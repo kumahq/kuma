@@ -338,16 +338,16 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 			for _, to := range policyWithTo.GetToList() {
 				var targetRef common_api.TargetRef
 				switch mhrRules.TargetRef.Kind {
-				case common_api.Mesh, "MeshSubset":
+				case common_api.Mesh, common_api.LegacyMeshSubsetKind():
 					targetRef = common_api.TargetRef{
-						Kind: "MeshSubset",
+						Kind: common_api.LegacyMeshSubsetKind(),
 						Tags: &map[string]string{
 							RuleMatchesHashTag: string(matchesHash),
 						},
 					}
 				default:
 					targetRef = common_api.TargetRef{
-						Kind: "MeshServiceSubset",
+						Kind: common_api.LegacyMeshServiceSubsetKind(),
 						Name: mhrRules.TargetRef.Name,
 						Tags: &map[string]string{
 							RuleMatchesHashTag: string(matchesHash),
@@ -609,7 +609,7 @@ func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {
 	switch tr.Kind {
 	case common_api.Mesh:
 		return subsetutils.Subset{}, nil
-	case "MeshSubset":
+	case common_api.LegacyMeshSubsetKind():
 		ss := subsetutils.Subset{}
 		for k, v := range pointer.Deref(tr.Tags) {
 			ss = append(ss, subsetutils.Tag{Key: k, Value: v})
@@ -617,7 +617,7 @@ func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {
 		return ss, nil
 	case common_api.MeshService:
 		return subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: pointer.Deref(tr.Name)}}, nil
-	case "MeshServiceSubset":
+	case common_api.LegacyMeshServiceSubsetKind():
 		ss := subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: pointer.Deref(tr.Name)}}
 		for k, v := range pointer.Deref(tr.Tags) {
 			ss = append(ss, subsetutils.Tag{Key: k, Value: v})

@@ -57,7 +57,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 ) core_model.ResourceSpec {
 	// consumer route
 	targetRef := common_api.TargetRef{
-		Kind: "MeshSubset",
+		Kind: common_api.LegacyMeshSubsetKind(),
 		Tags: &map[string]string{
 			mesh_proto.KubeNamespaceTag: routeNamespace,
 		},

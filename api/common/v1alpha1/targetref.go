@@ -32,6 +32,18 @@ const (
 	meshServiceSubset TargetRefKind = "MeshServiceSubset"
 )
 
+// LegacyMeshSubsetKind returns the legacy MeshSubset wire value without
+// re-exporting the kind constant.
+func LegacyMeshSubsetKind() TargetRefKind {
+	return meshSubset
+}
+
+// LegacyMeshServiceSubsetKind returns the legacy MeshServiceSubset wire value
+// without re-exporting the kind constant.
+func LegacyMeshServiceSubsetKind() TargetRefKind {
+	return meshServiceSubset
+}
+
 var order = map[TargetRefKind]int{
 	Mesh:                 1,
 	Dataplane:            2,

@@ -393,7 +393,7 @@ func ValidateTargetRef(
 		if !opts.IsInboundPolicy && pointer.Deref(ref.SectionName) != "" {
 			err.AddViolation("sectionName", "can only be used with inbound policies")
 		}
-	case "MeshSubset":
+	case common_api.LegacyMeshSubsetKind():
 		err.Add(disallowedField("name", pointer.Deref(ref.Name), ref.Kind))
 		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(ValidateTags(validators.RootedAt("tags"), pointer.Deref(ref.Tags), ValidateTagsOpts{}))
@@ -424,7 +424,7 @@ func ValidateTargetRef(
 		if len(pointer.Deref(ref.Labels)) > 0 && (pointer.Deref(ref.Name) != "" || pointer.Deref(ref.Namespace) != "") {
 			err.AddViolation("labels", "either labels or name and namespace must be specified")
 		}
-	case "MeshServiceSubset":
+	case common_api.LegacyMeshServiceSubsetKind():
 		err.Add(requiredField("name", pointer.Deref(ref.Name), ref.Kind))
 		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
