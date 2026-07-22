@@ -11,7 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	mt_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	mcb_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	mtp_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	test_matchers "github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
@@ -80,7 +80,7 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			resources, _ := readPolicies(given.policiesFile)
 
 			// when
-			policies, err := matchers.EgressMatchedPolicies(mt_api.MeshTimeoutType, es.Spec.Tags, resources)
+			policies, err := matchers.EgressMatchedPolicies(mcb_api.MeshCircuitBreakerType, es.Spec.Tags, resources)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
