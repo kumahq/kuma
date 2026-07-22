@@ -264,7 +264,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:        "27.dataplane.yaml",
 			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
 		}),
-		Entry("26b. Should copy node label to the dataplane labels even when inbound tags are disabled", testCase{
+		Entry("27. Should copy node label to the dataplane labels even when inbound tags are disabled", testCase{
 			pod:                 "26.pod.yaml",
 			node:                "26.node.yaml",
 			dataplane:           "node-labels-inbound-tags-disabled.dataplane.yaml",
