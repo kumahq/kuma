@@ -73,9 +73,8 @@ spec:
 		})
 
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
+			"cluster.kri_extsvc_%s_default_%s_http-external-service_80.upstream_rq_total",
 			meshName,
-			"http-external-service",
 			Config.KumaNamespace,
 		)
 
@@ -131,9 +130,8 @@ spec:
 `, Config.KumaNamespace, meshName)
 
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
+			"cluster.kri_extsvc_%s_default_%s_mesh-external-service-rbac_80.upstream_rq_total",
 			meshName,
-			"mesh-external-service-rbac",
 			Config.KumaNamespace,
 		)
 		BeforeAll(func() {
@@ -213,9 +211,8 @@ spec:
       port: 80
 `, Config.KumaNamespace, meshName)
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
+			"cluster.kri_extsvc_%s_default_%s_tcp-external-service_80.upstream_rq_total",
 			meshName,
-			"tcp-external-service",
 			Config.KumaNamespace,
 		)
 		BeforeAll(func() {
@@ -316,10 +313,10 @@ spec:
 		}
 		filter := func(serviceName string) string {
 			return fmt.Sprintf(
-				"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total", // cx
+				"cluster.kri_extsvc_%s_default_%s_%s_80.upstream_rq_total", // cx
 				meshName,
-				serviceName,
 				Config.KumaNamespace,
+				serviceName,
 			)
 		}
 		BeforeAll(func() {
