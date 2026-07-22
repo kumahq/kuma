@@ -94,7 +94,7 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		return kube_ctrl.Result{}, nil
 	}
 
-	meshName := util.MeshOfByLabelOrAnnotation(log, svc, namespace)
+	meshName := util.MeshOfByLabel(svc, namespace)
 
 	k8sMesh := v1alpha1.Mesh{}
 	if err := r.Get(ctx, kube_types.NamespacedName{Name: meshName}, &k8sMesh); err != nil {

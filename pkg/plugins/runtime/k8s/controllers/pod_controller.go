@@ -263,7 +263,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	ns *kube_core.Namespace,
 	services []*kube_core.Service,
 ) error {
-	meshName := util_k8s.MeshOfByLabelOrAnnotation(r.Log, pod, ns)
+	meshName := util_k8s.MeshOfByLabel(pod, ns)
 	k8sMesh := mesh_k8s.Mesh{}
 	if err := r.Get(ctx, kube_types.NamespacedName{Name: meshName}, &k8sMesh); err != nil {
 		return err
