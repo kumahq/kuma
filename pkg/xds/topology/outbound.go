@@ -403,7 +403,11 @@ func endpointIdentity(inboundTags map[string]string, dataplane *core_mesh.Datapl
 	if !inboundTagsDisabled {
 		return tags
 	}
-	for k, v := range dataplane.GetMeta().GetLabels() {
+	labels := dataplane.GetMeta().GetLabels()
+	if len(labels) == 0 {
+		return tags
+	}
+	for k, v := range labels {
 		if _, exists := tags[k]; !exists {
 			tags[k] = v
 		}
