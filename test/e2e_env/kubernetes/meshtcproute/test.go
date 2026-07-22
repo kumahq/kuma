@@ -8,6 +8,7 @@ import (
 
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
@@ -20,7 +21,16 @@ func Test() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MeshKubernetes(meshName)).
+			// MeshExternalService traffic is only ever routed through ZoneEgress
+			// (see docs/madr/decisions/062-meshexternalservice-and-zoneegress.md),
+			// so the mesh needs mTLS + egress routing enabled for the
+			// MeshTCPRoute-vs-MeshExternalService precedence case below to have
+			// a real backend to route to.
+			Install(Combine(
+				YamlK8s(samples.MeshMTLSBuilder().WithName(meshName).WithEgressRoutingEnabled().KubeYaml()),
+				WaitMeshKubernetesReady(meshName),
+			)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
 				testserver.Install(
@@ -162,8 +172,13 @@ spec:
         backendRefs:
         - kind: MeshExternalService
           name: external-tcp-service-mtcpr
+          # MeshExternalService resources live in the CP's own namespace
+          # (see how it's installed above); without an explicit namespace
+          # here the backendRef falls back to this policy's namespace and
+          # silently fails to resolve, producing an empty outbound listener.
+          namespace: %s
           port: 80
-`, namespace, meshName, namespace)
+`, namespace, meshName, namespace, Config.KumaNamespace)
 			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)
 		}
 
@@ -257,8 +272,13 @@ spec:
         backendRefs:
         - kind: MeshExternalService
           name: external-tcp-service-mtcpr
+          # MeshExternalService resources live in the CP's own namespace
+          # (see how it's installed above); without an explicit namespace
+          # here the backendRef falls back to this policy's namespace and
+          # silently fails to resolve, producing an empty outbound listener.
+          namespace: %s
           port: 80
-`, namespace, meshName, namespace)
+`, namespace, meshName, namespace, Config.KumaNamespace)
 			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)
 		}
 
