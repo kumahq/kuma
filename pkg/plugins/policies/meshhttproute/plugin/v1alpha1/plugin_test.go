@@ -2528,7 +2528,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															Percentage: pointer.To(intstr.FromString("99.9")),
 															BackendRef: common_api.BackendRef{
 																TargetRef: common_api.TargetRef{
-																	Kind: common_api.MeshServiceSubset,
+																	Kind: "MeshServiceSubset",
 																	Name: pointer.To("payments"),
 																	Tags: &map[string]string{
 																		"version": "v1",

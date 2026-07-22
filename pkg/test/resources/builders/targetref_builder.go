@@ -13,7 +13,7 @@ func TargetRefMesh() common_api.TargetRef {
 
 func TargetRefMeshSubset(kv ...string) common_api.TargetRef {
 	return common_api.TargetRef{
-		Kind: common_api.MeshSubset,
+		Kind: "MeshSubset",
 		Tags: pointer.To(TagsKVToMap(kv)),
 	}
 }
@@ -41,7 +41,7 @@ func TargetRefService(name string) common_api.TargetRef {
 
 func TargetRefServiceSubset(name string, kv ...string) common_api.TargetRef {
 	return common_api.TargetRef{
-		Kind: common_api.MeshServiceSubset,
+		Kind: "MeshServiceSubset",
 		Name: &name,
 		Tags: pointer.To(TagsKVToMap(kv)),
 	}
