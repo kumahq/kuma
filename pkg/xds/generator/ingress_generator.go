@@ -7,7 +7,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
@@ -29,7 +28,10 @@ func (i IngressGenerator) Generate(
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 	cp := xdsCtx.ControlPlane
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
+	// ZoneIngress isn't scoped to a single mesh (xdsCtx.Mesh is empty for zone proxies),
+	// so unlike mesh-scoped generators we can't use unified_naming.Enabled here: it
+	// would always see a nil mesh and report unified naming as disabled.
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
 	zoneIngress := proxy.ZoneIngressProxy.ZoneIngressResource
