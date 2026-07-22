@@ -378,12 +378,12 @@ func fillDataplaneOutbounds(
 // labels are merged in to preserve label-based identity (affinity, matching).
 // Inbound tags always win over labels on key conflicts.
 func endpointIdentity(inboundTags map[string]string, dataplane *core_mesh.DataplaneResource, inboundTagsDisabled bool) map[string]string {
+	if !inboundTagsDisabled {
+		return maps.Clone(inboundTags)
+	}
 	tags := maps.Clone(inboundTags)
 	if tags == nil {
 		tags = map[string]string{}
-	}
-	if !inboundTagsDisabled {
-		return tags
 	}
 	for k, v := range dataplane.GetMeta().GetLabels() {
 		if _, exists := tags[k]; !exists {

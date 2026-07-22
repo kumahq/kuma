@@ -53,9 +53,10 @@ func NewEndpoints(
 func createEndpoint(lbEndpoint *envoy_endpoint.LbEndpoint, localZone string) core_xds.Endpoint {
 	endpoint := core_xds.Endpoint{}
 	endpoint.Weight = lbEndpoint.LoadBalancingWeight.GetValue()
-	// When inbound tags are disabled, resource labels are serialized under the
-	// same envoy.lb key as tags, so ExtractLbTags returns the affinity identity
-	// regardless of the source (tags or labels).
+	// When inbound tags are disabled, resource labels are folded into the
+	// envoy.lb metadata at topology time, so ExtractLbTags returns the full
+	// affinity identity regardless of the source (tags or labels). The zone tag
+	// read on line 36 relies on that same merge for label-only endpoints.
 	endpoint.Tags = envoy_metadata.ExtractLbTags(lbEndpoint.Metadata)
 	address := lbEndpoint.GetEndpoint().GetAddress()
 	if address.GetSocketAddress() != nil {

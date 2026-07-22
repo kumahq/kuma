@@ -31,11 +31,12 @@ var _ = Describe("IngressTrafficRoute", func() {
 	})
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
-			mesh         *core_mesh.MeshResource
-			dataplanes   []*core_mesh.DataplaneResource
-			meshServices []*v1alpha1.MeshServiceResource
-			zoneEgress   []*core_mesh.ZoneEgressResource
-			expected     core_xds.EndpointMap
+			mesh                *core_mesh.MeshResource
+			dataplanes          []*core_mesh.DataplaneResource
+			meshServices        []*v1alpha1.MeshServiceResource
+			zoneEgress          []*core_mesh.ZoneEgressResource
+			inboundTagsDisabled bool
+			expected            core_xds.EndpointMap
 		}
 		DescribeTable("should generate ingress outbounds matching given selectors",
 			func(given testCase) {
@@ -57,7 +58,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 					egressAddresses,
 					dataSourceLoader,
 					given.mesh.MTLSEnabled(),
-					false,
+					given.inboundTagsDisabled,
 				)
 
 				// then
@@ -89,6 +90,44 @@ var _ = Describe("IngressTrafficRoute", func() {
 							Target: "192.168.0.2",
 							Port:   6379,
 							Tags:   map[string]string{mesh_proto.ServiceTag: "redis"},
+							Weight: 1,
+						},
+					},
+				},
+			}),
+			Entry("inbound tags disabled folds labels into endpoint tags", testCase{
+				mesh:                samples.MeshDefault(),
+				inboundTagsDisabled: true,
+				dataplanes: []*core_mesh.DataplaneResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:   "default",
+							Labels: map[string]string{"version": "v1"},
+						},
+						Spec: &mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								AdvertisedAddress: "192.168.0.2",
+								Address:           "192.168.0.1",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags:        map[string]string{mesh_proto.ServiceTag: "redis"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
+								},
+							},
+						},
+					},
+				},
+				expected: core_xds.EndpointMap{
+					"redis": []core_xds.Endpoint{
+						{
+							Target: "192.168.0.2",
+							Port:   6379,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "redis",
+								"version":             "v1",
+							},
 							Weight: 1,
 						},
 					},
