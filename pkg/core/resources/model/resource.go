@@ -1,10 +1,13 @@
 package model
 
 import (
+	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"hash"
 	"hash/fnv"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -123,6 +126,42 @@ func writeMetaIdentity(hasher hash.Hash, r Resource) {
 	_, _ = hasher.Write([]byte(r.Descriptor().Name))
 	_, _ = hasher.Write([]byte(meta.GetMesh()))
 	_, _ = hasher.Write([]byte(meta.GetName()))
+}
+
+// WriteSortedLabels writes labels into hasher in a deterministic,
+// unambiguous order regardless of map iteration order. Keys and values are
+// length-prefixed so that e.g. {"a":"bc"} and {"ab":"c"} don't collide.
+func WriteSortedLabels(hasher hash.Hash, labels map[string]string) {
+	keys := make([]string, 0, len(labels))
+	for k := range labels {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var lenBuf [8]byte
+	writeLenPrefixed := func(s string) {
+		binary.BigEndian.PutUint64(lenBuf[:], uint64(len(s)))
+		_, _ = hasher.Write(lenBuf[:])
+		_, _ = hasher.Write([]byte(s))
+	}
+
+	for _, k := range keys {
+		writeLenPrefixed(k)
+		writeLenPrefixed(labels[k])
+	}
+}
+
+// WriteDeterministicJSON writes a stable JSON encoding of v into hasher.
+// encoding/json sorts map keys, so the resulting bytes are deterministic.
+func WriteDeterministicJSON(hasher hash.Hash, v any) {
+	b, err := json.Marshal(v)
+	if err == nil {
+		_, _ = hasher.Write(b)
+	} else {
+		// Marshaling should not fail for the plain data structs used in resource
+		// hashing, but fall back to a value that still changes with content.
+		_, _ = fmt.Fprintf(hasher, "%+v", v)
+	}
 }
 
 func Deprecations(resource Resource) []string {
