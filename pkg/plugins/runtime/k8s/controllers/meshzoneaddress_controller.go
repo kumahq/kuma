@@ -88,7 +88,7 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 		return kube_ctrl.Result{}, r.deleteIfExists(ctx, req.NamespacedName)
 	}
 
-	meshName := util.MeshOfByLabelOrAnnotation(log, svc, namespace)
+	meshName := util.MeshOfByLabel(svc, namespace)
 
 	mza := &meshzoneaddress_k8s.MeshZoneAddress{
 		ObjectMeta: v1.ObjectMeta{

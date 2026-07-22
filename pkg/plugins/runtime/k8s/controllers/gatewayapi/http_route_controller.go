@@ -66,7 +66,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of HTTPRoute")
 	}
 
-	mesh := k8s_util.MeshOfByLabelOrAnnotation(r.Log, httpRoute, &ns)
+	mesh := k8s_util.MeshOfByLabel(httpRoute, &ns)
 
 	meshRouteSpecs, conditions, err := r.gapiToKumaRoutes(ctx, httpRoute)
 	if err != nil {
