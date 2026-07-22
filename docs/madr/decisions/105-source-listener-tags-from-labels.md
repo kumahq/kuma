@@ -54,9 +54,9 @@ What reads the listener map is our own policy matching. `MeshProxyPatch`'s `list
 
 ## Design
 
-Every option answers the same question: when a listener has no tags, what identifies the thing it stands for? An outbound listener stands for the destination service, which is the `Mesh*Service` resource it was generated from. An inbound listener stands for the proxy itself. For both of those, identity lives in labels now.
+Every option answers the same question: when a listener has no tags, what identifies the thing it stands for? An outbound listener stands for the destination service, which is the `Mesh*Service` resource it was generated from. An inbound listener stands for the proxy itself. For both of those, identity lives in labels now, and each resource also has a KRI computed from those labels, so the identity can be named either by copying the labels or by the KRI that stands in for them.
 
-An outbound listener does not stand for the individual workloads behind the destination. Those are its endpoints. They are picked by the service, and their own labels already go to Envoy separately, on the endpoints, under `io.kuma.labels`. So the outbound listener wants the service's labels, and the inbound listener wants the `Dataplane`'s. Clusters are not part of this. They never carry `io.kuma.tags`, so there is nothing on them to fill.
+An outbound listener does not stand for the individual workloads behind the destination. Those are its endpoints. They are picked by the service, and their own labels already go to Envoy separately, on the endpoints, under `io.kuma.labels`. So the outbound listener wants the destination's identity, and the inbound listener wants the proxy's own. Clusters are not part of this. They never carry `io.kuma.tags`, so there is nothing on them to fill.
 
 ### Option 1: Do nothing, require unified resource naming and `match.name`
 
@@ -92,29 +92,24 @@ Write labels under a new listener key and add `listenerLabels`/`labels` to the `
 
 ### Option 4: Fill `io.kuma.tags` from labels when tags are gone
 
-Keep one key and one selector. When a listener has no tags, take them from the labels of whatever the listener stands for: the destination resource for an outbound, the proxy's own `Dataplane` for an inbound. Strip `kuma.io/mesh`, which the outbound path already does today.
+Keep one key and one selector. When a listener has no tags, fill them from the label-based identity of whatever the listener stands for: the destination resource for an outbound, the proxy's own `Dataplane` for an inbound. That identity can be written two ways, and the sub-options below split on which: copy the resource's labels, or write the single `kuma.io/kri` the resource's identity already computes to.
 
-The labels are there in both environments, which is what makes this work. A `MeshService` has no tags to lose in the first place, so its computed labels always identify it: `kuma.io/display-name`, `kuma.io/zone`, `kuma.io/env`, `kuma.io/origin` plus `k8s.kuma.io/namespace` on Kubernetes. A `Dataplane` has them too, from Pod labels on Kubernetes and from label computation on Universal. Which of those keys we actually copy is the one thing still open, and the deep dive works through the candidates.
-
-This reuses the substitution Kuma has already applied elsewhere and brings the last component in line with it.
-
-A policy that used to say `kuma.io/service: backend` becomes:
+A policy that used to say `kuma.io/service: backend` becomes a match on the destination's synthesized KRI, which is the form this MADR settles on (sub-option B):
 
 ```yaml
 match:
   origin: outbound
   listenerTags:
-    kuma.io/display-name: backend
-    k8s.kuma.io/namespace: kuma-demo
+    kuma.io/kri: kri_msvc_default_east_kuma-demo_backend_http
 ```
 
-And group targeting, which no name-based selector can do at all, becomes:
+The same rewrite on an inbound listener keys on the proxy's own `Dataplane` KRI, with the inbound's port as the section name:
 
 ```yaml
 match:
-  origin: outbound
+  origin: inbound
   listenerTags:
-    team: payments
+    kuma.io/kri: kri_dp_default_east_kuma-demo_backend-7f9c_http
 ```
 
 * Good, because there is no API change. The selector people already use starts working again, and it is safe to ship as a patch.
@@ -196,13 +191,12 @@ Low for the fact that a destination appears at all. The outbound exists because 
 
 * Nothing that matches today can break, because the affected listeners have empty `io.kuma.tags` and every non-empty selector already fails against them.
 * Traffic is unaffected. `io.kuma.tags` only exists on listeners and only our matcher reads it. Clusters and endpoints use other keys that we don't touch, so there is no path from here to load balancing, mTLS or endpoint selection.
-* Labels are not recomputed for resources that came from elsewhere, so a `MeshService` synced from global keeps the labels it arrived with. Tags built at generation time have to cope with labels computed by another control plane. A `MeshMultiZoneService`, for instance, has no `kuma.io/zone` label at all, so that key just won't be there.
-* Listener metadata now changes when labels change, so editing a label on a `MeshService` updates the outbound listener of every proxy that talks to it. The trigger is not new. We hash a `MeshService` by its version, so any write to it already regenerates every proxy in the mesh. What is new is that the regeneration now produces different bytes. Today that output is thrown away, because `autoVersion` hashes each resource type and compares it against the previous snapshot, and the reconciler returns early when nothing changed (`pkg/xds/server/v3/reconcile.go:69-91`). Writes that leave labels alone, status updates in particular, stay free for the same reason.
-* Copying labels wholesale would tie listener churn to how often people deploy. Keys like `app.kubernetes.io/version` and `argocd.argoproj.io/instance` change on every rollout, and each change would replace a listener on every proxy reaching that service, for labels nobody is matching on. A fixed key list removes this, since only keys we picked can move the bytes.
-* Memory on the proxy is a small addition to something larger that already ships. Outbound listeners are one per destination and port, while endpoints are one per pod, and every local endpoint already carries the full unfiltered `Dataplane` label set (`pkg/xds/topology/outbound.go:384`, `:421`). A typical `MeshService` carries around 500 bytes of keys and values, closer to a kilobyte once it is a `google.protobuf.Struct`. A proxy reaching 200 services would hold roughly 200 KB of listener metadata against the few megabytes of endpoint labels it already holds. The control plane keeps a snapshot per proxy, so it scales the same way and the same ratio applies there.
-* The typical case is not the worst one. Nothing caps how many labels a `Service` can have, in Kuma or in Kubernetes, so a heavily labelled `Service` reaches a few kilobytes per listener and there is no upper bound. This is another reason to bound the key set rather than to rely on the ratio above staying true.
-* This adds to a config we are otherwise trying to shrink. `InboundTagsDisabled` exists to cut memory, and #11065 wants to strip tags from endpoints for the same reason. The addition here is modest and lands on listeners rather than endpoints, but it adds rather than removes, so we should write no more metadata than the feature needs.
-* Every affected golden file already has an `io.kuma.tags` block, because we write the key even when it is empty. What changes is that the empty ones gain content. It is a big mechanical diff, and it is worth actually reading it to catch labels we didn't mean to expose.
+* The KRI is built at generation time from the resource's own identity, `kri.FromResourceMeta` reading `kuma.io/zone`, `k8s.kuma.io/namespace` and the display name (`kri.go:86-92`), so it copes with whatever a resource arrived with. Labels are not recomputed for resources that came from elsewhere, so a `MeshService` synced from global keeps the labels it arrived with and its KRI reflects them. A `MeshMultiZoneService` has no `kuma.io/zone` label at all, so its KRI simply carries an empty zone segment, `kri_mzsvc_default__kuma-system_backend_http`, rather than a wrong one.
+* Listener metadata changes only when identity moves. Editing an arbitrary label on a `MeshService`, a status update in particular, does not change its KRI, so the outbound listeners of proxies that talk to it are regenerated to identical bytes and thrown away. The trigger to regenerate is not new, we hash a `MeshService` by its version so any write to it already re-runs every proxy in the mesh, and `autoVersion` hashes each resource type against the previous snapshot and the reconciler returns early when the bytes match (`pkg/xds/server/v3/reconcile.go:69-91`). Choosing the KRI over the resource's whole label set is what keeps that early return firing: only a rename, a move of namespace or zone, or a re-home across control planes shifts the KRI, and those are rare and are real identity changes.
+* This is the churn argument for picking sub-option B over copying labels. Copying the label set wholesale would tie listener churn to how often people deploy, keys like `app.kubernetes.io/version` and `argocd.argoproj.io/instance` change on every rollout, and each change would replace a listener on every proxy reaching that service, for labels nobody selects on. The single synthesized `kuma.io/kri` key sidesteps this entirely.
+* Memory on the proxy is a small, bounded addition. Each affected listener gains one key whose value is a KRI string, on the order of tens of bytes, against endpoints that already carry the full unfiltered `Dataplane` label set per pod (`pkg/xds/topology/outbound.go:384`, `:421`). A proxy reaching 200 destinations holds roughly one extra KRI per outbound listener, a few kilobytes in total, against the megabytes of endpoint labels it already holds. The control plane keeps a snapshot per proxy, so the same ratio applies there. Because the value is one bounded key rather than a copied label set, there is no heavily-labelled-`Service` worst case to bound, which is the second reason sub-option B is preferred to copying labels.
+* This adds to a config we are otherwise trying to shrink. `InboundTagsDisabled` exists to cut memory, and #11065 wants to strip tags from endpoints for the same reason. One bounded key per emptied listener is about as little as the fix can add, and it lands on listeners rather than endpoints, but it still adds rather than removes, so we write no more than the selector needs.
+* Every affected golden file already has an `io.kuma.tags` block, because we write the key even when it is empty. What changes is that the empty ones gain a single `kuma.io/kri` entry. It is a big mechanical diff across the golden files, and it is worth reading to confirm every emptied listener gets the KRI we expect and nothing else.
 
 ## Backport
 
@@ -223,7 +217,7 @@ None
 
 ## Decision
 
-Listener `io.kuma.tags` is filled wherever tags no longer exist, using **sub-option B**: a synthesized `kuma.io/kri` tag in both directions. The worked examples earlier in the body that select on `kuma.io/display-name` illustrate sub-option A; they show what labels look like on a listener, but they are not the selector this decision endorses.
+Listener `io.kuma.tags` is filled wherever it is otherwise empty, using **sub-option B**: a synthesized `kuma.io/kri` tag in both directions. The `kuma.io/display-name` examples that remain in the body, in sub-option A and in the contrast block under "Which labels sub-option A would reach for", show what labels would look like on a listener; they are not the selector this decision endorses.
 
 1. Outbound listeners get a `kuma.io/kri` tag holding the KRI of the destination `Mesh*Service`, with the port as its section name. KRI is stable and moves only when identity moves, so it avoids the churn and the memory cost of copying the resource's whole label set on every update, and its section name tells the listeners of a multi-port destination apart, which labels cannot.
 2. Inbound listeners whose tags are empty get a `kuma.io/kri` tag holding the KRI of the proxy's own `Dataplane`, with the inbound's port as its section name. The rule keys on the tags being empty, not on `InboundTagsDisabled`, because a hand-written Universal `Dataplane` can have tagless inbounds with the flag off. The KRI is used here rather than the `Dataplane`'s labels for a concrete reason: `Dataplane` labels are shared across all of a proxy's inbounds, so a label selector cannot target one inbound listener, whereas the KRI's section name carries the port and can.
@@ -239,7 +233,6 @@ Group targeting by a user label such as `team: payments`, billed above as the ma
 There is no `MeshProxyPatch` API change. The fix is entirely in how we fill the listener metadata. It is unconditional and has no new flag.
 
 Policies matching `kuma.io/service: <name>` have to be rewritten against the KRI, `kuma.io/kri: <kri>`.
-
 
 ## Deep dive
 
@@ -360,9 +353,11 @@ Two call sites use it, `:74` for services and `:116` for serviceless, both wrapp
 
 The flag is a Kubernetes-side stripper only. `tagsOrEmpty` lives in the pod converter, so it never touches a Universal `Dataplane`, whose inbounds keep whatever tags their author wrote. Universal reaches the same empty state in a different way: `validateNetworking` (`dataplane_validator.go:105-111`) only requires `kuma.io/service` on an inbound that has tags at all, and that rule is not gated on the flag. A hand-written `Dataplane` with tagless inbounds is therefore valid on any control plane, in either environment, with or without the flag, and its inbound listeners get `io.kuma.tags: {}` today. So the fallback keys on "the tags are empty" rather than on the flag, which is also all `inbound_proxy_generator.go:96` can see.
 
-What we fall back to is thinner on Universal. There are no Pod labels to copy, so the `Dataplane`'s metadata labels are whatever `Compute` puts there at write time (`dataplane_manager.go:66`, `:108`): `kuma.io/display-name`, `kuma.io/mesh`, `kuma.io/origin`, `kuma.io/zone`, `kuma.io/env: universal`, `kuma.io/proxy-type`, plus `kuma.io/listener-zoneingress`/`kuma.io/listener-zoneegress` on gateways. Alongside those sit any labels the author wrote under `metadata.labels`, kept verbatim. `kuma.io/workload` is not among them, because `WithWorkload` is only passed by the Kubernetes pod converter (`pod_converter.go:74`). A Universal inbound listener still ends up with a non-empty tag set, and there `kuma.io/display-name` is the `Dataplane`'s own name rather than a service's.
+The fix for an emptied inbound does not read these labels directly. It synthesizes the `Dataplane`'s KRI, `kri.FromResourceMeta(dp.GetMeta(), DataplaneType)` with the inbound's port as the section name. That KRI is built from the `Dataplane`'s own identity, its name, mesh, zone and namespace, which live on the resource's computed labels and are always present regardless of the flag, since the flag strips tags and never touches labels. So the inbound KRI is available in both environments and does not depend on Pod labels surviving anywhere.
 
-On Kubernetes the data survives, because Pod labels are copied onto the `Dataplane`'s metadata labels either way (`pod_converter.go:62-84`):
+Where the label data sits still matters, for two reasons. The KRI's zone and namespace segments are read from these computed labels, and the open question of copying user labels for group targeting (sub-option A) depends on them. On Universal the `Dataplane`'s metadata labels are whatever `Compute` puts there at write time (`dataplane_manager.go:66`, `:108`): `kuma.io/display-name`, `kuma.io/mesh`, `kuma.io/origin`, `kuma.io/zone`, `kuma.io/env: universal`, `kuma.io/proxy-type`, plus `kuma.io/listener-zoneingress`/`kuma.io/listener-zoneegress` on gateways. Alongside those sit any labels the author wrote under `metadata.labels`, kept verbatim. `kuma.io/workload` is not among them, because `WithWorkload` is only passed by the Kubernetes pod converter (`pod_converter.go:74`). There `kuma.io/display-name` is the `Dataplane`'s own name rather than a service's, which is exactly what the inbound KRI names.
+
+On Kubernetes the Pod labels survive on the `Dataplane`'s metadata labels either way, because they are copied there regardless of the flag (`pod_converter.go:62-84`):
 
 ```go
 labels, err := resource_labels.Compute(
@@ -375,16 +370,16 @@ labels, err := resource_labels.Compute(
 dataplane.SetLabels(labels)
 ```
 
-`mergeLabels` (`:511-518`) is a plain clone and copy. The flag adds no label mechanism, it only drops the copy that lived in tags.
+`mergeLabels` (`:511-518`) is a plain clone and copy. The flag adds no label mechanism, it only drops the copy that lived in tags, so the `Dataplane`'s identity labels, and therefore its KRI, are untouched.
 
-Node labels are the exception the fallback cannot cover. `getNodeLabelsToCopy` (`inbound_converter.go:220-235`) copies an allow-listed set of node labels straight into the inbound tags (`maps.Copy` at `:262`), keyed by `KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY` and defaulting to `topology.kubernetes.io/zone`, `topology.kubernetes.io/region` and `kubernetes.io/hostname` (`config.go:113`, `:254`). Those never reach the `Dataplane`'s metadata labels: `mergeLabels` merges the existing labels with `pod.Labels` only, and the node labels sit in a separate map that the pod converter never folds in. So a selector on a node key works today through the inbound tags, and once the flag empties them the `Dataplane`-label fallback has nothing to substitute. Recovering it would mean also copying those node labels onto the `Dataplane`'s labels, which is a change to the pod converter rather than to listener metadata, so it is out of scope here.
+Node labels are the one thing neither the KRI nor a label fallback can restore. `getNodeLabelsToCopy` (`inbound_converter.go:220-235`) copies an allow-listed set of node labels straight into the inbound tags (`maps.Copy` at `:262`), keyed by `KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY` and defaulting to `topology.kubernetes.io/zone`, `topology.kubernetes.io/region` and `kubernetes.io/hostname` (`config.go:113`, `:254`). Those never reach the `Dataplane`'s metadata labels: `mergeLabels` merges the existing labels with `pod.Labels` only, and the node labels sit in a separate map that the pod converter never folds in. They are not part of the `Dataplane`'s identity either, so the KRI does not carry them. A selector on a node key works today through the inbound tags, and once the flag empties them neither the KRI nor a `Dataplane`-label fallback has anything to substitute. Recovering it would mean also copying those node labels onto the `Dataplane`'s labels, which is a change to the pod converter rather than to listener metadata, so it is out of scope here.
 
 ### The tags-to-labels substitution inventory
 
 Four places actually fall back to labels:
 
 * `pkg/core/resources/apis/mesh/dataplane_helpers.go:193-204`, `IdentifyingName` returns the `kuma.io/workload` label when tags are disabled, otherwise the `kuma.io/service` tag. Used by `mads/v1/generator/assignments.go:50`, `meshtrace/plugin.go:266`, `meshaccesslog/plugin.go:108` and `meshmetric/plugin.go:146`.
-* `pkg/core/resources/apis/mesh/dataplane_helpers.go:181-190`, `InboundIdentifyingName` returns the `Dataplane` KRI with the port as section name.
+* `pkg/core/resources/apis/mesh/dataplane_helpers.go:181-190`, `InboundIdentifyingName` returns the `Dataplane` KRI with the port as section name. This is the precedent the inbound half of this fix follows: the same KRI, minus the flag gate.
 * `pkg/plugins/runtime/k8s/controllers/meshservice_controller.go:374-385`, the selector swaps `DataplaneTags` for `DataplaneLabels` using the same Service selector keys.
 * `meshloadbalancingstrategy`, in `priority.go:123-137` (`resolveAffinityValues`) and `locality_aware.go:151-154`, prefers inbound tags and falls back to Pod labels, filtered down to affinity keys so unrelated labels don't leak.
 
@@ -394,7 +389,7 @@ Everywhere else the data is dropped or the rule is relaxed:
 * `pkg/core/resources/apis/mesh/dataplane_validator.go:105-111` turns the `kuma.io/service` requirement into a no-op.
 * `pkg/xds/topology/outbound.go:386`, `:423` still derive `Locality` from `getZone(inboundTags)`, tags only.
 * `pkg/core/xds/types.go:138`, `:422`, `:435`: `Protocol()`, `ContainsTags` and selector matching are tags only.
-* `pkg/xds/generator/inbound_proxy_generator.go:96`, the inbound listener's tags, which is the gap this MADR closes.
+* `pkg/xds/generator/inbound_proxy_generator.go:96`, the inbound listener's tags, which is the gap this MADR closes, by synthesizing the `Dataplane` KRI when they are empty.
 
 ### Endpoint `Locality` under `InboundTagsDisabled`
 
@@ -424,7 +419,7 @@ func GetLocality(localZone string, otherZone *string, localityAwareness bool) *c
 
 Under `InboundTagsDisabled` the destination `Dataplane`'s inbound tags are empty, so `getZone` returns `nil` at both local call sites: the legacy path (`outbound.go:386`) and the `MeshService` local path (`outbound.go:423`). The effect is silent and it is a traffic effect, not a matching one. With the flag off, every local endpoint gets `Priority: local` and cross-zone endpoints `Priority: remote`, which is how Kuma keeps traffic in-zone; with the flag on, the local endpoints have no priority, the local/remote split collapses, and zone-aware routing quietly stops. Nothing errors, and no policy is involved.
 
-The data is still there, and it is already in scope. The zone lives on the destination `Dataplane`'s `kuma.io/zone` label, and both call sites already hold that label set: `dataplane.GetMeta().GetLabels()` at `outbound.go:384` and `dpp.GetMeta().GetLabels()` at `:421`, one line above each `GetLocality` call. So the fix is the same substitution this MADR applies to listeners: `getZone` should fall back to the `kuma.io/zone` label when the tag is absent. It is a small, self-contained change, and it does not touch the KDS or cross-zone builders (`:263`, `:303`), which already pass a real zone rather than reading it from tags.
+The data is still there, and it is already in scope. The zone lives on the destination `Dataplane`'s `kuma.io/zone` label, and both call sites already hold that label set: `dataplane.GetMeta().GetLabels()` at `outbound.go:384` and `dpp.GetMeta().GetLabels()` at `:421`, one line above each `GetLocality` call. So the fix is a label fallback in the same spirit as this MADR, `getZone` reading the `kuma.io/zone` label when the tag is absent. It differs in shape from the listener fix, which synthesizes a KRI rather than reading a label, because an endpoint needs the zone value itself for locality while a listener needs only something to select on. It is a small, self-contained change, and it does not touch the KDS or cross-zone builders (`:263`, `:303`), which already pass a real zone rather than reading it from tags.
 
 This one stays out of scope. It is a traffic-path fix, not a listener-metadata one, so folding it into this MADR would break the "traffic is unaffected" property the listener fix relies on and would need its own reliability and backport story. It is tracked as a separate follow-up; this section exists so whoever picks it up has the diagnosis and the fix already written down.
 
@@ -477,11 +472,13 @@ Third, it is narrower than its name suggests, and messier. It has one consumer, 
 
 So it is a local-zone, Kubernetes-only, unfiltered, single-consumer channel that reads like a general identity surface. Worth knowing before assuming it carries labels broadly, or that a listener could just read from it.
 
-Note also what `io.kuma.labels` confirms about the shape of our fix. The endpoint path did not invent a new idea; it shipped labels next to tags and let consumers fall back. We are doing the same thing for listeners, and merging rather than adding a key only because the constraint that forced the split on endpoints doesn't exist on listeners.
+Note also what `io.kuma.labels` confirms about the shape of our fix. The endpoint path solved the same class of problem by writing identity into xDS metadata for a later stage to read. We do the same for listeners, and we merge into the existing `io.kuma.tags` rather than add a second key, because the constraint that forced the split on endpoints doesn't exist here. Where the endpoint path shipped the labels themselves, the listener fix writes one synthesized `kuma.io/kri` value into that one key; a single stable identifier is enough for a selector, and it avoids copying a label set the endpoints already carry.
 
-### Where the labels come from
+### Where the KRI comes from
 
-The destination resource is already resolved at generation time and then thrown away (`pkg/plugins/policies/core/xds/meshroute/listeners.go:147-167`):
+The outbound KRI needs no lookup and no threading. It is already on `outbound.Resource`, the destination's identifier with the port as its section name (`core/xds/types/outbound.go:8-24`), and `DestinationService` already carries the `Outbound` (`meshroute/listeners.go:68-72`). Writing the tag is writing `outbound.Resource.String()`.
+
+The destination is still resolved at generation time, but not for the KRI (`pkg/plugins/policies/core/xds/meshroute/listeners.go:147-167`):
 
 ```go
 if svc = meshCtx.GetServiceByKRI(outbound.Resource); svc == nil {
@@ -497,17 +494,17 @@ result = append(result, DestinationService{
 })
 ```
 
-`GetServiceByKRI` returns a `core.Destination`, which embeds `core_model.Resource` and so exposes `GetMeta().GetLabels()`. `DestinationService` (`:68-72`) keeps only the KRI and a synthesized name, so the labels are discarded. Threading them through needs no extra lookup.
+`GetServiceByKRI` returns a `core.Destination` that exposes `GetMeta().GetLabels()`, and `DestinationService` (`:68-72`) discards those labels, keeping only the KRI and a synthesized name. For sub-option B that discard costs nothing, since the KRI is exactly what we write. Only sub-option A, copying the resource's labels, would need them threaded through, and even then without an extra lookup.
 
-A `MeshService` keeps its identity in labels rather than its spec. The computed set lives in `pkg/core/resources/labels/registry.go:10-23`, and only six of its twelve keys ever land on a `MeshService`, since the rest are for proxies and policies. The Universal generator does not go through `Compute` at all: `desiredLabels` (`meshservice/generate/generator.go:272-284`) writes `kuma.io/mesh`, `kuma.io/display-name`, `kuma.io/env` hardcoded to `universal`, `kuma.io/zone` and `kuma.io/origin` directly, plus `kuma.io/managed-by`, which is not a computed label and is not in the registry. User labels join them when `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED` is on. The Kubernetes controller adds `k8s.kuma.io/namespace` and `k8s.kuma.io/is-headless-service` (`meshservice_controller.go:373-489`). There is no `kuma.io/namespace` label in Kuma; the namespace label is `k8s.kuma.io/namespace` (`mesh_proto.KubeNamespaceTag`).
+The KRI's own segments are drawn from the resource's identity labels, `kri.FromResourceMeta` (`kri.go:86-92`) reading `kuma.io/zone`, `k8s.kuma.io/namespace` and the display name, so it is worth knowing where those come from. A `MeshService` keeps its identity in labels rather than its spec. The computed set lives in `pkg/core/resources/labels/registry.go:10-23`, and only six of its twelve keys ever land on a `MeshService`, since the rest are for proxies and policies. The Universal generator does not go through `Compute` at all: `desiredLabels` (`meshservice/generate/generator.go:272-284`) writes `kuma.io/mesh`, `kuma.io/display-name`, `kuma.io/env` hardcoded to `universal`, `kuma.io/zone` and `kuma.io/origin` directly, plus `kuma.io/managed-by`, which is not a computed label and is not in the registry. User labels join them when `KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED` is on. The Kubernetes controller adds `k8s.kuma.io/namespace` and `k8s.kuma.io/is-headless-service` (`meshservice_controller.go:373-489`). There is no `kuma.io/namespace` label in Kuma; the namespace label is `k8s.kuma.io/namespace` (`mesh_proto.KubeNamespaceTag`).
 
-The two environments differ in how user labels get there, which matters for how much we would be copying. The Universal generator filters them through `AllowedLabelKeys` and only runs when propagation is enabled, which is off by default. The Kubernetes controller does not: `ms.Labels = maps.Clone(svc.GetLabels())` at `meshservice_controller.go:483` takes every label off the `Service` unconditionally, and `MeshServiceLabelPropagation` never reaches that path. So on Kubernetes, which is where most of this runs, a `MeshService` carries whatever labels its `Service` carries.
+Those identity keys are all the KRI needs. User labels matter only to the open question of group targeting (sub-option A), and their source decides how much we would be copying. The Universal generator filters them through `AllowedLabelKeys` and only runs when propagation is enabled, which is off by default. The Kubernetes controller does not: `ms.Labels = maps.Clone(svc.GetLabels())` at `meshservice_controller.go:483` takes every label off the `Service` unconditionally, and `MeshServiceLabelPropagation` never reaches that path. So on Kubernetes a `MeshService` carries whatever labels its `Service` carries, which is the asymmetry the open question has to weigh.
 
 ### A Universal `MeshService` with no tags
 
-Worth separating two things that sound the same. A `MeshService` never has tags, in either environment: it has labels only, never tags, and the tags in question live on the `Dataplane`s behind it. So "the destination has no tags" cannot empty a Universal outbound listener, because none of the six computed labels is derived from a tag. `desiredLabels` (`generate/generator.go:272-284`) sets them unconditionally, and after `kuma.io/mesh` is stripped the listener carries `kuma.io/display-name`, `kuma.io/zone`, `kuma.io/env: universal`, `kuma.io/origin: zone` and `kuma.io/managed-by: meshservice-generator`. There is no `k8s.kuma.io/namespace`, since Universal has no namespaces, so the `kuma.io/display-name` plus `k8s.kuma.io/namespace` pair we recommend on Kubernetes reduces to `kuma.io/display-name` alone.
+Worth separating two things that sound the same. A `MeshService` never has tags, in either environment: it has labels only, never tags, and the tags in question live on the `Dataplane`s behind it. Under sub-option B this does not matter to what the outbound listener carries, because we write the destination's KRI, not its labels. That KRI is always available: `kri.FromResourceMeta` builds it from the computed labels `desiredLabels` (`generate/generator.go:272-284`) sets unconditionally, so a Universal outbound to `backend` in zone `east` gets `kri_msvc_default_east__backend_http`. The namespace segment is empty because Universal has no namespaces, which is the same asymmetry that reduces the `kuma.io/display-name` plus `k8s.kuma.io/namespace` pair of sub-option A to `kuma.io/display-name` alone there, expressed as an empty KRI segment instead of a missing key.
 
-What tagless `Dataplane`s do cost on Universal is user labels, and only when propagation is on. `dpContribution` (`generate/labels.go:80-183`) reads two sources: the non-reserved inbound tags that every inbound of the service agrees on, with conflicts dropped, overlaid with the `Dataplane`'s own metadata labels, both filtered through `AllowedLabelKeys`. `mergeAcrossDataplanes` (`:193-244`) then settles disagreements between `Dataplane`s by majority. Empty inbound tags simply contribute nothing to step one; the metadata labels still land, and the six computed labels are untouched. Group targeting on Universal therefore depends on operators labelling `Dataplane`s rather than on tags surviving.
+What tagless `Dataplane`s cost on Universal is user labels, and only for the open question of group targeting, and only when propagation is on. `dpContribution` (`generate/labels.go:80-183`) reads two sources: the non-reserved inbound tags that every inbound of the service agrees on, with conflicts dropped, overlaid with the `Dataplane`'s own metadata labels, both filtered through `AllowedLabelKeys`. `mergeAcrossDataplanes` (`:193-244`) then settles disagreements between `Dataplane`s by majority. Empty inbound tags simply contribute nothing to step one; the metadata labels still land, and the computed labels the KRI reads are untouched. So the KRI holds up regardless, and only label-based group targeting on Universal depends on operators labelling `Dataplane`s.
 
 A hand-written Universal `MeshService` skips the generator entirely. It goes through the API server, which calls `resource_labels.Compute` (`resource_endpoints.go:481-499`), and comes out with `kuma.io/display-name`, `kuma.io/mesh`, `kuma.io/origin: zone`, `kuma.io/zone` and `kuma.io/env: universal`. `kuma.io/managed-by` is absent, and that absence is intentional rather than an oversight: it is how the generator knows to leave the resource alone (`generator.go:319-321`). Labels the author wrote under `metadata.labels` are kept as they are, with no propagation flag and no allow list in the way, because those only gate what the generator copies off a `Dataplane`. A `MeshService` that arrived over KDS is not recomputed at all (`compute.go:126-128`), so it keeps the labels the other control plane gave it.
 
@@ -526,9 +523,11 @@ Put together, per pair:
 * `MeshMultiZoneService` against a `MeshExternalService`, both created on global: identical in both environments. Same display name, `kuma.io/origin: global`, no zone, no env, and on Kubernetes both sit in the global system namespace. They even land on the zone under the same hashed name, since `HashedName` omits the type (`kds/hash/hash.go:12-14`).
 * `MeshExternalService` against a `MeshService` on the same zone: identical on Universal, same origin, zone and env, with no namespace label to fall back on. Kubernetes separates them only because a `MeshExternalService` is system-namespace-only.
 
-So the canonical multi-zone setup already has a destination that `listenerTags` cannot address, and two other pairs collide outright. This is the argument for sub-option B.
+So the canonical multi-zone setup already has a destination that `listenerTags` cannot address, and two other pairs collide outright. This is the argument for sub-option B. The KRI settles every one of them: the resource type is its own segment (`msvc`, `mzsvc`, `extsvc`), so kind is explicit where no label records it, and zone, namespace and name are separate segments too, so no two of these destinations share a KRI even when they share a display name.
 
-### Which labels reach the listener
+### Which labels sub-option A would reach for
+
+This section is about sub-option A and the open question it feeds, not about what the decision writes. Sub-option B writes only the KRI, whose segments already encode the display name, namespace and zone. The list below is what copying labels would additionally reach for, and it is the same list the open question in the implementation notes has to settle before any group-targeting variant could ship.
 
 The computed labels are the bounded half. Six of the twelve keys in `AllComputedLabels` (`labels/registry.go:10-23`) can land on a `Mesh*Service`, the rest being for proxies and policies: `kuma.io/display-name`, `kuma.io/mesh`, `kuma.io/origin`, `kuma.io/zone`, `kuma.io/env` and `k8s.kuma.io/namespace`. Two more are written outside `Compute` and so are not in the registry at all: `kuma.io/managed-by` and, on Kubernetes, `k8s.kuma.io/is-headless-service`. Taking the candidates one at a time:
 
@@ -546,7 +545,16 @@ We strip `kuma.io/mesh`, as the outbound path already does. A `MeshProxyPatch` i
 
 User labels are the unbounded half, and their source decides how much we would be copying. On Kubernetes nothing filters them: `maps.Clone(svc.GetLabels())` takes every label off the `Service`. On Universal the generator's propagation path is off by default and trimmed by `AllowedLabelKeys` when on, so the same set arrives pre-filtered, though a hand-written `MeshService` still carries its author's labels unfiltered. The same key list therefore means "a handful of keys" on Universal and "whatever the cluster stamps on its `Service`s" on Kubernetes. That asymmetry, rather than the typical size, is the argument for choosing the list ourselves.
 
-The resulting outbound listener for `MeshService` `backend` in namespace `kuma-demo`, zone `east`:
+The resulting outbound listener for `MeshService` `backend` in namespace `kuma-demo`, zone `east`, under the decision (sub-option B):
+
+```yaml
+metadata:
+  filterMetadata:
+    io.kuma.tags:
+      kuma.io/kri: kri_msvc_default_east_kuma-demo_backend_http
+```
+
+The same listener under sub-option A, shown for contrast, is what copying the labels would produce:
 
 ```yaml
 metadata:
@@ -563,10 +571,10 @@ metadata:
 
 ### Implementation notes
 
-* `DestinationService` (`meshroute/listeners.go:68-72`) has to carry the resolved `core.Destination`, or its labels, through from `CollectServices`.
-* Both outbound generators share the `TagsOrNil().WithoutTags(MeshTag)` line and both need updating: `meshtcproute/plugin/v1alpha1/listeners.go:41` and `meshhttproute/plugin/v1alpha1/listeners.go:78`.
-* The inbound half is two call sites, not one: `inbound_proxy_generator.go:96` and `meshtls/plugin.go:376`, which rebuilds the inbound listener when a `MeshTLS` policy applies. Both need the `Dataplane`'s labels when `GetTags()` is empty. If only the first is changed, "an inbound listener always carries a filled `io.kuma.tags`" is false whenever `MeshTLS` is in play, and the tags a proxy gets depend on which generator produced its listener. `pkg/xds/context/context.go:40` already carries `InboundTagsDisabled` into the xDS context.
+* The outbound half needs nothing threaded. `DestinationService` (`meshroute/listeners.go:68-72`) already carries the `Outbound`, and `outbound.Resource` is the destination's KRI with the port as its section name, so the generators write `outbound.Resource.String()` under `kuma.io/kri`. Sub-option A would instead have to carry the resolved `core.Destination`, or its labels, through from `CollectServices`; sub-option B does not.
+* Both outbound generators share the `TagsOrNil().WithoutTags(MeshTag)` line and both need updating: `meshtcproute/plugin/v1alpha1/listeners.go:41` and `meshhttproute/plugin/v1alpha1/listeners.go:78`. When `outbound.Resource` is set (the new world, `LegacyOutbound == nil`) they write the KRI tag; the legacy branch keeps writing the real outbound tags.
+* The inbound half is two call sites, not one: `inbound_proxy_generator.go:96` and `meshtls/plugin.go:376`, which rebuilds the inbound listener when a `MeshTLS` policy applies. Both need to synthesize `kri.WithSectionName(kri.FromResourceMeta(dp.GetMeta(), DataplaneType), portName)` and write it under `kuma.io/kri` when `GetTags()` is empty. `InboundIdentifyingName` (`dataplane_helpers.go:181-190`) already builds this KRI but is gated on `InboundTagsDisabled` and falls back to a service name, so call the two `kri` helpers directly rather than reuse it. If only the first call site is changed, "an inbound listener always carries a filled `io.kuma.tags`" is false whenever `MeshTLS` is in play, and the tags a proxy gets depend on which generator produced its listener. `pkg/xds/context/context.go:40` already carries `InboundTagsDisabled` into the xDS context, though the rule keys on the tags being empty, not on the flag.
 * Legacy branches keep their current behaviour: `LegacyOutbound != nil`, and inbounds with tags enabled.
-* Out of scope, noted because this fix rewrites the same metadata and should stay consistent with it. Two neighbours are left alone on purpose. Node labels (see "Case 3" in the deep dive) only ever lived in the inbound tags, so a selector on `topology.kubernetes.io/zone` or `kubernetes.io/hostname` breaks under the flag and the `Dataplane`-label fallback cannot restore it without also propagating those node labels onto the `Dataplane`'s labels. And the endpoint path fixed the same class of bug with a second key (`io.kuma.labels`) rather than by filling `envoy.lb` from labels; the reasoning for why listeners merge and endpoints split is in the `io.kuma.labels` section. Both would add metadata we are otherwise trying to keep minimal, so this MADR takes neither on and each is a separate follow-up.
-* Open question: we may want to copy only labels whose keys are on a list we choose ourselves, rather than every label the resource happens to carry. The candidates and what each one buys are in "Which labels reach the listener" above: the six computed keys are bounded, stable and already the ones we tell people to match on, while user labels are neither bounded nor stable and on Kubernetes arrive wholesale from the `Service`. A fixed list keeps the metadata small, keeps rollouts from churning listeners, and keeps the config dump free of labels nobody selects on. It needs settling before implementation, because it is easier to add keys later than to take them away.
-* A list we choose ourselves and group targeting pull against each other. Group targeting by a user label such as `team: payments` only works if that key reaches the listener, and we cannot know those keys up front. Either the list holds computed labels only and group targeting goes away, which takes with it the main advantage Option 4 has over Option 1, or operators name the extra keys themselves and group targeting survives at the cost of configuration. The middle option is to reuse `MeshServiceLabelPropagation.AllowedLabelKeys`, which already exists, already rejects reserved keys and is already validated. It does not gate the Kubernetes path today, so wiring it in would mean extending it rather than adding a flag. Note its current default is "empty means allow all", which is the opposite of what we want here.
+* Out of scope, noted because this fix rewrites the same metadata and should stay consistent with it. Two neighbours are left alone on purpose. Node labels (see "Case 3" in the deep dive) only ever lived in the inbound tags, so a selector on `topology.kubernetes.io/zone` or `kubernetes.io/hostname` breaks under the flag, and neither the KRI nor a `Dataplane`-label fallback can restore it without also propagating those node labels onto the `Dataplane`'s labels. And the endpoint path fixed the same class of bug with a second key (`io.kuma.labels`) rather than by filling `envoy.lb` from labels; the reasoning for why listeners merge and endpoints split is in the `io.kuma.labels` section. Both would add metadata we are otherwise trying to keep minimal, so this MADR takes neither on and each is a separate follow-up.
+* Open question: whether to also copy user labels so group targeting works, which is the one capability sub-option A has that the KRI does not. If we do, we should copy only labels whose keys are on a list we choose ourselves, rather than every label the resource happens to carry. The candidates and what each one buys are in "Which labels sub-option A would reach for" above: the six computed keys are bounded, stable and already the ones we tell people to match on, while user labels are neither bounded nor stable and on Kubernetes arrive wholesale from the `Service`. A fixed list keeps the metadata small, keeps rollouts from churning listeners, and keeps the config dump free of labels nobody selects on. It needs settling before any group-targeting variant ships, because it is easier to add keys later than to take them away, and because such a variant would write these labels alongside the `kuma.io/kri` the decision already commits to.
+* A list we choose ourselves and group targeting pull against each other. Group targeting by a user label such as `team: payments` only works if that key reaches the listener, and we cannot know those keys up front. Either the list holds computed labels only and group targeting goes away, which is why the decision leaves it out of scope, or operators name the extra keys themselves and group targeting survives at the cost of configuration. The middle option is to reuse `MeshServiceLabelPropagation.AllowedLabelKeys`, which already exists, already rejects reserved keys and is already validated. It does not gate the Kubernetes path today, so wiring it in would mean extending it rather than adding a flag. Note its current default is "empty means allow all", which is the opposite of what we want here.
