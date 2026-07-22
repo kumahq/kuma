@@ -277,8 +277,10 @@ upgrading Zone control planes.
 
 The deprecated `spec.from` array has been removed from `MeshTimeout`. Timeouts
 for incoming traffic are now configured exclusively through `spec.rules`.
-Creating or updating a `MeshTimeout` that relies on `from` no longer takes
-effect (the field is ignored and produces no inbound configuration).
+`spec.from` is silently dropped on create/update: if `spec.rules` or `spec.to`
+is also set, the resource is accepted but `from` has no effect on inbound
+configuration; if `from` was the only field set, the resulting spec has
+neither `to` nor `rules`, so the request is rejected by validation.
 
 **Action required**
 
