@@ -49,7 +49,15 @@ spec:
         type: builtin
 `, mesh))).
 			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
-			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(YamlK8s(fmt.Sprintf(`
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
+  labels:
+    kuma.io/sidecar-injection: "enabled"
+    kuma.io/mesh: %s
+`, namespace, mesh))).
 			Install(Namespace(namespaceOutsideMesh)).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(namespaceOutsideMesh)), // this will not be in the mesh

@@ -651,6 +651,20 @@ use, rotate them (generate new tokens with the current control plane)
 before upgrading — they will be rejected as using an unsupported
 algorithm afterward.
 
+### `kuma.io/mesh` annotation no longer honored on Kubernetes
+
+The control plane no longer reads the deprecated `kuma.io/mesh` annotation on
+a Pod, Service, HTTPRoute, or Namespace to assign the resource's mesh. Only
+the `kuma.io/mesh` label is used: on the resource itself, or — for namespaced
+resources (Pod, Service, HTTPRoute) — on their Namespace. Resources without
+the label fall back to the `default` mesh.
+
+**Action required**
+
+If you still set `kuma.io/mesh` as an annotation, switch it to a label before
+upgrading. A resource that only carries the annotation will resolve to the
+`default` mesh after upgrading.
+
 ### `MeshMetric` OpenTelemetry backend no longer accepts an inline `endpoint`
 
 The deprecated `default.backends[].openTelemetry.endpoint` field has been
@@ -676,6 +690,20 @@ OpenTelemetry access log backend.
 **Action required**
 
 If any `MeshAccessLog` policy still sets `openTelemetry.endpoint`, create a
+`MeshOpenTelemetryBackend` resource with the equivalent endpoint and update
+the policy to reference it via `openTelemetry.backendRef` before upgrading.
+Policies that still set `openTelemetry.endpoint` will fail validation.
+
+### `MeshTrace` OpenTelemetry backend no longer accepts an inline `endpoint`
+
+The deprecated `default.backends[].openTelemetry.endpoint` field has been
+removed from the `MeshTrace` policy. `backendRef`, pointing at a
+`MeshOpenTelemetryBackend` resource, is now the only way to configure an
+OpenTelemetry tracing backend.
+
+**Action required**
+
+If any `MeshTrace` policy still sets `openTelemetry.endpoint`, create a
 `MeshOpenTelemetryBackend` resource with the equivalent endpoint and update
 the policy to reference it via `openTelemetry.backendRef` before upgrading.
 Policies that still set `openTelemetry.endpoint` will fail validation.

@@ -42,6 +42,28 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
+func otelBackendResource(name, address string) *motb_api.MeshOpenTelemetryBackendResource {
+	motb := motb_api.NewMeshOpenTelemetryBackendResource()
+	motb.SetMeta(&test_model.ResourceMeta{
+		Mesh:   "default",
+		Name:   name,
+		Labels: map[string]string{mesh_proto.DisplayName: name},
+	})
+	motb.Spec.Endpoint = &motb_api.Endpoint{
+		Address: pointer.To(address),
+		Port:    pointer.To(int32(4317)),
+	}
+	motb.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
+	return motb
+}
+
+func otelBackendRef(name string) *common_api.BackendResourceRef {
+	return &common_api.BackendResourceRef{
+		Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+		Labels: map[string]string{mesh_proto.DisplayName: name},
+	}
+}
+
 var _ = Describe("MeshTrace", func() {
 	type testCase struct {
 		resources       []core_xds.Resource
@@ -51,6 +73,7 @@ var _ = Describe("MeshTrace", func() {
 		features        xds_types.Features
 		proxyLabels     map[string]string
 		zone            string
+		otelBackends    []*motb_api.MeshOpenTelemetryBackendResource
 	}
 	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
@@ -138,6 +161,11 @@ var _ = Describe("MeshTrace", func() {
 					WithZone("zone-1").
 					WithNamespace("backend-ns").
 					Build()},
+			}
+			if len(given.otelBackends) > 0 {
+				meshResources.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType] = &motb_api.MeshOpenTelemetryBackendResourceList{
+					Items: given.otelBackends,
+				}
 			}
 			context := *xds_samples.SampleContextWith(meshResources).WithMeshBuilder(samples.MeshDefaultBuilder()).Build()
 			dpBuilder := builders.Dataplane().
@@ -323,12 +351,15 @@ var _ = Describe("MeshTrace", func() {
 							},
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OpenTelemetryBackend{
-									Endpoint: "jaeger-collector.mesh-observability:4317",
+									BackendRef: otelBackendRef("otel-collector"),
 								},
 							}},
 						},
 					},
 				},
+			},
+			otelBackends: []*motb_api.MeshOpenTelemetryBackendResource{
+				otelBackendResource("otel-collector", "jaeger-collector.mesh-observability"),
 			},
 			goldenFile: "inbound-outbound-otel",
 		}),
@@ -349,12 +380,15 @@ var _ = Describe("MeshTrace", func() {
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OpenTelemetryBackend{
-									Endpoint: "[2001:db8::1]:4317",
+									BackendRef: otelBackendRef("otel-collector-ipv6"),
 								},
 							}},
 						},
 					},
 				},
+			},
+			otelBackends: []*motb_api.MeshOpenTelemetryBackendResource{
+				otelBackendResource("otel-collector-ipv6", "2001:db8::1"),
 			},
 			goldenFile: "inbound-outbound-otel-ipv6",
 		}),
@@ -513,6 +547,65 @@ var _ = Describe("MeshTrace", func() {
 		}),
 	)
 
+	It("should skip opentelemetry provider for legacy inline endpoint config without backendRef", func() {
+		resources := core_xds.NewResourceSet()
+		for _, resource := range inboundAndOutbound() {
+			r := resource
+			resources.Add(&r)
+		}
+
+		meshResources := xds_context.NewResources()
+		meshResources.MeshLocalResources[v1alpha1.MeshServiceType] = &v1alpha1.MeshServiceResourceList{
+			Items: []*v1alpha1.MeshServiceResource{samples.MeshServiceBackendBuilder().
+				WithZone("zone-1").
+				WithNamespace("backend-ns").
+				Build()},
+		}
+
+		context := *xds_samples.SampleContextWith(meshResources).Build()
+		proxy := xds_builders.Proxy().
+			WithDataplane(
+				builders.Dataplane().
+					WithName("backend").
+					AddInbound(builders.Inbound().
+						WithService("backend").
+						WithAddress("127.0.0.1").
+						WithPort(17777)),
+			).
+			WithOutbounds(xds_types.Outbounds{
+				{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
+				},
+			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OpenTelemetryBackend{},
+							}},
+						},
+					},
+				},
+			})).
+			Build()
+
+		meshTracePlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(meshTracePlugin.Apply(resources, context, proxy)).To(Succeed())
+
+		listenerResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listenerResources).ToNot(ContainSubstring("envoy.tracers.opentelemetry"))
+
+		clusterResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(strings.TrimSpace(string(clusterResources))).To(Equal("{}"))
+	})
+
 	It("should skip opentelemetry provider for dangling backendRef", func() {
 		resources := core_xds.NewResourceSet()
 		for _, resource := range inboundAndOutbound() {
@@ -598,10 +691,10 @@ var _ = Describe("MeshTrace", func() {
 			Labels: map[string]string{mesh_proto.DisplayName: backendName},
 		})
 		motb.Spec.Endpoint = &motb_api.Endpoint{
-			Address: new("collector.mesh"),
-			Port:    new(int32(4317)),
+			Address: pointer.To("collector.mesh"),
+			Port:    pointer.To(int32(4317)),
 		}
-		motb.Spec.Protocol = new(motb_api.ProtocolGRPC)
+		motb.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
 
 		meshResources := xds_context.NewResources()
 		meshResources.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType] = &motb_api.MeshOpenTelemetryBackendResourceList{
@@ -798,6 +891,7 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 		singleItemRules     core_rules.SingleItemRules
 		inboundTagsDisabled bool
 		goldenFile          string
+		otelBackends        []*motb_api.MeshOpenTelemetryBackendResource
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -807,7 +901,13 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 				rs.Add(&r)
 			}
 
-			ctxBuilder := xds_samples.SampleContextWith(xds_context.NewResources()).
+			meshResources := xds_context.NewResources()
+			if len(given.otelBackends) > 0 {
+				meshResources.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType] = &motb_api.MeshOpenTelemetryBackendResourceList{
+					Items: given.otelBackends,
+				}
+			}
+			ctxBuilder := xds_samples.SampleContextWith(meshResources).
 				WithMeshBuilder(samples.MeshDefaultBuilder())
 			if given.inboundTagsDisabled {
 				ctxBuilder = ctxBuilder.With(func(c *xds_context.Context) {
@@ -881,11 +981,14 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 					Conf: api.Conf{
 						Backends: &[]api.Backend{{
 							OpenTelemetry: &api.OpenTelemetryBackend{
-								Endpoint: "jaeger-collector.mesh-observability:4317",
+								BackendRef: otelBackendRef("otel-collector"),
 							},
 						}},
 					},
 				}},
+			},
+			otelBackends: []*motb_api.MeshOpenTelemetryBackendResource{
+				otelBackendResource("otel-collector", "jaeger-collector.mesh-observability"),
 			},
 			goldenFile: "zone-egress-only-otel",
 		}),
@@ -935,11 +1038,14 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 					Conf: api.Conf{
 						Backends: &[]api.Backend{{
 							OpenTelemetry: &api.OpenTelemetryBackend{
-								Endpoint: "jaeger-collector.mesh-observability:4317",
+								BackendRef: otelBackendRef("otel-collector"),
 							},
 						}},
 					},
 				}},
+			},
+			otelBackends: []*motb_api.MeshOpenTelemetryBackendResource{
+				otelBackendResource("otel-collector", "jaeger-collector.mesh-observability"),
 			},
 			goldenFile: "zone-ingress-only-otel",
 		}),
@@ -989,11 +1095,14 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 					Conf: api.Conf{
 						Backends: &[]api.Backend{{
 							OpenTelemetry: &api.OpenTelemetryBackend{
-								Endpoint: "jaeger-collector.mesh-observability:4317",
+								BackendRef: otelBackendRef("otel-collector"),
 							},
 						}},
 					},
 				}},
+			},
+			otelBackends: []*motb_api.MeshOpenTelemetryBackendResource{
+				otelBackendResource("otel-collector", "jaeger-collector.mesh-observability"),
 			},
 			goldenFile: "mixed-inbound-and-zone-egress-otel",
 		}),
