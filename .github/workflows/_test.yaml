@@ -7,6 +7,9 @@ on:
       RUNNERS_BY_ARCH:
         required: true
         type: string
+      IS_RELEASE_TAG:
+        required: true
+        type: boolean
 permissions:
   contents: read
 env:
@@ -17,7 +20,7 @@ env:
 jobs:
   test_unit:
     timeout-minutes: 30
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+    if: ${{ !(contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || inputs.IS_RELEASE_TAG) }}
     runs-on: ${{ vars.RUNS_ON_RELEASE_2_9_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
@@ -81,7 +84,7 @@ jobs:
             BASE_MATRIX_ALL=$(echo $BASE_MATRIX_ALL | jq -r '${{ env.OVERRIDE_JQ_CMD }}')
           fi
           # Skip e2e tests if the PR has the label "ci/skip-e2e-test" or "ci/skip-test"
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}" == "true" ]]; then
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || inputs.IS_RELEASE_TAG }}" == "true" ]]; then
             BASE_MATRIX_ALL='{}'
           fi
 
