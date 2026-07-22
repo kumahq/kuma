@@ -266,9 +266,9 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 	}
 	if resolved != nil {
 		configurer.ResolvedOtelName = resolved.Name
-		// When kuma-dp acts as intermediary for a backendRef backend, Envoy
+		// When kuma-dp acts as intermediary for the resolved backend, Envoy
 		// always speaks gRPC to the pipe cluster. Only fall back to HTTP config
-		// when using direct-to-collector mode (inline endpoint or no feature).
+		// when using direct-to-collector mode (FeatureOtelViaKumaDp not enabled).
 		usePipe := hasOtelBackendRef(conf) && proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp)
 		if !usePipe && resolved.Protocol == motb_api.ProtocolHTTP {
 			configurer.ResolvedOtelUseHTTP = true
@@ -345,7 +345,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 	case backend.OpenTelemetry != nil:
 		resolved := policies_xds.ResolveOtelBackend(
 			backend.OpenTelemetry.BackendRef,
-			backend.OpenTelemetry.Endpoint,
+			"",
 			policies_xds.ParseOtelEndpoint,
 			func(ep string) string { return ep },
 			ctx.Mesh.Resources,
@@ -415,7 +415,7 @@ func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources) *pol
 	}
 	return policies_xds.ResolveOtelBackend(
 		backend.OpenTelemetry.BackendRef,
-		backend.OpenTelemetry.Endpoint,
+		"",
 		policies_xds.ParseOtelEndpoint,
 		func(ep string) string { return ep },
 		resources,

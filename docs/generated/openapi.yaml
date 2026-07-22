@@ -16066,8 +16066,7 @@ components:
                               BackendRef is a reference to a
                               MeshOpenTelemetryBackend resource that
 
-                              defines the collector endpoint. Mutually exclusive
-                              with Endpoint.
+                              defines the collector endpoint.
                             properties:
                               kind:
                                 description: Kind of the backend resource.
@@ -16086,14 +16085,6 @@ components:
                             required:
                               - kind
                             type: object
-                          endpoint:
-                            default: ''
-                            description: |-
-                              Address of OpenTelemetry collector.
-
-                              Deprecated: use BackendRef instead.
-                            example: otel-collector:4317
-                            type: string
                         type: object
                       type:
                         enum:
