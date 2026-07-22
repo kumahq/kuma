@@ -8,7 +8,6 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -63,8 +62,12 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	if readinessPort == 0 {
 		return nil, errors.New("ReadinessPort has to be in (0, 65535] range")
 	}
+	// AdminProxyGenerator also runs for zone ingress/egress, which aren't mesh-scoped
+	// (xdsCtx.Mesh is nil for them), so unlike mesh-scoped generators we can't use
+	// unified_naming.Enabled here: it would always see a nil mesh and report unified
+	// naming as disabled for zone proxies.
 	// TODO(unified-resource-naming): adjust when legacy naming is removed
-	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
+	unifiedNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	// We assume that Admin API must be available on a loopback interface (while users
 	// can override the default value `127.0.0.1` in the Bootstrap Server section of `kuma-cp` config,
 	// the only reasonable alternatives are `::1`, `0.0.0.0` or `::`).
