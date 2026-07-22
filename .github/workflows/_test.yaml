@@ -7,6 +7,9 @@ on:
       RUNNERS_BY_ARCH:
         required: true
         type: string
+      IS_RELEASE_TAG:
+        required: true
+        type: boolean
 permissions:
   contents: read
 env:
@@ -18,7 +21,7 @@ env:
 jobs:
   test_unit:
     timeout-minutes: 30
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+    if: ${{ !(contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || inputs.IS_RELEASE_TAG) }}
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -79,7 +82,7 @@ jobs:
             | .test_e2e_env.include = []
             | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
           FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
-          SKIP_E2E_TESTS: ${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+          SKIP_E2E_TESTS: ${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || inputs.IS_RELEASE_TAG }}
         run: |-
           BASE_MATRIX_ALL="$BASE_MATRIX"
           if [[ "$FULL_MATRIX" != "true" ]]; then
