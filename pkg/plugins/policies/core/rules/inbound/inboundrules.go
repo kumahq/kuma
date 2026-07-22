@@ -93,8 +93,10 @@ func getEntries(resources core_model.ResourceList) ([]common.WithPolicyAttribute
 				})
 			}
 		case desc.IsFromAsRules:
+			// Only policies that still carry a legacy 'from' list opt into this backward
+			// compatibility path (enforced by policy-gen: IsFromAsRules implies a 'from' field).
 			policyWithFrom, ok := policy.(core_model.PolicyWithFromList)
-			if !ok {
+			if !ok || len(policyWithFrom.GetFromList()) == 0 {
 				continue
 			}
 			for j, fromEntry := range policyWithFrom.GetFromList() {

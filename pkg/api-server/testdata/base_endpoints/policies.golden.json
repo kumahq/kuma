@@ -30,7 +30,7 @@
    "pluralDisplayName": "Mesh Fault Injections",
    "isExperimental": false,
    "isTargetRefBased": true,
-   "isInbound": true,
+   "isInbound": false,
    "isOutbound": true
   },
   {
