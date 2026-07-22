@@ -289,6 +289,65 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"basic_outbound_meshhttproute.listener.golden.yaml"},
 		}),
+		Entry("matches MeshHTTPRoute policy when route name carries a unified-naming rule section", sidecarTestCase{
+			resources: []core_xds.Resource{
+				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{
+					{
+						Name: routeKRI("route-1").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						},
+					},
+					{
+						// Under unified naming, a real-resource route carries a
+						// "rule_N" section name identifying the specific
+						// MeshHTTPRoute rule that produced it.
+						Name: kri.WithSectionName(routeKRI("route-2"), "rule_0").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						},
+					},
+				}),
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceHTTP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
+									File: &api.FileBackend{
+										Path: "/tmp/meshservice/log",
+									},
+								}},
+							},
+						},
+					},
+					// This MeshAccessLog targets the whole MeshHTTPRoute
+					// resource (no rule section), which must still match
+					// route-2's rule-scoped name.
+					routeKRI("route-2"): {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
+									File: &api.FileBackend{
+										Path: "/tmp/route-2/log",
+									},
+								}},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"basic_outbound_meshhttproute_unified_naming.listener.golden.yaml"},
+		}),
 		Entry("disable MAL for MeshHTTPRoute", sidecarTestCase{
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{

@@ -578,11 +578,14 @@ func buildRoutesMap(l *envoy_listener.Listener, svcCtx *outbound.ResourceContext
 
 		id, _ := kri.FromString(route.Name)
 
-		routeCtx := svcCtx.
-			WithID(kri.NoSectionName(id)).
-			WithID(id)
-
-		if conf, isDirect := routeCtx.DirectConf(); isDirect {
+		// A MeshAccessLog can target either the specific MeshHTTPRoute rule that
+		// produced this route (id, which under unified naming carries a "rule_N"
+		// section name) or the whole MeshHTTPRoute resource (no section name).
+		// DirectConf only ever looks at the most specific id, so both candidates
+		// have to be checked individually rather than chained through WithID.
+		if conf, isDirect := svcCtx.WithID(id).DirectConf(); isDirect {
+			routes[id] = conf
+		} else if conf, isDirect := svcCtx.WithID(kri.NoSectionName(id)).DirectConf(); isDirect {
 			routes[id] = conf
 		}
 	}); err != nil {
