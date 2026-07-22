@@ -310,6 +310,24 @@ violations:
   - field: spec.to[0].targetRef.labels
     message: either labels or name must be specified`,
 			}),
+			Entry("when rules is defined, to cannot be defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      connectionTimeout: 10s
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      connectionTimeout: 10s`,
+				expected: `
+violations:
+  - field: spec
+    message: field 'to' must be empty when 'rules' is defined`,
+			}),
 			Entry("rules with empty spec", testCase{
 				inputYaml: `
 targetRef:
