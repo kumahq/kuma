@@ -50,10 +50,10 @@ func otelBackendResource(name, address string) *motb_api.MeshOpenTelemetryBacken
 		Labels: map[string]string{mesh_proto.DisplayName: name},
 	})
 	motb.Spec.Endpoint = &motb_api.Endpoint{
-		Address: new(address),
-		Port:    new(int32(4317)),
+		Address: pointer.To(address),
+		Port:    pointer.To(int32(4317)),
 	}
-	motb.Spec.Protocol = new(motb_api.ProtocolGRPC)
+	motb.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
 	return motb
 }
 
@@ -691,10 +691,10 @@ var _ = Describe("MeshTrace", func() {
 			Labels: map[string]string{mesh_proto.DisplayName: backendName},
 		})
 		motb.Spec.Endpoint = &motb_api.Endpoint{
-			Address: new("collector.mesh"),
-			Port:    new(int32(4317)),
+			Address: pointer.To("collector.mesh"),
+			Port:    pointer.To(int32(4317)),
 		}
-		motb.Spec.Protocol = new(motb_api.ProtocolGRPC)
+		motb.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
 
 		meshResources := xds_context.NewResources()
 		meshResources.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType] = &motb_api.MeshOpenTelemetryBackendResourceList{
