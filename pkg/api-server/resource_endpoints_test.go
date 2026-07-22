@@ -122,7 +122,6 @@ var _ = Describe("Resource Endpoints", func() {
 		Expect(test_metrics.FindMetric(metrics, "api_server_http_requests_inflight")).ToNot(BeNil())
 		Expect(test_metrics.FindMetric(metrics, "api_server_http_response_size_bytes")).ToNot(BeNil())
 	})
-
 })
 
 var _ = Describe("Resource Endpoints on Zone, label origin", func() {
@@ -147,7 +146,8 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		jsonBytes, err := json.Marshal(res)
 		Expect(err).ToNot(HaveOccurred())
 
-		request, err := http.NewRequestWithContext(context.Background(),
+		request, err := http.NewRequestWithContext(
+			context.Background(),
 			http.MethodPut,
 			fmt.Sprintf("http://%s/meshes/%s/%s/%s", address, mesh, resType.WsPath, name),
 			bytes.NewBuffer(jsonBytes),
@@ -252,7 +252,8 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 	})
 
-	DescribeTable("should set origin label automatically when origin validation is disabled",
+	DescribeTable(
+		"should set origin label automatically when origin validation is disabled",
 		func(federatedZone bool) {
 			// given
 			apiServer, store, stop := createServer(federatedZone, false)
