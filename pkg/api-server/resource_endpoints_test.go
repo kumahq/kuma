@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
 	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
 	config "github.com/kumahq/kuma/v3/pkg/config/api-server"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
@@ -121,6 +122,25 @@ var _ = Describe("Resource Endpoints", func() {
 		Expect(test_metrics.FindMetric(metrics, "api_server_http_request_duration_seconds")).ToNot(BeNil())
 		Expect(test_metrics.FindMetric(metrics, "api_server_http_requests_inflight")).ToNot(BeNil())
 		Expect(test_metrics.FindMetric(metrics, "api_server_http_response_size_bytes")).ToNot(BeNil())
+	})
+
+	It("should keep legacy built-in gateway rules endpoint available for the bundled GUI", func() {
+		// given
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("http://%s/meshes/%s/meshgateways/gateway-1/_rules", apiServer.Address(), mesh), http.NoBody)
+		Expect(err).NotTo(HaveOccurred())
+
+		// when
+		resp, err := http.DefaultClient.Do(req)
+
+		// then
+		Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
+		body := api_types.InspectRulesResponse{}
+		Expect(json.NewDecoder(resp.Body).Decode(&body)).To(Succeed())
+		Expect(body.HttpMatches).To(BeEmpty())
+		Expect(body.Rules).To(BeEmpty())
 	})
 })
 
