@@ -6,6 +6,8 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/naming"
+	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -60,7 +62,8 @@ func (p plugin) Apply(
 
 	clusters := policies_xds.GatherClusters(rs)
 
-	if err := applyToInbounds(policies.FromRules, clusters.Inbound, proxy.Dataplane); err != nil {
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
+	if err := applyToInbounds(policies.FromRules, clusters.Inbound, proxy.Dataplane, unifiedNaming); err != nil {
 		return err
 	}
 
@@ -83,7 +86,9 @@ func applyToInbounds(
 	fromRules core_rules.FromRules,
 	inboundClusters map[string]*envoy_cluster.Cluster,
 	dataplane *core_mesh.DataplaneResource,
+	unifiedNaming bool,
 ) error {
+	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 	for _, inbound := range dataplane.Spec.Networking.GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
@@ -92,7 +97,9 @@ func applyToInbounds(
 			Port:    iface.DataplanePort,
 		}
 
-		cluster, ok := inboundClusters[envoy_names.GetInboundClusterName(inbound.ServicePort, iface.DataplanePort)]
+		legacyClusterName := envoy_names.GetInboundClusterName(inbound.ServicePort, iface.DataplanePort)
+		clusterName := getName(naming.MustContextualInboundName(dataplane, iface.WorkloadPort), legacyClusterName)
+		cluster, ok := inboundClusters[clusterName]
 		if !ok {
 			continue
 		}
