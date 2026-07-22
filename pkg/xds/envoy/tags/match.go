@@ -115,9 +115,9 @@ func FromLegacyTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
 	var service string
 
 	switch targetRef.Kind {
-	case common_api.MeshService, common_api.MeshServiceSubset:
+	case common_api.MeshService:
 		service = pointer.Deref(targetRef.Name)
-	case common_api.Mesh, common_api.MeshSubset:
+	case common_api.Mesh:
 		service = mesh_proto.MatchAllTag
 	default:
 		return nil, false

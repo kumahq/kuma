@@ -149,7 +149,7 @@ var _ = Describe("FromLegacyTargetRef", func() {
 		expected  tags.Tags
 	}
 
-	DescribeTable("should ignore subset tags and return only service or match-all tags",
+	DescribeTable("should return only service or match-all tags",
 		func(given testCase) {
 			result, ok := tags.FromLegacyTargetRef(given.targetRef)
 			Expect(ok).To(BeTrue())
@@ -162,24 +162,9 @@ var _ = Describe("FromLegacyTargetRef", func() {
 			},
 			expected: tags.Tags{mesh_proto.ServiceTag: "backend"},
 		}),
-		Entry("MeshServiceSubset ignores tags", testCase{
-			targetRef: common_api.TargetRef{
-				Kind: common_api.MeshServiceSubset,
-				Name: pointer.To("backend"),
-				Tags: &map[string]string{"version": "v1", mesh_proto.ZoneTag: "east"},
-			},
-			expected: tags.Tags{mesh_proto.ServiceTag: "backend"},
-		}),
 		Entry("Mesh", testCase{
 			targetRef: common_api.TargetRef{
 				Kind: common_api.Mesh,
-			},
-			expected: tags.Tags{mesh_proto.ServiceTag: mesh_proto.MatchAllTag},
-		}),
-		Entry("MeshSubset ignores tags", testCase{
-			targetRef: common_api.TargetRef{
-				Kind: common_api.MeshSubset,
-				Tags: &map[string]string{"version": "v1", mesh_proto.ZoneTag: "east"},
 			},
 			expected: tags.Tags{mesh_proto.ServiceTag: mesh_proto.MatchAllTag},
 		}),
