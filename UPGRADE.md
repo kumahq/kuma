@@ -1315,18 +1315,20 @@ KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS="system:serviceaccount:kuma-system:kuma-co
 
 This is already configured by default via Helm template with `KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS`.
 
-### MeshTrust spec.origin Field Deprecated
+### MeshTrust spec.origin Field Removed
 
-The `spec.origin` field in MeshTrust resources has been moved to `status.origin`.
+The `spec.origin` field in MeshTrust resources has been removed. The origin is
+now reported through `status.origin`.
 
 **What changed:**
-- `spec.origin` is now deprecated and will be removed in a future release
+- `spec.origin` is no longer part of the MeshTrust API or Kubernetes CRD schema
+- Manifests and API requests that still set `spec.origin` can be rejected as unknown-field input
 - The field is automatically populated in `status.origin` by the MeshIdentity status updater
-- Setting `spec.origin` continues to work but emits a deprecation warning
 
 **Action required:**
 
-No immediate action required, but update any automation or tooling that references `spec.origin` to use `status.origin` instead.
+Before upgrading, remove `spec.origin` from MeshTrust manifests and update any
+automation or tooling that reads it to use `status.origin` instead.
 
 **Example:**
 
