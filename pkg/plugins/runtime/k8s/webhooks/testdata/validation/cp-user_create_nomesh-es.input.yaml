@@ -1,0 +1,11 @@
+# user=system:serviceaccount:kuma-system:kuma-control-plane,operation=CREATE
+apiVersion: kuma.io/v1alpha1
+kind: ExternalService
+metadata:
+  name: empty
+  creationTimestamp: null
+spec:
+  networking:
+    address: 192.168.0.1:8080
+  tags:
+    kuma.io/service: backend

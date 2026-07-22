@@ -182,40 +182,6 @@ var _ = Describe("GenerateSnapshot", func() {
 				Build(),
 		)
 
-		create(
-			&core_mesh.TrafficRouteResource{
-				Meta: &test_model.ResourceMeta{Name: "tr", Mesh: "demo"},
-				Spec: &mesh_proto.TrafficRoute{
-					Sources: []*mesh_proto.Selector{{
-						Match: mesh_proto.MatchAnyService(),
-					}},
-					Destinations: []*mesh_proto.Selector{{
-						Match: mesh_proto.MatchAnyService(),
-					}},
-					Conf: &mesh_proto.TrafficRoute_Conf{
-						Destination: mesh_proto.MatchAnyService(),
-						LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
-							LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
-						},
-					},
-				},
-			},
-		)
-
-		create(
-			&core_mesh.TrafficPermissionResource{
-				Meta: &test_model.ResourceMeta{Name: "tp", Mesh: "demo"},
-				Spec: &mesh_proto.TrafficPermission{
-					Sources: []*mesh_proto.Selector{{
-						Match: mesh_proto.MatchAnyService(),
-					}},
-					Destinations: []*mesh_proto.Selector{{
-						Match: mesh_proto.MatchAnyService(),
-					}},
-				},
-			},
-		)
-
 		const numOfExtSrvs = 4
 
 		for i := range numOfExtSrvs {

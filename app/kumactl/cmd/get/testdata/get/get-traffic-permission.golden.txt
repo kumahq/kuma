@@ -1,2 +1,0 @@
-MESH      NAME                   AGE
-default   traffic-permission-1   292y

@@ -1,0 +1,10 @@
+Patches: null
+allowed: false
+status:
+  code: 403
+  message: Operation not allowed. Kuma resources like ExternalService can be updated
+    or deleted only from the GLOBAL control plane and not from a ZONE control plane.
+  metadata: {}
+  reason: Forbidden
+  status: Failure
+uid: "12345"

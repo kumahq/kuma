@@ -22,7 +22,21 @@ func Inspect() {
 	BeforeAll(func() {
 		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
 		Expect(multizone.Global.Install(MeshTrafficPermissionAllowAllUniversal(meshName))).To(Succeed())
-		Expect(multizone.Global.Install(TimeoutUniversal(meshName))).To(Succeed())
+		Expect(multizone.Global.Install(YamlUniversal(fmt.Sprintf(`
+type: MeshTimeout
+name: inspect-timeout
+mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 1h
+        http:
+          requestTimeout: 15s
+          maxStreamDuration: 0s`, meshName)))).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		err := multizone.UniZone1.Install(TestServerUniversal("test-server", meshName,
@@ -178,7 +192,7 @@ func Inspect() {
 
 		It("match dataplanes of policy", func() {
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, multizone.Global.GetKuma().GetAPIServerAddress()+fmt.Sprintf("/meshes/%s/timeouts/timeout-all-%s/_resources/dataplanes", meshName, meshName), http.NoBody)
+				req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, multizone.Global.GetKuma().GetAPIServerAddress()+fmt.Sprintf("/meshes/%s/meshtimeouts/inspect-timeout/_resources/dataplanes", meshName), http.NoBody)
 				g.Expect(err).ToNot(HaveOccurred())
 				r, err := http.DefaultClient.Do(req)
 				g.Expect(err).ToNot(HaveOccurred())

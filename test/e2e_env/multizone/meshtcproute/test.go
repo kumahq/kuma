@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
@@ -59,12 +58,6 @@ func Test() {
 			SetupInGroup(multizone.UniZone2, &group)
 
 		Expect(group.Wait()).To(Succeed())
-
-		Expect(DeleteMeshResources(
-			multizone.Global,
-			meshName,
-			core_mesh.TrafficRouteResourceTypeDescriptor,
-		)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {

@@ -1,29 +1,19 @@
-#/meshes/default/traffic-routes 200
+#/meshes/default/external-services 200
 type: Mesh
 name: default
 ---
-type: TrafficRoute
+type: ExternalService
 mesh: default
-name: tr-1
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'
-conf:
-  destination:
-    kuma.io/service: sample-path
+name: es-1
+tags:
+  kuma.io/service: es-1
+networking:
+  address: 192.168.0.1:8080
 ---
-type: TrafficRoute
+type: ExternalService
 mesh: default
-name: tr-2
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'
-conf:
-  destination:
-    kuma.io/service: sample-path
+name: es-2
+tags:
+  kuma.io/service: es-2
+networking:
+  address: 192.168.0.2:8080

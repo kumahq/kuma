@@ -2,55 +2,29 @@
  "total": 2,
  "items": [
   {
-   "type": "TrafficRoute",
+   "type": "ExternalService",
    "mesh": "default",
-   "name": "tr-1",
+   "name": "es-1",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
-   "sources": [
-    {
-     "match": {
-      "kuma.io/service": "*"
-     }
-    }
-   ],
-   "destinations": [
-    {
-     "match": {
-      "kuma.io/service": "*"
-     }
-    }
-   ],
-   "conf": {
-    "destination": {
-     "kuma.io/service": "sample-path"
-    }
+   "networking": {
+    "address": "192.168.0.1:8080"
+   },
+   "tags": {
+    "kuma.io/service": "es-1"
    }
   },
   {
-   "type": "TrafficRoute",
+   "type": "ExternalService",
    "mesh": "default",
-   "name": "tr-2",
+   "name": "es-2",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
-   "sources": [
-    {
-     "match": {
-      "kuma.io/service": "*"
-     }
-    }
-   ],
-   "destinations": [
-    {
-     "match": {
-      "kuma.io/service": "*"
-     }
-    }
-   ],
-   "conf": {
-    "destination": {
-     "kuma.io/service": "sample-path"
-    }
+   "networking": {
+    "address": "192.168.0.2:8080"
+   },
+   "tags": {
+    "kuma.io/service": "es-2"
    }
   }
  ],

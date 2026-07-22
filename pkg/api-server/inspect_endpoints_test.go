@@ -13,9 +13,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"google.golang.org/protobuf/types/known/durationpb"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
 	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -25,42 +23,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v3/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	samples2 "github.com/kumahq/kuma/v3/pkg/test/resources/samples"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
-
-type selectors []*mesh_proto.Selector
-
-func anyService() []*mesh_proto.Selector {
-	return []*mesh_proto.Selector{
-		{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		},
-	}
-}
-
-func serviceSelector(name, protocol string) *mesh_proto.Selector {
-	if protocol == "" {
-		return &mesh_proto.Selector{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: name,
-			},
-		}
-	} else {
-		return &mesh_proto.Selector{
-			Match: map[string]string{
-				mesh_proto.ServiceTag:  name,
-				mesh_proto.ProtocolTag: protocol,
-			},
-		}
-	}
-}
 
 var _ = Describe("Inspect WS", func() {
 	type testCase struct {
@@ -126,63 +92,6 @@ var _ = Describe("Inspect WS", func() {
 					WithHttpServices("backend").
 					AddOutboundsToServices("redis", "elastic", "postgres", "web").
 					Build(),
-				&core_mesh.TrafficPermissionResource{
-					Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
-					Spec: &mesh_proto.TrafficPermission{
-						Sources:      anyService(),
-						Destinations: anyService(),
-					},
-				},
-				&core_mesh.FaultInjectionResource{
-					Meta: &test_model.ResourceMeta{Name: "fi-1", Mesh: "default"},
-					Spec: &mesh_proto.FaultInjection{
-						Sources: anyService(),
-						Destinations: selectors{
-							serviceSelector("backend", "http"),
-						},
-						Conf: &mesh_proto.FaultInjection_Conf{
-							Delay: &mesh_proto.FaultInjection_Conf_Delay{
-								Value:      durationpb.New(5 * time.Second),
-								Percentage: util_proto.Double(90),
-							},
-						},
-					},
-				},
-				&core_mesh.FaultInjectionResource{
-					Meta: &test_model.ResourceMeta{Name: "fi-2", Mesh: "default"},
-					Spec: &mesh_proto.FaultInjection{
-						Sources: anyService(),
-						Destinations: selectors{
-							serviceSelector("backend", "http"),
-						},
-						Conf: &mesh_proto.FaultInjection_Conf{
-							Abort: &mesh_proto.FaultInjection_Conf_Abort{
-								HttpStatus: util_proto.UInt32(500),
-								Percentage: util_proto.Double(80),
-							},
-						},
-					},
-				},
-				&core_mesh.TimeoutResource{
-					Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "default"},
-					Spec: &mesh_proto.Timeout{
-						Sources: anyService(),
-						Destinations: selectors{
-							serviceSelector("redis", ""),
-						},
-						Conf: samples.Timeout.Conf,
-					},
-				},
-				&core_mesh.HealthCheckResource{
-					Meta: &test_model.ResourceMeta{Name: "hc-1", Mesh: "default"},
-					Spec: &mesh_proto.HealthCheck{
-						Sources: selectors{
-							serviceSelector("backend", ""),
-						},
-						Destinations: anyService(),
-						Conf:         samples.HealthCheck.Conf,
-					},
-				},
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMesh()).
 					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
@@ -200,272 +109,6 @@ var _ = Describe("Inspect WS", func() {
 					WithServices("backend").
 					AddOutboundsToServices("redis", "elastic", "postgres", "web").
 					Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect traffic permission", testCase{
-			path:    "/meshes/default/traffic-permissions/tp-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-permission.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().Build(),
-				&core_mesh.TrafficPermissionResource{
-					Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
-					Spec: &mesh_proto.TrafficPermission{
-						Sources: anyService(),
-						Destinations: selectors{
-							serviceSelector("backend", "http"),
-							serviceSelector("redis", "http"),
-							serviceSelector("elastic", "http"),
-						},
-					},
-				},
-				builders.Dataplane().
-					WithName("backend-1").
-					WithHttpServices("backend").
-					AddOutboundsToServices("redis", "elastic", "postgres").
-					Build(),
-				builders.Dataplane().
-					WithName("redis-1").
-					WithHttpServices("redis").
-					AddOutboundsToServices("redis", "elastic", "postgres").
-					Build(),
-				builders.Dataplane().
-					WithName("elastic-1").
-					WithHttpServices("elastic").
-					AddOutboundsToServices("redis", "elastic", "postgres").
-					Build(),
-				builders.Dataplane().WithName("web-1").WithServices("web").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect fault injection", testCase{
-			path:    "/meshes/mesh-1/fault-injections/fi-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_fault-injection.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.FaultInjectionResource{
-					Meta: &test_model.ResourceMeta{Name: "fi-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.FaultInjection{
-						Sources: anyService(),
-						Destinations: selectors{
-							serviceSelector("backend", "http"),
-							serviceSelector("redis", "http"),
-							serviceSelector("elastic", "http"),
-						},
-						Conf: samples.FaultInjection.Conf,
-					},
-				},
-				builders.Dataplane().WithName("backend-redis-1").WithMesh("mesh-1").WithHttpServices("backend", "redis").Build(),
-				builders.Dataplane().WithName("elastic-1").WithMesh("mesh-1").WithHttpServices("elastic").AddOutboundsToServices("backend", "redis").Build(),
-				// not matched by FaultInjection
-				builders.Dataplane().WithName("web-1").WithMesh("mesh-1").WithHttpServices("web").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect rate limit", testCase{
-			path:    "/meshes/mesh-1/rate-limits/rl-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_rate-limit.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.RateLimitResource{
-					Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.RateLimit{
-						Sources: anyService(),
-						Destinations: selectors{
-							serviceSelector("backend", "http"),
-							serviceSelector("redis", "http"),
-							serviceSelector("elastic", "http"),
-							serviceSelector("es", ""),
-						},
-						Conf: samples.RateLimit.Conf,
-					},
-				},
-				builders.Dataplane().WithName("elastic-1").WithMesh("mesh-1").WithHttpServices("elastic").AddOutboundsToServices("backend", "redis", "es").Build(),
-				// not matched by RateLimit
-				builders.Dataplane().WithName("web-1").WithMesh("mesh-1").WithHttpServices("web").Build(),
-				&core_mesh.ExternalServiceResource{
-					Meta: &test_model.ResourceMeta{Name: "es-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.ExternalService{
-						Networking: &mesh_proto.ExternalService_Networking{Address: "2.2.2.2:80"},
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "es",
-						},
-					},
-				},
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect traffic log", testCase{
-			path:    "/meshes/mesh-1/traffic-logs/tl-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-log.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.TrafficLogResource{
-					Meta: &test_model.ResourceMeta{Name: "tl-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.TrafficLog{
-						Sources: anyService(),
-						Destinations: selectors{
-							serviceSelector("redis", ""),
-							serviceSelector("elastic", ""),
-						},
-						Conf: samples.TrafficLog.Conf,
-					},
-				},
-				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("redis-1").WithMesh("mesh-1").WithServices("redis").AddOutboundsToServices("elastic", "web").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect health check", testCase{
-			path:    "/meshes/mesh-1/health-checks/hc-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_health-check.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.HealthCheckResource{
-					Meta: &test_model.ResourceMeta{Name: "hc-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.HealthCheck{
-						Sources: anyService(),
-						Destinations: selectors{
-							serviceSelector("redis", ""),
-							serviceSelector("elastic", ""),
-						},
-						Conf: samples.HealthCheck.Conf,
-					},
-				},
-				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("redis-1").WithMesh("mesh-1").WithServices("redis").AddOutboundsToServices("elastic", "web").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect circuit breaker", testCase{
-			path:    "/meshes/mesh-1/circuit-breakers/cb-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_circuit-breaker.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.CircuitBreakerResource{
-					Meta: &test_model.ResourceMeta{Name: "cb-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.CircuitBreaker{
-						Sources: anyService(),
-						Destinations: selectors{
-							serviceSelector("redis", ""),
-							serviceSelector("elastic", ""),
-						},
-						Conf: samples.CircuitBreaker.Conf,
-					},
-				},
-				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("redis-1").WithMesh("mesh-1").WithServices("redis").AddOutboundsToServices("elastic", "web").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect retry", testCase{
-			path:    "/meshes/mesh-1/retries/r-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_retry.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.RetryResource{
-					Meta: &test_model.ResourceMeta{Name: "r-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.Retry{
-						Sources: anyService(),
-						Destinations: selectors{
-							serviceSelector("redis", ""),
-							serviceSelector("elastic", ""),
-						},
-						Conf: samples.Retry.Conf,
-					},
-				},
-				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("redis-1").WithMesh("mesh-1").WithServices("redis").AddOutboundsToServices("elastic", "web").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect timeout", testCase{
-			path:    "/meshes/mesh-1/timeouts/t-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_timeout.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.TimeoutResource{
-					Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.Timeout{
-						Sources: anyService(),
-						Destinations: selectors{
-							serviceSelector("redis", ""),
-							serviceSelector("elastic", ""),
-						},
-						Conf: samples.Timeout.Conf,
-					},
-				},
-				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("redis-1").WithMesh("mesh-1").WithServices("redis").AddOutboundsToServices("elastic", "web").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect traffic route", testCase{
-			path:    "/meshes/mesh-1/traffic-routes/t-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-route.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.TrafficRouteResource{
-					Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.TrafficRoute{
-						Sources:      anyService(),
-						Destinations: anyService(),
-						Conf:         samples.TrafficRoute.Conf,
-					},
-				},
-				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").AddOutboundsToServices("redis", "web").Build(),
-				builders.Dataplane().WithName("redis-1").WithMesh("mesh-1").WithServices("redis").AddOutboundsToServices("elastic", "web").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect traffic trace", testCase{
-			path:    "/meshes/mesh-1/traffic-traces/tt-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-trace.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.TrafficTraceResource{
-					Meta: &test_model.ResourceMeta{Name: "tt-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.TrafficTrace{
-						Selectors: anyService(),
-						Conf:      samples.TrafficTrace.Conf,
-					},
-				},
-				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("redis-1").WithMesh("mesh-1").WithServices("redis").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("web-1").WithMesh("mesh-1").WithServices("web").AddOutboundsToServices("elastic", "backend").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect proxytemplate", testCase{
-			path:    "/meshes/mesh-1/proxytemplates/tt-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_proxytemplate.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.ProxyTemplateResource{
-					Meta: &test_model.ResourceMeta{Name: "tt-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.ProxyTemplate{
-						Selectors: anyService(),
-						Conf:      samples.ProxyTemplate.Conf,
-					},
-				},
-				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("redis-1").WithMesh("mesh-1").WithServices("redis").AddOutboundsToServices("redis", "elastic", "web").Build(),
-				builders.Dataplane().WithName("web-1").WithMesh("mesh-1").WithServices("web").AddOutboundsToServices("elastic", "backend").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect traffic trace, empty response", testCase{
-			path:    "/meshes/mesh-1/traffic-traces/tt-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-trace_empty-response.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				&core_mesh.TrafficTraceResource{
-					Meta: &test_model.ResourceMeta{Name: "tt-1", Mesh: "mesh-1"},
-					Spec: &mesh_proto.TrafficTrace{
-						Selectors: anyService(),
-						Conf:      samples.TrafficTrace.Conf,
-					},
-				},
 			},
 			contentType: restful.MIME_JSON,
 		}),
@@ -723,16 +366,6 @@ var _ = Describe("Inspect WS", func() {
 		// TrafficPermission that selects 2 DPPs
 		initState := []core_model.Resource{
 			builders.Mesh().Build(),
-			&core_mesh.TrafficPermissionResource{
-				Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
-				Spec: &mesh_proto.TrafficPermission{
-					Sources: anyService(),
-					Destinations: selectors{
-						serviceSelector("backend", "http"),
-						serviceSelector("redis", "http"),
-					},
-				},
-			},
 			builders.Dataplane().WithName("backend-1").WithHttpServices("backend").AddOutboundsToServices("redis", "elastic").Build(),
 			builders.Dataplane().WithName("redis-1").WithHttpServices("redis").AddOutboundsToServices("redis", "backend", "elastic").Build(),
 		}
@@ -748,7 +381,7 @@ var _ = Describe("Inspect WS", func() {
 			r, err := http.Get((&url.URL{
 				Scheme: "http",
 				Host:   apiServer.Address(),
-				Path:   "/meshes/default/traffic-permissions/tp-1/dataplanes",
+				Path:   "/meshes/default/meshtrafficpermissions/tp-1/dataplanes",
 			}).String())
 			resp = r
 			return err
@@ -766,7 +399,7 @@ var _ = Describe("Inspect WS", func() {
 			r, err := http.Get((&url.URL{
 				Scheme: "http",
 				Host:   apiServer.Address(),
-				Path:   "/meshes/default/traffic-permissions/tp-1/dataplanes",
+				Path:   "/meshes/default/meshtrafficpermissions/tp-1/dataplanes",
 			}).String())
 			resp = r
 			return err

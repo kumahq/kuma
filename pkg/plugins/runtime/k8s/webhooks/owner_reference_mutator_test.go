@@ -74,7 +74,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "ExternalService",
               "mesh": "default",
               "metadata": {
                 "namespace": "example",
@@ -101,7 +101,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "ExternalService",
               "mesh": "not-existing-mesh",
               "metadata": {
                 "namespace": "example",
@@ -115,7 +115,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "ExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -198,7 +198,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "ExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -213,7 +213,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "ExternalService",
               "mesh": "default",
               "metadata": {
                 "namespace": "example",
@@ -231,7 +231,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "ExternalService",
               "mesh": "default",
               "metadata": {
                 "namespace": "example",

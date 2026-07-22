@@ -212,11 +212,11 @@ var _ = Describe("Defaulter", func() {
 		}),
 		Entry("should not override mesh label if it's already set", testCase{
 			checker: globalChecker(),
-			kind:    string(mesh.TrafficRouteType),
+			kind:    string(mesh.ExternalServiceType),
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "ExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -230,7 +230,7 @@ var _ = Describe("Defaulter", func() {
 			expected: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "ExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
