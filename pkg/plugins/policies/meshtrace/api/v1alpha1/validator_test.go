@@ -49,15 +49,6 @@ default:
     random: "60.1"
     client: 40
 `),
-			Entry("with opentelemetry backend gRPC", `
-targetRef:
-  kind: Mesh
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: otel-collector:4317
-`),
 			Entry("with empty backends", `
 targetRef:
   kind: Mesh
@@ -373,69 +364,19 @@ violations:
   - field: spec.default.backends[0].openTelemetry
     message: must be defined`,
 			}),
-			Entry("openTelemetry neither endpoint nor backendRef", testCase{
+			Entry("openTelemetry backendRef missing", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
-      openTelemetry:
-        endpoint: ""
+      openTelemetry: {}
 `,
 				expected: `
 violations:
-  - field: spec.default.backends[0].openTelemetry
-    message: "openTelemetry must have exactly one defined: endpoint, backendRef"`,
-			}),
-			Entry("openTelemetry endpoint must not be a URL", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: "http://otel-collector:4318/v1/traces"
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].openTelemetry.endpoint
-    message: must be in host:port format, not a URL`,
-			}),
-			Entry("openTelemetry endpoint must not contain a path", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: "otel-collector:4318/v1/traces"
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].openTelemetry.endpoint
-    message: must be in host:port format, not a URL`,
-			}),
-			Entry("openTelemetry both endpoint and backendRef", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: otel-collector:4317
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          labels:
-            kuma.io/display-name: my-otel
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].openTelemetry
-    message: "openTelemetry must have only one type defined: endpoint, backendRef"`,
+  - field: spec.default.backends[0].openTelemetry.backendRef
+    message: must be defined`,
 			}),
 			Entry("openTelemetry backendRef no labels", testCase{
 				inputYaml: `
