@@ -3,7 +3,6 @@ package mesh
 import (
 	"fmt"
 	"net"
-	"net/url"
 	"regexp"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -19,7 +18,6 @@ func (m *MeshResource) Validate() error {
 	var verr validators.ValidationError
 	verr.AddError("mtls", validateMtls(m.Spec.Mtls))
 	verr.AddError("logging", validateLogging(m.Spec.Logging))
-	verr.AddError("tracing", validateTracing(m.Spec.Tracing))
 	verr.AddError("metrics", validateMetrics(m.Spec.Metrics))
 	verr.AddError("constraints", validateConstraints(m.Spec.Constraints))
 	verr.AddError("", validateZoneEgress(m.Spec.Routing, m.Spec.Mtls))
@@ -149,83 +147,6 @@ func validateLoggingFile(cfgStr *structpb.Struct) validators.ValidationError {
 		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
 	} else if cfg.Path == "" {
 		verr.AddViolation("path", "cannot be empty")
-	}
-	return verr
-}
-
-func validateTracing(tracing *mesh_proto.Tracing) validators.ValidationError {
-	var verr validators.ValidationError
-	if tracing == nil {
-		return verr
-	}
-	usedNames := map[string]bool{}
-	for i, backend := range tracing.Backends {
-		verr.AddError(validators.RootedAt("backends").Index(i).String(), validateTracingBackend(backend))
-		if usedNames[backend.Name] {
-			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("name"), fmt.Sprintf("%q name is already used for another backend", backend.Name))
-		}
-		usedNames[backend.Name] = true
-	}
-	if tracing.DefaultBackend != "" && !usedNames[tracing.DefaultBackend] {
-		verr.AddViolation("defaultBackend", "has to be set to one of the tracing backend in mesh")
-	}
-	return verr
-}
-
-func validateTracingBackend(backend *mesh_proto.TracingBackend) validators.ValidationError {
-	var verr validators.ValidationError
-	if backend.Name == "" {
-		verr.AddViolation("name", "cannot be empty")
-	}
-	if backend.Sampling.GetValue() < 0.0 || backend.Sampling.GetValue() > 100.0 {
-		verr.AddViolation("sampling", "has to be in [0.0 - 100.0] range")
-	}
-	switch backend.GetType() {
-	case mesh_proto.TracingZipkinType:
-		verr.AddError("config", validateZipkin(backend.Conf))
-	case mesh_proto.TracingDatadogType:
-		verr.AddError("config", validateDatadog(backend.Conf))
-	default:
-		verr.AddViolation("type", fmt.Sprintf("unknown backend type. Available backends: %q, %q", mesh_proto.TracingZipkinType, mesh_proto.TracingDatadogType))
-	}
-	return verr
-}
-
-func validateDatadog(cfgStr *structpb.Struct) validators.ValidationError {
-	var verr validators.ValidationError
-	cfg := mesh_proto.DatadogTracingBackendConfig{}
-	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
-		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
-		return verr
-	}
-
-	if cfg.Address == "" {
-		verr.AddViolation("address", "cannot be empty")
-	}
-
-	verr.Add(ValidatePort(validators.RootedAt("port"), cfg.GetPort()))
-	return verr
-}
-
-func validateZipkin(cfgStr *structpb.Struct) validators.ValidationError {
-	var verr validators.ValidationError
-	cfg := mesh_proto.ZipkinTracingBackendConfig{}
-	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
-		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
-		return verr
-	}
-	if cfg.ApiVersion != "" && cfg.ApiVersion != "httpJsonV1" && cfg.ApiVersion != "httpJson" && cfg.ApiVersion != "httpProto" {
-		verr.AddViolation("apiVersion", fmt.Sprintf(`has invalid value. %s`, AllowedValuesHint("httpJsonV1", "httpJson", "httpProto")))
-	}
-	if cfg.Url == "" {
-		verr.AddViolation("url", "cannot be empty")
-		return verr
-	}
-	uri, err := url.ParseRequestURI(cfg.Url)
-	if err != nil {
-		verr.AddViolation("url", "invalid URL")
-	} else if uri.Port() == "" {
-		verr.AddViolation("url", "port has to be explicitly specified")
 	}
 	return verr
 }

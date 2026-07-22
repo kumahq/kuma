@@ -29,13 +29,3 @@ mtls:
 routing:
   localityAwareLoadBalancing: true
   zoneEgress: true
-tracing:
-  backends:
-  - conf:
-      url: http://zipkin.us:8080/v1/spans
-    name: zipkin-us
-    type: zipkin
-  - conf:
-      url: http://zipkin.eu:8080/v1/spans
-    name: zipkin-eu
-    type: zipkin
