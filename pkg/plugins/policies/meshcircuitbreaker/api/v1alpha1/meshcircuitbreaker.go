@@ -9,7 +9,6 @@ import (
 )
 
 // MeshCircuitBreaker protects services from cascading failures by limiting connections and detecting unhealthy instances. It provides connection limits to prevent overload and outlier detection to temporarily remove failing endpoints from the load balancing pool.
-// +kuma:policy:is_from_as_rules=true
 // +kuma:policy:order=1300
 type MeshCircuitBreaker struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
@@ -20,9 +19,6 @@ type MeshCircuitBreaker struct {
 	// To list makes a match between the consumed services and corresponding
 	// configurations
 	To *[]To `json:"to,omitempty"`
-
-	// From list makes a match between clients and corresponding configurations
-	From *[]From `json:"from,omitempty"`
 
 	// Rules defines inbound circuit breaker configurations. Currently limited to
 	// selecting all inbound traffic, as L7 matching is not yet implemented.
@@ -35,15 +31,6 @@ type Rule struct {
 }
 
 type To struct {
-	// TargetRef is a reference to the resource that represents a group of
-	// destinations.
-	TargetRef common_api.TargetRef `json:"targetRef"`
-	// Default is a configuration specific to the group of destinations
-	// referenced in 'targetRef'
-	Default Conf `json:"default,omitempty"`
-}
-
-type From struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
 	TargetRef common_api.TargetRef `json:"targetRef"`
