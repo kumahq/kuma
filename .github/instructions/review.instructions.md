@@ -30,6 +30,37 @@ excludeAgent: "coding-agent"
 
 ---
 
+## Blast Radius (Downstream Impact)
+
+**When the diff stops producing, renames, moves, or gates data, trace who still reads it.** Most Kuma state crosses untyped boundaries - `map[string]string` tags/labels, string-keyed xDS metadata, KDS-synced proto fields - so the compiler and unit tests do NOT catch a broken producer→consumer link. Verify it by hand.
+
+**Triggers (any in the diff):**
+
+- Removes/renames a struct field, tag key, label, or xDS metadata key (`envoy.lb`, `kuma.io/*`, `io.kuma.*`)
+- Gates an existing data path behind a flag/condition (`KUMA_EXPERIMENTAL_*`, `if ...Disabled`)
+- Stops writing something that was previously always set
+- Changes what KDS syncs global↔zone, or a MeshContext cache-hash input
+
+**Procedure:**
+
+1. Name the datum (field / tag key / metadata key / label / flag).
+2. Grep every reader - including string-literal lookups (`tags["kuma.io/zone"]`, `metadata["envoy.lb"]`, `GetLabels()[...]`), not just typed references. Cross package boundaries.
+3. For each reader: is there a fallback when the datum is absent? If not → likely runtime break with no failing test.
+4. Report the chain producer→…→consumer, not just the edit site. Ask for a test covering the affected flag/path combination.
+
+**Kuma hot paths to trace:**
+
+- Inbound tags ↔ Dataplane labels ↔ endpoint metadata ↔ LB/affinity (MeshLoadBalancingStrategy resolves locality by tag/label key)
+- TargetRef / policy matching resolves subsets by tag key
+- KDS field drop/rename → breaks cross-version zone sync
+- MeshContext cache-hash inputs → dropping one yields stale xDS
+
+**Canonical miss:** allow-listed node labels lived only on inbound tags; enabling `KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED` emptied the tag bag; MeshLoadBalancingStrategy affinity (a string-key reader two hops downstream) silently lost locality - no compile error, no failing test. This is the class to catch.
+
+**Severity:** 🔴 consumer breaks with no fallback • 🟡 plausible break unverified, or no test for the flag/path combination.
+
+---
+
 ## Severity & Checklist
 
 **Levels:**
