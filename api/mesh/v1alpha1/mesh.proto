@@ -37,9 +37,8 @@ message Mesh {
   // +optional
   Mtls mtls = 1;
 
-  // Tracing settings.
-  // +optional
-  Tracing tracing = 2;
+  reserved 2;
+  reserved "tracing";
 
   // Logging settings.
   // +optional
@@ -162,64 +161,6 @@ message Networking {
 
   // Outbound settings
   Outbound outbound = 1;
-}
-
-// Tracing defines tracing configuration of the mesh.
-message Tracing {
-  // Name of the default backend
-  string defaultBackend = 1;
-
-  // List of available tracing backends
-  repeated TracingBackend backends = 2;
-}
-
-// TracingBackend defines tracing backend available to mesh.
-message TracingBackend {
-  // Name of the backend, can be then used in Mesh.tracing.defaultBackend
-  string name = 1;
-
-  // Percentage of traces that will be sent to the backend (range 0.0 - 100.0).
-  // Empty value defaults to 100.0%
-  google.protobuf.DoubleValue sampling = 2;
-
-  // Type of the backend (Kuma ships with 'zipkin')
-  string type = 3;
-
-  // Configuration of the backend
-  google.protobuf.Struct conf = 4;
-}
-
-message DatadogTracingBackendConfig {
-  // Address of datadog collector.
-  string address = 1;
-
-  // Port of datadog collector
-  uint32 port = 2;
-
-  // Determines if datadog service name should be split based on traffic
-  // direction and destination. For example, with `splitService: true` and a
-  // `backend` service that communicates with a couple of databases, you would
-  // get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
-  // `backend_OUTBOUND_db2` in Datadog. Default: false
-  bool splitService = 3;
-}
-
-message ZipkinTracingBackendConfig {
-  // Address of Zipkin collector.
-  string url = 1;
-
-  // Generate 128bit traces. Default: false
-  bool traceId128bit = 2;
-
-  // Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
-  // httpJson see
-  // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
-  string apiVersion = 3;
-
-  // Determines whether client and server spans will share the same span
-  // context. Default: true.
-  // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
-  google.protobuf.BoolValue sharedSpanContext = 4;
 }
 
 message Logging {

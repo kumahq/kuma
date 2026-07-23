@@ -458,8 +458,6 @@ func Run() {
 var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeFor[v1alpha1.FileLoggingBackendConfig](),
 	reflect.TypeFor[v1alpha1.TcpLoggingBackendConfig](),
-	reflect.TypeFor[v1alpha1.ZipkinTracingBackendConfig](),
-	reflect.TypeFor[v1alpha1.DatadogTracingBackendConfig](),
 	reflect.TypeFor[v1alpha1.PrometheusMetricsBackendConfig](),
 	reflect.TypeFor[provided_config.ProvidedCertificateAuthorityConfig](),
 	reflect.TypeFor[builtin_config.BuiltinCertificateAuthorityConfig](),
@@ -854,10 +852,6 @@ var BackendToOneOfs = map[string][]*jsonschema.Schema{
 	"LoggingBackend": {
 		{Ref: "/specs/protoresources/fileloggingbackendconfig/schema.yaml#/components/schemas/FileLoggingBackendConfig"},
 		{Ref: "/specs/protoresources/tcploggingbackendconfig/schema.yaml#/components/schemas/TcpLoggingBackendConfig"},
-	},
-	"TracingBackend": {
-		{Ref: "/specs/protoresources/datadogtracingbackendconfig/schema.yaml#/components/schemas/DatadogTracingBackendConfig"},
-		{Ref: "/specs/protoresources/zipkintracingbackendconfig/schema.yaml#/components/schemas/ZipkinTracingBackendConfig"},
 	},
 	"MetricsBackend": {
 		{Ref: "/specs/protoresources/prometheusmetricsbackendconfig/schema.yaml#/components/schemas/PrometheusMetricsBackendConfig"},
