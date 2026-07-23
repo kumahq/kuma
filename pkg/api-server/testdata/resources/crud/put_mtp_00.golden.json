@@ -7,6 +7,10 @@
   {
    "field": "spec.targetRef.name",
    "reason": "in body must be of type string: \"number\""
+  },
+  {
+   "field": "spec.targetRef.kind",
+   "reason": "in body should be one of [Mesh Dataplane]"
   }
  ],
  "details": "Resource is not valid",
@@ -14,6 +18,10 @@
   {
    "field": "spec.targetRef.name",
    "message": "in body must be of type string: \"number\""
+  },
+  {
+   "field": "spec.targetRef.kind",
+   "message": "in body should be one of [Mesh Dataplane]"
   }
  ]
 }
