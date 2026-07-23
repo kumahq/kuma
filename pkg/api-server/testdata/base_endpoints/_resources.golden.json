@@ -56,10 +56,10 @@
    "path": "meshaccesslogs",
    "pluralDisplayName": "Mesh Access Logs",
    "policy": {
-    "hasFromTargetRef": true,
+    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
     "hasToTargetRef": true,
-    "isFromAsRules": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,

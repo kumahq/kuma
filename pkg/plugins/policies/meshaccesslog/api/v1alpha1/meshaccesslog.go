@@ -8,7 +8,6 @@ import (
 )
 
 // MeshAccessLog configures access logging for traffic between services in the mesh. It allows you to capture and export request/response logs to various backends (file, TCP, or OpenTelemetry) for monitoring, debugging, and auditing purposes.
-// +kuma:policy:is_from_as_rules=true
 // +kuma:policy:has_status=true
 // +kuma:policy:order=600
 type MeshAccessLog struct {
