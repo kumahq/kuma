@@ -35,7 +35,7 @@ func (m *MeshTrafficPermissionBuilder) WithMesh(mesh string) *MeshTrafficPermiss
 }
 
 func (m *MeshTrafficPermissionBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshTrafficPermissionBuilder {
-	m.res.Spec.TargetRef = pointer.To(toTopLevelTargetRef(targetRef))
+	m.res.Spec.TargetRef = pointer.To(ToTopLevelTargetRef(targetRef))
 	return m
 }
 

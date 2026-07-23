@@ -79,7 +79,7 @@ func TargetRefMeshExternalService(name string) common_api.TargetRef {
 	}
 }
 
-func toTopLevelTargetRef(ref common_api.TargetRef) common_api.TopLevelTargetRef {
+func ToTopLevelTargetRef(ref common_api.TargetRef) common_api.TopLevelTargetRef {
 	return common_api.TopLevelTargetRef{
 		UsesSyntacticSugar: ref.UsesSyntacticSugar,
 		Kind:               ref.Kind,
@@ -93,7 +93,7 @@ func toTopLevelTargetRef(ref common_api.TargetRef) common_api.TopLevelTargetRef 
 	}
 }
 
-func toOutboundTargetRef(ref common_api.TargetRef) common_api.OutboundTargetRef {
+func ToOutboundTargetRef(ref common_api.TargetRef) common_api.OutboundTargetRef {
 	return common_api.OutboundTargetRef{
 		Kind:        ref.Kind,
 		Name:        ref.Name,

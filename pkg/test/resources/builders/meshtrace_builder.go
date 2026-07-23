@@ -27,7 +27,7 @@ func MeshTrace() *MeshTraceBuilder {
 }
 
 func (m *MeshTraceBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshTraceBuilder {
-	m.res.Spec.TargetRef = pointer.To(toTopLevelTargetRef(targetRef))
+	m.res.Spec.TargetRef = pointer.To(ToTopLevelTargetRef(targetRef))
 	return m
 }
 

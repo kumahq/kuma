@@ -186,7 +186,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				Name: "mtp1",
 			}))
 			Expect(rs.Items[0].GetSpec()).To(Equal(&policies_api.MeshTrafficPermission{
-				TargetRef: &common_api.TargetRef{Kind: "MeshService", Name: pointer.To("backend")},
+				TargetRef: &common_api.TopLevelTargetRef{Kind: "MeshService", Name: pointer.To("backend")},
 				From: &[]policies_api.From{
 					{
 						TargetRef: common_api.TargetRef{Kind: "Mesh"},
@@ -220,7 +220,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				Name: "mtp2",
 			}))
 			Expect(rs.Items[1].GetSpec()).To(Equal(&policies_api.MeshTrafficPermission{
-				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
+				TargetRef: &common_api.TopLevelTargetRef{Kind: "Mesh"},
 				From: &[]policies_api.From{
 					{
 						TargetRef: common_api.TargetRef{Kind: "MeshSubset", Tags: &map[string]string{"kuma.io/zone": "us-east"}},

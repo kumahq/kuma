@@ -292,7 +292,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: &common_api.TargetRef{
+							TargetRef: &common_api.TopLevelTargetRef{
 								Kind: common_api.Mesh,
 							},
 							Default: v1alpha1.Conf{
@@ -339,7 +339,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: &common_api.TargetRef{
+							TargetRef: &common_api.TopLevelTargetRef{
 								Kind: common_api.Mesh,
 							},
 							Default: v1alpha1.Conf{
@@ -398,7 +398,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: &common_api.TargetRef{
+							TargetRef: &common_api.TopLevelTargetRef{
 								Kind: common_api.Mesh,
 							},
 							Default: v1alpha1.Conf{
@@ -487,7 +487,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: &common_api.TargetRef{
+							TargetRef: &common_api.TopLevelTargetRef{
 								Kind: common_api.Dataplane,
 								Name: pointer.To("backend-01"),
 							},
@@ -559,7 +559,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: &common_api.TargetRef{
+							TargetRef: &common_api.TopLevelTargetRef{
 								Kind: common_api.Mesh,
 							},
 							Default: v1alpha1.Conf{
@@ -585,7 +585,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: &common_api.TargetRef{
+							TargetRef: &common_api.TopLevelTargetRef{
 								Kind: common_api.Dataplane,
 								Name: pointer.To("backend-02"),
 							},
@@ -679,7 +679,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: &common_api.TargetRef{
+							TargetRef: &common_api.TopLevelTargetRef{
 								Kind: common_api.Mesh,
 							},
 							Default: v1alpha1.Conf{
@@ -705,7 +705,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: &common_api.TargetRef{
+							TargetRef: &common_api.TopLevelTargetRef{
 								Kind: common_api.Dataplane,
 								Name: pointer.To("backend-02"),
 							},
