@@ -6,10 +6,8 @@ labels:
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         connectionLimits:
           maxConnectionPools: 5
           maxConnections: 10
