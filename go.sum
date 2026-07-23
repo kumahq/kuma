@@ -343,8 +343,8 @@ github.com/kumahq/go-control-plane v0.14.0-kong-1 h1:TgRksOBpxxCRyCIliCzrDYF6QEc
 github.com/kumahq/go-control-plane v0.14.0-kong-1/go.mod h1:NcS5X47pLl/hfqxU70yPwL9ZMkUlwlKxtAohpi2wBEU=
 github.com/kumahq/go-control-plane/contrib v1.36.0-kong-1 h1:D9emSea8PDMB4DnnZHB73+vNYbLyLKCI+Iq6pk0ka+c=
 github.com/kumahq/go-control-plane/contrib v1.36.0-kong-1/go.mod h1:hrW0JVqPKr6+o5MGX5i/0b1rjuJ2PF/vN0Yv4v3XToA=
-github.com/kumahq/go-control-plane/envoy v1.36.0-kong-1 h1:XYPk4BQ4uLocMk8dVmY/dTvz7cg8kax57xgNdfK0otk=
-github.com/kumahq/go-control-plane/envoy v1.36.0-kong-1/go.mod h1:ty89S1YCCVruQAm9OtKeEkQLTb+Lkz0k8v9W0Oxsv98=
+github.com/kumahq/go-control-plane/envoy v1.37.0-kong-1 h1:nzHKQfG2+VYFuFQgZxUDSVdddINP+HQdRSeNuUiKnaU=
+github.com/kumahq/go-control-plane/envoy v1.37.0-kong-1/go.mod h1:DReE9MMrmecPy+YvQOAOHNYMALuowAnbjjEMkkWOi6A=
 github.com/kumahq/go-control-plane/ratelimit v0.1.0-kong-1 h1:sHL3hEDiKPyzRYc4A9ADYGHLmUNt/AX+Ns3t5BeS1WA=
 github.com/kumahq/go-control-plane/ratelimit v0.1.0-kong-1/go.mod h1:Wk+tMFAFbCXaJPzVVHnPgRKdUdwW/KdbRt94AzgRee4=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
