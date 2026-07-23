@@ -14,12 +14,13 @@ import (
 	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	v3 "github.com/kumahq/kuma/v3/pkg/hds/v3"
 	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/v3/pkg/util/net"
@@ -59,9 +60,21 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 		return nil, err
 	}
 
+	meshResource := mesh.NewMeshResource()
+	meshFound := true
+	if err := g.readOnlyResourceManager.Get(ctx, meshResource, store.GetByKey(proxyId.ToResourceKey().Mesh, model.NoMesh)); err != nil {
+		if !store.IsNotFound(err) {
+			return nil, err
+		}
+		// Mesh deletion doesn't cascade to Dataplanes (mesh_manager only deletes
+		// the Mesh itself), so an orphaned Dataplane can still reach HDS. Fall
+		// back to the legacy admin cluster name instead of failing the snapshot.
+		meshFound = false
+	}
+
 	// TODO(unified-resource-naming): adjust when legacy naming is removed
 	md := xds.DataplaneMetadataFromXdsMetadata(node.Metadata)
-	unifiedNamingEnabled := md.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	unifiedNamingEnabled := meshFound && unified_naming.Enabled(md, meshResource)
 	clusterName := names.GetEnvoyAdminClusterName()
 	if unifiedNamingEnabled {
 		clusterName = system_names.SystemResourceNameEnvoyAdmin

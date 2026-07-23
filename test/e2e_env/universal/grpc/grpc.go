@@ -53,8 +53,8 @@ func GRPC() {
 			cmd := tunnel.AdminCurlCmd("/stats?format=prometheus")
 			stdout, _, err := universal.Cluster.Exec("", "", "test-server", cmd...)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="localhost_8080"}`))
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="localhost_8080"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="self_inbound_dp_80"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="self_inbound_dp_80"}`))
 		}, "30s", "1s").Should(Succeed())
 	})
 
@@ -63,8 +63,8 @@ func GRPC() {
 			cmd := tunnel.AdminCurlCmd("/stats?format=prometheus")
 			stdout, _, err := universal.Cluster.Exec("", "", "test-client", cmd...)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="grpc_test-server__kuma-3_msvc_80"}`))
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="grpc_test-server__kuma-3_msvc_80"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="kri_msvc_grpc_kuma-3__test-server_80"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="kri_msvc_grpc_kuma-3__test-server_80"}`))
 		}, "30s", "1s").Should(Succeed())
 	})
 
@@ -104,8 +104,8 @@ spec:
 			stdout, _, err := universal.Cluster.Exec("", "", "second-test-server", cmd...)
 			g.Expect(err).ToNot(HaveOccurred())
 
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="localhost_8080"}`))
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="localhost_8080"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="self_inbound_dp_80"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="self_inbound_dp_80"}`))
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 	})
 }
