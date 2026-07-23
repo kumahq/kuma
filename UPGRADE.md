@@ -348,6 +348,33 @@ spec:
           maxConnections: 1024
 ```
 
+### `from` removed from `MeshAccessLog`
+
+The deprecated `spec.from` array has been removed from `MeshAccessLog`. Access logging for incoming traffic is now configured exclusively through `spec.rules`. `spec.from` is silently dropped on create/update: if `spec.rules` or `spec.to` is also set, the resource is accepted but `from` has no effect on inbound configuration; if `from` was the only field set, the resulting spec has neither `to` nor `rules`, so the request is rejected by validation.
+
+**Action required**
+
+Before upgrading, migrate every `MeshAccessLog` that uses `spec.from` to `spec.rules`. A `from` entry targeting `kind: Mesh` (all clients) maps to a single catch-all rule:
+
+```yaml
+# before
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - file:
+              path: /tmp/access.log
+# after
+spec:
+  rules:
+    - default:
+        backends:
+          - file:
+              path: /tmp/access.log
+```
+
 ### Auto reachable services removed
 
 The experimental auto reachable services feature has been removed. The control
