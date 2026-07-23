@@ -2,7 +2,6 @@ package mesh
 
 import (
 	"fmt"
-	"net"
 	"regexp"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -17,7 +16,6 @@ var AllowedMTLSBackends = 1
 func (m *MeshResource) Validate() error {
 	var verr validators.ValidationError
 	verr.AddError("mtls", validateMtls(m.Spec.Mtls))
-	verr.AddError("logging", validateLogging(m.Spec.Logging))
 	verr.AddError("metrics", validateMetrics(m.Spec.Metrics))
 	verr.AddError("constraints", validateConstraints(m.Spec.Constraints))
 	verr.AddError("", validateZoneEgress(m.Spec.Routing, m.Spec.Mtls))
@@ -83,70 +81,6 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 	}
 	if mtls.GetEnabledBackend() != "" && !usedNames[mtls.GetEnabledBackend()] {
 		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
-	}
-	return verr
-}
-
-func validateLogging(logging *mesh_proto.Logging) validators.ValidationError {
-	var verr validators.ValidationError
-	if logging == nil {
-		return verr
-	}
-	usedNames := map[string]bool{}
-	for i, backend := range logging.Backends {
-		verr.AddError(validators.RootedAt("backends").Index(i).String(), validateLoggingBackend(backend))
-		if usedNames[backend.Name] {
-			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("name"), fmt.Sprintf("%q name is already used for another backend", backend.Name))
-		}
-		usedNames[backend.Name] = true
-	}
-	if logging.DefaultBackend != "" && !usedNames[logging.DefaultBackend] {
-		verr.AddViolation("defaultBackend", "has to be set to one of the logging backend in mesh")
-	}
-	return verr
-}
-
-func validateLoggingBackend(backend *mesh_proto.LoggingBackend) validators.ValidationError {
-	var verr validators.ValidationError
-	if backend.Name == "" {
-		verr.AddViolation("name", "cannot be empty")
-	}
-	switch backend.GetType() {
-	case mesh_proto.LoggingFileType:
-		verr.AddError("config", validateLoggingFile(backend.Conf))
-	case mesh_proto.LoggingTcpType:
-		verr.AddError("config", validateLoggingTcp(backend.Conf))
-	default:
-		verr.AddViolation("type", fmt.Sprintf("unknown backend type. Available backends: %q, %q", mesh_proto.LoggingTcpType, mesh_proto.LoggingFileType))
-	}
-	return verr
-}
-
-func validateLoggingTcp(cfgStr *structpb.Struct) validators.ValidationError {
-	var verr validators.ValidationError
-	cfg := mesh_proto.TcpLoggingBackendConfig{}
-	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
-		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
-		return verr
-	}
-	if cfg.Address == "" {
-		verr.AddViolation("address", "cannot be empty")
-		return verr
-	}
-	host, port, err := net.SplitHostPort(cfg.Address)
-	if host == "" || port == "" || err != nil {
-		verr.AddViolation("address", "has to be in format of HOST:PORT")
-	}
-	return verr
-}
-
-func validateLoggingFile(cfgStr *structpb.Struct) validators.ValidationError {
-	var verr validators.ValidationError
-	cfg := mesh_proto.FileLoggingBackendConfig{}
-	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
-		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
-	} else if cfg.Path == "" {
-		verr.AddViolation("path", "cannot be empty")
 	}
 	return verr
 }

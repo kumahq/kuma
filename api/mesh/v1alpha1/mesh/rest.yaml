@@ -108,40 +108,6 @@ components:
           additionalProperties:
             type: string
           type: object
-        logging:
-          description: |-
-            Logging settings.
-            +optional
-          properties:
-            backends:
-              description: List of available logging backends
-              items:
-                description: LoggingBackend defines logging backend available to mesh.
-                properties:
-                  conf:
-                    oneOf:
-                    - $ref: /specs/protoresources/fileloggingbackendconfig/schema.yaml#/components/schemas/FileLoggingBackendConfig
-                    - $ref: /specs/protoresources/tcploggingbackendconfig/schema.yaml#/components/schemas/TcpLoggingBackendConfig
-                    type: object
-                  format:
-                    description: |-
-                      Format of access logs. Placeholders available on
-                      https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-                    type: string
-                  name:
-                    description: |-
-                      Name of the backend, can be then used in Mesh.logging.defaultBackend or in
-                      TrafficLogging
-                    type: string
-                  type:
-                    description: Type of the backend (Kuma ships with 'tcp' and 'file')
-                    type: string
-                type: object
-              type: array
-            defaultBackend:
-              description: Name of the default backend
-              type: string
-          type: object
         metrics:
           description: |-
             Configuration for metrics collected and exposed by dataplanes.

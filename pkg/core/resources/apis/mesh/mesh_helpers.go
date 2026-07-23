@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -40,28 +39,6 @@ func (m *MeshResource) MTLSEnabled() bool {
 // change and when zoneEgress is enabled.
 func (m *MeshResource) ZoneEgressEnabled() bool {
 	return m != nil && m.Spec.GetRouting().GetZoneEgress()
-}
-
-func (m *MeshResource) GetLoggingBackend(name string) *mesh_proto.LoggingBackend {
-	backends := map[string]*mesh_proto.LoggingBackend{}
-	for _, backend := range m.Spec.GetLogging().GetBackends() {
-		backends[backend.Name] = backend
-	}
-	if name == "" {
-		return backends[m.Spec.GetLogging().GetDefaultBackend()]
-	}
-	return backends[name]
-}
-
-// GetLoggingBackends will return logging backends as comma separated strings
-// if empty return empty string
-func (m *MeshResource) GetLoggingBackends() string {
-	var backends []string
-	for _, backend := range m.Spec.GetLogging().GetBackends() {
-		backend := fmt.Sprintf("%s/%s", backend.GetType(), backend.GetName())
-		backends = append(backends, backend)
-	}
-	return strings.Join(backends, ", ")
 }
 
 func (m *MeshResource) GetEnabledCertificateAuthorityBackend() *mesh_proto.CertificateAuthorityBackend {

@@ -1,16 +1,6 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
   kri: kri_m____mesh1_
-  logging:
-    backends:
-    - conf:
-        address: 127.0.0.1:5000
-      name: logstash
-      type: tcp
-    - conf:
-        path: /tmp/service.log
-      name: file
-      type: file
   metrics:
     backends:
     - conf:
@@ -36,7 +26,6 @@ items:
   type: Mesh
 - creationTime: "0001-01-01T00:00:00Z"
   kri: kri_m____mesh2_
-  logging: {}
   metrics: {}
   modificationTime: "0001-01-01T00:00:00Z"
   name: mesh2

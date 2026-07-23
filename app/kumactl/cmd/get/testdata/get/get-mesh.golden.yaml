@@ -3,16 +3,6 @@ kri: kri_m____mesh-1_
 modificationTime: "0001-01-01T00:00:00Z"
 name: mesh-1
 type: Mesh
-logging:
-  backends:
-  - conf:
-      address: 127.0.0.1:5000
-    name: logstash
-    type: tcp
-  - conf:
-      path: /tmp/service.log
-    name: file
-    type: file
 metrics:
   backends:
   - conf:
