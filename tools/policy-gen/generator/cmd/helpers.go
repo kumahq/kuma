@@ -64,7 +64,7 @@ import (
 )
 
 func (x *{{.name}}) GetTargetRef() common_api.TargetRef {
-	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
+	return x.TargetRef.ToTargetRef()
 }
 
 {{ if .generateFrom }}
@@ -91,7 +91,7 @@ func (x *{{.name}}) GetFromList() []core_model.PolicyItem {
 {{ if .generateTo }}
 
 func (x *To) GetTargetRef() common_api.TargetRef {
-	return x.TargetRef
+	return x.TargetRef.ToTargetRef()
 }
 {{ if not .skipGetDefault }}
 

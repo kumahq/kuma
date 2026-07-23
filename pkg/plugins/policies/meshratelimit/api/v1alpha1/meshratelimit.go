@@ -14,7 +14,7 @@ type MeshRateLimit struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef *common_api.TopLevelTargetRef `json:"targetRef,omitempty"`
 	// From list makes a match between clients and corresponding configurations
 	From *[]From `json:"from,omitempty"`
 	// To list makes a match between clients and corresponding configurations
@@ -42,7 +42,7 @@ type From struct {
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef common_api.OutboundTargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
 	Default Conf `json:"default,omitempty"`
