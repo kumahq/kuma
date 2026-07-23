@@ -1,5 +1,39 @@
 {
-  "diff": [],
+  "diff": [
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_msvc_envoyconfig_kuma-3__demo-client_3000/transportSocket/typedConfig/commonTlsContext/tlsParams",
+      "value": {
+        "cipherSuites": [
+          "ECDHE-ECDSA-AES256-GCM-SHA384"
+        ],
+        "tlsMaximumProtocolVersion": "TLSv1_3",
+        "tlsMinimumProtocolVersion": "TLSv1_3"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_msvc_envoyconfig_kuma-3__test-server_80/transportSocket/typedConfig/commonTlsContext/tlsParams",
+      "value": {
+        "cipherSuites": [
+          "ECDHE-ECDSA-AES256-GCM-SHA384"
+        ],
+        "tlsMaximumProtocolVersion": "TLSv1_3",
+        "tlsMinimumProtocolVersion": "TLSv1_3"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_80/filterChains/0/transportSocket/typedConfig/commonTlsContext/tlsParams",
+      "value": {
+        "cipherSuites": [
+          "ECDHE-ECDSA-AES256-GCM-SHA384"
+        ],
+        "tlsMaximumProtocolVersion": "TLSv1_3",
+        "tlsMinimumProtocolVersion": "TLSv1_3"
+      }
+    }
+  ],
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "kri_msvc_envoyconfig_kuma-3__demo-client_3000": {
@@ -53,7 +87,14 @@
                     "resourceApiVersion": "V3"
                   }
                 }
-              ]
+              ],
+              "tlsParams": {
+                "cipherSuites": [
+                  "ECDHE-ECDSA-AES256-GCM-SHA384"
+                ],
+                "tlsMaximumProtocolVersion": "TLSv1_3",
+                "tlsMinimumProtocolVersion": "TLSv1_3"
+              }
             },
             "sni": "a65abe81bca1750d1.demo-client.3000.envoyconfig.ms"
           }
@@ -119,7 +160,14 @@
                     "resourceApiVersion": "V3"
                   }
                 }
-              ]
+              ],
+              "tlsParams": {
+                "cipherSuites": [
+                  "ECDHE-ECDSA-AES256-GCM-SHA384"
+                ],
+                "tlsMaximumProtocolVersion": "TLSv1_3",
+                "tlsMinimumProtocolVersion": "TLSv1_3"
+              }
             },
             "sni": "a029781856823048e.test-server.80.envoyconfig.ms"
           }
@@ -682,7 +730,14 @@
                         "resourceApiVersion": "V3"
                       }
                     }
-                  ]
+                  ],
+                  "tlsParams": {
+                    "cipherSuites": [
+                      "ECDHE-ECDSA-AES256-GCM-SHA384"
+                    ],
+                    "tlsMaximumProtocolVersion": "TLSv1_3",
+                    "tlsMinimumProtocolVersion": "TLSv1_3"
+                  }
                 },
                 "requireClientCertificate": true
               }

@@ -1,4 +1,3 @@
-//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -24,7 +23,6 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -405,14 +403,9 @@ func getPolicy(caseName string) *api.MeshTLSResource {
 }
 
 func getRulesAsFromRules(policyRules []api.Rule) core_rules.FromRules {
-	var legacyRules []*core_rules.Rule
 	var rules []*inbound.Rule
 
 	for _, rule := range policyRules {
-		legacyRules = append(legacyRules, &core_rules.Rule{
-			Subset: subsetutils.Subset{},
-			Conf:   rule.Default,
-		})
 		rules = append(rules, &inbound.Rule{
 			Conf:   rule.Default,
 			Origin: common.Origin{},
@@ -420,10 +413,6 @@ func getRulesAsFromRules(policyRules []api.Rule) core_rules.FromRules {
 	}
 
 	return core_rules.FromRules{
-		Rules: map[core_rules.InboundListener]core_rules.Rules{
-			{Address: "127.0.0.1", Port: 17777}: legacyRules,
-			{Address: "127.0.0.1", Port: 17778}: legacyRules,
-		},
 		InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 			{Address: "127.0.0.1", Port: 17777}: rules,
 			{Address: "127.0.0.1", Port: 17778}: rules,
