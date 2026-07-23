@@ -1098,9 +1098,11 @@ func (r *resourceEndpoints) getPoliciesConf(plugins []core_plugins.RegisteredPol
 			res, err := policyPlugin.Plugin.MatchedPolicies(dataplane, baseMeshContext.Resources())
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
+				return
 			}
 			if res.Type == "" {
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policyPlugin.Name))
+				return
 			}
 
 			matchedPolicies = append(matchedPolicies, res)
@@ -1353,6 +1355,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 		baseMeshContext, err := r.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to build Mesh context")
+			return
 		}
 
 		resources := xds_context.Resources{
@@ -1383,9 +1386,11 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			}
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
+				return
 			}
 			if res.Type == "" {
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policyPlugin.Name))
+				return
 			}
 
 			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
