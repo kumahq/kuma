@@ -143,15 +143,20 @@ resources:
         - a45e197ed7825551b.meshexternalservice-1.9090.mesh-1.mes
         transportProtocol: tls
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: kri_extsvc_mesh-1___meshexternalservice-1_9090.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
+          - name: envoy.filters.http.rbac
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+              rules:
+                policies:
+                  MeshTrafficPermission:
+                    permissions:
+                    - any: true
+                    principals:
+                    - any: true
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
