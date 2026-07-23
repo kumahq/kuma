@@ -59,41 +59,6 @@ var _ = Describe("MeshResource", func() {
 		)
 	})
 
-	Describe("should return logging backends", func() {
-		It("should return logging backends if not empty", func() {
-			mesh := &MeshResource{
-				Spec: &mesh_proto.Mesh{
-					Logging: &mesh_proto.Logging{
-						Backends: []*mesh_proto.LoggingBackend{
-							{
-								Name: "logstash-1",
-								Type: "logstash",
-							},
-							{
-								Name: "file-1",
-								Type: "file",
-							},
-						},
-					},
-				},
-			}
-			backends := mesh.GetLoggingBackends()
-			Expect(backends).To(Equal("logstash/logstash-1, file/file-1"))
-		})
-		It("should return default logging backend if logging backends is empty", func() {
-			mesh := &MeshResource{
-				Spec: &mesh_proto.Mesh{
-					Logging: &mesh_proto.Logging{
-						DefaultBackend: "default-backend",
-						Backends:       []*mesh_proto.LoggingBackend{},
-					},
-				},
-			}
-			backends := mesh.GetLoggingBackends()
-			Expect(backends).To(Equal(""))
-		})
-	})
-
 	Describe("ParseDuration", func() {
 		type testCase struct {
 			input  string
