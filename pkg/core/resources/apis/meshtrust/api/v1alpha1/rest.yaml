@@ -179,16 +179,6 @@ components:
                 type: object
               minItems: 1
               type: array
-            origin:
-              description: |-
-                Origin specifies whether the resource was created from a MeshIdentity.
-
-                Deprecated: use Status.Origin instead
-              properties:
-                kri:
-                  description: Resource identifier
-                  type: string
-              type: object
             trustDomain:
               description: TrustDomain is the trust domain associated with this resource.
               maxLength: 253

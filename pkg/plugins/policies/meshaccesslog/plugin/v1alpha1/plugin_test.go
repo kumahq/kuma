@@ -66,6 +66,17 @@ var _ = Describe("MeshAccessLog", func() {
 		SectionName:  "",
 	}
 
+	otelCollectorMotb := otelBackendMotb("otel-collector", "otel-collector", 4317)
+	otherOtelCollectorMotb := otelBackendMotb("other-otel-collector", "other-otel-collector", 5317)
+	otelCollectorBackendRef := &common_api.BackendResourceRef{
+		Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+		Labels: map[string]string{mesh_proto.DisplayName: "otel-collector"},
+	}
+	otherOtelCollectorBackendRef := &common_api.BackendResourceRef{
+		Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+		Labels: map[string]string{mesh_proto.DisplayName: "other-otel-collector"},
+	}
+
 	type sidecarTestCase struct {
 		resources           []core_xds.Resource
 		outbounds           xds_types.Outbounds
@@ -78,6 +89,7 @@ var _ = Describe("MeshAccessLog", func() {
 		inboundTagsDisabled bool
 		inboundName         string
 		extraInbounds       []*builders.InboundBuilder
+		motbBackends        []*motb_api.MeshOpenTelemetryBackendResource
 	}
 	DescribeTable(
 		"should generate proper Envoy config",
@@ -89,9 +101,16 @@ var _ = Describe("MeshAccessLog", func() {
 				resourceSet.Add(&r)
 			}
 
+			meshResources := xds_context.NewResources()
+			if len(given.motbBackends) > 0 {
+				meshResources.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType] = &motb_api.MeshOpenTelemetryBackendResourceList{
+					Items: given.motbBackends,
+				}
+			}
+
 			xdsCtx := xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
-				WithResources(xds_context.NewResources()).
+				WithResources(meshResources).
 				WithEndpointMap(
 					xds_builders.EndpointMap().
 						AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/service", "backend")).
@@ -551,7 +570,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Backends: &[]api.Backend{{
 								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
-									Endpoint: "otel-collector",
+									BackendRef: otelCollectorBackendRef,
 								},
 							}},
 						},
@@ -565,7 +584,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Backends: &[]api.Backend{{
 								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
-									Endpoint: "otel-collector",
+									BackendRef: otelCollectorBackendRef,
 									Body: &apiextensionsv1.JSON{
 										Raw: []byte("%KUMA_MESH%"),
 									},
@@ -582,7 +601,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Backends: &[]api.Backend{{
 								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
-									Endpoint: "other-otel-collector:5317",
+									BackendRef: otherOtelCollectorBackendRef,
 									Body: &apiextensionsv1.JSON{
 										Raw: []byte(`{
 										  "kvlistValue": {
@@ -607,6 +626,7 @@ var _ = Describe("MeshAccessLog", func() {
 				"outbound_otel_unified_naming_1.listener.golden.yaml",
 				"outbound_otel_unified_naming_2.listener.golden.yaml",
 			},
+			motbBackends: []*motb_api.MeshOpenTelemetryBackendResource{otelCollectorMotb, otherOtelCollectorMotb},
 		}),
 		Entry("outbound tcpproxy with opentelemetry backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{
@@ -635,7 +655,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Backends: &[]api.Backend{{
 								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
-									Endpoint: "otel-collector",
+									BackendRef: otelCollectorBackendRef,
 								},
 							}},
 						},
@@ -649,7 +669,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Backends: &[]api.Backend{{
 								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
-									Endpoint: "otel-collector",
+									BackendRef: otelCollectorBackendRef,
 									Body: &apiextensionsv1.JSON{
 										Raw: []byte("%KUMA_MESH%"),
 									},
@@ -666,7 +686,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Backends: &[]api.Backend{{
 								Type: api.OtelTelemetryBackendType,
 								OpenTelemetry: &api.OtelBackend{
-									Endpoint: "other-otel-collector:5317",
+									BackendRef: otherOtelCollectorBackendRef,
 									Body: &apiextensionsv1.JSON{
 										Raw: []byte(`{
 										  "kvlistValue": {
@@ -691,6 +711,7 @@ var _ = Describe("MeshAccessLog", func() {
 				"outbound_otel_backend_plain_format_1.listener.golden.yaml",
 				"outbound_otel_backend_plain_format_2.listener.golden.yaml",
 			},
+			motbBackends: []*motb_api.MeshOpenTelemetryBackendResource{otelCollectorMotb, otherOtelCollectorMotb},
 		}),
 		Entry("outbound tcpproxy with tcp backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{
@@ -965,7 +986,7 @@ var _ = Describe("MeshAccessLog", func() {
 								Backends: &[]api.Backend{{
 									Type: api.OtelTelemetryBackendType,
 									OpenTelemetry: &api.OtelBackend{
-										Endpoint: "otel-collector",
+										BackendRef: otelCollectorBackendRef,
 										Body: &apiextensionsv1.JSON{
 											Raw: []byte("%KUMA_MESH% %KUMA_ZONE% %KUMA_WORKLOAD%"),
 										},
@@ -985,6 +1006,7 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"outbound_otel_workload_identity.listener.golden.yaml"},
 			expectedClusters:  []string{"outbound_otel_workload_identity.cluster.golden.yaml"},
+			motbBackends:      []*motb_api.MeshOpenTelemetryBackendResource{otelCollectorMotb},
 		}),
 		Entry("outbound file backend with workload variables", sidecarTestCase{
 			features: map[string]bool{
@@ -1434,4 +1456,19 @@ func serviceName(id kri.Identifier, port int32) string {
 
 func routeKRI(name string) kri.Identifier {
 	return kri.Identifier{ResourceType: meshhttproute_api.MeshHTTPRouteType, Name: name, Mesh: "default"}
+}
+
+func otelBackendMotb(name, address string, port int32) *motb_api.MeshOpenTelemetryBackendResource {
+	motb := motb_api.NewMeshOpenTelemetryBackendResource()
+	motb.SetMeta(&test_model.ResourceMeta{
+		Mesh:   "default",
+		Name:   name,
+		Labels: map[string]string{mesh_proto.DisplayName: name},
+	})
+	motb.Spec.Endpoint = &motb_api.Endpoint{
+		Address: pointer.To(address),
+		Port:    pointer.To(port),
+	}
+	motb.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
+	return motb
 }

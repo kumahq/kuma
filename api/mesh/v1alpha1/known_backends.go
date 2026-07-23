@@ -4,8 +4,5 @@ const (
 	LoggingTcpType  = "tcp"
 	LoggingFileType = "file"
 
-	TracingZipkinType  = "zipkin"
-	TracingDatadogType = "datadog"
-
 	MetricsPrometheusType = "prometheus"
 )

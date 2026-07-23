@@ -6041,56 +6041,6 @@ components:
               type: integer
           type: object
       type: object
-    DatadogTracingBackendConfig:
-      properties:
-        address:
-          description: Address of datadog collector.
-          type: string
-        port:
-          description: Port of datadog collector
-          type: integer
-        splitService:
-          description: >-
-            Determines if datadog service name should be split based on traffic
-
-            direction and destination. For example, with `splitService: true`
-            and a
-
-            `backend` service that communicates with a couple of databases, you
-            would
-
-            get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`,
-            and
-
-            `backend_OUTBOUND_db2` in Datadog. Default: false
-          type: boolean
-      type: object
-    ZipkinTracingBackendConfig:
-      properties:
-        apiVersion:
-          description: >-
-            Version of the API. values: httpJson, httpJsonV1, httpProto.
-            Default:
-
-            httpJson see
-
-            https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
-          type: string
-        sharedSpanContext:
-          description: >-
-            Determines whether client and server spans will share the same span
-
-            context. Default: true.
-
-            https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
-          type: boolean
-        traceId128bit:
-          description: 'Generate 128bit traces. Default: false'
-          type: boolean
-        url:
-          description: Address of Zipkin collector.
-          type: string
-      type: object
     MeshItem:
       properties:
         constraints:
@@ -6382,42 +6332,6 @@ components:
           items:
             type: string
           type: array
-        tracing:
-          description: |-
-            Tracing settings.
-            +optional
-          properties:
-            backends:
-              description: List of available tracing backends
-              items:
-                description: TracingBackend defines tracing backend available to mesh.
-                properties:
-                  conf:
-                    oneOf:
-                      - $ref: '#/components/schemas/DatadogTracingBackendConfig'
-                      - $ref: '#/components/schemas/ZipkinTracingBackendConfig'
-                    type: object
-                  name:
-                    description: >-
-                      Name of the backend, can be then used in
-                      Mesh.tracing.defaultBackend
-                    type: string
-                  sampling:
-                    description: >-
-                      Percentage of traces that will be sent to the backend
-                      (range 0.0 - 100.0).
-
-                      Empty value defaults to 100.0%
-                    type: number
-                  type:
-                    description: Type of the backend (Kuma ships with 'zipkin')
-                    type: string
-                type: object
-              type: array
-            defaultBackend:
-              description: Name of the default backend
-              type: string
-          type: object
         type:
           type: string
       required:
@@ -6569,8 +6483,7 @@ components:
                                     BackendRef is a reference to a
                                     MeshOpenTelemetryBackend resource that
 
-                                    defines the collector endpoint. Mutually
-                                    exclusive with Endpoint.
+                                    defines the collector endpoint.
                                   properties:
                                     kind:
                                       description: Kind of the backend resource.
@@ -6606,16 +6519,6 @@ components:
                                           value:
                                             stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
-                                endpoint:
-                                  default: ''
-                                  description: >-
-                                    Endpoint of OpenTelemetry collector. An
-                                    empty port defaults to 4317.
-
-
-                                    Deprecated: use BackendRef instead.
-                                  example: otel-collector:4317
-                                  type: string
                               type: object
                             tcp:
                               description: TCPBackend defines a TCP logging backend.
@@ -6863,8 +6766,7 @@ components:
                                     BackendRef is a reference to a
                                     MeshOpenTelemetryBackend resource that
 
-                                    defines the collector endpoint. Mutually
-                                    exclusive with Endpoint.
+                                    defines the collector endpoint.
                                   properties:
                                     kind:
                                       description: Kind of the backend resource.
@@ -6900,16 +6802,6 @@ components:
                                           value:
                                             stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
-                                endpoint:
-                                  default: ''
-                                  description: >-
-                                    Endpoint of OpenTelemetry collector. An
-                                    empty port defaults to 4317.
-
-
-                                    Deprecated: use BackendRef instead.
-                                  example: otel-collector:4317
-                                  type: string
                               type: object
                             tcp:
                               description: TCPBackend defines a TCP logging backend.
@@ -7219,8 +7111,7 @@ components:
                                     BackendRef is a reference to a
                                     MeshOpenTelemetryBackend resource that
 
-                                    defines the collector endpoint. Mutually
-                                    exclusive with Endpoint.
+                                    defines the collector endpoint.
                                   properties:
                                     kind:
                                       description: Kind of the backend resource.
@@ -7256,16 +7147,6 @@ components:
                                           value:
                                             stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
-                                endpoint:
-                                  default: ''
-                                  description: >-
-                                    Endpoint of OpenTelemetry collector. An
-                                    empty port defaults to 4317.
-
-
-                                    Deprecated: use BackendRef instead.
-                                  example: otel-collector:4317
-                                  type: string
                               type: object
                             tcp:
                               description: TCPBackend defines a TCP logging backend.
@@ -18620,18 +18501,6 @@ components:
                 type: object
               minItems: 1
               type: array
-            origin:
-              description: >-
-                Origin specifies whether the resource was created from a
-                MeshIdentity.
-
-
-                Deprecated: use Status.Origin instead
-              properties:
-                kri:
-                  description: Resource identifier
-                  type: string
-              type: object
             trustDomain:
               description: TrustDomain is the trust domain associated with this resource.
               maxLength: 253

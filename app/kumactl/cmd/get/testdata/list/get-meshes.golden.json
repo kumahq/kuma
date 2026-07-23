@@ -16,24 +16,6 @@
           }
         ]
       },
-      "tracing": {
-        "backends": [
-          {
-            "name": "zipkin-us",
-            "type": "zipkin",
-            "conf": {
-              "url": "http://zipkin.us:8080/v1/spans"
-            }
-          },
-          {
-            "name": "zipkin-eu",
-            "type": "zipkin",
-            "conf": {
-              "url": "http://zipkin.eu:8080/v1/spans"
-            }
-          }
-        ]
-      },
       "logging": {
         "backends": [
           {
@@ -84,7 +66,6 @@
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
       "kri": "kri_m____mesh2_",
-      "tracing": {},
       "logging": {},
       "metrics": {}
     }

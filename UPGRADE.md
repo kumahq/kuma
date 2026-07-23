@@ -712,6 +712,21 @@ If any `MeshMetric` policy still sets `openTelemetry.endpoint`, create a
 the policy to reference it via `openTelemetry.backendRef` before upgrading.
 Policies that still set `openTelemetry.endpoint` will fail validation.
 
+### `MeshAccessLog` OpenTelemetry backend no longer accepts an inline `endpoint`
+
+The deprecated `default.backends[].openTelemetry.endpoint` /
+`rules[].default.backends[].openTelemetry.endpoint` field has been removed
+from the `MeshAccessLog` policy. `backendRef`, pointing at a
+`MeshOpenTelemetryBackend` resource, is now the only way to configure an
+OpenTelemetry access log backend.
+
+**Action required**
+
+If any `MeshAccessLog` policy still sets `openTelemetry.endpoint`, create a
+`MeshOpenTelemetryBackend` resource with the equivalent endpoint and update
+the policy to reference it via `openTelemetry.backendRef` before upgrading.
+Policies that still set `openTelemetry.endpoint` will fail validation.
+
 ### `MeshLoadBalancingStrategy` load-balancer-specific `hashPolicies` removed
 
 The deprecated `spec.to[].default.loadBalancer.ringHash.hashPolicies` and
@@ -740,6 +755,20 @@ If any `MeshTrace` policy still sets `openTelemetry.endpoint`, create a
 `MeshOpenTelemetryBackend` resource with the equivalent endpoint and update
 the policy to reference it via `openTelemetry.backendRef` before upgrading.
 Policies that still set `openTelemetry.endpoint` will fail validation.
+
+### `Mesh.spec.tracing` removed
+
+The inline `tracing` field (and its `Tracing`/`TracingBackend`/
+`DatadogTracingBackendConfig`/`ZipkinTracingBackendConfig` types) has been
+removed from the `Mesh` resource spec. The `MeshTrace` policy has been the GA
+replacement for configuring tracing and is unaffected by this change.
+
+**Action required**
+
+Migrate any `Mesh` resources that still configure `spec.tracing` to a
+`MeshTrace` policy before upgrading. A `Mesh` spec that still sets `tracing`
+continues to apply successfully; the field is silently ignored by the control
+plane.
 
 ## Upgrade to `2.13.7`
 
@@ -1348,18 +1377,20 @@ KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS="system:serviceaccount:kuma-system:kuma-co
 
 This is already configured by default via Helm template with `KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS`.
 
-### MeshTrust spec.origin Field Deprecated
+### MeshTrust spec.origin Field Removed
 
-The `spec.origin` field in MeshTrust resources has been moved to `status.origin`.
+The `spec.origin` field in MeshTrust resources has been removed. The origin is
+now reported through `status.origin`.
 
 **What changed:**
-- `spec.origin` is now deprecated and will be removed in a future release
+- `spec.origin` is no longer part of the MeshTrust API or Kubernetes CRD schema
+- Manifests and API requests that still set `spec.origin` can be rejected as unknown-field input
 - The field is automatically populated in `status.origin` by the MeshIdentity status updater
-- Setting `spec.origin` continues to work but emits a deprecation warning
 
 **Action required:**
 
-No immediate action required, but update any automation or tooling that references `spec.origin` to use `status.origin` instead.
+Before upgrading, remove `spec.origin` from MeshTrust manifests and update any
+automation or tooling that reads it to use `status.origin` instead.
 
 **Example:**
 
