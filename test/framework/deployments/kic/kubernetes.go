@@ -67,10 +67,6 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		"--namespace", t.ingressNamespace,
 		"--set", "controller.ingressController.watchNamespaces={"+watchNamespacesVal+"}",
 		"--set", "controller.ingressController.ingressClass="+t.name,
-		"--set", "controller.podAnnotations.kuma\\.io/mesh="+t.mesh,
-		"--set", "gateway.podAnnotations.kuma\\.io/mesh="+t.mesh,
-		// Mesh association is resolved from the kuma.io/mesh label (MeshOfByLabel),
-		// so the annotation alone leaves KIC pods in the default mesh.
 		"--set", "controller.podLabels.kuma\\.io/mesh="+t.mesh,
 		"--set", "gateway.podLabels.kuma\\.io/mesh="+t.mesh,
 		chartPath,
