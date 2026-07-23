@@ -141,7 +141,7 @@ spec:
 			Entry("of clusters for a zoneingress using Global CP", testCase{
 				cluster:     GlobalCluster,
 				args:        []string{"zoneingress", ingressName, "--type", "clusters"},
-				expectedOut: `kuma:envoy:admin::`,
+				expectedOut: `system_envoy_admin::`,
 			}),
 			Entry("of config dump for a zoneingress using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
@@ -156,7 +156,7 @@ spec:
 			Entry("of clusters for a zoneingress using Global CP", testCase{
 				cluster:     UniZone1Cluster,
 				args:        []string{"zoneingress", "ingress", "--type", "clusters"},
-				expectedOut: `kuma:envoy:admin::`,
+				expectedOut: `system_envoy_admin::`,
 			}),
 			Entry("of config dump for a zoneegress using Global CP", testCase{
 				cluster:     GlobalCluster,
@@ -171,7 +171,7 @@ spec:
 			Entry("of clusters for a zoneegress using Global CP", testCase{
 				cluster:     GlobalCluster,
 				args:        []string{"zoneegress", egressName, "--type", "clusters"},
-				expectedOut: `kuma:envoy:admin::`,
+				expectedOut: `system_envoy_admin::`,
 			}),
 			Entry("of config dump for a zoneegress using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
@@ -186,7 +186,7 @@ spec:
 			Entry("of clusters for a zoneegress using Global CP", testCase{
 				cluster:     UniZone1Cluster,
 				args:        []string{"zoneegress", "egress", "--type", "clusters"},
-				expectedOut: `kuma:envoy:admin::`,
+				expectedOut: `system_envoy_admin::`,
 			}),
 		)
 

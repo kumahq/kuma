@@ -109,7 +109,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			IgnoredServiceSelectorLabels: []string{},
 			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
 			NodeLabelsToCopy:             []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"},
-			UnifiedResourceNamingEnabled: false,
+			UnifiedResourceNamingEnabled: true,
 			OtelPipeEnabled:              true,
 			Spire: Spire{
 				Enabled:        false,

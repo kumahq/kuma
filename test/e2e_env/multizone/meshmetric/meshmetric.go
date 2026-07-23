@@ -80,7 +80,7 @@ spec:
 
 	// dynConfigJSON returns the listeners config_dump of the given zone-proxy
 	// DPP as JSON. The meshmetric dynconf payload is embedded as the
-	// `inlineString` body of the `_kuma:dynamicconfig` listener's direct
+	// `inlineString` body of the `system_dynamicconfig` listener's direct
 	// response, so a substring search over the marshaled listeners is enough
 	// to assert on the contract without walking the proto structure.
 	// g must come from an Eventually callback so that failures are retryable.
@@ -105,7 +105,7 @@ spec:
 		Eventually(func(g Gomega) {
 			payload := dynConfigJSON(g, "zone-proxy-egress")
 			// MeshMetric reached the proxy and emitted the dynconf listener.
-			g.Expect(payload).To(ContainSubstring("_kuma:dynamicconfig"))
+			g.Expect(payload).To(ContainSubstring("system_dynamicconfig"))
 			// applications[] must be cleared on a zone-proxy-only DPP.
 			// The inlineString field is JSON-encoded inside the larger JSON dump,
 			// so internal quotes appear as \" in the payload string.
@@ -124,7 +124,7 @@ spec:
 		// then — zone-ingress
 		Eventually(func(g Gomega) {
 			payload := dynConfigJSON(g, "zone-proxy-ingress")
-			g.Expect(payload).To(ContainSubstring("_kuma:dynamicconfig"))
+			g.Expect(payload).To(ContainSubstring("system_dynamicconfig"))
 			g.Expect(payload).To(ContainSubstring(`\"applications\":null`))
 			g.Expect(payload).ToNot(ContainSubstring("ignored-on-zone-proxy"))
 			g.Expect(payload).To(ContainSubstring(`\"kuma.proxy_role\":\"zone-ingress\"`))
