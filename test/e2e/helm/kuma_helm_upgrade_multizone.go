@@ -222,6 +222,10 @@ spec:
 			}, "30s", "1s").Should(Succeed())
 		},
 		EntryDescription("from version: %s"),
-		SupportedVersionEntries(),
+		// Only the last 2.14.x release is a supported upgrade path onto this
+		// (3.0-line) master; older LTS releases predate APIs (e.g. MeshTimeout
+		// 'rules') that this branch's KDS payloads now assume unconditionally,
+		// and are not a real upgrade path straight to a new major version.
+		SupportedVersionEntriesAtLeast("2.14.0"),
 	)
 }
