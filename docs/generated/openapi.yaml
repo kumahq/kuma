@@ -5972,22 +5972,6 @@ components:
         - name
         - mesh
       type: object
-    FileLoggingBackendConfig:
-      description: >-
-        FileLoggingBackendConfig defines configuration for file based access
-        logs
-      properties:
-        path:
-          description: Path to a file that logs will be written to
-          type: string
-      type: object
-    TcpLoggingBackendConfig:
-      description: TcpLoggingBackendConfig defines configuration for TCP based access logs
-      properties:
-        address:
-          description: Address to TCP service that will receive logs
-          type: string
-      type: object
     DataSource_File:
       properties:
         file:
@@ -6123,43 +6107,6 @@ components:
         labels:
           additionalProperties:
             type: string
-          type: object
-        logging:
-          description: |-
-            Logging settings.
-            +optional
-          properties:
-            backends:
-              description: List of available logging backends
-              items:
-                description: LoggingBackend defines logging backend available to mesh.
-                properties:
-                  conf:
-                    oneOf:
-                      - $ref: '#/components/schemas/FileLoggingBackendConfig'
-                      - $ref: '#/components/schemas/TcpLoggingBackendConfig'
-                    type: object
-                  format:
-                    description: >-
-                      Format of access logs. Placeholders available on
-
-                      https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-                    type: string
-                  name:
-                    description: >-
-                      Name of the backend, can be then used in
-                      Mesh.logging.defaultBackend or in
-
-                      TrafficLogging
-                    type: string
-                  type:
-                    description: Type of the backend (Kuma ships with 'tcp' and 'file')
-                    type: string
-                type: object
-              type: array
-            defaultBackend:
-              description: Name of the default backend
-              type: string
           type: object
         metrics:
           description: >-
