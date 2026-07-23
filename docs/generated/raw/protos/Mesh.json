@@ -274,10 +274,6 @@
         },
         "kuma.mesh.v1alpha1.Routing": {
             "properties": {
-                "localityAwareLoadBalancing": {
-                    "type": "boolean",
-                    "description": "Enable the Locality Aware Load Balancing"
-                },
                 "zoneEgress": {
                     "type": "boolean",
                     "description": "Enable routing traffic to services in other zone or external services through ZoneEgress. Default: false"
