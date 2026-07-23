@@ -65,10 +65,12 @@ func EnsureDefaultMeshResources(
 	}
 
 	defaultResourceBuilders := map[string]func() model.Resource{
-		"mesh-gateways-timeout-all": defaulMeshGatewaysTimeoutResource,
-		"mesh-timeout-all":          defaultMeshTimeoutResource,
-		"mesh-circuit-breaker-all":  defaultMeshCircuitBreakerResource,
-		"mesh-retry-all":            defaultMeshRetryResource,
+		"mesh-gateways-timeout-all":    defaulMeshGatewaysTimeoutResource,
+		"mesh-gateways-timeout-to-all": defaulMeshGatewaysTimeoutToResource,
+		"mesh-timeout-all":             defaultMeshTimeoutResource,
+		"mesh-timeout-to-all":          defaultMeshTimeoutToResource,
+		"mesh-circuit-breaker-all":     defaultMeshCircuitBreakerResource,
+		"mesh-retry-all":               defaultMeshRetryResource,
 	}
 	for prefix, resourceBuilder := range defaultResourceBuilders {
 		resourceName := fmt.Sprintf("%s-%s", prefix, meshName)

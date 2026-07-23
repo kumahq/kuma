@@ -112,7 +112,7 @@ spec:
 
 			Eventually(func(g Gomega) (int, error) {
 				return NumberOfResources(zoneK8s, meshtimeout.MeshTimeoutResourceTypeDescriptor)
-			}, "30s", "1s").Should(Equal(3), "meshtimeouts are not synced to zone")
+			}, "30s", "1s").Should(Equal(5), "meshtimeouts are not synced to zone")
 
 			By("Sync DPPs from Zone to Global")
 			err = NewClusterSetup().
@@ -200,7 +200,7 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				policiesUniversalZone, err := NumberOfResources(zoneUniversal, meshtimeout.MeshTimeoutResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(policiesGlobal).To(And(Equal(policiesUniversalZone), Equal(policiesK8sZone), Equal(3)))
+				g.Expect(policiesGlobal).To(And(Equal(policiesUniversalZone), Equal(policiesK8sZone), Equal(5)))
 
 				dppsGlobal, err := NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
