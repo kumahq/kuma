@@ -364,14 +364,16 @@ spec:
         kind: Mesh
       default:
         backends:
-          - file:
+          - type: File
+            file:
               path: /tmp/access.log
 # after
 spec:
   rules:
     - default:
         backends:
-          - file:
+          - type: File
+            file:
               path: /tmp/access.log
 ```
 
