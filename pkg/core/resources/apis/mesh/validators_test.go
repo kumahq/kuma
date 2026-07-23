@@ -139,7 +139,7 @@ tags:
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshSubset,
+					"MeshSubset",
 				},
 			},
 		}),
@@ -149,7 +149,7 @@ kind: MeshSubset
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshSubset,
+					"MeshSubset",
 				},
 			},
 		}),
@@ -230,7 +230,7 @@ tags:
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshServiceSubset,
+					"MeshServiceSubset",
 				},
 			},
 		}),
@@ -241,7 +241,7 @@ name: backend
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshServiceSubset,
+					"MeshServiceSubset",
 				},
 			},
 		}),
@@ -253,7 +253,7 @@ tags: {}
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshServiceSubset,
+					"MeshServiceSubset",
 				},
 			},
 		}),
@@ -346,7 +346,7 @@ kind: Mesh
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshSubset,
+					"MeshSubset",
 				},
 			},
 			expected: `
@@ -412,7 +412,7 @@ name: mesh-1
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshSubset,
+					"MeshSubset",
 				},
 			},
 			expected: `
@@ -428,7 +428,7 @@ tags:
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshSubset,
+					"MeshSubset",
 				},
 			},
 			expected: `
@@ -444,7 +444,7 @@ tags:
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshSubset,
+					"MeshSubset",
 				},
 			},
 			expected: `
@@ -460,7 +460,7 @@ tags:
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshSubset,
+					"MeshSubset",
 				},
 			},
 			expected: `
@@ -476,7 +476,7 @@ tags:
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshSubset,
+					"MeshSubset",
 				},
 			},
 			expected: `
@@ -490,7 +490,7 @@ kind: MeshService
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshServiceSubset,
+					"MeshServiceSubset",
 				},
 			},
 			expected: `
@@ -575,7 +575,7 @@ proxyTypes: ["Sidecar"]
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshServiceSubset,
+					"MeshServiceSubset",
 				},
 			},
 			expected: `
@@ -659,7 +659,7 @@ tags: {}
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshServiceSubset,
+					"MeshServiceSubset",
 				},
 			},
 			expected: `
@@ -676,7 +676,7 @@ tags: {}
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshServiceSubset,
+					"MeshServiceSubset",
 				},
 			},
 			expected: `
@@ -695,7 +695,7 @@ tags:
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshServiceSubset,
+					"MeshServiceSubset",
 				},
 			},
 			expected: `
@@ -853,7 +853,7 @@ sectionName: port-http
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshSubset,
+					"MeshSubset",
 				},
 			},
 			expected: `
@@ -877,7 +877,7 @@ sectionName: port-http
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshServiceSubset,
+					"MeshServiceSubset",
 				},
 			},
 			expected: `

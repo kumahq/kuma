@@ -99,7 +99,7 @@ func validateBackendRefs(backendRefs []common_api.BackendRef) validators.Validat
 				&mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
-						common_api.MeshServiceSubset,
+						common_api.LegacyMeshServiceSubsetKind(),
 						common_api.MeshExternalService,
 						common_api.MeshMultiZoneService,
 					},
