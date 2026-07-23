@@ -90,7 +90,6 @@ func BuildDataplaneZoneEgressEndpointMap(
 // Used for embedded zone ingress listeners in a Dataplane resource.
 func BuildDataplaneZoneIngressEndpointMap(
 	mesh *core_mesh.MeshResource,
-	localZone string,
 	meshServices []*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
@@ -100,7 +99,7 @@ func BuildDataplaneZoneIngressEndpointMap(
 	for _, ms := range meshServices {
 		meshServicesByKri[kri.From(ms)] = ms
 	}
-	fillLocalMeshServices(outbound, meshServices, dataplanes, localZone)
+	fillLocalMeshServices(outbound, meshServices, dataplanes)
 	fillMeshMultiZoneServices(outbound, meshServicesByKri, meshMultiZoneServices)
 	return outbound
 }
@@ -146,7 +145,7 @@ func BuildEdsEndpointMap(
 		meshServicesByKri[kri.From(ms)] = ms
 	}
 
-	fillLocalMeshServices(outbound, meshServices, dataplanes, localZone)
+	fillLocalMeshServices(outbound, meshServices, dataplanes)
 	// we want to prefer endpoints build by MeshService
 	// this way we can for example stop cross-zone traffic by default using kuma.io/service
 	meshServiceDestinations := map[core_xds.ServiceName]struct{}{}
@@ -160,11 +159,11 @@ func BuildEdsEndpointMap(
 		endpointWeight = ingressInstances
 	}
 
-	fillDataplaneOutbounds(outbound, dataplanes, endpointWeight, localZone, meshServiceDestinations)
+	fillDataplaneOutbounds(outbound, dataplanes, endpointWeight, meshServiceDestinations)
 
 	fillRemoteMeshServices(outbound, meshServices, zoneIngresses, meshZoneAddresses, localZone, mtlsEnabled)
 
-	fillExternalServicesOutboundsThroughEgress(ctx, outbound, meshExternalServices, egressAddresses, localZone, loader)
+	fillExternalServicesOutboundsThroughEgress(ctx, outbound, meshExternalServices, egressAddresses, loader)
 
 	// it has to be last because it reuses endpoints for other cases
 	fillMeshMultiZoneServices(outbound, meshServicesByKri, meshMultiZoneServices)
@@ -235,11 +234,10 @@ func fillRemoteMeshServices(
 		}
 		mzaInstances[coordinates] = struct{}{}
 		zoneToEndpoints[zone] = append(zoneToEndpoints[zone], core_xds.Endpoint{
-			Target:   mza.Spec.Address,
-			Port:     uint32(mza.Spec.Port),
-			Tags:     nil,
-			Weight:   1,
-			Locality: GetLocality(localZone, &zone),
+			Target: mza.Spec.Address,
+			Port:   uint32(mza.Spec.Port),
+			Tags:   nil,
+			Weight: 1,
 		})
 	}
 
@@ -275,11 +273,10 @@ func fillRemoteMeshServices(
 		ziInstances[ziCoordinates] = struct{}{}
 
 		zoneToEndpoints[zi.Spec.Zone] = append(zoneToEndpoints[zi.Spec.Zone], core_xds.Endpoint{
-			Target:   ziAddress,
-			Port:     ziPort,
-			Tags:     nil,
-			Weight:   1,
-			Locality: GetLocality(localZone, &zi.Spec.Zone),
+			Target: ziAddress,
+			Port:   ziPort,
+			Tags:   nil,
+			Weight: 1,
 		})
 	}
 
@@ -335,7 +332,6 @@ func fillDataplaneOutbounds(
 	outbound core_xds.EndpointMap,
 	dataplanes []*core_mesh.DataplaneResource,
 	endpointWeight uint32,
-	localZone string,
 	meshServiceDestinations map[core_xds.ServiceName]struct{},
 ) {
 	for _, dataplane := range dataplanes {
@@ -361,7 +357,7 @@ func fillDataplaneOutbounds(
 				Tags:     inboundTags,
 				Labels:   dataplane.GetMeta().GetLabels(),
 				Weight:   endpointWeight,
-				Locality: GetLocality(localZone, getZone(inboundTags)),
+				Locality: GetLocality(getZone(inboundTags)),
 			})
 		}
 	}
@@ -371,7 +367,6 @@ func fillLocalMeshServices(
 	outbound core_xds.EndpointMap,
 	meshServices []*meshservice_api.MeshServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
-	localZone string,
 ) {
 	dppsForMs := meshservice.MatchDataplanesWithMeshServices(dataplanes, meshServices, true)
 	for meshSvc, dpps := range dppsForMs {
@@ -397,7 +392,7 @@ func fillLocalMeshServices(
 						Tags:     inboundTags,
 						Labels:   dpp.GetMeta().GetLabels(),
 						Weight:   1,
-						Locality: GetLocality(localZone, getZone(inboundTags)),
+						Locality: GetLocality(getZone(inboundTags)),
 					})
 				}
 			}
@@ -510,7 +505,7 @@ func fillIngressOutbounds(
 			serviceTags := maps.Clone(service.GetTags())
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()
-			locality := GetLocality(localZone, getZone(serviceTags))
+			locality := GetLocality(getZone(serviceTags))
 
 			if _, ok := meshServiceDestinations[serviceName]; ok {
 				continue
@@ -701,14 +696,13 @@ func fillExternalServicesOutboundsThroughEgress(
 	outbound core_xds.EndpointMap,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	egressAddresses []core_xds.ZoneEgressInstance,
-	localZone string,
 	loader datasource.Loader,
 ) {
 	for _, mes := range meshExternalServices {
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
 		serviceName := destinationname.MustResolve(false, mes, mes.Spec.Match)
-		locality := GetLocality(localZone, getZone(serviceTags))
+		locality := GetLocality(getZone(serviceTags))
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
 			Protocol:      mes.Spec.Match.Protocol,
@@ -754,7 +748,7 @@ const (
 	priorityRemote = 1
 )
 
-func GetLocality(localZone string, otherZone *string) *core_xds.Locality {
+func GetLocality(otherZone *string) *core_xds.Locality {
 	if otherZone == nil {
 		return nil
 	}
