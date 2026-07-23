@@ -7,8 +7,6 @@ import (
 	"slices"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
-	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/dns/dpapi"
@@ -47,9 +45,6 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 			vips[domain] = addresses
 		}
 	}
-	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
-	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
-
 	// This is purposefully set to 30s to avoid DNS cache stale with ExternalService and Kong Gateway see: https://github.com/kumahq/kuma/issues/13353.
 	// https://github.com/kumahq/kuma/issues/13463
 	dnsInfo := dpapi.DNSProxyConfig{TTL: 30, Records: []dpapi.DNSRecord{}, ExtraLabels: dnsExtraLabels(proxy)}
@@ -67,7 +62,7 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 	if err != nil {
 		return nil, err
 	}
-	if err := dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("dns", dpapi.PATH), dpapi.PATH, bytes); err != nil {
+	if err := dynconf.AddConfigRoute(proxy, rs, true, "dns", dpapi.PATH, bytes); err != nil {
 		return nil, err
 	}
 	return nil, nil
