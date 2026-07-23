@@ -52,4 +52,45 @@ var _ = Describe("OutboundListenerTags", func() {
 		}))
 		Expect(tags).NotTo(HaveKey(mesh_proto.MeshTag))
 	})
+
+	It("returns an empty map for a legacy outbound with nil tags", func() {
+		// given
+		ds := meshroute.DestinationService{Outbound: &xds_types.Outbound{
+			LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+				Tags: nil,
+			},
+		}}
+
+		// when
+		tags := ds.OutboundListenerTags()
+
+		// then
+		Expect(tags).To(BeEmpty())
+	})
+
+	It("returns an empty map for a legacy outbound with empty tags", func() {
+		// given
+		ds := meshroute.DestinationService{Outbound: &xds_types.Outbound{
+			LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+				Tags: map[string]string{},
+			},
+		}}
+
+		// when
+		tags := ds.OutboundListenerTags()
+
+		// then
+		Expect(tags).To(BeEmpty())
+	})
+
+	It("returns nil when Outbound is nil", func() {
+		// given
+		ds := meshroute.DestinationService{Outbound: nil}
+
+		// when
+		tags := ds.OutboundListenerTags()
+
+		// then
+		Expect(tags).To(BeNil())
+	})
 })

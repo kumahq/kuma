@@ -88,6 +88,9 @@ func (ds *DestinationService) ConditionallyResolveKRIWithFallback(condition bool
 // outbound tags without kuma.io/mesh for a legacy outbound, or a synthesized
 // kuma.io/kri tag from the destination KRI for a resource-based one.
 func (ds *DestinationService) OutboundListenerTags() map[string]string {
+	if ds.Outbound == nil {
+		return nil
+	}
 	if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
 		return map[string]string{mesh_proto.KRITag: id.String()}
 	}
