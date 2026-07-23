@@ -124,6 +124,9 @@ linters:
           - staticcheck
         text: "IsIngress is deprecated: use ZoneIngress" # It's deprecated but Kuma still needs to support it for backwards compatibility.
       - linters:
+          - staticcheck
+        text: 'SA1019: .*CommonConfig is deprecated: Marked as deprecated in envoy/extensions/access_loggers/open_telemetry/v3/logs_service.proto'
+      - linters:
           - gocritic
         text: "appendAssign: append result not assigned to the same slice" # None of the instances of this in Kuma were bugs.
       - linters:
