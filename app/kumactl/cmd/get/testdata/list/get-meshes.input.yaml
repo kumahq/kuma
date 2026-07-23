@@ -30,7 +30,6 @@ mtls:
   enabledBackend: builtin-1
 name: mesh1
 routing:
-  localityAwareLoadBalancing: true
   zoneEgress: true
 type: Mesh
 ---

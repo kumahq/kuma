@@ -203,8 +203,8 @@ message TcpLoggingBackendConfig {
 
 // Routing defines configuration for the routing in the mesh
 message Routing {
-  // Enable the Locality Aware Load Balancing
-  bool localityAwareLoadBalancing = 1;
+  reserved 1;
+  reserved "localityAwareLoadBalancing";
 
   // Enable routing traffic to services in other zone or external services
   // through ZoneEgress. Default: false

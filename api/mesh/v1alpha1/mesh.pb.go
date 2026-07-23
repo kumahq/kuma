@@ -549,8 +549,6 @@ func (x *TcpLoggingBackendConfig) GetAddress() string {
 // Routing defines configuration for the routing in the mesh
 type Routing struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Enable the Locality Aware Load Balancing
-	LocalityAwareLoadBalancing bool `protobuf:"varint,1,opt,name=localityAwareLoadBalancing,proto3" json:"localityAwareLoadBalancing,omitempty"`
 	// Enable routing traffic to services in other zone or external services
 	// through ZoneEgress. Default: false
 	ZoneEgress bool `protobuf:"varint,2,opt,name=zoneEgress,proto3" json:"zoneEgress,omitempty"`
@@ -589,13 +587,6 @@ func (x *Routing) ProtoReflect() protoreflect.Message {
 // Deprecated: Use Routing.ProtoReflect.Descriptor instead.
 func (*Routing) Descriptor() ([]byte, []int) {
 	return file_api_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *Routing) GetLocalityAwareLoadBalancing() bool {
-	if x != nil {
-		return x.LocalityAwareLoadBalancing
-	}
-	return false
 }
 
 func (x *Routing) GetZoneEgress() bool {
@@ -1094,13 +1085,12 @@ const file_api_mesh_v1alpha1_mesh_proto_rawDesc = "" +
 	"\x18FileLoggingBackendConfig\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\"3\n" +
 	"\x17TcpLoggingBackendConfig\x12\x18\n" +
-	"\aaddress\x18\x01 \x01(\tR\aaddress\"\xc1\x01\n" +
-	"\aRouting\x12>\n" +
-	"\x1alocalityAwareLoadBalancing\x18\x01 \x01(\bR\x1alocalityAwareLoadBalancing\x12\x1e\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress\"\xa3\x01\n" +
+	"\aRouting\x12\x1e\n" +
 	"\n" +
 	"zoneEgress\x18\x02 \x01(\bR\n" +
 	"zoneEgress\x12V\n" +
-	"&defaultForbidMeshExternalServiceAccess\x18\x03 \x01(\bR&defaultForbidMeshExternalServiceAccessB-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
+	"&defaultForbidMeshExternalServiceAccess\x18\x03 \x01(\bR&defaultForbidMeshExternalServiceAccessJ\x04\b\x01\x10\x02R\x1alocalityAwareLoadBalancingB-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_mesh_proto_rawDescOnce sync.Once

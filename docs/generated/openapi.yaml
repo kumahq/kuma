@@ -6309,9 +6309,6 @@ components:
                 If true, blocks traffic to MeshExternalServices.
                 Default: false
               type: boolean
-            localityAwareLoadBalancing:
-              description: Enable the Locality Aware Load Balancing
-              type: boolean
             zoneEgress:
               description: >-
                 Enable routing traffic to services in other zone or external

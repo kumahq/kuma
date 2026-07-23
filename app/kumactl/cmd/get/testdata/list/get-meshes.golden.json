@@ -56,7 +56,6 @@
         ]
       },
       "routing": {
-        "localityAwareLoadBalancing": true,
         "zoneEgress": true
       }
     },
