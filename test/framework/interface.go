@@ -127,6 +127,7 @@ type appDeploymentOptions struct {
 	bindOutbounds         bool
 	labels                map[string]string
 	workload              string
+	omitWorkloadLabel     bool
 	spireAgent            bool
 	spireAgentToken       string
 	spireServerAddress    string
@@ -629,6 +630,12 @@ func WithLabels(labels map[string]string) AppDeploymentOption {
 func WithWorkload(workload string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.workload = workload
+	})
+}
+
+func WithoutWorkloadLabel() AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.omitWorkloadLabel = true
 	})
 }
 

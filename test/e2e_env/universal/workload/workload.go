@@ -145,6 +145,7 @@ spec:
 			WithArgs([]string{"echo", "--instance", "test-v1"}),
 			WithServiceName("test-server"),
 			WithAppLabel("test-server"),
+			WithoutWorkloadLabel(),
 		)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 

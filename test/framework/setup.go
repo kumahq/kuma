@@ -686,10 +686,12 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		if opts.appLabel != "" {
 			labels["app"] = opts.appLabel
 		}
-		if opts.workload == "" {
+		if opts.workload == "" && !opts.omitWorkloadLabel {
 			opts.workload = serviceName
 		}
-		labels[metadata.KumaWorkload] = opts.workload
+		if opts.workload != "" {
+			labels[metadata.KumaWorkload] = opts.workload
+		}
 
 		if appYaml == "" {
 			dpp := DataplaneTemplateData{
@@ -818,10 +820,12 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		if opts.appLabel != "" {
 			labels["app"] = opts.appLabel
 		}
-		if opts.workload == "" {
+		if opts.workload == "" && !opts.omitWorkloadLabel {
 			opts.workload = serviceName
 		}
-		labels[metadata.KumaWorkload] = opts.workload
+		if opts.workload != "" {
+			labels[metadata.KumaWorkload] = opts.workload
+		}
 
 		dpp := DataplaneTemplateData{
 			Mesh:               mesh,
