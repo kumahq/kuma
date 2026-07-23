@@ -158,7 +158,7 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterAll(func() {
+		E2EAfterAll(func() {
 			Expect(kubernetes.Cluster.Install(DeleteYamlK8s(disableMeshPassthrough))).To(Succeed())
 			Expect(kubernetes.Cluster.Install(YamlK8s(
 				samples.MeshMTLSBuilder().
