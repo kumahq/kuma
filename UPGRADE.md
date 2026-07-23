@@ -770,6 +770,19 @@ Migrate any `Mesh` resources that still configure `spec.tracing` to a
 continues to apply successfully; the field is silently ignored by the control
 plane.
 
+### Per-zone MeshExternalService routing removed
+
+A `MeshExternalService` labeled with `kuma.io/zone` is no longer restricted to
+being reached only from that zone via a routing path through the remote
+zone's ingress and egress. It is now reachable directly through the local
+zone egress from every zone, the same as an unlabeled `MeshExternalService`.
+
+**Action required**
+
+None. Existing `kuma.io/zone` labels on `MeshExternalService` resources are
+no longer used to gate reachability and can be removed; leaving them in place
+has no effect on routing.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.
