@@ -41,7 +41,7 @@ func newHelpers(rootArgs *args) *cobra.Command {
 				"generateRules":         pconfig.HasRules,
 				"ruleHasMatches":        pconfig.RuleHasMatches,
 				"skipGetDefault":        pconfig.SkipGetDefault,
-				"generateGetPolicyItem": !pconfig.HasFrom && !pconfig.HasTo,
+				"generateGetPolicyItem": !pconfig.HasFrom && !pconfig.HasTo && !pconfig.HasRules,
 			}, outPath)
 		},
 	}
@@ -57,8 +57,8 @@ var helpersTemplate = template.Must(template.New("missingkey=error").Parse(
 package {{.version}}
 
 import (
-	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"{{ if .generateRules }}
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"{{ if or .generateFrom .generateTo .generateGetPolicyItem }}
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"{{ end }}{{ if .generateRules }}
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"{{ end }}
     "github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -157,11 +157,5 @@ var _ core_model.PolicyItem = &policyItem{}
 func (p *policyItem) GetTargetRef() common_api.TargetRef {
 	return common_api.TargetRef{Kind: common_api.Mesh}
 }
-{{ if .skipGetDefault }}
-
-func (p *policyItem) GetDefault() interface{} {
-	return nil
-}
-{{- end }}
 {{- end }}
 `))

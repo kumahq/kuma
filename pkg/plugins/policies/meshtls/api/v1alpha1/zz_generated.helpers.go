@@ -5,7 +5,6 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -29,25 +28,4 @@ func (x *MeshTLS) GetRules() []inbound.RuleEntry {
 		result = append(result, &item)
 	}
 	return result
-}
-
-func (x *MeshTLS) GetPolicyItem() core_model.PolicyItem {
-	return &policyItem{
-		MeshTLS: x,
-	}
-}
-
-// policyItem is an auxiliary struct with the implementation of the GetTargetRef() to always return empty result
-type policyItem struct {
-	*MeshTLS
-}
-
-var _ core_model.PolicyItem = &policyItem{}
-
-func (p *policyItem) GetTargetRef() common_api.TargetRef {
-	return common_api.TargetRef{Kind: common_api.Mesh}
-}
-
-func (p *policyItem) GetDefault() interface{} {
-	return nil
 }
