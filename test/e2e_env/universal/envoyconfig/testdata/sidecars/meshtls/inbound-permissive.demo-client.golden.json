@@ -1,210 +1,5 @@
 {
-  "diff": [
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_3000/filterChains/0/filterChainMatch",
-      "value": {
-        "transportProtocol": "raw_buffer"
-      }
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_3000/filterChains/0/filters/0",
-      "value": {
-        "name": "envoy.filters.network.rbac",
-        "typedConfig": {
-          "@type": "type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC",
-          "rules": {
-            "policies": {
-              "MeshTrafficPermission": {
-                "permissions": [
-                  {
-                    "any": true
-                  }
-                ],
-                "principals": [
-                  {
-                    "any": true
-                  }
-                ]
-              }
-            }
-          },
-          "statPrefix": "STAT_PREFIX_REDACTED"
-        }
-      }
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_3000/filterChains/0/transportSocket",
-      "value": {
-        "name": "envoy.transport_sockets.tls",
-        "typedConfig": {
-          "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext",
-          "commonTlsContext": {
-            "combinedValidationContext": {
-              "defaultValidationContext": {
-                "matchTypedSubjectAltNames": [
-                  {
-                    "matcher": {
-                      "prefix": "spiffe://envoyconfig/"
-                    },
-                    "sanType": "URI"
-                  }
-                ]
-              },
-              "validationContextSdsSecretConfig": {
-                "name": "system_mtls_ca_envoyconfig",
-                "sdsConfig": {
-                  "ads": {},
-                  "resourceApiVersion": "V3"
-                }
-              }
-            },
-            "tlsCertificateSdsSecretConfigs": [
-              {
-                "name": "system_mtls_identity_envoyconfig",
-                "sdsConfig": {
-                  "ads": {},
-                  "resourceApiVersion": "V3"
-                }
-              }
-            ]
-          },
-          "requireClientCertificate": true
-        }
-      }
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_3000/filterChains/1",
-      "value": {
-        "filterChainMatch": {
-          "applicationProtocols": [
-            "kuma"
-          ],
-          "transportProtocol": "tls"
-        },
-        "filters": [
-          {
-            "name": "envoy.filters.network.rbac",
-            "typedConfig": {
-              "@type": "type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC",
-              "rules": {
-                "policies": {
-                  "MeshTrafficPermission": {
-                    "permissions": [
-                      {
-                        "any": true
-                      }
-                    ],
-                    "principals": [
-                      {
-                        "any": true
-                      }
-                    ]
-                  }
-                }
-              },
-              "statPrefix": "STAT_PREFIX_REDACTED"
-            }
-          },
-          {
-            "name": "envoy.filters.network.tcp_proxy",
-            "typedConfig": {
-              "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
-              "cluster": "self_inbound_dp_3000",
-              "idleTimeout": "3600s",
-              "statPrefix": "STAT_PREFIX_REDACTED"
-            }
-          }
-        ],
-        "transportSocket": {
-          "name": "envoy.transport_sockets.tls",
-          "typedConfig": {
-            "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext",
-            "commonTlsContext": {
-              "combinedValidationContext": {
-                "defaultValidationContext": {
-                  "matchTypedSubjectAltNames": [
-                    {
-                      "matcher": {
-                        "prefix": "spiffe://envoyconfig/"
-                      },
-                      "sanType": "URI"
-                    }
-                  ]
-                },
-                "validationContextSdsSecretConfig": {
-                  "name": "system_mtls_ca_envoyconfig",
-                  "sdsConfig": {
-                    "ads": {},
-                    "resourceApiVersion": "V3"
-                  }
-                }
-              },
-              "tlsCertificateSdsSecretConfigs": [
-                {
-                  "name": "system_mtls_identity_envoyconfig",
-                  "sdsConfig": {
-                    "ads": {},
-                    "resourceApiVersion": "V3"
-                  }
-                }
-              ]
-            },
-            "requireClientCertificate": true
-          }
-        }
-      }
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_3000/filterChains/1",
-      "value": {
-        "filterChainMatch": {
-          "transportProtocol": "tls"
-        },
-        "filters": [
-          {
-            "name": "envoy.filters.network.tcp_proxy",
-            "typedConfig": {
-              "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
-              "cluster": "self_inbound_dp_3000",
-              "idleTimeout": "3600s",
-              "statPrefix": "STAT_PREFIX_REDACTED"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_3000/listenerFilters",
-      "value": [
-        {
-          "name": "envoy.filters.listener.tls_inspector",
-          "typedConfig": {
-            "@type": "type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector"
-          }
-        }
-      ]
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_transparentproxy_passthrough_inbound_ipv4/filterChains/0/filterChainMatch",
-      "value": {
-        "destinationPort": 3000
-      }
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_transparentproxy_passthrough_inbound_ipv6/filterChains/0/filterChainMatch",
-      "value": {
-        "destinationPort": 3000
-      }
-    }
-  ],
+  "diff": [],
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "kri_msvc_envoyconfig_kuma-3__demo-client_3000": {
@@ -747,44 +542,6 @@
         "enableReusePort": true,
         "filterChains": [
           {
-            "filterChainMatch": {
-              "transportProtocol": "raw_buffer"
-            },
-            "filters": [
-              {
-                "name": "envoy.filters.network.tcp_proxy",
-                "typedConfig": {
-                  "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
-                  "cluster": "self_inbound_dp_3000",
-                  "idleTimeout": "3600s",
-                  "statPrefix": "STAT_PREFIX_REDACTED"
-                }
-              }
-            ]
-          },
-          {
-            "filterChainMatch": {
-              "transportProtocol": "tls"
-            },
-            "filters": [
-              {
-                "name": "envoy.filters.network.tcp_proxy",
-                "typedConfig": {
-                  "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
-                  "cluster": "self_inbound_dp_3000",
-                  "idleTimeout": "3600s",
-                  "statPrefix": "STAT_PREFIX_REDACTED"
-                }
-              }
-            ]
-          },
-          {
-            "filterChainMatch": {
-              "applicationProtocols": [
-                "kuma"
-              ],
-              "transportProtocol": "tls"
-            },
             "filters": [
               {
                 "name": "envoy.filters.network.rbac",
@@ -858,14 +615,6 @@
             }
           }
         ],
-        "listenerFilters": [
-          {
-            "name": "envoy.filters.listener.tls_inspector",
-            "typedConfig": {
-              "@type": "type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector"
-            }
-          }
-        ],
         "metadata": {
           "filterMetadata": {
             "io.kuma.tags": {
@@ -889,6 +638,9 @@
         "enableReusePort": true,
         "filterChains": [
           {
+            "filterChainMatch": {
+              "destinationPort": 3000
+            },
             "filters": [
               {
                 "name": "envoy.filters.network.tcp_proxy",
@@ -916,6 +668,9 @@
         "enableReusePort": true,
         "filterChains": [
           {
+            "filterChainMatch": {
+              "destinationPort": 3000
+            },
             "filters": [
               {
                 "name": "envoy.filters.network.tcp_proxy",
