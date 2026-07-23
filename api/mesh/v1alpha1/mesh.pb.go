@@ -12,7 +12,6 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -90,8 +89,6 @@ type Mesh struct {
 	// for each dataplane individually using Dataplane resource.
 	// +optional
 	Metrics *Metrics `protobuf:"bytes,4,opt,name=metrics,proto3" json:"metrics,omitempty"`
-	// Networking settings of the mesh
-	Networking *Networking `protobuf:"bytes,5,opt,name=networking,proto3" json:"networking,omitempty"`
 	// Routing settings of the mesh
 	Routing *Routing `protobuf:"bytes,6,opt,name=routing,proto3" json:"routing,omitempty"`
 	// Constraints that applies to the mesh and its entities
@@ -144,13 +141,6 @@ func (x *Mesh) GetMtls() *Mesh_Mtls {
 func (x *Mesh) GetMetrics() *Metrics {
 	if x != nil {
 		return x.Metrics
-	}
-	return nil
-}
-
-func (x *Mesh) GetNetworking() *Networking {
-	if x != nil {
-		return x.Networking
 	}
 	return nil
 }
@@ -268,52 +258,6 @@ func (x *CertificateAuthorityBackend) GetRootChain() *CertificateAuthorityBacken
 	return nil
 }
 
-// Networking defines the networking configuration of the mesh
-type Networking struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Outbound settings
-	Outbound      *Networking_Outbound `protobuf:"bytes,1,opt,name=outbound,proto3" json:"outbound,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Networking) Reset() {
-	*x = Networking{}
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Networking) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Networking) ProtoMessage() {}
-
-func (x *Networking) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Networking.ProtoReflect.Descriptor instead.
-func (*Networking) Descriptor() ([]byte, []int) {
-	return file_api_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *Networking) GetOutbound() *Networking_Outbound {
-	if x != nil {
-		return x.Outbound
-	}
-	return nil
-}
-
 // Routing defines configuration for the routing in the mesh
 type Routing struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -331,7 +275,7 @@ type Routing struct {
 
 func (x *Routing) Reset() {
 	*x = Routing{}
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[3]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -343,7 +287,7 @@ func (x *Routing) String() string {
 func (*Routing) ProtoMessage() {}
 
 func (x *Routing) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[3]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -356,7 +300,7 @@ func (x *Routing) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Routing.ProtoReflect.Descriptor instead.
 func (*Routing) Descriptor() ([]byte, []int) {
-	return file_api_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{3}
+	return file_api_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Routing) GetLocalityAwareLoadBalancing() bool {
@@ -395,7 +339,7 @@ type Mesh_Mtls struct {
 
 func (x *Mesh_Mtls) Reset() {
 	*x = Mesh_Mtls{}
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[4]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -407,7 +351,7 @@ func (x *Mesh_Mtls) String() string {
 func (*Mesh_Mtls) ProtoMessage() {}
 
 func (x *Mesh_Mtls) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[4]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -456,7 +400,7 @@ type Mesh_Constraints struct {
 
 func (x *Mesh_Constraints) Reset() {
 	*x = Mesh_Constraints{}
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[5]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -468,7 +412,7 @@ func (x *Mesh_Constraints) String() string {
 func (*Mesh_Constraints) ProtoMessage() {}
 
 func (x *Mesh_Constraints) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[5]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -509,7 +453,7 @@ type Mesh_DataplaneProxyConstraints struct {
 
 func (x *Mesh_DataplaneProxyConstraints) Reset() {
 	*x = Mesh_DataplaneProxyConstraints{}
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[6]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -521,7 +465,7 @@ func (x *Mesh_DataplaneProxyConstraints) String() string {
 func (*Mesh_DataplaneProxyConstraints) ProtoMessage() {}
 
 func (x *Mesh_DataplaneProxyConstraints) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[6]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -564,7 +508,7 @@ type Mesh_DataplaneProxyConstraints_Rules struct {
 
 func (x *Mesh_DataplaneProxyConstraints_Rules) Reset() {
 	*x = Mesh_DataplaneProxyConstraints_Rules{}
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[7]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -576,7 +520,7 @@ func (x *Mesh_DataplaneProxyConstraints_Rules) String() string {
 func (*Mesh_DataplaneProxyConstraints_Rules) ProtoMessage() {}
 
 func (x *Mesh_DataplaneProxyConstraints_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[7]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -612,7 +556,7 @@ type CertificateAuthorityBackend_DpCert struct {
 
 func (x *CertificateAuthorityBackend_DpCert) Reset() {
 	*x = CertificateAuthorityBackend_DpCert{}
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[9]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -624,7 +568,7 @@ func (x *CertificateAuthorityBackend_DpCert) String() string {
 func (*CertificateAuthorityBackend_DpCert) ProtoMessage() {}
 
 func (x *CertificateAuthorityBackend_DpCert) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[9]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -666,7 +610,7 @@ type CertificateAuthorityBackend_RootChain struct {
 
 func (x *CertificateAuthorityBackend_RootChain) Reset() {
 	*x = CertificateAuthorityBackend_RootChain{}
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[10]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -678,7 +622,7 @@ func (x *CertificateAuthorityBackend_RootChain) String() string {
 func (*CertificateAuthorityBackend_RootChain) ProtoMessage() {}
 
 func (x *CertificateAuthorityBackend_RootChain) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[10]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -712,7 +656,7 @@ type CertificateAuthorityBackend_DpCert_Rotation struct {
 
 func (x *CertificateAuthorityBackend_DpCert_Rotation) Reset() {
 	*x = CertificateAuthorityBackend_DpCert_Rotation{}
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[11]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -724,7 +668,7 @@ func (x *CertificateAuthorityBackend_DpCert_Rotation) String() string {
 func (*CertificateAuthorityBackend_DpCert_Rotation) ProtoMessage() {}
 
 func (x *CertificateAuthorityBackend_DpCert_Rotation) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[11]
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -747,63 +691,14 @@ func (x *CertificateAuthorityBackend_DpCert_Rotation) GetExpiration() string {
 	return ""
 }
 
-// Outbound describes the common mesh outbound settings
-type Networking_Outbound struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Control the passthrough cluster
-	Passthrough   *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=passthrough,proto3" json:"passthrough,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Networking_Outbound) Reset() {
-	*x = Networking_Outbound{}
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[12]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Networking_Outbound) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Networking_Outbound) ProtoMessage() {}
-
-func (x *Networking_Outbound) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[12]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Networking_Outbound.ProtoReflect.Descriptor instead.
-func (*Networking_Outbound) Descriptor() ([]byte, []int) {
-	return file_api_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{2, 0}
-}
-
-func (x *Networking_Outbound) GetPassthrough() *wrapperspb.BoolValue {
-	if x != nil {
-		return x.Passthrough
-	}
-	return nil
-}
-
 var File_api_mesh_v1alpha1_mesh_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_mesh_proto_rawDesc = "" +
 	"\n" +
-	"\x1capi/mesh/v1alpha1/mesh.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a\x1fapi/mesh/v1alpha1/metrics.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xec\b\n" +
+	"\x1capi/mesh/v1alpha1/mesh.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a\x1fapi/mesh/v1alpha1/metrics.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\"\xbe\b\n" +
 	"\x04Mesh\x121\n" +
 	"\x04mtls\x18\x01 \x01(\v2\x1d.kuma.mesh.v1alpha1.Mesh.MtlsR\x04mtls\x125\n" +
-	"\ametrics\x18\x04 \x01(\v2\x1b.kuma.mesh.v1alpha1.MetricsR\ametrics\x12>\n" +
-	"\n" +
-	"networking\x18\x05 \x01(\v2\x1e.kuma.mesh.v1alpha1.NetworkingR\n" +
-	"networking\x125\n" +
+	"\ametrics\x18\x04 \x01(\v2\x1b.kuma.mesh.v1alpha1.MetricsR\ametrics\x125\n" +
 	"\arouting\x18\x06 \x01(\v2\x1b.kuma.mesh.v1alpha1.RoutingR\arouting\x12F\n" +
 	"\vconstraints\x18\a \x01(\v2$.kuma.mesh.v1alpha1.Mesh.ConstraintsR\vconstraints\x12@\n" +
 	"\x1bskipCreatingInitialPolicies\x18\b \x03(\tR\x1bskipCreatingInitialPolicies\x1a\xa3\x01\n" +
@@ -822,8 +717,9 @@ const file_api_mesh_v1alpha1_mesh_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:O\xaa\x8c\x89\xa6\x01I\n" +
 	"\fMeshResource\x12\x04Mesh\x18\x01\"\x04mesh:\x0e\n" +
-	"\x04mesh\x12\x06meshesR\x17model.GlobalToZonesFlag\x9a\x01\x01mJ\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\t\x10\n" +
-	"R\atracingR\alogging\"\xb0\x05\n" +
+	"\x04mesh\x12\x06meshesR\x17model.GlobalToZonesFlag\x9a\x01\x01mJ\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x05\x10\x06J\x04\b\t\x10\n" +
+	"R\atracingR\aloggingR\n" +
+	"networking\"\xb0\x05\n" +
 	"\x1bCertificateAuthorityBackend\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12N\n" +
@@ -844,12 +740,7 @@ const file_api_mesh_v1alpha1_mesh_proto_rawDesc = "" +
 	"\n" +
 	"\x06STRICT\x10\x00\x12\x0e\n" +
 	"\n" +
-	"PERMISSIVE\x10\x01\"\x9b\x01\n" +
-	"\n" +
-	"Networking\x12C\n" +
-	"\boutbound\x18\x01 \x01(\v2'.kuma.mesh.v1alpha1.Networking.OutboundR\boutbound\x1aH\n" +
-	"\bOutbound\x12<\n" +
-	"\vpassthrough\x18\x01 \x01(\v2\x1a.google.protobuf.BoolValueR\vpassthrough\"\xc1\x01\n" +
+	"PERMISSIVE\x10\x01\"\xc1\x01\n" +
 	"\aRouting\x12>\n" +
 	"\x1alocalityAwareLoadBalancing\x18\x01 \x01(\bR\x1alocalityAwareLoadBalancing\x12\x1e\n" +
 	"\n" +
@@ -870,52 +761,46 @@ func file_api_mesh_v1alpha1_mesh_proto_rawDescGZIP() []byte {
 }
 
 var file_api_mesh_v1alpha1_mesh_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_api_mesh_v1alpha1_mesh_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_api_mesh_v1alpha1_mesh_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_api_mesh_v1alpha1_mesh_proto_goTypes = []any{
 	(CertificateAuthorityBackend_Mode)(0),        // 0: kuma.mesh.v1alpha1.CertificateAuthorityBackend.Mode
 	(*Mesh)(nil),                                 // 1: kuma.mesh.v1alpha1.Mesh
 	(*CertificateAuthorityBackend)(nil),          // 2: kuma.mesh.v1alpha1.CertificateAuthorityBackend
-	(*Networking)(nil),                           // 3: kuma.mesh.v1alpha1.Networking
-	(*Routing)(nil),                              // 4: kuma.mesh.v1alpha1.Routing
-	(*Mesh_Mtls)(nil),                            // 5: kuma.mesh.v1alpha1.Mesh.Mtls
-	(*Mesh_Constraints)(nil),                     // 6: kuma.mesh.v1alpha1.Mesh.Constraints
-	(*Mesh_DataplaneProxyConstraints)(nil),       // 7: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints
-	(*Mesh_DataplaneProxyConstraints_Rules)(nil), // 8: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules
-	nil, // 9: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules.TagsEntry
-	(*CertificateAuthorityBackend_DpCert)(nil),          // 10: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert
-	(*CertificateAuthorityBackend_RootChain)(nil),       // 11: kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain
-	(*CertificateAuthorityBackend_DpCert_Rotation)(nil), // 12: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation
-	(*Networking_Outbound)(nil),                         // 13: kuma.mesh.v1alpha1.Networking.Outbound
-	(*Metrics)(nil),                                     // 14: kuma.mesh.v1alpha1.Metrics
-	(*structpb.Struct)(nil),                             // 15: google.protobuf.Struct
-	(*durationpb.Duration)(nil),                         // 16: google.protobuf.Duration
-	(*wrapperspb.BoolValue)(nil),                        // 17: google.protobuf.BoolValue
+	(*Routing)(nil),                              // 3: kuma.mesh.v1alpha1.Routing
+	(*Mesh_Mtls)(nil),                            // 4: kuma.mesh.v1alpha1.Mesh.Mtls
+	(*Mesh_Constraints)(nil),                     // 5: kuma.mesh.v1alpha1.Mesh.Constraints
+	(*Mesh_DataplaneProxyConstraints)(nil),       // 6: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints
+	(*Mesh_DataplaneProxyConstraints_Rules)(nil), // 7: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules
+	nil, // 8: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules.TagsEntry
+	(*CertificateAuthorityBackend_DpCert)(nil),          // 9: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert
+	(*CertificateAuthorityBackend_RootChain)(nil),       // 10: kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain
+	(*CertificateAuthorityBackend_DpCert_Rotation)(nil), // 11: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation
+	(*Metrics)(nil),             // 12: kuma.mesh.v1alpha1.Metrics
+	(*structpb.Struct)(nil),     // 13: google.protobuf.Struct
+	(*durationpb.Duration)(nil), // 14: google.protobuf.Duration
 }
 var file_api_mesh_v1alpha1_mesh_proto_depIdxs = []int32{
-	5,  // 0: kuma.mesh.v1alpha1.Mesh.mtls:type_name -> kuma.mesh.v1alpha1.Mesh.Mtls
-	14, // 1: kuma.mesh.v1alpha1.Mesh.metrics:type_name -> kuma.mesh.v1alpha1.Metrics
-	3,  // 2: kuma.mesh.v1alpha1.Mesh.networking:type_name -> kuma.mesh.v1alpha1.Networking
-	4,  // 3: kuma.mesh.v1alpha1.Mesh.routing:type_name -> kuma.mesh.v1alpha1.Routing
-	6,  // 4: kuma.mesh.v1alpha1.Mesh.constraints:type_name -> kuma.mesh.v1alpha1.Mesh.Constraints
-	10, // 5: kuma.mesh.v1alpha1.CertificateAuthorityBackend.dpCert:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert
-	15, // 6: kuma.mesh.v1alpha1.CertificateAuthorityBackend.conf:type_name -> google.protobuf.Struct
-	0,  // 7: kuma.mesh.v1alpha1.CertificateAuthorityBackend.mode:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.Mode
-	11, // 8: kuma.mesh.v1alpha1.CertificateAuthorityBackend.rootChain:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain
-	13, // 9: kuma.mesh.v1alpha1.Networking.outbound:type_name -> kuma.mesh.v1alpha1.Networking.Outbound
-	2,  // 10: kuma.mesh.v1alpha1.Mesh.Mtls.backends:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend
-	7,  // 11: kuma.mesh.v1alpha1.Mesh.Constraints.dataplaneProxy:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints
-	8,  // 12: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.requirements:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules
-	8,  // 13: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.restrictions:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules
-	9,  // 14: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules.tags:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules.TagsEntry
-	12, // 15: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.rotation:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation
-	16, // 16: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.requestTimeout:type_name -> google.protobuf.Duration
-	16, // 17: kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain.requestTimeout:type_name -> google.protobuf.Duration
-	17, // 18: kuma.mesh.v1alpha1.Networking.Outbound.passthrough:type_name -> google.protobuf.BoolValue
-	19, // [19:19] is the sub-list for method output_type
-	19, // [19:19] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	4,  // 0: kuma.mesh.v1alpha1.Mesh.mtls:type_name -> kuma.mesh.v1alpha1.Mesh.Mtls
+	12, // 1: kuma.mesh.v1alpha1.Mesh.metrics:type_name -> kuma.mesh.v1alpha1.Metrics
+	3,  // 2: kuma.mesh.v1alpha1.Mesh.routing:type_name -> kuma.mesh.v1alpha1.Routing
+	5,  // 3: kuma.mesh.v1alpha1.Mesh.constraints:type_name -> kuma.mesh.v1alpha1.Mesh.Constraints
+	9,  // 4: kuma.mesh.v1alpha1.CertificateAuthorityBackend.dpCert:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert
+	13, // 5: kuma.mesh.v1alpha1.CertificateAuthorityBackend.conf:type_name -> google.protobuf.Struct
+	0,  // 6: kuma.mesh.v1alpha1.CertificateAuthorityBackend.mode:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.Mode
+	10, // 7: kuma.mesh.v1alpha1.CertificateAuthorityBackend.rootChain:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain
+	2,  // 8: kuma.mesh.v1alpha1.Mesh.Mtls.backends:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend
+	6,  // 9: kuma.mesh.v1alpha1.Mesh.Constraints.dataplaneProxy:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints
+	7,  // 10: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.requirements:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules
+	7,  // 11: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.restrictions:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules
+	8,  // 12: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules.tags:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules.TagsEntry
+	11, // 13: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.rotation:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation
+	14, // 14: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.requestTimeout:type_name -> google.protobuf.Duration
+	14, // 15: kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain.requestTimeout:type_name -> google.protobuf.Duration
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_api_mesh_v1alpha1_mesh_proto_init() }
@@ -930,7 +815,7 @@ func file_api_mesh_v1alpha1_mesh_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_mesh_v1alpha1_mesh_proto_rawDesc), len(file_api_mesh_v1alpha1_mesh_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   13,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
