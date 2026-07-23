@@ -19,7 +19,7 @@ var defaultMeshTimeoutResource = func() model.Resource {
 	const factor = 2
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
+			TargetRef: &common_api.TopLevelTargetRef{
 				Kind: common_api.Mesh,
 				ProxyTypes: &[]common_api.TargetRefProxyType{
 					common_api.Sidecar,
@@ -57,7 +57,7 @@ var defaultMeshTimeoutResource = func() model.Resource {
 var defaultMeshTimeoutToResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
+			TargetRef: &common_api.TopLevelTargetRef{
 				Kind: common_api.Mesh,
 				ProxyTypes: &[]common_api.TargetRefProxyType{
 					common_api.Sidecar,
@@ -65,7 +65,7 @@ var defaultMeshTimeoutToResource = func() model.Resource {
 			},
 			To: &[]v1alpha1.To{
 				{
-					TargetRef: common_api.TargetRef{
+					TargetRef: common_api.OutboundTargetRef{
 						Kind: common_api.Mesh,
 					},
 					Default: v1alpha1.Conf{
@@ -93,7 +93,7 @@ var defaultMeshTimeoutToResource = func() model.Resource {
 var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
+			TargetRef: &common_api.TopLevelTargetRef{
 				Kind: common_api.Mesh,
 				ProxyTypes: &[]common_api.TargetRefProxyType{
 					common_api.Gateway,
@@ -123,7 +123,7 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 var defaulMeshGatewaysTimeoutToResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
+			TargetRef: &common_api.TopLevelTargetRef{
 				Kind: common_api.Mesh,
 				ProxyTypes: &[]common_api.TargetRefProxyType{
 					common_api.Gateway,
@@ -131,7 +131,7 @@ var defaulMeshGatewaysTimeoutToResource = func() model.Resource {
 			},
 			To: &[]v1alpha1.To{
 				{
-					TargetRef: common_api.TargetRef{
+					TargetRef: common_api.OutboundTargetRef{
 						Kind: common_api.Mesh,
 					},
 					Default: v1alpha1.Conf{

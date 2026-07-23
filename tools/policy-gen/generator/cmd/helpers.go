@@ -59,8 +59,8 @@ package {{.version}}
 import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"{{ if .generateRules }}
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"{{ end }}
-    "github.com/kumahq/kuma/v3/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"{{ end }}{{ if or .generateFrom .generateTo .generateRules }}
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"{{ end }}
 )
 
 func (x *{{.name}}) GetTargetRef() common_api.TargetRef {

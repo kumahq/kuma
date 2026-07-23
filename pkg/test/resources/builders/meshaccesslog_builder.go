@@ -35,7 +35,7 @@ func (m *MeshAccessLogBuilder) WithLabels(labels map[string]string) *MeshAccessL
 }
 
 func (m *MeshAccessLogBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshAccessLogBuilder {
-	m.res.Spec.TargetRef = &targetRef
+	m.res.Spec.TargetRef = pointer.To(toTopLevelTargetRef(targetRef))
 	return m
 }
 
@@ -49,7 +49,7 @@ func (m *MeshAccessLogBuilder) AddFrom(targetRef common_api.TargetRef, conf *Mes
 
 func (m *MeshAccessLogBuilder) AddTo(targetRef common_api.TargetRef, conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
 	m.res.Spec.To = pointer.To(append(pointer.Deref(m.res.Spec.To), meshaccesslog_proto.To{
-		TargetRef: targetRef,
+		TargetRef: toOutboundTargetRef(targetRef),
 		Default:   conf.res,
 	}))
 	return m

@@ -65,12 +65,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -427,13 +421,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:

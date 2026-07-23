@@ -10,11 +10,11 @@ import (
 )
 
 func (x *MeshTCPRoute) GetTargetRef() common_api.TargetRef {
-	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
+	return x.TargetRef.ToTargetRef()
 }
 
 func (x *To) GetTargetRef() common_api.TargetRef {
-	return x.TargetRef
+	return x.TargetRef.ToTargetRef()
 }
 
 func (x *MeshTCPRoute) GetToList() []core_model.PolicyItem {

@@ -182,7 +182,7 @@ func (t *TopLevelTargetRef) ToTargetRef() TargetRef {
 		Kind:               t.Kind,
 		Name:               t.Name,
 		Tags:               t.Tags,
-		Mesh:                t.Mesh,
+		Mesh:               t.Mesh,
 		ProxyTypes:         t.ProxyTypes,
 		Namespace:          t.Namespace,
 		Labels:             t.Labels,

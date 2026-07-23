@@ -11,7 +11,7 @@ import (
 )
 
 func (x *MeshTLS) GetTargetRef() common_api.TargetRef {
-	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
+	return x.TargetRef.ToTargetRef()
 }
 
 func (x *From) GetTargetRef() common_api.TargetRef {
