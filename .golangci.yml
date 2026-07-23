@@ -160,6 +160,9 @@ linters:
         text: 'SA1019: "github.com/golang/protobuf/jsonpb"'
       - linters:
           - staticcheck
+        text: 'SA1019: .*CommonConfig is deprecated: Marked as deprecated in envoy/extensions/access_loggers/open_telemetry/v3/logs_service.proto'
+      - linters:
+          - staticcheck
         text: 'SA1019: cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.'
       - linters:
           - staticcheck
