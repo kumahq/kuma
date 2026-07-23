@@ -129,6 +129,9 @@ linters:
         text: 'SA1019: "github.com/golang/protobuf/jsonpb"'
       - linters:
           - staticcheck
+        text: 'SA1019: .*CommonConfig is deprecated: Marked as deprecated in envoy/extensions/access_loggers/open_telemetry/v3/logs_service.proto'
+      - linters:
+          - staticcheck
         text: 'SA1019: l.UseOriginalDst is deprecated: Do not use.'
       - linters:
           - staticcheck
