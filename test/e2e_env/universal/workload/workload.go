@@ -184,9 +184,7 @@ spec:
 			WithArgs([]string{"echo", "--instance", "backend-v1"}),
 			WithServiceName("backend"),
 			WithAppLabel("backend"),
-			WithAppendDataplaneYaml(`
-labels:
-  kuma.io/workload: my-workload`),
+			WithWorkload("my-workload"),
 		)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -262,9 +260,7 @@ spec:
 			WithArgs([]string{"echo", "--instance", "v1"}),
 			WithServiceName(appName1),
 			WithAppLabel(appName1),
-			WithAppendDataplaneYaml(fmt.Sprintf(`
-labels:
-  kuma.io/workload: %s`, workloadName)),
+			WithWorkload(workloadName),
 		)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -280,9 +276,7 @@ labels:
 			WithArgs([]string{"echo", "--instance", "v2"}),
 			WithServiceName(appName2),
 			WithAppLabel(appName2),
-			WithAppendDataplaneYaml(fmt.Sprintf(`
-labels:
-  kuma.io/workload: %s`, workloadName)),
+			WithWorkload(workloadName),
 		)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
