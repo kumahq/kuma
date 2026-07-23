@@ -5,10 +5,8 @@ mesh: default
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         mode: Strict
 ---
 type: MeshTLS
@@ -19,8 +17,6 @@ spec:
     kind: Dataplane
     labels:
       kuma.io/service: foo
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         mode: Permissive
