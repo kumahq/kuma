@@ -224,93 +224,6 @@ var _ = Describe("Mesh", func() {
                 - field: mtls.dpcert.rotation.expiration
                   message: has to be a valid format`,
 			}),
-			Entry("logging backend with empty name", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name:
-                    type: tcp
-                    conf: 
-                      address: kibana:1234`,
-				expected: `
-                violations:
-                - field: logging.backends[0].name
-                  message: cannot be empty`,
-			}),
-			Entry("multiple logging backends of the same name", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name: backend-1
-                    type: tcp
-                    conf:
-                      address: kibana:1234
-                  - name: backend-1
-                    type: file
-                    conf:
-                      path: /path/to/file
-                  defaultBackend: backend-1`,
-				expected: `
-                violations:
-                - field: logging.backends[1].name
-                  message: '"backend-1" name is already used for another backend'`,
-			}),
-			Entry("tcp logging address is empty", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name: backend-1
-                    type: tcp
-                    conf:
-                      address:
-                  defaultBackend: backend-1`,
-				expected: `
-                violations:
-                - field: logging.backends[0].config.address
-                  message: cannot be empty`,
-			}),
-			Entry("tcp logging address is invalid", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name: backend-1
-                    type: tcp
-                    conf:
-                      address: wrong-format:234:234
-                  defaultBackend: backend-1`,
-				expected: `
-                violations:
-                - field: logging.backends[0].config.address
-                  message: has to be in format of HOST:PORT`,
-			}),
-			Entry("file logging path is empty", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name: backend-1
-                    type: file
-                    conf:
-                      path:
-                  defaultBackend: backend-1`,
-				expected: `
-                violations:
-                - field: logging.backends[0].config.path
-                  message: cannot be empty`,
-			}),
-			Entry("default backend has to be set to one of the backends", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name: backend-1
-                    type: file
-                    conf:
-                      path: /path
-                  defaultBackend: non-existing-backend`,
-				expected: `
-                violations:
-                - field: logging.defaultBackend
-                  message: has to be set to one of the logging backend in mesh`,
-			}),
 			Entry("multiple metrics backends of the same name", testCase{
 				mesh: `
                 metrics:
@@ -343,14 +256,8 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: backend-1
                     type: xxx
-                logging:
-                  backends:
-                  - name: backend-1
-                    type: xxx
 `,
 				expected: `violations:
-                - field: logging.backends[0].type
-                  message: 'unknown backend type. Available backends: "tcp", "file"'
                 - field: metrics.backends[0].type
                   message: 'unknown backend type. Available backends: "prometheus"'`,
 			}),
@@ -401,36 +308,11 @@ var _ = Describe("Mesh", func() {
 			Entry("multiple errors", testCase{
 				mesh: `
                 mtls:
-                  enabledBackend: invalid-backend
-                logging:
-                  backends:
-                  - name:
-                    type: file
-                    conf:
-                      path: /path
-                  - name: tcp-1
-                    type: file
-                    conf:
-                      address: invalid-address
-                  - name: tcp-1
-                    type: tcp
-                    path:
-                      address:
-                  defaultBackend: invalid-backend`,
+                  enabledBackend: invalid-backend`,
 				expected: `
                 violations:
                 - field: mtls.enabledBackend
-                  message: has to be set to one of the backends in the mesh
-                - field: logging.backends[0].name
-                  message: cannot be empty
-                - field: logging.backends[1].config.path
-                  message: cannot be empty
-                - field: logging.backends[2].config.address
-                  message: cannot be empty
-                - field: logging.backends[2].name
-                  message: '"tcp-1" name is already used for another backend'
-                - field: logging.defaultBackend
-                  message: has to be set to one of the logging backend in mesh`,
+                  message: has to be set to one of the backends in the mesh`,
 			}),
 			Entry("zoneEgress enabled but mtls not defined", testCase{
 				mesh: `

@@ -16,24 +16,6 @@
           }
         ]
       },
-      "logging": {
-        "backends": [
-          {
-            "name": "logstash",
-            "type": "tcp",
-            "conf": {
-              "address": "127.0.0.1:5000"
-            }
-          },
-          {
-            "name": "file",
-            "type": "file",
-            "conf": {
-              "path": "/tmp/service.log"
-            }
-          }
-        ]
-      },
       "metrics": {
         "enabledBackend": "prometheus-1",
         "backends": [
@@ -66,7 +48,6 @@
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
       "kri": "kri_m____mesh2_",
-      "logging": {},
       "metrics": {}
     }
   ],
