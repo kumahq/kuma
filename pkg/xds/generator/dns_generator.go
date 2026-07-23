@@ -62,7 +62,7 @@ func (g DNSGenerator) Generate(_ context.Context, rs *core_xds.ResourceSet, xdsC
 	if err != nil {
 		return nil, err
 	}
-	if err := dynconf.AddConfigRoute(proxy, rs, true, "dns", dpapi.PATH, bytes); err != nil {
+	if err := dynconf.AddConfigRoute(proxy, rs, "dns", dpapi.PATH, bytes); err != nil {
 		return nil, err
 	}
 	return nil, nil

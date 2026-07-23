@@ -62,7 +62,6 @@ func writeUnifiedOtelRoute(rs *xds.ResourceSet, xdsCtx xds_context.Context, prox
 	return dynconf.AddConfigRoute(
 		proxy,
 		rs,
-		unifiedNamingEnabled,
 		getNameOrDefault("otel", xds.OtelDynconfPath),
 		xds.OtelDynconfPath,
 		data,

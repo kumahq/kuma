@@ -292,7 +292,7 @@ func configureDynamicDPPConfig(
 	}
 	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
 	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
-	return dynconf.AddConfigRoute(proxy, rs, unifiedNamingEnabled, getNameOrDefault("meshmetric", dpapi.PATH), dpapi.PATH, marshal)
+	return dynconf.AddConfigRoute(proxy, rs, getNameOrDefault("meshmetric", dpapi.PATH), dpapi.PATH, marshal)
 }
 
 func EnvoyMetricsFilter(sidecar *api.Sidecar) url.Values {

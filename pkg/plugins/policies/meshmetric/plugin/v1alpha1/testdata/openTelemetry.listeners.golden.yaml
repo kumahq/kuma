@@ -1,51 +1,4 @@
 resources:
-- name: _kuma:dynamicconfig
-  resource:
-    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
-    address:
-      pipe:
-        path: /tmp/kuma-mesh-metric-config.sock
-    filterChains:
-    - filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          httpFilters:
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          internalAddressConfig:
-            cidrRanges:
-            - addressPrefix: 127.0.0.1
-              prefixLen: 32
-          routeConfig:
-            maxDirectResponseBodySizeBytes: 426
-            virtualHosts:
-            - domains:
-              - '*'
-              name: _kuma:dynamicconfig
-              routes:
-              - directResponse:
-                  status: 304
-                match:
-                  headers:
-                  - name: If-None-Match
-                    stringMatch:
-                      exact: 0e84b169bd3a8f5cb7b08cfa0ee96d0b903216709cef5f419be14495ee345f8d
-                  path: /meshmetric
-              - directResponse:
-                  body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"OpenTelemetry","name":"otel-collector","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.sock","refreshInterval":"10s"}}],"extraLabels":{"dataplane":"dp-1","kuma.proxy_role":"sidecar","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","zone":"zone-1"}}}}'
-                  status: 200
-                match:
-                  path: /meshmetric
-                name: _kuma:dynamicconfig:/meshmetric
-                responseHeadersToAdd:
-                - header:
-                    key: Etag
-                    value: 0e84b169bd3a8f5cb7b08cfa0ee96d0b903216709cef5f419be14495ee345f8d
-          statPrefix: _kuma_dynamicconfig
-    name: _kuma:dynamicconfig
 - name: _kuma:metrics:opentelemetry:otel-collector
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -82,3 +35,52 @@ resources:
                   cluster: _kuma:metrics:opentelemetry:otel-collector
           statPrefix: _kuma_metrics_opentelemetry_otel-collector
     name: _kuma:metrics:opentelemetry:otel-collector
+- name: system_dynamicconfig
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      pipe:
+        path: /tmp/kuma-mesh-metric-config.sock
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
+          routeConfig:
+            maxDirectResponseBodySizeBytes: 426
+            virtualHosts:
+            - domains:
+              - '*'
+              name: system_dynamicconfig
+              routes:
+              - directResponse:
+                  status: 304
+                match:
+                  headers:
+                  - name: If-None-Match
+                    stringMatch:
+                      exact: 0e84b169bd3a8f5cb7b08cfa0ee96d0b903216709cef5f419be14495ee345f8d
+                  path: /meshmetric
+                name: system_dynamicconfig_/meshmetric_not_modified
+              - directResponse:
+                  body:
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"OpenTelemetry","name":"otel-collector","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.sock","refreshInterval":"10s"}}],"extraLabels":{"dataplane":"dp-1","kuma.proxy_role":"sidecar","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","zone":"zone-1"}}}}'
+                  status: 200
+                match:
+                  path: /meshmetric
+                name: system_dynamicconfig_/meshmetric
+                responseHeadersToAdd:
+                - header:
+                    key: Etag
+                    value: 0e84b169bd3a8f5cb7b08cfa0ee96d0b903216709cef5f419be14495ee345f8d
+          statPrefix: system_dynamicconfig
+    name: system_dynamicconfig
+    statPrefix: system_dynamicconfig
