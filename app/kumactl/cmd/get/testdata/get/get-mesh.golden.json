@@ -13,24 +13,6 @@
       }
     ]
   },
-  "logging": {
-    "backends": [
-      {
-        "name": "logstash",
-        "type": "tcp",
-        "conf": {
-          "address": "127.0.0.1:5000"
-        }
-      },
-      {
-        "name": "file",
-        "type": "file",
-        "conf": {
-          "path": "/tmp/service.log"
-        }
-      }
-    ]
-  },
   "metrics": {
     "enabledBackend": "prometheus-1",
     "backends": [

@@ -81,17 +81,6 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 						Spec: &mesh_proto.Mesh{
 							Mtls: mtls,
-							Logging: &mesh_proto.Logging{
-								Backends: []*mesh_proto.LoggingBackend{
-									{
-										Name: "file",
-										Type: mesh_proto.LoggingFileType,
-										Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
-											Path: "/var/log",
-										}),
-									},
-								},
-							},
 						},
 					},
 				},

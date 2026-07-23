@@ -40,9 +40,8 @@ message Mesh {
   reserved 2;
   reserved "tracing";
 
-  // Logging settings.
-  // +optional
-  Logging logging = 3;
+  reserved 3;
+  reserved "logging";
 
   // Configuration for metrics collected and exposed by dataplanes.
   //
@@ -161,44 +160,6 @@ message Networking {
 
   // Outbound settings
   Outbound outbound = 1;
-}
-
-message Logging {
-  // Name of the default backend
-  string defaultBackend = 1;
-
-  // List of available logging backends
-  repeated LoggingBackend backends = 2;
-}
-
-// LoggingBackend defines logging backend available to mesh. Backends can be
-// used in TrafficLog rules.
-message LoggingBackend {
-  // Name of the backend, can be then used in Mesh.logging.defaultBackend or in
-  // TrafficLogging
-  string name = 1;
-
-  // Format of access logs. Placeholders available on
-  // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-  string format = 2;
-
-  // Type of the backend (Kuma ships with 'tcp' and 'file')
-  string type = 3;
-
-  // Configuration of the backend
-  google.protobuf.Struct conf = 4;
-}
-
-// FileLoggingBackendConfig defines configuration for file based access logs
-message FileLoggingBackendConfig {
-  // Path to a file that logs will be written to
-  string path = 1;
-}
-
-// TcpLoggingBackendConfig defines configuration for TCP based access logs
-message TcpLoggingBackendConfig {
-  // Address to TCP service that will receive logs
-  string address = 1;
 }
 
 // Routing defines configuration for the routing in the mesh
