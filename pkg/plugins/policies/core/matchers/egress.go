@@ -227,11 +227,11 @@ func serviceSelectedByTargetRef(tr common_api.TargetRef, tags map[string]string)
 	switch tr.Kind {
 	case common_api.Mesh:
 		return true
-	case common_api.MeshSubset:
+	case common_api.LegacyMeshSubsetKind():
 		return mesh_proto.TagSelector(pointer.Deref(tr.Tags)).Matches(tags)
 	case common_api.MeshService:
 		return pointer.Deref(tr.Name) == tags[mesh_proto.ServiceTag]
-	case common_api.MeshServiceSubset:
+	case common_api.LegacyMeshServiceSubsetKind():
 		return pointer.Deref(tr.Name) == tags[mesh_proto.ServiceTag] && mesh_proto.TagSelector(pointer.Deref(tr.Tags)).Matches(tags)
 	}
 	return false

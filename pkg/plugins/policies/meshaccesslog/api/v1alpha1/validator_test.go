@@ -131,7 +131,10 @@ from:
       backends:
         - type: OpenTelemetry
           openTelemetry:
-            endpoint: otel-collector:4317
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              labels:
+                kuma.io/display-name: my-otel
             attributes:
               - key: "service.version"
                 value: "%KUMA_MESH%"
@@ -475,7 +478,7 @@ violations:
 - field: spec.from[0].default.backends[1].tcp.format.json
   message: must be defined`,
 			}),
-			Entry("openTelemetry neither endpoint nor backendRef", testCase{
+			Entry("openTelemetry backendRef required", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
@@ -485,35 +488,12 @@ from:
     default:
       backends:
         - type: OpenTelemetry
-          openTelemetry:
-            endpoint: ""
+          openTelemetry: {}
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backends[0].openTelemetry
-    message: "openTelemetry must have exactly one defined: endpoint, backendRef"`,
-			}),
-			Entry("openTelemetry both endpoint and backendRef", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      backends:
-        - type: OpenTelemetry
-          openTelemetry:
-            endpoint: otel-collector:4317
-            backendRef:
-              kind: MeshOpenTelemetryBackend
-              labels:
-                kuma.io/display-name: my-otel
-`,
-				expected: `
-violations:
-  - field: spec.from[0].default.backends[0].openTelemetry
-    message: "openTelemetry must have only one type defined: endpoint, backendRef"`,
+  - field: spec.from[0].default.backends[0].openTelemetry.backendRef
+    message: "must be defined"`,
 			}),
 			Entry("openTelemetry backendRef no labels", testCase{
 				inputYaml: `
@@ -545,7 +525,10 @@ from:
       backends:
         - type: OpenTelemetry
           openTelemetry:
-            endpoint: otel-collector:4317
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              labels:
+                kuma.io/display-name: my-otel
             attributes:
               - key: "my custom attribute"
                 value: "%KUMA_MESH%"
@@ -566,7 +549,10 @@ from:
       backends:
         - type: OpenTelemetry
           openTelemetry:
-            endpoint: otel-collector:4317
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              labels:
+                kuma.io/display-name: my-otel
             attributes:
               - key: "%KUMA_ZONE%"
                 value: "%KUMA_MESH%"
@@ -587,7 +573,10 @@ from:
       backends:
         - type: OpenTelemetry
           openTelemetry:
-            endpoint: otel-collector:4317
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              labels:
+                kuma.io/display-name: my-otel
             attributes:
               - key: "otel.attribute"
                 value: "%KUMA_MESH%"
@@ -608,7 +597,10 @@ from:
       backends:
         - type: OpenTelemetry
           openTelemetry:
-            endpoint: otel-collector:4317
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              labels:
+                kuma.io/display-name: my-otel
             attributes:
               - key: "bad key"
                 value: "%KUMA_MESH%"

@@ -18,14 +18,6 @@ mesh: default
 spec:
   targetRef:
     kind: Mesh
-  to:
-  - targetRef:
-      kind: Mesh
-    default:
-      idleTimeout: 20s
-      connectionTimeout: 2s
-      http:
-        requestTimeout: 10s
   rules:
     - default:
         idleTimeout: 20s
@@ -34,7 +26,33 @@ spec:
           requestTimeout: 5s
 ---
 type: MeshTimeout
+name: default-to
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+  - targetRef:
+      kind: Mesh
+    default:
+      idleTimeout: 20s
+      connectionTimeout: 2s
+      http:
+        requestTimeout: 10s
+---
+type: MeshTimeout
 name: override
+mesh: default
+spec:
+  targetRef:
+    kind: Dataplane
+    name: dp-1
+  rules:
+    - default:
+        connectionTimeout: 20s
+---
+type: MeshTimeout
+name: override-to
 mesh: default
 spec:
   targetRef:
@@ -53,6 +71,3 @@ spec:
       default:
         http:
           requestTimeout: 20s
-  rules:
-    - default:
-        connectionTimeout: 20s

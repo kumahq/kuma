@@ -957,15 +957,15 @@ var _ = Describe("Rules", func() {
 					Kind: common_api.Mesh,
 				}, "AllowWithShadowDeny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-2"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-3"},
 				}, "Allow"),
 			}
@@ -997,15 +997,15 @@ var _ = Describe("Rules", func() {
 			// All three intersect with each other
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"zone": "us-east"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"zone": "us-east", "env": "prod"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"env": "prod"},
 				}, "AllowWithShadowDeny"),
 			}
@@ -1034,15 +1034,15 @@ var _ = Describe("Rules", func() {
 			// But they're connected via B in the graph
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1", "version": "v1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1", "version": "v2"},
 				}, "AllowWithShadowDeny"),
 			}
@@ -1095,11 +1095,11 @@ var _ = Describe("Rules", func() {
 			// Multiple policies with the same targetRef
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1"},
 				}, "Deny"),
 			}
@@ -1126,7 +1126,7 @@ var _ = Describe("Rules", func() {
 			}
 			for i := 1; i <= 5; i++ {
 				items = append(items, createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{
 						"app":       fmt.Sprintf("app-%d", i),
 						"namespace": fmt.Sprintf("ns-%d", i),
@@ -1163,11 +1163,11 @@ var _ = Describe("Rules", func() {
 			// {app: app-1} and {app: app-2} don't intersect because app can only have one value
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-2"},
 				}, "Deny"),
 			}
@@ -1191,11 +1191,11 @@ var _ = Describe("Rules", func() {
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{Kind: common_api.Mesh}, "AllowWithShadowDeny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"zone": "us-east", "env": "prod", "team": "platform"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"zone": "us-west", "env": "dev", "team": "product"},
 				}, "Deny"),
 			}
@@ -1222,19 +1222,19 @@ var _ = Describe("Rules", func() {
 			// D: {env: dev}  - disjoint from B and C, intersects with A via Mesh-like behavior
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"zone": "us-east"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"zone": "us-east", "env": "prod"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"env": "prod"},
 				}, "AllowWithShadowDeny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"env": "dev"},
 				}, "Allow"),
 			}

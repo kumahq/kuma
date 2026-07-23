@@ -7,6 +7,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
@@ -18,6 +19,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/tokens"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var log = core.Log.WithName("defaults").WithName("mesh")
@@ -59,16 +62,21 @@ func EnsureDefaultMeshResources(
 	} else {
 		logger.Info("Dataplane Token Signing Key already exists")
 	}
+	if err := migrateCombinedMeshTimeoutDefaults(ctx, resManager, meshName, k8sStore, systemNamespace, logger); err != nil {
+		return errors.Wrap(err, "could not migrate legacy combined default MeshTimeout resources")
+	}
 	if slices.Contains(skippedPolicies, "*") {
 		logger.Info("skipping all default policy creation")
 		return nil
 	}
 
 	defaultResourceBuilders := map[string]func() model.Resource{
-		"mesh-gateways-timeout-all": defaulMeshGatewaysTimeoutResource,
-		"mesh-timeout-all":          defaultMeshTimeoutResource,
-		"mesh-circuit-breaker-all":  defaultMeshCircuitBreakerResource,
-		"mesh-retry-all":            defaultMeshRetryResource,
+		"mesh-gateways-timeout-all":    defaulMeshGatewaysTimeoutResource,
+		"mesh-gateways-timeout-to-all": defaulMeshGatewaysTimeoutToResource,
+		"mesh-timeout-all":             defaultMeshTimeoutResource,
+		"mesh-timeout-to-all":          defaultMeshTimeoutToResource,
+		"mesh-circuit-breaker-all":     defaultMeshCircuitBreakerResource,
+		"mesh-retry-all":               defaultMeshRetryResource,
 	}
 	for prefix, resourceBuilder := range defaultResourceBuilders {
 		resourceName := fmt.Sprintf("%s-%s", prefix, meshName)
@@ -99,6 +107,49 @@ func EnsureDefaultMeshResources(
 		}
 
 		logger.Info(msg, "name", key.Name)
+	}
+	return nil
+}
+
+// migrateCombinedMeshTimeoutDefaults strips the outbound 'to' config from the
+// mesh-wide default MeshTimeout resources persisted by CP versions that
+// predate the rules/to split (rules and to are mutually exclusive, see
+// validator.go). Without this, an existing mesh would keep an invalid
+// combined resource forever: ensureDefaultResource only heals labels on
+// existing resources, and Update() re-validates the resource on every call,
+// so a legacy combined resource would fail label-healing outright, and would
+// keep getting rejected by KDS peers on versions that still enforce the
+// same constraint.
+func migrateCombinedMeshTimeoutDefaults(
+	ctx context.Context,
+	resManager manager.ResourceManager,
+	meshName string,
+	k8sStore bool,
+	systemNamespace string,
+	logger logr.Logger,
+) error {
+	for _, prefix := range []string{"mesh-timeout-all", "mesh-gateways-timeout-all"} {
+		resourceName := fmt.Sprintf("%s-%s", prefix, meshName)
+		if k8sStore {
+			resourceName = fmt.Sprintf("%s.%s", resourceName, systemNamespace)
+		}
+		key := model.ResourceKey{Mesh: meshName, Name: resourceName}
+
+		existing := v1alpha1.NewMeshTimeoutResource()
+		if err := resManager.Get(ctx, existing, store.GetBy(key), store.GetConsistent()); err != nil {
+			if store.IsNotFound(err) {
+				continue
+			}
+			return errors.Wrapf(err, "could not retrieve default MeshTimeout %q", key.Name)
+		}
+		if len(pointer.Deref(existing.Spec.To)) == 0 {
+			continue // already migrated, or an operator-modified rules-only resource
+		}
+		existing.Spec.To = nil
+		if err := resManager.Update(ctx, existing); err != nil {
+			return errors.Wrapf(err, "could not migrate default MeshTimeout %q", key.Name)
+		}
+		logger.Info("migrated legacy combined default MeshTimeout, outbound defaults now live in a separate resource", "name", key.Name)
 	}
 	return nil
 }

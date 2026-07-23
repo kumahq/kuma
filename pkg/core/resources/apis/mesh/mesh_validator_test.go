@@ -61,21 +61,6 @@ var _ = Describe("Mesh", func() {
                 conf:
                   address: kibana:1234
               defaultBackend: tcp-1
-            tracing:
-              backends:
-              - name: zipkin-us
-                sampling: 80.0
-                type: zipkin
-                conf:
-                  url: http://zipkin.local:9411/v2/spans
-                  traceId128bit: true
-                  apiVersion: httpProto
-                  sharedSpanContext: true
-              - name: zipkin-eu
-                type: zipkin
-                conf:
-                  url: http://zipkin.local:9411/v2/spans
-              defaultBackend: zipkin-us
             metrics:
               enabledBackend: prom-1
               backends:
@@ -141,21 +126,6 @@ var _ = Describe("Mesh", func() {
                 conf:
                   address: kibana:1234
               defaultBackend: tcp-1
-            tracing:
-              backends:
-              - name: zipkin-us
-                sampling: 80.0
-                type: zipkin
-                conf:
-                  url: http://zipkin.local:9411/v2/spans
-                  traceId128bit: true
-                  apiVersion: httpProto
-                  sharedSpanContext: true
-              - name: zipkin-eu
-                type: zipkin
-                conf:
-                  url: http://zipkin.local:9411/v2/spans
-              defaultBackend: zipkin-us
             metrics:
               enabledBackend: prom-1
               backends:
@@ -254,204 +224,6 @@ var _ = Describe("Mesh", func() {
                 - field: mtls.dpcert.rotation.expiration
                   message: has to be a valid format`,
 			}),
-			Entry("logging backend with empty name", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name:
-                    type: tcp
-                    conf: 
-                      address: kibana:1234`,
-				expected: `
-                violations:
-                - field: logging.backends[0].name
-                  message: cannot be empty`,
-			}),
-			Entry("multiple logging backends of the same name", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name: backend-1
-                    type: tcp
-                    conf:
-                      address: kibana:1234
-                  - name: backend-1
-                    type: file
-                    conf:
-                      path: /path/to/file
-                  defaultBackend: backend-1`,
-				expected: `
-                violations:
-                - field: logging.backends[1].name
-                  message: '"backend-1" name is already used for another backend'`,
-			}),
-			Entry("tcp logging address is empty", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name: backend-1
-                    type: tcp
-                    conf:
-                      address:
-                  defaultBackend: backend-1`,
-				expected: `
-                violations:
-                - field: logging.backends[0].config.address
-                  message: cannot be empty`,
-			}),
-			Entry("tcp logging address is invalid", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name: backend-1
-                    type: tcp
-                    conf:
-                      address: wrong-format:234:234
-                  defaultBackend: backend-1`,
-				expected: `
-                violations:
-                - field: logging.backends[0].config.address
-                  message: has to be in format of HOST:PORT`,
-			}),
-			Entry("file logging path is empty", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name: backend-1
-                    type: file
-                    conf:
-                      path:
-                  defaultBackend: backend-1`,
-				expected: `
-                violations:
-                - field: logging.backends[0].config.path
-                  message: cannot be empty`,
-			}),
-			Entry("default backend has to be set to one of the backends", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name: backend-1
-                    type: file
-                    conf:
-                      path: /path
-                  defaultBackend: non-existing-backend`,
-				expected: `
-                violations:
-                - field: logging.defaultBackend
-                  message: has to be set to one of the logging backend in mesh`,
-			}),
-			Entry("tracing backend with empty name", testCase{
-				mesh: `
-                tracing:
-                  backends:
-                  - name:
-                    type: zipkin
-                    conf:
-                      url: http://zipkin.local:9411/v2/spans`,
-				expected: `
-                violations:
-                - field: tracing.backends[0].name
-                  message: cannot be empty`,
-			}),
-			Entry("multiple tracing backend with the same name", testCase{
-				mesh: `
-                tracing:
-                  backends:
-                  - name: zipkin-us
-                    type: zipkin
-                    conf:
-                      url: http://zipkin.local:9411/v2/spans
-                  - name: zipkin-us
-                    type: zipkin
-                    conf:
-                      url: http://zipkin.local:9411/v2/spans`,
-				expected: `
-                violations:
-                - field: tracing.backends[1].name
-                  message: '"zipkin-us" name is already used for another backend'`,
-			}),
-			Entry("tracing with invalid sampling", testCase{
-				mesh: `
-                tracing:
-                  backends:
-                  - name: zipkin-us
-                    sampling: 100.1
-                    type: zipkin
-                    conf:
-                      url: http://zipkin-us.local:9411/v2/spans`,
-				expected: `
-                violations:
-                - field: tracing.backends[0].sampling
-                  message: has to be in [0.0 - 100.0] range`,
-			}),
-			Entry("tracing with zipkin without url", testCase{
-				mesh: `
-                tracing:
-                  backends:
-                  - name: zipkin-us
-                    type: zipkin
-                    conf:
-                      url: ""`,
-				expected: `
-                violations:
-                - field: tracing.backends[0].config.url
-                  message: cannot be empty`,
-			}),
-			Entry("tracing with zipkin with invalid url", testCase{
-				mesh: `
-                tracing:
-                  backends:
-                  - name: zipkin-us
-                    type: zipkin
-                    conf:
-                      url: invalid-url`,
-				expected: `
-                violations:
-                - field: tracing.backends[0].config.url
-                  message: invalid URL`,
-			}),
-			Entry("tracing with zipkin with valid url but without port", testCase{
-				mesh: `
-                tracing:
-                  backends:
-                  - name: zipkin-us
-                    type: zipkin
-                    conf:
-                      url: http://zipkin-us.local/v2/spans`,
-				expected: `
-                violations:
-                - field: tracing.backends[0].config.url
-                  message: port has to be explicitly specified`,
-			}),
-			Entry("tracing with zipkin with invalid apiVersion", testCase{
-				mesh: `
-                tracing:
-                  backends:
-                  - name: zipkin-us
-                    type: zipkin
-                    conf:
-                      url: http://zipkin-us.local:9411/v2/spans
-                      apiVersion: invalid`,
-				expected: `
-                violations:
-                - field: tracing.backends[0].config.apiVersion
-                  message: 'has invalid value. Allowed values: httpJsonV1, httpJson, httpProto'`,
-			}),
-			Entry("default backend has to be set to one of the backends", testCase{
-				mesh: `
-                tracing:
-                  defaultBackend: non-existent
-                  backends:
-                  - name: zipkin-us
-                    type: zipkin
-                    conf:
-                      url: http://zipkin.local:9411/v2/spans`,
-				expected: `
-                violations:
-                - field: tracing.defaultBackend
-                  message: has to be set to one of the tracing backend in mesh`,
-			}),
 			Entry("multiple metrics backends of the same name", testCase{
 				mesh: `
                 metrics:
@@ -484,20 +256,8 @@ var _ = Describe("Mesh", func() {
                   backends:
                   - name: backend-1
                     type: xxx
-                logging:
-                  backends:
-                  - name: backend-1
-                    type: xxx
-                tracing:
-                  backends:
-                  - name: backend-1
-                    type: xxx
 `,
 				expected: `violations:
-                - field: logging.backends[0].type
-                  message: 'unknown backend type. Available backends: "tcp", "file"'
-                - field: tracing.backends[0].type
-                  message: 'unknown backend type. Available backends: "zipkin", "datadog"'
                 - field: metrics.backends[0].type
                   message: 'unknown backend type. Available backends: "prometheus"'`,
 			}),
@@ -548,36 +308,11 @@ var _ = Describe("Mesh", func() {
 			Entry("multiple errors", testCase{
 				mesh: `
                 mtls:
-                  enabledBackend: invalid-backend
-                logging:
-                  backends:
-                  - name:
-                    type: file
-                    conf:
-                      path: /path
-                  - name: tcp-1
-                    type: file
-                    conf:
-                      address: invalid-address
-                  - name: tcp-1
-                    type: tcp
-                    path:
-                      address:
-                  defaultBackend: invalid-backend`,
+                  enabledBackend: invalid-backend`,
 				expected: `
                 violations:
                 - field: mtls.enabledBackend
-                  message: has to be set to one of the backends in the mesh
-                - field: logging.backends[0].name
-                  message: cannot be empty
-                - field: logging.backends[1].config.path
-                  message: cannot be empty
-                - field: logging.backends[2].config.address
-                  message: cannot be empty
-                - field: logging.backends[2].name
-                  message: '"tcp-1" name is already used for another backend'
-                - field: logging.defaultBackend
-                  message: has to be set to one of the logging backend in mesh`,
+                  message: has to be set to one of the backends in the mesh`,
 			}),
 			Entry("zoneEgress enabled but mtls not defined", testCase{
 				mesh: `

@@ -77,7 +77,7 @@
        "resourceMeta": {
         "labels": {},
         "mesh": "default",
-        "name": "default",
+        "name": "default-to",
         "type": "MeshTimeout"
        },
        "ruleIndex": 0

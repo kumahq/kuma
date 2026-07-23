@@ -1,14 +1,4 @@
 creationTime: "0001-01-01T00:00:00Z"
-logging:
-  backends:
-    - conf:
-        address: 127.0.0.1:5000
-      name: logstash
-      type: tcp
-    - conf:
-        path: /tmp/service.log
-      name: file
-      type: file
 metrics:
   backends:
     - conf:
@@ -32,22 +22,10 @@ name: mesh1
 routing:
   localityAwareLoadBalancing: true
   zoneEgress: true
-tracing:
-  backends:
-    - conf:
-        url: http://zipkin.us:8080/v1/spans
-      name: zipkin-us
-      type: zipkin
-    - conf:
-        url: http://zipkin.eu:8080/v1/spans
-      name: zipkin-eu
-      type: zipkin
 type: Mesh
 ---
 creationTime: "0001-01-01T00:00:00Z"
-logging: {}
 metrics: {}
 modificationTime: "0001-01-01T00:00:00Z"
 name: mesh2
-tracing: {}
 type: Mesh

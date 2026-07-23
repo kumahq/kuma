@@ -462,7 +462,7 @@ var _ = Describe("IngressGenerator", func() {
 												Default: meshhttproute_api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
-															Kind: common_api.MeshServiceSubset,
+															Kind: common_api.LegacyMeshServiceSubsetKind(),
 															Name: pointer.To("backend"),
 															Tags: &map[string]string{
 																"version": "v1",
@@ -556,7 +556,7 @@ var _ = Describe("IngressGenerator", func() {
 												Default: meshhttproute_api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
-															Kind: common_api.MeshServiceSubset,
+															Kind: common_api.LegacyMeshServiceSubsetKind(),
 															Name: pointer.To("backend"),
 															Tags: &map[string]string{
 																"version":      "v1",
@@ -645,7 +645,7 @@ var _ = Describe("IngressGenerator", func() {
 												Default: meshtcproute_api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
-															Kind: common_api.MeshServiceSubset,
+															Kind: common_api.LegacyMeshServiceSubsetKind(),
 															Name: pointer.To("backend"),
 															Tags: &map[string]string{
 																"version":      "v1",
