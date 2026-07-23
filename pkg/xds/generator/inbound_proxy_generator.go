@@ -7,10 +7,8 @@ import (
 
 	"github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -83,7 +81,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 			Configure(envoy_listeners.InboundListener(endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 			Configure(envoy_listeners.StatPrefix(statPrefix)).
 			Configure(envoy_listeners.TransparentProxying(proxy)).
-			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(proxy.Dataplane, iface.GetTags(), iface.Name)))
+			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(iface.GetTags(), unifiedName)))
 
 		switch xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
 		case mesh_proto.CertificateAuthorityBackend_STRICT:
@@ -169,18 +167,15 @@ func FilterChainBuilder(
 		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
 }
 
-// InboundListenerTags returns the inbound listener's io.kuma.tags. When the
-// inbound has no tags, it synthesizes a kuma.io/kri tag from the Dataplane KRI
-// (port as section name) so the listener stays selectable.
-func InboundListenerTags(dataplane *core_mesh.DataplaneResource, tags map[string]string, portName string) map[string]string {
+// InboundListenerTags keeps the inbound's own tags, or when they are empty
+// falls back to the contextual name (self_inbound_dp_<sectionName>) under
+// kuma.io/unified-name so the listener stays selectable. The name carries no
+// Dataplane identity, so it survives Pod churn that a Dataplane KRI would not.
+func InboundListenerTags(tags map[string]string, contextualName string) map[string]string {
 	if len(tags) > 0 {
 		return tags
 	}
-	id := kri.WithSectionName(kri.FromResourceMeta(dataplane.GetMeta(), core_mesh.DataplaneType), portName)
-	if id.IsEmpty() {
-		return tags
-	}
-	return map[string]string{mesh_proto.KRITag: id.String()}
+	return map[string]string{mesh_proto.UnifiedNameTag: contextualName}
 }
 
 func GenerateRoutes(proxy *core_xds.Proxy, endpoint mesh_proto.InboundInterface, cluster envoy_common.Cluster) envoy_common.Routes {

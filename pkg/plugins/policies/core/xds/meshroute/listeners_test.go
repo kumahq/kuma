@@ -13,7 +13,7 @@ import (
 )
 
 var _ = Describe("OutboundListenerTags", func() {
-	It("returns a synthesized kuma.io/kri tag for a real-resource outbound", func() {
+	It("returns a synthesized kuma.io/unified-name tag for a real-resource outbound", func() {
 		// given
 		ms := builders.MeshService().
 			WithName("backend").
@@ -27,7 +27,7 @@ var _ = Describe("OutboundListenerTags", func() {
 		tags := ds.OutboundListenerTags()
 
 		// then
-		Expect(tags).To(BeEquivalentTo(map[string]string{mesh_proto.KRITag: id.String()}))
+		Expect(tags).To(BeEquivalentTo(map[string]string{mesh_proto.UnifiedNameTag: id.String()}))
 	})
 
 	It("returns the real outbound tags without kuma.io/mesh for a legacy outbound", func() {

@@ -61,6 +61,6 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/kri: kri_dp_default_east_kuma-demo_backend-7f9c_http-port
+          kuma.io/unified-name: self_inbound_dp_http-port
     name: inbound:192.168.0.1:9000
     trafficDirection: INBOUND

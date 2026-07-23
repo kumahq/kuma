@@ -38,7 +38,7 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/kri: kri_msvc_default___backend_80
+          kuma.io/unified-name: kri_msvc_default___backend_80
     name: kri_msvc_default___backend_80
     statPrefix: kri_msvc_default___backend_80
     trafficDirection: OUTBOUND

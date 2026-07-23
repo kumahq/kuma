@@ -39,7 +39,7 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/kri: kri_extsvc_default___example_
+          kuma.io/unified-name: kri_extsvc_default___example_
     name: kri_extsvc_default___example_
     statPrefix: kri_extsvc_default___example_
     trafficDirection: OUTBOUND

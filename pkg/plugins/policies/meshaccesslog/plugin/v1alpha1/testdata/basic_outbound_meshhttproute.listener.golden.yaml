@@ -149,6 +149,6 @@ filterChains:
 metadata:
   filterMetadata:
     io.kuma.tags:
-      kuma.io/kri: kri_msvc_default_zone-1_other-ns_other-meshservice-http_
+      kuma.io/unified-name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_
 name: outbound:127.0.0.1:27777
 trafficDirection: OUTBOUND

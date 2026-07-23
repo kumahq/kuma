@@ -39,7 +39,7 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/kri: kri_extsvc_default_remote-zone__ext-backend_9000
+          kuma.io/unified-name: kri_extsvc_default_remote-zone__ext-backend_9000
     name: kri_extsvc_default_remote-zone__ext-backend_9000
     statPrefix: kri_extsvc_default_remote-zone__ext-backend_9000
     trafficDirection: OUTBOUND

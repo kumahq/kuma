@@ -16,6 +16,6 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/kri: kri_msvc_default___backend_test-port
+          kuma.io/unified-name: kri_msvc_default___backend_test-port
     name: outbound:127.0.0.1:10001
     trafficDirection: OUTBOUND

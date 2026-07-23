@@ -53,6 +53,6 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/kri: kri_extsvc_default___example_
+          kuma.io/unified-name: kri_extsvc_default___example_
     name: outbound:10.20.20.1:9090
     trafficDirection: OUTBOUND
