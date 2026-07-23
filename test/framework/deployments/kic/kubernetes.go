@@ -67,8 +67,8 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		"--namespace", t.ingressNamespace,
 		"--set", "controller.ingressController.watchNamespaces={"+watchNamespacesVal+"}",
 		"--set", "controller.ingressController.ingressClass="+t.name,
-		"--set", "controller.podAnnotations.kuma\\.io/mesh="+t.mesh,
-		"--set", "gateway.podAnnotations.kuma\\.io/mesh="+t.mesh,
+		"--set", "controller.podLabels.kuma\\.io/mesh="+t.mesh,
+		"--set", "gateway.podLabels.kuma\\.io/mesh="+t.mesh,
 		chartPath,
 	)
 	if err != nil {
