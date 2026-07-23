@@ -96,22 +96,28 @@ jobs:
 
       - name: "Trigger Kong/kong-mesh-smoke"
         if: steps.version.outputs.is_release == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          # Cross-org (kumahq -> Kong) token with `actions:write` on
-          # Kong/kong-mesh-smoke. Must be provisioned by a Kong org admin;
-          # no existing kumahq GitHub App/secret has that scope.
-          GH_TOKEN: ${{ secrets.KONG_MESH_SMOKE_DISPATCH_TOKEN }}
           PRODUCT_VERSION: ${{ steps.version.outputs.product_version }}
-        run: |
-          set -euo pipefail
-          gh workflow run smoke.yaml \
-            --repo Kong/kong-mesh-smoke \
-            --ref main \
-            --field product_name=kuma \
-            --field product_version="${PRODUCT_VERSION}" \
-            --field k8s_provider_k3d=true \
-            --field k8s_provider_gke=true \
-            --field k8s_provider_eks=true \
-            --field uni_provider_gcp=true \
-            --field uni_provider_aws=true \
-            --field run_tf_provider_tests=false
+        with:
+          # Same cross-org (kumahq -> Kong) PAT already used by pr-merged.yaml
+          # (KUMA_UPGRADE, to Kong/kong-mesh) and sync_kuma_oas_to_kuma-gui.yaml
+          # (SYNC_KUMA_OAS, to Kong/kuma-gui). Needs a Kong org admin to add
+          # Kong/kong-mesh-smoke to its repo access list; no new secret required.
+          github-token: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: "Kong",
+              repo: "kong-mesh-smoke",
+              event_type: "KUMA_SMOKE_TEST",
+              client_payload: {
+                product_name: "kuma",
+                product_version: process.env.PRODUCT_VERSION,
+                k8s_provider_k3d: true,
+                k8s_provider_gke: true,
+                k8s_provider_eks: true,
+                uni_provider_gcp: true,
+                uni_provider_aws: true,
+                run_tf_provider_tests: false,
+              },
+            });
