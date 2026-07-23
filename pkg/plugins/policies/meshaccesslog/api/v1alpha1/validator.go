@@ -150,10 +150,12 @@ func validateBackend(backend Backend) validators.ValidationError {
 			verr.AddViolationAt(root, validators.MustBeDefined)
 			break
 		}
-		verr.AddErrorAt(root, validators.ValidateOtelBackendRefOrEndpoint(
-			backend.OpenTelemetry.Endpoint,
-			backend.OpenTelemetry.BackendRef,
-		))
+		switch backend.OpenTelemetry.BackendRef {
+		case nil:
+			verr.AddViolationAt(root.Field("backendRef"), validators.MustBeDefined)
+		default:
+			verr.AddErrorAt(root.Field("backendRef"), validators.ValidateBackendResourceRef(backend.OpenTelemetry.BackendRef))
+		}
 		verr.AddErrorAt(root, validateOtelAttributes(pointer.Deref(backend.OpenTelemetry.Attributes)))
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))

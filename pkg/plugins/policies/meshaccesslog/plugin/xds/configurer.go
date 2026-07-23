@@ -153,7 +153,7 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 
 	resolved := policies_xds.ResolveOtelBackend(
 		otelBackend.BackendRef,
-		otelBackend.Endpoint,
+		"",
 		policies_xds.ParseOtelEndpoint,
 		func(ep string) string { return ep },
 		pipe.Resources,

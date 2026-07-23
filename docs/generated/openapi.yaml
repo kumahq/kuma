@@ -6569,8 +6569,7 @@ components:
                                     BackendRef is a reference to a
                                     MeshOpenTelemetryBackend resource that
 
-                                    defines the collector endpoint. Mutually
-                                    exclusive with Endpoint.
+                                    defines the collector endpoint.
                                   properties:
                                     kind:
                                       description: Kind of the backend resource.
@@ -6606,16 +6605,6 @@ components:
                                           value:
                                             stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
-                                endpoint:
-                                  default: ''
-                                  description: >-
-                                    Endpoint of OpenTelemetry collector. An
-                                    empty port defaults to 4317.
-
-
-                                    Deprecated: use BackendRef instead.
-                                  example: otel-collector:4317
-                                  type: string
                               type: object
                             tcp:
                               description: TCPBackend defines a TCP logging backend.
@@ -6863,8 +6852,7 @@ components:
                                     BackendRef is a reference to a
                                     MeshOpenTelemetryBackend resource that
 
-                                    defines the collector endpoint. Mutually
-                                    exclusive with Endpoint.
+                                    defines the collector endpoint.
                                   properties:
                                     kind:
                                       description: Kind of the backend resource.
@@ -6900,16 +6888,6 @@ components:
                                           value:
                                             stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
-                                endpoint:
-                                  default: ''
-                                  description: >-
-                                    Endpoint of OpenTelemetry collector. An
-                                    empty port defaults to 4317.
-
-
-                                    Deprecated: use BackendRef instead.
-                                  example: otel-collector:4317
-                                  type: string
                               type: object
                             tcp:
                               description: TCPBackend defines a TCP logging backend.
@@ -7219,8 +7197,7 @@ components:
                                     BackendRef is a reference to a
                                     MeshOpenTelemetryBackend resource that
 
-                                    defines the collector endpoint. Mutually
-                                    exclusive with Endpoint.
+                                    defines the collector endpoint.
                                   properties:
                                     kind:
                                       description: Kind of the backend resource.
@@ -7256,16 +7233,6 @@ components:
                                           value:
                                             stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
-                                endpoint:
-                                  default: ''
-                                  description: >-
-                                    Endpoint of OpenTelemetry collector. An
-                                    empty port defaults to 4317.
-
-
-                                    Deprecated: use BackendRef instead.
-                                  example: otel-collector:4317
-                                  type: string
                               type: object
                             tcp:
                               description: TCPBackend defines a TCP logging backend.
