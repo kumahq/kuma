@@ -43,7 +43,7 @@ func BuildEgressEndpointMap(
 
 	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil, false, map[core_xds.ServiceName]struct{}{})
 
-	fillExternalServicesReachableFromZone(ctx, outbound, meshExternalServices, mesh, loader)
+	fillMeshExternalServicesOutbounds(ctx, outbound, meshExternalServices, mesh, loader)
 
 	for serviceName, endpoints := range outbound {
 		var newEndpoints []core_xds.Endpoint
@@ -564,7 +564,7 @@ func fillIngressOutbounds(
 	return uint32(len(ziInstances))
 }
 
-func fillExternalServicesReachableFromZone(
+func fillMeshExternalServicesOutbounds(
 	ctx context.Context,
 	outbound core_xds.EndpointMap,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
