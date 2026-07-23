@@ -228,7 +228,6 @@ components:
                 Default: false
               type: boolean
             localityAwareLoadBalancing:
-              description: Enable the Locality Aware Load Balancing
               type: boolean
             zoneEgress:
               description: |-
