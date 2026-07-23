@@ -8,6 +8,34 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `from` removed from `MeshTLS`
+
+The deprecated `from` field has been removed from the `MeshTLS` policy. Use the `rules` field instead.
+
+**Action required**
+
+Migrate any `MeshTLS` resources using `from` to use `rules` before upgrading:
+
+```yaml
+# Before (deprecated)
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        mode: Strict
+
+# After
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        mode: Strict
+```
+
 ### Legacy `ExternalService` resource removed
 
 The legacy `ExternalService` resource has been removed. Its CRD, API

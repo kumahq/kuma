@@ -157,5 +157,11 @@ var _ core_model.PolicyItem = &policyItem{}
 func (p *policyItem) GetTargetRef() common_api.TargetRef {
 	return common_api.TargetRef{Kind: common_api.Mesh}
 }
+{{ if .skipGetDefault }}
+
+func (p *policyItem) GetDefault() interface{} {
+	return nil
+}
+{{- end }}
 {{- end }}
 `))

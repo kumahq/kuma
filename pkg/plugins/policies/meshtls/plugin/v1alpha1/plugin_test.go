@@ -104,7 +104,7 @@ var _ = Describe("MeshTLS", func() {
 								WithService("frontend"),
 						),
 				).
-				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getFromRules(pointer.Deref(policy.Spec.From))))
+				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getRulesAsFromRules(pointer.Deref(policy.Spec.Rules))))
 
 			if given.features != nil {
 				proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{
@@ -404,17 +404,17 @@ func getPolicy(caseName string) *api.MeshTLSResource {
 	return meshTLS
 }
 
-func getFromRules(froms []api.From) core_rules.FromRules {
+func getRulesAsFromRules(policyRules []api.Rule) core_rules.FromRules {
 	var legacyRules []*core_rules.Rule
 	var rules []*inbound.Rule
 
-	for _, from := range froms {
+	for _, rule := range policyRules {
 		legacyRules = append(legacyRules, &core_rules.Rule{
 			Subset: subsetutils.Subset{},
-			Conf:   from.Default,
+			Conf:   rule.Default,
 		})
 		rules = append(rules, &inbound.Rule{
-			Conf:   from.Default,
+			Conf:   rule.Default,
 			Origin: common.Origin{},
 		})
 	}

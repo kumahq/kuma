@@ -14,23 +14,6 @@ func (x *MeshTLS) GetTargetRef() common_api.TargetRef {
 	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
 }
 
-func (x *From) GetTargetRef() common_api.TargetRef {
-	return x.TargetRef
-}
-
-func (x *From) GetDefault() interface{} {
-	return x.Default
-}
-
-func (x *MeshTLS) GetFromList() []core_model.PolicyItem {
-	var result []core_model.PolicyItem
-	for _, itm := range pointer.Deref(x.From) {
-		item := itm
-		result = append(result, &item)
-	}
-	return result
-}
-
 func (x *Rule) GetDefault() interface{} {
 	return x.Default
 }
@@ -46,4 +29,25 @@ func (x *MeshTLS) GetRules() []inbound.RuleEntry {
 		result = append(result, &item)
 	}
 	return result
+}
+
+func (x *MeshTLS) GetPolicyItem() core_model.PolicyItem {
+	return &policyItem{
+		MeshTLS: x,
+	}
+}
+
+// policyItem is an auxiliary struct with the implementation of the GetTargetRef() to always return empty result
+type policyItem struct {
+	*MeshTLS
+}
+
+var _ core_model.PolicyItem = &policyItem{}
+
+func (p *policyItem) GetTargetRef() common_api.TargetRef {
+	return common_api.TargetRef{Kind: common_api.Mesh}
+}
+
+func (p *policyItem) GetDefault() interface{} {
+	return nil
 }
