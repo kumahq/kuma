@@ -47,6 +47,18 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		Name:         "backend",
 		SectionName:  "",
 	}
+	otherServiceIdentifier := kri.Identifier{
+		ResourceType: "MeshService",
+		Mesh:         "default",
+		Name:         "other-service",
+		SectionName:  "",
+	}
+	secondServiceIdentifier := kri.Identifier{
+		ResourceType: "MeshService",
+		Mesh:         "default",
+		Name:         "second-service",
+		SectionName:  "",
+	}
 
 	type sidecarTestCase struct {
 		resources       []*core_xds.Resource
@@ -124,21 +136,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						WithMesh("default").
 						WithAddress("127.0.0.1").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http"),
-				).
-				WithOutbounds(xds_types.Outbounds{
-					{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
-						Port: builders.FirstOutboundPort,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "other-service",
-						},
-					}},
-					{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
-						Port: builders.FirstOutboundPort + 1,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "second-service",
-						},
-					}},
-				})
+				)
 			if given.unifiedNaming {
 				proxy = proxy.WithMetadata(&core_xds.DataplaneMetadata{
 					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
@@ -160,20 +158,19 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		Entry("basic outbound cluster with connection limits", sidecarTestCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:     "outbound",
-					Origin:   metadata.OriginOutbound,
-					Resource: test_xds.ClusterWithName("other-service"),
+					Name:           "outbound",
+					Origin:         metadata.OriginOutbound,
+					Resource:       test_xds.ClusterWithName("other-service"),
+					ResourceOrigin: otherServiceIdentifier,
 				},
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{subsetutils.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service",
-						}},
-						Conf: api.Conf{
-							ConnectionLimits: genConnectionLimits(),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					otherServiceIdentifier: {
+						Conf: []any{
+							api.Conf{
+								ConnectionLimits: genConnectionLimits(),
+							},
 						},
 					},
 				},
@@ -205,20 +202,19 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		Entry("basic outbound cluster with outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:     "outbound",
-					Origin:   metadata.OriginOutbound,
-					Resource: test_xds.ClusterWithName("second-service"),
+					Name:           "outbound",
+					Origin:         metadata.OriginOutbound,
+					Resource:       test_xds.ClusterWithName("second-service"),
+					ResourceOrigin: secondServiceIdentifier,
 				},
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{subsetutils.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "second-service",
-						}},
-						Conf: api.Conf{
-							OutlierDetection: genOutlierDetection(false),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					secondServiceIdentifier: {
+						Conf: []any{
+							api.Conf{
+								OutlierDetection: genOutlierDetection(false),
+							},
 						},
 					},
 				},
@@ -228,20 +224,19 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		Entry("basic outbound cluster with outlier detection and disabled=true", sidecarTestCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:     "outbound",
-					Origin:   metadata.OriginOutbound,
-					Resource: test_xds.ClusterWithName("second-service"),
+					Name:           "outbound",
+					Origin:         metadata.OriginOutbound,
+					Resource:       test_xds.ClusterWithName("second-service"),
+					ResourceOrigin: secondServiceIdentifier,
 				},
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{subsetutils.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "second-service",
-						}},
-						Conf: api.Conf{
-							OutlierDetection: genOutlierDetection(true),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					secondServiceIdentifier: {
+						Conf: []any{
+							api.Conf{
+								OutlierDetection: genOutlierDetection(true),
+							},
 						},
 					},
 				},
@@ -251,21 +246,20 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		Entry("basic outbound cluster with connection limits and outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:     "outbound",
-					Origin:   metadata.OriginOutbound,
-					Resource: test_xds.ClusterWithName("second-service"),
+					Name:           "outbound",
+					Origin:         metadata.OriginOutbound,
+					Resource:       test_xds.ClusterWithName("second-service"),
+					ResourceOrigin: secondServiceIdentifier,
 				},
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{subsetutils.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "second-service",
-						}},
-						Conf: api.Conf{
-							ConnectionLimits: genConnectionLimits(),
-							OutlierDetection: genOutlierDetection(false),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					secondServiceIdentifier: {
+						Conf: []any{
+							api.Conf{
+								ConnectionLimits: genConnectionLimits(),
+								OutlierDetection: genOutlierDetection(false),
+							},
 						},
 					},
 				},
@@ -275,21 +269,20 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		Entry("basic outbound cluster with connection limits, outlier detection and disabled=true", sidecarTestCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:     "outbound",
-					Origin:   metadata.OriginOutbound,
-					Resource: test_xds.ClusterWithName("second-service"),
+					Name:           "outbound",
+					Origin:         metadata.OriginOutbound,
+					Resource:       test_xds.ClusterWithName("second-service"),
+					ResourceOrigin: secondServiceIdentifier,
 				},
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{subsetutils.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "second-service",
-						}},
-						Conf: api.Conf{
-							ConnectionLimits: genConnectionLimits(),
-							OutlierDetection: genOutlierDetection(true),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					secondServiceIdentifier: {
+						Conf: []any{
+							api.Conf{
+								ConnectionLimits: genConnectionLimits(),
+								OutlierDetection: genOutlierDetection(true),
+							},
 						},
 					},
 				},
@@ -470,26 +463,26 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		Entry("split outbound cluster with connection limits and outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:     "other-service",
-					Origin:   metadata.OriginOutbound,
-					Resource: test_xds.ClusterWithName("other-service"),
+					Name:           "other-service",
+					Origin:         metadata.OriginOutbound,
+					Resource:       test_xds.ClusterWithName("other-service"),
+					ResourceOrigin: otherServiceIdentifier,
 				},
 				{
-					Name:     "other-service-5ab6003f460fabce",
-					Origin:   metadata.OriginOutbound,
-					Resource: test_xds.ClusterWithName("other-service-5ab6003f460fabce"),
+					Name:           "other-service-5ab6003f460fabce",
+					Origin:         metadata.OriginOutbound,
+					Resource:       test_xds.ClusterWithName("other-service-5ab6003f460fabce"),
+					ResourceOrigin: otherServiceIdentifier,
 				},
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{subsetutils.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service",
-						}},
-						Conf: api.Conf{
-							ConnectionLimits: genConnectionLimits(),
-							OutlierDetection: genOutlierDetection(false),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					otherServiceIdentifier: {
+						Conf: []any{
+							api.Conf{
+								ConnectionLimits: genConnectionLimits(),
+								OutlierDetection: genOutlierDetection(false),
+							},
 						},
 					},
 				},
