@@ -35,7 +35,7 @@ func (f *fromTestPolicyItem) GetTargetRef() common_api.TargetRef {
 	return f.targetRef
 }
 
-func (f *fromTestPolicyItem) GetDefault() interface{} {
+func (f *fromTestPolicyItem) GetDefault() any {
 	return f.conf
 }
 
