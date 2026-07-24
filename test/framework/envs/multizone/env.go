@@ -68,11 +68,6 @@ func SetupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...KumaD
 		WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION", "100s"),
 		WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE", "80s"),
 		WithEnv("KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES", "argocd.argoproj.io"),
-		// e2e test pods carry "app", not the Helm chart's default
-		// "app.kubernetes.io/name" — without this override,
-		// computeWorkloadName() falls through to ServiceAccountName,
-		// which is "default" for any pod without a dedicated SA.
-		WithEnv("KUMA_RUNTIME_KUBERNETES_WORKLOAD_LABELS", "app"),
 	}
 	options = append(options, extraOptions...)
 	zone := NewK8sCluster(NewTestingT(), clusterName, Verbose)

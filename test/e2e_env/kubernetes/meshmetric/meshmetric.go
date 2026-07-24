@@ -410,21 +410,25 @@ func MeshMetric() {
 					testserver.WithName("test-server-0"),
 					testserver.WithMesh(mainMesh),
 					testserver.WithNamespace(namespace),
+					testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server-0"}),
 				),
 				testserver.Install(
 					testserver.WithName("test-server-1"),
 					testserver.WithMesh(mainMesh),
 					testserver.WithNamespace(namespace),
+					testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server-1"}),
 				),
 				testserver.Install(
 					testserver.WithName("test-server-2"),
 					testserver.WithMesh(secondaryMesh),
 					testserver.WithNamespace(namespace),
+					testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server-2"}),
 				),
 				testserver.Install(
 					testserver.WithName("test-server-3"),
 					testserver.WithMesh(secondaryMesh),
 					testserver.WithNamespace(namespace),
+					testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server-3"}),
 				),
 			)).
 			Setup(kubernetes.Cluster)
@@ -467,8 +471,7 @@ func MeshMetric() {
 			// metric from envoy and the sidecar
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
 			g.Expect(stdout).To(ContainSubstring("kuma_dp_dns_request_duration_seconds"))
-			// check if workload attribute was added (plain workload name from ServiceAccount)
-			g.Expect(stdout).To(ContainSubstring("kuma_workload=\"default\""))
+			g.Expect(stdout).To(ContainSubstring("kuma_workload=\"test-server-0\""))
 		}).Should(Succeed())
 	})
 
