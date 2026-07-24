@@ -1,0 +1,11 @@
+controlPlane:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: kuma.example.com
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    tls:
+      - hosts:
+          - kuma.example.com
+        secretName: kuma-gui-tls
