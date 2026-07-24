@@ -799,6 +799,19 @@ Migrate any `Mesh` resources that still configure `spec.logging` to a
 `logging` continues to apply successfully; the field is silently ignored by
 the control plane.
 
+### `MeshInsight.policies` removed in favor of `resources`
+
+The deprecated `policies` field (a map of policy type to a `total` count) has
+been removed from `MeshInsight`. The `resources` field, which reports a
+`total` count for every resource type (policies included), has been the
+replacement since it was introduced and is unaffected by this change.
+
+**Action required**
+
+Update any automation or dashboards that read `MeshInsight.policies` (via the
+REST API or `kumactl inspect meshes`) to read the equivalent entry from
+`MeshInsight.resources` instead, keyed by the same resource type name.
+
 ### `Mesh.spec.networking.outbound.passthrough` removed
 
 The inline `networking.outbound.passthrough` field has been removed from the
