@@ -1,4 +1,4 @@
-package reachableservices
+package reachablebackends
 
 import (
 	. "github.com/onsi/ginkgo/v2"

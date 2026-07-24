@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/v3/pkg/test"
-	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/reachablebackends"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/api"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/auth"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/bindoutbounds"
@@ -32,6 +31,7 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/observability"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/projectedsatoken"
+	"github.com/kumahq/kuma/v3/test/e2e_env/universal/reachablebackends"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/resilience"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/strictinbounds"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/timeout"
