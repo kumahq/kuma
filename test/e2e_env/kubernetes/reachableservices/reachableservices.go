@@ -14,6 +14,15 @@ func ReachableServices() {
 	meshName := "reachable-svc"
 	namespace := "reachable-svc"
 
+	// Services are reached via auto-generated MeshServices, so restrict
+	// outbounds with reachableBackends referencing the MeshService rather
+	// than the legacy kuma.io/transparent-proxying-reachable-services annotation.
+	reachableBackends := `refs:
+- kind: MeshService
+  name: first-test-server
+  namespace: reachable-svc
+  port: 80`
+
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MTLSMeshKubernetes(meshName)).
@@ -24,7 +33,7 @@ func ReachableServices() {
 					testserver.WithName("client-server"),
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
-					testserver.WithReachableServices("first-test-server_reachable-svc_svc_80"),
+					testserver.WithReachableBackends(reachableBackends),
 				),
 				testserver.Install(
 					testserver.WithName("first-test-server"),

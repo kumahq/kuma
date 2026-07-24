@@ -265,11 +265,9 @@ message Dataplane {
       reserved 4;
       reserved "redirect_port_inbound_v6";
 
-      // List of reachable services (represented by the value of
-      // `kuma.io/service`) via transparent proxying. Setting an explicit list
-      // can dramatically improve the performance of the mesh. If not specified,
-      // all services in the mesh are reachable.
-      repeated string reachable_services = 5;
+      // `reachable_services` has been removed in favor of `reachable_backends`.
+      reserved 5;
+      reserved "reachable_services";
 
       // The IP family mode to enable for. Can be "IPv4" or "DualStack".
       IpFamilyMode ip_family_mode = 6;
