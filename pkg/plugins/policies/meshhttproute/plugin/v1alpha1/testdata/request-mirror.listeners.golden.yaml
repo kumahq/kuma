@@ -39,7 +39,7 @@ resources:
                       defaultValue:
                         denominator: TEN_THOUSAND
                         numerator: 9990
-                  - cluster: backend
+                  - cluster: payments
                   timeout: 0s
               - match:
                   prefix: /v1/
@@ -52,7 +52,7 @@ resources:
                       defaultValue:
                         denominator: TEN_THOUSAND
                         numerator: 9990
-                  - cluster: backend
+                  - cluster: payments
                   timeout: 0s
               - match:
                   prefix: /

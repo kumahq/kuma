@@ -1325,11 +1325,17 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithPort(8084).
 						WithWeight(1).
 						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us")).
-				AddEndpoint("default_backend-us___msvc_80", xds_builders.Endpoint().
-					WithTarget("192.168.0.6").
-					WithPort(8084).
-					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend-us", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+				AddEndpoints("default_backend-us___msvc_80",
+					xds_builders.Endpoint().
+						WithTarget("192.168.0.6").
+						WithPort(8084).
+						WithWeight(1).
+						WithTags(mesh_proto.ServiceTag, "backend-us", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"),
+					xds_builders.Endpoint().
+						WithTarget("192.168.0.7").
+						WithPort(8084).
+						WithWeight(1).
+						WithTags(mesh_proto.ServiceTag, "backend-us", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
@@ -2773,12 +2779,14 @@ var _ = Describe("MeshHTTPRoute", func() {
 														},
 													},
 													{
+														// MeshHTTPRoute resolves mirror backendRefs through the
+														// legacy path only, so this one has to stay tag-based.
 														Type: api.RequestMirrorType,
 														RequestMirror: &api.RequestMirror{
 															BackendRef: common_api.BackendRef{
 																TargetRef: common_api.TargetRef{
 																	Kind: common_api.MeshService,
-																	Name: pointer.To("backend"),
+																	Name: pointer.To("payments"),
 																},
 															},
 														},
