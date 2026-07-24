@@ -238,10 +238,9 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Sidecar"]
-    tags:
-      kuma.io/service: demo-client-matcher_mesh-passthrough_svc
+    kind: Dataplane
+    labels:
+      app: demo-client-matcher
   default:
     passthroughMode: None
 `, Config.KumaNamespace, meshName)
@@ -270,10 +269,9 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Sidecar"]
-    tags:
-      kuma.io/service: demo-client-matcher_mesh-passthrough_svc
+    kind: Dataplane
+    labels:
+      app: demo-client-matcher
   default:
     passthroughMode: Matched
     appendMatch:
