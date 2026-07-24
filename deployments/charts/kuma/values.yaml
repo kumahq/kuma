@@ -1090,7 +1090,7 @@ transparentProxy:
 
 experimental:
   # -- If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching.
-  inboundTagsDisabled: false
+  inboundTagsDisabled: true
   # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.
   envoyAdminUnixSocket: true
 

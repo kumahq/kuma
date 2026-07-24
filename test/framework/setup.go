@@ -675,7 +675,6 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := opts.appYaml
 
-		// Determine service name
 		serviceName := getValueOrDefault(opts.serviceName, name)
 		transparent := opts.transparent != nil && *opts.transparent // default false
 		var err error
@@ -687,13 +686,14 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		if opts.appLabel != "" {
 			labels["app"] = opts.appLabel
 		}
+		if opts.workload == "" && !opts.omitWorkloadLabel {
+			opts.workload = serviceName
+		}
 		if opts.workload != "" {
 			labels[metadata.KumaWorkload] = opts.workload
 		}
 
-		// Build dataplane YAML if not provided
 		if appYaml == "" {
-			// Initialize template data with common fields
 			dpp := DataplaneTemplateData{
 				Mesh:           mesh,
 				ServiceName:    serviceName,
@@ -702,7 +702,6 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 				Labels:         labels,
 			}
 
-			// Configure based on mode
 			switch {
 			case transparent:
 				dpp.InboundPort = "3000"
@@ -812,10 +811,8 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		var opts appDeploymentOptions
 		opts.apply(opt...)
 
-		// Determine service name and defaults
 		serviceName := getValueOrDefault(opts.serviceName, "test-server")
 
-		// Build labels map, merging opts.labels with appLabel
 		labels := opts.labels
 		if labels == nil {
 			labels = make(map[string]string)
@@ -823,11 +820,13 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		if opts.appLabel != "" {
 			labels["app"] = opts.appLabel
 		}
+		if opts.workload == "" && !opts.omitWorkloadLabel {
+			opts.workload = serviceName
+		}
 		if opts.workload != "" {
 			labels[metadata.KumaWorkload] = opts.workload
 		}
 
-		// Initialize dataplane template data
 		dpp := DataplaneTemplateData{
 			Mesh:               mesh,
 			ServiceName:        serviceName,

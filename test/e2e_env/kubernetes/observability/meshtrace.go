@@ -49,8 +49,16 @@ func PluginTest() {
 			Install(NamespaceWithSidecarInjection(ns)).
 			Install(MeshKubernetes(mesh)).
 			Install(Parallel(
-				democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh)),
-				testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(ns)),
+				democlient.Install(
+					democlient.WithNamespace(ns),
+					democlient.WithMesh(mesh),
+					democlient.WithPodLabels(map[string]string{"app.kubernetes.io/name": "demo-client"}),
+				),
+				testserver.Install(
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(ns),
+					testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server"}),
+				),
 				obs.Install(obsDeployment, obs.WithNamespace(obsNs)),
 			)).
 			Setup(kubernetes.Cluster)
