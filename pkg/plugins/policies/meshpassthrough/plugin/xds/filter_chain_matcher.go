@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"sort"
 
 	xds_core "github.com/cncf/xds/go/xds/core/v3"
 	matcher_config "github.com/cncf/xds/go/xds/type/matcher/v3"
@@ -45,8 +46,16 @@ func BuildFilterChainMatcher(matches []FilterChainMatch, isIPv6 bool) (*matcher_
 	return m, nil
 }
 
+// serverNameMatcherExtensionName is the registered name of Envoy's domain-aware SNI custom
+// matcher (config proto xds.type.matcher.v3.ServerNameMatcher). Unlike a prefix_match_map on
+// ServerNameInput — which does a literal character-prefix match and never matches a real
+// subdomain — this matcher treats "*.example.com" as a domain suffix and evaluates
+// longest-suffix-first.
+const serverNameMatcherExtensionName = "envoy.matching.custom_matchers.domain_matcher"
+
 // buildTLSMatcher builds the "tls" transport protocol branch.
-// Matches SNI (exact/wildcard domains), then destination port, with IP/CIDR fallback.
+// Matches SNI (exact + wildcard domains) via a ServerNameMatcher, then destination port, with an
+// IP/CIDR fallback when the SNI does not match any configured domain.
 func buildTLSMatcher(matches []FilterChainMatch, isIPv6 bool) (*matcher_config.Matcher_OnMatch, error) {
 	var tlsMatches []FilterChainMatch
 	for _, m := range matches {
@@ -58,38 +67,20 @@ func buildTLSMatcher(matches []FilterChainMatch, isIPv6 bool) (*matcher_config.M
 		return nil, nil
 	}
 
-	exactSNI := map[string][]FilterChainMatch{}
-	wildcardSNI := map[string][]FilterChainMatch{}
+	// Group SNI (exact + wildcard) matches by domain value; IP/CIDR matches become the fallback.
+	sniMatches := map[string][]FilterChainMatch{}
+	var sniOrder []string
 	var ipCIDRMatches []FilterChainMatch
-
 	for _, m := range tlsMatches {
 		switch m.MatchType {
-		case Domain:
-			exactSNI[m.Value] = append(exactSNI[m.Value], m)
-		case WildcardDomain:
-			prefix := wildcardDomainToPrefix(m.Value)
-			wildcardSNI[prefix] = append(wildcardSNI[prefix], m)
+		case Domain, WildcardDomain:
+			if _, ok := sniMatches[m.Value]; !ok {
+				sniOrder = append(sniOrder, m.Value)
+			}
+			sniMatches[m.Value] = append(sniMatches[m.Value], m)
 		case IP, IPV6, CIDR, CIDRV6:
 			ipCIDRMatches = append(ipCIDRMatches, m)
 		}
-	}
-
-	exactEntries := map[string]*matcher_config.Matcher_OnMatch{}
-	for sni, chainMatches := range exactSNI {
-		onMatch, err := buildPortMatcher(chainMatches)
-		if err != nil {
-			return nil, err
-		}
-		exactEntries[sni] = onMatch
-	}
-
-	prefixEntries := map[string]*matcher_config.Matcher_OnMatch{}
-	for prefix, chainMatches := range wildcardSNI {
-		onMatch, err := buildPortMatcher(chainMatches)
-		if err != nil {
-			return nil, err
-		}
-		prefixEntries[prefix] = onMatch
 	}
 
 	var ipCIDRFallback *matcher_config.Matcher_OnMatch
@@ -97,49 +88,59 @@ func buildTLSMatcher(matches []FilterChainMatch, isIPv6 bool) (*matcher_config.M
 		ipCIDRFallback = buildIPCIDRMatcherList(ipCIDRMatches, core_meta.ProtocolTLS)
 	}
 
-	sniMatcher, err := buildSNITree(exactEntries, prefixEntries, ipCIDRFallback)
+	if len(sniMatches) == 0 {
+		// Only IP/CIDR TLS matches (no SNI): fall straight through to the IP matcher list.
+		return bldrs_matchers.OnMatchMatcher(&matcher_config.Matcher{OnNoMatch: ipCIDRFallback}), nil
+	}
+
+	// One DomainMatcher per SNI value. ServerNameMatcher does domain-aware longest-suffix
+	// matching, so exact domains automatically win over wildcards regardless of list order.
+	sort.Strings(sniOrder)
+	var domainMatchers []*matcher_config.ServerNameMatcher_DomainMatcher
+	for _, sni := range sniOrder {
+		onMatch, err := buildPortMatcher(sniMatches[sni])
+		if err != nil {
+			return nil, err
+		}
+		domainMatchers = append(domainMatchers, &matcher_config.ServerNameMatcher_DomainMatcher{
+			Domains: []string{sni},
+			OnMatch: onMatch,
+		})
+	}
+
+	sniMatcher, err := buildServerNameMatcher(domainMatchers, ipCIDRFallback)
 	if err != nil {
 		return nil, err
 	}
 	return bldrs_matchers.OnMatchMatcher(sniMatcher), nil
 }
 
-func buildSNITree(
-	exactEntries map[string]*matcher_config.Matcher_OnMatch,
-	prefixEntries map[string]*matcher_config.Matcher_OnMatch,
+// buildServerNameMatcher wraps the domain matchers in a ServerNameMatcher custom_match. The
+// domain matcher matches against whatever string the MatcherTree input provides, so the input
+// MUST be ServerNameInput (the raw SNI). IP/CIDR matches (if any) are the on_no_match fallback.
+func buildServerNameMatcher(
+	domainMatchers []*matcher_config.ServerNameMatcher_DomainMatcher,
 	ipCIDRFallback *matcher_config.Matcher_OnMatch,
 ) (*matcher_config.Matcher, error) {
-	// Build prefix matcher (wildcard domains) with IP/CIDR as its fallback.
-	var prefixMatcher *matcher_config.Matcher
-	if len(prefixEntries) > 0 {
-		prefixMatcher = &matcher_config.Matcher{OnNoMatch: ipCIDRFallback}
-		if err := bldrs_matchers.MatcherTreePrefixMap(bldrs_matchers.NetworkInputServerName(), prefixEntries)(prefixMatcher); err != nil {
-			return nil, err
-		}
-	}
-
-	// Build exact matcher with prefix matcher (or IP/CIDR) as fallback.
-	var onNoMatch *matcher_config.Matcher_OnMatch
-	if prefixMatcher != nil {
-		onNoMatch = bldrs_matchers.OnMatchMatcher(prefixMatcher)
-	} else {
-		onNoMatch = ipCIDRFallback
-	}
-
-	if len(exactEntries) == 0 {
-		// Only prefix or IP/CIDR matchers. Return the prefix matcher if exists, otherwise a
-		// passthrough matcher that immediately falls back to IP/CIDR.
-		if prefixMatcher != nil {
-			return prefixMatcher, nil
-		}
-		return &matcher_config.Matcher{OnNoMatch: ipCIDRFallback}, nil
-	}
-
-	m := &matcher_config.Matcher{OnNoMatch: onNoMatch}
-	if err := bldrs_matchers.MatcherTreeExactMap(bldrs_matchers.NetworkInputServerName(), exactEntries)(m); err != nil {
+	serverNameMatcher := &matcher_config.ServerNameMatcher{DomainMatchers: domainMatchers}
+	typedConfig, err := util_proto.MarshalAnyDeterministic(serverNameMatcher)
+	if err != nil {
 		return nil, err
 	}
-	return m, nil
+	return &matcher_config.Matcher{
+		MatcherType: &matcher_config.Matcher_MatcherTree_{
+			MatcherTree: &matcher_config.Matcher_MatcherTree{
+				Input: bldrs_matchers.NetworkInputServerName(),
+				TreeType: &matcher_config.Matcher_MatcherTree_CustomMatch{
+					CustomMatch: &xds_core.TypedExtensionConfig{
+						Name:        serverNameMatcherExtensionName,
+						TypedConfig: typedConfig,
+					},
+				},
+			},
+		},
+		OnNoMatch: ipCIDRFallback,
+	}, nil
 }
 
 // buildRawBufferMatcher builds the "raw_buffer" transport protocol branch.
@@ -420,14 +421,6 @@ func ipToCIDR(ip string, isIPv6 bool) *corev3.CidrRange {
 		AddressPrefix: ip,
 		PrefixLen:     util_proto.UInt32(prefixLen),
 	}
-}
-
-// wildcardDomainToPrefix converts *.example.com to .example.com for prefix matching.
-func wildcardDomainToPrefix(domain string) string {
-	if len(domain) > 1 && domain[0] == '*' {
-		return domain[1:]
-	}
-	return domain
 }
 
 func matchesIPVersion(m FilterChainMatch, isIPv6 bool) bool {
