@@ -259,6 +259,34 @@ var _ = Describe("MeshTCPRoute", func() {
 					VIPs: []meshservice_api.VIP{{IP: "10.0.1.2"}},
 				},
 			}
+			meshSvcBackendEU := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "backend-eu", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8004)),
+						AppProtocol: core_meta.ProtocolTCP,
+						Name:        pointer.To("tcp-port"),
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.1.3"}},
+				},
+			}
+			meshSvcBackendUS := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "backend-us", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8005)),
+						AppProtocol: core_meta.ProtocolHTTP,
+						Name:        pointer.To("http-port"),
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.1.4"}},
+				},
+			}
 			meshExtSvcExternal := meshexternalservice_api.MeshExternalServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "externalservice", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
@@ -282,25 +310,24 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
-				Items: []*meshservice_api.MeshServiceResource{&meshSvcBackend, &meshSvcOtherBackend},
+				Items: []*meshservice_api.MeshServiceResource{&meshSvcBackend, &meshSvcOtherBackend, &meshSvcBackendEU, &meshSvcBackendUS},
 			}
 			resources.MeshLocalResources[meshexternalservice_api.MeshExternalServiceType] = &meshexternalservice_api.MeshExternalServiceResourceList{
 				Items: []*meshexternalservice_api.MeshExternalServiceResource{&meshExtSvcExternal},
 			}
 
 			outboundTargets := xds_builders.EndpointMap().
-				AddEndpoints("backend",
-					xds_builders.Endpoint().
-						WithTarget("192.168.0.4").
-						WithPort(8004).
-						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolTCP), "region", "eu"),
-					xds_builders.Endpoint().
-						WithTarget("192.168.0.5").
-						WithPort(8005).
-						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us")).
-				AddEndpoint("other-backend", xds_builders.Endpoint().
+				AddEndpoint("default_backend-eu___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8004).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend-eu", mesh_proto.ProtocolTag, string(core_meta.ProtocolTCP))).
+				AddEndpoint("default_backend-us___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.5").
+					WithPort(8005).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend-us", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
+				AddEndpoint("default_other-backend___msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.6").
 					WithPort(8006).
 					WithWeight(1).
@@ -317,27 +344,25 @@ var _ = Describe("MeshTCPRoute", func() {
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{
 								{
-									TargetRef: builders.TargetRefServiceSubset(
-										"backend",
-										"region", "eu",
+									TargetRef: builders.TargetRefMeshService(
+										"backend-eu", "", "tcp-port",
 									),
 									Weight: pointer.To(uint(40)),
 								},
 								{
-									TargetRef: builders.TargetRefServiceSubset(
-										"backend",
-										"region", "us",
+									TargetRef: builders.TargetRefMeshService(
+										"backend-us", "", "http-port",
 									),
 									Weight: pointer.To(uint(15)),
 								},
 								{
-									TargetRef: builders.TargetRefService(
-										"other-backend",
+									TargetRef: builders.TargetRefMeshService(
+										"other-backend", "", "http-port",
 									),
 									Weight: pointer.To(uint(15)),
 								},
 								{
-									TargetRef: builders.TargetRefService(
+									TargetRef: builders.TargetRefMeshExternalService(
 										"externalservice",
 									),
 									Weight: pointer.To(uint(15)),
@@ -351,8 +376,6 @@ var _ = Describe("MeshTCPRoute", func() {
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithEndpointMap(outboundTargets).
-					AddServiceProtocol("backend", core_meta.GetCommonProtocol(core_meta.ProtocolTCP, core_meta.ProtocolHTTP)).
-					AddServiceProtocol("other-backend", core_meta.ProtocolHTTP).
 					AddServiceProtocol("externalservice", core_meta.ProtocolHTTP2).
 					AddExternalService("externalservice").
 					WithResources(resources).
@@ -673,16 +696,6 @@ var _ = Describe("MeshTCPRoute", func() {
 				Items: []*meshservice_api.MeshServiceResource{&meshSvcBackend, &meshSvcTCPBackend},
 			}
 			outboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("backend", xds_builders.Endpoint().
-					WithTarget("192.168.0.4").
-					WithPort(8004).
-					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
-				AddEndpoint("tcp-backend", xds_builders.Endpoint().
-					WithTarget("192.168.0.5").
-					WithPort(8005).
-					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "tcp-backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolTCP))).
 				AddEndpoint("default_tcp-backend___msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.5").
 					WithPort(8005).
@@ -694,8 +707,8 @@ var _ = Describe("MeshTCPRoute", func() {
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{
 								{
-									TargetRef: builders.TargetRefService(
-										"tcp-backend",
+									TargetRef: builders.TargetRefMeshService(
+										"tcp-backend", "", "tcp-port",
 									),
 									Weight: pointer.To(uint(1)),
 								},
@@ -707,8 +720,6 @@ var _ = Describe("MeshTCPRoute", func() {
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
-					AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-					AddServiceProtocol("tcp-backend", core_meta.ProtocolTCP).
 					WithResources(resources).
 					Build(),
 				proxy: xds_builders.Proxy().
@@ -932,22 +943,12 @@ var _ = Describe("MeshTCPRoute", func() {
 				Items: []*meshservice_api.MeshServiceResource{&meshSvcBackend, &meshSvcTCPBackend, &meshSvcHTTPBackend},
 			}
 			outboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("backend", xds_builders.Endpoint().
-					WithTarget("192.168.0.4").
-					WithPort(8004).
-					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolTCP))).
-				AddEndpoint("tcp-backend", xds_builders.Endpoint().
-					WithTarget("192.168.0.5").
-					WithPort(8005).
-					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "tcp-backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolTCP))).
 				AddEndpoint("default_tcp-backend___msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.5").
 					WithPort(8005).
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "tcp-backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolTCP))).
-				AddEndpoint("http-backend", xds_builders.Endpoint().
+				AddEndpoint("default_http-backend___msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.6").
 					WithPort(8006).
 					WithWeight(1).
@@ -958,8 +959,8 @@ var _ = Describe("MeshTCPRoute", func() {
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{
 								{
-									TargetRef: builders.TargetRefService(
-										"tcp-backend",
+									TargetRef: builders.TargetRefMeshService(
+										"tcp-backend", "", "tcp-port",
 									),
 									Weight: pointer.To(uint(1)),
 								},
@@ -985,7 +986,7 @@ var _ = Describe("MeshTCPRoute", func() {
 								Default: meshhttproute_api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{
 										{
-											TargetRef: builders.TargetRefService("http-backend"),
+											TargetRef: builders.TargetRefMeshService("http-backend", "", "http-port"),
 											Weight:    pointer.To(uint(1)),
 										},
 									},
@@ -998,9 +999,6 @@ var _ = Describe("MeshTCPRoute", func() {
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
-					AddServiceProtocol("backend", core_meta.ProtocolTCP).
-					AddServiceProtocol("tcp-backend", core_meta.ProtocolTCP).
-					AddServiceProtocol("http-backend", core_meta.ProtocolHTTP).
 					WithResources(resources).
 					Build(),
 				proxy: xds_builders.Proxy().
@@ -1048,38 +1046,63 @@ var _ = Describe("MeshTCPRoute", func() {
 					VIPs: []meshservice_api.VIP{{IP: "10.0.6.1"}},
 				},
 			}
+			meshSvcBackendEU := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "backend-eu", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8004)),
+						AppProtocol: core_meta.ProtocolKafka,
+						Name:        pointer.To("kafka-port"),
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.6.2"}},
+				},
+			}
+			meshSvcBackendUS := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "backend-us", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8005)),
+						AppProtocol: core_meta.ProtocolKafka,
+						Name:        pointer.To("kafka-port"),
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.6.3"}},
+				},
+			}
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
-				Items: []*meshservice_api.MeshServiceResource{&meshSvcBackend},
+				Items: []*meshservice_api.MeshServiceResource{&meshSvcBackend, &meshSvcBackendEU, &meshSvcBackendUS},
 			}
 			outboundTargets := xds_builders.EndpointMap().
-				AddEndpoints("backend",
-					xds_builders.Endpoint().
-						WithTarget("192.168.0.4").
-						WithPort(8004).
-						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolKafka), "region", "eu"),
-					xds_builders.Endpoint().
-						WithTarget("192.168.0.5").
-						WithPort(8005).
-						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolKafka), "region", "us"))
+				AddEndpoint("default_backend-eu___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8004).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend-eu", mesh_proto.ProtocolTag, string(core_meta.ProtocolKafka))).
+				AddEndpoint("default_backend-us___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.5").
+					WithPort(8005).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend-us", mesh_proto.ProtocolTag, string(core_meta.ProtocolKafka)))
 			rules := core_rules.ToRules{
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					kri.From(&meshSvcBackend): test_policies.NewOutboundRule(nil, api.Rule{
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{
 								{
-									TargetRef: builders.TargetRefServiceSubset(
-										"backend",
-										"region", "eu",
+									TargetRef: builders.TargetRefMeshService(
+										"backend-eu", "", "kafka-port",
 									),
 									Weight: pointer.To(uint(60)),
 								},
 								{
-									TargetRef: builders.TargetRefServiceSubset(
-										"backend",
-										"region", "us",
+									TargetRef: builders.TargetRefMeshService(
+										"backend-us", "", "kafka-port",
 									),
 									Weight: pointer.To(uint(40)),
 								},
@@ -1091,7 +1114,6 @@ var _ = Describe("MeshTCPRoute", func() {
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
-					AddServiceProtocol("backend", core_meta.ProtocolKafka).
 					WithResources(resources).
 					Build(),
 				proxy: xds_builders.Proxy().

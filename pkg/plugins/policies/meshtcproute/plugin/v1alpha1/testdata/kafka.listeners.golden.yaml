@@ -18,9 +18,9 @@ resources:
           statPrefix: default_backend___msvc_80
           weightedClusters:
             clusters:
-            - name: backend-bb38a94289f18fb9
+            - name: default_backend-eu___msvc_80
               weight: 60
-            - name: backend-c72efb5be46fae6b
+            - name: default_backend-us___msvc_80
               weight: 40
     metadata:
       filterMetadata:

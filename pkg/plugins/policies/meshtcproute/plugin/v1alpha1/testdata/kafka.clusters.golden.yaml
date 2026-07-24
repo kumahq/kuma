@@ -1,26 +1,26 @@
 resources:
-- name: backend-bb38a94289f18fb9
+- name: default_backend-eu___msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: backend-bb38a94289f18fb9
+    name: default_backend-eu___msvc_80
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: backend-c72efb5be46fae6b
+- name: default_backend-us___msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: backend-c72efb5be46fae6b
+    name: default_backend-us___msvc_80
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
