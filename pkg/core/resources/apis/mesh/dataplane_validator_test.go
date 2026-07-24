@@ -1720,5 +1720,22 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.inbound[0].tags["kuma.io/service"]
                   message: tag has to exist`))
 		})
+
+		It("should allow dataplane with empty gateway tags (InboundTagsDisabled)", func() {
+			dataplane := core_mesh.NewDataplaneResource()
+
+			// when
+			err := util_proto.FromYAML([]byte(`
+                networking:
+                  address: 192.168.0.1
+                  gateway:
+                    type: DELEGATED
+`), dataplane.Spec)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then - empty tags = new setup, no service tag required
+			err = dataplane.Validate()
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 })
