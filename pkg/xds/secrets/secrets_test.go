@@ -338,6 +338,30 @@ var _ = Describe("Secrets", Ordered, func() {
 				// then
 				Expect(err).To(HaveOccurred())
 			})
+
+			It("GetAllInOne should fall back to the kuma.io/workload label for identity", func() {
+				// given a dataplane with no inbound tags but a workload label
+				dataplane := newTaglessDataplane(map[string]string{"kuma.io/workload": "web"})
+
+				// when
+				identity, ca, err := secrets.GetAllInOne(context.Background(), newMesh("default"), dataplane, nil)
+
+				// then a cert is still generated, keyed off the workload label
+				Expect(err).ToNot(HaveOccurred())
+				Expect(identity.PemCerts).ToNot(BeEmpty())
+				Expect(ca.PemCerts).ToNot(BeEmpty())
+			})
+
+			It("GetAllInOne should error rather than issue a cert with no SAN when the workload label is also missing", func() {
+				// given a dataplane with neither inbound tags nor a workload label
+				dataplane := newTaglessDataplane(nil)
+
+				// when
+				_, _, err := secrets.GetAllInOne(context.Background(), newMesh("default"), dataplane, nil)
+
+				// then
+				Expect(err).To(HaveOccurred())
+			})
 		})
 	})
 
