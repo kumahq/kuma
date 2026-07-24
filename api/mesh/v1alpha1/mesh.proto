@@ -3,7 +3,6 @@ syntax = "proto3";
 package kuma.mesh.v1alpha1;
 
 import "api/mesh/options.proto";
-import "api/mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 
@@ -42,13 +41,8 @@ message Mesh {
   reserved 3;
   reserved "logging";
 
-  // Configuration for metrics collected and exposed by dataplanes.
-  //
-  // Settings defined here become defaults for every dataplane in a given Mesh.
-  // Additionally, it is also possible to further customize this configuration
-  // for each dataplane individually using Dataplane resource.
-  // +optional
-  Metrics metrics = 4;
+  reserved 4;
+  reserved "metrics";
 
   reserved 5;
   reserved "networking";

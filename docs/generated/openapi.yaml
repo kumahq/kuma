@@ -5234,118 +5234,6 @@ components:
             detail:
               type: string
               example: The requested resource was not found
-    PrometheusMetricsBackendConfig:
-      description: >-
-        PrometheusMetricsBackendConfig defines configuration of Prometheus
-        backend
-      properties:
-        aggregate:
-          description: >-
-            Map with the configuration of applications which metrics are going
-            to be
-
-            scrapped by kuma-dp.
-          items:
-            description: >-
-              PrometheusAggregateMetricsConfig defines endpoints that should be
-              scrapped by kuma-dp for prometheus metrics.
-            properties:
-              address:
-                description: >-
-                  Address on which a service expose HTTP endpoint with
-                  Prometheus metrics.
-                type: string
-              enabled:
-                description: >-
-                  If false then the application won't be scrapped. If nil, then
-                  it is treated
-
-                  as true and kuma-dp scrapes metrics from the service.
-                type: boolean
-              name:
-                description: Name which identify given configuration.
-                type: string
-              path:
-                description: >-
-                  Path on which a service expose HTTP endpoint with Prometheus
-                  metrics.
-                type: string
-              port:
-                description: >-
-                  Port on which a service expose HTTP endpoint with Prometheus
-                  metrics.
-                type: integer
-            type: object
-          type: array
-        envoy:
-          description: Configuration of Envoy's metrics.
-          properties:
-            filterRegex:
-              description: >-
-                FilterRegex value that is going to be passed to Envoy for
-                filtering
-
-                Envoy metrics.
-              type: string
-            usedOnly:
-              description: >-
-                If true then return metrics that Envoy has updated (counters
-                incremented
-
-                at least once, gauges changed at least once, and histograms
-                added to at
-
-                least once). If nil, then it is treated as false.
-              type: boolean
-          type: object
-        path:
-          description: >-
-            Path on which a dataplane should expose HTTP endpoint with
-            Prometheus
-
-            metrics.
-          type: string
-        port:
-          description: >-
-            Port on which a dataplane should expose HTTP endpoint with
-            Prometheus
-
-            metrics.
-          type: integer
-        skipMTLS:
-          description: >-
-            If true then endpoints for scraping metrics won't require mTLS even
-            if mTLS
-
-            is enabled in Mesh. If nil, then it is treated as false.
-          type: boolean
-        tags:
-          additionalProperties:
-            type: string
-          description: >-
-            Tags associated with an application this dataplane is deployed next
-            to,
-
-            e.g. service=web, version=1.0.
-
-            `service` tag is mandatory.
-          type: object
-        tls:
-          description: Configuration of TLS for prometheus listener.
-          properties:
-            mode:
-              description: >-
-                mode defines how configured is the TLS for Prometheus.
-
-                Supported values, delegated, disabled, activeMTLSBackend.
-                Default to
-
-                `activeMTLSBackend`.
-              oneOf:
-                - type: string
-                - type: integer
-          type: object
-      type: object
     DataplaneItem:
       properties:
         creationTime:
@@ -5363,31 +5251,6 @@ components:
           type: object
         mesh:
           type: string
-        metrics:
-          description: >-
-            Configuration for metrics that should be collected and exposed by
-            the
-
-            data plane proxy.
-
-
-            Settings defined here will override their respective defaults
-
-            defined at a Mesh level.
-          properties:
-            conf:
-              oneOf:
-                - $ref: '#/components/schemas/PrometheusMetricsBackendConfig'
-              type: object
-            name:
-              description: >-
-                Name of the backend, can be then used in
-                Mesh.metrics.enabledBackend
-              type: string
-            type:
-              description: Type of the backend (Kuma ships with 'prometheus')
-              type: string
-          type: object
         modificationTime:
           description: Time at which the resource was updated
           format: date-time
@@ -6107,44 +5970,6 @@ components:
         labels:
           additionalProperties:
             type: string
-          type: object
-        metrics:
-          description: >-
-            Configuration for metrics collected and exposed by dataplanes.
-
-
-            Settings defined here become defaults for every dataplane in a given
-            Mesh.
-
-            Additionally, it is also possible to further customize this
-            configuration
-
-            for each dataplane individually using Dataplane resource.
-
-            +optional
-          properties:
-            backends:
-              description: List of available Metrics backends
-              items:
-                description: MetricsBackend defines metric backends
-                properties:
-                  conf:
-                    oneOf:
-                      - $ref: '#/components/schemas/PrometheusMetricsBackendConfig'
-                    type: object
-                  name:
-                    description: >-
-                      Name of the backend, can be then used in
-                      Mesh.metrics.enabledBackend
-                    type: string
-                  type:
-                    description: Type of the backend (Kuma ships with 'prometheus')
-                    type: string
-                type: object
-              type: array
-            enabledBackend:
-              description: Name of the enabled backend
-              type: string
           type: object
         modificationTime:
           description: Time at which the resource was updated
@@ -15384,31 +15209,6 @@ components:
       properties:
         dataplane:
           properties:
-            metrics:
-              description: >-
-                Configuration for metrics that should be collected and exposed
-                by the
-
-                data plane proxy.
-
-
-                Settings defined here will override their respective defaults
-
-                defined at a Mesh level.
-              properties:
-                conf:
-                  oneOf:
-                    - $ref: '#/components/schemas/PrometheusMetricsBackendConfig'
-                  type: object
-                name:
-                  description: >-
-                    Name of the backend, can be then used in
-                    Mesh.metrics.enabledBackend
-                  type: string
-                type:
-                  description: Type of the backend (Kuma ships with 'prometheus')
-                  type: string
-              type: object
             networking:
               description: >-
                 Networking describes inbound and outbound interfaces of the data

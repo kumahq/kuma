@@ -16,7 +16,6 @@ import (
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
 	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
@@ -60,52 +59,6 @@ func overlap(address1 net.IP, address2 net.IP) bool {
 	}
 	// exact match
 	return address1.Equal(address2)
-}
-
-func (d *DataplaneResource) GetPrometheusConfig(mesh *MeshResource) (*mesh_proto.PrometheusMetricsBackendConfig, error) {
-	if d == nil || mesh == nil || mesh.Meta.GetName() != d.Meta.GetMesh() || !mesh.HasPrometheusMetricsEnabled() {
-		return nil, nil
-	}
-	cfg := mesh_proto.PrometheusMetricsBackendConfig{}
-	strCfg := mesh.GetEnabledMetricsBackend().Conf
-	if err := util_proto.ToTyped(strCfg, &cfg); err != nil {
-		return nil, err
-	}
-
-	if d.Spec.GetMetrics().GetType() == mesh_proto.MetricsPrometheusType {
-		dpCfg := mesh_proto.PrometheusMetricsBackendConfig{}
-		if err := util_proto.ToTyped(d.Spec.Metrics.Conf, &dpCfg); err != nil {
-			return nil, err
-		}
-		d.mergeLists(&cfg, &dpCfg)
-		proto.Merge(&cfg, &dpCfg)
-	}
-	return &cfg, nil
-}
-
-// After proto.Merge called two lists are merged and we cannot be sure
-// of order of the elements and if the element is from the Mesh or from
-// the Dataplane resource.
-func (d *DataplaneResource) mergeLists(
-	meshCfg *mesh_proto.PrometheusMetricsBackendConfig,
-	dpCfg *mesh_proto.PrometheusMetricsBackendConfig,
-) {
-	aggregate := make(map[string]*mesh_proto.PrometheusAggregateMetricsConfig)
-	for _, conf := range meshCfg.Aggregate {
-		aggregate[conf.Name] = conf
-	}
-	// override Mesh aggregate configuration with Dataplane
-	for _, conf := range dpCfg.Aggregate {
-		aggregate[conf.Name] = conf
-	}
-	// contains all the elements for Dataplane configuration
-	var unduplicatedConfig []*mesh_proto.PrometheusAggregateMetricsConfig
-	for _, value := range aggregate {
-		unduplicatedConfig = append(unduplicatedConfig, value)
-	}
-	// we cannot set the same values because they are going to be appended
-	meshCfg.Aggregate = []*mesh_proto.PrometheusAggregateMetricsConfig{}
-	dpCfg.Aggregate = unduplicatedConfig
 }
 
 func (d *DataplaneResource) GetIP() string {

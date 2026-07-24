@@ -16,27 +16,6 @@
           }
         ]
       },
-      "metrics": {
-        "enabledBackend": "prometheus-1",
-        "backends": [
-          {
-            "name": "prometheus-1",
-            "type": "prometheus",
-            "conf": {
-              "path": "/non-standard-path",
-              "port": 1234
-            }
-          },
-          {
-            "name": "prometheus-2",
-            "type": "prometheus",
-            "conf": {
-              "path": "/non-standard-path",
-              "port": 1235
-            }
-          }
-        ]
-      },
       "routing": {
         "zoneEgress": true
       }
@@ -46,8 +25,7 @@
       "name": "mesh2",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
-      "kri": "kri_m____mesh2_",
-      "metrics": {}
+      "kri": "kri_m____mesh2_"
     }
   ],
   "next": null

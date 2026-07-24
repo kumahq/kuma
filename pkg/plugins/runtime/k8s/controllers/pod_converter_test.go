@@ -24,7 +24,6 @@ import (
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
 )
 
@@ -156,11 +155,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:            "05.pod.yaml",
 			servicesForPod: "05.services-for-pod.yaml",
 			dataplane:      "05.dataplane.yaml",
-		}),
-		Entry("07. Pod with metrics override", testCase{
-			pod:            "07.pod.yaml",
-			servicesForPod: "07.services-for-pod.yaml",
-			dataplane:      "07.dataplane.yaml",
 		}),
 		Entry("08. Pod with transparent proxy enabled, without direct access servies", testCase{
 			pod:            "08.pod.yaml",
@@ -789,130 +783,6 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"k8s.kuma.io/service-port": "80",
 				"k8s.kuma.io/namespace":    "demo",
 			},
-		}),
-	)
-})
-
-var _ = Describe("MetricsAggregateFor(..)", func() {
-	type testCase struct {
-		annotations map[string]string
-		expected    []*mesh_proto.PrometheusAggregateMetricsConfig
-	}
-
-	DescribeTable("should create proper metrics configuration",
-		func(given testCase) {
-			// given
-			pod := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace:   "demo",
-					Annotations: given.annotations,
-				},
-			}
-
-			// expect
-			configuration, err := MetricsAggregateFor(pod)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(configuration).To(HaveLen(len(given.expected)))
-			Expect(configuration).To(ContainElements(given.expected))
-		},
-		Entry("one service with double tag", testCase{
-			annotations: map[string]string{
-				"prometheus.metrics.kuma.io/aggregate-my-app-path":    "/stats",
-				"prometheus.metrics.kuma.io/aggregate-my-app-port":    "123",
-				"prometheus.metrics.kuma.io/aggregate-my-app-address": "localhost",
-				"prometheus.metrics.kuma.io/aggregate-my-app-enabled": "false",
-			},
-			expected: []*mesh_proto.PrometheusAggregateMetricsConfig{
-				{
-					Name:    "my-app",
-					Path:    "/stats",
-					Port:    123,
-					Enabled: util_proto.Bool(false),
-					Address: "localhost",
-				},
-			},
-		}),
-		Entry("few services", testCase{
-			annotations: map[string]string{
-				"prometheus.metrics.kuma.io/aggregate-my-app-path":       "/stats",
-				"prometheus.metrics.kuma.io/aggregate-my-app-port":       "123",
-				"prometheus.metrics.kuma.io/aggregate-my-app-2-path":     "/stats/2",
-				"prometheus.metrics.kuma.io/aggregate-my-app-2-port":     "1234",
-				"prometheus.metrics.kuma.io/aggregate-my-app-2-enabled":  "true",
-				"prometheus.metrics.kuma.io/aggregate-sidecar-path":      "/metrics",
-				"prometheus.metrics.kuma.io/aggregate-sidecar-port":      "12345",
-				"prometheus.metrics.kuma.io/aggregate-sidecar-enabled":   "false",
-				"prometheus.metrics.kuma.io/aggregate-disabled-enabled":  "false",
-				"prometheus.metrics.kuma.io/aggregate-default-path-port": "11111",
-			},
-			expected: []*mesh_proto.PrometheusAggregateMetricsConfig{
-				{
-					Name:    "my-app",
-					Path:    "/stats",
-					Port:    123,
-					Enabled: util_proto.Bool(true),
-				},
-				{
-					Name:    "my-app-2",
-					Path:    "/stats/2",
-					Port:    1234,
-					Enabled: util_proto.Bool(true),
-				},
-				{
-					Name:    "sidecar",
-					Path:    "/metrics",
-					Port:    12345,
-					Enabled: util_proto.Bool(false),
-				},
-				{
-					Name:    "disabled",
-					Enabled: util_proto.Bool(false),
-					Path:    "/metrics",
-				},
-				{
-					Name:    "default-path",
-					Port:    11111,
-					Path:    "/metrics",
-					Enabled: util_proto.Bool(true),
-				},
-			},
-		}),
-	)
-})
-
-var _ = Describe("MetricsAggregateFor(..)", func() {
-	type testCase struct {
-		annotations map[string]string
-		expected    string
-	}
-
-	DescribeTable("should fail when",
-		func(given testCase) {
-			// given
-			pod := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace:   "demo",
-					Annotations: given.annotations,
-				},
-			}
-
-			// expect
-			_, err := MetricsAggregateFor(pod)
-			Expect(err.Error()).To(Equal(given.expected))
-		},
-		Entry("one parameter for each service only defined", testCase{
-			annotations: map[string]string{
-				"prometheus.metrics.kuma.io/aggregate-my-app-path":   "/stats",
-				"prometheus.metrics.kuma.io/aggregate-my-app-2-port": "123",
-			},
-			expected: "port needs to be specified for metrics scraping",
-		}),
-		Entry("parsing integer", testCase{
-			annotations: map[string]string{
-				"prometheus.metrics.kuma.io/aggregate-my-app-2-path": "/stats",
-				"prometheus.metrics.kuma.io/aggregate-my-app-2-port": "123a",
-			},
-			expected: "failed to parse annotation \"prometheus.metrics.kuma.io/aggregate-my-app-2-port\": strconv.ParseUint: parsing \"123a\": invalid syntax",
 		}),
 	)
 })
