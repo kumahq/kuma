@@ -26,8 +26,3 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-          tlsParams:
-            cipherSuites:
-            - ECDHE-ECDSA-AES128-GCM-SHA256
-            tlsMaximumProtocolVersion: TLSv1_3
-            tlsMinimumProtocolVersion: TLSv1_2

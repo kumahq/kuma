@@ -71,12 +71,6 @@ var _ = Describe("MeshTLS", func() {
 				WithSecretsTracker(secretsTracker).
 				WithWorkloadIdentity(given.workloadIdentity).
 				WithApiVersion(envoy_common.APIV3).
-				WithOutbounds(xds_types.Outbounds{&xds_types.Outbound{
-					LegacyOutbound: builders.Outbound().
-						WithService("outgoing").
-						WithAddress("127.0.0.1").
-						WithPort(27777).Build(),
-				}}).
 				WithDataplane(
 					builders.Dataplane().
 						WithName("test").
@@ -87,7 +81,7 @@ var _ = Describe("MeshTLS", func() {
 							builders.Outbound().
 								WithAddress("127.0.0.1").
 								WithPort(27777).
-								WithService("outgoing"),
+								WithMeshService("outgoing", 80),
 						).
 						AddInbound(
 							builders.Inbound().
