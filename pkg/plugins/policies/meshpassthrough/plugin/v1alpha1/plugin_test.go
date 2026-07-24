@@ -1469,7 +1469,7 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "wildcard-port.listener.matcher-api.golden.yaml",
 			clustersGolden:  "wildcard-port.clusters.golden.yaml",
 		}),
-		Entry("kitchen sink, dual-stack mixed protocols", testCase{
+		Entry("mixed match types, dual-stack", testCase{
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
@@ -1565,10 +1565,10 @@ var _ = Describe("MeshPassthrough", func() {
 					},
 				},
 			},
-			listenersGolden: "kitchen-sink.listener.golden.yaml",
-			clustersGolden:  "kitchen-sink.clusters.golden.yaml",
+			listenersGolden: "mixed-dual-stack.listener.golden.yaml",
+			clustersGolden:  "mixed-dual-stack.clusters.golden.yaml",
 		}),
-		Entry("kitchen sink, dual-stack mixed protocols (matcher API)", testCase{
+		Entry("mixed match types, dual-stack (matcher API)", testCase{
 			matcherAPI: true,
 			resources: []*core_xds.Resource{
 				{
@@ -1665,8 +1665,8 @@ var _ = Describe("MeshPassthrough", func() {
 					},
 				},
 			},
-			listenersGolden: "kitchen-sink.listener.matcher-api.golden.yaml",
-			clustersGolden:  "kitchen-sink.clusters.golden.yaml",
+			listenersGolden: "mixed-dual-stack.listener.matcher-api.golden.yaml",
+			clustersGolden:  "mixed-dual-stack.clusters.golden.yaml",
 		}),
 	)
 })
