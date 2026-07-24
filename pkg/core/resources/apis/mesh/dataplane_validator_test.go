@@ -1649,6 +1649,7 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   gateway:
                     type: DELEGATED
+                    tags: {}
 `), dataplane.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
