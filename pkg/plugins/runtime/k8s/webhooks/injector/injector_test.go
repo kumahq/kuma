@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -1219,6 +1220,31 @@ metadata:
 			Expect(pod.Spec.InitContainers).ToNot(ContainElement(
 				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
 			))
+		})
+
+		It("does not stack container-level resources onto a sidecar injected into a pod with pod-level resources", func() {
+			pod := newPod(true, "ingress")
+			pod.Spec.Resources = &kube_core.ResourceRequirements{
+				Requests: kube_core.ResourceList{
+					kube_core.ResourceCPU:    resource.MustParse("100m"),
+					kube_core.ResourceMemory: resource.MustParse("128Mi"),
+				},
+				Limits: kube_core.ResourceList{
+					kube_core.ResourceCPU:    resource.MustParse("500m"),
+					kube_core.ResourceMemory: resource.MustParse("256Mi"),
+				},
+			}
+
+			Expect(newInjector().InjectKuma(context.Background(), pod)).To(Succeed())
+
+			var sidecar *kube_core.Container
+			for i := range pod.Spec.InitContainers {
+				if pod.Spec.InitContainers[i].Name == k8s_util.KumaSidecarContainerName {
+					sidecar = &pod.Spec.InitContainers[i]
+				}
+			}
+			Expect(sidecar).ToNot(BeNil())
+			Expect(sidecar.Resources).To(Equal(kube_core.ResourceRequirements{}))
 		})
 	})
 }, Ordered)

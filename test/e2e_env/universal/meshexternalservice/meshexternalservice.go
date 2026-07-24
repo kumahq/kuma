@@ -38,9 +38,18 @@ mtls:
   backends:
   - name: ca-1
     type: builtin
-networking:
-  outbound:
-    passthrough: false
+`, meshName))
+	}
+	disableDefaultPassthrough := func(meshName string) InstallFunc {
+		return YamlUniversal(fmt.Sprintf(`
+type: MeshPassthrough
+mesh: %s
+name: disable-default-passthrough
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    passthroughMode: None
 `, meshName))
 	}
 
@@ -96,6 +105,7 @@ networking:
 
 		err := NewClusterSetup().
 			Install(meshDefaulMtlsOn(meshNameNoDefaults)).
+			Install(disableDefaultPassthrough(meshNameNoDefaults)).
 			Install(TcpSinkUniversal("mes-tcp-sink", WithDockerContainerName(tcpSinkDockerName))).
 			Install(TestServerExternalServiceUniversal(esHttpName, 80, false, WithDockerContainerName(esHttpContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).

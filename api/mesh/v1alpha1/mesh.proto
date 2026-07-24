@@ -6,7 +6,6 @@ import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
-import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
 
@@ -51,8 +50,8 @@ message Mesh {
   // +optional
   Metrics metrics = 4;
 
-  // Networking settings of the mesh
-  Networking networking = 5;
+  reserved 5;
+  reserved "networking";
 
   // Routing settings of the mesh
   Routing routing = 6;
@@ -150,22 +149,10 @@ message CertificateAuthorityBackend {
   RootChain rootChain = 6;
 }
 
-// Networking defines the networking configuration of the mesh
-message Networking {
-  // Outbound describes the common mesh outbound settings
-  message Outbound {
-    // Control the passthrough cluster
-    google.protobuf.BoolValue passthrough = 1;
-  }
-
-  // Outbound settings
-  Outbound outbound = 1;
-}
-
 // Routing defines configuration for the routing in the mesh
 message Routing {
-  // Enable the Locality Aware Load Balancing
-  bool localityAwareLoadBalancing = 1;
+  reserved 1;
+  reserved "localityAwareLoadBalancing";
 
   // Enable routing traffic to services in other zone or external services
   // through ZoneEgress. Default: false
