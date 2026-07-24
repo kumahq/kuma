@@ -1,11 +1,10 @@
 resources:
-- name: localhost:9001
+- name: self_inbound_dp_http-port
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: localhost_9001
     connectTimeout: 10s
     loadAssignment:
-      clusterName: localhost:9001
+      clusterName: self_inbound_dp_http-port
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -13,9 +12,9 @@ resources:
               socketAddress:
                 address: 192.168.0.1
                 portValue: 9001
-    name: localhost:9001
+    name: self_inbound_dp_http-port
     type: STATIC
-- name: inbound:192.168.0.1:9000
+- name: self_inbound_dp_http-port
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -25,17 +24,12 @@ resources:
     enableReusePort: false
     filterChains:
     - filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: inbound_192_168_0_1_9000.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:9001
+          cluster: self_inbound_dp_http-port
           idleTimeout: 7200s
-          statPrefix: localhost_9001
+          statPrefix: self_inbound_dp_http-port
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -48,12 +42,12 @@ resources:
                     prefix: spiffe://default/
                   sanType: URI
               validationContextSdsSecretConfig:
-                name: mesh_ca:secret:default
+                name: system_mtls_ca_default
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: identity_cert:secret:default
+            - name: system_mtls_identity_default
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
@@ -62,5 +56,6 @@ resources:
       filterMetadata:
         io.kuma.tags:
           kuma.io/unified-name: self_inbound_dp_http-port
-    name: inbound:192.168.0.1:9000
+    name: self_inbound_dp_http-port
+    statPrefix: self_inbound_dp_http-port
     trafficDirection: INBOUND
