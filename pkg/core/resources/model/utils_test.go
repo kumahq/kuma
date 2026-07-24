@@ -17,8 +17,7 @@ var _ = Describe("Resource Utils", func() {
 			// given
 			var spec core_model.ResourceSpec = builders.MeshAccessLog().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFrom(
-					builders.TargetRefMesh(),
+				AddRule(
 					builders.MeshAccessLogConf().
 						AddBackends(make([]meshaccesslog_proto.Backend, 0)),
 				).
@@ -33,11 +32,8 @@ var _ = Describe("Resource Utils", func() {
   "targetRef": {
     "kind": "Mesh"
   },
-  "from": [
+  "rules": [
     {
-      "targetRef": {
-        "kind": "Mesh"
-      },
       "default": {
         "backends": []
       }
