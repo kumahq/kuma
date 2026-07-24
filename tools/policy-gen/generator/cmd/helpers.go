@@ -32,6 +32,11 @@ func newHelpers(rootArgs *args) *cobra.Command {
 				return nil
 			}
 
+			// GetPolicyItem is only generated for policies without from/to/rules lists;
+			// those policies implement PolicyItem directly on the root spec struct
+			generateGetPolicyItem := !pconfig.HasFrom && !pconfig.HasTo && !pconfig.HasRules
+			needsCoreModel := pconfig.HasFrom || pconfig.HasTo || generateGetPolicyItem
+
 			outPath := filepath.Join(filepath.Dir(policyPath), "zz_generated.helpers.go")
 			return commontemplate.GoTemplate(helpersTemplate, map[string]any{
 				"name":                  pconfig.Name,
@@ -41,7 +46,8 @@ func newHelpers(rootArgs *args) *cobra.Command {
 				"generateRules":         pconfig.HasRules,
 				"ruleHasMatches":        pconfig.RuleHasMatches,
 				"skipGetDefault":        pconfig.SkipGetDefault,
-				"generateGetPolicyItem": !pconfig.HasFrom && !pconfig.HasTo && !pconfig.HasRules,
+				"generateGetPolicyItem": generateGetPolicyItem,
+				"needsCoreModel":        needsCoreModel,
 			}, outPath)
 		},
 	}
@@ -57,7 +63,7 @@ var helpersTemplate = template.Must(template.New("missingkey=error").Parse(
 package {{.version}}
 
 import (
-	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"{{ if or .generateFrom .generateTo .generateGetPolicyItem }}
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"{{ if .needsCoreModel }}
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"{{ end }}{{ if .generateRules }}
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"{{ end }}
     "github.com/kumahq/kuma/v3/pkg/util/pointer"

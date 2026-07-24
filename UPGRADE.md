@@ -14,7 +14,9 @@ The deprecated `from` field has been removed from the `MeshTLS` policy. Use the 
 
 **Action required**
 
-Migrate any `MeshTLS` resources using `from` to use `rules` before upgrading:
+Migrate any `MeshTLS` resources using `from` to use `rules` before upgrading.
+
+**Warning**: Un-migrated `from` configurations are silently ignored after upgrade — the `from` field no longer exists in the schema and the data is discarded during deserialization. This may disable strict mTLS without any error, leaving workloads with permissive TLS when you intended strict.
 
 ```yaml
 # Before (deprecated)
