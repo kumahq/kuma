@@ -6,8 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v3/pkg/core"
-	"github.com/kumahq/kuma/v3/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -61,28 +59,18 @@ func (g Generator) GenerateForZoneEgress(
 
 	rs := core_xds.NewResourceSet()
 	meshName := mesh.GetMeta().GetName()
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, mesh)
-	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
 	if secretsTracker.UsedIdentity() {
 		log.V(1).Info("added identity", "mesh", meshName)
 
-		identitySecretName := getName(
-			system_names.AsSystemName("mtls_identity_"+meshName),
-			secretsTracker.RequestIdentityCert().Name(),
-		)
-
+		identitySecretName := system_names.AsSystemName("mtls_identity_" + meshName)
 		rs.Add(createIdentitySecretResource(identitySecretName, identity))
 	}
 
 	if _, ok := secretsTracker.UsedCas()[meshName]; ok {
 		log.V(1).Info("added mesh CA resources", "mesh", meshName)
 
-		name := getName(
-			system_names.AsSystemName("mtls_ca_"+meshName),
-			secretsTracker.RequestCa(meshName).Name(),
-		)
-
+		name := system_names.AsSystemName("mtls_ca_" + meshName)
 		rs.Add(createCaSecretResource(name, ca))
 	}
 
