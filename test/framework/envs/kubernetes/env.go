@@ -33,7 +33,11 @@ func SetupAndGetState() []byte {
 			// 100s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
 			framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION", "100s"),
 			framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE", "80s"),
-			framework.WithEnv("KUMA_RUNTIME_KUBERNETES_WORKLOAD_LABELS", "app.kubernetes.io/name"),
+			// e2e test pods carry "app", not the Helm chart's default
+			// "app.kubernetes.io/name" — without this override,
+			// computeWorkloadName() falls through to ServiceAccountName,
+			// which is "default" for any pod without a dedicated SA.
+			framework.WithEnv("KUMA_RUNTIME_KUBERNETES_WORKLOAD_LABELS", "app"),
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
 	)
