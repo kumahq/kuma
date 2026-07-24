@@ -32,10 +32,10 @@ func (g Generator) Generate(
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 
-	// ZoneEgress isn't scoped to a single mesh (xdsCtx.Mesh is empty for zone proxies),
-	// so unlike mesh-scoped generators we can't use unified_naming.Enabled here: it
-	// would always see a nil mesh and report unified naming as disabled.
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+	// Zone egress secrets are always created with unified/system names
+	// (secrets.Generator.GenerateForZoneEgress no longer branches on the
+	// flag), so the listener/SDS names built here must match unconditionally.
+	unifiedNaming := true
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
 	zoneEgress := proxy.ZoneEgressProxy.ZoneEgressResource

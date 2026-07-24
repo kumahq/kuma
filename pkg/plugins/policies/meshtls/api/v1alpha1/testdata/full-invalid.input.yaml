@@ -1,12 +1,7 @@
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: MeshHTTPRoute
-    default: {}
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       tlsVersion:
         min: TLS15
         max: TLS16
