@@ -126,8 +126,15 @@ components:
                             type: boolean
                         type: object
                       name:
-                        description: Name adds another way of referencing this port,
-                          usable with MeshService
+                        description: |-
+                          Name adds another way of referencing this port, usable with MeshService.
+                          On Kubernetes, this is derived from the pod container port name that
+                          matches the Service's targetPort, not from the Service port name. It
+                          is empty when the matched container port is unnamed, or when a
+                          numeric targetPort has no matching declared container port. A string
+                          targetPort with no matching named container port is not represented
+                          here at all: the inbound is dropped instead of being emitted with an
+                          empty name.
                         type: string
                       port:
                         description: |-
