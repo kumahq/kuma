@@ -122,11 +122,13 @@ func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode
 
 	// Mount the host cache dir so the DP compatibility install can reuse
 	// already-downloaded kuma-dp tarballs instead of pulling them again.
-	if err := os.MkdirAll(dpBinaryCacheHostDir, 0o755); err != nil {
-		return nil, errors.Wrapf(err, "failed to create DP binary cache dir %q", dpBinaryCacheHostDir)
+	volumes := runOptions.Volumes
+	if _, ok := runOptions.DockerBackend.(*LocalDockerBackend); ok {
+		if err := os.MkdirAll(dpBinaryCacheHostDir, 0o755); err != nil {
+			return nil, errors.Wrapf(err, "failed to create DP binary cache dir %q", dpBinaryCacheHostDir)
+		}
+		volumes = append(slices.Clone(runOptions.Volumes), fmt.Sprintf("%s:%s", dpBinaryCacheHostDir, dpBinaryCacheMountPath))
 	}
-	volumes := append(runOptions.Volumes, fmt.Sprintf("%s:%s", dpBinaryCacheHostDir, dpBinaryCacheMountPath))
-
 	container, err := app.dockerBackend.RunAndGetIDE(t, Config.GetUniversalImage(), &docker.RunOptions{
 		Detach:               true,
 		Remove:               true,
