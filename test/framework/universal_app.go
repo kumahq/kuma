@@ -37,6 +37,15 @@ const (
 	AppModeDemoClient      = "demo-client"
 
 	sshPort = "22"
+
+	// dpBinaryCacheHostDir is a stable host directory caching released kuma-dp
+	// tarballs across universal e2e runs, so the DP compatibility install reuses
+	// them instead of re-downloading from packages.konghq.com every run. CI
+	// persists it via actions/cache; on self-hosted runners it survives between
+	// runs on its own. It is bind-mounted into every app container at
+	// dpBinaryCacheMountPath.
+	dpBinaryCacheHostDir   = "/tmp/kuma-dp-binaries-cache"
+	dpBinaryCacheMountPath = "/kuma-dp-binaries-cache"
 )
 
 type UniversalApp struct {
@@ -111,11 +120,18 @@ func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode
 		app.logger = logger.Default
 	}
 
+	// Mount the host cache dir so the DP compatibility install can reuse
+	// already-downloaded kuma-dp tarballs instead of pulling them again.
+	if err := os.MkdirAll(dpBinaryCacheHostDir, 0o755); err != nil {
+		return nil, errors.Wrapf(err, "failed to create DP binary cache dir %q", dpBinaryCacheHostDir)
+	}
+	volumes := append(runOptions.Volumes, fmt.Sprintf("%s:%s", dpBinaryCacheHostDir, dpBinaryCacheMountPath))
+
 	container, err := app.dockerBackend.RunAndGetIDE(t, Config.GetUniversalImage(), &docker.RunOptions{
 		Detach:               true,
 		Remove:               true,
 		Name:                 app.containerName,
-		Volumes:              runOptions.Volumes,
+		Volumes:              volumes,
 		Logger:               app.logger,
 		EnvironmentVariables: runOptions.EnvironmentVariables,
 		OtherOptions:         dockerExtraOptions,
@@ -355,16 +371,26 @@ func (s *UniversalApp) CreateDP(
 		url := fmt.Sprintf("https://packages.konghq.com/public/kuma-binaries-release/raw/names/kuma-linux-%[2]s/versions/%[1]s/kuma-%[1]s-linux-%[2]s.tar.gz", dpVersion, Config.Arch)
 		newPathOut := fmt.Sprintf("/tmp/kuma/kuma-%s/bin", dpVersion)
 
+		// Reuse the cached tarball on a hit; on a miss download it and populate the
+		// cache atomically (cp+mv) for future runs. The cache populate is
+		// best-effort (|| true) so a read-only mount never fails the install.
+		cacheFile := fmt.Sprintf("%s/kuma-%s-linux-%s.tar.gz", dpBinaryCacheMountPath, dpVersion, Config.Arch)
+
 		// Run the install synchronously so a failed download fails the test fast
 		// instead of silently falling through to the image's bundled binaries.
 		installScript := fmt.Sprintf(`set -e
 rm -f /usr/bin/kuma-dp /usr/bin/envoy
 mkdir -p /tmp/kuma/
-curl --no-progress-bar --fail '%s' -o /tmp/kuma/kuma.tar.gz
+if [ -f '%[1]s' ]; then
+  cp '%[1]s' /tmp/kuma/kuma.tar.gz
+else
+  curl --no-progress-bar --fail '%[2]s' -o /tmp/kuma/kuma.tar.gz
+  cp /tmp/kuma/kuma.tar.gz '%[1]s.tmp.'"$$" && mv '%[1]s.tmp.'"$$" '%[1]s' || true
+fi
 tar xzf /tmp/kuma/kuma.tar.gz --directory /tmp/kuma/
-cp %s/kuma-dp /usr/bin/kuma-dp
-cp %s/envoy /usr/bin/envoy
-`, url, newPathOut, newPathOut)
+cp %[3]s/kuma-dp /usr/bin/kuma-dp
+cp %[3]s/envoy /usr/bin/envoy
+`, cacheFile, url, newPathOut)
 		if stdout, stderr, err := s.universalNetworking.RunCommand(installScript); err != nil {
 			return errors.Wrapf(err, "failed to install kuma-dp %s: stdout=%q stderr=%q", dpVersion, stdout, stderr)
 		}

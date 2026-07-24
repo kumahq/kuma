@@ -73,6 +73,19 @@ runs:
           docker load -i "$tar"
           echo "KUMA_E2E_TRUST_CACHED_IMAGE_TAGS=true" >> "$GITHUB_ENV"
         fi
+    # Cache released kuma-dp tarballs pulled from packages.konghq.com by the DP
+    # compatibility tests (universal target only). Without this every run re-pulls
+    # ~130MB per supported version, which dominates Cloudsmith egress. The test
+    # framework reads/writes this dir (see dpBinaryCacheHostDir). restore-keys lets
+    # a version bump reuse the previous cache and only download the new version.
+    - name: "Cache kuma-dp release binaries"
+      if: ${{ inputs.target == 'universal' }}
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: /tmp/kuma-dp-binaries-cache
+        key: kuma-dp-binaries-${{ inputs.arch }}-${{ hashFiles('versions.yml') }}
+        restore-keys: |
+          kuma-dp-binaries-${{ inputs.arch }}-
     - name: "Run E2E tests"
       shell: bash
       env:
