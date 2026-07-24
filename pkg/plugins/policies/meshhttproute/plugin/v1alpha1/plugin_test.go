@@ -66,6 +66,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 		Mesh:         "default",
 		Name:         "example",
 	}
+	unifiedNaming := func() *core_xds.DataplaneMetadata {
+		return &core_xds.DataplaneMetadata{
+			Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
+		}
+	}
 
 	type outboundsTestCase struct {
 		proxy      *core_xds.Proxy
@@ -191,11 +196,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					WithInternalAddresses(core_xds.InternalAddress{AddressPrefix: "192.168.0.0", PrefixLen: 16}, core_xds.InternalAddress{AddressPrefix: "::1", PrefixLen: 128}).
 					Build(),
 			}
 		}()),
-		Entry("default-route-outbound-with-tags-with-mtls", func() outboundsTestCase {
+		Entry("default-route-with-mtls", func() outboundsTestCase {
 			meshSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
 				Spec: &meshservice_api.MeshService{
@@ -245,6 +251,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					Build(),
 			}
 		}()),
@@ -1335,6 +1342,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
@@ -1938,6 +1946,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
@@ -1998,16 +2007,39 @@ var _ = Describe("MeshHTTPRoute", func() {
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
 				},
 			}
+			tcpMeshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "other-tcp", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
+						AppProtocol: core_meta.ProtocolTCP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{{
+						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+						Value: "other-tcp",
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.2"}},
+				},
+			}
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
-				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc, &tcpMeshSvc},
 			}
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("default_backend___msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend")).
+				AddEndpoint("default_other-tcp___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.10").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "other-tcp", mesh_proto.ProtocolTag, string(core_meta.ProtocolTCP), "app", "other-tcp"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
@@ -2023,8 +2055,14 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Port:     80,
 							Resource: kri.WithSectionName(kri.From(&meshSvc), "80"),
 						},
+						{
+							Address:  "10.0.0.2",
+							Port:     80,
+							Resource: kri.WithSectionName(kri.From(&tcpMeshSvc), "80"),
+						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
@@ -2099,6 +2137,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
@@ -2187,6 +2226,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
@@ -2274,6 +2314,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
@@ -2358,6 +2399,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
@@ -2432,6 +2474,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					WithPolicies(
 						xds_builders.MatchedPolicies().WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 							ResourceRules: map[kri.Identifier]outbound.ResourceRule{
@@ -2531,6 +2574,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
@@ -2592,6 +2636,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
@@ -2671,6 +2716,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
