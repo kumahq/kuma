@@ -1,11 +1,11 @@
 resources:
-- name: outbound:127.0.0.1:10001
+- name: outbound:10.0.0.1:80
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
-        address: 127.0.0.1
-        portValue: 10001
+        address: 10.0.0.1
+        portValue: 80
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -21,33 +21,32 @@ resources:
               prefixLen: 16
           normalizePath: true
           routeConfig:
-            name: outbound:backend
+            name: kri_msvc_default___backend_80
             validateClusters: false
             virtualHosts:
             - domains:
               - '*'
-              name: backend
+              name: default_backend___msvc_80
               routes:
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
-                  cluster: backend
+                  cluster: default_backend___msvc_80
                   timeout: 0s
-          statPrefix: backend
+          statPrefix: default_backend___msvc_80
     metadata:
       filterMetadata:
-        io.kuma.tags:
-          kuma.io/service: backend
-    name: outbound:127.0.0.1:10001
+        io.kuma.tags: {}
+    name: outbound:10.0.0.1:80
     trafficDirection: OUTBOUND
-- name: outbound:127.0.0.1:10002
+- name: outbound:10.20.20.1:8085
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
-        address: 127.0.0.1
-        portValue: 10002
+        address: 10.20.20.1
+        portValue: 8085
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -63,24 +62,23 @@ resources:
               prefixLen: 16
           normalizePath: true
           routeConfig:
-            name: outbound:external-service
+            name: kri_extsvc_default___external-service_8085
             validateClusters: false
             virtualHosts:
             - domains:
               - '*'
-              name: external-service
+              name: default_external-service___extsvc_8085
               routes:
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
                   autoHostRewrite: true
-                  cluster: external-service
+                  cluster: default_external-service___extsvc_8085
                   timeout: 0s
-          statPrefix: external-service
+          statPrefix: default_external-service___extsvc_8085
     metadata:
       filterMetadata:
-        io.kuma.tags:
-          kuma.io/service: external-service
-    name: outbound:127.0.0.1:10002
+        io.kuma.tags: {}
+    name: outbound:10.20.20.1:8085
     trafficDirection: OUTBOUND

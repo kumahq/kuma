@@ -1,8 +1,8 @@
 resources:
-- name: backend-c72efb5be46fae6b
+- name: default_backend___msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: backend-c72efb5be46fae6b
+    clusterName: default_backend___msvc_80
     endpoints:
     - lbEndpoints:
       - endpoint:
