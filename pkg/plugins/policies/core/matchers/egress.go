@@ -48,7 +48,11 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 	_, isTo := p.GetSpec().(core_model.PolicyWithToList)
 
 	if !isFrom && !isTo {
-		return core_xds.TypedMatchingPolicies{}, nil
+		// Policies that only support "rules" (e.g. MeshTrafficPermission) have no
+		// representation on ZoneEgress: there's no "from"/"to" list to build egress
+		// rules from. Treat this as a legitimate no-op instead of failing the whole
+		// egress proxy build.
+		return core_xds.TypedMatchingPolicies{Type: rType}, nil
 	}
 
 	var fr core_rules.FromRules

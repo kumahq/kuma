@@ -8,7 +8,6 @@ import (
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	meshaccesslog "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshtrafficpermissions "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
@@ -177,13 +176,17 @@ var (
 		TargetRef: &common_api.TargetRef{
 			Kind: "Mesh",
 		},
-		From: &[]meshtrafficpermissions.From{
+		Rules: &[]meshtrafficpermissions.Rule{
 			{
-				TargetRef: common_api.TargetRef{
-					Kind: "Mesh",
-				},
-				Default: meshtrafficpermissions.Conf{
-					Action: pointer.To[meshtrafficpermissions.Action]("Allow"),
+				Default: meshtrafficpermissions.RuleConf{
+					Allow: &[]common_api.Match{
+						{
+							SpiffeID: &common_api.SpiffeIDMatch{
+								Type:  common_api.PrefixMatchType,
+								Value: "spiffe://default",
+							},
+						},
+					},
 				},
 			},
 		},

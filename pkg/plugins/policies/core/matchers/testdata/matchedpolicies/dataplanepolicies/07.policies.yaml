@@ -8,8 +8,9 @@ spec:
     labels:
       kuma.io/service: web
       version: v1
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1

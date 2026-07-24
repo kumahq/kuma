@@ -9,7 +9,6 @@ import (
 	meshaccesslog_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshtrafficpermissions_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var _ = Describe("Resource Utils", func() {
@@ -83,57 +82,53 @@ var _ = Describe("Resource Utils", func() {
 			// given
 			var spec1 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: &[]meshtrafficpermissions_proto.From{
+				Rules: &[]meshtrafficpermissions_proto.Rule{
 					{
-						TargetRef: common_api.TargetRef{
-							Kind: "MeshService",
-							Name: pointer.To("backend"),
-						},
-						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
-					},
-					{
-						TargetRef: common_api.TargetRef{
-							Kind: "MeshService",
-							Name: pointer.To("web"),
-						},
-						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Deny")},
-					},
-					{
-						TargetRef: common_api.TargetRef{
-							Kind: "MeshSubset",
-							Tags: &map[string]string{
-								"version": "v3",
+						Default: meshtrafficpermissions_proto.RuleConf{
+							Allow: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh/sa/backend"}},
 							},
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
+					},
+					{
+						Default: meshtrafficpermissions_proto.RuleConf{
+							Deny: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh/sa/web"}},
+							},
+						},
+					},
+					{
+						Default: meshtrafficpermissions_proto.RuleConf{
+							Allow: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.PrefixMatchType, Value: "spiffe://v3"}},
+							},
+						},
 					},
 				},
 			}
 			var spec2 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: &[]meshtrafficpermissions_proto.From{
+				Rules: &[]meshtrafficpermissions_proto.Rule{
 					{
-						TargetRef: common_api.TargetRef{
-							Kind: "MeshService",
-							Name: pointer.To("backend"),
-						},
-						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
-					},
-					{
-						TargetRef: common_api.TargetRef{
-							Kind: "MeshService",
-							Name: pointer.To("web"),
-						},
-						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Deny")},
-					},
-					{
-						TargetRef: common_api.TargetRef{
-							Kind: "MeshSubset",
-							Tags: &map[string]string{
-								"version": "v3",
+						Default: meshtrafficpermissions_proto.RuleConf{
+							Allow: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh/sa/backend"}},
 							},
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
+					},
+					{
+						Default: meshtrafficpermissions_proto.RuleConf{
+							Deny: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh/sa/web"}},
+							},
+						},
+					},
+					{
+						Default: meshtrafficpermissions_proto.RuleConf{
+							Allow: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.PrefixMatchType, Value: "spiffe://v3"}},
+							},
+						},
 					},
 				},
 			}
@@ -147,57 +142,53 @@ var _ = Describe("Resource Utils", func() {
 			// given
 			var spec1 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: &[]meshtrafficpermissions_proto.From{
+				Rules: &[]meshtrafficpermissions_proto.Rule{
 					{
-						TargetRef: common_api.TargetRef{
-							Kind: "MeshService",
-							Name: pointer.To("backend"),
-						},
-						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
-					},
-					{
-						TargetRef: common_api.TargetRef{
-							Kind: "MeshService",
-							Name: pointer.To("web"),
-						},
-						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Deny")},
-					},
-					{
-						TargetRef: common_api.TargetRef{
-							Kind: "MeshSubset",
-							Tags: &map[string]string{
-								"version": "v3",
+						Default: meshtrafficpermissions_proto.RuleConf{
+							Allow: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh/sa/backend"}},
 							},
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
+					},
+					{
+						Default: meshtrafficpermissions_proto.RuleConf{
+							Deny: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh/sa/web"}},
+							},
+						},
+					},
+					{
+						Default: meshtrafficpermissions_proto.RuleConf{
+							Allow: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.PrefixMatchType, Value: "spiffe://v3"}},
+							},
+						},
 					},
 				},
 			}
 			var spec2 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: &[]meshtrafficpermissions_proto.From{
+				Rules: &[]meshtrafficpermissions_proto.Rule{
 					{
-						TargetRef: common_api.TargetRef{
-							Kind: "MeshService",
-							Name: pointer.To("backend"),
-						},
-						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
-					},
-					{
-						TargetRef: common_api.TargetRef{
-							Kind: "MeshService",
-							Name: pointer.To("web"),
-						},
-						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Deny")},
-					},
-					{
-						TargetRef: common_api.TargetRef{
-							Kind: "MeshSubset",
-							Tags: &map[string]string{
-								"version": "v5", // different from 'v3'
+						Default: meshtrafficpermissions_proto.RuleConf{
+							Allow: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh/sa/backend"}},
 							},
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
+					},
+					{
+						Default: meshtrafficpermissions_proto.RuleConf{
+							Deny: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh/sa/web"}},
+							},
+						},
+					},
+					{
+						Default: meshtrafficpermissions_proto.RuleConf{
+							Allow: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.PrefixMatchType, Value: "spiffe://v5"}}, // different from 'v3'
+							},
+						},
 					},
 				},
 			}

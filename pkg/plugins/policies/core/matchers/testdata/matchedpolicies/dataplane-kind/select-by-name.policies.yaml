@@ -8,11 +8,12 @@ spec:
   targetRef:
     kind: Dataplane
     name: dp-1
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Deny
+  rules:
+    - default:
+        deny:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
@@ -23,8 +24,9 @@ spec:
   targetRef:
     kind: Dataplane
     name: dp-2
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1

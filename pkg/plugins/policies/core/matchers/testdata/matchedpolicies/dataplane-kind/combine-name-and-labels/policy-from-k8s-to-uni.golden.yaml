@@ -12,11 +12,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-1-7fddv968x8wdzb48
   spec:
-    from:
+    rules:
     - default:
-        action: Deny
-      targetRef:
-        kind: Mesh
+        deny:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Dataplane
       labels:

@@ -371,7 +371,7 @@
    "path": "meshtrafficpermissions",
    "pluralDisplayName": "Mesh Traffic Permissions",
    "policy": {
-    "hasFromTargetRef": true,
+    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
     "hasToTargetRef": false,
     "isFromAsRules": false,

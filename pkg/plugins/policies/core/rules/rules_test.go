@@ -23,6 +23,22 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
+// fromTestPolicyItem is a minimal core_model.PolicyItem stand-in used to exercise
+// the generic from-list rule building/merging logic without depending on a
+// specific policy's 'From' type.
+type fromTestPolicyItem struct {
+	targetRef common_api.TargetRef
+	conf      meshtrafficpermission_api.Conf
+}
+
+func (f *fromTestPolicyItem) GetTargetRef() common_api.TargetRef {
+	return f.targetRef
+}
+
+func (f *fromTestPolicyItem) GetDefault() any {
+	return f.conf
+}
+
 var _ = Describe("Rules", func() {
 	Describe("SubsetIter", func() {
 		It("should return all possible subsets for the given set of tags", func() {
@@ -918,9 +934,9 @@ var _ = Describe("Rules", func() {
 		// Helper to create a PolicyItemWithMeta for testing
 		createPolicyItem := func(targetRef common_api.TargetRef, action meshtrafficpermission_api.Action) core_rules.PolicyItemWithMeta {
 			return core_rules.PolicyItemWithMeta{
-				PolicyItem: &meshtrafficpermission_api.From{
-					TargetRef: targetRef,
-					Default: meshtrafficpermission_api.Conf{
+				PolicyItem: &fromTestPolicyItem{
+					targetRef: targetRef,
+					conf: meshtrafficpermission_api.Conf{
 						Action: pointer.To(action),
 					},
 				},

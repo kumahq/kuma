@@ -875,6 +875,26 @@ to `false` to a `MeshPassthrough` policy with `targetRef.kind: Mesh` and
 sets `networking.outbound.passthrough` continues to apply successfully; the
 field is silently ignored by the control plane.
 
+### `MeshTrafficPermission.spec.from` removed
+
+The `from` field (and its legacy client-targetRef-based `Allow`/`Deny`/
+`AllowWithShadowDeny` matching) has been removed from the
+`MeshTrafficPermission` resource spec. The `rules` field, which matches
+clients by `MeshIdentity` (`spiffeID`) or SNI instead of by dataplane tag
+subsets, is now the only supported way to configure traffic permissions and
+is unaffected by this change. A `MeshTrafficPermission` must now define at
+least one entry in `rules`; a spec with only `from` (or with neither `from`
+nor `rules`) fails validation with `policy must define rules`.
+
+**Action required**
+
+Migrate any `MeshTrafficPermission` resources that still configure `from` to
+use `rules` with `MeshIdentity` (`spiffeID`) matches before upgrading.
+Dataplane proxies still on legacy mTLS (no `MeshIdentity`/SPIFFE identity)
+that are matched only by a `from`-based `MeshTrafficPermission` will
+default-deny once that policy is migrated or removed, unless a `rules`-based
+policy is added to allow the same traffic.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.

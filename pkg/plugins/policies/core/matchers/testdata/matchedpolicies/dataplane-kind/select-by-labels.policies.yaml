@@ -7,11 +7,12 @@ spec:
     kind: Dataplane
     labels:
       app: demo
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Deny
+  rules:
+    - default:
+        deny:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
@@ -21,8 +22,9 @@ spec:
     kind: Dataplane
     labels:
       app: test
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1

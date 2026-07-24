@@ -248,11 +248,12 @@ metadata:
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow`, name, Config.KumaNamespace)
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[1]s"`, name, Config.KumaNamespace)
 	return YamlK8s(mtp)
 }
 
@@ -322,11 +323,12 @@ mesh: %[1]s
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow`, name)
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[1]s"`, name)
 	return YamlUniversal(mtp)
 }
 
