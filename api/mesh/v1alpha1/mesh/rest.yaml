@@ -219,17 +219,6 @@ components:
           type: object
         name:
           type: string
-        networking:
-          description: Networking settings of the mesh
-          properties:
-            outbound:
-              description: Outbound settings
-              properties:
-                passthrough:
-                  description: Control the passthrough cluster
-                  type: boolean
-              type: object
-          type: object
         routing:
           description: Routing settings of the mesh
           properties:
