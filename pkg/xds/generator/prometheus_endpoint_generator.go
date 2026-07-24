@@ -8,7 +8,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -33,7 +32,6 @@ var prometheusLog = core.Log.WithName("xds").WithName("prometheus-endpoint-gener
 type PrometheusEndpointGenerator struct{}
 
 func (g PrometheusEndpointGenerator) Generate(_ context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusConfig(xdsCtx.Mesh.Resource)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get prometheus endpoint")
@@ -113,7 +111,7 @@ func (g PrometheusEndpointGenerator) Generate(_ context.Context, _ *core_xds.Res
 		case mesh_proto.PrometheusTlsConfig_activeMTLSBackend:
 			listenerBuilder = listenerBuilder.Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
-					envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, nil, nil, unifiedNaming, len(xdsCtx.Mesh.CAsByTrustDomain) > 0),
+					envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, nil, nil, true, len(xdsCtx.Mesh.CAsByTrustDomain) > 0),
 					envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), prometheusListenerName, []*envoy_common.StaticEndpointPath{
 						{
 							ClusterName: metricsHijackerClusterName,
