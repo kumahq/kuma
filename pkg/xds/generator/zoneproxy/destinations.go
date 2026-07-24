@@ -122,7 +122,7 @@ func addMeshHTTPRouteDestinations(
 	// iterating through them.
 	for _, policy := range policies {
 		for _, to := range pointer.Deref(policy.Spec.To) {
-			if toTags, ok := envoy_tags.FromLegacyTargetRef(to.TargetRef); ok {
+			if toTags, ok := envoy_tags.FromLegacyTargetRef(to.TargetRef.ToTargetRef()); ok {
 				addMeshHTTPRouteToDestinations(to.Rules, toTags, destinations)
 			}
 		}
@@ -140,7 +140,7 @@ func addMeshTCPRouteDestinations(
 	// iterating through them.
 	for _, policy := range policies {
 		for _, to := range pointer.Deref(policy.Spec.To) {
-			if toTags, ok := envoy_tags.FromLegacyTargetRef(to.TargetRef); ok {
+			if toTags, ok := envoy_tags.FromLegacyTargetRef(to.TargetRef.ToTargetRef()); ok {
 				addMeshTCPRouteToDestinations(to.Rules, toTags, destinations)
 			}
 		}

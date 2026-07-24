@@ -141,7 +141,7 @@ func mixedInboundAndZoneEgressResources() []core_xds.Resource {
 	return []core_xds.Resource{inbound, egress}
 }
 
-func newMeshProxyPatch(name string, targetRef *common_api.TargetRef, mods []api.Modification) *api.MeshProxyPatchResource {
+func newMeshProxyPatch(name string, targetRef *common_api.TopLevelTargetRef, mods []api.Modification) *api.MeshProxyPatchResource {
 	return &api.MeshProxyPatchResource{
 		Meta: &test_model.ResourceMeta{Mesh: "default", Name: name},
 		Spec: &api.MeshProxyPatch{
@@ -207,7 +207,7 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 			dp:        zoneEgressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneEgressListenerResource()},
 			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("by-label", &common_api.TargetRef{
+				newMeshProxyPatch("by-label", &common_api.TopLevelTargetRef{
 					Kind:   common_api.Dataplane,
 					Labels: pointer.To(map[string]string{mesh_proto.ListenerZoneEgressLabel: "enabled"}),
 				}, []api.Modification{
@@ -224,7 +224,7 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 			dp:        zoneIngressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneIngressListenerResource()},
 			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("by-label", &common_api.TargetRef{
+				newMeshProxyPatch("by-label", &common_api.TopLevelTargetRef{
 					Kind:   common_api.Dataplane,
 					Labels: pointer.To(map[string]string{mesh_proto.ListenerZoneIngressLabel: "enabled"}),
 				}, []api.Modification{
@@ -241,7 +241,7 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 			dp:        mixedInboundAndZoneEgressDataplane(),
 			resources: mixedInboundAndZoneEgressResources(),
 			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("patch-both", &common_api.TargetRef{Kind: common_api.Dataplane}, []api.Modification{
+				newMeshProxyPatch("patch-both", &common_api.TopLevelTargetRef{Kind: common_api.Dataplane}, []api.Modification{
 					{Listener: &api.ListenerMod{
 						Operation: api.ModOpPatch,
 						Match:     &api.ListenerMatch{Name: pointer.To("inbound:192.168.0.1:17777")},

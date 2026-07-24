@@ -65,12 +65,12 @@ package {{.version}}
 import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"{{ if .needsCoreModel }}
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"{{ end }}{{ if .generateRules }}
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"{{ end }}
-    "github.com/kumahq/kuma/v3/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"{{ end }}{{ if or .generateFrom .generateTo .generateRules }}
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"{{ end }}
 )
 
 func (x *{{.name}}) GetTargetRef() common_api.TargetRef {
-	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
+	return x.TargetRef.ToTargetRef()
 }
 
 {{ if .generateFrom }}
@@ -97,7 +97,7 @@ func (x *{{.name}}) GetFromList() []core_model.PolicyItem {
 {{ if .generateTo }}
 
 func (x *To) GetTargetRef() common_api.TargetRef {
-	return x.TargetRef
+	return x.TargetRef.ToTargetRef()
 }
 {{ if not .skipGetDefault }}
 

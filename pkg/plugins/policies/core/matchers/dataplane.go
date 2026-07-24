@@ -186,7 +186,7 @@ func DppSelectedByPolicy(
 		if mhr == nil {
 			return nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with name '%s'", pointer.Deref(ref.Name))
 		}
-		return DppSelectedByPolicy(mhr.Meta, pointer.DerefOr(mhr.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), dpp, referencableResources)
+		return DppSelectedByPolicy(mhr.Meta, mhr.Spec.TargetRef.ToTargetRef(), dpp, referencableResources)
 	default:
 		return nil, false, fmt.Errorf("unsupported targetRef kind '%s'", ref.Kind)
 	}

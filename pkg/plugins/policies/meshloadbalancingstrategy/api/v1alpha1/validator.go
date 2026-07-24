@@ -14,16 +14,16 @@ func (r *MeshLoadBalancingStrategyResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
+	topLevel := r.Spec.TargetRef.ToTargetRef()
 	verr.AddErrorAt(path, validateTo(topLevel, pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
-func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.TopLevelTargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
-	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.Dataplane,
@@ -37,7 +37,7 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		errs := mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
+		errs := mesh.ValidateTargetRef(toItem.TargetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,

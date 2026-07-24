@@ -32,13 +32,13 @@ func (r *MeshProxyPatchResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TopLevelTargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
 	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.Dataplane,
@@ -46,7 +46,7 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) va
 			GatewayListenerTagsAllowed: false,
 		})
 	default:
-		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.Dataplane,

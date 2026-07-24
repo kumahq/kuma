@@ -19,11 +19,11 @@ func (r *DoNothingPolicyResource) validate() error {
 	return verr.OrNil()
 }
 
-func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func validateTop(targetRef *common_api.TopLevelTargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
-	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			// TODO add supported TargetRef kinds for this policy
 		},

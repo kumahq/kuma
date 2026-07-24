@@ -174,7 +174,7 @@ var (
 		Config: "sample config",
 	}
 	MeshTrafficPermission = &meshtrafficpermissions.MeshTrafficPermission{
-		TargetRef: &common_api.TargetRef{
+		TargetRef: &common_api.TopLevelTargetRef{
 			Kind: "Mesh",
 		},
 		From: &[]meshtrafficpermissions.From{
@@ -189,7 +189,7 @@ var (
 		},
 	}
 	MeshAccessLog = &meshaccesslog.MeshAccessLog{
-		TargetRef: &common_api.TargetRef{
+		TargetRef: &common_api.TopLevelTargetRef{
 			Kind: "Mesh",
 		},
 		Rules: &[]meshaccesslog.Rule{

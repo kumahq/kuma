@@ -473,7 +473,7 @@ var _ = Describe("MeshRateLimit", func() {
 			Labels: map[string]string{},
 		})
 		meshRateLimit.Spec = &api.MeshRateLimit{
-			TargetRef: &common_api.TargetRef{
+			TargetRef: &common_api.TopLevelTargetRef{
 				Kind:        common_api.Dataplane,
 				SectionName: pointer.To("ze-port"),
 			},
@@ -549,7 +549,7 @@ var _ = Describe("MeshRateLimit", func() {
 			Labels: map[string]string{},
 		})
 		meshRateLimit.Spec = &api.MeshRateLimit{
-			TargetRef: &common_api.TargetRef{
+			TargetRef: &common_api.TopLevelTargetRef{
 				Kind:        common_api.Dataplane,
 				SectionName: pointer.To("ze-port"),
 			},

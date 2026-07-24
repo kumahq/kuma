@@ -6412,12 +6412,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -6436,10 +6430,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -6471,10 +6463,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -6692,13 +6684,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -6717,9 +6706,10 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
+                          kinds: `MeshService`,
 
-                          and `MeshServiceSubset`
+                          `MeshExternalService`, `MeshMultiZoneService`, and
+                          `MeshHTTPRoute`.
                         type: string
                       namespace:
                         description: >-
@@ -6753,10 +6743,10 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
+                          Tags used to select a subset of proxies by tags. Not
+                          applicable to the
 
-                          `MeshSubset` and `MeshServiceSubset`
+                          kinds supported by this field.
                         type: object
                     required:
                       - kind
@@ -7365,12 +7355,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -7389,10 +7373,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -7424,10 +7406,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -7917,13 +7899,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -7942,9 +7921,10 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
+                          kinds: `MeshService`,
 
-                          and `MeshServiceSubset`
+                          `MeshExternalService`, `MeshMultiZoneService`, and
+                          `MeshHTTPRoute`.
                         type: string
                       namespace:
                         description: >-
@@ -7978,10 +7958,10 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
+                          Tags used to select a subset of proxies by tags. Not
+                          applicable to the
 
-                          `MeshSubset` and `MeshServiceSubset`
+                          kinds supported by this field.
                         type: object
                     required:
                       - kind
@@ -8216,12 +8196,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -8240,10 +8214,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -8275,10 +8247,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -8401,13 +8373,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -8426,9 +8395,10 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
+                          kinds: `MeshService`,
 
-                          and `MeshServiceSubset`
+                          `MeshExternalService`, `MeshMultiZoneService`, and
+                          `MeshHTTPRoute`.
                         type: string
                       namespace:
                         description: >-
@@ -8462,10 +8432,10 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
+                          Tags used to select a subset of proxies by tags. Not
+                          applicable to the
 
-                          `MeshSubset` and `MeshServiceSubset`
+                          kinds supported by this field.
                         type: object
                     required:
                       - kind
@@ -8553,12 +8523,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -8577,10 +8541,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -8612,10 +8574,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -9210,13 +9172,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -9235,9 +9194,10 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
+                          kinds: `MeshService`,
 
-                          and `MeshServiceSubset`
+                          `MeshExternalService`, `MeshMultiZoneService`, and
+                          `MeshHTTPRoute`.
                         type: string
                       namespace:
                         description: >-
@@ -9271,10 +9231,10 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
+                          Tags used to select a subset of proxies by tags. Not
+                          applicable to the
 
-                          `MeshSubset` and `MeshServiceSubset`
+                          kinds supported by this field.
                         type: object
                     required:
                       - kind
@@ -9353,12 +9313,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -9377,10 +9331,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -9412,10 +9364,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -9713,13 +9665,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -9738,9 +9687,10 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
+                          kinds: `MeshService`,
 
-                          and `MeshServiceSubset`
+                          `MeshExternalService`, `MeshMultiZoneService`, and
+                          `MeshHTTPRoute`.
                         type: string
                       namespace:
                         description: >-
@@ -9774,10 +9724,10 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
+                          Tags used to select a subset of proxies by tags. Not
+                          applicable to the
 
-                          `MeshSubset` and `MeshServiceSubset`
+                          kinds supported by this field.
                         type: object
                     required:
                       - kind
@@ -9858,12 +9808,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -9882,10 +9826,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -9917,10 +9859,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -10361,13 +10303,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -10386,9 +10325,10 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
+                          kinds: `MeshService`,
 
-                          and `MeshServiceSubset`
+                          `MeshExternalService`, `MeshMultiZoneService`, and
+                          `MeshHTTPRoute`.
                         type: string
                       namespace:
                         description: >-
@@ -10422,10 +10362,10 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
+                          Tags used to select a subset of proxies by tags. Not
+                          applicable to the
 
-                          `MeshSubset` and `MeshServiceSubset`
+                          kinds supported by this field.
                         type: object
                     required:
                       - kind
@@ -10720,12 +10660,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -10744,10 +10678,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -10779,10 +10711,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -10970,12 +10902,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -10994,10 +10920,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -11029,10 +10953,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -11677,12 +11601,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -11701,10 +11619,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -11736,10 +11652,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -12236,12 +12152,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -12260,10 +12170,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -12295,10 +12203,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -12458,13 +12366,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -12483,9 +12388,10 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
+                          kinds: `MeshService`,
 
-                          and `MeshServiceSubset`
+                          `MeshExternalService`, `MeshMultiZoneService`, and
+                          `MeshHTTPRoute`.
                         type: string
                       namespace:
                         description: >-
@@ -12519,10 +12425,10 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
+                          Tags used to select a subset of proxies by tags. Not
+                          applicable to the
 
-                          `MeshSubset` and `MeshServiceSubset`
+                          kinds supported by this field.
                         type: object
                     required:
                       - kind
@@ -12600,12 +12506,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -12624,10 +12524,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -12659,10 +12557,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -13116,13 +13014,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -13141,9 +13036,10 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
+                          kinds: `MeshService`,
 
-                          and `MeshServiceSubset`
+                          `MeshExternalService`, `MeshMultiZoneService`, and
+                          `MeshHTTPRoute`.
                         type: string
                       namespace:
                         description: >-
@@ -13177,10 +13073,10 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
+                          Tags used to select a subset of proxies by tags. Not
+                          applicable to the
 
-                          `MeshSubset` and `MeshServiceSubset`
+                          kinds supported by this field.
                         type: object
                     required:
                       - kind
@@ -13267,12 +13163,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -13291,10 +13181,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -13326,10 +13214,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -13466,13 +13354,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -13491,9 +13376,10 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
+                          kinds: `MeshService`,
 
-                          and `MeshServiceSubset`
+                          `MeshExternalService`, `MeshMultiZoneService`, and
+                          `MeshHTTPRoute`.
                         type: string
                       namespace:
                         description: >-
@@ -13527,10 +13413,10 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
+                          Tags used to select a subset of proxies by tags. Not
+                          applicable to the
 
-                          `MeshSubset` and `MeshServiceSubset`
+                          kinds supported by this field.
                         type: object
                     required:
                       - kind
@@ -13675,12 +13561,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -13699,10 +13579,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -13734,10 +13612,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -13955,12 +13833,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -13979,10 +13851,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -14014,10 +13884,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -14123,13 +13993,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -14148,9 +14015,10 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
+                          kinds: `MeshService`,
 
-                          and `MeshServiceSubset`
+                          `MeshExternalService`, `MeshMultiZoneService`, and
+                          `MeshHTTPRoute`.
                         type: string
                       namespace:
                         description: >-
@@ -14184,10 +14052,10 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
+                          Tags used to select a subset of proxies by tags. Not
+                          applicable to the
 
-                          `MeshSubset` and `MeshServiceSubset`
+                          kinds supported by this field.
                         type: object
                     required:
                       - kind
@@ -14503,12 +14371,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -14527,10 +14389,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -14562,10 +14422,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind
@@ -14976,12 +14836,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -15000,10 +14854,8 @@ components:
                   type: string
                 name:
                   description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
+                    Name of the referenced resource. Can only be used with kind
+                    `Dataplane`.
                   type: string
                 namespace:
                   description: >-
@@ -15035,10 +14887,10 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
+                    Tags used to select a subset of proxies by tags. Not
+                    applicable to the
 
-                    `MeshSubset` and `MeshServiceSubset`
+                    kinds supported by this field (`Mesh`, `Dataplane`).
                   type: object
               required:
                 - kind

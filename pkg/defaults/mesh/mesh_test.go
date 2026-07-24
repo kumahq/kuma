@@ -181,7 +181,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			// with both 'rules' and 'to' set (now mutually exclusive)
 			legacy := meshtimeout.NewMeshTimeoutResource()
 			legacy.Spec = &meshtimeout.MeshTimeout{
-				TargetRef: &common_api.TargetRef{
+				TargetRef: &common_api.TopLevelTargetRef{
 					Kind: common_api.Mesh,
 					ProxyTypes: &[]common_api.TargetRefProxyType{
 						common_api.Sidecar,
@@ -192,7 +192,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 				},
 				To: &[]meshtimeout.To{
 					{
-						TargetRef: common_api.TargetRef{Kind: common_api.Mesh},
+						TargetRef: common_api.OutboundTargetRef{Kind: common_api.Mesh},
 						Default:   meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Hour}},
 					},
 				},

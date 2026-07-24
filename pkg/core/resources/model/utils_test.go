@@ -58,7 +58,7 @@ var _ = Describe("Resource Utils", func() {
 		It("should return false if ResourceSpec is not empty", func() {
 			// given
 			var spec core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
-				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
+				TargetRef: &common_api.TopLevelTargetRef{Kind: "Mesh"},
 			}
 			// when
 			isEmpty := core_model.IsEmpty(spec)
@@ -82,7 +82,7 @@ var _ = Describe("Resource Utils", func() {
 		It("should return true if specs are equal", func() {
 			// given
 			var spec1 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
-				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
+				TargetRef: &common_api.TopLevelTargetRef{Kind: "Mesh"},
 				From: &[]meshtrafficpermissions_proto.From{
 					{
 						TargetRef: common_api.TargetRef{
@@ -110,7 +110,7 @@ var _ = Describe("Resource Utils", func() {
 				},
 			}
 			var spec2 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
-				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
+				TargetRef: &common_api.TopLevelTargetRef{Kind: "Mesh"},
 				From: &[]meshtrafficpermissions_proto.From{
 					{
 						TargetRef: common_api.TargetRef{
@@ -146,7 +146,7 @@ var _ = Describe("Resource Utils", func() {
 		It("should return false if specs are different", func() {
 			// given
 			var spec1 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
-				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
+				TargetRef: &common_api.TopLevelTargetRef{Kind: "Mesh"},
 				From: &[]meshtrafficpermissions_proto.From{
 					{
 						TargetRef: common_api.TargetRef{
@@ -174,7 +174,7 @@ var _ = Describe("Resource Utils", func() {
 				},
 			}
 			var spec2 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
-				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
+				TargetRef: &common_api.TopLevelTargetRef{Kind: "Mesh"},
 				From: &[]meshtrafficpermissions_proto.From{
 					{
 						TargetRef: common_api.TargetRef{

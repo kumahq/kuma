@@ -29,11 +29,11 @@ func (r *MeshPassthroughResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TopLevelTargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
-	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.Dataplane,

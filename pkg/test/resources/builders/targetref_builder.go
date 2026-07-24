@@ -78,3 +78,20 @@ func TargetRefMeshExternalService(name string) common_api.TargetRef {
 		Name: &name,
 	}
 }
+
+func ToTopLevelTargetRef(ref common_api.TargetRef) common_api.TopLevelTargetRef {
+	return common_api.TopLevelTargetRef(ref)
+}
+
+func ToOutboundTargetRef(ref common_api.TargetRef) common_api.OutboundTargetRef {
+	return common_api.OutboundTargetRef{
+		Kind:        ref.Kind,
+		Name:        ref.Name,
+		Tags:        ref.Tags,
+		Mesh:        ref.Mesh,
+		ProxyTypes:  ref.ProxyTypes,
+		Namespace:   ref.Namespace,
+		Labels:      ref.Labels,
+		SectionName: ref.SectionName,
+	}
+}
