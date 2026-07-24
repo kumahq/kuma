@@ -1,0 +1,121 @@
+name: "trigger-smoke-tests"
+
+# Auto-triggers the downstream enterprise smoke-test workflow for a single
+# version when that version's release-tag build (build-test-distribute)
+# completes. Per-branch/event-driven, not a batch fan-out over all versions.
+# workflow_dispatch re-runs one version by hand.
+on:
+  workflow_run:
+    workflows: ["build-test-distribute"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Product version to smoke-test, e.g. 2.14.1 or v2.14.1"
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch || inputs.version }}
+  cancel-in-progress: true
+
+jobs:
+  dispatch-smoke:
+    # workflow_run has no reliable tag-level filter at the trigger layer (GitHub
+    # only supports `branches`/`branches-ignore`, and those are documented as
+    # branch-only - unreliable/silently-broken for tag-triggered runs). So this
+    # `if` is the earliest point we can filter, and it excludes the two branch
+    # names that account for the overwhelming majority of build-test-distribute
+    # completions (master, release-*) before a runner is even allocated. Actual
+    # tag-shape validation (vX.Y.Z / 2.9's bare X.Y.Z) still happens in-job below.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch != 'master' &&
+        !startsWith(github.event.workflow_run.head_branch, 'release-')
+      )
+    timeout-minutes: 5
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    permissions:
+      contents: read # to confirm the ref is really a tag, via the git refs API
+    steps:
+      - name: "Resolve version"
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MANUAL_VERSION: ${{ inputs.version }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          # v-prefix optional: release-2.9 never got the v-prefix backport and
+          # tags bare; manual re-runs also conventionally use the bare form.
+          RAW="${MANUAL_VERSION:-${HEAD_BRANCH}}"
+          if [[ "${RAW}" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            PRODUCT_VERSION="${BASH_REMATCH[1]}"
+          else
+            echo "'${RAW}' is not a recognized release version/tag; skipping smoke dispatch."
+            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ -n "${MANUAL_VERSION}" ]]; then
+            # deliberate operator override; may target an archived version
+            echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
+            echo "product_version=${PRODUCT_VERSION}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # confirm head_branch is this tag, not a same-named branch, and it
+          # still points at the built commit, not one it moved to since
+          TAG="${RAW}"
+          if ! TAG_REF_JSON="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" 2>/dev/null)"; then
+            echo "'${TAG}' is not an existing tag ref; skipping smoke dispatch."
+            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          OBJ_TYPE="$(jq -r '.object.type' <<< "${TAG_REF_JSON}")"
+          OBJ_SHA="$(jq -r '.object.sha' <<< "${TAG_REF_JSON}")"
+          # annotated tags point at a tag object, not the commit directly
+          if [[ "${OBJ_TYPE}" == "tag" ]]; then
+            OBJ_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${OBJ_SHA}" --jq '.object.sha')"
+          fi
+          if [[ "${OBJ_SHA}" != "${HEAD_SHA}" ]]; then
+            echo "'${TAG}' does not currently point at built commit ${HEAD_SHA}; skipping smoke dispatch."
+            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
+          echo "product_version=${PRODUCT_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: "Trigger downstream smoke test"
+        if: steps.version.outputs.should_dispatch == 'true'
+        env:
+          # smoke.yaml only triggers on pull_request/push/schedule/workflow_dispatch
+          # (no repository_dispatch), so this must be a workflow_dispatch run, not
+          # a repository_dispatch event. Needs a Kong org admin to provision a
+          # cross-org (kumahq -> Kong) token with `actions:write` on the target
+          # repo; no existing kumahq secret has that scope.
+          GH_TOKEN: ${{ secrets.KONG_MESH_SMOKE_DISPATCH_TOKEN }}
+          SMOKE_OWNER: ${{ secrets.NOTIFY_OWNER }}
+          SMOKE_REPO: ${{ secrets.KONG_MESH_SMOKE_REPO }}
+          PRODUCT_VERSION: ${{ steps.version.outputs.product_version }}
+        run: |
+          set -euo pipefail
+          gh workflow run smoke.yaml \
+            --repo "${SMOKE_OWNER}/${SMOKE_REPO}" \
+            --ref main \
+            --field product_name=kuma \
+            --field product_version="${PRODUCT_VERSION}" \
+            --field k8s_provider_k3d=true \
+            --field k8s_provider_gke=true \
+            --field k8s_provider_eks=true \
+            --field uni_provider_gcp=true \
+            --field uni_provider_aws=true \
+            --field run_tf_provider_tests=false
