@@ -2,13 +2,9 @@ package mesh
 
 import (
 	"fmt"
-	"regexp"
-
-	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var AllowedMTLSBackends = 1
@@ -16,7 +12,6 @@ var AllowedMTLSBackends = 1
 func (m *MeshResource) Validate() error {
 	var verr validators.ValidationError
 	verr.AddError("mtls", validateMtls(m.Spec.Mtls))
-	verr.AddError("metrics", validateMetrics(m.Spec.Metrics))
 	verr.AddError("constraints", validateConstraints(m.Spec.Constraints))
 	verr.AddError("", validateZoneEgress(m.Spec.Routing, m.Spec.Mtls))
 	return verr.OrNil()
@@ -85,55 +80,6 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 	return verr
 }
 
-func validateMetrics(metrics *mesh_proto.Metrics) validators.ValidationError {
-	var verr validators.ValidationError
-	if metrics == nil {
-		return verr
-	}
-	usedNames := map[string]bool{}
-	for i, backend := range metrics.GetBackends() {
-		if usedNames[backend.Name] {
-			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("name"), fmt.Sprintf("%q name is already used for another backend", backend.Name))
-		}
-		if backend.GetType() != mesh_proto.MetricsPrometheusType {
-			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("type"), fmt.Sprintf("unknown backend type. Available backends: %q", mesh_proto.MetricsPrometheusType))
-		} else {
-			verr.AddErrorAt(validators.RootedAt("backends").Index(i).Field("conf"), validatePrometheusConfig(backend.GetConf()))
-		}
-		usedNames[backend.Name] = true
-	}
-	if metrics.GetEnabledBackend() != "" && !usedNames[metrics.GetEnabledBackend()] {
-		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
-	}
-	return verr
-}
-
-func validatePrometheusConfig(cfgStr *structpb.Struct) validators.ValidationError {
-	var verr validators.ValidationError
-	cfg := mesh_proto.PrometheusMetricsBackendConfig{}
-	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
-		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
-		return verr
-	}
-	if cfg.SkipMTLS != nil && cfg.Tls != nil && !hasEqualConfiguration(&cfg) {
-		verr.AddViolation("", "skipMTLS and tls configuration cannot be defined together")
-		return verr
-	}
-	if _, err := regexp.Compile(cfg.GetEnvoy().GetFilterRegex()); err != nil {
-		verr.AddViolationAt(validators.RootedAt("envoy").Field("filterRegex"), fmt.Sprintf("provided regexp isn't correct: %s", err.Error()))
-		return verr
-	}
-	usedName := make(map[string]bool)
-	for i, config := range cfg.GetAggregate() {
-		if _, ok := usedName[config.GetName()]; ok {
-			verr.AddViolationAt(validators.RootedAt("aggregate").Index(i).Field("name"), fmt.Sprintf("duplicate entry: %s, values have to be unique", config.GetName()))
-			continue
-		}
-		usedName[config.GetName()] = true
-	}
-	return verr
-}
-
 func validateZoneEgress(routing *mesh_proto.Routing, mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 	var verr validators.ValidationError
 	if routing == nil {
@@ -145,9 +91,4 @@ func validateZoneEgress(routing *mesh_proto.Routing, mtls *mesh_proto.Mesh_Mtls)
 		}
 	}
 	return verr
-}
-
-func hasEqualConfiguration(cfg *mesh_proto.PrometheusMetricsBackendConfig) bool {
-	return (!cfg.SkipMTLS.GetValue() && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_activeMTLSBackend) ||
-		(cfg.SkipMTLS.GetValue() && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_disabled)
 }

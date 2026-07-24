@@ -64,9 +64,6 @@ func (d *DataplaneResource) Validate() error {
 	default:
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 		err.Add(validateProbes(d.Spec.GetProbes()))
-		if d.Spec.GetMetrics() != nil {
-			err.Add(validateMetricsBackend(d.Spec.GetMetrics()))
-		}
 		err.AddErrorAt(net.Field("listeners"), validateListeners(d.Spec.GetNetworking()))
 	}
 
@@ -119,16 +116,6 @@ func validateProbes(probes *mesh_proto.Dataplane_Probes) validators.ValidationEr
 		}
 	}
 	return err
-}
-
-func validateMetricsBackend(metrics *mesh_proto.MetricsBackend) validators.ValidationError {
-	var verr validators.ValidationError
-	if metrics.GetType() != mesh_proto.MetricsPrometheusType {
-		verr.AddViolationAt(validators.RootedAt("metrics").Field("type"), fmt.Sprintf("unknown backend type. Available backends: %q", mesh_proto.MetricsPrometheusType))
-	} else {
-		verr.AddErrorAt(validators.RootedAt("metrics").Field("conf"), validatePrometheusConfig(metrics.GetConf()))
-	}
-	return verr
 }
 
 func validateAddress(path validators.PathBuilder, address string) validators.ValidationError {
@@ -358,7 +345,9 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 		return result
 	}
 	result.Add(ValidateTags(validators.RootedAt("tags"), gateway.Tags, ValidateTagsOpts{
-		RequireService:      true,
+		// Require service tag only if gateway has any tags (old setup).
+		// With InboundTagsDisabled gateways have no tags (new setup).
+		RequireService:      len(gateway.Tags) > 0,
 		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
 	}),
 	)

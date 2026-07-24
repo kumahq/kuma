@@ -14,51 +14,6 @@ import (
 )
 
 var _ = Describe("MeshResource", func() {
-	Describe("HasPrometheusMetricsEnabled", func() {
-		type testCase struct {
-			mesh     *MeshResource
-			expected bool
-		}
-
-		DescribeTable("should correctly determine whether Prometheus metrics has been enabled on that Mesh",
-			func(given testCase) {
-				Expect(given.mesh.HasPrometheusMetricsEnabled()).To(Equal(given.expected))
-			},
-			Entry("mesh == nil", testCase{
-				mesh:     nil,
-				expected: false,
-			}),
-			Entry("mesh.metrics == nil", testCase{
-				mesh:     NewMeshResource(),
-				expected: false,
-			}),
-			Entry("mesh.metrics.prometheus == nil", testCase{
-				mesh: &MeshResource{
-					Spec: &mesh_proto.Mesh{
-						Metrics: &mesh_proto.Metrics{},
-					},
-				},
-				expected: false,
-			}),
-			Entry("mesh.metrics.prometheus != nil", testCase{
-				mesh: &MeshResource{
-					Spec: &mesh_proto.Mesh{
-						Metrics: &mesh_proto.Metrics{
-							EnabledBackend: "prometheus-1",
-							Backends: []*mesh_proto.MetricsBackend{
-								{
-									Name: "prometheus-1",
-									Type: mesh_proto.MetricsPrometheusType,
-								},
-							},
-						},
-					},
-				},
-				expected: true,
-			}),
-		)
-	})
-
 	Describe("ParseDuration", func() {
 		type testCase struct {
 			input  string

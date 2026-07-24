@@ -299,12 +299,6 @@ type Dataplane struct {
 	// Networking describes inbound and outbound interfaces of the data plane
 	// proxy.
 	Networking *Dataplane_Networking `protobuf:"bytes,1,opt,name=networking,proto3" json:"networking,omitempty"`
-	// Configuration for metrics that should be collected and exposed by the
-	// data plane proxy.
-	//
-	// Settings defined here will override their respective defaults
-	// defined at a Mesh level.
-	Metrics *MetricsBackend `protobuf:"bytes,2,opt,name=metrics,proto3" json:"metrics,omitempty"`
 	// Probes describe a list of endpoints that will be exposed without mTLS.
 	// This is useful to expose the health endpoints of the application so the
 	// orchestration system (e.g. Kubernetes) can still health check the
@@ -353,13 +347,6 @@ func (*Dataplane) Descriptor() ([]byte, []int) {
 func (x *Dataplane) GetNetworking() *Dataplane_Networking {
 	if x != nil {
 		return x.Networking
-	}
-	return nil
-}
-
-func (x *Dataplane) GetMetrics() *MetricsBackend {
-	if x != nil {
-		return x.Metrics
 	}
 	return nil
 }
@@ -1501,12 +1488,11 @@ var File_api_mesh_v1alpha1_dataplane_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\n" +
-	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1fapi/mesh/v1alpha1/metrics.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17validate/validate.proto\"\xb3&\n" +
+	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17validate/validate.proto\"\x84&\n" +
 	"\tDataplane\x12H\n" +
 	"\n" +
 	"networking\x18\x01 \x01(\v2(.kuma.mesh.v1alpha1.Dataplane.NetworkingR\n" +
 	"networking\x12<\n" +
-	"\ametrics\x18\x02 \x01(\v2\".kuma.mesh.v1alpha1.MetricsBackendR\ametrics\x12<\n" +
 	"\x06probes\x18\x03 \x01(\v2$.kuma.mesh.v1alpha1.Dataplane.ProbesR\x06probes\x1a\xbe\x1d\n" +
 	"\n" +
 	"Networking\x12\x18\n" +
@@ -1619,7 +1605,7 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\finbound_path\x18\x02 \x01(\tR\vinboundPath\x12\x12\n" +
 	"\x04path\x18\x03 \x01(\tR\x04path:\xcc\x05\xaa\x8c\x89\xa6\x01\xc5\x05\n" +
 	"\x11DataplaneResource\x12\tDataplane\"\x04mesh:\v\n" +
-	"\tdataplaneR\x16model.ZoneToGlobalFlagX\x01\x8a\x01\x91\x01description=\"Service tag of the first inbound\",JSONPath=`.spec.networking.inbound[0].tags['kuma\\.io/service']`,name=\"kuma.io/service\",type=string\x8a\x01\x92\x01description=\"Service tag of the second inbound\",JSONPath=`.spec.networking.inbound[1].tags['kuma\\.io/service']`,name=\"kuma.io/service\",type=string\x8a\x01\x9c\x01description=\"Service tag of the third inbound\",JSONPath=`.spec.networking.inbound[2].tags['kuma\\.io/service']`,name=\"kuma.io/service\",type=string,priority=1\x8a\x01\x9d\x01description=\"Service tag of the fourth inbound\",JSONPath=`.spec.networking.inbound[3].tags['kuma\\.io/service']`,name=\"kuma.io/service\",type=string,priority=1\x90\x01\x01\x9a\x01\x02dp\xa0\x01\x01\xa8\x01\x01B-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
+	"\tdataplaneR\x16model.ZoneToGlobalFlagX\x01\x8a\x01\x91\x01description=\"Service tag of the first inbound\",JSONPath=`.spec.networking.inbound[0].tags['kuma\\.io/service']`,name=\"kuma.io/service\",type=string\x8a\x01\x92\x01description=\"Service tag of the second inbound\",JSONPath=`.spec.networking.inbound[1].tags['kuma\\.io/service']`,name=\"kuma.io/service\",type=string\x8a\x01\x9c\x01description=\"Service tag of the third inbound\",JSONPath=`.spec.networking.inbound[2].tags['kuma\\.io/service']`,name=\"kuma.io/service\",type=string,priority=1\x8a\x01\x9d\x01description=\"Service tag of the fourth inbound\",JSONPath=`.spec.networking.inbound[3].tags['kuma\\.io/service']`,name=\"kuma.io/service\",type=string,priority=1\x90\x01\x01\x9a\x01\x02dp\xa0\x01\x01\xa8\x01\x01J\x04\b\x02\x10\x03R\ametricsB-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_dataplane_proto_rawDescOnce sync.Once
@@ -1661,48 +1647,46 @@ var file_api_mesh_v1alpha1_dataplane_proto_goTypes = []any{
 	(*Dataplane_Networking_TransparentProxying_ReachableBackends)(nil),   // 22: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends
 	nil,                               // 23: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.LabelsEntry
 	(*Dataplane_Probes_Endpoint)(nil), // 24: kuma.mesh.v1alpha1.Dataplane.Probes.Endpoint
-	(*MetricsBackend)(nil),            // 25: kuma.mesh.v1alpha1.MetricsBackend
-	(*EnvoyAdmin)(nil),                // 26: kuma.mesh.v1alpha1.EnvoyAdmin
-	(*durationpb.Duration)(nil),       // 27: google.protobuf.Duration
-	(*wrapperspb.UInt32Value)(nil),    // 28: google.protobuf.UInt32Value
+	(*EnvoyAdmin)(nil),                // 25: kuma.mesh.v1alpha1.EnvoyAdmin
+	(*durationpb.Duration)(nil),       // 26: google.protobuf.Duration
+	(*wrapperspb.UInt32Value)(nil),    // 27: google.protobuf.UInt32Value
 }
 var file_api_mesh_v1alpha1_dataplane_proto_depIdxs = []int32{
 	6,  // 0: kuma.mesh.v1alpha1.Dataplane.networking:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking
-	25, // 1: kuma.mesh.v1alpha1.Dataplane.metrics:type_name -> kuma.mesh.v1alpha1.MetricsBackend
-	7,  // 2: kuma.mesh.v1alpha1.Dataplane.probes:type_name -> kuma.mesh.v1alpha1.Dataplane.Probes
-	10, // 3: kuma.mesh.v1alpha1.Dataplane.Networking.gateway:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Gateway
-	8,  // 4: kuma.mesh.v1alpha1.Dataplane.Networking.inbound:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound
-	9,  // 5: kuma.mesh.v1alpha1.Dataplane.Networking.outbound:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound
-	11, // 6: kuma.mesh.v1alpha1.Dataplane.Networking.transparent_proxying:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying
-	26, // 7: kuma.mesh.v1alpha1.Dataplane.Networking.admin:type_name -> kuma.mesh.v1alpha1.EnvoyAdmin
-	12, // 8: kuma.mesh.v1alpha1.Dataplane.Networking.listeners:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Listener
-	24, // 9: kuma.mesh.v1alpha1.Dataplane.Probes.endpoints:type_name -> kuma.mesh.v1alpha1.Dataplane.Probes.Endpoint
-	13, // 10: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.tags:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.TagsEntry
-	14, // 11: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.health:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.Health
-	15, // 12: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.serviceProbe:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe
-	0,  // 13: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.state:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.State
-	17, // 14: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.tags:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.TagsEntry
-	18, // 15: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.backendRef:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef
-	20, // 16: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.tags:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.TagsEntry
-	1,  // 17: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.type:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.GatewayType
-	2,  // 18: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ip_family_mode:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.IpFamilyMode
-	22, // 19: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.reachable_backends:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends
-	3,  // 20: kuma.mesh.v1alpha1.Dataplane.Networking.Listener.type:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Listener.Type
-	4,  // 21: kuma.mesh.v1alpha1.Dataplane.Networking.Listener.state:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Listener.State
-	27, // 22: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.interval:type_name -> google.protobuf.Duration
-	27, // 23: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.timeout:type_name -> google.protobuf.Duration
-	28, // 24: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.unhealthy_threshold:type_name -> google.protobuf.UInt32Value
-	28, // 25: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.healthy_threshold:type_name -> google.protobuf.UInt32Value
-	16, // 26: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.tcp:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.Tcp
-	19, // 27: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef.labels:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef.LabelsEntry
-	28, // 28: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.port:type_name -> google.protobuf.UInt32Value
-	23, // 29: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.labels:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.LabelsEntry
-	21, // 30: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends.refs:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef
-	31, // [31:31] is the sub-list for method output_type
-	31, // [31:31] is the sub-list for method input_type
-	31, // [31:31] is the sub-list for extension type_name
-	31, // [31:31] is the sub-list for extension extendee
-	0,  // [0:31] is the sub-list for field type_name
+	7,  // 1: kuma.mesh.v1alpha1.Dataplane.probes:type_name -> kuma.mesh.v1alpha1.Dataplane.Probes
+	10, // 2: kuma.mesh.v1alpha1.Dataplane.Networking.gateway:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Gateway
+	8,  // 3: kuma.mesh.v1alpha1.Dataplane.Networking.inbound:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound
+	9,  // 4: kuma.mesh.v1alpha1.Dataplane.Networking.outbound:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound
+	11, // 5: kuma.mesh.v1alpha1.Dataplane.Networking.transparent_proxying:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying
+	25, // 6: kuma.mesh.v1alpha1.Dataplane.Networking.admin:type_name -> kuma.mesh.v1alpha1.EnvoyAdmin
+	12, // 7: kuma.mesh.v1alpha1.Dataplane.Networking.listeners:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Listener
+	24, // 8: kuma.mesh.v1alpha1.Dataplane.Probes.endpoints:type_name -> kuma.mesh.v1alpha1.Dataplane.Probes.Endpoint
+	13, // 9: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.tags:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.TagsEntry
+	14, // 10: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.health:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.Health
+	15, // 11: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.serviceProbe:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe
+	0,  // 12: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.state:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.State
+	17, // 13: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.tags:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.TagsEntry
+	18, // 14: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.backendRef:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef
+	20, // 15: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.tags:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.TagsEntry
+	1,  // 16: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.type:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.GatewayType
+	2,  // 17: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ip_family_mode:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.IpFamilyMode
+	22, // 18: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.reachable_backends:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends
+	3,  // 19: kuma.mesh.v1alpha1.Dataplane.Networking.Listener.type:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Listener.Type
+	4,  // 20: kuma.mesh.v1alpha1.Dataplane.Networking.Listener.state:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Listener.State
+	26, // 21: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.interval:type_name -> google.protobuf.Duration
+	26, // 22: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.timeout:type_name -> google.protobuf.Duration
+	27, // 23: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.unhealthy_threshold:type_name -> google.protobuf.UInt32Value
+	27, // 24: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.healthy_threshold:type_name -> google.protobuf.UInt32Value
+	16, // 25: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.tcp:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.Tcp
+	19, // 26: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef.labels:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef.LabelsEntry
+	27, // 27: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.port:type_name -> google.protobuf.UInt32Value
+	23, // 28: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.labels:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.LabelsEntry
+	21, // 29: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends.refs:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef
+	30, // [30:30] is the sub-list for method output_type
+	30, // [30:30] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_api_mesh_v1alpha1_dataplane_proto_init() }
@@ -1711,7 +1695,6 @@ func file_api_mesh_v1alpha1_dataplane_proto_init() {
 		return
 	}
 	file_api_mesh_v1alpha1_envoy_admin_proto_init()
-	file_api_mesh_v1alpha1_metrics_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

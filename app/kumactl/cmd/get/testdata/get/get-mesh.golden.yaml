@@ -3,14 +3,6 @@ kri: kri_m____mesh-1_
 modificationTime: "0001-01-01T00:00:00Z"
 name: mesh-1
 type: Mesh
-metrics:
-  backends:
-  - conf:
-      path: /non-standard-path
-      port: 1234
-    name: prometheus-1
-    type: prometheus
-  enabledBackend: prometheus-1
 mtls:
   backends:
   - name: builtin-1

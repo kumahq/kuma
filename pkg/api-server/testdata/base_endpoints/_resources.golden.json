@@ -320,10 +320,10 @@
    "path": "meshtlses",
    "pluralDisplayName": "Mesh TLSes",
    "policy": {
-    "hasFromTargetRef": true,
+    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
     "hasToTargetRef": false,
-    "isFromAsRules": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,

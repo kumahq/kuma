@@ -86,9 +86,6 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err != nil {
 		return err
 	}
-	if err := mesh.Default(); err != nil {
-		return err
-	}
 	if err := validator.Validate(resource); err != nil {
 		return err
 	}
@@ -156,9 +153,6 @@ func (m *meshManager) DeleteAll(ctx context.Context, list core_model.ResourceLis
 func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {
 	mesh, err := m.mesh(resource)
 	if err != nil {
-		return err
-	}
-	if err := mesh.Default(); err != nil {
 		return err
 	}
 	if err := validator.Validate(resource); err != nil {

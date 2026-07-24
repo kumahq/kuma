@@ -1,4 +1,4 @@
-# it should handle policies when some of them have 'rules', some have 'from' and IsFromAsRules is set to true
+# it should handle multiple MeshTLS policies with 'rules'
 type: MeshTLS
 name: matched-for-rules-mtls-aaaaaa
 mesh: mesh-1
@@ -11,10 +11,8 @@ type: MeshTLS
 name: matched-for-rules-mtls-bbbbbb
 mesh: mesh-1
 spec:
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         mode: Permissive
 ---
 type: MeshTLS

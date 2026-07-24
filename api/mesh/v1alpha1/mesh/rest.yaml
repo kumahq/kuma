@@ -108,36 +108,6 @@ components:
           additionalProperties:
             type: string
           type: object
-        metrics:
-          description: |-
-            Configuration for metrics collected and exposed by dataplanes.
-
-            Settings defined here become defaults for every dataplane in a given Mesh.
-            Additionally, it is also possible to further customize this configuration
-            for each dataplane individually using Dataplane resource.
-            +optional
-          properties:
-            backends:
-              description: List of available Metrics backends
-              items:
-                description: MetricsBackend defines metric backends
-                properties:
-                  conf:
-                    oneOf:
-                    - $ref: /specs/protoresources/prometheusmetricsbackendconfig/schema.yaml#/components/schemas/PrometheusMetricsBackendConfig
-                    type: object
-                  name:
-                    description: Name of the backend, can be then used in Mesh.metrics.enabledBackend
-                    type: string
-                  type:
-                    description: Type of the backend (Kuma ships with 'prometheus')
-                    type: string
-                type: object
-              type: array
-            enabledBackend:
-              description: Name of the enabled backend
-              type: string
-          type: object
         modificationTime:
           description: Time at which the resource was updated
           format: date-time
