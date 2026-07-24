@@ -282,6 +282,15 @@ spec:
                             this interval takes precedence over any other. The default value for "no
                             traffic interval" is 60 seconds.
                           type: string
+                        unhealthyInterval:
+                          description: |-
+                            The interval used between health checks while an endpoint is considered
+                            unhealthy. When an endpoint becomes unhealthy, Envoy will probe it using
+                            this more frequent interval instead of the normal health check interval.
+                            This allows faster detection of recovery or continued failure. If not
+                            specified, Envoy will use the same interval for both healthy and unhealthy
+                            endpoints.
+                          type: string
                         reuseConnection:
                           description: Reuse health check connection between health
                             checks. Default is true.

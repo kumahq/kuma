@@ -73,6 +73,11 @@ func (in *Conf) DeepCopyInto(out *Conf) {
 		*out = new(v1.Duration)
 		**out = **in
 	}
+	if in.UnhealthyInterval != nil {
+		in, out := &in.UnhealthyInterval, &out.UnhealthyInterval
+		*out = new(v1.Duration)
+		**out = **in
+	}
 	if in.Tcp != nil {
 		in, out := &in.Tcp, &out.Tcp
 		*out = new(TcpHealthCheck)
