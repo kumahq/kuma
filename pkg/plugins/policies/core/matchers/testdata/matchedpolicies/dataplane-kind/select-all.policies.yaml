@@ -5,11 +5,12 @@ name: mtp-1
 spec:
   targetRef:
     kind: Dataplane
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Deny
+  rules:
+    - default:
+        deny:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
@@ -17,8 +18,9 @@ name: mtp-2
 spec:
   targetRef:
     kind: Dataplane
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1

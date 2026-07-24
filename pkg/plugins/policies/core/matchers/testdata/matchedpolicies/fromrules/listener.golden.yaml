@@ -15,5 +15,4 @@ InboundRules:
         name: mtp-listener
         type: MeshTrafficPermission
       RuleIndex: 0
-Rules:
-  1.1.1.1:10002: []
+Rules: {}

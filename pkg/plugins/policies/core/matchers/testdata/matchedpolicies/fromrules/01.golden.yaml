@@ -1,85 +1,64 @@
 InboundRules:
-  1.1.1.1:8080: []
-  1.1.1.1:8081: []
-Rules:
   1.1.1.1:8080:
-  - Conf:
-      action: AllowWithShadowDeny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_mesh-1___mtp-2_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-2
-      type: MeshTrafficPermission
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_mesh-1___mtp-1_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-1
-      type: MeshTrafficPermission
-    OriginByMatches: {}
-    Subset:
-    - Key: kuma.io/service
-      Not: false
-      Value: orders
-  - Conf:
-      action: Allow
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_mesh-1___mtp-2_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-2
-      type: MeshTrafficPermission
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_mesh-1___mtp-1_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-1
-      type: MeshTrafficPermission
-    OriginByMatches: {}
-    Subset:
-    - Key: kuma.io/service
-      Not: false
-      Value: backend
-  - Conf:
-      action: Deny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_mesh-1___mtp-2_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-2
-      type: MeshTrafficPermission
-    OriginByMatches: {}
-    Subset:
-    - Key: kuma.io/service
-      Not: true
-      Value: orders
-  - Conf:
-      action: Deny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_mesh-1___mtp-2_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-2
-      type: MeshTrafficPermission
-    OriginByMatches: {}
-    Subset:
-    - Key: kuma.io/service
-      Not: true
-      Value: backend
+  - conf:
+      deny:
+      - spiffeID:
+          type: Prefix
+          value: spiffe://mesh-1
+    match: null
+    origin:
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mtp_mesh-1___mtp-2_
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mtp-2
+        type: MeshTrafficPermission
+      RuleIndex: 0
+  - conf:
+      allow:
+      - spiffeID:
+          type: Exact
+          value: spiffe://mesh-1/backend
+    match: null
+    origin:
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mtp_mesh-1___mtp-1_
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mtp-1
+        type: MeshTrafficPermission
+      RuleIndex: 0
+  - conf:
+      allowWithShadowDeny:
+      - spiffeID:
+          type: Exact
+          value: spiffe://mesh-1/orders
+    match: null
+    origin:
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mtp_mesh-1___mtp-1_
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mtp-1
+        type: MeshTrafficPermission
+      RuleIndex: 1
   1.1.1.1:8081:
-  - Conf:
-      action: Deny
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mtp_mesh-1___mtp-2_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-2
-      type: MeshTrafficPermission
-    OriginByMatches: {}
-    Subset: []
+  - conf:
+      deny:
+      - spiffeID:
+          type: Prefix
+          value: spiffe://mesh-1
+    match: null
+    origin:
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mtp_mesh-1___mtp-2_
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mtp-2
+        type: MeshTrafficPermission
+      RuleIndex: 0
+Rules: {}

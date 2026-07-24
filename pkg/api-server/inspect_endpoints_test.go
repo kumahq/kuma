@@ -94,7 +94,7 @@ var _ = Describe("Inspect WS", func() {
 					Build(),
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMesh()).
-					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddRule(v1alpha1.Allow).
 					Build(),
 			},
 			contentType: restful.MIME_JSON,
@@ -121,7 +121,7 @@ var _ = Describe("Inspect WS", func() {
 				builders.MeshTrafficPermission().
 					WithMesh("mesh-1").
 					WithTargetRef(builders.TargetRefDataplaneName("backend-1")).
-					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddRule(v1alpha1.Allow).
 					Build(),
 			},
 			contentType: restful.MIME_JSON,
@@ -276,10 +276,6 @@ var _ = Describe("Inspect WS", func() {
 			resources: []core_model.Resource{
 				samples2.MeshDefault(),
 				samples2.DataplaneWeb(),
-				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefDataplaneName("web-01")).
-					AddFrom(builders.TargetRefService("client"), v1alpha1.Deny).
-					Build(),
 				builders.MeshAccessLog().
 					WithTargetRef(builders.TargetRefDataplaneName("web-01")).
 					AddTo(builders.TargetRefMesh(), samples2.MeshAccessLogFileConf()).

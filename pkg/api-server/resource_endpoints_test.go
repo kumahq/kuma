@@ -178,7 +178,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			},
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				AddRule(v1alpha1.Allow).
 				Build().Spec,
 		}
 		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
@@ -210,7 +210,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			},
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				AddRule(v1alpha1.Allow).
 				Build().Spec,
 		}
 		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
@@ -242,7 +242,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			},
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				AddRule(v1alpha1.Allow).
 				Build().Spec,
 		}
 		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
@@ -273,7 +273,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 				},
 				Spec: builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMesh()).
-					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddRule(v1alpha1.Allow).
 					Build().Spec,
 			}
 			resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
@@ -362,7 +362,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			},
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				AddRule(v1alpha1.Allow).
 				Build().Spec,
 		}
 		resp, err := put(apiServerWithErr.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-err", res)
@@ -488,7 +488,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			},
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				AddRule(v1alpha1.Allow).
 				Build().Spec,
 		}
 		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-role", res)

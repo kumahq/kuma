@@ -10,11 +10,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-1-w6b2779598z4fd75.kuma-system
   spec:
-    from:
+    rules:
     - default:
-        action: Deny
-      targetRef:
-        kind: Mesh
+        deny:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Dataplane
       labels:

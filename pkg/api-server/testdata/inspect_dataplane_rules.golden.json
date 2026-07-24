@@ -1,5 +1,5 @@
 {
- "total": 3,
+ "total": 2,
  "items": [
   {
    "type": "SingleItem",
@@ -51,31 +51,6 @@
     {
      "mesh": "default",
      "name": "mal-1"
-    }
-   ]
-  },
-  {
-   "type": "ClientSubset",
-   "name": "web-e816eaf96a14245f",
-   "addresses": [
-    "192.168.0.2:80"
-   ],
-   "service": "web",
-   "tags": {
-    "kuma.io/protocol": "http",
-    "kuma.io/service": "web"
-   },
-   "policyType": "MeshTrafficPermission",
-   "subset": {
-    "kuma.io/service": "client"
-   },
-   "conf": {
-    "action": "Deny"
-   },
-   "origins": [
-    {
-     "mesh": "default",
-     "name": "mtp-1"
     }
    ]
   }
