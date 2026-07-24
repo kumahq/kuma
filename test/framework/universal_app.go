@@ -73,6 +73,7 @@ type UniversalApp struct {
 type UniversalAppRunOptions struct {
 	DockerBackend        DockerBackend
 	DPConcurrency        int
+	DPVersion            string
 	EnvironmentVariables []string
 	ContainerName        string
 	Volumes              []string
@@ -122,9 +123,13 @@ func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode
 	}
 
 	// Mount the host cache dir so the DP compatibility install can reuse
-	// already-downloaded kuma-dp tarballs instead of pulling them again.
+	// already-downloaded kuma-dp tarballs instead of pulling them again. Only for
+	// apps that install a specific kuma-dp version (the ones that download) and
+	// only on the local docker backend (a host bind-mount is meaningless for the
+	// remote backend).
 	volumes := runOptions.Volumes
-	if _, ok := runOptions.DockerBackend.(*LocalDockerBackend); ok {
+	_, localBackend := runOptions.DockerBackend.(*LocalDockerBackend)
+	if localBackend && runOptions.DPVersion != "" {
 		if err := os.MkdirAll(dpBinaryCacheHostDir, 0o755); err != nil {
 			return nil, errors.Wrapf(err, "failed to create DP binary cache dir %q", dpBinaryCacheHostDir)
 		}
