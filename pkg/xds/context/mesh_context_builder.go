@@ -233,7 +233,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	dpZoneIngressEndpointMap := xds_topology.BuildDataplaneZoneIngressEndpointMap(
 		mesh,
-		m.zone,
 		meshServices,
 		meshMultiZoneServices,
 		dataplanes,

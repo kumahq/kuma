@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	meshName           = "unified-naming"
-	namespace          = "unified-naming"
-	containerPatchName = "enable-feature-unified-resource-naming"
+	meshName                  = "unified-naming"
+	namespace                 = "unified-naming"
+	containerPatchName        = "enable-feature-unified-resource-naming"
+	disableContainerPatchName = "disable-feature-unified-resource-naming"
 )
 
 func UnifiedNaming() {
@@ -40,6 +41,22 @@ spec:
       "name": "KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED",
       "value": "true"
     }'`, containerPatchName, Config.KumaNamespace)
+
+	// Explicit override so tests don't depend on kuma-dp's own default for
+	// unified naming, which can change independently of this test.
+	disableContainerPatch := fmt.Sprintf(`apiVersion: kuma.io/v1alpha1
+kind: ContainerPatch
+metadata:
+  name: %s
+  namespace: %s
+spec:
+  sidecarPatch:
+  - op: add
+    path: /env/-
+    value: '{
+      "name": "KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED",
+      "value": "false"
+    }'`, disableContainerPatchName, Config.KumaNamespace)
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
@@ -60,6 +77,7 @@ spec:
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(YamlK8s(containerPatch)).
+			Install(YamlK8s(disableContainerPatch)).
 			SetupInGroup(multizone.KubeZone2, wg)
 
 		Expect(wg.Wait()).To(Succeed())
@@ -101,7 +119,7 @@ spec:
 	})
 
 	It("enables unified resource naming per app without breaking cross-zone connectivity", func() {
-		By("verifying unified naming is disabled by default in Kube Zone 2")
+		By("verifying unified naming is disabled in Kube Zone 2")
 		assertUnifiedNamingFlag(multizone.KubeZone2, false)
 
 		By("verifying connectivity across zones and environments (Kube<->Kube and Kube<->Universal) with unified naming disabled")
@@ -136,7 +154,7 @@ spec:
 		By("verifying connectivity across zones and environments remains healthy when both apps have unified naming enabled")
 		assertConnectivity()
 
-		By("disabling unified naming on test-server in Kube Zone 2 (redeploy without ContainerPatch)")
+		By("disabling unified naming on test-server in Kube Zone 2 via ContainerPatch")
 		Expect(NewClusterSetup().
 			Install(appsKube(multizone.KubeZone2, false, "test-server")).
 			Setup(multizone.KubeZone2),
@@ -247,8 +265,13 @@ func appsKube(c *K8sCluster, unifiedNaming bool, apps ...string) InstallFunc {
 	}
 
 	annotations := map[string]string{}
-	if unifiedNaming {
+	switch {
+	case unifiedNaming:
 		annotations[metadata.KumaContainerPatches] = containerPatchName
+	case c == multizone.KubeZone2:
+		// Explicit disable so the assertion below doesn't depend on
+		// kuma-dp's own default for unified naming.
+		annotations[metadata.KumaContainerPatches] = disableContainerPatchName
 	}
 
 	for _, app := range apps {

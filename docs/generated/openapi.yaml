@@ -6237,17 +6237,6 @@ components:
           type: object
         name:
           type: string
-        networking:
-          description: Networking settings of the mesh
-          properties:
-            outbound:
-              description: Outbound settings
-              properties:
-                passthrough:
-                  description: Control the passthrough cluster
-                  type: boolean
-              type: object
-          type: object
         routing:
           description: Routing settings of the mesh
           properties:
@@ -6255,9 +6244,6 @@ components:
               description: |-
                 If true, blocks traffic to MeshExternalServices.
                 Default: false
-              type: boolean
-            localityAwareLoadBalancing:
-              description: Enable the Locality Aware Load Balancing
               type: boolean
             zoneEgress:
               description: >-

@@ -770,6 +770,21 @@ Migrate any `Mesh` resources that still configure `spec.tracing` to a
 continues to apply successfully; the field is silently ignored by the control
 plane.
 
+### `Mesh.spec.routing.localityAwareLoadBalancing` removed
+
+The inline `routing.localityAwareLoadBalancing` field has been removed from
+the `Mesh` resource spec. The `MeshLoadBalancingStrategy` policy has been the
+GA replacement for configuring locality-aware load balancing and is
+unaffected by this change.
+
+**Action required**
+
+Migrate any `Mesh` resources that still configure
+`spec.routing.localityAwareLoadBalancing` to a `MeshLoadBalancingStrategy`
+policy before upgrading. A `Mesh` spec that still sets
+`routing.localityAwareLoadBalancing` continues to apply successfully; the
+field is silently ignored by the control plane.
+
 ### `Mesh.spec.logging` removed
 
 The inline `logging` field (and its `Logging`/`LoggingBackend`/
@@ -796,6 +811,23 @@ replacement since it was introduced and is unaffected by this change.
 Update any automation or dashboards that read `MeshInsight.policies` (via the
 REST API or `kumactl inspect meshes`) to read the equivalent entry from
 `MeshInsight.resources` instead, keyed by the same resource type name.
+
+### `Mesh.spec.networking.outbound.passthrough` removed
+
+The inline `networking.outbound.passthrough` field has been removed from the
+`Mesh` resource spec. The `MeshPassthrough` policy is the replacement for
+controlling the default outbound passthrough cluster and is unaffected by
+this change. After upgrading, the control plane always behaves as if
+`passthrough` was `true` (its previous default) unless a `MeshPassthrough`
+policy says otherwise.
+
+**Action required**
+
+Migrate any `Mesh` resources that still set `networking.outbound.passthrough`
+to `false` to a `MeshPassthrough` policy with `targetRef.kind: Mesh` and
+`default.passthroughMode: None` before upgrading. A `Mesh` spec that still
+sets `networking.outbound.passthrough` continues to apply successfully; the
+field is silently ignored by the control plane.
 
 ## Upgrade to `2.13.7`
 

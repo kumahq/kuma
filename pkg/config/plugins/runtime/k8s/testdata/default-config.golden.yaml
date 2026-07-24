@@ -79,7 +79,7 @@ injector:
     mountPath: /run/spire/sockets
     socketFileName: socket
   transparentProxyConfigMap: ""
-  unifiedResourceNamingEnabled: false
+  unifiedResourceNamingEnabled: true
   validationContainer:
     resources:
       limits:

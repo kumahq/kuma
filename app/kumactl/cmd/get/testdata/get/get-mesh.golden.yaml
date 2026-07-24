@@ -17,5 +17,4 @@ mtls:
     type: builtin
   enabledBackend: builtin-1
 routing:
-  localityAwareLoadBalancing: true
   zoneEgress: true

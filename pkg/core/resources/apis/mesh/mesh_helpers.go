@@ -41,10 +41,6 @@ func (m *MeshResource) ZoneEgressEnabled() bool {
 	return m != nil && m.Spec.GetRouting().GetZoneEgress()
 }
 
-func (m *MeshResource) LocalityAwareLbEnabled() bool {
-	return m != nil && m.Spec.GetRouting().GetLocalityAwareLoadBalancing()
-}
-
 func (m *MeshResource) GetEnabledCertificateAuthorityBackend() *mesh_proto.CertificateAuthorityBackend {
 	return m.GetCertificateAuthorityBackend(m.Spec.GetMtls().GetEnabledBackend())
 }
