@@ -124,8 +124,6 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 				// ignore VIP outbound if reachableBackends is defined and not specified
 				continue
 			}
-			// we don't support MeshTrafficPermission for MeshExternalService at the moment
-			// TODO: https://github.com/kumahq/kuma/issues/11077
 		}
 		if dataplane.UsesInboundInterface(net.ParseIP(outbound.GetAddress()), outbound.GetPort()) {
 			// Skip overlapping outbound interface with inbound.
