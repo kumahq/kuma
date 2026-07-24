@@ -1,0 +1,86 @@
+resources:
+- name: meshpassthrough_grpc_grpc.example.com_50051
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_grpc_grpc_example_com_50051
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_grpc_grpc.example.com_50051
+    type: ORIGINAL_DST
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: meshpassthrough_http_*.svc.local_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_http___svc_local_80
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_http_*.svc.local_80
+    type: ORIGINAL_DST
+- name: meshpassthrough_http_192.168.0.0/16_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_http_192_168_0_0_16_80
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_http_192.168.0.0/16_80
+    type: ORIGINAL_DST
+- name: meshpassthrough_http_web.example.com_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_http_web_example_com_80
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_http_web.example.com_80
+    type: ORIGINAL_DST
+- name: meshpassthrough_tcp_10.0.0.1_9000
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_tcp_10_0_0_1_9000
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_tcp_10.0.0.1_9000
+    type: ORIGINAL_DST
+- name: meshpassthrough_tcp_10.0.0.2_3306
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_tcp_10_0_0_2_3306
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_tcp_10.0.0.2_3306
+    type: ORIGINAL_DST
+- name: meshpassthrough_tcp_fd00::1_9000
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_tcp_fd00__1_9000
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_tcp_fd00::1_9000
+    type: ORIGINAL_DST
+- name: meshpassthrough_tls_*.example.com_443
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_tls___example_com_443
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_tls_*.example.com_443
+    type: ORIGINAL_DST
+- name: meshpassthrough_tls_api.example.com_443
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_tls_api_example_com_443
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_tls_api.example.com_443
+    type: ORIGINAL_DST
+- name: meshpassthrough_tls_fd00::/16_443
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_tls_fd00___16_443
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_tls_fd00::/16_443
+    type: ORIGINAL_DST

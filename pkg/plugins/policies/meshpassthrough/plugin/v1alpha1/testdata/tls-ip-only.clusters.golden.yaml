@@ -1,0 +1,17 @@
+resources:
+- name: meshpassthrough_tls_10.0.0.1_443
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_tls_10_0_0_1_443
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_tls_10.0.0.1_443
+    type: ORIGINAL_DST
+- name: meshpassthrough_tls_192.168.0.0/16_443
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_tls_192_168_0_0_16_443
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_tls_192.168.0.0/16_443
+    type: ORIGINAL_DST
