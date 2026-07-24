@@ -1,19 +1,6 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
   kri: kri_m____mesh1_
-  metrics:
-    backends:
-    - conf:
-        path: /non-standard-path
-        port: 1234
-      name: prometheus-1
-      type: prometheus
-    - conf:
-        path: /non-standard-path
-        port: 1235
-      name: prometheus-2
-      type: prometheus
-    enabledBackend: prometheus-1
   modificationTime: "0001-01-01T00:00:00Z"
   mtls:
     backends:
@@ -26,7 +13,6 @@ items:
   type: Mesh
 - creationTime: "0001-01-01T00:00:00Z"
   kri: kri_m____mesh2_
-  metrics: {}
   modificationTime: "0001-01-01T00:00:00Z"
   name: mesh2
   type: Mesh
