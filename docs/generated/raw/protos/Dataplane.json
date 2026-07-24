@@ -387,7 +387,7 @@
             "properties": {
                 "kind": {
                     "type": "string",
-                    "description": "Type of the backend: MeshService or MeshExternalService  +required"
+                    "description": "Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService  +required"
                 },
                 "name": {
                     "type": "string",

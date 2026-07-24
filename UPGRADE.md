@@ -441,8 +441,8 @@ configuration.
 
 The legacy `kuma.io/service`-based reachable services mechanism has been
 removed in favor of `reachableBackends` (`kuma.io/reachable-backends` on
-Kubernetes), which targets `MeshService`/`MeshExternalService` resources
-instead of the `kuma.io/service` tag.
+Kubernetes), which targets `MeshService`/`MeshExternalService`/
+`MeshMultiZoneService` resources instead of the `kuma.io/service` tag.
 
 The following have been removed:
 
@@ -453,9 +453,9 @@ The following have been removed:
 **Action required**
 
 Migrate any usage of the annotation or field above to `reachableBackends` /
-`kuma.io/reachable-backends`, referencing the target `MeshService` or
-`MeshExternalService` by name/namespace/port instead of the `kuma.io/service`
-tag value.
+`kuma.io/reachable-backends`, referencing the target `MeshService`,
+`MeshExternalService`, or `MeshMultiZoneService` by name/namespace/port
+instead of the `kuma.io/service` tag value.
 
 ### `kumactl install observability` removed
 

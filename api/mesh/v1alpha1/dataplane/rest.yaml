@@ -385,7 +385,8 @@ components:
                       items:
                         properties:
                           kind:
-                            description: "Type of the backend: MeshService or MeshExternalService\n\n\t+required"
+                            description: "Type of the backend: MeshService, MeshExternalService
+                              or MeshMultiZoneService\n\n\t+required"
                             type: string
                           labels:
                             additionalProperties:

@@ -1274,7 +1274,7 @@ func (x *Dataplane_Networking_Outbound_BackendRef) GetLabels() map[string]string
 
 type Dataplane_Networking_TransparentProxying_ReachableBackendRef struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Type of the backend: MeshService or MeshExternalService
+	// Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService
 	//
 	//	+required
 	Kind string `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`

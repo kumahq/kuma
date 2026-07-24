@@ -272,7 +272,7 @@ message Dataplane {
       // The IP family mode to enable for. Can be "IPv4" or "DualStack".
       IpFamilyMode ip_family_mode = 6;
       message ReachableBackendRef {
-        // Type of the backend: MeshService or MeshExternalService
+        // Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService
         //  +required
         string kind = 1;
         // Name of the backend.
