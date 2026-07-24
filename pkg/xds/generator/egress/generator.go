@@ -12,7 +12,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	generator_core "github.com/kumahq/kuma/v3/pkg/xds/generator/core"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	generator_secrets "github.com/kumahq/kuma/v3/pkg/xds/generator/secrets"
@@ -32,19 +31,13 @@ func (g Generator) Generate(
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 
-	// Zone egress secrets are always created with unified/system names
-	// (secrets.Generator.GenerateForZoneEgress no longer branches on the
-	// flag), so the listener/SDS names built here must match unconditionally.
-	unifiedNaming := true
-	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
-
 	zoneEgress := proxy.ZoneEgressProxy.ZoneEgressResource
 	address := zoneEgress.Spec.GetNetworking().GetAddress()
 	port := zoneEgress.Spec.GetNetworking().GetPort()
 
 	inboundContextualID := naming.MustContextualInboundName(zoneEgress, port)
-	listenerName := getName(inboundContextualID, envoy_names.GetInboundListenerName(address, port))
-	statPrefix := getName(inboundContextualID, "")
+	listenerName := inboundContextualID
+	statPrefix := inboundContextualID
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
@@ -64,7 +57,7 @@ func (g Generator) Generate(
 		}
 		rs.AddSet(internal)
 
-		external, externalFCB, err := genExternalResources(proxy, meshResources, secretsTracker, unifiedNaming)
+		external, externalFCB, err := genExternalResources(proxy, meshResources, secretsTracker)
 		if err != nil {
 			return nil, err
 		}
