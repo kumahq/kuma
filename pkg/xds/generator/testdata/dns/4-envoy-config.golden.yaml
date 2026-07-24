@@ -1,5 +1,5 @@
 resources:
-- name: _kuma:dynamicconfig
+- name: system_dynamicconfig
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -23,7 +23,7 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:dynamicconfig
+              name: system_dynamicconfig
               routes:
               - directResponse:
                   status: 304
@@ -33,16 +33,18 @@ resources:
                     stringMatch:
                       exact: 3a7819834364a9832e4a7b58cf52f72bc5b33bb1766e86dfd5cfe5afab562693
                   path: /dns
+                name: system_dynamicconfig_dns_not_modified
               - directResponse:
                   body:
                     inlineString: '{"records":[{"name":"backend.test-ns.svc.8080.mesh","ips":["240.0.0.0","::ffff:f000:0"]},{"name":"backend_test-ns_svc_8080.mesh","ips":["240.0.0.0","::ffff:f000:0"]},{"name":"httpbin.mesh","ips":["240.0.0.1","::ffff:f000:1"]}],"ttl":30,"extraLabels":{"k8s_kuma_io_namespace":"test-ns","kuma_io_zone":"zone-1","kuma_workload":"backend","mesh":"default"}}'
                   status: 200
                 match:
                   path: /dns
-                name: _kuma:dynamicconfig:/dns
+                name: system_dynamicconfig_dns
                 responseHeadersToAdd:
                 - header:
                     key: Etag
                     value: 3a7819834364a9832e4a7b58cf52f72bc5b33bb1766e86dfd5cfe5afab562693
-          statPrefix: _kuma_dynamicconfig
-    name: _kuma:dynamicconfig
+          statPrefix: system_dynamicconfig
+    name: system_dynamicconfig
+    statPrefix: system_dynamicconfig
