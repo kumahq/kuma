@@ -10,13 +10,13 @@ import (
 	"github.com/asaskevich/govalidator"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
-	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
@@ -168,11 +168,38 @@ func (d *DataplaneResource) AdminPort(defaultAdminPort uint32) uint32 {
 	return defaultAdminPort
 }
 
+// Hash returns a content-based hash of the Dataplane for consumers that need to
+// observe metadata-only writes via resourceVersion as well as spec and label
+// changes.
 func (d *DataplaneResource) Hash() []byte {
+	return d.hash(true)
+}
+
+// XDSHash returns the Dataplane hash used to gate mesh-wide xDS regeneration.
+// It intentionally excludes meta.GetVersion() (the Kubernetes resourceVersion)
+// so that writes irrelevant to xDS generation - status, annotations,
+// managedFields - don't invalidate the mesh-wide xDS context. Labels are
+// included because they affect policy matching.
+func (d *DataplaneResource) XDSHash() []byte {
+	return d.hash(false)
+}
+
+func (d *DataplaneResource) hash(includeVersion bool) []byte {
 	hasher := fnv.New128a()
-	_, _ = hasher.Write(core_model.HashMeta(d))
-	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAddress()))
-	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAdvertisedAddress()))
+	_, _ = hasher.Write(core_model.HashMetaIdentity(d))
+	if includeVersion {
+		_, _ = hasher.Write([]byte(d.GetMeta().GetVersion()))
+	}
+	core_model.WriteSortedLabels(hasher, d.GetMeta().GetLabels())
+	specBytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(d.Spec)
+	if err == nil {
+		_, _ = hasher.Write(specBytes)
+	} else {
+		// Deterministic marshaling should never fail for a well-formed Dataplane
+		// spec, but fall back to a value that still changes with the spec
+		// instead of silently treating every Dataplane as identical.
+		_, _ = hasher.Write([]byte(d.Spec.String()))
+	}
 	return hasher.Sum(nil)
 }
 

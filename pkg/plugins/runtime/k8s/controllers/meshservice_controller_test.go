@@ -19,12 +19,11 @@ import (
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
-	meshservice_k8s "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	yaml2 "github.com/kumahq/kuma/v2/pkg/util/yaml"
+	meshservice_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	yaml2 "github.com/kumahq/kuma/v3/pkg/util/yaml"
 )
 
 var _ = Describe("MeshServiceController", func() {
@@ -73,7 +72,6 @@ var _ = Describe("MeshServiceController", func() {
 				Log:                 logr.Discard(),
 				Scheme:              k8sClientScheme,
 				EventRecorder:       kube_events.NewFakeRecorder(10),
-				ResourceConverter:   k8s.NewSimpleConverter(),
 				InboundTagsDisabled: given.inboundTagsDisabled,
 			}
 
@@ -124,7 +122,7 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "ignore.resources.yaml",
 			outputFile: "ignore.meshservice.yaml",
 		}),
-		Entry("headless gateway service with mode Disabled", testCase{
+		Entry("headless gateway service is unaffected by meshServices.mode", testCase{
 			inputFile:  "headless-gateway-disabled.resources.yaml",
 			outputFile: "headless-gateway-disabled.meshservice.yaml",
 		}),

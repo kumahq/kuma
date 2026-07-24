@@ -6,12 +6,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/httpclient"
 )
 
 var waitLog = dataplaneLog.WithName("wait")
@@ -29,20 +28,6 @@ func newWaitCmd() *cobra.Command {
 		Short: "Waits for data plane proxy to be ready",
 		Long:  `Waits for data plane proxy (Envoy) to be ready.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			// When running inside a K8s sidecar with admin on UDS,
-			// the injector sets KUMA_READINESS_UNIX_SOCKET_DISABLED=true
-			// and KUMA_READINESS_PORT. Derive the URL from those env vars
-			// so zero-argument "kuma-dp wait" works out of the box.
-			if !cmd.Flags().Changed("url") && args.unixSocket == "" {
-				if os.Getenv("KUMA_READINESS_UNIX_SOCKET_DISABLED") == "true" {
-					port := os.Getenv("KUMA_READINESS_PORT")
-					if port == "" {
-						port = "9902"
-					}
-					args.url = fmt.Sprintf("http://localhost:%s/ready", port)
-				}
-			}
-
 			client := httpclient.NewTCPOrUDS(args.unixSocket, args.requestTimeout, args.requestTimeout)
 			targetURL := args.url
 			if args.unixSocket != "" {

@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane", func() {
@@ -579,7 +579,43 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.inbound
                   message: inbound cannot be defined for delegated gateways`,
 		}),
-		Entry("networking: builtin gateway must not have inbounds", testCase{
+		Entry("networking: delegated gateway must not have listeners", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  gateway:
+                    tags:
+                      kuma.io/service: kong
+                  listeners:
+                    - type: ZoneEgress
+                      address: 192.168.0.1
+                      port: 10002
+                      name: ze-port`,
+			expected: `
+                violations:
+                - field: networking.listeners
+                  message: listeners cannot be defined for delegated gateways`,
+		}),
+		Entry("networking: builtin gateway is rejected", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  gateway:
+                    type: BUILTIN
+                    tags:
+                      kuma.io/service: kong`,
+			expected: `
+                violations:
+                - field: networking.gateway.type
+                  message: BUILTIN gateways are no longer supported, use DELEGATED instead`,
+		}),
+		Entry("networking: builtin gateway with inbounds and listeners is still rejected at type", testCase{
 			dataplane: `
                 type: Dataplane
                 name: dp-1
@@ -593,43 +629,12 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 3333
                       tags:
-                        kuma.io/service: kong`,
-			expected: `
-                violations:
-                - field: networking.inbound
-                  message: inbound cannot be defined for builtin gateways`,
-		}),
-		Entry("networking: builtin gateway must not have outbounds", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    type: BUILTIN
-                    tags:
-                      kuma.io/service: kong
-                  outbound:
-                    - port: 3333
-                      tags:
-                        kuma.io/service: kong`,
-			expected: `
-                violations:
-                - field: networking.outbound
-                  message: outbound cannot be defined for builtin gateways`,
-		}),
-		Entry("networking: builtin gateway must not have probes", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    type: BUILTIN
-                    tags:
-                      kuma.io/service: kong
+                        kuma.io/service: kong
+                  listeners:
+                    - type: ZoneEgress
+                      address: 192.168.0.1
+                      port: 10002
+                      name: ze-port
                 probes:
                   port: 0
                   endpoints:
@@ -638,24 +643,8 @@ var _ = Describe("Dataplane", func() {
                      path: /8080/healthz`,
 			expected: `
                 violations:
-                - field: networking.probes
-                  message: probes cannot be defined for builtin gateways`,
-		}),
-		Entry("networking: builtin gateway must have a service tag", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    type: BUILTIN
-                    tags:
-                      foo: bar`,
-			expected: `
-                violations:
-                - field: networking.gateway.tags
-                  message: mandatory tag "kuma.io/service" is missing`,
+                - field: networking.gateway.type
+                  message: BUILTIN gateways are no longer supported, use DELEGATED instead`,
 		}),
 		Entry("networking.inbound: port of the range", testCase{
 			dataplane: `

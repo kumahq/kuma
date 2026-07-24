@@ -3,9 +3,9 @@ package v1alpha1_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/test/resources/validators"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
 )
 
 var _ = Describe("validation", func() {
@@ -42,8 +42,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshServiceSubset
@@ -87,8 +86,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -115,8 +113,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -161,8 +158,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -189,8 +185,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -217,8 +212,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -424,29 +418,6 @@ to:
 
 `),
 		ErrorCases(
-			"invalid MeshGateway and to MeshService",
-			[]validators.Violation{{
-				Field:   "spec.to[0].targetRef.kind",
-				Message: "value 'MeshGateway' is not supported, only Mesh is allowed if loadBalancer is set",
-			}},
-			`
-type: MeshLoadBalancingStrategy
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge-gateway
-to:
-  - targetRef:
-      kind: MeshService
-      name: svc-1
-    default:
-      loadBalancer:
-        type: LeastRequest
-        leastRequest:
-          activeRequestBias: "1.3"
-`),
-		ErrorCases(
 			"invalid hashPolicies",
 			[]validators.Violation{
 				{
@@ -475,8 +446,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -506,8 +476,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -543,8 +512,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshHTTPRoute
@@ -570,8 +538,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshHTTPRoute
@@ -595,8 +562,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshHTTPRoute
@@ -619,8 +585,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -644,8 +609,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -665,8 +629,7 @@ type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 to: 
   - targetRef:
       kind: MeshService
@@ -709,25 +672,6 @@ targetRef:
   labels:
     app: web
 to: []
-`),
-		Entry(
-			"top level MeshGateway",
-			`
-type: MeshLoadBalancingStrategy
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-  tags:
-    name: listener-1
-to:
-  - targetRef:
-      kind: MeshService
-      name: svc-2
-    default:
-      localityAwareness:
-        disabled: true
 `),
 	)
 })

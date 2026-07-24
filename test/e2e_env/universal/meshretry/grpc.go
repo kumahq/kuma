@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func GrpcRetry() {
@@ -16,17 +16,21 @@ func GrpcRetry() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
-			Install(TestServerUniversal("test-server", meshName,
+			Install(TestServerUniversal(
+				"test-server", meshName,
 				WithServiceName("test-server"),
 				WithProtocol("grpc"),
 				WithArgs([]string{"grpc", "server", "--port", "8080"}),
 				WithTransparentProxy(true),
+				WithLabels(map[string]string{"kuma.io/service": "test-server"}),
 			)).
-			Install(TestServerUniversal("test-client", meshName,
+			Install(TestServerUniversal(
+				"test-client", meshName,
 				WithServiceName("test-client"),
-				WithArgs([]string{"grpc", "client", "--address", "test-server.mesh:80", "--unary", "true"}),
+				WithArgs([]string{"grpc", "client", "--address", "test-server.svc.mesh.local:80", "--unary", "true"}),
 				WithProtocol("grpc"),
 				WithTransparentProxy(true),
+				WithLabels(map[string]string{"kuma.io/service": "test-client"}),
 			)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -53,13 +57,11 @@ mesh: "%s"
 name: mesh-fault-injecton-500-grpc
 spec:
   targetRef:
-    kind: MeshService
-    name: test-server
-  from:
-    - targetRef:
-        kind: MeshService
-        name: test-client
-      default:
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-server
+  rules:
+    - default:
         http:
           - abort:
               httpStatus: 503
@@ -71,8 +73,9 @@ mesh: "%s"
 name: fake-meshretry-policy
 spec:
   targetRef:
-    kind: MeshService
-    name: test-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-client
   to:
     - targetRef:
         kind: MeshService
@@ -85,13 +88,13 @@ spec:
 
 		lastFailureStats := stats.StatItem{Name: "", Value: float64(0)}
 		grpcFailureStats := func(g Gomega) *stats.Stats {
-			s, err := admin.GetStats("cluster.test-server.grpc.failure")
+			s, err := admin.GetStats("cluster.meshretry-grpc_test-server__kuma-3_msvc_80.grpc.failure")
 			g.Expect(err).ToNot(HaveOccurred())
 			fmt.Printf("current failure stats %v\n", s)
 			return s
 		}
 		grpcSuccessStats := func(g Gomega) *stats.Stats {
-			s, err := admin.GetStats("cluster.test-server.grpc.success")
+			s, err := admin.GetStats("cluster.meshretry-grpc_test-server__kuma-3_msvc_80.grpc.success")
 			g.Expect(err).ToNot(HaveOccurred())
 			return s
 		}

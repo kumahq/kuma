@@ -22,15 +22,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	util_k8s "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	util_k8s "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 const (
@@ -43,10 +43,6 @@ const (
 	// FailedToGenerateKumaDataplaneReason is added to an event when
 	// a Dataplane cannot be generated or is not valid.
 	FailedToGenerateKumaDataplaneReason = "FailedToGenerateKumaDataplane"
-	// ZoneProxyListenersSkippedReason is added to a warning event when
-	// zone proxy Services are found but MeshServices mode is not Exclusive,
-	// so listener generation is skipped.
-	ZoneProxyListenersSkippedReason = "ZoneProxyListenersSkipped"
 )
 
 // PodReconciler reconciles a Pod object
@@ -94,12 +90,6 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 		return kube_ctrl.Result{}, r.reconcileZoneEgress(ctx, pod, log)
 	}
 
-	// If we are using a builtin gateway, we want to generate a builtin gateway
-	// dataplane.
-	if name, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaGatewayAnnotation); name == metadata.AnnotationBuiltin {
-		return kube_ctrl.Result{}, r.reconcileBuiltinGatewayDataplane(ctx, pod, log)
-	}
-
 	// only Pods with injected Kuma need a Dataplane descriptor
 	injected, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaSidecarInjectedAnnotation)
 	if err != nil {
@@ -142,16 +132,7 @@ func (r *PodReconciler) reconcileDataplane(ctx context.Context, pod *kube_core.P
 		return err
 	}
 
-	var others []*mesh_k8s.Dataplane
-	// we don't need other Dataplane objects when outbounds are stored in ConfigMap
-	if !r.PodConverter.KubeOutboundsAsVIPs {
-		others, err = r.findOtherDataplanes(ctx, pod, &ns)
-		if err != nil {
-			return err
-		}
-	}
-
-	if err := r.createOrUpdateDataplane(ctx, pod, &ns, services, others); err != nil {
+	if err := r.createOrUpdateDataplane(ctx, pod, &ns, services); err != nil {
 		return err
 	}
 	return nil
@@ -173,21 +154,6 @@ func (r *PodReconciler) deleteObjectIfExist(ctx context.Context, object k8s_mode
 	}
 	log.Info("Object deleted")
 	return nil
-}
-
-func (r *PodReconciler) reconcileBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
-	if pod.Status.PodIP == "" {
-		dp := &mesh_k8s.Dataplane{
-			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
-		}
-		return r.deleteObjectIfExist(ctx, dp, "pod IP is empty", log)
-	}
-
-	ns := kube_core.Namespace{}
-	if err := r.Get(ctx, kube_types.NamespacedName{Name: pod.Namespace}, &ns); err != nil {
-		return errors.Wrap(err, "unable to get Namespace for Pod")
-	}
-	return r.createOrUpdateBuiltinGatewayDataplane(ctx, pod, &ns)
 }
 
 func (r *PodReconciler) reconcileZoneIngress(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
@@ -291,41 +257,13 @@ func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core
 	return matchingServices, nil
 }
 
-func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.Pod, ns *kube_core.Namespace) ([]*mesh_k8s.Dataplane, error) {
-	// List all Dataplanes
-	allDataplanes := &mesh_k8s.DataplaneList{}
-	if err := r.List(ctx, allDataplanes); err != nil {
-		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
-		log.Error(err, "unable to list Dataplanes")
-		return nil, err
-	}
-
-	// only consider Dataplanes in the same Mesh as Pod
-	mesh := util_k8s.MeshOfByLabelOrAnnotation(converterLog, pod, ns)
-	otherDataplanes := make([]*mesh_k8s.Dataplane, 0)
-	for i := range allDataplanes.Items {
-		dataplane := allDataplanes.Items[i]
-		dp := core_mesh.NewDataplaneResource()
-		if err := r.ResourceConverter.ToCoreResource(&dataplane, dp); err != nil {
-			converterLog.Error(err, "failed to parse Dataplane", "dataplane", dataplane.Spec)
-			continue // one invalid Dataplane definition should not break the entire mesh
-		}
-		if dataplane.Mesh == mesh {
-			otherDataplanes = append(otherDataplanes, &dataplane)
-		}
-	}
-
-	return otherDataplanes, nil
-}
-
 func (r *PodReconciler) createOrUpdateDataplane(
 	ctx context.Context,
 	pod *kube_core.Pod,
 	ns *kube_core.Namespace,
 	services []*kube_core.Service,
-	others []*mesh_k8s.Dataplane,
 ) error {
-	meshName := util_k8s.MeshOfByLabelOrAnnotation(r.Log, pod, ns)
+	meshName := util_k8s.MeshOfByLabel(pod, ns)
 	k8sMesh := mesh_k8s.Mesh{}
 	if err := r.Get(ctx, kube_types.NamespacedName{Name: meshName}, &k8sMesh); err != nil {
 		return err
@@ -342,7 +280,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, others, mesh); err != nil {
+		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, mesh); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
@@ -359,22 +297,12 @@ func (r *PodReconciler) createOrUpdateDataplane(
 
 		return err
 	}
-	if operationResult != kube_controllerutil.OperationResultNone &&
-		mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-		for _, svc := range services {
-			if _, ok := svc.Labels[metadata.KumaZoneProxyTypeLabel]; ok {
-				r.Eventf(pod, nil, kube_core.EventTypeWarning, ZoneProxyListenersSkippedReason, "SkippedListenerGeneration",
-					"Zone proxy Services found but spec.meshServices.mode is not set to Exclusive; set spec.meshServices.mode: Exclusive on the Mesh to enable zone proxy listener generation")
-				break
-			}
-		}
-	}
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
-		log.Info("Dataplane created")
+		log.V(1).Info("Dataplane created")
 		r.Eventf(pod, nil, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Create", "Created Kuma Dataplane: %s", pod.Name)
 	case kube_controllerutil.OperationResultUpdated:
-		log.Info("Dataplane updated")
+		log.V(1).Info("Dataplane updated")
 		r.Eventf(pod, nil, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Update", "Updated Kuma Dataplane: %s", pod.Name)
 	}
 	return nil
@@ -456,7 +384,7 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentRec
 		// on Service update reconcile affected Pods (all Pods selected by this service)
 		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient()))).
 		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToPodsMapper(r.Log, mgr.GetClient()))).
-		Watches(&mesh_k8s.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(MeshServiceExclusivePredicate{})).
+		Watches(&mesh_k8s.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(MeshUpdateIgnoredPredicate{})).
 		Complete(r)
 }
 
@@ -584,34 +512,15 @@ func MeshToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.Map
 	}
 }
 
-type MeshServiceExclusivePredicate struct {
+// MeshUpdateIgnoredPredicate drops Mesh Update events: no Mesh spec change
+// (meshServices.mode is always Exclusive now, unlike when this predicate
+// only re-triggered Pod reconciliation on a mode flip) affects Pod
+// reconciliation, so Updates are never relevant. Create/Delete/Generic keep
+// the predicate.Funcs default of true.
+type MeshUpdateIgnoredPredicate struct {
 	predicate.Funcs
 }
 
-func (p MeshServiceExclusivePredicate) Update(e event.UpdateEvent) bool {
-	oldMesh, err := e.ObjectOld.(*mesh_k8s.Mesh).GetSpec()
-	if err != nil {
-		return false
-	}
-	newMesh, err := e.ObjectNew.(*mesh_k8s.Mesh).GetSpec()
-	if err != nil {
-		return false
-	}
-
-	oldMSMode := oldMesh.(*mesh_proto.Mesh).GetMeshServices().GetMode()
-	newMSMode := newMesh.(*mesh_proto.Mesh).GetMeshServices().GetMode()
-
-	// MeshService mode changed to Exclusive
-	if newMSMode == mesh_proto.Mesh_MeshServices_Exclusive &&
-		oldMSMode != mesh_proto.Mesh_MeshServices_Exclusive {
-		return true
-	}
-
-	// MeshService mode changed back from Exclusive
-	if newMSMode != mesh_proto.Mesh_MeshServices_Exclusive &&
-		oldMSMode == mesh_proto.Mesh_MeshServices_Exclusive {
-		return true
-	}
-
+func (p MeshUpdateIgnoredPredicate) Update(e event.UpdateEvent) bool {
 	return false
 }

@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -94,7 +94,7 @@ spec:
                             backendRef:
                               description: |-
                                 BackendRef is a reference to a MeshOpenTelemetryBackend resource that
-                                defines the collector endpoint. Mutually exclusive with Endpoint.
+                                defines the collector endpoint.
                               properties:
                                 kind:
                                   description: Kind of the backend resource.
@@ -105,26 +105,12 @@ spec:
                                   additionalProperties:
                                     type: string
                                   description: |-
-                                    Labels to match the referenced resource. Use for cross-zone references
-                                    where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-                                    Name. When multiple resources match, the oldest by creation time wins.
+                                    Labels to match the referenced resource. When multiple resources match,
+                                    the oldest by creation time wins.
                                   type: object
-                                name:
-                                  description: |-
-                                    Name of the referenced resource (metadata.name). Use for same-cluster
-                                    references. Mutually exclusive with Labels.
-                                  type: string
                               required:
                               - kind
                               type: object
-                            endpoint:
-                              default: ""
-                              description: |-
-                                Address of OpenTelemetry collector.
-
-                                Deprecated: use BackendRef instead.
-                              example: otel-collector:4317
-                              type: string
                           type: object
                         type:
                           enum:
@@ -258,7 +244,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -279,8 +264,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-

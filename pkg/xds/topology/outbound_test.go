@@ -2,32 +2,31 @@ package topology_test
 
 import (
 	"context"
-	"maps"
 
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/datasource"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/secrets/cipher"
-	secret_manager "github.com/kumahq/kuma/v2/pkg/core/secrets/manager"
-	secret_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	. "github.com/kumahq/kuma/v2/pkg/xds/topology"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/datasource"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
+	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	. "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 var _ = Describe("TrafficRoute", func() {
@@ -55,19 +54,6 @@ var _ = Describe("TrafficRoute", func() {
 			},
 		},
 	}
-	defaultMeshWithMTLSAndZoneEgressDisabled := &core_mesh.MeshResource{
-		Meta: &test_model.ResourceMeta{
-			Name: defaultMeshName,
-		},
-		Spec: &mesh_proto.Mesh{
-			Mtls: &mesh_proto.Mesh_Mtls{
-				EnabledBackend: "ca-1",
-			},
-			Routing: &mesh_proto.Routing{
-				ZoneEgress: false,
-			},
-		},
-	}
 	defaultMeshWithoutMTLS := &core_mesh.MeshResource{
 		Meta: &test_model.ResourceMeta{
 			Name: defaultMeshName,
@@ -75,16 +61,6 @@ var _ = Describe("TrafficRoute", func() {
 		Spec: &mesh_proto.Mesh{
 			Mtls: &mesh_proto.Mesh_Mtls{
 				EnabledBackend: "",
-			},
-		},
-	}
-	defaultMeshWithLocality := &core_mesh.MeshResource{
-		Meta: &test_model.ResourceMeta{
-			Name: defaultMeshName,
-		},
-		Spec: &mesh_proto.Mesh{
-			Routing: &mesh_proto.Routing{
-				LocalityAwareLoadBalancing: true,
 			},
 		},
 	}
@@ -212,10 +188,8 @@ var _ = Describe("TrafficRoute", func() {
 				Items: []*core_mesh.DataplaneResource{backend, redisV1, redisV3, elasticEU, elasticUS},
 			}
 
-			externalServices := &core_mesh.ExternalServiceResourceList{}
-
 			// when
-			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, nil, externalServices.Items, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
 
 			Expect(targets).To(HaveLen(4))
 			// and
@@ -299,7 +273,6 @@ var _ = Describe("TrafficRoute", func() {
 			zoneIngresses        []*core_mesh.ZoneIngressResource
 			zoneEgresses         []*core_mesh.ZoneEgressResource
 			zoneEgressAddresses  []core_xds.ZoneEgressInstance
-			externalServices     []*core_mesh.ExternalServiceResource
 			mesh                 *core_mesh.MeshResource
 			expected             core_xds.EndpointMap
 		}
@@ -313,11 +286,7 @@ var _ = Describe("TrafficRoute", func() {
 						egressAddresses = append(egressAddresses, core_xds.ZoneEgressInstance{Address: n.GetAddress(), Port: n.GetPort()})
 					}
 				}
-				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, nil, given.zoneEgresses, given.externalServices, dataSourceLoader, given.mesh.MTLSEnabled(), egressAddresses)
-				esEndpoints := BuildExternalServicesEndpointMap(
-					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
-				)
-				maps.Copy(endpoints, esEndpoints)
+				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, nil, given.zoneEgresses, dataSourceLoader, given.mesh.MTLSEnabled(), egressAddresses)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
@@ -566,165 +535,6 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
-			Entry("external service no TLS", testCase{
-				dataplanes: []*core_mesh.DataplaneResource{},
-				externalServices: []*core_mesh.ExternalServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "httpbin.org:80",
-								Tls:     nil,
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "redis"},
-						},
-					},
-				},
-				mesh: defaultMeshWithMTLS,
-				expected: core_xds.EndpointMap{
-					"redis": []core_xds.Endpoint{
-						{
-							Target:          "httpbin.org",
-							Port:            80,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "redis"},
-							Weight:          1,
-							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
-						},
-					},
-				},
-			}),
-			Entry("external service with TLS disabled", testCase{
-				dataplanes: []*core_mesh.DataplaneResource{},
-				externalServices: []*core_mesh.ExternalServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "httpbin.org:80",
-								Tls: &mesh_proto.ExternalService_Networking_TLS{
-									Enabled: false,
-								},
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "redis"},
-						},
-					},
-				},
-				mesh: defaultMeshWithMTLS,
-				expected: core_xds.EndpointMap{
-					"redis": []core_xds.Endpoint{
-						{
-							Target:          "httpbin.org",
-							Port:            80,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "redis"},
-							Weight:          1,
-							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
-						},
-					},
-				},
-			}),
-			Entry("external service with TLS enabled", testCase{
-				dataplanes: []*core_mesh.DataplaneResource{},
-				externalServices: []*core_mesh.ExternalServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "httpbin.org:80",
-								Tls: &mesh_proto.ExternalService_Networking_TLS{
-									Enabled: true,
-								},
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "redis"},
-						},
-					},
-				},
-				mesh: defaultMeshWithMTLS,
-				expected: core_xds.EndpointMap{
-					"redis": []core_xds.Endpoint{
-						{
-							Target:          "httpbin.org",
-							Port:            80,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ExternalServiceTag: ""},
-							Weight:          1,
-							ExternalService: &core_xds.ExternalService{TLSEnabled: true},
-						},
-					},
-				},
-			}),
-			Entry("external service with TLS enabled and Locality", testCase{
-				dataplanes: []*core_mesh.DataplaneResource{},
-				externalServices: []*core_mesh.ExternalServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "httpbin.org:80",
-								Tls: &mesh_proto.ExternalService_Networking_TLS{
-									Enabled: true,
-								},
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "us"},
-						},
-					},
-				},
-				mesh: defaultMeshWithLocality,
-				expected: core_xds.EndpointMap{
-					"redis": []core_xds.Endpoint{
-						{
-							Target:          "httpbin.org",
-							Port:            80,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "us", mesh_proto.ExternalServiceTag: ""},
-							Weight:          1,
-							Locality:        &core_xds.Locality{Zone: "us", Priority: 1},
-							ExternalService: &core_xds.ExternalService{TLSEnabled: true},
-						},
-					},
-				},
-			}),
-			Entry("external services with Zones and Locality", testCase{
-				dataplanes: []*core_mesh.DataplaneResource{},
-				externalServices: []*core_mesh.ExternalServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "zone1.httpbin.org:80",
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "zone-1"},
-						},
-					},
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "zone2.httpbin.org:80",
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "zone-2"},
-						},
-					},
-				},
-				mesh: defaultMeshWithLocality,
-				expected: core_xds.EndpointMap{
-					"redis": []core_xds.Endpoint{
-						{
-							Target:          "zone1.httpbin.org",
-							Port:            80,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "zone-1"},
-							Weight:          1,
-							Locality:        &core_xds.Locality{Zone: "zone-1", Priority: 0},
-							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
-						},
-						{
-							Target:          "zone2.httpbin.org",
-							Port:            80,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "zone-2"},
-							Weight:          1,
-							Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 1},
-							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
-						},
-					},
-				},
-			}),
 			Entry("unhealthy dataplane", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
@@ -767,389 +577,6 @@ var _ = Describe("TrafficRoute", func() {
 							Port:   6379,
 							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
 							Weight: 1, // local weight is bumped to 2 to factor two instances of Ingresses
-						},
-					},
-				},
-			}),
-			Entry("external service with zoneegress address when mtls and zone egress enabled and zone egress instance available", testCase{
-				dataplanes: []*core_mesh.DataplaneResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Address: "192.168.0.1",
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-										Port:        6379,
-										ServicePort: 16379,
-									},
-								},
-							},
-						},
-					},
-				},
-				externalServices: []*core_mesh.ExternalServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "httpbin.org:80",
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "httpbin"},
-						},
-					},
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "example.com:443",
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "example"},
-						},
-					},
-				},
-				zoneEgresses: []*core_mesh.ZoneEgressResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Name: "egress",
-							Mesh: "default",
-						},
-						Spec: &mesh_proto.ZoneEgress{
-							Networking: &mesh_proto.ZoneEgress_Networking{
-								Address: "1.1.1.1",
-								Port:    10002,
-							},
-						},
-					},
-				},
-				mesh: defaultMeshWithMTLSAndZoneEgress,
-				expected: core_xds.EndpointMap{
-					"redis": []core_xds.Endpoint{
-						{
-							Target: "192.168.0.1",
-							Port:   6379,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-							Weight: 1, // local weight is bumped to 2 to factor two instances of Ingresses
-						},
-					},
-					"httpbin": []core_xds.Endpoint{
-						{
-							Target:          "1.1.1.1",
-							Port:            10002,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin"},
-							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
-							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
-						},
-					},
-					"example": []core_xds.Endpoint{
-						{
-							Target:          "1.1.1.1",
-							Port:            10002,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "example"},
-							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
-							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
-						},
-					},
-				},
-			}),
-			Entry("external service with direct address when mtls and zone egress disabled", testCase{
-				dataplanes: []*core_mesh.DataplaneResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Address: "192.168.0.1",
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-										Port:        6379,
-										ServicePort: 16379,
-									},
-								},
-							},
-						},
-					},
-				},
-				externalServices: []*core_mesh.ExternalServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "httpbin.org:80",
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "httpbin"},
-						},
-					},
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "example.com:443",
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "example"},
-						},
-					},
-				},
-				zoneEgresses: []*core_mesh.ZoneEgressResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Name: "egress",
-							Mesh: "default",
-						},
-						Spec: &mesh_proto.ZoneEgress{
-							Networking: &mesh_proto.ZoneEgress_Networking{
-								Address: "1.1.1.1",
-								Port:    10002,
-							},
-						},
-					},
-				},
-				mesh: defaultMeshWithMTLSAndZoneEgressDisabled,
-				expected: core_xds.EndpointMap{
-					"redis": []core_xds.Endpoint{
-						{
-							Target: "192.168.0.1",
-							Port:   6379,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-							Weight: 1, // local weight is bumped to 2 to factor two instances of Ingresses
-						},
-					},
-					"httpbin": []core_xds.Endpoint{
-						{
-							Target:          "httpbin.org",
-							Port:            80,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin"},
-							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
-							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
-						},
-					},
-					"example": []core_xds.Endpoint{
-						{
-							Target:          "example.com",
-							Port:            443,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "example"},
-							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
-							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
-						},
-					},
-				},
-			}),
-			Entry("no external services when mtls and zone egress enabled but no zone egress instance", testCase{
-				dataplanes: []*core_mesh.DataplaneResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Address: "192.168.0.1",
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-										Port:        6379,
-										ServicePort: 16379,
-									},
-								},
-							},
-						},
-					},
-				},
-				externalServices: []*core_mesh.ExternalServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "httpbin.org:80",
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "httpbin"},
-						},
-					},
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "example.com:443",
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "example"},
-						},
-					},
-				},
-				mesh: defaultMeshWithMTLSAndZoneEgress,
-				expected: core_xds.EndpointMap{
-					"redis": []core_xds.Endpoint{
-						{
-							Target: "192.168.0.1",
-							Port:   6379,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-							Weight: 1, // local weight is bumped to 2 to factor two instances of Ingresses
-						},
-					},
-				},
-			}),
-			Entry("external services available from other zone should have non empty external service object for dp", testCase{
-				dataplanes: []*core_mesh.DataplaneResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Address: "192.168.0.1",
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-										Port:        6379,
-										ServicePort: 16379,
-									},
-								},
-							},
-						},
-					},
-				},
-				zoneIngresses: []*core_mesh.ZoneIngressResource{
-					{
-						Spec: &mesh_proto.ZoneIngress{
-							Zone: "zone-2",
-							Networking: &mesh_proto.ZoneIngress_Networking{
-								Address:           "10.20.1.2",
-								Port:              10001,
-								AdvertisedAddress: "192.168.0.100",
-								AdvertisedPort:    12345,
-							},
-							AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
-								{
-									Instances:       2,
-									Mesh:            defaultMeshName,
-									Tags:            map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2"},
-									ExternalService: true,
-								},
-							},
-						},
-					},
-				},
-				zoneEgresses: []*core_mesh.ZoneEgressResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Name: "egress",
-							Mesh: "default",
-						},
-						Spec: &mesh_proto.ZoneEgress{
-							Networking: &mesh_proto.ZoneEgress_Networking{
-								Address: "1.1.1.1",
-								Port:    10002,
-							},
-						},
-					},
-				},
-				mesh: defaultMeshWithMTLSAndZoneEgress,
-				expected: core_xds.EndpointMap{
-					"redis": []core_xds.Endpoint{
-						{
-							Target: "192.168.0.1",
-							Port:   6379,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-							Weight: 1, // local weight is bumped to 2 to factor two instances of Ingresses
-						},
-					},
-					"service-in-zone2": []core_xds.Endpoint{
-						{
-							Target:          "1.1.1.1",
-							Port:            10002,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2"},
-							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
-							Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 0},
-							ExternalService: &core_xds.ExternalService{},
-						},
-					},
-				},
-			}),
-			Entry("service in zone2 available through ingress when zoneEgress disabled but zoneEgress instances available", testCase{
-				dataplanes: []*core_mesh.DataplaneResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Address: "192.168.0.1",
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-										Port:        6379,
-										ServicePort: 16379,
-									},
-								},
-							},
-						},
-					},
-				},
-				externalServices: []*core_mesh.ExternalServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "httpbin.org:80",
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "httpbin"},
-						},
-					},
-				},
-				zoneIngresses: []*core_mesh.ZoneIngressResource{
-					{
-						Spec: &mesh_proto.ZoneIngress{
-							Zone: "zone-2",
-							Networking: &mesh_proto.ZoneIngress_Networking{
-								Address:           "10.20.1.2",
-								Port:              10001,
-								AdvertisedAddress: "192.168.0.100",
-								AdvertisedPort:    12345,
-							},
-							AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
-								{
-									Instances:       2,
-									Mesh:            defaultMeshName,
-									Tags:            map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2"},
-									ExternalService: true,
-								},
-							},
-						},
-					},
-				},
-				zoneEgresses: []*core_mesh.ZoneEgressResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Name: "egress",
-							Mesh: "default",
-						},
-						Spec: &mesh_proto.ZoneEgress{
-							Networking: &mesh_proto.ZoneEgress_Networking{
-								Address: "1.1.1.1",
-								Port:    10002,
-							},
-						},
-					},
-				},
-				mesh: defaultMeshWithMTLS,
-				expected: core_xds.EndpointMap{
-					"redis": []core_xds.Endpoint{
-						{
-							Target: "192.168.0.1",
-							Port:   6379,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-							Weight: 1,
-						},
-					},
-					"service-in-zone2": []core_xds.Endpoint{
-						{
-							Target:   "192.168.0.100",
-							Port:     12345,
-							Tags:     map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2"},
-							Weight:   2, // local weight is bumped to 2 to factor two instances of Ingresses
-							Locality: &core_xds.Locality{Zone: "zone-2"},
-						},
-					},
-					"httpbin": []core_xds.Endpoint{
-						{
-							Target:          "httpbin.org",
-							Port:            80,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin"},
-							Weight:          1,
-							ExternalService: &core_xds.ExternalService{},
 						},
 					},
 				},
@@ -1724,7 +1151,6 @@ var _ = Describe("TrafficRoute", func() {
 		Describe("BuildEgressEndpointMap()", func() {
 			type testCase struct {
 				zoneIngresses        []*core_mesh.ZoneIngressResource
-				externalServices     []*core_mesh.ExternalServiceResource
 				meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource
 				mesh                 *core_mesh.MeshResource
 				expected             core_xds.EndpointMap
@@ -1733,7 +1159,7 @@ var _ = Describe("TrafficRoute", func() {
 			DescribeTable("should generate endpoints map for zone egress",
 				func(given testCase) {
 					// when
-					endpoints := BuildEgressEndpointMap(context.Background(), given.mesh, "zone-1", given.zoneIngresses, given.externalServices, given.meshExternalServices, dataSourceLoader)
+					endpoints := BuildEgressEndpointMap(context.Background(), given.mesh, "zone-1", given.zoneIngresses, given.meshExternalServices, dataSourceLoader)
 					// then
 					Expect(endpoints).To(Equal(given.expected))
 				},
@@ -1761,17 +1187,6 @@ var _ = Describe("TrafficRoute", func() {
 										Tags:      map[string]string{mesh_proto.ServiceTag: "test", mesh_proto.ZoneTag: "zone-2"},
 									},
 								},
-							},
-						},
-					},
-					externalServices: []*core_mesh.ExternalServiceResource{
-						{
-							Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-							Spec: &mesh_proto.ExternalService{
-								Networking: &mesh_proto.ExternalService_Networking{
-									Address: "httpbin.org:80",
-								},
-								Tags: map[string]string{mesh_proto.ServiceTag: "httpbin"},
 							},
 						},
 					},
@@ -1811,15 +1226,6 @@ var _ = Describe("TrafficRoute", func() {
 								Tags:     map[string]string{mesh_proto.ServiceTag: "test", mesh_proto.ZoneTag: "zone-2", "mesh": "default"},
 								Weight:   3, // local weight is bumped to 2 to factor two instances of Ingresses
 								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-							},
-						},
-						"httpbin": []core_xds.Endpoint{
-							{
-								Target:          "httpbin.org",
-								Port:            80,
-								Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin", "mesh": "default"},
-								Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
-								ExternalService: &core_xds.ExternalService{TLSEnabled: false},
 							},
 						},
 						"default_example___extsvc_443": []core_xds.Endpoint{

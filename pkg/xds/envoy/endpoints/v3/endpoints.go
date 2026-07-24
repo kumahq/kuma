@@ -7,8 +7,8 @@ import (
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	proto_wrappers "google.golang.org/protobuf/types/known/wrapperspb"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	envoy "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	envoy "github.com/kumahq/kuma/v3/pkg/xds/envoy/metadata/v3"
 )
 
 func ToLocalityLbEndpoints(endpoints []core_xds.Endpoint) []*envoy_endpoint.LocalityLbEndpoints {
@@ -38,7 +38,7 @@ func ToLocalityLbEndpoints(endpoints []core_xds.Endpoint) []*envoy_endpoint.Loca
 			}
 		}
 		lbEndpoint := &envoy_endpoint.LbEndpoint{
-			Metadata: envoy.EndpointMetadata(ep.Tags),
+			Metadata: envoy.EndpointMetadataWithLabels(ep.Tags, ep.Labels),
 			HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
 				Endpoint: &envoy_endpoint.Endpoint{
 					Address: address,

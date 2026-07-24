@@ -8,24 +8,24 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/api/openapi/types"
-	generate_context "github.com/kumahq/kuma/v2/app/kumactl/cmd/generate/context"
-	get_context "github.com/kumahq/kuma/v2/app/kumactl/cmd/get/context"
-	inspect_context "github.com/kumahq/kuma/v2/app/kumactl/cmd/inspect/context"
-	install_context "github.com/kumahq/kuma/v2/app/kumactl/cmd/install/context"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/client"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/config"
-	kumactl_resources "github.com/kumahq/kuma/v2/app/kumactl/pkg/resources"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/tokens"
-	config_proto "github.com/kumahq/kuma/v2/pkg/config/app/kumactl/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api"
-	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/tokens/cli"
-	util_files "github.com/kumahq/kuma/v2/pkg/util/files"
-	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	"github.com/kumahq/kuma/v3/api/openapi/types"
+	generate_context "github.com/kumahq/kuma/v3/app/kumactl/cmd/generate/context"
+	get_context "github.com/kumahq/kuma/v3/app/kumactl/cmd/get/context"
+	inspect_context "github.com/kumahq/kuma/v3/app/kumactl/cmd/inspect/context"
+	install_context "github.com/kumahq/kuma/v3/app/kumactl/cmd/install/context"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/client"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/config"
+	kumactl_resources "github.com/kumahq/kuma/v3/app/kumactl/pkg/resources"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/tokens"
+	config_proto "github.com/kumahq/kuma/v3/pkg/config/app/kumactl/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api"
+	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/tokens/cli"
+	util_files "github.com/kumahq/kuma/v3/pkg/util/files"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
 )
 
 type ConfigType int
@@ -51,7 +51,6 @@ type RootRuntime struct {
 	NewResourceStore             func(util_http.Client) core_store.ResourceStore
 	NewDataplaneOverviewClient   func(util_http.Client) kumactl_resources.DataplaneOverviewClient
 	NewDataplaneInspectClient    func(util_http.Client) kumactl_resources.DataplaneInspectClient
-	NewMeshGatewayInspectClient  func(util_http.Client) kumactl_resources.MeshGatewayInspectClient
 	NewInspectEnvoyProxyClient   func(core_model.ResourceTypeDescriptor, util_http.Client) kumactl_resources.InspectEnvoyProxyClient
 	NewPolicyInspectClient       func(util_http.Client) kumactl_resources.PolicyInspectClient
 	NewZoneIngressOverviewClient func(util_http.Client) kumactl_resources.ZoneIngressOverviewClient
@@ -82,14 +81,10 @@ type RootContext struct {
 	GenerateContext                     generate_context.GenerateContext
 	InspectContext                      inspect_context.InspectContext
 	InstallCpContext                    install_context.InstallCpContext
-	InstallObservabilityContext         install_context.InstallObservabilityContext
-	InstallMetricsContext               install_context.InstallMetricsContext
 	InstallCRDContext                   install_context.InstallCrdsContext
 	InstallDemoContext                  install_context.InstallDemoContext
 	InstallGatewayKongContext           install_context.InstallGatewayKongContext
 	InstallGatewayKongEnterpriseContext install_context.InstallGatewayKongEnterpriseContext
-	InstallTracingContext               install_context.InstallTracingContext
-	InstallLoggingContext               install_context.InstallLoggingContext
 }
 
 func DefaultRootContext() *RootContext {
@@ -106,7 +101,6 @@ func DefaultRootContext() *RootContext {
 			},
 			NewDataplaneOverviewClient:   kumactl_resources.NewDataplaneOverviewClient,
 			NewDataplaneInspectClient:    kumactl_resources.NewDataplaneInspectClient,
-			NewMeshGatewayInspectClient:  kumactl_resources.NewMeshGatewayInspectClient,
 			NewInspectEnvoyProxyClient:   kumactl_resources.NewInspectEnvoyProxyClient,
 			NewPolicyInspectClient:       kumactl_resources.NewPolicyInspectClient,
 			NewZoneIngressOverviewClient: kumactl_resources.NewZoneIngressOverviewClient,
@@ -123,13 +117,9 @@ func DefaultRootContext() *RootContext {
 		},
 		InstallCpContext:                    install_context.DefaultInstallCpContext(),
 		InstallCRDContext:                   install_context.DefaultInstallCrdsContext(),
-		InstallMetricsContext:               install_context.DefaultInstallMetricsContext(),
-		InstallObservabilityContext:         install_context.DefaultInstallObservabilityContext(),
 		InstallDemoContext:                  install_context.DefaultInstallDemoContext(),
 		InstallGatewayKongContext:           install_context.DefaultInstallGatewayKongContext(),
 		InstallGatewayKongEnterpriseContext: install_context.DefaultInstallGatewayKongEnterpriseContext(),
-		InstallTracingContext:               install_context.DefaultInstallTracingContext(),
-		InstallLoggingContext:               install_context.DefaultInstallLoggingContext(),
 		GenerateContext:                     generate_context.DefaultGenerateContext(),
 	}
 }
@@ -249,14 +239,6 @@ func (rc *RootContext) CurrentDataplaneInspectClient() (kumactl_resources.Datapl
 		return nil, err
 	}
 	return rc.Runtime.NewDataplaneInspectClient(client), nil
-}
-
-func (rc *RootContext) CurrentMeshGatewayInspectClient() (kumactl_resources.MeshGatewayInspectClient, error) {
-	client, err := rc.BaseAPIServerClient()
-	if err != nil {
-		return nil, err
-	}
-	return rc.Runtime.NewMeshGatewayInspectClient(client), nil
 }
 
 func (rc *RootContext) CurrentInspectEnvoyProxyClient(resDesc core_model.ResourceTypeDescriptor) (kumactl_resources.InspectEnvoyProxyClient, error) {

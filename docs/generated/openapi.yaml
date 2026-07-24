@@ -74,7 +74,6 @@ paths:
             type: string
             enum:
               - dataplanes
-              - meshgateways
           description: The type of resource (only some resources support rules api)
         - in: path
           name: resourceName
@@ -504,7 +503,6 @@ paths:
                   - $ref: '#/components/schemas/MeshAccessLogItem'
                   - $ref: '#/components/schemas/MeshCircuitBreakerItem'
                   - $ref: '#/components/schemas/MeshFaultInjectionItem'
-                  - $ref: '#/components/schemas/MeshGatewayItem'
                   - $ref: '#/components/schemas/MeshHTTPRouteItem'
                   - $ref: '#/components/schemas/MeshHealthCheckItem'
                   - $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
@@ -2745,128 +2743,6 @@ paths:
       summary: Creates or Updates Mesh entity
       tags:
         - Mesh
-  /meshes/{mesh}/meshgateways:
-    get:
-      operationId: getMeshGatewayList
-      parameters:
-        - description: offset in the list of entities
-          example: 0
-          in: query
-          name: offset
-          required: false
-          schema:
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshGatewayList'
-      summary: Returns a list of MeshGateway in the mesh.
-      tags:
-        - MeshGateway
-  /meshes/{mesh}/meshgateways/{name}:
-    delete:
-      operationId: deleteMeshGateway
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the MeshGateway
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshGatewayDeleteSuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Deletes MeshGateway entity
-      tags:
-        - MeshGateway
-    get:
-      operationId: getMeshGateway
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the MeshGateway
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshGatewayItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Returns MeshGateway entity
-      tags:
-        - MeshGateway
-    put:
-      operationId: putMeshGateway
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the MeshGateway
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MeshGatewayItem'
-        description: Put request
-        required: true
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshGatewayCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/MeshGatewayCreateOrUpdateSuccessResponse'
-      summary: Creates or Updates MeshGateway entity
-      tags:
-        - MeshGateway
   /meshes/{mesh}/secrets:
     get:
       operationId: getSecretList
@@ -4510,9 +4386,9 @@ components:
           type: integer
           description: Number of meshes
           example: 3
-    schemas-GlobalInsight:
+    GlobalInsightBase:
       type: object
-      title: GlobalInsight
+      title: GlobalInsightBase
       description: Global Insight contains statistics for all main resources
       required:
         - createdAt
@@ -4553,9 +4429,6 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/ResourceStats'
           description: A map of resource names to their corresponding statistics
-    GlobalInsight:
-      allOf:
-        - $ref: '#/components/schemas/schemas-GlobalInsight'
     InspectHostnames:
       type: object
       title: InspectHostnames
@@ -4601,14 +4474,15 @@ components:
       type: object
       title: DataplaneLayout
       description: >-
-        Dataplane networking layout. It contains information most important
-        information about dataplane and lists of available inbounds and
-        outbounds
+        Dataplane networking layout. It contains the most important information
+        about the dataplane and lists the available inbounds, outbounds, and
+        zone proxy listeners
       required:
         - kri
         - labels
         - inbounds
         - outbounds
+        - listeners
       properties:
         kri:
           type: string
@@ -4630,6 +4504,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DataplaneOutbound'
+        listeners:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataplaneListener'
         spiffeId:
           type: string
           description: SPIFFE ID of the dataplane's workload identity certificate
@@ -4996,6 +4874,16 @@ components:
             type: object
             additionalProperties: true
             x-go-type: interface{}
+        match:
+          description: >-
+            The incoming traffic match for this effective rule. Null means the
+            rule matches all incoming traffic (catch-all).
+          type: object
+          additionalProperties: true
+          x-go-type: common_api.Match
+          x-go-type-import:
+            name: common_api
+            path: github.com/kumahq/kuma/v3/api/common/v1alpha1
         origin:
           type: array
           description: >-
@@ -5129,6 +5017,26 @@ components:
           x-go-type: int32
         protocol:
           type: string
+        proxyResourceName:
+          type: string
+    DataplaneListener:
+      type: object
+      required:
+        - kri
+        - type
+        - port
+        - proxyResourceName
+      properties:
+        kri:
+          type: string
+        type:
+          type: string
+          enum:
+            - ZoneIngress
+            - ZoneEgress
+        port:
+          type: integer
+          x-go-type: int32
         proxyResourceName:
           type: string
     PolicyOrigin:
@@ -5440,6 +5348,15 @@ components:
       type: object
     DataplaneItem:
       properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
@@ -5471,6 +5388,11 @@ components:
               description: Type of the backend (Kuma ships with 'prometheus')
               type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         name:
           type: string
         networking:
@@ -6239,6 +6161,15 @@ components:
                   type: array
               type: object
           type: object
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
@@ -6280,13 +6211,6 @@ components:
               description: Name of the default backend
               type: string
           type: object
-        meshServices:
-          properties:
-            mode:
-              oneOf:
-                - type: string
-                - type: integer
-          type: object
         metrics:
           description: >-
             Configuration for metrics collected and exposed by dataplanes.
@@ -6325,6 +6249,11 @@ components:
               description: Name of the enabled backend
               type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         mtls:
           description: |-
             mTLS settings.
@@ -6471,9 +6400,7 @@ components:
                   name:
                     description: >-
                       Name of the backend, can be then used in
-                      Mesh.tracing.defaultBackend or in
-
-                      TrafficTrace
+                      Mesh.tracing.defaultBackend
                     type: string
                   sampling:
                     description: >-
@@ -6613,8 +6540,11 @@ components:
                               properties:
                                 attributes:
                                   description: >-
-                                    Attributes can contain placeholders
-                                    available on
+                                    Attributes defines custom OpenTelemetry
+                                    attributes. Keys must be static
+
+                                    OpenTelemetry attribute names. Values can
+                                    contain placeholders available on
 
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                   example:
@@ -6623,8 +6553,11 @@ components:
                                   items:
                                     properties:
                                       key:
+                                        description: Key is the OpenTelemetry attribute name.
+                                        pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
                                         type: string
                                       value:
+                                        description: Value can contain Kuma placeholders.
                                         type: string
                                     required:
                                       - key
@@ -6649,22 +6582,10 @@ components:
                                         type: string
                                       description: >-
                                         Labels to match the referenced resource.
-                                        Use for cross-zone references
+                                        When multiple resources match,
 
-                                        where KDS adds a hash suffix to
-                                        metadata.name. Mutually exclusive with
-
-                                        Name. When multiple resources match, the
-                                        oldest by creation time wins.
+                                        the oldest by creation time wins.
                                       type: object
-                                    name:
-                                      description: >-
-                                        Name of the referenced resource
-                                        (metadata.name). Use for same-cluster
-
-                                        references. Mutually exclusive with
-                                        Labels.
-                                      type: string
                                   required:
                                     - kind
                                   type: object
@@ -6770,7 +6691,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -6795,9 +6715,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -6845,12 +6765,7 @@ components:
                 type: object
               type: array
             rules:
-              description: >-
-                Rules defines inbound access log configurations. Currently
-                limited to
-
-                selecting all inbound traffic, as L7 matching is not yet
-                implemented.
+              description: Rules defines inbound access log configurations.
               items:
                 properties:
                   default:
@@ -6919,8 +6834,11 @@ components:
                               properties:
                                 attributes:
                                   description: >-
-                                    Attributes can contain placeholders
-                                    available on
+                                    Attributes defines custom OpenTelemetry
+                                    attributes. Keys must be static
+
+                                    OpenTelemetry attribute names. Values can
+                                    contain placeholders available on
 
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                   example:
@@ -6929,8 +6847,11 @@ components:
                                   items:
                                     properties:
                                       key:
+                                        description: Key is the OpenTelemetry attribute name.
+                                        pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
                                         type: string
                                       value:
+                                        description: Value can contain Kuma placeholders.
                                         type: string
                                     required:
                                       - key
@@ -6955,22 +6876,10 @@ components:
                                         type: string
                                       description: >-
                                         Labels to match the referenced resource.
-                                        Use for cross-zone references
+                                        When multiple resources match,
 
-                                        where KDS adds a hash suffix to
-                                        metadata.name. Mutually exclusive with
-
-                                        Name. When multiple resources match, the
-                                        oldest by creation time wins.
+                                        the oldest by creation time wins.
                                       type: object
-                                    name:
-                                      description: >-
-                                        Name of the referenced resource
-                                        (metadata.name). Use for same-cluster
-
-                                        references. Mutually exclusive with
-                                        Labels.
-                                      type: string
                                   required:
                                     - kind
                                   type: object
@@ -7064,6 +6973,64 @@ components:
                           type: object
                         type: array
                     type: object
+                  matches:
+                    description: >-
+                      Matches defines a list of conditions (by SpiffeID or SNI)
+                      that select the
+
+                      traffic this rule applies to. Rules fire independently: a
+                      connection that
+
+                      satisfies multiple rules is logged to every matching
+                      rule's backends.
+                    items:
+                      properties:
+                        sni:
+                          description: >-
+                            SNI defines a matcher configuration for matching by
+                            SNI value carried on the TLS connection
+                          properties:
+                            type:
+                              description: >-
+                                Type defines how to match traffic by SNI. Only
+                                `Exact` is supported.
+                              enum:
+                                - Exact
+                              type: string
+                            value:
+                              description: >-
+                                Value is the SNI carried on the TLS connection
+                                that needs to match for the configuration to be
+                                applied
+                              type: string
+                          required:
+                            - type
+                            - value
+                          type: object
+                        spiffeID:
+                          description: >-
+                            SpiffeID defines a matcher configuration for
+                            SpiffeID matching
+                          properties:
+                            type:
+                              description: >-
+                                Type defines how to match incoming traffic by
+                                SpiffeID. `Exact` or `Prefix` are allowed.
+                              enum:
+                                - Exact
+                                - Prefix
+                              type: string
+                            value:
+                              description: >-
+                                Value is SpiffeID of a client that needs to
+                                match for the configuration to be applied
+                              type: string
+                          required:
+                            - type
+                            - value
+                          type: object
+                      type: object
+                    type: array
                 required:
                   - default
                 type: object
@@ -7083,7 +7050,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -7108,9 +7074,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -7224,8 +7190,11 @@ components:
                               properties:
                                 attributes:
                                   description: >-
-                                    Attributes can contain placeholders
-                                    available on
+                                    Attributes defines custom OpenTelemetry
+                                    attributes. Keys must be static
+
+                                    OpenTelemetry attribute names. Values can
+                                    contain placeholders available on
 
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                   example:
@@ -7234,8 +7203,11 @@ components:
                                   items:
                                     properties:
                                       key:
+                                        description: Key is the OpenTelemetry attribute name.
+                                        pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
                                         type: string
                                       value:
+                                        description: Value can contain Kuma placeholders.
                                         type: string
                                     required:
                                       - key
@@ -7260,22 +7232,10 @@ components:
                                         type: string
                                       description: >-
                                         Labels to match the referenced resource.
-                                        Use for cross-zone references
+                                        When multiple resources match,
 
-                                        where KDS adds a hash suffix to
-                                        metadata.name. Mutually exclusive with
-
-                                        Name. When multiple resources match, the
-                                        oldest by creation time wins.
+                                        the oldest by creation time wins.
                                       type: object
-                                    name:
-                                      description: >-
-                                        Name of the referenced resource
-                                        (metadata.name). Use for same-cluster
-
-                                        references. Mutually exclusive with
-                                        Labels.
-                                      type: string
                                   required:
                                     - kind
                                   type: object
@@ -7381,7 +7341,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -7406,9 +7365,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -8049,7 +8008,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -8074,9 +8032,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -8612,7 +8570,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -8637,9 +8594,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -9165,7 +9122,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -9190,9 +9146,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -9293,198 +9249,6 @@ components:
         spec:
           description: Spec is the specification of the Kuma MeshFaultInjection resource.
           properties:
-            from:
-              description: >-
-                From list makes a match between clients and corresponding
-                configurations
-              items:
-                properties:
-                  default:
-                    description: >-
-                      Default is a configuration specific to the group of
-                      destinations referenced in
-
-                      'targetRef'
-                    properties:
-                      http:
-                        description: >-
-                          Http allows to define list of Http faults between
-                          dataplanes.
-                        items:
-                          description: >-
-                            FaultInjection defines the configuration of faults
-                            between dataplanes.
-                          properties:
-                            abort:
-                              description: >-
-                                Abort defines a configuration of not delivering
-                                requests to destination
-
-                                service and replacing the responses from
-                                destination dataplane by
-
-                                predefined status code
-                              properties:
-                                httpStatus:
-                                  description: >-
-                                    HTTP status code which will be returned to
-                                    source side
-                                  format: int32
-                                  type: integer
-                                percentage:
-                                  anyOf:
-                                    - type: integer
-                                    - type: string
-                                  description: >-
-                                    Percentage of requests on which abort will
-                                    be injected, has to be
-
-                                    either int or decimal represented as string.
-                                  x-kubernetes-int-or-string: true
-                              required:
-                                - httpStatus
-                                - percentage
-                              type: object
-                            delay:
-                              description: >-
-                                Delay defines configuration of delaying a
-                                response from a destination
-                              properties:
-                                percentage:
-                                  anyOf:
-                                    - type: integer
-                                    - type: string
-                                  description: >-
-                                    Percentage of requests on which delay will
-                                    be injected, has to be
-
-                                    either int or decimal represented as string.
-                                  x-kubernetes-int-or-string: true
-                                value:
-                                  description: >-
-                                    The duration during which the response will
-                                    be delayed
-                                  type: string
-                              required:
-                                - percentage
-                                - value
-                              type: object
-                            responseBandwidth:
-                              description: >-
-                                ResponseBandwidth defines a configuration to
-                                limit the speed of
-
-                                responding to the requests
-                              properties:
-                                limit:
-                                  description: >-
-                                    Limit is represented by value measure in
-                                    Gbps, Mbps, kbps, e.g.
-
-                                    10kbps
-                                  type: string
-                                percentage:
-                                  anyOf:
-                                    - type: integer
-                                    - type: string
-                                  description: >-
-                                    Percentage of requests on which response
-                                    bandwidth limit will be
-
-                                    either int or decimal represented as string.
-                                  x-kubernetes-int-or-string: true
-                              required:
-                                - limit
-                                - percentage
-                              type: object
-                          type: object
-                        type: array
-                    type: object
-                  targetRef:
-                    description: >-
-                      TargetRef is a reference to the resource that represents a
-                      group of
-
-                      destinations.
-                    properties:
-                      kind:
-                        description: Kind of the referenced resource
-                        enum:
-                          - Mesh
-                          - MeshSubset
-                          - MeshGateway
-                          - MeshService
-                          - MeshExternalService
-                          - MeshMultiZoneService
-                          - MeshServiceSubset
-                          - MeshHTTPRoute
-                          - Dataplane
-                        type: string
-                      labels:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Labels are used to select group of MeshServices that
-                          match labels. Either Labels or
-
-                          Name and Namespace can be used.
-                        type: object
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
-
-                          `MeshServiceSubset` and `MeshGatewayRoute`
-                        type: string
-                      namespace:
-                        description: >-
-                          Namespace specifies the namespace of target resource.
-                          If empty only resources in policy namespace
-
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
-                      sectionName:
-                        description: >-
-                          SectionName is used to target specific section of
-                          resource.
-
-                          For example, you can target port from
-                          MeshService.ports[] by its name. Only traffic to this
-                          port will be affected.
-                        type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
-                    required:
-                      - kind
-                    type: object
-                required:
-                  - targetRef
-                type: object
-              type: array
             rules:
               description: Rules defines inbound fault injection configuration
               items:
@@ -9592,6 +9356,28 @@ components:
                       will be applied
                     items:
                       properties:
+                        sni:
+                          description: >-
+                            SNI defines a matcher configuration for matching by
+                            SNI value carried on the TLS connection
+                          properties:
+                            type:
+                              description: >-
+                                Type defines how to match traffic by SNI. Only
+                                `Exact` is supported.
+                              enum:
+                                - Exact
+                              type: string
+                            value:
+                              description: >-
+                                Value is the SNI carried on the TLS connection
+                                that needs to match for the configuration to be
+                                applied
+                              type: string
+                          required:
+                            - type
+                            - value
+                          type: object
                         spiffeID:
                           description: >-
                             SpiffeID defines a matcher configuration for
@@ -9607,7 +9393,7 @@ components:
                               type: string
                             value:
                               description: >-
-                                Value is SpiffeId of a client that needs to
+                                Value is SpiffeID of a client that needs to
                                 match for the configuration to be applied
                               type: string
                           required:
@@ -9635,7 +9421,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -9660,9 +9445,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -9821,7 +9606,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -9846,9 +9630,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -9907,189 +9691,6 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-    MeshGatewayItem:
-      properties:
-        conf:
-          description: The desired configuration of the MeshGateway.
-          properties:
-            listeners:
-              description: >-
-                Listeners define logical endpoints that are bound on this
-                MeshGateway's
-
-                address(es).
-              items:
-                properties:
-                  crossMesh:
-                    description: >-
-                      CrossMesh enables traffic to flow to this listener only
-                      from other
-
-                      meshes.
-                    type: boolean
-                  hostname:
-                    description: >-
-                      Hostname specifies the virtual hostname to match for
-                      protocol types that
-
-                      define this concept. When unspecified, "", or `*`, all
-                      hostnames are
-
-                      matched. This field can be omitted for protocols that
-                      don't require
-
-                      hostname based matching.
-                    type: string
-                  port:
-                    description: |-
-                      Port is the network port. Multiple listeners may use the
-                      same port, subject to the Listener compatibility rules.
-                    type: integer
-                  protocol:
-                    description: >-
-                      Protocol specifies the network protocol this listener
-                      expects to receive.
-                    oneOf:
-                      - type: string
-                      - type: integer
-                  resources:
-                    description: >-
-                      Resources is used to specify listener-specific resource
-                      settings.
-                    properties:
-                      connectionLimit:
-                        type: integer
-                    type: object
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: >-
-                      Tags specifies a unique combination of tags that routes
-                      can use
-
-                      to match themselves to this listener.
-
-
-                      When matching routes to listeners, the control plane
-                      constructs a
-
-                      set of matching tags for each listener by forming the
-                      union of the
-
-                      gateway tags and the listener tags. A route will be
-                      attached to the
-
-                      listener if all of the route's tags are preset in the
-                      matching tags
-                    type: object
-                  tls:
-                    description: |-
-                      TLS is the TLS configuration for the Listener. This field
-                      is required if the Protocol field is "HTTPS" or "TLS" and
-                      ignored otherwise.
-                    properties:
-                      certificates:
-                        description: >-
-                          Certificates is an array of datasources that contain
-                          TLS
-
-                          certificates and private keys.  Each datasource must
-                          contain a
-
-                          sequence of PEM-encoded objects. The server
-                          certificate and private
-
-                          key are required, but additional certificates are
-                          allowed and will
-
-                          be added to the certificate chain.  The server
-                          certificate must
-
-                          be the first certificate in the datasource.
-
-
-                          When multiple certificate datasources are configured,
-                          they must have
-
-                          different key types. In practice, this means that one
-                          datasource
-
-                          should contain an RSA key and certificate, and the
-                          other an
-
-                          ECDSA key and certificate.
-                        items:
-                          oneOf:
-                            - $ref: '#/components/schemas/DataSource_File'
-                            - $ref: '#/components/schemas/DataSource_Inline'
-                            - $ref: '#/components/schemas/DataSource_InlineString'
-                            - $ref: '#/components/schemas/DataSource_Secret'
-                        type: array
-                      mode:
-                        description: >-
-                          Mode defines the TLS behavior for the TLS session
-                          initiated
-
-                          by the client.
-                        oneOf:
-                          - type: string
-                          - type: integer
-                      options:
-                        description: >-
-                          Options should eventually configure how TLS is
-                          configured. This
-
-                          is where cipher suite and version configuration can be
-                          specified,
-
-                          client certificates enforced, and so on.
-                        properties: {}
-                        type: object
-                    type: object
-                type: object
-              type: array
-          type: object
-        labels:
-          additionalProperties:
-            type: string
-          type: object
-        mesh:
-          type: string
-        name:
-          type: string
-        selectors:
-          description: |-
-            Selectors is a list of selectors that are used to match builtin
-            gateway dataplanes that will receive this MeshGateway configuration.
-          items:
-            description: Selector defines structure for selecting tags for given dataplane
-            properties:
-              match:
-                additionalProperties:
-                  type: string
-                description: Tags to match, can be used for both source and destinations
-                type: object
-            type: object
-          type: array
-        tags:
-          additionalProperties:
-            type: string
-          description: >-
-            Tags is the set of tags common to all of the gateway's listeners.
-
-
-            This field must not include a `kuma.io/service` tag (the service is
-            always
-
-            defined on the dataplanes).
-          type: object
-        type:
-          type: string
-      required:
-        - type
-        - name
-        - mesh
-      type: object
     MeshHTTPRouteItem:
       type: object
       description: >-
@@ -10157,7 +9758,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -10182,9 +9782,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -10231,16 +9831,7 @@ components:
               items:
                 properties:
                   hostnames:
-                    description: >-
-                      Hostnames is only valid when targeting MeshGateway and
-                      limits the
-
-                      effects of the rules to requests to this hostname.
-
-                      Given hostnames must intersect with the hostname of the
-                      listeners the
-
-                      route attaches to.
+                    description: Hostnames is not currently supported and must not be set.
                     items:
                       type: string
                     type: array
@@ -10268,7 +9859,6 @@ components:
                                     enum:
                                       - Mesh
                                       - MeshSubset
-                                      - MeshGateway
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -10294,9 +9884,9 @@ components:
                                   name:
                                     description: >-
                                       Name of the referenced resource. Can only
-                                      be used with kinds: `MeshService`,
+                                      be used with kinds: `MeshService`
 
-                                      `MeshServiceSubset` and `MeshGatewayRoute`
+                                      and `MeshServiceSubset`
                                     type: string
                                   namespace:
                                     description: >-
@@ -10422,7 +10012,6 @@ components:
                                             enum:
                                               - Mesh
                                               - MeshSubset
-                                              - MeshGateway
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
@@ -10448,10 +10037,9 @@ components:
                                           name:
                                             description: >-
                                               Name of the referenced resource. Can
-                                              only be used with kinds: `MeshService`,
+                                              only be used with kinds: `MeshService`
 
-                                              `MeshServiceSubset` and
-                                              `MeshGatewayRoute`
+                                              and `MeshServiceSubset`
                                             type: string
                                           namespace:
                                             description: >-
@@ -10666,11 +10254,8 @@ components:
                                     properties:
                                       hostToBackendHostname:
                                         description: >-
-                                          HostToBackendHostname rewrites the
-                                          hostname to the hostname of the
-
-                                          upstream host. This option is only
-                                          available when targeting MeshGateways.
+                                          HostToBackendHostname is not currently
+                                          supported and must not be set.
                                         type: boolean
                                       hostname:
                                         description: >-
@@ -10830,7 +10415,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -10855,9 +10439,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -10974,7 +10558,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -10999,9 +10582,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -11335,7 +10918,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -11360,9 +10942,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -11481,7 +11063,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -11506,9 +11087,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -12215,7 +11796,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -12240,9 +11820,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -12348,8 +11928,11 @@ components:
               properties:
                 applications:
                   description: >-
-                    Applications is a list of application that Dataplane Proxy
-                    will scrape
+                    Applications is a list of applications that Dataplane Proxy
+                    will scrape.
+
+                    Ignored on zone-proxy-only Dataplanes (zone ingress/egress
+                    exist without a co-located workload).
                   items:
                     properties:
                       address:
@@ -12386,8 +11969,7 @@ components:
                               BackendRef is a reference to a
                               MeshOpenTelemetryBackend resource that
 
-                              defines the collector endpoint. Mutually exclusive
-                              with Endpoint.
+                              defines the collector endpoint.
                             properties:
                               kind:
                                 description: Kind of the backend resource.
@@ -12398,32 +11980,14 @@ components:
                                 additionalProperties:
                                   type: string
                                 description: >-
-                                  Labels to match the referenced resource. Use
-                                  for cross-zone references
+                                  Labels to match the referenced resource. When
+                                  multiple resources match,
 
-                                  where KDS adds a hash suffix to metadata.name.
-                                  Mutually exclusive with
-
-                                  Name. When multiple resources match, the
-                                  oldest by creation time wins.
+                                  the oldest by creation time wins.
                                 type: object
-                              name:
-                                description: >-
-                                  Name of the referenced resource
-                                  (metadata.name). Use for same-cluster
-
-                                  references. Mutually exclusive with Labels.
-                                type: string
                             required:
                               - kind
                             type: object
-                          endpoint:
-                            default: ''
-                            description: |-
-                              Endpoint for OpenTelemetry collector.
-
-                              Deprecated: use BackendRef instead.
-                            type: string
                           refreshInterval:
                             description: >-
                               RefreshInterval defines how frequent metrics
@@ -12591,7 +12155,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -12616,9 +12179,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -12842,7 +12405,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -12867,9 +12429,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -13053,8 +12615,6 @@ components:
 
                                   egress - resources generated for Zone Egress.
 
-                                  gateway - resources generated for MeshGateway.
-
 
                                   The list is not complete, because policy
                                   plugins can introduce new resources.
@@ -13172,8 +12732,6 @@ components:
 
                                   egress - resources generated for Zone Egress.
 
-                                  gateway - resources generated for MeshGateway.
-
 
                                   The list is not complete, because policy
                                   plugins can introduce new resources.
@@ -13278,8 +12836,6 @@ components:
                                   Ingress.
 
                                   egress - resources generated for Zone Egress.
-
-                                  gateway - resources generated for MeshGateway.
 
 
                                   The list is not complete, because policy
@@ -13402,8 +12958,6 @@ components:
 
                                   egress - resources generated for Zone Egress.
 
-                                  gateway - resources generated for MeshGateway.
-
 
                                   The list is not complete, because policy
                                   plugins can introduce new resources.
@@ -13511,8 +13065,6 @@ components:
 
                                   egress - resources generated for Zone Egress.
 
-                                  gateway - resources generated for MeshGateway.
-
 
                                   The list is not complete, because policy
                                   plugins can introduce new resources.
@@ -13560,7 +13112,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -13585,9 +13136,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -13841,7 +13392,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -13866,9 +13416,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -13915,12 +13465,7 @@ components:
                 type: object
               type: array
             rules:
-              description: >-
-                Rules defines inbound rate limiting configurations. Currently
-                limited to
-
-                selecting all inbound traffic, as L7 matching is not yet
-                implemented.
+              description: Rules defines inbound rate limiting configurations.
               items:
                 properties:
                   default:
@@ -14057,6 +13602,58 @@ components:
                             type: object
                         type: object
                     type: object
+                  matches:
+                    description: >-
+                      Matches define additional conditions for applying this
+                      rate limit rule.
+                    items:
+                      properties:
+                        sni:
+                          description: >-
+                            SNI defines a matcher configuration for matching by
+                            SNI value carried on the TLS connection
+                          properties:
+                            type:
+                              description: >-
+                                Type defines how to match traffic by SNI. Only
+                                `Exact` is supported.
+                              enum:
+                                - Exact
+                              type: string
+                            value:
+                              description: >-
+                                Value is the SNI carried on the TLS connection
+                                that needs to match for the configuration to be
+                                applied
+                              type: string
+                          required:
+                            - type
+                            - value
+                          type: object
+                        spiffeID:
+                          description: >-
+                            SpiffeID defines a matcher configuration for
+                            SpiffeID matching
+                          properties:
+                            type:
+                              description: >-
+                                Type defines how to match incoming traffic by
+                                SpiffeID. `Exact` or `Prefix` are allowed.
+                              enum:
+                                - Exact
+                                - Prefix
+                              type: string
+                            value:
+                              description: >-
+                                Value is SpiffeID of a client that needs to
+                                match for the configuration to be applied
+                              type: string
+                          required:
+                            - type
+                            - value
+                          type: object
+                      type: object
+                    type: array
                 type: object
               type: array
             targetRef:
@@ -14074,7 +13671,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -14099,9 +13695,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -14297,7 +13893,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -14322,9 +13917,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -14440,7 +14035,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -14465,9 +14059,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -14957,7 +14551,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -14982,9 +14575,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -15109,7 +14702,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -15134,9 +14726,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -15208,7 +14800,6 @@ components:
                                     enum:
                                       - Mesh
                                       - MeshSubset
-                                      - MeshGateway
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -15234,9 +14825,9 @@ components:
                                   name:
                                     description: >-
                                       Name of the referenced resource. Can only
-                                      be used with kinds: `MeshService`,
+                                      be used with kinds: `MeshService`
 
-                                      `MeshServiceSubset` and `MeshGatewayRoute`
+                                      and `MeshServiceSubset`
                                     type: string
                                   namespace:
                                     description: >-
@@ -15310,7 +14901,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -15335,9 +14925,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -15517,7 +15107,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -15542,9 +15131,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -15669,7 +15258,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -15694,9 +15282,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -15792,188 +15380,13 @@ components:
         spec:
           description: Spec is the specification of the Kuma MeshTimeout resource.
           properties:
-            from:
-              description: >-
-                From list makes a match between clients and corresponding
-                configurations
-              items:
-                properties:
-                  default:
-                    description: >-
-                      Default is a configuration specific to the group of
-                      clients referenced in
-
-                      'targetRef'
-                    properties:
-                      connectionTimeout:
-                        description: >-
-                          ConnectionTimeout specifies the amount of time proxy
-                          will wait for an TCP connection to be established.
-
-                          Default value is 5 seconds. Cannot be set to 0.
-                        type: string
-                      http:
-                        description: Http provides configuration for HTTP specific timeouts
-                        properties:
-                          maxConnectionDuration:
-                            description: >-
-                              MaxConnectionDuration is the time after which a
-                              connection will be drained and/or closed,
-
-                              starting from when it was first established.
-                              Setting this timeout to 0 will disable it.
-
-                              Disabled by default.
-                            type: string
-                          maxStreamDuration:
-                            description: >-
-                              MaxStreamDuration is the maximum time that a
-                              stream’s lifetime will span.
-
-                              Setting this timeout to 0 will disable it.
-                              Disabled by default.
-                            type: string
-                          requestHeadersTimeout:
-                            description: >-
-                              RequestHeadersTimeout The amount of time that
-                              proxy will wait for the request headers to be
-                              received. The timer is
-
-                              activated when the first byte of the headers is
-                              received, and is disarmed when the last byte of
-
-                              the headers has been received. If not specified or
-                              set to 0, this timeout is disabled.
-
-                              Disabled by default.
-                            type: string
-                          requestTimeout:
-                            description: >-
-                              RequestTimeout The amount of time that proxy will
-                              wait for the entire request to be received.
-
-                              The timer is activated when the request is
-                              initiated, and is disarmed when the last byte of
-                              the request is sent,
-
-                              OR when the response is initiated. Setting this
-                              timeout to 0 will disable it.
-
-                              Default is 15s.
-                            type: string
-                          streamIdleTimeout:
-                            description: >-
-                              StreamIdleTimeout is the amount of time that proxy
-                              will allow a stream to exist with no activity.
-
-                              Setting this timeout to 0 will disable it. Default
-                              is 30m
-                            type: string
-                        type: object
-                      idleTimeout:
-                        description: >-
-                          IdleTimeout is defined as the period in which there
-                          are no bytes sent or received on connection
-
-                          Setting this timeout to 0 will disable it. Be cautious
-                          when disabling it because
-
-                          it can lead to connection leaking. Default value is
-                          1h.
-                        type: string
-                    type: object
-                  targetRef:
-                    description: >-
-                      TargetRef is a reference to the resource that represents a
-                      group of
-
-                      clients.
-                    properties:
-                      kind:
-                        description: Kind of the referenced resource
-                        enum:
-                          - Mesh
-                          - MeshSubset
-                          - MeshGateway
-                          - MeshService
-                          - MeshExternalService
-                          - MeshMultiZoneService
-                          - MeshServiceSubset
-                          - MeshHTTPRoute
-                          - Dataplane
-                        type: string
-                      labels:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Labels are used to select group of MeshServices that
-                          match labels. Either Labels or
-
-                          Name and Namespace can be used.
-                        type: object
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
-
-                          `MeshServiceSubset` and `MeshGatewayRoute`
-                        type: string
-                      namespace:
-                        description: >-
-                          Namespace specifies the namespace of target resource.
-                          If empty only resources in policy namespace
-
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
-                      sectionName:
-                        description: >-
-                          SectionName is used to target specific section of
-                          resource.
-
-                          For example, you can target port from
-                          MeshService.ports[] by its name. Only traffic to this
-                          port will be affected.
-                        type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
-                    required:
-                      - kind
-                    type: object
-                required:
-                  - targetRef
-                type: object
-              type: array
             rules:
               description: >-
-                Rules defines inbound timeout configurations. Currently limited
-                to exactly one rule containing
+                Rules defines inbound timeout configurations. When matches are
+                present, the rule is applied only
 
-                default timeouts that apply to all inbound traffic, as L7
-                matching is not yet implemented.
+                to traffic selected by the given source and destination
+                matchers.
               items:
                 properties:
                   default:
@@ -16056,6 +15469,58 @@ components:
                           1h.
                         type: string
                     type: object
+                  matches:
+                    description: >-
+                      Matches define predicates for selecting traffic this
+                      configuration applies to.
+                    items:
+                      properties:
+                        sni:
+                          description: >-
+                            SNI defines a matcher configuration for matching by
+                            SNI value carried on the TLS connection
+                          properties:
+                            type:
+                              description: >-
+                                Type defines how to match traffic by SNI. Only
+                                `Exact` is supported.
+                              enum:
+                                - Exact
+                              type: string
+                            value:
+                              description: >-
+                                Value is the SNI carried on the TLS connection
+                                that needs to match for the configuration to be
+                                applied
+                              type: string
+                          required:
+                            - type
+                            - value
+                          type: object
+                        spiffeID:
+                          description: >-
+                            SpiffeID defines a matcher configuration for
+                            SpiffeID matching
+                          properties:
+                            type:
+                              description: >-
+                                Type defines how to match incoming traffic by
+                                SpiffeID. `Exact` or `Prefix` are allowed.
+                              enum:
+                                - Exact
+                                - Prefix
+                              type: string
+                            value:
+                              description: >-
+                                Value is SpiffeID of a client that needs to
+                                match for the configuration to be applied
+                              type: string
+                          required:
+                            - type
+                            - value
+                          type: object
+                      type: object
+                    type: array
                 type: object
               type: array
             targetRef:
@@ -16073,7 +15538,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -16098,9 +15562,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -16242,7 +15706,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -16267,9 +15730,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -16429,8 +15892,7 @@ components:
                               BackendRef is a reference to a
                               MeshOpenTelemetryBackend resource that
 
-                              defines the collector endpoint. Mutually exclusive
-                              with Endpoint.
+                              defines the collector endpoint.
                             properties:
                               kind:
                                 description: Kind of the backend resource.
@@ -16441,33 +15903,14 @@ components:
                                 additionalProperties:
                                   type: string
                                 description: >-
-                                  Labels to match the referenced resource. Use
-                                  for cross-zone references
+                                  Labels to match the referenced resource. When
+                                  multiple resources match,
 
-                                  where KDS adds a hash suffix to metadata.name.
-                                  Mutually exclusive with
-
-                                  Name. When multiple resources match, the
-                                  oldest by creation time wins.
+                                  the oldest by creation time wins.
                                 type: object
-                              name:
-                                description: >-
-                                  Name of the referenced resource
-                                  (metadata.name). Use for same-cluster
-
-                                  references. Mutually exclusive with Labels.
-                                type: string
                             required:
                               - kind
                             type: object
-                          endpoint:
-                            default: ''
-                            description: |-
-                              Address of OpenTelemetry collector.
-
-                              Deprecated: use BackendRef instead.
-                            example: otel-collector:4317
-                            type: string
                         type: object
                       type:
                         enum:
@@ -16643,7 +16086,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -16668,9 +16110,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -16858,7 +16300,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -16883,9 +16324,9 @@ components:
                       name:
                         description: >-
                           Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`,
+                          kinds: `MeshService`
 
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: >-
@@ -16943,6 +16384,28 @@ components:
                           be allowed
                         items:
                           properties:
+                            sni:
+                              description: >-
+                                SNI defines a matcher configuration for matching
+                                by SNI value carried on the TLS connection
+                              properties:
+                                type:
+                                  description: >-
+                                    Type defines how to match traffic by SNI.
+                                    Only `Exact` is supported.
+                                  enum:
+                                    - Exact
+                                  type: string
+                                value:
+                                  description: >-
+                                    Value is the SNI carried on the TLS
+                                    connection that needs to match for the
+                                    configuration to be applied
+                                  type: string
+                              required:
+                                - type
+                                - value
+                              type: object
                             spiffeID:
                               description: >-
                                 SpiffeID defines a matcher configuration for
@@ -16959,7 +16422,7 @@ components:
                                   type: string
                                 value:
                                   description: >-
-                                    Value is SpiffeId of a client that needs to
+                                    Value is SpiffeID of a client that needs to
                                     match for the configuration to be applied
                                   type: string
                               required:
@@ -16976,6 +16439,28 @@ components:
                           requests are denied
                         items:
                           properties:
+                            sni:
+                              description: >-
+                                SNI defines a matcher configuration for matching
+                                by SNI value carried on the TLS connection
+                              properties:
+                                type:
+                                  description: >-
+                                    Type defines how to match traffic by SNI.
+                                    Only `Exact` is supported.
+                                  enum:
+                                    - Exact
+                                  type: string
+                                value:
+                                  description: >-
+                                    Value is the SNI carried on the TLS
+                                    connection that needs to match for the
+                                    configuration to be applied
+                                  type: string
+                              required:
+                                - type
+                                - value
+                              type: object
                             spiffeID:
                               description: >-
                                 SpiffeID defines a matcher configuration for
@@ -16992,7 +16477,7 @@ components:
                                   type: string
                                 value:
                                   description: >-
-                                    Value is SpiffeId of a client that needs to
+                                    Value is SpiffeID of a client that needs to
                                     match for the configuration to be applied
                                   type: string
                               required:
@@ -17007,6 +16492,28 @@ components:
                           be denied
                         items:
                           properties:
+                            sni:
+                              description: >-
+                                SNI defines a matcher configuration for matching
+                                by SNI value carried on the TLS connection
+                              properties:
+                                type:
+                                  description: >-
+                                    Type defines how to match traffic by SNI.
+                                    Only `Exact` is supported.
+                                  enum:
+                                    - Exact
+                                  type: string
+                                value:
+                                  description: >-
+                                    Value is the SNI carried on the TLS
+                                    connection that needs to match for the
+                                    configuration to be applied
+                                  type: string
+                              required:
+                                - type
+                                - value
+                              type: object
                             spiffeID:
                               description: >-
                                 SpiffeID defines a matcher configuration for
@@ -17023,7 +16530,7 @@ components:
                                   type: string
                                 value:
                                   description: >-
-                                    Value is SpiffeId of a client that needs to
+                                    Value is SpiffeID of a client that needs to
                                     match for the configuration to be applied
                                   type: string
                               required:
@@ -17052,7 +16559,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -17077,9 +16583,9 @@ components:
                 name:
                   description: >-
                     Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`,
+                    kinds: `MeshService`
 
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: >-
@@ -17134,10 +16640,24 @@ components:
           example: '0001-01-01T00:00:00Z'
     ZoneEgressItem:
       properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         name:
           type: string
         networking:
@@ -17194,10 +16714,24 @@ components:
                 type: object
             type: object
           type: array
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
         labels:
           additionalProperties:
             type: string
           type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
         name:
           type: string
         networking:
@@ -18114,7 +17648,7 @@ components:
                       dependencies:
                         additionalProperties:
                           type: string
-                        description: Versions of other dependencies, i.e. CoreDNS
+                        description: Versions of other dependencies
                         type: object
                       envoy:
                         description: Version of Envoy
@@ -18159,6 +17693,11 @@ components:
       type: object
     SecretItem:
       properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
         data:
           description: Value of the secret
           format: byte
@@ -18168,6 +17707,11 @@ components:
             type: string
           type: object
         mesh:
+          type: string
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
           type: string
         name:
           type: string
@@ -18300,6 +17844,29 @@ components:
           type: string
           readOnly: true
           example: kri_extsvc_default_zone-east_kuma-system_myresource1_
+        snis:
+          description: >-
+            List of SNIs (Server Name Indication) advertised by xDS for this
+            destination, one entry per port, sorted by port ascending. Present
+            for MeshService, MeshMultiZoneService and MeshExternalService.
+          type: array
+          readOnly: true
+          items:
+            type: object
+            required:
+              - port
+              - sni
+            properties:
+              port:
+                type: integer
+                format: int32
+                description: The destination port this SNI corresponds to.
+              sni:
+                type: string
+                description: The SNI string advertised by xDS for this port.
+          example:
+            - port: 8080
+              sni: sni.extsvc.default.zone-east.kuma-system.myresource1.8080
         name:
           description: Name of the Kuma resource
           type: string
@@ -18990,6 +18557,29 @@ components:
           type: string
           readOnly: true
           example: kri_mzsvc_default_zone-east_kuma-demo_myresource1_
+        snis:
+          description: >-
+            List of SNIs (Server Name Indication) advertised by xDS for this
+            destination, one entry per port, sorted by port ascending. Present
+            for MeshService, MeshMultiZoneService and MeshExternalService.
+          type: array
+          readOnly: true
+          items:
+            type: object
+            required:
+              - port
+              - sni
+            properties:
+              port:
+                type: integer
+                format: int32
+                description: The destination port this SNI corresponds to.
+              sni:
+                type: string
+                description: The SNI string advertised by xDS for this port.
+          example:
+            - port: 8080
+              sni: sni.mzsvc.default.zone-east.kuma-demo.myresource1.8080
         name:
           description: Name of the Kuma resource
           type: string
@@ -19308,20 +18898,60 @@ components:
                 in the
 
                 final exporter config for this backend.
+
+                Defaults to mode: Optional, precedence: EnvFirst,
+                allowSignalOverrides: true
+
+                when omitted.
               properties:
                 allowSignalOverrides:
                   description: >-
-                    AllowSignalOverrides controls whether signal-specific OTEL
-                    env vars such
+                    AllowSignalOverrides controls whether per-signal OTEL env
+                    vars
 
-                    as `OTEL_EXPORTER_OTLP_TRACES_*` may diverge from the shared
-                    config.
+                    (OTEL_EXPORTER_OTLP_TRACES_*, OTEL_EXPORTER_OTLP_METRICS_*,
+
+                    OTEL_EXPORTER_OTLP_LOGS_*) may diverge from the shared
+
+                    OTEL_EXPORTER_OTLP_* values.
+
+                    true (default): per-signal vars override the shared values
+                    for that
+
+                    signal.
+
+                    false: per-signal vars are ignored; the shared values apply
+                    to all
+
+                    signals. When per-signal overrides are dropped this way,
+
+                    SignalOverridesDisallowed appears in blockedReasons (a soft
+                    block -
+
+                    export still works via the shared config).
                   type: boolean
                 mode:
                   default: Optional
                   description: >-
-                    Mode controls whether OTEL env vars are ignored, allowed, or
-                    required.
+                    Mode controls whether OTEL env vars participate in the
+                    merge.
+
+                    Disabled: env vars are skipped entirely; only explicit
+                    backend fields and
+
+                    built-in defaults apply.
+
+                    Optional (default): env vars are used when present; absence
+                    is fine.
+
+                    Required: env vars must supply the missing fields - if any
+                    required field
+
+                    is missing the signal is blocked (state: missing,
+                    RequiredEnvMissing in
+
+                    blockedReasons) even when an explicit value or default could
+                    fill it.
                   enum:
                     - Disabled
                     - Optional
@@ -19330,10 +18960,18 @@ components:
                 precedence:
                   default: EnvFirst
                   description: >-
-                    Precedence controls whether explicit backend fields or env
-                    vars win when
+                    Precedence controls which source wins when both an explicit
+                    backend field
 
-                    both are present for the same field.
+                    and an env var are present for the same field.
+
+                    EnvFirst (default): env vars win; explicit backend fields
+                    fill gaps.
+
+                    ExplicitFirst: explicit backend fields win; env vars fill
+                    gaps.
+
+                    In either case, built-in defaults are the last fallback.
                   enum:
                     - ExplicitFirst
                     - EnvFirst
@@ -19452,6 +19090,29 @@ components:
           type: string
           readOnly: true
           example: kri_msvc_default_zone-east_kuma-demo_myresource1_
+        snis:
+          description: >-
+            List of SNIs (Server Name Indication) advertised by xDS for this
+            destination, one entry per port, sorted by port ascending. Present
+            for MeshService, MeshMultiZoneService and MeshExternalService.
+          type: array
+          readOnly: true
+          items:
+            type: object
+            required:
+              - port
+              - sni
+            properties:
+              port:
+                type: integer
+                format: int32
+                description: The destination port this SNI corresponds to.
+              sni:
+                type: string
+                description: The SNI string advertised by xDS for this port.
+          example:
+            - port: 8080
+              sni: sni.msvc.default.zone-east.kuma-demo.myresource1.8080
         name:
           description: Name of the Kuma resource
           type: string
@@ -19963,7 +19624,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/GlobalInsight'
+            $ref: '#/components/schemas/GlobalInsightBase'
           examples:
             Single control plane response:
               $ref: '#/components/examples/GlobalInsightExample'
@@ -20910,53 +20571,6 @@ components:
               items:
                 items:
                   $ref: '#/components/schemas/MeshItem'
-                type: array
-              next:
-                description: URL to the next page
-                type: string
-              total:
-                description: The total number of entities
-                type: number
-            type: object
-      description: List
-    MeshGatewayCreateOrUpdateSuccessResponse:
-      content:
-        application/json:
-          schema:
-            properties:
-              warnings:
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-                readOnly: true
-                type: array
-            type: object
-      description: Successful response
-    MeshGatewayDeleteSuccessResponse:
-      content:
-        application/json:
-          schema:
-            type: object
-      description: Successful response
-    MeshGatewayItem:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/MeshGatewayItem'
-      description: Successful response
-    MeshGatewayList:
-      content:
-        application/json:
-          schema:
-            properties:
-              items:
-                items:
-                  $ref: '#/components/schemas/MeshGatewayItem'
                 type: array
               next:
                 description: URL to the next page

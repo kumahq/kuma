@@ -6,38 +6,22 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	mcb_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	mr_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
-	mt_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/gateway/delegated"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/kic"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/observability"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/otelcollector"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	mcb_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	mr_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
+	mt_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/gateway/delegated"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/kic"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/observability"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/otelcollector"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func Delegated() {
 	config := delegated.Config{
-		Namespace:                   "delegated-gateway",
-		NamespaceOutsideMesh:        "delegated-gateway-outside-mesh",
-		Mesh:                        "delegated-gateway",
-		KicIP:                       "",
-		CpNamespace:                 Config.KumaNamespace,
-		ObservabilityDeploymentName: "observability-delegated-meshtrace",
-		IPV6:                        Config.IPV6,
-		MeshServiceMode:             mesh_proto.Mesh_MeshServices_Disabled,
-		UseEgress:                   false,
-	}
-	AfterEachFailure(func() {
-		DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.NamespaceOutsideMesh)
-	})
-
-	configMs := delegated.Config{
 		Namespace:                   "delegated-gateway-ms",
 		NamespaceOutsideMesh:        "delegated-gateway-outside-mesh-ms",
 		Mesh:                        "delegated-gateway-ms",
@@ -45,9 +29,12 @@ func Delegated() {
 		CpNamespace:                 Config.KumaNamespace,
 		ObservabilityDeploymentName: "observability-delegated-meshtrace-ms",
 		IPV6:                        Config.IPV6,
-		MeshServiceMode:             mesh_proto.Mesh_MeshServices_Exclusive,
 		UseEgress:                   true,
 	}
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.NamespaceOutsideMesh)
+	})
+
 	contextFor := func(name string, config *delegated.Config, testMatrix map[string]func()) {
 		Context(name, func() {
 			externalNameService := func(serviceName string) string {
@@ -61,14 +48,22 @@ spec:
   externalName: %s.%s.svc.cluster.local`, serviceName, config.Namespace, serviceName, config.NamespaceOutsideMesh)
 			}
 			BeforeAll(func() {
-				mesh := samples.MeshMTLSBuilder().WithName(config.Mesh).WithMeshServicesEnabled(config.MeshServiceMode)
+				mesh := samples.MeshMTLSBuilder().WithName(config.Mesh)
 				if config.UseEgress {
 					mesh.WithEgressRoutingEnabled()
 				}
 				err := NewClusterSetup().
 					Install(Yaml(mesh)).
 					Install(MeshTrafficPermissionAllowAllKubernetes(config.Mesh)).
-					Install(NamespaceWithSidecarInjection(config.Namespace)).
+					Install(YamlK8s(fmt.Sprintf(`
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
+  labels:
+    kuma.io/sidecar-injection: "enabled"
+    kuma.io/mesh: %s
+`, config.Namespace, config.Mesh))).
 					Install(Namespace(config.NamespaceOutsideMesh)).
 					Install(Parallel(
 						democlient.Install(
@@ -101,7 +96,6 @@ spec:
 						observability.Install(
 							config.ObservabilityDeploymentName,
 							observability.WithNamespace(config.NamespaceOutsideMesh),
-							observability.WithComponents(observability.JaegerComponent),
 						),
 						kic.KongIngressController(
 							kic.WithName(config.Mesh),
@@ -188,12 +182,13 @@ spec:
 		})
 	}
 
-	contextFor("delegated with kuma.io/service", &config, map[string]func(){
+	contextFor("delegated", &config, map[string]func(){
 		"MeshCircuitBreaker":        delegated.CircuitBreaker(&config),
 		"MeshProxyPatch":            delegated.MeshProxyPatch(&config),
 		"MeshHealthCheck":           delegated.MeshHealthCheck(&config),
 		"MeshRetry":                 delegated.MeshRetry(&config),
 		"MeshHTTPRoute":             delegated.MeshHTTPRoute(&config),
+		"MeshHTTPRouteMeshService":  delegated.MeshHTTPRouteMeshService(&config),
 		"MeshTimeout":               delegated.MeshTimeout(&config),
 		"MeshMetric":                delegated.MeshMetric(&config),
 		"MeshTrace":                 delegated.MeshTrace(&config),
@@ -202,8 +197,5 @@ spec:
 		"MeshPassthrough":           delegated.MeshPassthrough(&config),
 		// Matcher for from policy doesn't work for delegated gateway https://github.com/kumahq/kuma/issues/12107
 		// "MeshTLS":                   delegated.MeshTLS(&config),
-	})
-	contextFor("delegated with MeshService", &configMs, map[string]func(){
-		"MeshHTTPRoute": delegated.MeshHTTPRouteMeshService(&configMs),
 	})
 }

@@ -3,30 +3,23 @@ package v1alpha1
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/egress"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/plugin/xds"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/plugin/xds"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
-var (
-	_   core_plugins.EgressPolicyPlugin = &plugin{}
-	log                                 = core.Log.WithName("MeshFaultInjection")
-)
+var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
+
+func (p plugin) Order() int { return api.MeshFaultInjectionResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
@@ -36,13 +29,12 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshFaultInjectionType, dataplane, resources, opts...)
 }
 
-func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.EgressMatchedPolicies(api.MeshFaultInjectionType, tags, resources, opts...)
-}
-
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.ZoneEgressProxy != nil {
-		return applyToEgress(rs, proxy)
+		// MeshFaultInjection no longer supports targeting the legacy ExternalService resource via
+		// 'from' on zone egress. MeshExternalService fault injection on zone egress is applied
+		// through the Dataplane path below using rules-based SNI matches (applyToZoneProxyListener).
+		return nil
 	}
 
 	if proxy.Dataplane == nil {
@@ -57,10 +49,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy); err != nil {
 		return err
 	}
-
-	if err := applyToGateways(policies.GatewayRules, listeners.Gateway, proxy); err != nil {
+	if err := applyToZoneProxyListeners(policies.FromRules, listeners, proxy); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -72,9 +64,6 @@ func applyToInbounds(
 	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
 		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
 		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
-		if _, exists := proxy.Policies.FaultInjections[iface]; exists {
-			continue
-		}
 
 		listenerKey := core_rules.InboundListener{
 			Address: iface.DataplaneIP,
@@ -87,132 +76,76 @@ func applyToInbounds(
 
 		inboundRules, ok := fromRules.InboundRules[listenerKey]
 		if !ok || len(inboundRules) == 0 {
-			//nolint:staticcheck // SA1019 Backward compatibility: fallback to old Rules format if InboundRules not present
-			rules, ok := fromRules.Rules[listenerKey]
-			if !ok {
-				continue
-			}
+			continue
+		}
 
+		switch protocol {
+		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
+			configurer := plugin_xds.Configurer{Rules: inboundRules}
 			for _, filterChain := range listener.FilterChains {
-				if err := configure(rules, filterChain, protocol); err != nil {
+				if err := configurer.ConfigureHttpListener(filterChain); err != nil {
 					return err
 				}
 			}
-		} else {
-			switch protocol {
-			case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-				configurer := plugin_xds.Configurer{Rules: inboundRules}
-				for _, filterChain := range listener.FilterChains {
-					if err := configurer.ConfigureHttpListener(filterChain); err != nil {
-						return err
-					}
-				}
-			}
 		}
 	}
 	return nil
 }
 
-func applyToGateways(
-	rules core_rules.GatewayRules,
-	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
+func applyToZoneProxyListeners(
+	fromRules core_rules.FromRules,
+	listeners policies_xds.Listeners,
 	proxy *core_xds.Proxy,
 ) error {
-	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
+	if !proxy.Dataplane.Spec.GetNetworking().HasZoneProxyListeners() {
 		return nil
 	}
-	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
-		address := proxy.Dataplane.Spec.GetNetworking().Address
-		port := listenerInfo.Listener.Port
-		listenerKey := core_rules.InboundListener{
-			Address: address,
-			Port:    port,
-		}
-		gatewayListener, ok := gatewayListeners[listenerKey]
-		if !ok {
-			continue
-		}
-		rules, ok := rules.ToRules.ByListener[listenerKey]
-		if !ok {
-			continue
-		}
 
-		var protocol core_meta.Protocol
-		switch listenerInfo.Listener.Protocol {
-		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
-			protocol = core_meta.ProtocolHTTP
-		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
-			protocol = core_meta.ProtocolTCP
-		}
-		for _, filterChain := range gatewayListener.FilterChains {
-			if err := configure(rules.Rules, filterChain, protocol); err != nil {
-				return err
-			}
+	for _, listener := range listeners.ZoneIngress {
+		if err := applyToZoneProxyListener(fromRules, listener); err != nil {
+			return err
 		}
 	}
+	for _, listener := range listeners.ZoneEgress {
+		if err := applyToZoneProxyListener(fromRules, listener); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	listeners := policies_xds.GatherListeners(rs)
-	if listeners.Egress == nil {
-		log.V(1).Info("skip applying MeshFaultInjection, Egress has no listener",
-			"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
-		)
-		return nil
-	}
-	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
-		for _, es := range resource.ExternalServices {
-			meshName := resource.Mesh.GetMeta().GetName()
-			esName, ok := es.Spec.GetTags()[mesh_proto.ServiceTag]
-			if !ok {
-				continue
-			}
-			policies, ok := resource.Dynamic[esName]
-			if !ok {
-				continue
-			}
-			mfi, ok := policies[api.MeshFaultInjectionType]
-			if !ok {
-				continue
-			}
-			protocol := util.GetExternalServiceProtocol(es)
-
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
-			for _, rule := range mfi.FromRules.Rules {
-				for _, filterChain := range listeners.Egress.FilterChains {
-					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
-						if err := configure(rule, filterChain, protocol); err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func configure(
-	fromRules core_rules.Rules,
-	filterChain *envoy_listener.FilterChain,
-	protocol core_meta.Protocol,
+func applyToZoneProxyListener(
+	fromRules core_rules.FromRules,
+	listener *envoy_listener.Listener,
 ) error {
-	switch protocol {
-	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-		for _, rule := range fromRules {
-			conf := rule.Conf.(api.Conf)
-			from := rule.Subset
+	if listener == nil {
+		return nil
+	}
 
-			configurer := plugin_xds.LegacyConfigurer{
-				FaultInjections: pointer.Deref(conf.Http),
-				From:            from,
-			}
+	socketAddress := listener.GetAddress().GetSocketAddress()
+	if socketAddress == nil {
+		return nil
+	}
 
+	listenerKey := core_rules.InboundListener{
+		Address: socketAddress.GetAddress(),
+		Port:    socketAddress.GetPortValue(),
+	}
+	inboundRules, ok := fromRules.InboundRules[listenerKey]
+	if !ok || len(inboundRules) == 0 {
+		return nil
+	}
+
+	configurer := plugin_xds.Configurer{Rules: inboundRules}
+	for _, filterChain := range listener.FilterChains {
+		switch policies_xds.FilterChainProtocol(filterChain) {
+		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 			if err := configurer.ConfigureHttpListener(filterChain); err != nil {
 				return err
 			}
 		}
 	}
+
 	return nil
 }

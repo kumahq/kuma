@@ -9,15 +9,15 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
 func NewValidatingWebhook(

@@ -3,8 +3,10 @@ metadata:
   labels:
     app: mixed-proxy
     k8s.kuma.io/namespace: demo
+    kuma.io/display-name: mixed-proxy
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
+  name: mixed-proxy
 spec:
   networking:
     address: 192.168.0.1

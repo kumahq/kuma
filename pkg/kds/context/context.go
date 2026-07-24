@@ -14,28 +14,29 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/kds"
-	"github.com/kumahq/kuma/v2/pkg/kds/hash"
-	"github.com/kumahq/kuma/v2/pkg/kds/service"
-	"github.com/kumahq/kuma/v2/pkg/kds/util"
-	reconcile_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/reconcile"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	"github.com/kumahq/kuma/v2/pkg/util/rsa"
-	"github.com/kumahq/kuma/v2/pkg/version"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/kds"
+	"github.com/kumahq/kuma/v3/pkg/kds/hash"
+	"github.com/kumahq/kuma/v3/pkg/kds/service"
+	"github.com/kumahq/kuma/v3/pkg/kds/util"
+	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/util/rsa"
+	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
 const VersionHeader = "version"
@@ -306,7 +307,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilte
 					return false
 				}
 				// otherwise we're testing the role in Global CP in case Zone had the validation webhook turned off
-				role, err := core_model.ComputePolicyRole(policy, core_model.NewNamespace(r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag], false))
+				role, err := resource_labels.ComputePolicyRole(policy, resource_labels.NewNamespace(r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag], false))
 				if err != nil {
 					ri := kri.From(r)
 					log.V(1).Info(err.Error(), "name", ri.Name, "mesh", ri.Mesh, "zone", ri.Zone, "namespace", ri.Namespace)
@@ -324,9 +325,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilte
 				}
 			}
 
-			// TODO (Icarus9913): replace the function by model.ZoneOfResource(r)
-			// Reference: https://github.com/kumahq/kuma/issues/10952
-			zoneTag := util.ZoneTag(r)
+			zoneTag := core_model.ZoneOfResource(r)
 
 			// don't need to sync resource to the zone where resource is originating from
 			if zoneName == zoneTag {

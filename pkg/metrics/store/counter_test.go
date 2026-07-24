@@ -8,21 +8,23 @@ import (
 	. "github.com/onsi/gomega"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	"github.com/kumahq/kuma/v2/pkg/insights"
-	test_insights "github.com/kumahq/kuma/v2/pkg/insights/test"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	metrics_store "github.com/kumahq/kuma/v2/pkg/metrics/store"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
-	store_memory "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/insights"
+	test_insights "github.com/kumahq/kuma/v3/pkg/insights/test"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	metrics_store "github.com/kumahq/kuma/v3/pkg/metrics/store"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
+	mtp_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	store_memory "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/kds/samples"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 )
 
 var _ = Describe("Counter", func() {
@@ -108,8 +110,12 @@ var _ = Describe("Counter", func() {
 
 		err = resManager.Create(
 			context.Background(),
-			&core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission},
-			core_store.CreateByKey("tp-1", "mesh-1"),
+			builders.MeshTrafficPermission().
+				WithMesh("mesh-1").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddFrom(builders.TargetRefMesh(), mtp_proto.Allow).
+				Build(),
+			core_store.CreateByKey("mtp-1", "mesh-1"),
 		)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -118,8 +124,12 @@ var _ = Describe("Counter", func() {
 
 		err = resManager.Create(
 			context.Background(),
-			&core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission},
-			core_store.CreateByKey("tp-2", "mesh-2"),
+			builders.MeshTrafficPermission().
+				WithMesh("mesh-2").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddFrom(builders.TargetRefMesh(), mtp_proto.Allow).
+				Build(),
+			core_store.CreateByKey("mtp-2", "mesh-2"),
 		)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -132,7 +142,7 @@ var _ = Describe("Counter", func() {
 			g.Expect(findGauge("Zone").GetValue()).To(Equal(float64(1)))
 			g.Expect(findGauge("Mesh").GetValue()).To(Equal(float64(2)))
 			g.Expect(findGauge("Dataplane").GetValue()).To(Equal(float64(1)))
-			g.Expect(findGauge("TrafficPermission").GetValue()).To(Equal(float64(2)))
+			g.Expect(findGauge("MeshTrafficPermission").GetValue()).To(Equal(float64(2)))
 		}).Should(Succeed())
 	})
 })

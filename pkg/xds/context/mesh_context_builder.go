@@ -10,38 +10,47 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core/datasource"
-	"github.com/kumahq/kuma/v2/pkg/core/dns/lookup"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/dns/vips"
-	"github.com/kumahq/kuma/v2/pkg/log"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
-	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core/datasource"
+	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/log"
+	"github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
+	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 type meshContextBuilder struct {
-	rm              manager.ReadOnlyResourceManager
-	typeSet         map[core_model.ResourceType]struct{}
-	ipFunc          lookup.LookupIPFunc
-	zone            string
-	vipsPersistence *vips.Persistence
-	topLevelDomain  string
-	vipPort         uint32
-	rsGraphBuilder  ReachableServicesGraphBuilder
-	caProvider      secrets.CaProvider
+	rm                     manager.ReadOnlyResourceManager
+	typeSet                map[core_model.ResourceType]struct{}
+	ipFunc                 lookup.LookupIPFunc
+	zone                   string
+	caProvider             secrets.CaProvider
+	withPolicyMatchingHash bool
+}
+
+// MeshContextBuilderOption configures optional behavior of the MeshContextBuilder.
+type MeshContextBuilderOption func(*meshContextBuilder)
+
+// WithPolicyMatchingHash enables computing MeshContext.PolicyMatchingHash (the MatchedPolicies
+// cache key). It is skipped by default to avoid hashing work when the cache is disabled.
+func WithPolicyMatchingHash() MeshContextBuilderOption {
+	return func(m *meshContextBuilder) {
+		m.withPolicyMatchingHash = true
+	}
 }
 
 // MeshContextBuilder
@@ -68,28 +77,25 @@ func NewMeshContextBuilder(
 	types []core_model.ResourceType, // types that should be taken into account when MeshContext is built.
 	ipFunc lookup.LookupIPFunc,
 	zone string,
-	vipsPersistence *vips.Persistence,
-	topLevelDomain string,
-	vipPort uint32,
-	rsGraphBuilder ReachableServicesGraphBuilder,
 	caProvider secrets.CaProvider,
+	opts ...MeshContextBuilderOption,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
 		typeSet[typ] = struct{}{}
 	}
 
-	return &meshContextBuilder{
-		rm:              rm,
-		typeSet:         typeSet,
-		ipFunc:          ipFunc,
-		zone:            zone,
-		vipsPersistence: vipsPersistence,
-		topLevelDomain:  topLevelDomain,
-		vipPort:         vipPort,
-		rsGraphBuilder:  rsGraphBuilder,
-		caProvider:      caProvider,
+	builder := &meshContextBuilder{
+		rm:         rm,
+		typeSet:    typeSet,
+		ipFunc:     ipFunc,
+		zone:       zone,
+		caProvider: caProvider,
 	}
+	for _, opt := range opts {
+		opt(builder)
+	}
+	return builder
 }
 
 func (m *meshContextBuilder) Build(ctx context.Context, meshName string) (MeshContext, error) {
@@ -123,23 +129,13 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 				resources.MeshLocalResources[resType] = rl
 			} else { // absent from all parent contexts get it now
 				managedTypes = append(managedTypes, resType)
-				rl, err = m.fetchResourceList(ctx, resType, baseMeshContext.Mesh, nil)
+				rl, err = m.fetchResourceList(ctx, resType, baseMeshContext.Mesh)
 				if err != nil {
 					return nil, errors.Wrap(err, fmt.Sprintf("could not fetch resources of type:%s", resType))
 				}
 				resources.MeshLocalResources[resType] = rl
 			}
 		}
-	}
-
-	if err := m.decorateWithCrossMeshResources(ctx, meshName, resources); err != nil {
-		return nil, errors.Wrap(err, "failed to retrieve cross mesh resources")
-	}
-
-	// This base64 encoding seems superfluous but keeping it for backward compatibility
-	newHash := base64.StdEncoding.EncodeToString(m.hash(globalContext, baseMeshContext, managedTypes, resources))
-	if latestMeshCtx != nil && newHash == latestMeshCtx.Hash {
-		return latestMeshCtx, nil
 	}
 
 	dataplanes := resources.Dataplanes().Items
@@ -150,15 +146,15 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	var domains []xds_types.VIPDomains
 	var outbounds []*xds_types.Outbound
-	if baseMeshContext.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-		virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, meshName)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not fetch vips")
-		}
-		// resolve all the domains
-		vipDomains, vipOutbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
-		outbounds = append(outbounds, vipOutbounds...)
-		domains = append(domains, vipDomains...)
+	// This base64 encoding seems superfluous but keeping it for backward compatibility
+	newHash := base64.StdEncoding.EncodeToString(m.hash(globalContext, baseMeshContext, managedTypes, resources))
+	if latestMeshCtx != nil && newHash == latestMeshCtx.Hash {
+		return latestMeshCtx, nil
+	}
+
+	var policyMatchingHash string
+	if m.withPolicyMatchingHash {
+		policyMatchingHash = base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypes, resources))
 	}
 
 	meshServices := resources.MeshServices().Items
@@ -188,7 +184,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
-	externalServices := resources.ExternalServices().Items
 	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
 	if len(zoneEgressList) == 0 {
 		// Do not mix legacy zone egresses with dataplane listeners in one pool because
@@ -207,12 +202,10 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		zoneIngresses,
 		resources.MeshZoneAddresses().Items,
 		zoneEgresses,
-		externalServices,
 		loader,
 		mtlsEnabled(mesh, resources.MeshIdentities()),
 		zoneEgressList,
 	)
-	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
 	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(
 		ctx,
 		mesh,
@@ -221,8 +214,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		meshMultiZoneServices,
 		meshExternalServices,
 		dataplanes,
-		externalServices,
-		resources.Gateways().Items,
 		zoneEgresses,
 		zoneEgressList,
 		loader,
@@ -230,13 +221,11 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
-	for otherMeshName, gateways := range resources.gatewaysAndDataplanesForMesh(mesh) {
-		crossMeshEndpointMap[otherMeshName] = xds_topology.BuildCrossMeshEndpointMap(
+	for _, otherMesh := range resources.OtherMeshes(meshName).Items {
+		crossMeshEndpointMap[otherMesh.GetMeta().GetName()] = xds_topology.BuildCrossMeshEndpointMap(
 			mesh,
-			gateways.Mesh,
+			otherMesh,
 			m.zone,
-			gateways.Gateways,
-			gateways.Dataplanes,
 			zoneIngresses,
 			zoneEgresses,
 		)
@@ -256,25 +245,32 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		loader,
 	)
 
+	zonesWithMeshScopedProxy := map[string]bool{}
+	for _, mza := range resources.MeshZoneAddresses().Items {
+		if zone := core_model.ZoneOfResource(mza); zone != "" {
+			zonesWithMeshScopedProxy[zone] = true
+		}
+	}
+
 	return &MeshContext{
 		Hash:                            newHash,
+		PolicyMatchingHash:              policyMatchingHash,
 		Resource:                        mesh,
 		Resources:                       resources,
 		BaseMeshContext:                 baseMeshContext,
 		DataplanesByName:                dataplanesByName,
 		EndpointMap:                     endpointMap,
-		ExternalServicesEndpointMap:     esEndpointMap,
 		IngressEndpointMap:              ingressEndpointMap,
 		CrossMeshEndpoints:              crossMeshEndpointMap,
 		VIPDomains:                      domains,
 		VIPOutbounds:                    outbounds,
-		ServicesInformation:             m.generateServicesInformation(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
+		ServicesInformation:             m.generateServicesInformation(mesh, meshServices, endpointMap),
 		DataSourceLoader:                loader,
-		ReachableServicesGraph:          m.rsGraphBuilder(meshName, resources),
 		CAsByTrustDomain:                casByTrustDomain,
 		ZoneEgresses:                    zoneEgressList,
 		DataplaneZoneIngressEndpointMap: dpZoneIngressEndpointMap,
 		DataplaneZoneEgressEndpointMap:  dpZoneEgressEndpointMap,
+		ZonesWithMeshScopedProxy:        zonesWithMeshScopedProxy,
 	}, nil
 }
 
@@ -287,7 +283,7 @@ func (m *meshContextBuilder) BuildGlobalContextIfChanged(ctx context.Context, la
 			return nil, err
 		}
 		if desc.Scope == core_model.ScopeGlobal && desc.Name != system.ConfigType { // For config we ignore them atm and prefer to rely on more specific filters.
-			rmap[t], err = m.fetchResourceList(ctx, t, nil, nil)
+			rmap[t], err = m.fetchResourceList(ctx, t, nil)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to build global context")
 			}
@@ -320,17 +316,13 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		if err != nil {
 			return nil, err
 		}
-		// Only pick the policies, gateways, external services and the vip config map
+		// Only pick the policies, gateways, and the vip config map
 		switch {
 		case desc.IsDestination:
-			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
+			rmap[t], err = m.fetchResourceList(ctx, t, mesh)
 			destinations = append(destinations, rmap[t].GetItems())
-		case desc.IsPolicy || desc.Name == core_mesh.MeshGatewayType || desc.Name == core_mesh.ExternalServiceType:
-			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
-		case desc.Name == system.ConfigType:
-			rmap[t], err = m.fetchResourceList(ctx, t, mesh, func(rs core_model.Resource) bool {
-				return rs.GetMeta().GetName() == vips.ConfigKey(meshName)
-			})
+		case desc.IsPolicy:
+			rmap[t], err = m.fetchResourceList(ctx, t, mesh)
 		default:
 			// DO nothing we're not interested in this type
 		}
@@ -351,10 +343,8 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 	}, nil
 }
 
-type filterFn = func(rs core_model.Resource) bool
-
 // fetch all resources of a type with potential filters etc
-func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core_model.ResourceType, mesh *core_mesh.MeshResource, filterFn filterFn) (core_model.ResourceList, error) {
+func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core_model.ResourceType, mesh *core_mesh.MeshResource) (core_model.ResourceList, error) {
 	l := log.AddFieldsFromCtx(logger, ctx, context.Background())
 	var listOptsFunc []core_store.ListOptionsFunc
 	desc, err := registry.Global().DescriptorFor(resType)
@@ -387,16 +377,11 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {
 		return nil, err
 	}
-	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType && filterFn == nil {
+	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType {
 		// No post processing stuff so return the list as is
 		return list, nil
 	}
 	list, err = modifyAllEntries(list, func(resource core_model.Resource) (core_model.Resource, error) {
-		// Because we're not using the pagination store we need to do the filtering ourselves outside of the store
-		// I believe this is to maximize cachability of the store
-		if filterFn != nil && !filterFn(resource) {
-			return nil, nil
-		}
 		switch resType {
 		case core_mesh.ZoneIngressType:
 			zi, ok := resource.(*core_mesh.ZoneIngressResource)
@@ -461,32 +446,19 @@ func modifyAllEntries(list core_model.ResourceList, fn func(resource core_model.
 
 func (m *meshContextBuilder) generateServicesInformation(
 	mesh *core_mesh.MeshResource,
-	serviceInsights *core_mesh.ServiceInsightResourceList,
+	meshServices []*meshservice_api.MeshServiceResource,
 	endpointMap xds.EndpointMap,
-	esEndpointMap xds.EndpointMap,
 ) map[string]*ServiceInformation {
 	servicesInformation := map[string]*ServiceInformation{}
-	m.resolveProtocol(mesh, endpointMap, esEndpointMap, servicesInformation)
-	m.resolveTLSReadiness(mesh, serviceInsights, servicesInformation)
+	m.resolveProtocol(endpointMap, servicesInformation)
+	m.resolveTLSReadiness(mesh, meshServices, servicesInformation)
 	return servicesInformation
 }
 
 func (m *meshContextBuilder) resolveProtocol(
-	mesh *core_mesh.MeshResource,
 	endpointMap xds.EndpointMap,
-	esEndpointMap xds.EndpointMap,
 	servicesInformation map[string]*ServiceInformation,
 ) {
-	// endpointMap has only informations about externalServices when egress is enabled
-	// that's why we have to iterate over second map with external services
-	if !mesh.ZoneEgressEnabled() {
-		for svc, endpoints := range esEndpointMap {
-			serviceInfo := getServiceInformation(servicesInformation, svc)
-			serviceInfo.Protocol = inferServiceProtocol(endpoints)
-			serviceInfo.IsExternalService = true
-			servicesInformation[svc] = serviceInfo
-		}
-	}
 	for svc, endpoints := range endpointMap {
 		serviceInfo := getServiceInformation(servicesInformation, svc)
 		serviceInfo.Protocol = inferServiceProtocol(endpoints)
@@ -497,79 +469,33 @@ func (m *meshContextBuilder) resolveProtocol(
 
 func (m *meshContextBuilder) resolveTLSReadiness(
 	mesh *core_mesh.MeshResource,
-	serviceInsights *core_mesh.ServiceInsightResourceList,
+	meshServices []*meshservice_api.MeshServiceResource,
 	servicesInformation map[string]*ServiceInformation,
 ) {
 	backend := mesh.GetEnabledCertificateAuthorityBackend()
 	// TLS readiness is irrelevant unless we are using PERMISSIVE TLS, so skip
-	// checking ServiceInsights if we aren't.
+	// checking MeshServices if we aren't.
 	if backend == nil || backend.Mode != mesh_proto.CertificateAuthorityBackend_PERMISSIVE {
 		return
 	}
 
-	if len(serviceInsights.Items) == 0 {
-		// Nothing about the TLS readiness has been reported yet
-		logger.Info("could not determine service TLS readiness, ServiceInsight is not yet present")
-		return
-	}
-	for svc, insight := range serviceInsights.Items[0].Spec.GetServices() {
-		serviceInfo := getServiceInformation(servicesInformation, svc)
-		if insight.ServiceType == mesh_proto.ServiceInsight_Service_external {
-			serviceInfo.TLSReadiness = true
-		} else {
-			serviceInfo.TLSReadiness = insight.IssuedBackends[backend.Name] == (insight.Dataplanes.Offline + insight.Dataplanes.Online)
+	// External services are always considered TLS ready: traffic to them never
+	// goes through mTLS issued by this mesh's CA.
+	for svc, info := range servicesInformation {
+		if info.IsExternalService {
+			info.TLSReadiness = true
+			servicesInformation[svc] = info
 		}
-		servicesInformation[svc] = serviceInfo
 	}
-}
 
-func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context, localMesh string, resources Resources) error {
-	// Expand with crossMesh info
-	otherMeshesByName := map[string]*core_mesh.MeshResource{}
-	for _, m := range resources.OtherMeshes(localMesh).GetItems() {
-		otherMeshesByName[m.GetMeta().GetName()] = m.(*core_mesh.MeshResource)
-		resources.CrossMeshResources[m.GetMeta().GetName()] = map[core_model.ResourceType]core_model.ResourceList{
-			core_mesh.DataplaneType:   &core_mesh.DataplaneResourceList{},
-			core_mesh.MeshGatewayType: &core_mesh.MeshGatewayResourceList{},
+	for _, ms := range meshServices {
+		for _, port := range ms.Spec.Ports {
+			svc := destinationname.MustResolve(false, ms, port)
+			serviceInfo := getServiceInformation(servicesInformation, svc)
+			serviceInfo.TLSReadiness = ms.Status.TLS.Status == meshservice_api.TLSReady
+			servicesInformation[svc] = serviceInfo
 		}
 	}
-	var gatewaysByMesh map[string]core_model.ResourceList
-	if _, ok := m.typeSet[core_mesh.MeshGatewayType]; ok {
-		// For all meshes, get all cross mesh gateways
-		rl, err := m.fetchResourceList(ctx, core_mesh.MeshGatewayType, nil, func(rs core_model.Resource) bool {
-			_, exists := otherMeshesByName[rs.GetMeta().GetMesh()]
-			return exists && rs.(*core_mesh.MeshGatewayResource).Spec.IsCrossMesh()
-		})
-		if err != nil {
-			return errors.Wrap(err, "could not fetch cross mesh meshGateway resources")
-		}
-		gatewaysByMesh, err = core_model.ResourceListByMesh(rl)
-		if err != nil {
-			return errors.Wrap(err, "failed building cross mesh meshGateway resources")
-		}
-	}
-	if _, ok := m.typeSet[core_mesh.DataplaneType]; ok {
-		for otherMeshName, gws := range gatewaysByMesh { // Only iterate over meshes that have crossMesh gateways
-			otherMesh := otherMeshesByName[otherMeshName]
-			var gwResources []*core_mesh.MeshGatewayResource
-			for _, gw := range gws.GetItems() {
-				gwResources = append(gwResources, gw.(*core_mesh.MeshGatewayResource))
-			}
-			rl, err := m.fetchResourceList(ctx, core_mesh.DataplaneType, otherMesh, func(rs core_model.Resource) bool {
-				dp := rs.(*core_mesh.DataplaneResource)
-				if !dp.Spec.IsBuiltinGateway() {
-					return false
-				}
-				return xds_topology.SelectGateway(gwResources, dp.Spec.Matches) != nil
-			})
-			if err != nil {
-				return errors.Wrap(err, "could not fetch cross mesh meshGateway resources")
-			}
-			resources.CrossMeshResources[otherMeshName][core_mesh.DataplaneType] = rl
-			resources.CrossMeshResources[otherMeshName][core_mesh.MeshGatewayType] = gws
-		}
-	}
-	return nil
 }
 
 func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
@@ -578,12 +504,52 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	_, _ = hasher.Write(globalContext.hash)
 	_, _ = hasher.Write(baseMeshContext.hash)
 	for _, resType := range managedTypes {
-		_, _ = hasher.Write(core_model.ResourceListHash(resources.MeshLocalResources[resType]))
+		_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
 	}
 
 	for _, m := range maps.SortedKeys(resources.CrossMeshResources) {
 		_, _ = hasher.Write([]byte(m))
 		_, _ = hasher.Write(resources.CrossMeshResources[m].Hash())
+	}
+	return hasher.Sum(nil)
+}
+
+// affectsPolicyMatching reports whether resources of resType can change which policies match a
+// dataplane, per the type's ResourceTypeDescriptor.AffectsPolicyMatching. Unknown types are
+// treated as relevant (safe default: spurious cache misses, never stale xDS).
+func affectsPolicyMatching(resType core_model.ResourceType) bool {
+	descriptor, err := registry.Global().DescriptorFor(resType)
+	if err != nil {
+		return true
+	}
+	return descriptor.AffectsPolicyMatching
+}
+
+func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
+	hasher := fnv.New128a()
+	for _, resType := range maps.SortedKeys(globalContext.ResourceMap) {
+		if affectsPolicyMatching(resType) {
+			_, _ = hasher.Write(resourceListXDSHash(globalContext.ResourceMap[resType]))
+		}
+	}
+	for _, resType := range maps.SortedKeys(baseMeshContext.ResourceMap) {
+		if affectsPolicyMatching(resType) {
+			_, _ = hasher.Write(resourceListXDSHash(baseMeshContext.ResourceMap[resType]))
+		}
+	}
+	for _, resType := range managedTypes {
+		if affectsPolicyMatching(resType) {
+			_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
+		}
+	}
+	for _, meshName := range maps.SortedKeys(resources.CrossMeshResources) {
+		_, _ = hasher.Write([]byte(meshName))
+		crossMesh := resources.CrossMeshResources[meshName]
+		for _, resType := range maps.SortedKeys(crossMesh) {
+			if affectsPolicyMatching(resType) {
+				_, _ = hasher.Write(resourceListXDSHash(crossMesh[resType]))
+			}
+		}
 	}
 	return hasher.Sum(nil)
 }

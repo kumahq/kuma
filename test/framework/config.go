@@ -10,10 +10,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
-	"github.com/kumahq/kuma/v2/test/framework/report"
-	"github.com/kumahq/kuma/v2/test/framework/versions"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
+	"github.com/kumahq/kuma/v3/test/framework/report"
+	"github.com/kumahq/kuma/v3/test/framework/versions"
 )
 
 var _ config.Config = E2eConfig{}
@@ -21,49 +21,53 @@ var _ config.Config = E2eConfig{}
 type E2eConfig struct {
 	config.BaseConfig
 
-	KumaImageRegistry                 string            `json:"imageRegistry,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_REGISTRY"`
-	KumaImageTag                      string            `json:"imageTag,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_TAG"`
-	KumaNamespace                     string            `json:"namespace,omitempty"`
-	KumaServiceName                   string            `json:"serviceName,omitempty"`
-	HelmChartPath                     string            `json:"helmChartPath,omitempty"`
-	HelmSubChartPrefix                string            `json:"helmSubChartPrefix,omitempty"`
-	HelmChartName                     string            `json:"helmChartName,omitempty"`
-	HelmRepoUrl                       string            `json:"helmRepoUrl,omitempty"`
-	HelmGlobalExtraYaml               string            `json:"HelmGlobalExtraYaml,omitempty"`
-	CNIApp                            string            `json:"CNIApp,omitempty"`
-	CNINamespace                      string            `json:"CNINamespace,omitempty"`
-	CNIConf                           CniConf           `json:"CNIConf,omitempty"`
-	KumaGlobalZoneSyncServiceName     string            `json:"globalZoneSyncServiceName,omitempty"`
-	KumaUniversalEnvVars              map[string]string `json:"universalEnvVars,omitempty"`
-	KumaZoneUniversalEnvVars          map[string]string `json:"universalZoneEnvVars,omitempty"`
-	KumaK8sCtlFlags                   map[string]string `json:"k8sCtlFlags,omitempty"`
-	KumaZoneK8sCtlFlags               map[string]string `json:"k8sZoneCtlFlags,omitempty"`
-	DefaultObservabilityNamespace     string            `json:"observabilityNamespace,omitempty"`
-	DefaultGatewayNamespace           string            `json:"gatewayNamespace,omitempty"`
-	KumactlImageRepo                  string            `json:"ctlImageRepo,omitempty" envconfig:"KUMACTL_IMAGE_REPOSITORY"`
-	KumaCPImageRepo                   string            `json:"cpImageRepo,omitempty" envconfig:"KUMA_CP_IMAGE_REPOSITORY"`
-	KumaDPImageRepo                   string            `json:"dpImageRepo,omitempty" envconfig:"KUMA_DP_IMAGE_REPOSITORY"`
-	KumaInitImageRepo                 string            `json:"initImageRepo,omitempty" envconfig:"KUMA_INIT_IMAGE_REPOSITORY"`
-	KumaCNIImageRepo                  string            `json:"cniImageRepo,omitempty" envconfig:"KUMA_CNI_IMAGE_REPOSITORY"`
-	KumaUniversalImageRepo            string            `json:"universalImageRepo,omitempty"`
-	XDSApiVersion                     string            `json:"xdsVersion,omitempty" envconfig:"API_VERSION"`
-	K8sType                           K8sType           `json:"k8sType,omitempty" envconfig:"KUMA_K8S_TYPE"`
-	IPV6                              bool              `json:"ipv6,omitempty" envconfig:"IPV6"`
-	UseHostnameInsteadOfIP            bool              `json:"useHostnameInsteadOfIP,omitempty" envconfig:"KUMA_USE_HOSTNAME_INSTEAD_OF_ID"`
-	UseLoadBalancer                   bool              `json:"useLoadBalancer,omitempty" envconfig:"KUMA_USE_LOAD_BALANCER"`
-	DefaultClusterStartupRetries      int               `json:"defaultClusterStartupRetries,omitempty" envconfig:"KUMA_DEFAULT_RETRIES"`
-	DefaultClusterStartupTimeout      time.Duration     `json:"defaultClusterStartupTimeout,omitempty" envconfig:"KUMA_DEFAULT_TIMEOUT"`
-	KumactlBin                        string            `json:"kumactlBin,omitempty" envconfig:"KUMACTLBIN"`
-	ZoneEgressApp                     string            `json:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
-	ZoneIngressApp                    string            `json:"zoneIngressApp,omitempty" envconfig:"KUMA_ZONE_INGRESS_APP"`
-	Arch                              string            `json:"arch,omitempty" envconfig:"ARCH"`
-	OS                                string            `json:"os,omitempty" envconfig:"OS"`
-	KumaCpConfig                      KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
-	VersionsYamlPath                  string            `json:"versionsYamlPath,omitempty" envconfig:"VERSIONS_YAML_PATH"`
-	KumaExperimentalSidecarContainers bool              `json:"kumaSidecarContainers,omitempty" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
-	Debug                             bool              `json:"debug" envconfig:"KUMA_DEBUG"`
-	DumpDir                           string            `json:"dumpDir" envconfig:"KUMA_DUMP_DIR"`
-	DumpOnSuccess                     bool              `json:"dumpOnSuccess,omitempty" envconfig:"DUMP_ON_SUCCESS"`
+	KumaImageRegistry             string            `json:"imageRegistry,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_REGISTRY"`
+	KumaImageTag                  string            `json:"imageTag,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_TAG"`
+	KumaNamespace                 string            `json:"namespace,omitempty"`
+	KumaServiceName               string            `json:"serviceName,omitempty"`
+	HelmChartPath                 string            `json:"helmChartPath,omitempty"`
+	HelmSubChartPrefix            string            `json:"helmSubChartPrefix,omitempty"`
+	HelmChartName                 string            `json:"helmChartName,omitempty"`
+	HelmRepoUrl                   string            `json:"helmRepoUrl,omitempty"`
+	HelmGlobalExtraYaml           string            `json:"HelmGlobalExtraYaml,omitempty"`
+	CNIApp                        string            `json:"CNIApp,omitempty"`
+	CNINamespace                  string            `json:"CNINamespace,omitempty"`
+	CNIConf                       CniConf           `json:"CNIConf,omitempty"`
+	KumaGlobalZoneSyncServiceName string            `json:"globalZoneSyncServiceName,omitempty"`
+	KumaUniversalEnvVars          map[string]string `json:"universalEnvVars,omitempty"`
+	KumaZoneUniversalEnvVars      map[string]string `json:"universalZoneEnvVars,omitempty"`
+	KumaK8sCtlFlags               map[string]string `json:"k8sCtlFlags,omitempty"`
+	KumaZoneK8sCtlFlags           map[string]string `json:"k8sZoneCtlFlags,omitempty"`
+	DefaultObservabilityNamespace string            `json:"observabilityNamespace,omitempty"`
+	DefaultGatewayNamespace       string            `json:"gatewayNamespace,omitempty"`
+	KumactlImageRepo              string            `json:"ctlImageRepo,omitempty" envconfig:"KUMACTL_IMAGE_REPOSITORY"`
+	KumaCPImageRepo               string            `json:"cpImageRepo,omitempty" envconfig:"KUMA_CP_IMAGE_REPOSITORY"`
+	KumaDPImageRepo               string            `json:"dpImageRepo,omitempty" envconfig:"KUMA_DP_IMAGE_REPOSITORY"`
+	KumaInitImageRepo             string            `json:"initImageRepo,omitempty" envconfig:"KUMA_INIT_IMAGE_REPOSITORY"`
+	KumaCNIImageRepo              string            `json:"cniImageRepo,omitempty" envconfig:"KUMA_CNI_IMAGE_REPOSITORY"`
+	KumaUniversalImageRepo        string            `json:"universalImageRepo,omitempty"`
+	XDSApiVersion                 string            `json:"xdsVersion,omitempty" envconfig:"API_VERSION"`
+	K8sType                       K8sType           `json:"k8sType,omitempty" envconfig:"KUMA_K8S_TYPE"`
+	IPV6                          bool              `json:"ipv6,omitempty" envconfig:"IPV6"`
+	UseHostnameInsteadOfIP        bool              `json:"useHostnameInsteadOfIP,omitempty" envconfig:"KUMA_USE_HOSTNAME_INSTEAD_OF_ID"`
+	UseLoadBalancer               bool              `json:"useLoadBalancer,omitempty" envconfig:"KUMA_USE_LOAD_BALANCER"`
+	DefaultClusterStartupRetries  int               `json:"defaultClusterStartupRetries,omitempty" envconfig:"KUMA_DEFAULT_RETRIES"`
+	DefaultClusterStartupTimeout  time.Duration     `json:"defaultClusterStartupTimeout,omitempty" envconfig:"KUMA_DEFAULT_TIMEOUT"`
+	KumactlBin                    string            `json:"kumactlBin,omitempty" envconfig:"KUMACTLBIN"`
+	ZoneEgressApp                 string            `json:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
+	ZoneIngressApp                string            `json:"zoneIngressApp,omitempty" envconfig:"KUMA_ZONE_INGRESS_APP"`
+	Arch                          string            `json:"arch,omitempty" envconfig:"ARCH"`
+	OS                            string            `json:"os,omitempty" envconfig:"OS"`
+	KumaCpConfig                  KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
+	VersionsYamlPath              string            `json:"versionsYamlPath,omitempty" envconfig:"VERSIONS_YAML_PATH"`
+	Debug                         bool              `json:"debug" envconfig:"KUMA_DEBUG"`
+	DumpDir                       string            `json:"dumpDir" envconfig:"KUMA_DUMP_DIR"`
+	DumpOnSuccess                 bool              `json:"dumpOnSuccess,omitempty" envconfig:"DUMP_ON_SUCCESS"`
+	// Kuma3Preflight* gate the opt-in kuma3-preflight capture hook (see
+	// test/framework/preflight.go). Bin+Dir empty == disabled, so a normal run is a no-op.
+	Kuma3PreflightBin     string        `json:"kuma3PreflightBin,omitempty" envconfig:"KUMA3_PREFLIGHT_BIN"`
+	Kuma3PreflightDir     string        `json:"kuma3PreflightDir,omitempty" envconfig:"KUMA3_PREFLIGHT_DIR"`
+	Kuma3PreflightTimeout time.Duration `json:"kuma3PreflightTimeout,omitempty" envconfig:"KUMA3_PREFLIGHT_TIMEOUT"`
 }
 
 func (c E2eConfig) SupportedVersions() []versions.Version {
@@ -243,11 +247,11 @@ var defaultConf = E2eConfig{
 			},
 		},
 	},
-	ZoneEgressApp:                     "kuma-egress",
-	ZoneIngressApp:                    "kuma-ingress",
-	KumaExperimentalSidecarContainers: false,
-	DumpDir:                           path.Join("..", "..", "..", "build", "reports", "e2e-debug"),
-	DumpOnSuccess:                     false,
+	ZoneEgressApp:         "kuma-egress",
+	ZoneIngressApp:        "kuma-ingress",
+	DumpDir:               path.Join("..", "..", "..", "build", "reports", "e2e-debug"),
+	DumpOnSuccess:         false,
+	Kuma3PreflightTimeout: 45 * time.Second,
 }
 
 func Init(configModificationFunctions ...func(*E2eConfig)) {

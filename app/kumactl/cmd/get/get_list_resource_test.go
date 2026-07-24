@@ -10,12 +10,12 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
-	test_kumactl "github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	memory_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/app/kumactl/cmd"
+	test_kumactl "github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	memory_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
 
 var _ = Describe("kumactl get [resource]", func() {
@@ -40,22 +40,10 @@ var _ = Describe("kumactl get [resource]", func() {
 	})
 
 	entries := []TableEntry{
-		Entry("circuit-breaker", "circuit-breakers"),
-		Entry("fault-injection", "fault-injections"),
 		Entry("dataplane", "dataplanes"),
-		Entry("external-service", "external-services"),
-		Entry("fault-injection", "fault-injections"),
 		Entry("global-secret", "global-secrets"),
-		Entry("healthcheck", "healthchecks"),
 		Entry("mesh", "meshes"),
-		Entry("proxytemplate", "proxytemplates"),
-		Entry("rate-limit", "rate-limits"),
-		Entry("retry", "retries"),
 		Entry("secret", "secrets"),
-		Entry("traffic-log", "traffic-logs"),
-		Entry("traffic-permission", "traffic-permissions"),
-		Entry("traffic-route", "traffic-routes"),
-		Entry("traffic-trace", "traffic-traces"),
 		Entry("zone-ingress", "zone-ingresses"),
 		Entry("zoneegress", "zoneegresses"),
 		Entry("zone", "zones"),

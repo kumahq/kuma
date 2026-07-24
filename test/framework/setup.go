@@ -2,6 +2,7 @@ package framework
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -20,13 +21,14 @@ import (
 	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_rest "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	bootstrap_k8s "github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/tls"
-	tproxy_consts "github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_rest "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
+	common_k8s "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/tls"
+	tproxy_consts "github.com/kumahq/kuma/v3/pkg/transparentproxy/consts"
 )
 
 type InstallFunc func(cluster Cluster) error
@@ -75,9 +77,9 @@ func YamlK8sObject(obj runtime.Object) InstallFunc {
 			return err
 		}
 
-		_, err = retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
+		_, err = retry.DoWithRetryContextE(cluster.GetTesting(), context.Background(), "install yaml resource", DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				return "", k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), string(bytes))
+				return "", k8s.KubectlApplyFromStringContextE(cluster.GetTesting(), context.Background(), cluster.GetKubectlOptions(), string(bytes))
 			})
 		return err
 	}
@@ -85,10 +87,10 @@ func YamlK8sObject(obj runtime.Object) InstallFunc {
 
 func YamlK8s(yamls ...string) InstallFunc {
 	return func(cluster Cluster) error {
-		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
+		_, err := retry.DoWithRetryContextE(cluster.GetTesting(), context.Background(), "install yaml resource", DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				for _, yaml := range yamls {
-					if err := k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml); err != nil {
+					if err := k8s.KubectlApplyFromStringContextE(cluster.GetTesting(), context.Background(), cluster.GetKubectlOptions(), yaml); err != nil {
 						return "", err
 					}
 				}
@@ -100,10 +102,10 @@ func YamlK8s(yamls ...string) InstallFunc {
 
 func DeleteYamlK8s(yamls ...string) InstallFunc {
 	return func(cluster Cluster) error {
-		_, err := retry.DoWithRetryE(cluster.GetTesting(), "delete yaml resource", DefaultRetries, DefaultTimeout,
+		_, err := retry.DoWithRetryContextE(cluster.GetTesting(), context.Background(), "delete yaml resource", DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				for _, yaml := range yamls {
-					if err := k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml); err != nil {
+					if err := k8s.KubectlDeleteFromStringContextE(cluster.GetTesting(), context.Background(), cluster.GetKubectlOptions(), yaml); err != nil {
 						return "", err
 					}
 				}
@@ -141,20 +143,10 @@ kind: Mesh
 metadata:
   name: %s
 `, name)
-	return YamlK8s(mesh)
-}
-
-func MeshWithMeshServicesKubernetes(name string, meshServicesEnabled string) InstallFunc {
-	mesh := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  meshServices:
-    mode: %s
-`, name, meshServicesEnabled)
-	return YamlK8s(mesh)
+	return Combine(
+		YamlK8s(mesh),
+		WaitMeshKubernetesReady(name),
+	)
 }
 
 func MTLSMeshKubernetes(name string) InstallFunc {
@@ -170,7 +162,10 @@ spec:
       - name: ca-1
         type: builtin
 `, name)
-	return YamlK8s(mesh)
+	return Combine(
+		YamlK8s(mesh),
+		WaitMeshKubernetesReady(name),
+	)
 }
 
 func MTLSMeshKubernetesWithEgressRouting(name string) InstallFunc {
@@ -188,7 +183,57 @@ spec:
       - name: ca-1
         type: builtin
 `, name)
-	return YamlK8s(mesh)
+	return Combine(
+		YamlK8s(mesh),
+		WaitMeshKubernetesReady(name),
+	)
+}
+
+func WaitMeshKubernetesReady(name string) InstallFunc {
+	return func(cluster Cluster) error {
+		_, err := retry.DoWithRetryContextE(
+			cluster.GetTesting(),
+			context.Background(),
+			fmt.Sprintf("wait for mesh %q defaults to be generated", name),
+			DefaultRetries,
+			DefaultTimeout,
+			func() (string, error) {
+				out, err := k8s.RunKubectlAndGetOutputContextE(
+					cluster.GetTesting(),
+					context.Background(),
+					cluster.GetKubectlOptions(),
+					"get",
+					"mesh",
+					name,
+					"-o",
+					"json",
+				)
+				if err != nil {
+					return "", err
+				}
+
+				var mesh struct {
+					Metadata struct {
+						Annotations map[string]string `json:"annotations"`
+					} `json:"metadata"`
+				}
+				if err := json.Unmarshal([]byte(out), &mesh); err != nil {
+					return "", err
+				}
+
+				if mesh.Metadata.Annotations[common_k8s.K8sMeshDefaultsGenerated] != "true" {
+					return "", errors.Errorf(
+						"mesh %q defaults annotation %q is not ready yet",
+						name,
+						common_k8s.K8sMeshDefaultsGenerated,
+					)
+				}
+
+				return "", nil
+			},
+		)
+		return err
+	}
 }
 
 func MeshTrafficPermissionAllowAllKubernetes(name string) InstallFunc {
@@ -209,6 +254,36 @@ spec:
       default:
         action: Allow`, name, Config.KumaNamespace)
 	return YamlK8s(mtp)
+}
+
+// MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity is the 'rules'-based
+// counterpart of MeshTrafficPermissionAllowAllKubernetes for meshes using
+// MeshIdentity, where the legacy 'from' form is ignored. See
+// MeshTrafficPermissionAllowAllUniversalWorkloadIdentity for the SPIFFE ID
+// prefix constraints.
+func MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(name string, trustDomains ...string) InstallFunc {
+	fns := make([]InstallFunc, 0, len(trustDomains))
+	for i, td := range trustDomains {
+		mtp := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  namespace: %[2]s
+  name: allow-all-%[1]s-%[3]d.%[2]s
+  labels:
+    kuma.io/mesh: %[1]s
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[4]s"`, name, Config.KumaNamespace, i, td)
+		fns = append(fns, YamlK8s(mtp))
+	}
+	return Combine(fns...)
 }
 
 func MTLSMeshUniversal(name string) InstallFunc {
@@ -239,178 +314,6 @@ mtls:
 	return YamlUniversal(mesh)
 }
 
-func TrafficRouteKubernetes(name string) InstallFunc {
-	tr := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: TrafficRoute
-mesh: %[1]s
-metadata:
-  name: route-all-%[1]s
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: '*'
-  conf:
-    loadBalancer:
-      roundRobin: {}
-    destination:
-      kuma.io/service: '*'`, name)
-	return YamlK8s(tr)
-}
-
-func TrafficRouteUniversal(name string) InstallFunc {
-	tr := fmt.Sprintf(`
-type: TrafficRoute
-name: route-all-%[1]s
-mesh: %[1]s
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'
-conf:
-  loadBalancer:
-    roundRobin: {}
-  destination:
-    kuma.io/service: '*'`, name)
-	return YamlUniversal(tr)
-}
-
-func TrafficPermissionUniversal(name string) InstallFunc {
-	tp := fmt.Sprintf(`
-type: TrafficPermission
-name: allow-all-%[1]s
-mesh: %[1]s
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'`, name)
-	return YamlUniversal(tp)
-}
-
-func TrafficPermissionKubernetes(name string) InstallFunc {
-	tp := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: TrafficPermission
-mesh: %[1]s
-metadata:
-  name: allow-all-%[1]s
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: '*'`, name)
-	return YamlK8s(tp)
-}
-
-func TimeoutUniversal(name string) InstallFunc {
-	timeout := fmt.Sprintf(`
-type: Timeout
-mesh: %[1]s
-name: timeout-all-%[1]s
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'
-conf:
-  connectTimeout: 5s # all protocols
-  tcp: # tcp, kafka
-    idleTimeout: 1h
-  http: # http, http2, grpc
-    requestTimeout: 15s
-    idleTimeout: 1h
-    streamIdleTimeout: 30m
-    maxStreamDuration: 0s`, name)
-	return YamlUniversal(timeout)
-}
-
-func TimeoutKubernetes(name string) InstallFunc {
-	timeout := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Timeout
-mesh: %[1]s
-metadata:
-  name: timeout-all-%[1]s
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: '*'
-  conf:
-    connectTimeout: 5s # all protocols
-    tcp: # tcp, kafka
-      idleTimeout: 1h 
-    http: # http, http2, grpc
-      requestTimeout: 15s 
-      idleTimeout: 1h
-      streamIdleTimeout: 30m
-      maxStreamDuration: 0s
-`, name)
-	return YamlK8s(timeout)
-}
-
-func CircuitBreakerUniversal(name string) InstallFunc {
-	cb := fmt.Sprintf(`
-type: CircuitBreaker
-mesh: %[1]s
-name: circuit-breaker-all-%[1]s
-sources:
-- match:
-    kuma.io/service: '*'
-destinations:
-- match:
-    kuma.io/service: '*'
-conf:
-  thresholds:
-    maxConnections: 1024
-    maxPendingRequests: 1024
-    maxRequests: 1024
-    maxRetries: 3`, name)
-	return YamlUniversal(cb)
-}
-
-func RetryUniversal(name string) InstallFunc {
-	retry := fmt.Sprintf(`
-type: Retry
-name: retry-all-%[1]s
-mesh: %[1]s
-sources:
-- match:
-    kuma.io/service: '*'
-destinations:
-- match:
-    kuma.io/service: '*'
-conf:
-  http:
-    numRetries: 5
-    perTryTimeout: 16s
-    backOff:
-      baseInterval: 25ms
-      maxInterval: 250s
-  grpc:
-    numRetries: 5
-    perTryTimeout: 16s
-    backOff:
-      baseInterval: 25ms
-      maxInterval: 250ms
-  tcp:
-    maxConnectAttempts: 5
-`, name)
-	return YamlUniversal(retry)
-}
-
 func MeshTrafficPermissionAllowAllUniversal(name string) InstallFunc {
 	mtp := fmt.Sprintf(`
 type: MeshTrafficPermission
@@ -427,9 +330,39 @@ spec:
 	return YamlUniversal(mtp)
 }
 
+// MeshTrafficPermissionAllowAllUniversalWorkloadIdentity installs an allow-all
+// MeshTrafficPermission using the 'rules' field. Under MeshIdentity the legacy
+// 'from' form is ignored, so meshes with MeshIdentity must use 'rules' with a
+// SPIFFE ID prefix. The value must be a valid SPIFFE ID, i.e. carry the full
+// trust domain and no trailing slash (a bare "spiffe://" or a trailing slash
+// fails validation). One MeshTrafficPermission is installed per trust domain
+// (they're merged anyway), which lets multizone meshes (per-zone trust domains)
+// and migrations (legacy mTLS trust domain "<mesh>" plus identity trust domains)
+// allow every expected client.
+func MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(name string, trustDomains ...string) InstallFunc {
+	fns := make([]InstallFunc, 0, len(trustDomains))
+	for i, td := range trustDomains {
+		mtp := fmt.Sprintf(`
+type: MeshTrafficPermission
+name: allow-all-%[1]s-%[2]d
+mesh: %[1]s
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[3]s"`, name, i, td)
+		fns = append(fns, YamlUniversal(mtp))
+	}
+	return Combine(fns...)
+}
+
 func YamlUniversal(yaml string) InstallFunc {
 	return func(cluster Cluster) error {
-		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
+		_, err := retry.DoWithRetryContextE(cluster.GetTesting(), context.Background(), "install yaml resource", DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				kumactl := cluster.GetKumactlOptions()
 				return "", kumactl.KumactlApplyFromString(yaml)
@@ -484,7 +417,7 @@ func Yaml(b builder) InstallFunc {
 
 func ResourceUniversal(resource model.Resource) InstallFunc {
 	return func(cluster Cluster) error {
-		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install resource", DefaultRetries, DefaultTimeout,
+		_, err := retry.DoWithRetryContextE(cluster.GetTesting(), context.Background(), "install resource", DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				kumactl := cluster.GetKumactlOptions()
 
@@ -505,9 +438,9 @@ func ResourceUniversal(resource model.Resource) InstallFunc {
 
 func YamlPathK8s(path string) InstallFunc {
 	return func(cluster Cluster) error {
-		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource by path", DefaultRetries, DefaultTimeout,
+		_, err := retry.DoWithRetryContextE(cluster.GetTesting(), context.Background(), "install yaml resource by path", DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				return "", k8s.KubectlApplyE(cluster.GetTesting(), cluster.GetKubectlOptions(), path)
+				return "", k8s.KubectlApplyContextE(cluster.GetTesting(), context.Background(), cluster.GetKubectlOptions(), path)
 			})
 		return err
 	}
@@ -522,15 +455,15 @@ func Kuma(mode core.CpMode, opt ...KumaDeploymentOption) InstallFunc {
 
 func WaitService(namespace, service string) InstallFunc {
 	return func(c Cluster) error {
-		k8s.WaitUntilServiceAvailable(c.GetTesting(), c.GetKubectlOptions(namespace), service, 10, 3*time.Second)
+		k8s.WaitUntilServiceAvailableContext(c.GetTesting(), context.Background(), c.GetKubectlOptions(namespace), service, 10, 3*time.Second)
 		return nil
 	}
 }
 
 func WaitNumPods(namespace string, num int, app string) InstallFunc {
 	return func(c Cluster) error {
-		return k8s.WaitUntilNumPodsCreatedE(
-			c.GetTesting(),
+		return k8s.WaitUntilNumPodsCreatedContextE(
+			c.GetTesting(), context.Background(),
 			c.GetKubectlOptions(namespace),
 			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", app),
@@ -552,7 +485,7 @@ func WaitPodsAvailableWithLabel(namespace, labelKey, labelValue string) InstallF
 		testingT := c.GetTesting()
 		kubectlOptions := c.GetKubectlOptions(namespace)
 
-		pods, err := k8s.ListPodsE(testingT, kubectlOptions,
+		pods, err := k8s.ListPodsContextE(testingT, context.Background(), kubectlOptions,
 			metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", labelKey, labelValue)})
 		if err != nil {
 			return err
@@ -561,7 +494,7 @@ func WaitPodsAvailableWithLabel(namespace, labelKey, labelValue string) InstallF
 		var podError error
 		for _, p := range pods {
 			pod := p
-			podError = k8s.WaitUntilPodAvailableE(testingT, kubectlOptions, pod.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
+			podError = k8s.WaitUntilPodAvailableContextE(testingT, context.Background(), kubectlOptions, pod.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
 			if podError != nil {
 				podDetails := ExtractPodDetails(testingT, c.GetKubectlOptions(namespace), pod.Name)
 				return &K8sDecoratedError{Err: podError, Details: podDetails}
@@ -574,7 +507,7 @@ func WaitPodsAvailableWithLabel(namespace, labelKey, labelValue string) InstallF
 func WaitUntilJobSucceed(namespace, app string) InstallFunc {
 	return func(c Cluster) error {
 		ck8s := c.(*K8sCluster)
-		return k8s.WaitUntilJobSucceedE(c.GetTesting(), c.GetKubectlOptions(namespace), app, ck8s.defaultRetries, ck8s.defaultTimeout)
+		return k8s.WaitUntilJobSucceedContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(namespace), app, ck8s.defaultRetries, ck8s.defaultTimeout)
 	}
 }
 
@@ -777,6 +710,7 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 					RedirectPortInbound:  redirectPortInbound,
 					RedirectPortOutbound: redirectPortOutbound,
 					ReachableServices:    opts.reachableServices,
+					ReachableBackends:    opts.reachableBackends,
 				}
 			case opts.bindOutbounds:
 				dpp.InboundPort = "13000"
@@ -973,8 +907,8 @@ func Combine(fs ...InstallFunc) InstallFunc {
 func CombineWithRetries(maxRetries int, fs ...InstallFunc) InstallFunc {
 	return func(cluster Cluster) error {
 		for _, f := range fs {
-			_, err := retry.DoWithRetryE(
-				cluster.GetTesting(),
+			_, err := retry.DoWithRetryContextE(
+				cluster.GetTesting(), context.Background(),
 				"installing component to cluster",
 				maxRetries,
 				0,
@@ -991,7 +925,7 @@ func CombineWithRetries(maxRetries int, fs ...InstallFunc) InstallFunc {
 
 func Namespace(name string) InstallFunc {
 	return func(cluster Cluster) error {
-		return k8s.CreateNamespaceE(cluster.GetTesting(), cluster.GetKubectlOptions(), name)
+		return k8s.CreateNamespaceContextE(cluster.GetTesting(), context.Background(), cluster.GetKubectlOptions(), name)
 	}
 }
 

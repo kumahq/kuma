@@ -3,34 +3,32 @@ package generator_test
 import (
 	"context"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	test_xds "github.com/kumahq/kuma/v2/pkg/test/xds"
-	"github.com/kumahq/kuma/v2/pkg/tls"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	test_xds "github.com/kumahq/kuma/v3/pkg/test/xds"
+	"github.com/kumahq/kuma/v3/pkg/tls"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 )
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
 	type testCase struct {
-		mesh            string
-		dataplane       string
-		profile         string
-		expected        string
-		features        xds_types.Features
-		meshServiceMode mesh_proto.Mesh_MeshServices_Mode
+		mesh      string
+		dataplane string
+		profile   string
+		expected  string
+		features  xds_types.Features
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -60,25 +58,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				},
 			}
 			resources := xds_context.NewResources()
-			resources.MeshLocalResources[core_mesh.TrafficRouteType] = &core_mesh.TrafficRouteResourceList{
-				Items: []*core_mesh.TrafficRouteResource{{
-					Meta: &test_model.ResourceMeta{Name: "default-allow-all"},
-					Spec: &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Destination: mesh_proto.MatchAnyService(),
-							LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
-								LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
-							},
-						},
-					},
-				}},
-			}
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					CLACache: &test_xds.DummyCLACache{OutboundTargets: outboundTargets},
@@ -89,11 +68,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: &mesh_proto.Mesh{
-							MeshServices: &mesh_proto.Mesh_MeshServices{
-								Mode: given.meshServiceMode,
-							},
-						},
+						Spec: &mesh_proto.Mesh{},
 					},
 					Resources: resources,
 					ServicesInformation: map[string]*xds_context.ServiceInformation{
@@ -107,12 +82,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						},
 					},
 				},
-			}
-
-			if given.features.HasFeature(xds_types.FeatureUnifiedResourceNaming) {
-				ctx.Mesh.Resource.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{
-					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-				}
 			}
 
 			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
@@ -133,49 +102,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Routing: core_xds.Routing{
-					TrafficRoutes: core_xds.RouteMap{
-						mesh_proto.OutboundInterface{
-							DataplaneIP:   "127.0.0.1",
-							DataplanePort: 54321,
-						}: &core_mesh.TrafficRouteResource{
-							Spec: &mesh_proto.TrafficRoute{
-								Conf: &mesh_proto.TrafficRoute_Conf{
-									Destination: mesh_proto.MatchService("db"),
-								},
-							},
-						},
-						mesh_proto.OutboundInterface{
-							DataplaneIP:   "127.0.0.1",
-							DataplanePort: 59200,
-						}: &core_mesh.TrafficRouteResource{
-							Spec: &mesh_proto.TrafficRoute{
-								Conf: &mesh_proto.TrafficRoute_Conf{
-									Destination: mesh_proto.MatchService("elastic"),
-								},
-							},
-						},
-					},
 					OutboundTargets: outboundTargets,
-				},
-				Policies: core_xds.MatchedPolicies{
-					HealthChecks: core_xds.HealthCheckMap{
-						"elastic": &core_mesh.HealthCheckResource{
-							Spec: &mesh_proto.HealthCheck{
-								Sources: []*mesh_proto.Selector{
-									{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
-								},
-								Destinations: []*mesh_proto.Selector{
-									{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
-								},
-								Conf: &mesh_proto.HealthCheck_Conf{
-									Interval:           util_proto.Duration(5 * time.Second),
-									Timeout:            util_proto.Duration(4 * time.Second),
-									UnhealthyThreshold: 3,
-									HealthyThreshold:   2,
-								},
-							},
-						},
-					},
 				},
 				Metadata: &core_xds.DataplaneMetadata{
 					AdminPort:     9902,
@@ -278,7 +205,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "2-envoy-config.golden.yaml",
 		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true; readiness with Unix socket", testCase{
+		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true", testCase{
 			mesh: `
             mtls:
               enabledBackend: builtin
@@ -314,11 +241,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "3-envoy-config.golden.yaml",
-			features: map[string]bool{
-				xds_types.FeatureReadinessUnixSocket: true,
-			},
 		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true; readiness with Unix socket", testCase{
+		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true", testCase{
 			mesh: `
             mtls:
               enabledBackend: builtin
@@ -358,11 +282,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "4-envoy-config.golden.yaml",
-			features: map[string]bool{
-				xds_types.FeatureReadinessUnixSocket: true,
-			},
 		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; unified naming; readiness with Unix socket", testCase{
+		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; unified naming", testCase{
 			mesh: `
             mtls:
               enabledBackend: builtin
@@ -386,12 +307,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 tags:
                   kuma.io/service: elastic
 `,
-			profile:         core_mesh.ProfileDefaultProxy,
-			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			expected:        "5-envoy-config.golden.yaml",
+			profile:  core_mesh.ProfileDefaultProxy,
+			expected: "5-envoy-config.golden.yaml",
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
-				xds_types.FeatureReadinessUnixSocket:   true,
 			},
 		}),
 	)

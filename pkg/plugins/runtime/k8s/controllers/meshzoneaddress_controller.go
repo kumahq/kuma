@@ -19,11 +19,11 @@ import (
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	meshzoneaddress_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
-	meshzoneaddress_k8s "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/k8s/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
+	meshzoneaddress_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/k8s/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 )
 
 const (
@@ -88,7 +88,7 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 		return kube_ctrl.Result{}, r.deleteIfExists(ctx, req.NamespacedName)
 	}
 
-	meshName := util.MeshOfByLabelOrAnnotation(log, svc, namespace)
+	meshName := util.MeshOfByLabel(svc, namespace)
 
 	mza := &meshzoneaddress_k8s.MeshZoneAddress{
 		ObjectMeta: v1.ObjectMeta{

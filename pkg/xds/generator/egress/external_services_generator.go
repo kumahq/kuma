@@ -1,22 +1,17 @@
 package egress
 
 import (
-	"slices"
-
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/zoneproxy"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/zoneproxy"
 )
 
 func genExternalResources(
@@ -58,42 +53,7 @@ func getExternalServicesClusters(
 		localResources.MeshExternalServices(),
 	)
 
-	meshName := resources.Mesh.GetMeta().GetName()
-	matchAll := destinations.KumaIoServices[mesh_proto.MatchAllTag]
 	sniUsed := map[string]struct{}{}
-
-	for _, es := range resources.ExternalServices {
-		esName := es.Spec.GetService()
-		endpoints := resources.EndpointMap[esName]
-
-		if len(endpoints) == 0 || !endpoints[0].IsExternalService() {
-			continue
-		}
-
-		for _, dest := range slices.Concat(destinations.KumaIoServices[esName], matchAll) {
-			destTags := dest.WithTags("mesh", meshName)
-
-			sni := tls.SNIFromTags(destTags.WithTags(mesh_proto.ServiceTag, esName))
-			if _, ok := sniUsed[sni]; ok {
-				continue
-			}
-
-			sniUsed[sni] = struct{}{}
-
-			// There is a case where multiple meshes contain services with
-			// the same names, so we cannot use just "serviceName" as a cluster
-			// name as we would overwrite some clusters with the latest one
-			cluster := xds.NewClusterBuilder().
-				WithName(envoy_names.GetMeshClusterName(meshName, esName)).
-				WithService(esName).
-				WithSNI(sni).
-				WithExternalService(true).
-				WithTags(destTags).
-				Build()
-
-			svcAcc.Add(cluster)
-		}
-	}
 
 	for _, ref := range destinations.BackendRefs {
 		endpoints := resources.EndpointMap[ref.LegacyServiceName]
@@ -173,33 +133,16 @@ func buildExternalServiceFilterChain(
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, filterChainName).
 		Configure(envoy_listeners.ServerSideMTLS(resources.Mesh, secretsTracker, nil, nil, unifiedNaming, false)).
 		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS)).
-		Configure(envoy_listeners.MatchServerNames(cluster.SNI())).
-		// Zone Egress will configure these filter chains only for meshes with mTLS enabled, so we can safely pass here true
-		Configure(envoy_listeners.NetworkRBAC(esName, true, resources.ExternalServicePermissionMap[esName]))
+		Configure(envoy_listeners.MatchServerNames(cluster.SNI()))
 
 	// Protocol is not HTTP based, so we can use TCP proxy instead of HTTP connection manager and return early
 	if !core_meta.IsHTTPBased(endpoints[0].Protocol()) {
 		return filterChain.Configure(envoy_listeners.TcpProxyDeprecatedWithMetadata(esName, cluster))
 	}
 
-	var routes envoy_common.Routes
-	for _, rl := range resources.ExternalServiceRateLimits[esName] {
-		if rl.Spec.GetConf().GetHttp() == nil {
-			continue
-		}
-
-		routes = append(routes, envoy_common.NewRoute(
-			envoy_common.WithCluster(cluster),
-			envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
-			envoy_common.WithRateLimit(rl.Spec),
-		))
-	}
-	// Add the default fall-back route
-	routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
+	routes := envoy_common.Routes{envoy_common.NewRoute(envoy_common.WithCluster(cluster))}
 
 	return filterChain.
 		Configure(envoy_listeners.HttpConnectionManager(esName, false, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-		Configure(envoy_listeners.FaultInjection(resources.ExternalServiceFaultInjections[esName]...)).
-		Configure(envoy_listeners.RateLimit(resources.ExternalServiceRateLimits[esName])).
 		Configure(envoy_listeners.HttpOutboundRoute(routeConfigName, virtualHostName, routes, nil))
 }

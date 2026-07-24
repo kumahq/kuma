@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshtrafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -84,7 +84,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -105,8 +104,8 @@ spec:
                           type: string
                         name:
                           description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                            `MeshServiceSubset` and `MeshGatewayRoute`
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`
+                            and `MeshServiceSubset`
                           type: string
                         namespace:
                           description: |-
@@ -153,6 +152,25 @@ spec:
                             access will be allowed
                           items:
                             properties:
+                              sni:
+                                description: SNI defines a matcher configuration for
+                                  matching by SNI value carried on the TLS connection
+                                properties:
+                                  type:
+                                    description: Type defines how to match traffic
+                                      by SNI. Only `Exact` is supported.
+                                    enum:
+                                    - Exact
+                                    type: string
+                                  value:
+                                    description: Value is the SNI carried on the TLS
+                                      connection that needs to match for the configuration
+                                      to be applied
+                                    type: string
+                                required:
+                                - type
+                                - value
+                                type: object
                               spiffeID:
                                 description: SpiffeID defines a matcher configuration
                                   for SpiffeID matching
@@ -166,7 +184,7 @@ spec:
                                     - Prefix
                                     type: string
                                   value:
-                                    description: Value is SpiffeId of a client that
+                                    description: Value is SpiffeID of a client that
                                       needs to match for the configuration to be applied
                                     type: string
                                 required:
@@ -181,6 +199,25 @@ spec:
                             requests are denied
                           items:
                             properties:
+                              sni:
+                                description: SNI defines a matcher configuration for
+                                  matching by SNI value carried on the TLS connection
+                                properties:
+                                  type:
+                                    description: Type defines how to match traffic
+                                      by SNI. Only `Exact` is supported.
+                                    enum:
+                                    - Exact
+                                    type: string
+                                  value:
+                                    description: Value is the SNI carried on the TLS
+                                      connection that needs to match for the configuration
+                                      to be applied
+                                    type: string
+                                required:
+                                - type
+                                - value
+                                type: object
                               spiffeID:
                                 description: SpiffeID defines a matcher configuration
                                   for SpiffeID matching
@@ -194,7 +231,7 @@ spec:
                                     - Prefix
                                     type: string
                                   value:
-                                    description: Value is SpiffeId of a client that
+                                    description: Value is SpiffeID of a client that
                                       needs to match for the configuration to be applied
                                     type: string
                                 required:
@@ -208,6 +245,25 @@ spec:
                             will be denied
                           items:
                             properties:
+                              sni:
+                                description: SNI defines a matcher configuration for
+                                  matching by SNI value carried on the TLS connection
+                                properties:
+                                  type:
+                                    description: Type defines how to match traffic
+                                      by SNI. Only `Exact` is supported.
+                                    enum:
+                                    - Exact
+                                    type: string
+                                  value:
+                                    description: Value is the SNI carried on the TLS
+                                      connection that needs to match for the configuration
+                                      to be applied
+                                    type: string
+                                required:
+                                - type
+                                - value
+                                type: object
                               spiffeID:
                                 description: SpiffeID defines a matcher configuration
                                   for SpiffeID matching
@@ -221,7 +277,7 @@ spec:
                                     - Prefix
                                     type: string
                                   value:
-                                    description: Value is SpiffeId of a client that
+                                    description: Value is SpiffeID of a client that
                                       needs to match for the configuration to be applied
                                     type: string
                                 required:
@@ -246,7 +302,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -267,8 +322,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-

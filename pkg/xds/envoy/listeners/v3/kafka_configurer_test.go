@@ -4,10 +4,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("TcpProxyConfigurer", func() {
@@ -23,7 +23,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
 				Build()
@@ -49,11 +49,11 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			expected: `
         name: inbound:192.168.0.1:8080
         trafficDirection: INBOUND
+        enableReusePort: true
         address:
           socketAddress:
             address: 192.168.0.1
             portValue: 8080
-        enableReusePort: false
         filterChains:
         - filters:
           - name: envoy.filters.network.tcp_proxy
@@ -84,7 +84,6 @@ var _ = Describe("TcpProxyConfigurer", func() {
               socketAddress:
                 address: 127.0.0.1
                 portValue: 5432
-            enableReusePort: false
             filterChains:
             - filters:
               - name: envoy.filters.network.tcp_proxy
@@ -98,7 +97,8 @@ var _ = Describe("TcpProxyConfigurer", func() {
                     - name: db-1
                       weight: 90
             name: inbound:127.0.0.1:5432
-            trafficDirection: INBOUND`,
+            trafficDirection: INBOUND
+            enableReusePort: true`,
 		}),
 	)
 })

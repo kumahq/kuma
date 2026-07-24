@@ -4,9 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 
-	"github.com/pkg/errors"
-
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 )
 
 // signingKeyFromPublicKeyAccessor is an accessor which can be used in situation
@@ -38,10 +36,4 @@ func (s *signingKeyFromPublicKeyAccessor) GetPublicKey(ctx context.Context, keyI
 
 func (s *signingKeyFromPublicKeyAccessor) getKeyBytes(ctx context.Context, keyID KeyID) ([]byte, error) {
 	return getKeyBytes(ctx, s.resManager, s.signingKeyPrefix, keyID)
-}
-
-// GetLegacyKey is not supported for this accessor as it's not used for signing
-// keys from pre 1.4.x version of Kuma, where we used symmetric HMAC256 method of signing DP keys.
-func (s *signingKeyFromPublicKeyAccessor) GetLegacyKey(_ context.Context, _ string) ([]byte, error) {
-	return nil, errors.New("legacy key are not supported")
 }

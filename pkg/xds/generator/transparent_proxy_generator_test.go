@@ -7,24 +7,23 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	model "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 )
 
 var _ = Describe("TransparentProxyGenerator", func() {
 	type testCase struct {
-		proxy            *model.Proxy
-		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
-		expected         string
-		tlsMode          *mesh_proto.CertificateAuthorityBackend_Mode
+		proxy    *model.Proxy
+		expected string
+		tlsMode  *mesh_proto.CertificateAuthorityBackend_Mode
 	}
 
 	strictInboundPortsProxy := func(inboundPorts []uint32) *model.Proxy {
@@ -52,12 +51,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					},
 				},
 			},
-			APIVersion: envoy_common.APIV3,
-			Policies: model.MatchedPolicies{
-				TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{
-					"some-service": {Spec: &mesh_proto.TrafficLog{Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"}}},
-				},
-			},
+			APIVersion:        envoy_common.APIV3,
 			InternalAddresses: DummyInternalAddresses,
 		}
 	}
@@ -86,9 +80,6 @@ var _ = Describe("TransparentProxyGenerator", func() {
 							Name: "default",
 						},
 						Spec: &mesh_proto.Mesh{
-							MeshServices: &mesh_proto.Mesh_MeshServices{
-								Mode: given.meshServicesMode,
-							},
 							Mtls: mtls,
 							Logging: &mesh_proto.Logging{
 								Backends: []*mesh_proto.LoggingBackend{
@@ -149,16 +140,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				},
-				APIVersion: envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is not picked
-						"some-service": {
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
-							},
-						},
-					},
-				},
+				APIVersion:        envoy_common.APIV3,
 				InternalAddresses: DummyInternalAddresses,
 			},
 			expected: "02.envoy.golden.yaml",
@@ -181,15 +163,6 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					},
 				},
 				APIVersion: envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is is not picked
-						"pass_through": {
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
-							},
-						},
-					},
-				},
 			},
 			expected: "03.envoy.golden.yaml",
 		}),
@@ -211,15 +184,6 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					},
 				},
 				APIVersion: envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is not picked
-						"some-service": {
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
-							},
-						},
-					},
-				},
 			},
 			expected: "04.envoy.golden.yaml",
 		}),
@@ -241,44 +205,30 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				},
-				APIVersion: envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is not picked
-						"some-service": {
-							Spec: &mesh_proto.TrafficLog{
-								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
-							},
-						},
-					},
-				},
+				APIVersion:        envoy_common.APIV3,
 				InternalAddresses: DummyInternalAddresses,
 			},
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			expected:         "05.envoy.golden.yaml",
+			expected: "05.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict", testCase{
-			proxy:            strictInboundPortsProxy([]uint32{8080}),
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			tlsMode:          mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
-			expected:         "06.envoy.golden.yaml",
+			proxy:    strictInboundPortsProxy([]uint32{8080}),
+			tlsMode:  mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
+			expected: "06.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,permissive", testCase{
-			proxy:            strictInboundPortsProxy([]uint32{8080, 9000}),
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			tlsMode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
-			expected:         "07.envoy.golden.yaml",
+			proxy:    strictInboundPortsProxy([]uint32{8080, 9000}),
+			tlsMode:  mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
+			expected: "07.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,no tls", testCase{
-			proxy:            strictInboundPortsProxy([]uint32{8080}),
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			tlsMode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
-			expected:         "08.envoy.golden.yaml",
+			proxy:    strictInboundPortsProxy([]uint32{8080}),
+			tlsMode:  mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
+			expected: "08.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict,duplicate_ports", testCase{
-			proxy:            strictInboundPortsProxy([]uint32{8080, 8080}),
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			tlsMode:          mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
-			expected:         "10.envoy.golden.yaml",
+			proxy:    strictInboundPortsProxy([]uint32{8080, 8080}),
+			tlsMode:  mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
+			expected: "10.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict,gateway", testCase{
 			proxy: &model.Proxy{
@@ -311,9 +261,8 @@ var _ = Describe("TransparentProxyGenerator", func() {
 				Policies:          model.MatchedPolicies{},
 				InternalAddresses: DummyInternalAddresses,
 			},
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			tlsMode:          mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
-			expected:         "09.envoy.golden.yaml",
+			tlsMode:  mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
+			expected: "09.envoy.golden.yaml",
 		}),
 	)
 })

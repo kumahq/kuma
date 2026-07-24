@@ -4,9 +4,9 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
-	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 func TLSInspector() ListenerBuilderOpt {
@@ -23,11 +23,12 @@ func StatPrefix(prefix string) ListenerBuilderOpt {
 	})
 }
 
-func InboundListener(address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
+func InboundListener(address string, port uint32, protocol core_xds.SocketAddressProtocol, enableReusedPorts bool) ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.InboundListenerConfigurer{
-		Protocol: protocol,
-		Address:  address,
-		Port:     port,
+		Protocol:          protocol,
+		Address:           address,
+		Port:              port,
+		EnableReusedPorts: enableReusedPorts,
 	})
 }
 
@@ -79,12 +80,6 @@ func FilterChain(builder *FilterChainBuilder) ListenerBuilderOpt {
 			return nil
 		}),
 	)
-}
-
-func DNS(vips map[string][]string) ListenerBuilderOpt {
-	return AddListenerConfigurer(&v3.DNSConfigurer{
-		VIPs: vips,
-	})
 }
 
 func ConnectionBufferLimit(bytes uint32) ListenerBuilderOpt {

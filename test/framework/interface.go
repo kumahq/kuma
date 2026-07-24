@@ -7,11 +7,11 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
 )
 
 type InstallationMode string
@@ -118,6 +118,7 @@ type appDeploymentOptions struct {
 	proxyOnly             bool
 	serviceProbe          bool
 	reachableServices     []string
+	reachableBackends     string
 	appendDataplaneConfig string
 	boundToContainerIp    bool
 	serviceAddress        string
@@ -591,6 +592,15 @@ func WithReachableServices(services ...string) AppDeploymentOption {
 	})
 }
 
+// WithReachableBackends sets networking.transparentProxying.reachableBackends
+// on the Dataplane. The config is the YAML body under reachableBackends (e.g. a
+// `refs:` list of MeshService references). Only applies with transparent proxy.
+func WithReachableBackends(config string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.reachableBackends = config
+	})
+}
+
 func WithDockerVolumes(volumes ...string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.dockerVolumes = append(o.dockerVolumes, volumes...)
@@ -666,6 +676,7 @@ type Cluster interface {
 
 type ControlPlane interface {
 	GetName() string
+	Mode() core.CpMode
 	GetMetrics() (string, error)
 	GetMonitoringAssignment(clientId string) (string, error)
 	GetKDSServerAddress() string

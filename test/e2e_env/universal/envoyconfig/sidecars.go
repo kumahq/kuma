@@ -8,26 +8,26 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	meshaccesslog "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	meshcircuitbreaker "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	meshfaultinjection "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	meshhealthcheck "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
-	meshhttproute "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshloadbalancing "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	meshmetric "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	meshratelimit "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/api/v1alpha1"
-	meshretry "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
-	meshtimeout "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	meshtls "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
-	meshtrafficpermission "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	meshopentelemetrybackend "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	meshaccesslog "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshcircuitbreaker "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshfaultinjection "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	meshhealthcheck "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
+	meshhttproute "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshloadbalancing "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	meshmetric "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	meshratelimit "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	meshretry "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtimeout "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	meshtls "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
+	meshtrafficpermission "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 const meshName = "envoyconfig"
@@ -52,6 +52,7 @@ func Sidecars() {
 		meshloadbalancing.MeshLoadBalancingStrategyResourceTypeDescriptor,
 		meshmetric.MeshMetricResourceTypeDescriptor,
 		meshtrafficpermission.MeshTrafficPermissionResourceTypeDescriptor,
+		meshopentelemetrybackend.MeshOpenTelemetryBackendResourceTypeDescriptor,
 	))
 
 	DescribeTable("should generate proper Envoy config",
@@ -93,7 +94,6 @@ func SetupSidecarCluster() {
 				builders.Mesh().
 					WithName(meshName).
 					WithoutInitialPolicies().
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
 					WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
 			),
 		).
@@ -126,7 +126,7 @@ func SetupSidecarCluster() {
 }
 
 func CleanupAfterSidecarTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(meshName, policies...)
+	return cleanupAfterTest(meshName, []string{"demo-client", "test-server"}, MeshTrafficPermissionAllowAllUniversal(meshName), policies...)
 }
 
 func CleanupAfterSidecarSuite() {

@@ -4,8 +4,8 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 )
 
 type KdsServerConfig struct {
@@ -13,8 +13,6 @@ type KdsServerConfig struct {
 
 	// Port of a gRPC server that serves Kuma Discovery Service (KDS).
 	GrpcPort uint32 `json:"grpcPort" envconfig:"kuma_multizone_global_kds_grpc_port"`
-	// Interval for refreshing state of the world
-	RefreshInterval config_types.Duration `json:"refreshInterval" envconfig:"kuma_multizone_global_kds_refresh_interval"`
 	// Interval for flushing Zone Insights (stats of multi-zone communication)
 	ZoneInsightFlushInterval config_types.Duration `json:"zoneInsightFlushInterval" envconfig:"kuma_multizone_global_kds_zone_insight_flush_interval"`
 	// TlsEnabled turns on TLS for KDS
@@ -40,6 +38,8 @@ type KdsServerConfig struct {
 	// ResponseBackoff is a time Global CP waits before sending ACK/NACK.
 	// This is a way to slow down Zone CP from sending resources too often.
 	ResponseBackoff config_types.Duration `json:"responseBackoff" envconfig:"kuma_multizone_global_kds_response_backoff"`
+	// If true, Global CP logs full DeltaDiscoveryResponse payloads received from Zone CPs at V(1) instead of compact summaries.
+	LogPayloads bool `json:"logPayloads" envconfig:"kuma_multizone_global_kds_log_payloads"`
 	// ZoneHealthCheck holds config for ensuring zones are online
 	ZoneHealthCheck ZoneHealthCheckConfig `json:"zoneHealthCheck"`
 	Tracing         KDSServerTracing      `json:"tracing"`
@@ -57,9 +57,6 @@ func (c *KdsServerConfig) Validate() error {
 	var errs error
 	if c.GrpcPort > 65535 {
 		errs = multierr.Append(errs, errors.Errorf(".GrpcPort must be in the range [0, 65535]"))
-	}
-	if c.RefreshInterval.Duration <= 0 {
-		errs = multierr.Append(errs, errors.New(".RefreshInterval must be positive"))
 	}
 	if c.ZoneInsightFlushInterval.Duration <= 0 {
 		errs = multierr.Append(errs, errors.New(".ZoneInsightFlushInterval must be positive"))
@@ -88,8 +85,6 @@ func (c *KdsServerConfig) Validate() error {
 type KdsClientConfig struct {
 	config.BaseConfig
 
-	// Interval for refreshing state of the world
-	RefreshInterval config_types.Duration `json:"refreshInterval" envconfig:"kuma_multizone_zone_kds_refresh_interval"`
 	// If true, TLS connection to the server won't be verified.
 	TlsSkipVerify bool `json:"tlsSkipVerify" envconfig:"kuma_multizone_zone_kds_tls_skip_verify"`
 	// RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify the server by using it.
@@ -105,6 +100,8 @@ type KdsClientConfig struct {
 	// ResponseBackoff is a time Zone CP waits before sending ACK/NACK.
 	// This is a way to slow down Global CP from sending resources too often.
 	ResponseBackoff config_types.Duration `json:"responseBackoff" envconfig:"kuma_multizone_zone_kds_response_backoff"`
+	// If true, Zone CP logs full DeltaDiscoveryResponse payloads received from Global CP at V(1) instead of compact summaries.
+	LogPayloads bool `json:"logPayloads" envconfig:"kuma_multizone_zone_kds_log_payloads"`
 	// Labels allows for customizing label handling
 	Labels ZoneLabels `json:"labels"`
 }

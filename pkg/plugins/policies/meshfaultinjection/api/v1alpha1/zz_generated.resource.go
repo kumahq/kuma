@@ -15,7 +15,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 //go:embed rest.yaml
@@ -192,12 +192,14 @@ var MeshFaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName:          "Mesh Fault Injection",
 	PluralDisplayName:            "Mesh Fault Injections",
 	IsPluginOriginated:           true,
+	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
-	HasFromTargetRef:             true,
+	HasFromTargetRef:             false,
 	HasRulesTargetRef:            true,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mfi",
 	IsFromAsRules:                false,
+	Order:                        800,
 }

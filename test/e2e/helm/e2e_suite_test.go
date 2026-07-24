@@ -5,9 +5,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/test/e2e/helm"
-	"github.com/kumahq/kuma/v2/test/framework/report"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/test/e2e/helm"
+	"github.com/kumahq/kuma/v3/test/framework/report"
 )
 
 func TestE2E(t *testing.T) {
@@ -16,8 +16,6 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Zone and Global with Helm chart", Label("job-2"), Ordered, helm.ZoneAndGlobalWithHelmChart, Serial)
-	_ = Describe("Zone and Global universal mode with Helm chart", Label("job-2"), Ordered, helm.ZoneAndGlobalInUniversalModeWithHelmChart, Serial)
-	_ = Describe("Global and Zone universal mode with Helm chart", Label("job-0"), Ordered, helm.GlobalAndZoneInUniversalModeWithHelmChart, Serial)
-	_ = Describe("Upgrade Multizone with Helm", Label("job-2"), helm.UpgradingWithHelmChartMultizone, Serial)
+	_ = Describe("Zone with Helm chart and Universal Global", Label("job-0"), Ordered, helm.ZoneWithHelmChartAndUniversalGlobal, Serial)
+	_ = Describe("Upgrade Zone with Helm chart", Label("job-2"), helm.UpgradingZoneWithHelmChart, Serial)
 )

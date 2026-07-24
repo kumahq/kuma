@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func MeshLoadBalancingStrategy(config *Config) func() {
@@ -50,20 +50,20 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: %[2]s-gateway-admin_%[2]s_svc_8444
+    kind: Dataplane
+    labels:
+      app: %[2]s-gateway
   to:
     - targetRef:
         kind: MeshService
         name: test-server_%[2]s_svc_80
       default:
+        hashPolicies:
+          - type: Header
+            header:
+              name: x-header
         loadBalancer:
           type: RingHash
-          ringHash:
-            hashPolicies:
-              - type: Header
-                header:
-                  name: x-header
 `, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
 
 			Eventually(func(g Gomega) {

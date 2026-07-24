@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.1
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: meshpassthroughs.kuma.io
 spec:
   group: kuma.io
@@ -117,7 +117,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -138,8 +137,8 @@ spec:
                     type: string
                   name:
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                      and `MeshServiceSubset`
                     type: string
                   namespace:
                     description: |-

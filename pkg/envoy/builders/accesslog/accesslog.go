@@ -4,14 +4,15 @@ import (
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
+	access_loggers_cel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/filters/cel/v3"
 	access_loggers_otel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	. "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 func NewBuilder() *Builder[envoy_accesslog.AccessLog] {
@@ -35,6 +36,28 @@ func Config[R any](name string, builder *Builder[R]) Configurer[envoy_accesslog.
 		accessLog.Name = name
 		accessLog.ConfigType = &envoy_accesslog.AccessLog_TypedConfig{
 			TypedConfig: marshaled,
+		}
+		return nil
+	}
+}
+
+func CELFilter(expression string) Configurer[envoy_accesslog.AccessLog] {
+	return func(accessLog *envoy_accesslog.AccessLog) error {
+		marshaled, err := util_proto.MarshalAnyDeterministic(&access_loggers_cel.ExpressionFilter{
+			Expression: expression,
+		})
+		if err != nil {
+			return err
+		}
+		accessLog.Filter = &envoy_accesslog.AccessLogFilter{
+			FilterSpecifier: &envoy_accesslog.AccessLogFilter_ExtensionFilter{
+				ExtensionFilter: &envoy_accesslog.ExtensionFilter{
+					Name: "envoy.access_loggers.extension_filters.cel",
+					ConfigType: &envoy_accesslog.ExtensionFilter_TypedConfig{
+						TypedConfig: marshaled,
+					},
+				},
+			},
 		}
 		return nil
 	}

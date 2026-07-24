@@ -12,10 +12,10 @@ import (
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	runtime_k8s "github.com/kumahq/kuma/v3/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/probes"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type EnvVarsByName []kube_core.EnvVar
@@ -299,51 +299,15 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: i.ControlPlaneCACert,
 		},
 	}
-	if i.envoyAdminUnixSocket {
-		// When admin is on UDS, force readiness reporter to use TCP so
-		// K8s probes (which only support TCP/HTTP) can reach it.
-		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
-			Value: "true",
-		}
-	}
-	if xdsTransportProtocol, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaXdsTransportProtocolVariant); exist {
-		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT"] = kube_core.EnvVar{
-			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
-			Value: xdsTransportProtocol,
-		}
-	}
 	if i.BuiltinDNS.Enabled {
 		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{
 			Name:  "KUMA_DNS_ENABLED",
 			Value: "true",
 		}
 
-		envVars["KUMA_DNS_ENABLE_LOGGING"] = kube_core.EnvVar{
-			Name:  "KUMA_DNS_ENABLE_LOGGING",
-			Value: strconv.FormatBool(i.BuiltinDNS.Logging),
-		}
-
-		if i.BuiltinDNS.ExperimentalProxy {
-			envVars["KUMA_DNS_PROXY_PORT"] = kube_core.EnvVar{
-				Name:  "KUMA_DNS_PROXY_PORT",
-				Value: strconv.FormatInt(int64(i.BuiltinDNS.Port), 10),
-			}
-		} else {
-			envVars["KUMA_DNS_CORE_DNS_PORT"] = kube_core.EnvVar{
-				Name:  "KUMA_DNS_CORE_DNS_PORT",
-				Value: strconv.FormatInt(int64(i.BuiltinDNS.Port), 10),
-			}
-
-			envVars["KUMA_DNS_ENVOY_DNS_PORT"] = kube_core.EnvVar{
-				Name:  "KUMA_DNS_ENVOY_DNS_PORT",
-				Value: strconv.FormatInt(int64(i.BuiltinDNS.Port+2), 10),
-			}
-
-			envVars["KUMA_DNS_CORE_DNS_BINARY_PATH"] = kube_core.EnvVar{
-				Name:  "KUMA_DNS_CORE_DNS_BINARY_PATH",
-				Value: "coredns",
-			}
+		envVars["KUMA_DNS_PROXY_PORT"] = kube_core.EnvVar{
+			Name:  "KUMA_DNS_PROXY_PORT",
+			Value: strconv.FormatInt(int64(i.BuiltinDNS.Port), 10),
 		}
 	} else {
 		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{
@@ -428,15 +392,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars[envName] = kube_core.EnvVar{
 			Name:  envName,
 			Value: envVal,
-		}
-	}
-
-	// Re-assert readiness env var after user overrides — overriding this
-	// would desync kuma-dp from the injected probes and break readiness.
-	if i.envoyAdminUnixSocket {
-		envVars["KUMA_READINESS_UNIX_SOCKET_DISABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_READINESS_UNIX_SOCKET_DISABLED",
-			Value: "true",
 		}
 	}
 

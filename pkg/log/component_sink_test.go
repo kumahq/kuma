@@ -6,8 +6,10 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 )
 
 var _ = Describe("ComponentAwareSink", func() {
@@ -117,5 +119,62 @@ var _ = Describe("ComponentAwareSink", func() {
 		newLogger().WithName("plugins").WithName("authn").WithName("tokens").V(1).Info("deep debug")
 
 		Expect(buf.String()).To(ContainSubstring("deep debug"))
+	})
+})
+
+var _ = Describe("log volume counter", Serial, func() {
+	var (
+		cv  *prometheus.CounterVec
+		buf *bytes.Buffer
+		clr *kuma_log.ComponentLevelRegistry
+	)
+
+	BeforeEach(func() {
+		reg := prometheus.NewRegistry()
+		var err error
+		cv, err = kuma_log.SetupMetrics(reg)
+		Expect(err).NotTo(HaveOccurred())
+		buf = &bytes.Buffer{}
+		clr = kuma_log.NewComponentLevelRegistry()
+		DeferCleanup(kuma_log.ResetMetrics)
+	})
+
+	newLogger := func() logr.Logger {
+		return kuma_log.NewLoggerToWithRegistry(buf, kuma_log.InfoLevel, clr)
+	}
+
+	count := func(logger, level string) float64 {
+		return testutil.ToFloat64(cv.WithLabelValues(logger, level))
+	}
+
+	It("increments info counter per logger", func() {
+		newLogger().WithName("xds").Info("hello")
+		Expect(count("xds", "info")).To(Equal(1.0))
+	})
+
+	It("increments error counter per logger", func() {
+		newLogger().WithName("kds").Error(nil, "oops")
+		Expect(count("kds", "error")).To(Equal(1.0))
+	})
+
+	It("increments debug counter for V(1) calls", func() {
+		Expect(clr.SetLevel("xds", kuma_log.DebugLevel)).To(Succeed())
+		newLogger().WithName("xds").V(1).Info("verbose")
+		Expect(count("xds", "debug")).To(Equal(1.0))
+	})
+
+	It("counts multiple calls", func() {
+		l := newLogger().WithName("api")
+		l.Info("one")
+		l.Info("two")
+		l.Info("three")
+		Expect(count("api", "info")).To(Equal(3.0))
+	})
+
+	It("tracks separate loggers independently", func() {
+		newLogger().WithName("xds").Info("from xds")
+		newLogger().WithName("kds").Info("from kds")
+		Expect(count("xds", "info")).To(Equal(1.0))
+		Expect(count("kds", "info")).To(Equal(1.0))
 	})
 })

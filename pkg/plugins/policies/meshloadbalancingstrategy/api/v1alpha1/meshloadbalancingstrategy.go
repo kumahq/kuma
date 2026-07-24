@@ -5,10 +5,11 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // MeshLoadBalancingStrategy configures how traffic is distributed across service instances. It supports multiple load balancing algorithms (round-robin, least request, ring hash, random, maglev), locality-aware routing to prefer nearby instances, and cross-zone failover strategies for high availability.
+// +kuma:policy:order=400
 type MeshLoadBalancingStrategy struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

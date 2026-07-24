@@ -3,8 +3,8 @@ package v1alpha1
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	. "github.com/kumahq/kuma/v2/pkg/test/resources/validators"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
 )
 
 var _ = Describe("validation", func() {
@@ -15,8 +15,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   sidecar:
     profiles:
@@ -44,22 +43,25 @@ default:
           mode: "ProvidedTLS"
     - type: OpenTelemetry
       openTelemetry:
-        endpoint: otel-collector:4778
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          labels:
+            kuma.io/display-name: my-otel
 `),
 		Entry("openTelemetry with backendRef", `
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
       openTelemetry:
         backendRef:
           kind: MeshOpenTelemetryBackend
-          name: my-otel
+          labels:
+            kuma.io/display-name: my-otel
 `),
 	)
 
@@ -76,8 +78,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: Prometheus
@@ -93,8 +94,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: Prometheus
@@ -112,8 +112,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   applications:
     - port: 95599
@@ -129,8 +128,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   sidecar:
     profiles:
@@ -150,8 +148,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   sidecar:
     profiles:
@@ -169,8 +166,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   sidecar:
     profiles:
@@ -178,96 +174,34 @@ default:
         - name: not_supported
 `),
 		ErrorCase(
-			"invalid endpoint missing port",
+			"openTelemetry backendRef missing",
 			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
-				Message: "must be in host:port format",
+				Field:   "spec.default.backends.backend[0].openTelemetry.backendRef",
+				Message: "must be defined",
 			},
 			`
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: "asdasd123"
-`),
-		ErrorCase(
-			"invalid endpoint with URL scheme",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
-				Message: "must be in host:port format, not a URL",
-			},
-			`
-type: MeshMetric
-mesh: mesh-1
-name: metrics-1
-targetRef:
-  kind: MeshService
-  name: svc-1
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: "http://endpoint:8023"
-`),
-		ErrorCase(
-			"openTelemetry neither endpoint nor backendRef",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry",
-				Message: "openTelemetry must have exactly one defined: endpoint, backendRef",
-			},
-			`
-type: MeshMetric
-mesh: mesh-1
-name: metrics-1
-targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
       openTelemetry: {}
 `),
 		ErrorCase(
-			"openTelemetry both endpoint and backendRef",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry",
-				Message: "openTelemetry must have only one type defined: endpoint, backendRef",
-			},
-			`
-type: MeshMetric
-mesh: mesh-1
-name: metrics-1
-targetRef:
-  kind: MeshService
-  name: svc-1
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: otel-collector:4778
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          name: my-otel
-`),
-		ErrorCase(
-			"openTelemetry backendRef neither name nor labels",
+			"openTelemetry backendRef no labels",
 			validators.Violation{
 				Field:   "spec.default.backends.backend[0].openTelemetry.backendRef",
-				Message: "backendRef must have exactly one defined: name, labels",
+				Message: "backendRef must have exactly one defined: labels",
 			},
 			`
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
@@ -286,8 +220,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry

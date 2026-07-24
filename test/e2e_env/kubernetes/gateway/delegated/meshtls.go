@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func MeshTLS(config *Config) func() {
@@ -27,10 +27,8 @@ metadata:
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         tlsVersion:
           min: TLS13
           max: TLS13`, config.CpNamespace, config.Mesh)

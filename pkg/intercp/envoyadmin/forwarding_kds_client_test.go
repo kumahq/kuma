@@ -8,19 +8,19 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
-	"github.com/kumahq/kuma/v2/pkg/intercp/catalog"
-	"github.com/kumahq/kuma/v2/pkg/intercp/envoyadmin"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v2/pkg/test/runtime"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/envoy/admin"
+	"github.com/kumahq/kuma/v3/pkg/intercp/catalog"
+	"github.com/kumahq/kuma/v3/pkg/intercp/envoyadmin"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/pkg/test/runtime"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Forwarding KDS Client", func() {
@@ -121,7 +121,7 @@ var _ = Describe("Forwarding KDS Client", func() {
 			createZoneInsightConnectedToGlobal("east", given.globalInstanceID, false)
 
 			// when
-			_, err := forwardingClient.Stats(context.Background(), dp, mesh_proto.AdminOutputFormat_TEXT)
+			_, err := forwardingClient.Stats(context.Background(), dp, mesh_proto.AdminOutputFormat_TEXT, false)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -139,6 +139,20 @@ var _ = Describe("Forwarding KDS Client", func() {
 			executedRequests:  1,
 		}),
 	)
+
+	It("forwarded stats request preserves Format and UsedOnly", func() {
+		// given
+		createZoneInsightConnectedToGlobal("east", otherInstanceID, false)
+
+		// when
+		_, err := forwardingClient.Stats(context.Background(), dp, mesh_proto.AdminOutputFormat_JSON, true)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(forwardClient.lastStatsReq).ToNot(BeNil())
+		Expect(forwardClient.lastStatsReq.Format).To(Equal(mesh_proto.AdminOutputFormat_JSON))
+		Expect(forwardClient.lastStatsReq.UsedOnly).To(BeTrue())
+	})
 
 	DescribeTable("when request for clusters is executed",
 		func(given testCase) {
@@ -182,6 +196,7 @@ type countingForwardClient struct {
 	xdsConfigCalled int
 	statsCalled     int
 	clustersCalled  int
+	lastStatsReq    *mesh_proto.StatsRequest
 }
 
 var _ mesh_proto.InterCPEnvoyAdminForwardServiceClient = &countingForwardClient{}
@@ -197,6 +212,7 @@ func (c *countingForwardClient) XDSConfig(ctx context.Context, in *mesh_proto.XD
 
 func (c *countingForwardClient) Stats(ctx context.Context, in *mesh_proto.StatsRequest, opts ...grpc.CallOption) (*mesh_proto.StatsResponse, error) {
 	c.statsCalled++
+	c.lastStatsReq = in
 	return &mesh_proto.StatsResponse{
 		Result: &mesh_proto.StatsResponse_Stats{
 			Stats: []byte("forwarded"),

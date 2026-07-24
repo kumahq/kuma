@@ -4,22 +4,21 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	model "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 )
 
 var _ = Describe("InboundProxyGenerator", func() {
@@ -28,7 +27,6 @@ var _ = Describe("InboundProxyGenerator", func() {
 		dataplaneMeta    *model.DataplaneMetadata
 		expected         string
 		mode             mesh_proto.CertificateAuthorityBackend_Mode
-		meshServiceMode  mesh_proto.Mesh_MeshServices_Mode
 		casByTrustDomain map[string][]xds_context.PEMBytes
 	}
 
@@ -50,9 +48,6 @@ var _ = Describe("InboundProxyGenerator", func() {
 								Mode: given.mode,
 							},
 						},
-					},
-					MeshServices: &mesh_proto.Mesh_MeshServices{
-						Mode: given.meshServiceMode,
 					},
 				},
 			}
@@ -81,142 +76,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 				},
 				SecretsTracker: envoy_common.NewSecretsTracker(xdsCtx.Mesh.Resource.Meta.GetName(), []string{xdsCtx.Mesh.Resource.Meta.GetName()}),
 				APIVersion:     envoy_common.APIV3,
-				Policies: model.MatchedPolicies{
-					TrafficPermissions: model.TrafficPermissionMap{
-						mesh_proto.InboundInterface{
-							DataplaneAdvertisedIP: "192.168.0.1",
-							DataplaneIP:           "192.168.0.1",
-							DataplanePort:         80,
-							WorkloadIP:            "192.168.0.1",
-							WorkloadPort:          8080,
-							InboundName:           "80",
-						}: &core_mesh.TrafficPermissionResource{
-							Meta: &test_model.ResourceMeta{
-								Name: "tp-1",
-								Mesh: "default",
-							},
-							Spec: &mesh_proto.TrafficPermission{
-								Sources: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"kuma.io/service": "web1",
-											"version":         "1.0",
-										},
-									},
-								},
-								Destinations: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"kuma.io/service": "backend1",
-											"env":             "dev",
-										},
-									},
-								},
-							},
-						},
-					},
-					FaultInjections: model.FaultInjectionMap{
-						mesh_proto.InboundInterface{
-							DataplaneAdvertisedIP: "192.168.0.1",
-							DataplaneIP:           "192.168.0.1",
-							DataplanePort:         80,
-							WorkloadIP:            "192.168.0.1",
-							WorkloadPort:          8080,
-							InboundName:           "80",
-						}: []*core_mesh.FaultInjectionResource{{Spec: &mesh_proto.FaultInjection{
-							Sources: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "frontend",
-									},
-								},
-							},
-							Destinations: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "backend1",
-									},
-								},
-							},
-							Conf: &mesh_proto.FaultInjection_Conf{
-								Delay: &mesh_proto.FaultInjection_Conf_Delay{
-									Percentage: util_proto.Double(50),
-									Value:      util_proto.Duration(time.Second * 5),
-								},
-							},
-						}}},
-					},
-					RateLimitsInbound: model.InboundRateLimitsMap{
-						mesh_proto.InboundInterface{
-							DataplaneAdvertisedIP: "192.168.0.1",
-							DataplaneIP:           "192.168.0.1",
-							DataplanePort:         80,
-							WorkloadIP:            "192.168.0.1",
-							WorkloadPort:          8080,
-							InboundName:           "80",
-						}: []*core_mesh.RateLimitResource{
-							{
-								Spec: &mesh_proto.RateLimit{
-									Sources: []*mesh_proto.Selector{
-										{
-											Match: map[string]string{
-												"kuma.io/service": "frontend",
-											},
-										},
-									},
-									Destinations: []*mesh_proto.Selector{
-										{
-											Match: map[string]string{
-												"kuma.io/service": "backend1",
-											},
-										},
-									},
-									Conf: &mesh_proto.RateLimit_Conf{
-										Http: &mesh_proto.RateLimit_Conf_Http{
-											Requests: 200,
-											Interval: util_proto.Duration(time.Second * 10),
-										},
-									},
-								},
-							},
-							{
-								Spec: &mesh_proto.RateLimit{
-									Sources: []*mesh_proto.Selector{
-										{
-											Match: map[string]string{
-												"kuma.io/service": "*",
-											},
-										},
-									},
-									Destinations: []*mesh_proto.Selector{
-										{
-											Match: map[string]string{
-												"kuma.io/service": "backend1",
-											},
-										},
-									},
-									Conf: &mesh_proto.RateLimit_Conf{
-										Http: &mesh_proto.RateLimit_Conf_Http{
-											Requests: 100,
-											Interval: util_proto.Duration(time.Second * 2),
-											OnRateLimit: &mesh_proto.RateLimit_Conf_Http_OnRateLimit{
-												Status: util_proto.UInt32(404),
-												Headers: []*mesh_proto.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
-													{
-														Key:    "x-rate-limited",
-														Value:  "true",
-														Append: util_proto.Bool(false),
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				Metadata: given.dataplaneMeta,
+				Metadata:       given.dataplaneMeta,
 				InternalAddresses: []model.InternalAddress{
 					{AddressPrefix: "100.64.0.0", PrefixLen: 16},
 					{AddressPrefix: "fc00::/7", PrefixLen: 128},
@@ -274,16 +134,14 @@ var _ = Describe("InboundProxyGenerator", func() {
 			mode:          mesh_proto.CertificateAuthorityBackend_STRICT,
 		}),
 		Entry("08. transparent_proxying=false, ip_addresses=2, ports=2, unified", testCase{
-			dataplaneFile:   "8-dataplane.input.yaml",
-			dataplaneMeta:   &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
-			expected:        "8-envoy-config.golden.yaml",
-			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			dataplaneFile: "8-dataplane.input.yaml",
+			dataplaneMeta: &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
+			expected:      "8-envoy-config.golden.yaml",
 		}),
 		Entry("09. transparent_proxying=false, ip_addresses=2, ports=2, trust with old mesh mtls", testCase{
-			dataplaneFile:   "9-dataplane.input.yaml",
-			dataplaneMeta:   &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
-			expected:        "9-envoy-config.golden.yaml",
-			meshServiceMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			dataplaneFile: "9-dataplane.input.yaml",
+			dataplaneMeta: &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
+			expected:      "9-envoy-config.golden.yaml",
 			casByTrustDomain: map[string][]xds_context.PEMBytes{
 				"my-test.domain.com": {xds_context.PEMBytes("123")},
 			},

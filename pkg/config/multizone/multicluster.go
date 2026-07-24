@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 )
 
 var _ config.Config = &MultizoneConfig{}
@@ -38,7 +38,6 @@ func DefaultGlobalConfig() *GlobalConfig {
 	return &GlobalConfig{
 		KDS: &KdsServerConfig{
 			GrpcPort:                 5685,
-			RefreshInterval:          config_types.Duration{Duration: 1 * time.Second},
 			ZoneInsightFlushInterval: config_types.Duration{Duration: 10 * time.Second},
 			TlsEnabled:               true,
 			MaxMsgSize:               10 * 1024 * 1024,
@@ -46,6 +45,7 @@ func DefaultGlobalConfig() *GlobalConfig {
 			TlsMinVersion:            "TLSv1_2",
 			TlsCipherSuites:          []string{},
 			NackBackoff:              config_types.Duration{Duration: 5 * time.Second},
+			LogPayloads:              false,
 			Tracing: KDSServerTracing{
 				Enabled: true,
 			},
@@ -123,10 +123,10 @@ func DefaultZoneConfig() *ZoneConfig {
 		GlobalAddress: "",
 		Name:          "default",
 		KDS: &KdsClientConfig{
-			RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
-			MaxMsgSize:      10 * 1024 * 1024,
-			MsgSendTimeout:  config_types.Duration{Duration: 60 * time.Second},
-			NackBackoff:     config_types.Duration{Duration: 5 * time.Second},
+			MaxMsgSize:     10 * 1024 * 1024,
+			MsgSendTimeout: config_types.Duration{Duration: 60 * time.Second},
+			NackBackoff:    config_types.Duration{Duration: 5 * time.Second},
+			LogPayloads:    false,
 		},
 		DisableOriginLabelValidation: false,
 		IngressUpdateInterval:        config_types.Duration{Duration: 1 * time.Second},

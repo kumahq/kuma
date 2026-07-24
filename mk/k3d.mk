@@ -16,17 +16,19 @@ K3S_IMAGE   ?= rancher/k3s:$(K3S_VERSION)
 # --- MetalLB ---
 
 # renovate: datasource=github-tags depName=metallb packageName=metallb/metallb versioning=semver
-METALLB_VERSION ?= v0.15.3
+METALLB_VERSION ?= v0.16.1
 METALLB_MANIFESTS ?= https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
 METALLB_NAMESPACE ?= metallb-system
 
 # --- Calico ---
 
 # renovate: datasource=github-releases depName=projectcalico/tigera-operator packageName=projectcalico/calico versioning=semver
-CALICO_VERSION ?= v3.31.4
+CALICO_VERSION ?= v3.32.1
 CALICO_NAMESPACE ?= tigera-operator
 CALICO_HELM_REPO_ADDR ?= https://docs.tigera.io/calico/charts
 CALICO_HELM_REPO_NAME ?= projectcalico
+CALICO_CRDS_HELM_RELEASE ?= calico-crds
+CALICO_CRDS_HELM_CHART ?= $(CALICO_HELM_REPO_NAME)/crd.projectcalico.org.v1
 CALICO_HELM_RELEASE ?= calico
 CALICO_HELM_CHART ?= $(CALICO_HELM_REPO_NAME)/tigera-operator
 
@@ -97,15 +99,6 @@ ifeq ($(K3D_TWEAK_FS_EVICTION_RULES),true)
 		--k3s-arg "--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%@server:0"
 endif
 
-# --- eBPF ---
-# Mount bpffs inside k3d containers for eBPF-based transparent proxy.
-# On macOS Docker Desktop the mount must happen post-create; on Linux
-# it's done via a volume at cluster creation time.
-
-ifeq ($(GOOS),linux)
-K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
-endif
-
 # --- k3d-specific context ---
 
 CLUSTER_KUBECONTEXT := k3d-$(CLUSTER_NAME)
@@ -140,6 +133,7 @@ endif
 
 K3D_IMAGE_IMPORT_MODE    ?= direct
 K3D_IMAGE_IMPORT_RETRIES ?= 5
+K3D_CLUSTER_START_RETRIES ?= 3
 K3D_IMAGE_IMPORT_VERBOSE ?= true
 K3D_IMAGE_IMPORT_VERBOSE_FLAG := $(if $(filter true 1,$(K3D_IMAGE_IMPORT_VERBOSE)),--verbose,)
 
@@ -166,6 +160,11 @@ k3d/cluster/cni/setup/flannel: ; @
 k3d/cluster/cni/setup/calico:
 	$(Q)$(HELM) repo add $(CALICO_HELM_REPO_NAME) $(CALICO_HELM_REPO_ADDR) >/dev/null
 	$(Q)$(HELM) repo update $(CALICO_HELM_REPO_NAME) >/dev/null
+	$(Q)$(HELM) template $(CALICO_CRDS_HELM_RELEASE) $(CALICO_CRDS_HELM_CHART) \
+		--version $(CALICO_VERSION) | \
+		$(KUBECTL) apply --server-side -f -
+	$(Q)$(KUBECTL) wait --for=condition=Established --timeout=120s \
+		crd/installations.operator.tigera.io
 	$(Q)$(HELM) upgrade $(CALICO_HELM_RELEASE) $(CALICO_HELM_CHART) \
 		--install --create-namespace --wait \
 		--kube-context $(KUBECONTEXT) \
@@ -175,15 +174,6 @@ k3d/cluster/cni/setup/calico:
 		--set goldmane.enabled=false \
 		--set whisker.enabled=false \
 		--set defaultFelixConfiguration.enabled=false
-
-# --- eBPF setup ---
-
-.PHONY: k3d/cluster/ebpf/setup
-k3d/cluster/ebpf/setup:
-ifeq ($(GOOS),darwin)
-	$(Q)docker exec k3d-$(CLUSTER_NAME)-server-0 mount bpffs /sys/fs/bpf -t bpf && \
-	docker exec k3d-$(CLUSTER_NAME)-server-0 mount --make-shared /sys/fs/bpf
-endif
 
 # --- Helm deploy options ---
 
@@ -296,10 +286,23 @@ k3d/cluster/start:
 	$(Q)$(MAKE) k3d/docker/network/create
 	$(Q)$(MAKE) k3d/docker/credentials/setup
 	$(Q)$(MAKE) k3d/cluster/create
+	$(Q)$(MAKE) k3d/cluster/wait/api
 	$(Q)$(MAKE) k3d/cluster/cni/setup
-	$(Q)$(MAKE) k3d/cluster/ebpf/setup
 	$(Q)$(MAKE) k3d/cluster/wait
 	$(Q)$(MAKE) k3d/cluster/metallb/setup
+
+.PHONY: k3d/cluster/start/with-retry
+k3d/cluster/start/with-retry:
+	@attempts=0; \
+	while [ $$attempts -lt $(K3D_CLUSTER_START_RETRIES) ]; do \
+		attempts=$$((attempts + 1)); \
+		echo "==> k3d cluster $(CLUSTER_NAME) start attempt $$attempts/$(K3D_CLUSTER_START_RETRIES)"; \
+		$(MAKE) k3d/cluster/start && exit 0; \
+		echo "==> Attempt $$attempts failed, tearing down $(CLUSTER_NAME)..."; \
+		$(MAKE) k3d/cluster/stop || true; \
+	done; \
+	echo "==> All $(K3D_CLUSTER_START_RETRIES) attempts to start $(CLUSTER_NAME) failed"; \
+	exit 1
 
 # --- MetalLB ---
 
@@ -330,6 +333,23 @@ k3d/cluster/metallb/setup: $(METALLB_RESOURCES)
 	  --filename $(METALLB_RESOURCES)
 
 # --- Cluster wait ---
+
+.PHONY: k3d/cluster/wait/api
+k3d/cluster/wait/api: MAX_RETRIES ?= 30
+k3d/cluster/wait/api:
+	$(Q)tries=0; \
+	until $(KUBECTL) get --raw=/readyz \
+	  --context $(KUBECONTEXT) \
+	  --request-timeout 5s >/dev/null 2>&1; do \
+	  tries=$$((tries + 1)); \
+	  if [ $$tries -ge $(MAX_RETRIES) ]; then \
+	    echo "Timed out waiting for Kubernetes API readiness in $(CLUSTER_NAME)"; \
+	    docker logs k3d-$(CLUSTER_NAME)-server-0 2>&1 || true; \
+	    exit 1; \
+	  fi; \
+	  echo "Waiting for Kubernetes API in $(CLUSTER_NAME) ($$tries/$(MAX_RETRIES))..."; \
+	  sleep 1; \
+	done
 
 .PHONY: k3d/cluster/wait
 k3d/cluster/wait: NAMESPACE   ?= kube-system

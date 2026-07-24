@@ -1,19 +1,18 @@
 package bootstrap
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"strings"
 
 	"github.com/pkg/errors"
 
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/tls"
-	util_net "github.com/kumahq/kuma/v2/pkg/util/net"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/tls"
+	util_net "github.com/kumahq/kuma/v3/pkg/util/net"
 )
 
 const (
@@ -121,8 +120,7 @@ func autoconfigureTLS(cfg *kuma_cp.Config) error {
 	if cfg.General.TlsCertFile != "" {
 		return nil
 	}
-	autoconfigureLog.Info(fmt.Sprintf("directory %v will be used as a working directory, "+
-		"it could be changed using KUMA_GENERAL_WORK_DIR environment variable", cfg.General.WorkDir))
+	autoconfigureLog.Info("directory will be used as a working directory, it could be changed using KUMA_GENERAL_WORK_DIR environment variable", "workDir", cfg.General.WorkDir)
 
 	if crtFile, keyFile, err := tryReadKeyPair(workDir(cfg.General.WorkDir)); err == nil {
 		cfg.General.TlsCertFile = crtFile

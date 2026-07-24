@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	meshtrace_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	meshtrace_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/api/v1alpha1"
 )
 
 var _ = Describe("MeshTrace", func() {
@@ -27,8 +27,7 @@ var _ = Describe("MeshTrace", func() {
 			},
 			Entry("full zipkin example", `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Zipkin
@@ -50,20 +49,9 @@ default:
     random: "60.1"
     client: 40
 `),
-			Entry("with opentelemetry backend gRPC", `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: otel-collector:4317
-`),
 			Entry("with empty backends", `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends: []
   tags:
@@ -83,19 +71,7 @@ default:
 `),
 			Entry("with datadog backend", `
 targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: Datadog
-      datadog:
-        url: http://intake.datadoghq.eu:8126
-        splitService: true
-`),
-			Entry("top level MeshGateway", `
-targetRef:
-  kind: MeshGateway
-  name: edge
+  kind: Mesh
 default:
   backends:
     - type: Datadog
@@ -105,15 +81,15 @@ default:
 `),
 			Entry("with opentelemetry backendRef", `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
       openTelemetry:
         backendRef:
           kind: MeshOpenTelemetryBackend
-          name: my-otel
+          labels:
+            kuma.io/display-name: my-otel
 `),
 		)
 
@@ -141,8 +117,7 @@ default:
 			Entry("no default", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 `,
 				expected: `
 violations:
@@ -152,8 +127,7 @@ violations:
 			Entry("multiple backends", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - zipkin:
@@ -169,8 +143,7 @@ violations:
 			Entry("no url for zipkin backend", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Zipkin
@@ -184,8 +157,7 @@ violations:
 			Entry("invalid url for zipkin backend", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Zipkin
@@ -200,8 +172,7 @@ violations:
 			Entry("invalid url for datadog backend", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Datadog
@@ -216,8 +187,7 @@ violations:
 			Entry("no port for datadog backend url", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Datadog
@@ -232,8 +202,7 @@ violations:
 			Entry("invalid port for datadog backend", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Datadog
@@ -248,8 +217,7 @@ violations:
 			Entry("invalid scheme for datadog backend", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Datadog
@@ -264,8 +232,7 @@ violations:
 			Entry("path provided for datadog backend", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Datadog
@@ -280,8 +247,7 @@ violations:
 			Entry("tag missing name", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Datadog
@@ -302,8 +268,7 @@ violations:
 			Entry("tag missing type", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Datadog
@@ -321,8 +286,7 @@ violations:
 			Entry("sampling out of range", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Datadog
@@ -340,8 +304,7 @@ violations:
 			Entry("sampling invalid string", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Datadog
@@ -365,8 +328,7 @@ violations:
 			Entry("datadog backend must be defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Datadog
@@ -379,8 +341,7 @@ violations:
 			Entry("zipkin backend must be defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: Zipkin
@@ -393,8 +354,7 @@ violations:
 			Entry("openTelemetry backend must be defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
@@ -404,78 +364,24 @@ violations:
   - field: spec.default.backends[0].openTelemetry
     message: must be defined`,
 			}),
-			Entry("openTelemetry neither endpoint nor backendRef", testCase{
+			Entry("openTelemetry backendRef missing", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
-      openTelemetry:
-        endpoint: ""
+      openTelemetry: {}
 `,
 				expected: `
 violations:
-  - field: spec.default.backends[0].openTelemetry
-    message: "openTelemetry must have exactly one defined: endpoint, backendRef"`,
+  - field: spec.default.backends[0].openTelemetry.backendRef
+    message: must be defined`,
 			}),
-			Entry("openTelemetry endpoint must not be a URL", testCase{
+			Entry("openTelemetry backendRef no labels", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: "http://otel-collector:4318/v1/traces"
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].openTelemetry.endpoint
-    message: must be in host:port format, not a URL`,
-			}),
-			Entry("openTelemetry endpoint must not contain a path", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: "otel-collector:4318/v1/traces"
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].openTelemetry.endpoint
-    message: must be in host:port format, not a URL`,
-			}),
-			Entry("openTelemetry both endpoint and backendRef", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: otel-collector:4317
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          name: my-otel
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].openTelemetry
-    message: "openTelemetry must have only one type defined: endpoint, backendRef"`,
-			}),
-			Entry("openTelemetry backendRef neither name nor labels", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
@@ -486,25 +392,7 @@ default:
 				expected: `
 violations:
   - field: spec.default.backends[0].openTelemetry.backendRef
-    message: "backendRef must have exactly one defined: name, labels"`,
-			}),
-			Entry("gateway listener tags not allowed", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshGateway
-  name: edge
-  tags:
-    name: listener-1
-default:
-  backends:
-    - type: Datadog
-      datadog:
-        url: http://intake.datadoghq.eu:8126
-        splitService: true`,
-				expected: `
-violations:
-  - field: spec.targetRef.tags
-    message: must not be set with kind MeshGateway`,
+    message: "backendRef must have exactly one defined: labels"`,
 			}),
 		)
 	})

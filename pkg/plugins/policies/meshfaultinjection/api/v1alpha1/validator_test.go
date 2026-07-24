@@ -1,73 +1,20 @@
 package v1alpha1_test
 
 import (
-	. "github.com/onsi/ginkgo/v2"
+	"os"
 
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	meshfaultinjection_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/test/resources/validators"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	meshfaultinjection_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
 )
 
 var _ = Describe("MeshFaultInjection", func() {
 	DescribeValidCases(
 		meshfaultinjection_proto.NewMeshFaultInjectionResource,
 		Entry("accepts valid resource", `
-type: MeshFaultInjection
-mesh: mesh-1
-name: fi1
-targetRef:
-  kind: MeshService
-  name: backend
-from:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      http:
-        - abort:
-            httpStatus: 503
-            percentage: 50
-          delay:
-            value: 10s
-            percentage: 5
-        - delay:
-            value: 5s
-            percentage: 5
-        - responseBandwidth:
-            limit: 100Mbps
-            percentage: 5
-        - abort:
-            httpStatus: 500
-            percentage: "50.5"
-`),
-		Entry("empty faults", `
-type: MeshFaultInjection
-mesh: mesh-1
-name: fi1
-targetRef:
-  kind: MeshService
-  name: backend
-from:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      http: []
-`),
-		Entry("Kind Mesh with to and only gateway", `
-type: MeshFaultInjection
-mesh: mesh-1
-name: fi1
-targetRef:
-  kind: Mesh
-  proxyTypes: ["Gateway"]
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      http: []
-`),
-		Entry("accepts valid resource with rules", `
 type: MeshFaultInjection
 mesh: mesh-1
 name: fi1
@@ -96,60 +43,57 @@ rules:
             httpStatus: 500
             percentage: "50.5"
 `),
-	)
-
-	DescribeErrorCases(
-		meshfaultinjection_proto.NewMeshFaultInjectionResource,
-		ErrorCases("incorrect values",
-			[]validators.Violation{
-				{
-					Field:   `spec.from[0].default.http.abort[0].httpStatus`,
-					Message: `must be in inclusive range [100, 599]`,
-				},
-				{
-					Field:   `spec.from[0].default.http.abort[0].percentage`,
-					Message: `must be in inclusive range [0.0, 100.0]`,
-				},
-				{
-					Field:   "spec.from[0].default.http.delay[1].value",
-					Message: "must not be negative when defined",
-				},
-				{
-					Field:   `spec.from[0].default.http.delay[1].percentage`,
-					Message: `must be in inclusive range [0.0, 100.0]`,
-				},
-				{
-					Field:   `spec.from[0].default.http.responseBandwidth[2].limit`,
-					Message: `must be in kbps/Mbps/Gbps units`,
-				},
-				{
-					Field:   `spec.from[0].default.http.responseBandwidth[2].percentage`,
-					Message: `must be in inclusive range [0.0, 100.0]`,
-				},
-			}, `
+		Entry("empty faults", `
 type: MeshFaultInjection
 mesh: mesh-1
 name: fi1
 targetRef:
-  kind: MeshService
-  name: backend
-from:
+  kind: Mesh
+rules:
+  - default:
+      http: []
+`),
+		Entry("Kind Mesh with to and only gateway", `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+  proxyTypes: ["Gateway"]
+to:
   - targetRef:
-      kind: MeshService
-      name: web-backend
+      kind: Mesh
+    default:
+      http: []
+`),
+		Entry("accepts rules matches with sni", `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - sni:
+          type: Exact
+          value: sni.extsvc.default.zone-1.aws-aurora.8443
     default:
       http:
-      - abort:
-          httpStatus: 677
-          percentage: 111
-      - delay: 
-          value: -5s
-          percentage: 1111
-      - responseBandwidth:
-          limit: 1000
-          percentage: 1111
+        - responseBandwidth:
+            limit: 1000Mbps
+            percentage: 50
 `),
-		ErrorCases("incorrect values with rules",
+	)
+
+	It("omits the legacy from field from the generated schema", func() {
+		contents, err := os.ReadFile("rest.yaml")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(contents)).NotTo(MatchRegexp(`(?m)^\s+from:\s*$`))
+	})
+
+	DescribeErrorCases(
+		meshfaultinjection_proto.NewMeshFaultInjectionResource,
+		ErrorCases("incorrect values",
 			[]validators.Violation{
 				{
 					Field:   `spec.rules[0].default.http.abort[0].httpStatus`,
@@ -182,27 +126,46 @@ name: fi1
 targetRef:
   kind: Mesh
 rules:
-  - matches:
-      - spiffeID:
-          type: Exact
-          value: spiffe://trust.domain/service
-    default:
+  - default:
       http:
       - abort:
           httpStatus: 677
           percentage: 111
-      - delay: 
+      - delay:
           value: -5s
           percentage: 1111
       - responseBandwidth:
           limit: 1000
           percentage: 1111
 `),
+		ErrorCases("matches sni incorrect",
+			[]validators.Violation{
+				{
+					Field:   "spec.rules[0].matches[0].sni.type",
+					Message: `unrecognized type "Prefix", supported values are: Exact`,
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - sni:
+          type: Prefix
+          value: sni.extsvc.default.zone-1.aws-aurora.8443
+    default:
+      http:
+      - responseBandwidth:
+          limit: 1000Mbps
+          percentage: 50
+`),
 		ErrorCases("matches spiffeID incorrect",
 			[]validators.Violation{
 				{
 					Field:   "spec.rules[0].matches[0].spiffeID",
-					Message: "must be a valid Spiffe ID",
+					Message: "must be a valid Spiffe ID: scheme is missing or invalid",
 				},
 			}, `
 type: MeshFaultInjection
@@ -223,11 +186,11 @@ rules:
 		ErrorCases("empty values",
 			[]validators.Violation{
 				{
-					Field:   "spec.from[0].default.http.abort[0].httpStatus",
+					Field:   "spec.rules[0].default.http.abort[0].httpStatus",
 					Message: "must be in inclusive range [100, 599]",
 				},
 				{
-					Field:   "spec.from[0].default.http.responseBandwidth[2].limit",
+					Field:   "spec.rules[0].default.http.responseBandwidth[2].limit",
 					Message: "must be in kbps/Mbps/Gbps units",
 				},
 			}, `
@@ -235,13 +198,9 @@ type: MeshFaultInjection
 mesh: mesh-1
 name: fi1
 targetRef:
-  kind: MeshService
-  name: backend
-from:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
+  kind: Mesh
+rules:
+  - default:
       http:
       - abort: {}
       - delay: {}
@@ -279,11 +238,11 @@ to:
 		ErrorCases("incorrect value in percentage",
 			[]validators.Violation{
 				{
-					Field:   "spec.from[0].default.http.responseBandwidth[0].limit",
+					Field:   "spec.rules[0].default.http.responseBandwidth[0].limit",
 					Message: "must be in kbps/Mbps/Gbps units",
 				},
 				{
-					Field:   "spec.from[0].default.http.responseBandwidth[0].percentage",
+					Field:   "spec.rules[0].default.http.responseBandwidth[0].percentage",
 					Message: "string must be a valid number",
 				},
 			}, `
@@ -291,59 +250,13 @@ type: MeshFaultInjection
 mesh: mesh-1
 name: fi1
 targetRef:
-  kind: MeshService
-  name: backend
-from:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
+  kind: Mesh
+rules:
+  - default:
       http:
       - responseBandwidth:
           limit: 1000
           percentage: "xyz"`,
-		),
-		ErrorCases("MeshGateway and targetRefs",
-			[]validators.Violation{
-				{
-					Field:   "spec.from",
-					Message: "must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to",
-				},
-				{
-					Field:   "spec.to[1].targetRef.kind",
-					Message: "value 'MeshService' is not supported",
-				},
-			}, `
-type: MeshFaultInjection
-mesh: mesh-1
-name: fi1
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-      - abort:
-          httpStatus: 503
-          percentage: 50
-  - targetRef:
-      kind: MeshService
-      name: backend
-    default:
-      http:
-      - abort:
-          httpStatus: 503
-          percentage: 50
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-      - abort:
-          httpStatus: 503
-          percentage: 50`,
 		),
 	)
 })

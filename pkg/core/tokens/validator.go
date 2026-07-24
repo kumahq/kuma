@@ -10,7 +10,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
-	store_config "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
+	store_config "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 )
 
 type Validator interface {
@@ -46,24 +46,15 @@ var _ Validator = &jwtTokenValidator{}
 
 func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken Token, claims Claims) error {
 	token, err := jwt.ParseWithClaims(rawToken, claims, func(token *jwt.Token) (any, error) {
-		var keyID KeyID
 		kid, exists := token.Header[KeyIDHeader]
 		if !exists {
 			return 0, fmt.Errorf("JWT token must have %s header", KeyIDHeader)
-		} else {
-			keyID = kid.(string)
+		}
+		keyID, ok := kid.(string)
+		if !ok {
+			return 0, fmt.Errorf("JWT token %s header must be a string", KeyIDHeader)
 		}
 		switch token.Method.Alg() {
-		case jwt.SigningMethodHS256.Name:
-			var key []byte
-			var err error
-			for _, keyAccessor := range j.keyAccessors {
-				key, err = keyAccessor.GetLegacyKey(ctx, KeyIDFallbackValue)
-				if err == nil {
-					return key, nil
-				}
-			}
-			return nil, err
 		case jwt.SigningMethodRS256.Name:
 			var key *rsa.PublicKey
 			var err error
@@ -75,7 +66,7 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 			}
 			return nil, err
 		default:
-			return nil, fmt.Errorf("unsupported token alg %s. Allowed algorithms are %s and %s", token.Method.Alg(), jwt.SigningMethodRS256.Name, jwt.SigningMethodHS256)
+			return nil, fmt.Errorf("unsupported token alg %s. Allowed algorithm is %s", token.Method.Alg(), jwt.SigningMethodRS256.Name)
 		}
 	}, j.parserOptions...)
 	if err != nil {

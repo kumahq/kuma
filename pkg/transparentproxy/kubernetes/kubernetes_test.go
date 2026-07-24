@@ -22,8 +22,8 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/kubernetes"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/kubernetes"
 )
 
 var _ = Describe("kubernetes", func() {
@@ -141,41 +141,6 @@ var _ = Describe("kubernetes", func() {
 				"--redirect-inbound=false",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port=25053",
-				"--verbose",
-			},
-		}),
-		Entry("should generate for ebpf transparent proxy", testCaseKumactl{
-			pod: &kube_core.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						metadata.KumaBuiltinDNS:                                  metadata.AnnotationEnabled,
-						metadata.KumaBuiltinDNSPort:                              "25053",
-						metadata.KumaTrafficExcludeOutboundPorts:                 "11000",
-						metadata.KumaTransparentProxyingOutboundPortAnnotation:   "25100",
-						metadata.KumaGatewayAnnotation:                           metadata.AnnotationEnabled,
-						metadata.KumaTrafficExcludeInboundPorts:                  "12000",
-						metadata.KumaTransparentProxyingInboundPortAnnotation:    "25204",
-						metadata.KumaSidecarUID:                                  "12345",
-						metadata.KumaTransparentProxyingEbpf:                     metadata.AnnotationEnabled,
-						metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName: "FOO_BAR",
-						metadata.KumaTransparentProxyingEbpfBPFFSPath:            "/baz/bar/foo",
-						metadata.KumaTransparentProxyingEbpfCgroupPath:           "/foo/bar/baz",
-						metadata.KumaTransparentProxyingEbpfProgramsSourcePath:   "/foo",
-					},
-				},
-			},
-			commandLine: []string{
-				"--kuma-dp-user=12345",
-				"--redirect-outbound-port=25100",
-				"--exclude-outbound-ports=11000",
-				"--redirect-inbound=false",
-				"--redirect-all-dns-traffic",
-				"--redirect-dns-port=25053",
-				"--ebpf-enabled",
-				"--ebpf-bpffs-path=/baz/bar/foo",
-				"--ebpf-cgroup-path=/foo/bar/baz",
-				"--ebpf-programs-source-path=/foo",
-				"--ebpf-instance-ip=$(FOO_BAR)",
 				"--verbose",
 			},
 		}),

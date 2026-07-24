@@ -2,9 +2,12 @@ package framework
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -20,8 +23,37 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	bootstrap_k8s "github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s"
+	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
 )
+
+// RunKubectlWithStdinAndGetOutputE runs kubectl with the given args, piping
+// stdinData through stdin. On success returns combined stdout/stderr; on
+// failure returns a terratest-compatible "error while running command: <err>;
+// <output>" string. Use when kubectl error messages should reference "STDIN"
+// instead of a non-deterministic temp file path (terratest's *FromString
+// helpers shell out to a temp file).
+func RunKubectlWithStdinAndGetOutputE(ctx context.Context, t testing.TestingT, options *k8s.KubectlOptions, stdinData string, args ...string) (string, error) {
+	cmdArgs := []string{}
+	if options.ContextName != "" {
+		cmdArgs = append(cmdArgs, "--context", options.ContextName)
+	}
+	if options.ConfigPath != "" {
+		cmdArgs = append(cmdArgs, "--kubeconfig", options.ConfigPath)
+	}
+	if options.Namespace != "" {
+		cmdArgs = append(cmdArgs, "--namespace", options.Namespace)
+	}
+	cmdArgs = append(cmdArgs, args...)
+
+	cmd := exec.CommandContext(ctx, "kubectl", cmdArgs...)
+	cmd.Stdin = strings.NewReader(stdinData)
+	out, err := cmd.CombinedOutput()
+	output := string(out)
+	if err != nil {
+		return output, fmt.Errorf("error while running command: %w; %s", err, strings.TrimRight(output, "\n"))
+	}
+	return output, nil
+}
 
 func PodNameOfApp(cluster Cluster, name string, namespace string) (string, error) {
 	pod, err := PodOfApp(cluster, name, namespace)
@@ -33,8 +65,8 @@ func PodNameOfApp(cluster Cluster, name string, namespace string) (string, error
 }
 
 func PodOfApp(cluster Cluster, name string, namespace string) (v1.Pod, error) {
-	pods, err := k8s.ListPodsE(
-		cluster.GetTesting(),
+	pods, err := k8s.ListPodsContextE(
+		cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(namespace),
 		metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("app=%s", name),
@@ -50,8 +82,8 @@ func PodOfApp(cluster Cluster, name string, namespace string) (v1.Pod, error) {
 }
 
 func PodIPOfApp(cluster Cluster, name string, namespace string) (string, error) {
-	pods, err := k8s.ListPodsE(
-		cluster.GetTesting(),
+	pods, err := k8s.ListPodsContextE(
+		cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(namespace),
 		metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("app=%s", name),
@@ -67,10 +99,44 @@ func PodIPOfApp(cluster Cluster, name string, namespace string) (string, error) 
 }
 
 func GatewayAPICRDs(cluster Cluster) error {
-	return k8s.RunKubectlE(
-		cluster.GetTesting(),
+	if err := k8s.RunKubectlContextE(
+		cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(),
-		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml")
+		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.0/standard-install.yaml"); err != nil {
+		return err
+	}
+
+	crds := []string{
+		"gatewayclasses.gateway.networking.k8s.io",
+		"gateways.gateway.networking.k8s.io",
+		"httproutes.gateway.networking.k8s.io",
+		"referencegrants.gateway.networking.k8s.io",
+	}
+	for _, crd := range crds {
+		if err := k8s.RunKubectlContextE(
+			cluster.GetTesting(), context.Background(),
+			cluster.GetKubectlOptions(),
+			"wait", "--for", "condition=established", "--timeout=60s", "crd/"+crd); err != nil {
+			return err
+		}
+	}
+
+	_, err := retry.DoWithRetryContextE(cluster.GetTesting(), context.Background(), "wait for Gateway API discovery", 20, 3*time.Second, func() (string, error) {
+		out, err := k8s.RunKubectlAndGetOutputContextE(
+			cluster.GetTesting(), context.Background(),
+			cluster.GetKubectlOptions(),
+			"get", "--raw", "/apis/gateway.networking.k8s.io/v1beta1")
+		if err != nil {
+			return out, err
+		}
+		for _, resource := range []string{"gatewayclasses", "gateways", "httproutes", "referencegrants"} {
+			if !strings.Contains(out, fmt.Sprintf(`"name":%q`, resource)) {
+				return out, errors.Errorf("Gateway API discovery missing %s", resource)
+			}
+		}
+		return out, nil
+	})
+	return err
 }
 
 func UpdateKubeObject(
@@ -90,8 +156,8 @@ func UpdateKubeObject(
 		return errors.Errorf("no serializer for %q", runtime.ContentTypeYAML)
 	}
 
-	_, err = retry.DoWithRetryableErrorsE(t, "update object", map[string]string{"Error from server \\(Conflict\\)": "object conflict"}, 5, time.Second, func() (string, error) {
-		out, err := k8s.RunKubectlAndGetOutputE(t, k8sOpts, "get", typeName, objectName, "-o", "yaml")
+	_, err = retry.DoWithRetryableErrorsContextE(t, context.Background(), "update object", map[string]string{"Error from server \\(Conflict\\)": "object conflict"}, 5, time.Second, func() (string, error) {
+		out, err := k8s.RunKubectlAndGetOutputContextE(t, context.Background(), k8sOpts, "get", typeName, objectName, "-o", "yaml")
 		if err != nil {
 			return "", err
 		}
@@ -120,7 +186,7 @@ func UpdateKubeObject(
 			return "", err
 		}
 
-		if err := k8s.KubectlApplyFromStringE(t, k8sOpts, string(yml)); err != nil {
+		if err := k8s.KubectlApplyFromStringContextE(t, context.Background(), k8sOpts, string(yml)); err != nil {
 			return "", err
 		}
 		return "", nil
@@ -157,7 +223,7 @@ func MarshalObjectDetails(e *ObjectDetails) string {
 func ExtractDeploymentDetails(testingT testing.TestingT,
 	kubectlOptions *k8s.KubectlOptions, name string,
 ) *ObjectDetails {
-	deploy, err := k8s.GetDeploymentE(testingT, kubectlOptions, name)
+	deploy, err := k8s.GetDeploymentContextE(testingT, context.Background(), kubectlOptions, name)
 	if err != nil {
 		// might not be a Deployment, let's ignore it
 		return &ObjectDetails{RetrievalError: err}
@@ -171,7 +237,7 @@ func ExtractDeploymentDetails(testingT testing.TestingT,
 		Events:     getObjectEvents(testingT, kubectlOptions, "Deployment", name),
 	}
 
-	replicaSets, err := k8s.ListReplicaSetsE(testingT, kubectlOptions, metav1.ListOptions{
+	replicaSets, err := k8s.ListReplicaSetsContextE(testingT, context.Background(), kubectlOptions, metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(deploy.Spec.Selector.MatchLabels).String(),
 	})
 	if err != nil {
@@ -185,7 +251,7 @@ func ExtractDeploymentDetails(testingT testing.TestingT,
 		})
 	}
 
-	pods, err := k8s.ListPodsE(testingT, kubectlOptions, metav1.ListOptions{
+	pods, err := k8s.ListPodsContextE(testingT, context.Background(), kubectlOptions, metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(deploy.Spec.Selector.MatchLabels).String(),
 	})
 	if err != nil {
@@ -205,7 +271,7 @@ func ExtractDeploymentDetails(testingT testing.TestingT,
 func ExtractPodDetails(testingT testing.TestingT,
 	kubectlOptions *k8s.KubectlOptions, name string,
 ) *ObjectDetails {
-	podObject, err := k8s.GetPodE(testingT, kubectlOptions, name)
+	podObject, err := k8s.GetPodContextE(testingT, context.Background(), kubectlOptions, name)
 	if err != nil {
 		// might not be a Pod, let's ignore it
 		return &ObjectDetails{RetrievalError: err}
@@ -259,7 +325,7 @@ type simplifiedEvent struct {
 }
 
 func getObjectEvents(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, kind string, name string) []*simplifiedEvent {
-	events, _ := k8s.ListEventsE(testingT, kubectlOptions, metav1.ListOptions{
+	events, _ := k8s.ListEventsContextE(testingT, context.Background(), kubectlOptions, metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("involvedObject.kind=%s,involvedObject.name=%s", kind, name),
 	})
 	return simplifyK8sEvents(events)
@@ -270,7 +336,7 @@ func getPodLogs(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, p
 	allContainers := append([]v1.ContainerStatus{}, pod.Status.InitContainerStatuses...)
 	allContainers = append(allContainers, pod.Status.ContainerStatuses...)
 	for _, c := range allContainers {
-		logs, err := k8s.GetPodLogsE(testingT, kubectlOptions, pod, c.Name)
+		logs, err := k8s.GetPodLogsContextE(testingT, context.Background(), kubectlOptions, pod, c.Name)
 		if err != nil {
 			continue
 		}
@@ -366,8 +432,8 @@ func RestartCount(pods []v1.Pod) int {
 }
 
 func ScaleApp(cluster Cluster, app, namespace string, replicas int) error {
-	if err := k8s.RunKubectlE(
-		cluster.GetTesting(),
+	if err := k8s.RunKubectlContextE(
+		cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(namespace),
 		"scale", "deployment", app, "--replicas", strconv.Itoa(replicas),
 	); err != nil {

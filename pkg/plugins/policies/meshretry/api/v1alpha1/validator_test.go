@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	meshretry_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	meshretry_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 )
 
 var _ = Describe("MeshRetry", func() {
@@ -178,19 +178,6 @@ to:
     default:
       http:
         retryOn: 
-          - 500
-          - 409
-`),
-			Entry("target MeshHTTPRoute", `
-targetRef:
-  kind: MeshHTTPRoute
-  name: route-1
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-        retryOn:
           - 500
           - 409
 `),
@@ -517,23 +504,6 @@ violations:
   - field: spec.to[0].default.conf.http.hostSelection[2].predicate
     message: OmitPreviousPriorities must only be specified once`,
 			}),
-			Entry("top-level targetRef MeshGateway", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshGateway
-  name: gateway-1
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      tcp:
-        maxConnectAttempt: 5`,
-				expected: `
-violations:
-  - field: spec.to[0].targetRef.kind
-    message: value 'MeshService' is not supported`,
-			}),
 			Entry("top-level targetRef MeshHTTPRoute", testCase{
 				inputYaml: `
 targetRef:
@@ -549,8 +519,29 @@ to:
         - 5xx`,
 				expected: `
 violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported
   - field: spec.to[0].targetRef.kind
     message: value 'MeshService' is not supported`,
+			}),
+			Entry("top-level targetRef MeshHTTPRoute with valid to", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshHTTPRoute
+  name: route-1
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http:
+        retryOn:
+          - 500
+          - 409
+`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported`,
 			}),
 		)
 	})

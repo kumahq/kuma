@@ -3,13 +3,13 @@ package builder
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
-	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/chains"
-	. "github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/parameters"
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/rules"
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/iptables/tables"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/consts"
+	. "github.com/kumahq/kuma/v3/pkg/transparentproxy/iptables/chains"
+	. "github.com/kumahq/kuma/v3/pkg/transparentproxy/iptables/parameters"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/iptables/rules"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/iptables/tables"
+	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 func buildMeshInbound(cfg config.InitializedTrafficFlow) *Chain {
@@ -146,21 +146,21 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 				WithCommentf("prevent traffic loops by ensuring traffic from the sidecar proxy (using %s) to loopback interface is not redirected again", cfg.InboundPassthroughCIDR.String()),
 			rules.
 				NewAppendRule(
-					Protocol(Tcp(NotDestinationPortIfBool(cfg.Redirect.DNS.Enabled, consts.DNSPort))),
+					Protocol(Tcp()),
 					OutInterface(cfg.LoopbackInterfaceName),
 					NotDestination(cfg.LocalhostCIDR),
 					Match(Owner(Uid(cfg.KumaDPUser))),
 					Jump(ToUserDefinedChain(cfg.Redirect.Inbound.RedirectChainName)),
 				).
-				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", consts.DNSPort, cfg.LocalhostCIDR.String(), cfg.KumaDPUser, cfg.Redirect.Inbound.RedirectChainName),
+				WithCommentf("redirect outbound TCP traffic destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", cfg.LocalhostCIDR.String(), cfg.KumaDPUser, cfg.Redirect.Inbound.RedirectChainName),
 			rules.
 				NewAppendRule(
-					Protocol(Tcp(NotDestinationPortIfBool(cfg.Redirect.DNS.Enabled, consts.DNSPort))),
+					Protocol(Tcp()),
 					OutInterface(cfg.LoopbackInterfaceName),
 					Match(Owner(NotUid(cfg.KumaDPUser))),
 					Jump(Return()),
 				).
-				WithCommentf("return outbound TCP traffic (except to DNS port %d) destined for loopback interface, owned by any UID other than %s (kuma-dp user)", consts.DNSPort, cfg.KumaDPUser),
+				WithCommentf("return outbound TCP traffic destined for loopback interface, owned by any UID other than %s (kuma-dp user)", cfg.KumaDPUser),
 			rules.
 				NewAppendRule(
 					Match(Owner(Uid(cfg.KumaDPUser))),

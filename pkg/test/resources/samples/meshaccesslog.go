@@ -1,9 +1,9 @@
 package samples
 
 import (
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	meshaccesslog_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	meshaccesslog_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 )
 
 func MeshAccessLogFileConf() *builders.MeshAccessLogConfBuilder {
@@ -18,7 +18,7 @@ func LogFileBackend() *meshaccesslog_proto.FileBackend {
 
 func MeshAccessLogWithFileBackend() *meshaccesslog_proto.MeshAccessLogResource {
 	return builders.MeshAccessLog().
-		WithTargetRef(builders.TargetRefService("web")).
+		WithTargetRef(builders.TargetRefDataplaneLabels("kuma.io/service", "web")).
 		AddTo(builders.TargetRefMesh(), MeshAccessLogFileConf()).
 		AddTo(builders.TargetRefMesh(), MeshAccessLogFileConf()).
 		Build()
@@ -30,7 +30,7 @@ func MeshAccessLogWithZoneOriginLabel() *meshaccesslog_proto.MeshAccessLogResour
 		WithLabels(map[string]string{
 			v1alpha1.ResourceOriginLabel: string(v1alpha1.ZoneResourceOrigin),
 		}).
-		WithTargetRef(builders.TargetRefService("web")).
+		WithTargetRef(builders.TargetRefDataplaneLabels("kuma.io/service", "web")).
 		AddTo(builders.TargetRefMesh(), MeshAccessLogFileConf()).
 		AddTo(builders.TargetRefMesh(), MeshAccessLogFileConf()).
 		Build()

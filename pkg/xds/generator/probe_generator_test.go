@@ -7,15 +7,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 )
 
 var _ = Describe("ProbeGenerator", func() {
@@ -23,6 +24,7 @@ var _ = Describe("ProbeGenerator", func() {
 		dataplane            string
 		expected             string
 		appProbeProxyEnabled bool
+		unifiedNaming        bool
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -42,14 +44,24 @@ var _ = Describe("ProbeGenerator", func() {
 				Metadata: &core_xds.DataplaneMetadata{
 					AppProbeProxyEnabled: given.appProbeProxyEnabled,
 					IPv6Enabled:          true,
+					Features:             map[string]bool{xds_types.FeatureUnifiedResourceNaming: given.unifiedNaming},
 				},
 				APIVersion: envoy_common.APIV3,
 				// internal addresses are set to "localhost" addresses to the "probe" listener
 				InternalAddresses: DummyInternalAddresses,
 			}
 
+			xdsCtx := xds_context.Context{
+				Mesh: xds_context.MeshContext{
+					Resource: &core_mesh.MeshResource{
+						Meta: &test_model.ResourceMeta{Name: "default"},
+						Spec: &mesh_proto.Mesh{},
+					},
+				},
+			}
+
 			// when
-			rs, err := gen.Generate(context.Background(), nil, xds_context.Context{}, proxy)
+			rs, err := gen.Generate(context.Background(), nil, xdsCtx, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -110,6 +122,21 @@ var _ = Describe("ProbeGenerator", func() {
                 path: /8080/healthz/probe?param1=value1&param2=value2
 `,
 			expected: "04.envoy.golden.yaml",
+		}),
+		Entry("base probes with unified naming", testCase{
+			dataplane: `
+            networking:
+              inbound:
+              - port: 8080
+            probes:
+              port: 9000
+              endpoints:
+              - inboundPort: 8080
+                inboundPath: /healthz/probe
+                path: /8080/healthz/probe
+`,
+			unifiedNaming: true,
+			expected:      "06.envoy.golden.yaml",
 		}),
 		Entry("skip probes listener with application probe proxy enabled ", testCase{
 			dataplane: `

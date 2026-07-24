@@ -55,8 +55,9 @@ modificationTime: "2024-02-08T14:52:20.706742Z"
 name: timeout-3-bbzw9cc54z4bv4v5
 spec:
   targetRef:
-    kind: MeshService
-    name: api-play-002_microservice-mesh_svc_8080
+    kind: Dataplane
+    labels:
+      kuma.io/service: api-play-002_microservice-mesh_svc_8080
   to:
   - default:
       http:
@@ -78,8 +79,9 @@ modificationTime: "2024-02-08T14:52:20.692623Z"
 name: timeout-4-dv4792fw8fwvww42
 spec:
   targetRef:
-    kind: MeshService
-    name: api-play-000_microservice-mesh_svc_8080
+    kind: Dataplane
+    labels:
+      kuma.io/service: api-play-000_microservice-mesh_svc_8080
   to:
   - default:
       http:

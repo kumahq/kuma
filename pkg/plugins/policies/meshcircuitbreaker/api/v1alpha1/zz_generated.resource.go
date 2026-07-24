@@ -15,7 +15,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 //go:embed rest.yaml
@@ -192,6 +192,7 @@ var MeshCircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName:          "Mesh Circuit Breaker",
 	PluralDisplayName:            "Mesh Circuit Breakers",
 	IsPluginOriginated:           true,
+	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
 	HasFromTargetRef:             true,
@@ -200,4 +201,5 @@ var MeshCircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mcb",
 	IsFromAsRules:                true,
+	Order:                        1300,
 }

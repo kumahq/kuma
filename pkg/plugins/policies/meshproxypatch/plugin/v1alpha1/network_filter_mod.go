@@ -8,14 +8,40 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_metadata "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/jsonpatch"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_metadata "github.com/kumahq/kuma/v3/pkg/xds/envoy/metadata/v3"
+	generator_meta "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
+
+// systemListenerNameEquivalents pairs up the legacy and unified-resource-naming
+// names of well-known system listeners. Users write MeshProxyPatch's
+// listenerName against whichever naming scheme they know, but the actual
+// listener name depends on whether unified naming is enabled for the proxy -
+// a plain string match on one form would silently never match the other.
+var systemListenerNameEquivalents = [][2]string{
+	{generator_meta.TransparentOutboundNameIPv4, naming.ContextualTransparentProxyName("outbound", 4)},
+	{generator_meta.TransparentOutboundNameIPv6, naming.ContextualTransparentProxyName("outbound", 6)},
+	{generator_meta.TransparentInboundNameIPv4, naming.ContextualTransparentProxyName("inbound", 4)},
+	{generator_meta.TransparentInboundNameIPv6, naming.ContextualTransparentProxyName("inbound", 6)},
+}
+
+func listenerNameMatches(match, actual string) bool {
+	if match == actual {
+		return true
+	}
+	for _, pair := range systemListenerNameEquivalents {
+		if (match == pair[0] && actual == pair[1]) || (match == pair[1] && actual == pair[0]) {
+			return true
+		}
+	}
+	return false
+}
 
 type networkFilterModificator api.NetworkFilterMod
 
@@ -125,7 +151,7 @@ func (n *networkFilterModificator) listenerMatches(resource *core_xds.Resource) 
 	if n.Match == nil {
 		return true
 	}
-	if n.Match.ListenerName != nil && *n.Match.ListenerName != resource.Name {
+	if n.Match.ListenerName != nil && !listenerNameMatches(*n.Match.ListenerName, resource.Name) {
 		return false
 	}
 	if n.Match.Origin != nil && *n.Match.Origin != string(resource.Origin) {

@@ -14,7 +14,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 //go:embed rest.yaml
@@ -203,6 +203,7 @@ var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName:          "Mesh Trace",
 	PluralDisplayName:            "Mesh Traces",
 	IsPluginOriginated:           true,
+	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               false,
 	HasFromTargetRef:             false,
@@ -211,4 +212,5 @@ var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mtr",
 	IsFromAsRules:                false,
+	Order:                        700,
 }

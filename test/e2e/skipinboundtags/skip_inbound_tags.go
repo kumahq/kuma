@@ -1,18 +1,18 @@
 package skipinboundtags
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
 var KubeCluster *K8sCluster
@@ -53,10 +53,11 @@ spec:
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Yaml(
 				builders.Mesh().
-					WithName(meshName).
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+					WithName(meshName),
 			)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			// standalone zone CP without global resolves {{ .Zone }} to "default"
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName,
+				fmt.Sprintf("%s.default.mesh.local", meshName))).
 			Install(YamlK8s(meshIdentity)).
 			Install(Parallel(
 				testserver.Install(
@@ -79,14 +80,15 @@ spec:
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(KubeCluster)
 		Expect(KubeCluster.DeleteNamespace(namespace)).To(Succeed())
 		Expect(KubeCluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should generate dataplane with empty inbound tags", func() {
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				KubeCluster.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				KubeCluster.GetTesting(), context.Background(),
 				KubeCluster.GetKubectlOptions(Config.KumaNamespace),
 				"get", "dataplanes", "-n", Config.KumaNamespace,
 				"-l", fmt.Sprintf("k8s.kuma.io/namespace=%s", namespace),
@@ -99,8 +101,8 @@ spec:
 
 	It("should generate MeshService with dataplaneLabels selector", func() {
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				KubeCluster.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				KubeCluster.GetTesting(), context.Background(),
 				KubeCluster.GetKubectlOptions(namespace),
 				"get", "meshservices", "-n", namespace,
 				"-l", fmt.Sprintf("kuma.io/mesh=%s", meshName),
@@ -111,8 +113,8 @@ spec:
 		}, "60s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				KubeCluster.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				KubeCluster.GetTesting(), context.Background(),
 				KubeCluster.GetKubectlOptions(namespace),
 				"get", "meshservices", "-n", namespace,
 				"-l", fmt.Sprintf("kuma.io/mesh=%s", meshName),

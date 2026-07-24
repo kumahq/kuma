@@ -26,19 +26,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	meshservice_k8s "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
-	"github.com/kumahq/kuma/v2/pkg/util/k8s"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	string_util "github.com/kumahq/kuma/v2/pkg/util/strings"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshservice_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/v3/pkg/util/k8s"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	string_util "github.com/kumahq/kuma/v3/pkg/util/strings"
 )
 
 const (
@@ -60,7 +58,6 @@ type MeshServiceReconciler struct {
 	kube_event.EventRecorder
 	Log                 logr.Logger
 	Scheme              *kube_runtime.Scheme
-	ResourceConverter   k8s_common.Converter
 	InboundTagsDisabled bool
 }
 
@@ -97,7 +94,7 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		return kube_ctrl.Result{}, nil
 	}
 
-	meshName := util.MeshOfByLabelOrAnnotation(log, svc, namespace)
+	meshName := util.MeshOfByLabel(svc, namespace)
 
 	k8sMesh := v1alpha1.Mesh{}
 	if err := r.Get(ctx, kube_types.NamespacedName{Name: meshName}, &k8sMesh); err != nil {
@@ -109,38 +106,6 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 			return kube_ctrl.Result{}, nil
 		}
 		return kube_ctrl.Result{}, err
-	}
-
-	mesh := core_mesh.NewMeshResource()
-	if err := r.ResourceConverter.ToCoreResource(&k8sMesh, mesh); err != nil {
-		return kube_ctrl.Result{}, err
-	}
-
-	if mesh.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Disabled {
-		log.V(1).Info("MeshServices not enabled on Mesh, deleting existing")
-		if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
-			return kube_ctrl.Result{}, err
-		}
-		// For headless services, also delete per-pod MeshServices
-		if svc.Spec.ClusterIP == kube_core.ClusterIPNone {
-			meshServices := &meshservice_k8s.MeshServiceList{}
-			if err := r.List(
-				ctx,
-				meshServices,
-				kube_client.InNamespace(svc.Namespace),
-				kube_client.MatchingLabels(map[string]string{
-					metadata.KumaServiceName: svc.Name,
-				}),
-			); err != nil {
-				return kube_ctrl.Result{}, errors.Wrap(err, "unable to list MeshServices for headless Service")
-			}
-			for _, ms := range meshServices.Items {
-				if err := r.Delete(ctx, &ms); err != nil && !kube_apierrs.IsNotFound(err) {
-					return kube_ctrl.Result{}, errors.Wrap(err, "unable to delete MeshService for headless Service")
-				}
-			}
-		}
-		return kube_ctrl.Result{}, nil
 	}
 
 	if len(svc.GetAnnotations()) > 0 {

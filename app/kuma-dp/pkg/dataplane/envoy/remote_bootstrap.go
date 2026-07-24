@@ -17,12 +17,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
+	kuma_dp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
 type remoteBootstrapClient struct {
@@ -63,15 +63,16 @@ func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata m
 		client.Transport = &http.Transport{
 			TLSClientConfig: tlsConfig,
 		}
-		if opts.Config.ControlPlane.CaCert != "" {
+		switch {
+		case opts.Config.ControlPlane.TlsSkipVerify:
+			log.Info("[WARNING] --skip-verify is set, the Control Plane certificate will not be verified")
+			tlsConfig.InsecureSkipVerify = true // #nosec G402 -- opt-in via --skip-verify
+		case opts.Config.ControlPlane.CaCert != "":
 			certPool := x509.NewCertPool()
 			if ok := certPool.AppendCertsFromPEM([]byte(opts.Config.ControlPlane.CaCert)); !ok {
 				return nil, nil, errors.New("could not add certificate")
 			}
 			tlsConfig.RootCAs = certPool
-		} else {
-			log.Info(`[WARNING] The data plane proxy cannot verify the identity of the control plane because you are not setting the "--ca-cert-file" argument or setting the KUMA_CONTROL_PLANE_CA_CERT environment variable.`)
-			tlsConfig.InsecureSkipVerify = true // #nosec G402 -- we have the warning above
 		}
 	}
 
@@ -191,7 +192,7 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 		},
 		DynamicMetadata: metadata,
 		OtelEnv:         otelEnv,
-		DNSPort:         opts.Config.DNS.EnvoyDNSPort,
+		DNSPort:         opts.Config.DNS.ProxyPort,
 		ReadinessPort:   opts.Config.Dataplane.ReadinessPort,
 		// AppProbeProxyEnabled controls whether the per-pod HTTP probe proxy is enabled.
 		//

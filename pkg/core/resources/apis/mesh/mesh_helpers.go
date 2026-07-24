@@ -9,9 +9,9 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/ca/provided/config"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/ca/provided/config"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 func (m *MeshResource) HasPrometheusMetricsEnabled() bool {

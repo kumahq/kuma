@@ -6,9 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 )
 
 type meshedSigningKeyAccessor struct {
@@ -55,8 +55,4 @@ func (s *meshedSigningKeyAccessor) getKeyBytes(ctx context.Context, keyID KeyID)
 		return nil, errors.Wrap(err, "could not retrieve signing key")
 	}
 	return resource.Spec.GetData().GetValue(), nil
-}
-
-func (s *meshedSigningKeyAccessor) GetLegacyKey(ctx context.Context, keyID KeyID) ([]byte, error) {
-	return s.getKeyBytes(ctx, keyID)
 }

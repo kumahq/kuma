@@ -5,9 +5,9 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
 var _ = Describe("AllowedValuesHint()", func() {
@@ -208,45 +208,6 @@ sectionName: http-port
 					common_api.Dataplane,
 				},
 				IsInboundPolicy: true,
-			},
-		}),
-		Entry("MeshGateway", testCase{
-			inputYaml: `
-kind: MeshGateway
-name: gateway1
-tags:
-  listener: one
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshGateway,
-				},
-				GatewayListenerTagsAllowed: true,
-			},
-		}),
-		Entry("MeshGateway with period", testCase{
-			inputYaml: `
-kind: MeshGateway
-name: gateway.namespace
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshGateway,
-				},
-			},
-		}),
-		Entry("MeshGateway with slash in tags", testCase{
-			inputYaml: `
-kind: MeshGateway
-name: gateway.namespace
-tags:
-  port: http/443
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshGateway,
-				},
-				GatewayListenerTagsAllowed: true,
 			},
 		}),
 		Entry("MeshHTTPRoute", testCase{
@@ -623,23 +584,6 @@ violations:
     message: must not be set with kind MeshServiceSubset
 `,
 		}),
-		Entry("MeshGateway with proxyTypes", testCase{
-			inputYaml: `
-kind: MeshGateway
-name: "test"
-proxyTypes: ["Sidecar"]
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshGateway,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.proxyTypes
-    message: must not be set with kind MeshGateway
-`,
-		}),
 		Entry("Mesh with empty proxyTypes", testCase{
 			inputYaml: `
 kind: Mesh
@@ -692,55 +636,6 @@ kind: MeshGateway
 violations:
   - field: targetRef.kind
     message: value 'MeshGateway' is not supported`,
-		}),
-		Entry("MeshGateway with mesh", testCase{
-			inputYaml: `
-kind: MeshGateway
-name: gateway1
-mesh: mesh-1
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshGateway,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.mesh
-    message: must not be set with kind MeshGateway
-`,
-		}),
-		Entry("MeshGateway without name with empty tags", testCase{
-			inputYaml: `
-kind: MeshGateway
-tags: {}
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshGateway,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.name
-    message: must be set when kind is MeshGateway
-`,
-		}),
-		Entry("MeshGateway with invalid name", testCase{
-			inputYaml: `
-kind: MeshGateway
-name: "*"
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshGateway,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.name
-    message: "invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'."
-`,
 		}),
 		Entry("MeshServiceSubset when it's not supported", testCase{
 			inputYaml: `
@@ -822,24 +717,6 @@ kind: MeshGatewayRoute
 violations:
   - field: targetRef.kind
     message: value 'MeshGatewayRoute' is not supported
-`,
-		}),
-		Entry("MeshGateway and no tags allowed", testCase{
-			inputYaml: `
-kind: MeshGateway
-name: edge
-tags:
-  port: http
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshGateway,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.tags
-    message: must not be set with kind MeshGateway
 `,
 		}),
 		Entry("MeshService should not combine name with labels", testCase{

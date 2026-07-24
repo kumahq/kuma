@@ -81,33 +81,19 @@ rules:
   - apiGroups: # Gateway API
       - gateway.networking.k8s.io
     resources:
-      - gateways
-      - referencegrants
       - httproutes
     verbs:
       - get
       - list
       - watch
-  - apiGroups:
+  - apiGroups: # Gateway API legacy finalizer cleanup during upgrade
       - gateway.networking.k8s.io
     resources:
-      - gatewayclasses # ClusterScope
+      - gatewayclasses
     verbs:
-      - create
-      - delete
       - get
       - list
       - patch
-      - update
-      - watch
-  - apiGroups:
-      - gateway.networking.k8s.io
-    resources:
-      - gatewayclasses/status # ClusterScope
-    verbs:
-      - get
-      - patch
-      - update
   - apiGroups:
       - kuma.io
     resources:
@@ -131,15 +117,10 @@ rules:
       - circuitbreakers
       - virtualoutbounds
       - containerpatches
-      - externalservices
       - faultinjections
       - healthchecks
       - trafficlogs
       - traffictraces
-      - meshgateways
-      - meshgatewayroutes
-      - meshgatewayinstances
-      - meshgatewayconfigs
       - meshaccesslogs
       - meshcircuitbreakers
       - meshfaultinjections
@@ -176,8 +157,6 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
-      - meshgatewayinstances/status
-      - meshgatewayinstances/finalizers
       - meshes/finalizers
       - dataplanes/finalizers
     verbs:
@@ -256,8 +235,6 @@ rules:
     # Gateway API
       - gateway.networking.k8s.io
     resources:
-      - gateways
-      - referencegrants
       - httproutes
     verbs:
       - create
@@ -270,7 +247,6 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gateways/status
       - httproutes/status
     verbs:
       - get
@@ -364,8 +340,6 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gateways
-      - referencegrants
       - httproutes
     verbs:
       - create
@@ -378,7 +352,6 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gateways/status
       - httproutes/status
     verbs:
       - get
@@ -469,7 +442,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: f682bf0be13a5363a8fe433d046be85b64bbd62026cabcead33f236e51de8fa0
+        checksum/tls-secrets: e553765cc791cdd1dced7872505a2c7f6a1e034f9454ce4a107d9cc9a4f2b7c9
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -694,7 +667,6 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - meshgateways
           - zoneingresses
           - zoneingressinsights
           - zoneegresses
@@ -754,11 +726,8 @@ webhooks:
           - CREATE
         resources:
           - circuitbreakers
-          - externalservices
           - faultinjections
           - healthchecks
-          - meshgateways
-          - meshgatewayroutes
           - proxytemplates
           - ratelimits
           - retries
@@ -875,6 +844,8 @@ webhooks:
             - enabled
         - key: kuma.io/mesh
           operator: Exists
+        - key: k8s.kuma.io/zone-proxy-type
+          operator: Exists
     clientConfig:
       caBundle: XYZ
       service:
@@ -931,13 +902,9 @@ webhooks:
         resources:
           - circuitbreakers
           - dataplanes
-          - externalservices
           - faultinjections
-          - meshgatewayinstances
           - healthchecks
           - meshes
-          - meshgateways
-          - meshgatewayroutes
           - proxytemplates
           - ratelimits
           - retries

@@ -2,26 +2,25 @@ package v1alpha1
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 	netutils "k8s.io/utils/net"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 )
 
 func (r *MeshHTTPRouteResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path.Field("to"), validateTos(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), pointer.Deref(r.Spec.To)))
+	verr.AddErrorAt(path.Field("to"), validateTos(pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
@@ -34,10 +33,6 @@ func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) val
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshGateway,
-				common_api.MeshSubset,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
@@ -46,74 +41,55 @@ func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) val
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
 		})
 	}
 }
 
-func validateToRef(topTargetRef, targetRef common_api.TargetRef) validators.ValidationError {
-	switch topTargetRef.Kind {
-	case common_api.MeshGateway:
-		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-			},
-		})
-	default:
-		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.MeshService,
-				common_api.MeshExternalService,
-				common_api.MeshMultiZoneService,
-			},
-		})
-	}
+func validateToRef(targetRef common_api.TargetRef) validators.ValidationError {
+	return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+		SupportedKinds: []common_api.TargetRefKind{
+			common_api.MeshService,
+			common_api.MeshExternalService,
+			common_api.MeshMultiZoneService,
+		},
+	})
 }
 
-func validateTos(topTargetRef common_api.TargetRef, tos []To) validators.ValidationError {
+func validateTos(tos []To) validators.ValidationError {
 	var errs validators.ValidationError
 
 	for i, to := range tos {
 		path := validators.Root().Index(i)
-		errs.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, to.TargetRef))
-		errs.AddErrorAt(path.Field("rules"), validateRules(topTargetRef, to.Rules))
-		errs.AddErrorAt(path.Field("hostnames"), validateHostnames(topTargetRef, pointer.Deref(to.Hostnames)))
+		errs.AddErrorAt(path.Field("targetRef"), validateToRef(to.TargetRef))
+		errs.AddErrorAt(path.Field("rules"), validateRules(to.Rules))
+		errs.AddErrorAt(path.Field("hostnames"), validateHostnames(pointer.Deref(to.Hostnames)))
 	}
 
 	return errs
 }
 
-func validateRules(topTargetRef common_api.TargetRef, rules []Rule) validators.ValidationError {
+func validateRules(rules []Rule) validators.ValidationError {
 	var errs validators.ValidationError
 
 	for i, rule := range rules {
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("matches"), validateMatches(rule.Matches))
-		errs.AddErrorAt(path.Field("default").Field("filters"), validateFilters(topTargetRef, rule.Default.Filters, rule.Matches))
+		errs.AddErrorAt(path.Field("default").Field("filters"), validateFilters(rule.Default.Filters, rule.Matches))
 		errs.AddErrorAt(path.Field("default").Field("backendRefs"), validateBackendRefs(
-			topTargetRef,
 			pointer.Deref(rule.Default.BackendRefs),
-			pointer.Deref(rule.Default.Filters),
 		))
 	}
 
 	return errs
 }
 
-func validateHostnames(topTargetRef common_api.TargetRef, hostnames []string) validators.ValidationError {
+func validateHostnames(hostnames []string) validators.ValidationError {
 	var errs validators.ValidationError
 
-	path := validators.Root()
-	switch topTargetRef.Kind {
-	case common_api.MeshGateway:
-	default:
-		if len(hostnames) > 0 {
-			errs.AddViolationAt(path, validators.MustNotBeDefined)
-		}
+	if len(hostnames) > 0 {
+		errs.AddViolationAt(validators.Root(), validators.MustNotBeDefined)
 	}
 	return errs
 }
@@ -214,7 +190,7 @@ func hasAnyMatchesWithoutPrefix(matches []Match) bool {
 	return false
 }
 
-func validateFilters(topTargetRef common_api.TargetRef, filters *[]Filter, matches []Match) validators.ValidationError {
+func validateFilters(filters *[]Filter, matches []Match) validators.ValidationError {
 	var errs validators.ValidationError
 
 	if filters == nil {
@@ -261,9 +237,7 @@ func validateFilters(topTargetRef common_api.TargetRef, filters *[]Filter, match
 			}
 			errs.AddErrorAt(path.Field("urlRewrite").Field("hostname"), validatePreciseHostname(filter.URLRewrite.Hostname))
 			if pointer.Deref(filter.URLRewrite.HostToBackendHostname) {
-				if topTargetRef.Kind != common_api.MeshGateway {
-					errs.AddViolationAt(path.Field("urlRewrite").Field("hostToBackendHostname"), "can only be set with MeshGateway")
-				}
+				errs.AddViolationAt(path.Field("urlRewrite").Field("hostToBackendHostname"), validators.MustNotBeSet)
 
 				if filter.URLRewrite.Hostname != nil {
 					errs.AddViolationAt(path.Field("urlRewrite").Field("hostToBackendHostname"), "cannot be set together with hostname")
@@ -350,24 +324,9 @@ func validateHeaderModifier(modifier *HeaderModifier) validators.ValidationError
 }
 
 func validateBackendRefs(
-	topTargetRef common_api.TargetRef,
 	backendRefs []common_api.BackendRef,
-	filters []Filter,
 ) validators.ValidationError {
 	var errs validators.ValidationError
-
-	if len(backendRefs) == 0 {
-		if topTargetRef.Kind == common_api.MeshGateway {
-			containsBackendlessFilter := slices.ContainsFunc(filters, func(filter Filter) bool {
-				return filter.Type == RequestRedirectType
-			})
-
-			// Rule doesn't need to contain any backendRefs when it contains RequestRedirectType filter
-			if !containsBackendlessFilter {
-				errs.AddViolationAt(validators.Root(), validators.MustNotBeEmpty)
-			}
-		}
-	}
 
 	for i, backendRef := range backendRefs {
 		errs.AddErrorAt(

@@ -7,12 +7,12 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/portforward"
-	"github.com/kumahq/kuma/v2/test/framework/report"
-	kssh "github.com/kumahq/kuma/v2/test/framework/ssh"
-	"github.com/kumahq/kuma/v2/test/framework/universal"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/portforward"
+	"github.com/kumahq/kuma/v3/test/framework/report"
+	kssh "github.com/kumahq/kuma/v3/test/framework/ssh"
+	"github.com/kumahq/kuma/v3/test/framework/universal"
 )
 
 var (
@@ -146,16 +146,12 @@ func SetupAndGetState() []byte {
 
 	kubeZone2Options := append(
 		KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.KubeZone2),
-		WithEnv("KUMA_EXPERIMENTAL_DELTA_XDS", "true"),
 		WithMemoryLimit("512Mi"),
 		WithCNI(),
 	)
 	KubeZone2 = SetupKubeZone(&wg, Kuma2, kubeZone2Options...)
 
-	uniZone1Options := append(
-		KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.UniZone1),
-		WithEnv("KUMA_EXPERIMENTAL_DELTA_XDS", "true"),
-	)
+	uniZone1Options := KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.UniZone1)
 	UniZone1 = SetupUniZone(&wg, Kuma4, uniZone1Options...)
 
 	vipCIDROverride := "251.0.0.0/8"

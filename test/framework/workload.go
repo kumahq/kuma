@@ -1,8 +1,8 @@
 package framework
 
 import (
-	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 )
 
 func GetWorkload(cluster Cluster, workloadName, meshName string) (*workload_api.WorkloadResource, error) {

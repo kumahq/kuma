@@ -12,18 +12,18 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/kds/global"
-	"github.com/kumahq/kuma/v2/pkg/kds/zone"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/kds/setup"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_store "github.com/kumahq/kuma/v2/pkg/test/store"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/kds/global"
+	"github.com/kumahq/kuma/v3/pkg/kds/zone"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/kds/setup"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_store "github.com/kumahq/kuma/v3/pkg/test/store"
 )
 
 var _ = Describe("Full sync tests", func() {
@@ -33,6 +33,11 @@ var _ = Describe("Full sync tests", func() {
 		zones := make(map[string]store.ResourceStore)
 		wg := sync.WaitGroup{}
 		done := make(chan struct{})
+		closeOnce := sync.Once{}
+		DeferCleanup(func() {
+			closeOnce.Do(func() { close(done) })
+			wg.Wait()
+		})
 
 		for _, file := range files {
 			if before, ok := strings.CutSuffix(file.Name(), ".input.yaml"); ok {
@@ -56,6 +61,8 @@ var _ = Describe("Full sync tests", func() {
 		cfg.Multizone.Global.KDS.GrpcPort = uint32(globalPort)
 		cfg.Multizone.Global.KDS.TlsEnabled = false
 		cfg.Multizone.Global.KDS.ZoneInsightFlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+		cfg.Experimental.KDSEventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+		cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 		cfg.Mode = config_core.Global
 		rt := setup.NewTestRuntime(ctx, cfg, globalStore)
 		Expect(global.Setup(rt)).To(Succeed())
@@ -87,6 +94,8 @@ var _ = Describe("Full sync tests", func() {
 			cfg.Multizone.Zone.Name = zoneName
 			cfg.Multizone.Zone.GlobalAddress = fmt.Sprintf("grpc://localhost:%d", globalPort)
 			cfg.Multizone.Global.KDS.ZoneInsightFlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+			cfg.Experimental.KDSEventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+			cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 			rt := setup.NewTestRuntime(ctx, cfg, zoneStore)
 			Expect(zone.Setup(rt)).To(Succeed())
 			wg.Go(func() {
@@ -95,16 +104,21 @@ var _ = Describe("Full sync tests", func() {
 			})
 		}
 
-		// Wait for some time to ensure sync was complete
-		time.Sleep(time.Second * 5)
-		close(done)
-		wg.Wait()
-
-		// Compare golden files
+		// Wait until all stores converge to their expected golden state.
+		// Using Eventually instead of a fixed sleep avoids flakes on
+		// slow CI runners where 5s may not be enough for full sync.
+		// When regenerating golden files, Eventually writes partial state on
+		// the first match — sleep first to let full sync complete.
+		if os.Getenv("UPDATE_GOLDEN_FILES") != "" {
+			time.Sleep(5 * time.Second)
+		}
 		for zoneName, zoneStore := range zones {
-			out, err := test_store.ExtractResources(ctx, zoneStore)
-			Expect(err).To(Succeed())
-			Expect(out).To(matchers.MatchGoldenEqual(folder, zoneName+".golden.yaml"), "zone %s", zoneName)
+			goldenFile := zoneName + ".golden.yaml"
+			Eventually(func(g Gomega) {
+				out, err := test_store.ExtractResources(ctx, zoneStore)
+				g.Expect(err).To(Succeed())
+				g.Expect(out).To(matchers.MatchGoldenEqual(folder, goldenFile), "zone %s", zoneName)
+			}, "30s", "250ms").Should(Succeed())
 		}
 	}, test.EntriesAsFolder("full_sync"))
 })

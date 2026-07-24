@@ -8,11 +8,11 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
-	core_config "github.com/kumahq/kuma/v2/pkg/config"
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	k8s_probes "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	core_config "github.com/kumahq/kuma/v3/pkg/config"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/runtime/k8s"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	k8s_probes "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/probes"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
 )
 
 const (
@@ -174,7 +174,7 @@ func (c configurer) redirectExcludePorts(kind trafficKind) (tproxy_config.Ports,
 		source string,
 		value tproxy_config.Ports,
 	) (tproxy_config.Ports, error) {
-		l.V(1).Info(fmt.Sprintf("using exclude %s ports from the %s", kind, source))
+		l.V(1).Info("using exclude ports", "kind", kind, "source", source)
 		return value, nil
 	}
 
@@ -228,7 +228,7 @@ func (c configurer) redirectExcludePortsForIPs(kind trafficKind) []string {
 	)
 
 	logDebugUsageAndReturn := func(source string, value []string) []string {
-		l.V(1).Info(fmt.Sprintf("using exclude %s IPs from the %s", kind, source))
+		l.V(1).Info("using exclude IPs", "kind", kind, "source", source)
 		return value
 	}
 
@@ -289,7 +289,7 @@ func (c configurer) ipFamilyMode() (tproxy_config.IPFamilyMode, error) {
 		source string,
 		value tproxy_config.IPFamilyMode,
 	) (tproxy_config.IPFamilyMode, error) {
-		l.V(1).Info(fmt.Sprintf("using IP Family Mode from the %s", source))
+		l.V(1).Info("using IP family mode", "source", source)
 		return value, nil
 	}
 
@@ -431,49 +431,6 @@ func ConfigForKubernetes(
 			if err := cfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", v)); err != nil {
 				return cfg, err
 			}
-		}
-	}
-
-	if v, exists, err := annotations.GetEnabled(k8s_metadata.KumaTransparentProxyingEbpf); err != nil {
-		return cfg, err
-	} else if exists {
-		cfg.Ebpf.Enabled = v
-	}
-
-	if cfg.Ebpf.Enabled {
-		if v, _ := annotations.GetStringWithDefault(
-			runtimeCfg.EBPF.BPFFSPath,
-			k8s_metadata.KumaTransparentProxyingEbpfBPFFSPath,
-		); v != "" {
-			cfg.Ebpf.BPFFSPath = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			runtimeCfg.EBPF.CgroupPath,
-			k8s_metadata.KumaTransparentProxyingEbpfCgroupPath,
-		); v != "" {
-			cfg.Ebpf.CgroupPath = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			runtimeCfg.EBPF.TCAttachIface,
-			k8s_metadata.KumaTransparentProxyingEbpfTCAttachIface,
-		); v != "" {
-			cfg.Ebpf.TCAttachIface = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			runtimeCfg.EBPF.InstanceIPEnvVarName,
-			k8s_metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName,
-		); v != "" {
-			cfg.Ebpf.InstanceIPEnvVarName = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			runtimeCfg.EBPF.ProgramsSourcePath,
-			k8s_metadata.KumaTransparentProxyingEbpfProgramsSourcePath,
-		); v != "" {
-			cfg.Ebpf.ProgramsSourcePath = v
 		}
 	}
 

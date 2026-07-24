@@ -3,8 +3,10 @@ metadata:
   labels:
     app: zone-proxy-notready
     k8s.kuma.io/namespace: demo
+    kuma.io/display-name: zone-proxy-notready
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
+  name: zone-proxy-notready
 spec:
   networking:
     address: 192.168.0.1

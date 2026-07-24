@@ -1,24 +1,28 @@
 package v1alpha1
 
 import (
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"slices"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/api/v1alpha1"
-	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/plugin/xds"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	"github.com/pkg/errors"
+
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/merge"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/plugin/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 var (
@@ -27,6 +31,8 @@ var (
 )
 
 type plugin struct{}
+
+func (p plugin) Order() int { return api.MeshRateLimitResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
@@ -47,55 +53,21 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if proxy.Dataplane == nil {
 		return nil
 	}
+
 	policies, ok := proxy.Policies.Dynamic[api.MeshRateLimitType]
 	if !ok {
 		return nil
 	}
+
 	listeners := xds.GatherListeners(rs)
-	routes := xds.GatherRoutes(rs)
 
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy); err != nil {
 		return err
 	}
-	if err := applyToGateways(policies.GatewayRules, listeners.Gateway, routes.Gateway, proxy); err != nil {
+	if err := applyToZoneProxyListeners(policies, listeners, proxy); err != nil {
 		return err
 	}
-	return nil
-}
 
-func applyToGateways(
-	toRules core_rules.GatewayRules,
-	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
-	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
-	proxy *core_xds.Proxy,
-) error {
-	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
-		address := proxy.Dataplane.Spec.GetNetworking().Address
-		port := listenerInfo.Listener.Port
-		listenerKey := core_rules.InboundListener{
-			Address: address,
-			Port:    port,
-		}
-		gatewayListener, ok := gatewayListeners[listenerKey]
-		if !ok {
-			continue
-		}
-		rules, ok := toRules.ToRules.ByListener[listenerKey]
-		if !ok {
-			continue
-		}
-
-		for _, listenerHostname := range listenerInfo.ListenerHostnames {
-			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
-			if !ok {
-				continue
-			}
-
-			if err := configureGateway(rules.Rules, gatewayListener, route); err != nil {
-				return err
-			}
-		}
-	}
 	return nil
 }
 
@@ -106,9 +78,6 @@ func applyToInbounds(
 ) error {
 	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
 		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
-		if _, exists := proxy.Policies.RateLimitsInbound[iface]; exists {
-			continue
-		}
 
 		listenerKey := core_rules.InboundListener{
 			Address: iface.DataplaneIP,
@@ -119,12 +88,109 @@ func applyToInbounds(
 			continue
 		}
 
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
-		if err := configure(conf, listener, nil); err != nil {
+		inboundRules := fromRules.InboundRules[listenerKey]
+		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
+		applyCommonConf := len(inboundRules) == 0 || hasCatchAllInboundRule(inboundRules)
+		configurer := plugin_xds.ListenerConfigurer{
+			Conf:             conf,
+			Rules:            inboundRules,
+			SkipCommonConfig: !applyCommonConf,
+		}
+		if err := configurer.ConfigureListener(listener); err != nil {
 			return err
 		}
 	}
+
 	return nil
+}
+
+func applyToZoneProxyListeners(
+	policies core_xds.TypedMatchingPolicies,
+	listeners xds.Listeners,
+	proxy *core_xds.Proxy,
+) error {
+	networking := proxy.Dataplane.Spec.GetNetworking()
+	if !networking.HasZoneProxyListeners() {
+		return nil
+	}
+
+	for _, listener := range networking.GetListeners() {
+		var (
+			envoyListener *envoy_listener.Listener
+			ok            bool
+		)
+
+		switch listener.GetType() {
+		case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
+			envoyListener, ok = listeners.ZoneIngress[naming.ContextualZoneIngressListenerName(listener.GetSectionName())]
+		case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
+			envoyListener, ok = listeners.ZoneEgress[naming.ContextualZoneEgressListenerName(listener.GetSectionName())]
+		default:
+			continue
+		}
+		if !ok {
+			continue
+		}
+
+		inboundRules, err := buildListenerScopedInboundRules(policies, listener.GetSectionName())
+		if err != nil {
+			return err
+		}
+		if len(inboundRules) == 0 {
+			continue
+		}
+
+		if err := applyToZoneProxyListener(envoyListener, inboundRules); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func applyToZoneProxyListener(
+	listener *envoy_listener.Listener,
+	inboundRules []*rules_inbound.Rule,
+) error {
+	commonConf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
+	applyCommonConf := hasCatchAllInboundRule(inboundRules)
+
+	for _, filterChain := range listener.FilterChains {
+		matchedRules := zoneProxyFilterChainRules(inboundRules, filterChain)
+		baseConf, ok, err := effectiveZoneProxyFilterChainConf(commonConf, applyCommonConf, matchedRules)
+		if err != nil {
+			return err
+		}
+		if ok {
+			if err := plugin_xds.ConfigureFilterChain(baseConf, filterChain); err != nil {
+				return err
+			}
+		}
+
+		if err := plugin_xds.ConfigureMatchedRoutesOnFilterChain(filterChain, baseConf, inboundRules); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func effectiveZoneProxyFilterChainConf(
+	commonConf api.Conf,
+	applyCommonConf bool,
+	matchedRules []*rules_inbound.Rule,
+) (api.Conf, bool, error) {
+	confs := make([]api.Conf, 0, 2)
+	if applyCommonConf {
+		confs = append(confs, commonConf)
+	}
+	if conf, ok, err := mergeZoneProxyRuleConfs(matchedRules); err != nil {
+		return api.Conf{}, false, err
+	} else if ok {
+		confs = append(confs, conf)
+	}
+
+	return mergeRateLimitConfs(confs...)
 }
 
 func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
@@ -135,76 +201,121 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 		)
 		return nil
 	}
-	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
-		for _, es := range resource.ExternalServices {
-			meshName := resource.Mesh.GetMeta().GetName()
-			esName, ok := es.Spec.GetTags()[mesh_proto.ServiceTag]
-			if !ok {
-				continue
-			}
-			policies, ok := resource.Dynamic[esName]
-			if !ok {
-				continue
-			}
-			mrl, ok := policies[api.MeshRateLimitType]
-			if !ok {
-				continue
-			}
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
-			for _, rule := range mrl.FromRules.Rules {
-				for _, filterChain := range listeners.Egress.FilterChains {
-					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
-						configurer := plugin_xds.Configurer{
-							Rules:   rule,
-							Element: subsetutils.MeshElement(),
-						}
-						if err := configurer.ConfigureFilterChain(filterChain); err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
-	}
 	return nil
 }
 
-func configure(conf api.Conf, listener *envoy_listener.Listener, route *envoy_route.RouteConfiguration) error {
-	configurer := plugin_xds.Configurer{
-		Conf:    &conf,
-		Element: subsetutils.MeshElement(),
-	}
-
-	for _, chain := range listener.FilterChains {
-		if err := configurer.ConfigureFilterChain(chain); err != nil {
-			return err
+func hasCatchAllInboundRule(rules []*rules_inbound.Rule) bool {
+	for _, rule := range rules {
+		if rule.Match == nil {
+			return true
 		}
 	}
-	if err := configurer.ConfigureRoute(route); err != nil {
-		return err
-	}
-
-	return nil
+	return false
 }
 
-func configureGateway(
-	fromRules core_rules.Rules,
-	listener *envoy_listener.Listener,
-	route *envoy_route.RouteConfiguration,
-) error {
-	configurer := plugin_xds.Configurer{
-		Rules:   fromRules,
-		Element: subsetutils.MeshElement(),
-	}
-
-	for _, chain := range listener.FilterChains {
-		if err := configurer.ConfigureFilterChain(chain); err != nil {
-			return err
+func zoneProxyFilterChainRules(inboundRules []*rules_inbound.Rule, filterChain *envoy_listener.FilterChain) []*rules_inbound.Rule {
+	var matched []*rules_inbound.Rule
+	for _, rule := range inboundRules {
+		if matchesZoneProxyFilterChain(rule, filterChain) {
+			matched = append(matched, rule)
 		}
 	}
-	if err := configurer.ConfigureGatewayRoute(route); err != nil {
-		return err
+	return matched
+}
+
+func matchesZoneProxyFilterChain(rule *rules_inbound.Rule, filterChain *envoy_listener.FilterChain) bool {
+	if rule.Match == nil {
+		return false
+	}
+	serverNames := filterChain.GetFilterChainMatch().GetServerNames()
+	if len(serverNames) == 0 {
+		return false
+	}
+	if rule.Match.SpiffeID != nil || rule.Match.SNI == nil {
+		return false
+	}
+	return slices.Contains(serverNames, rule.Match.SNI.Value)
+}
+
+func mergeZoneProxyRuleConfs(rules []*rules_inbound.Rule) (api.Conf, bool, error) {
+	confs := make([]any, 0, len(rules))
+	for _, rule := range rules {
+		conf, ok := rule.Conf.(api.Conf)
+		if !ok {
+			continue
+		}
+		confs = append(confs, conf)
+	}
+	if len(confs) == 0 {
+		return api.Conf{}, false, nil
 	}
 
-	return nil
+	merged, err := merge.Confs(confs)
+	if err != nil {
+		return api.Conf{}, false, err
+	}
+	if len(merged) == 0 {
+		return api.Conf{}, false, nil
+	}
+
+	conf, ok := merged[0].(api.Conf)
+	if !ok {
+		return api.Conf{}, false, errors.Errorf("unexpected merged zone proxy conf type: %T", merged[0])
+	}
+	return conf, true, nil
+}
+
+func mergeRateLimitConfs(confs ...api.Conf) (api.Conf, bool, error) {
+	mergedInputs := make([]any, 0, len(confs))
+	for _, conf := range confs {
+		if conf.Local == nil {
+			continue
+		}
+		mergedInputs = append(mergedInputs, conf)
+	}
+	if len(mergedInputs) == 0 {
+		return api.Conf{}, false, nil
+	}
+
+	merged, err := merge.Confs(mergedInputs)
+	if err != nil {
+		return api.Conf{}, false, err
+	}
+	if len(merged) == 0 {
+		return api.Conf{}, false, nil
+	}
+
+	conf, ok := merged[0].(api.Conf)
+	if !ok {
+		return api.Conf{}, false, errors.Errorf("unexpected merged rate limit conf type: %T", merged[0])
+	}
+	return conf, true, nil
+}
+
+func buildListenerScopedInboundRules(
+	policies core_xds.TypedMatchingPolicies,
+	sectionName string,
+) ([]*rules_inbound.Rule, error) {
+	if len(policies.DataplanePolicies) == 0 {
+		return nil, nil
+	}
+
+	filtered := api.MeshRateLimitResourceTypeDescriptor.NewList()
+	for _, resource := range policies.DataplanePolicies {
+		policy, ok := resource.GetSpec().(core_model.Policy)
+		if !ok {
+			continue
+		}
+		targetRef := policy.GetTargetRef()
+		if targetRef.Kind == common_api.Dataplane {
+			if sn := pointer.Deref(targetRef.SectionName); sn != "" && sn != sectionName {
+				continue
+			}
+		}
+		if err := filtered.AddItem(resource); err != nil {
+			return nil, err
+		}
+	}
+
+	return rules_inbound.BuildRules(filtered)
 }

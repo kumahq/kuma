@@ -53,7 +53,7 @@ spec:
     spec:
       containers:
         - name: redis
-          image: "redis@sha256:1f073813b641755b70b0200da64131bbeeb4ec5b633ca67772229b49820caafa"
+          image: "redis@sha256:2838d5524559494f6f1cd66e97e76b200d64a633a8614200620755ed395daf32"
           ports:
             - name: tcp
               containerPort: 6379
@@ -95,53 +95,3 @@ spec:
           ports:
             - name: http
               containerPort: 5000
----
-apiVersion: kuma.io/v1alpha1
-kind: MeshGateway
-mesh: default
-metadata:
-  name: demo-app
-  labels:
-    kuma.io/origin: zone
-spec:
-  conf:
-    listeners:
-    - port: 80
-      protocol: HTTP
-  selectors:
-  - match:
-      kuma.io/service: demo-app-gateway_not-kuma-demo_svc
----
-apiVersion: kuma.io/v1alpha1
-kind: MeshGatewayInstance
-metadata:
-  name: demo-app-gateway
-  namespace: not-kuma-demo
-spec:
-  replicas: 1
-  serviceType: LoadBalancer
----
-apiVersion: kuma.io/v1alpha1
-kind: MeshHTTPRoute
-metadata:
-  name: demo-app
-  namespace: kuma-system
-  labels:
-    kuma.io/origin: zone
-    kuma.io/mesh: default
-spec:
-  targetRef:
-    kind: MeshGateway
-    name: demo-app
-  to:
-  - targetRef:
-      kind: Mesh
-    rules:
-    - default:
-        backendRefs:
-        - kind: MeshService
-          name: demo-app_not-kuma-demo_svc_5000
-      matches:
-      - path:
-          type: PathPrefix
-          value: /

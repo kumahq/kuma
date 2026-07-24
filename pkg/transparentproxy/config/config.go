@@ -15,10 +15,10 @@ import (
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 
-	core_config "github.com/kumahq/kuma/v2/pkg/config"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	core_config "github.com/kumahq/kuma/v3/pkg/config"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 // ValueOrRangeList is a format acceptable by iptables in which
@@ -413,62 +413,6 @@ func (c Redirect) Initialize(
 	return initialized, nil
 }
 
-type Ebpf struct {
-	Enabled              bool   `json:"enabled"`                                                   // KUMA_TRANSPARENT_PROXY_EBPF_ENABLED
-	InstanceIP           string `json:"instanceIP" envconfig:"instance_ip"`                        // KUMA_TRANSPARENT_PROXY_EBPF_INSTANCE_IP
-	InstanceIPEnvVarName string `json:"instanceIPEnvVarName" envconfig:"instance_ip_env_var_name"` // KUMA_TRANSPARENT_PROXY_EBPF_INSTANCE_IP_ENV_VAR_NAME
-	BPFFSPath            string `json:"bpffsPath" envconfig:"bpffs_path"`                          // KUMA_TRANSPARENT_PROXY_EBPF_BPFFS_PATH
-	CgroupPath           string `json:"cgroupPath" split_words:"true"`                             // KUMA_TRANSPARENT_PROXY_EBPF_CGROUP_PATH
-	ProgramsSourcePath   string `json:"programsSourcePath" split_words:"true"`                     // KUMA_TRANSPARENT_PROXY_EBPF_PROGRAM_SOURCE_PATH
-	// The name of network interface which TC ebpf programs should bind to,
-	// when not provided, we'll try to automatically determine it
-	TCAttachIface string `json:"tcAttachIface" envconfig:"tc_attach_iface"` // KUMA_TRANSPARENT_PROXY_EBPF_TC_ATTACH_IFACE
-}
-
-func (c Ebpf) Initialize() (InitializedEbpf, error) {
-	if !c.Enabled {
-		return InitializedEbpf{}, nil
-	}
-
-	instanceIP := c.InstanceIP
-	defaultInstanceIPEnvVarName := "INSTANCE_IP"
-	switch {
-	case c.InstanceIP != "":
-		break
-	case c.InstanceIPEnvVarName != "" && os.Getenv(c.InstanceIPEnvVarName) == "":
-		return InitializedEbpf{}, errors.Errorf(
-			"environment variable '%s' does not contain an instance IP",
-			c.InstanceIPEnvVarName,
-		)
-	case c.InstanceIPEnvVarName == "" && os.Getenv(defaultInstanceIPEnvVarName) == "":
-		return InitializedEbpf{}, errors.New(
-			"no instance IP or environment variable containing instance IP specified",
-		)
-	case c.InstanceIPEnvVarName == "":
-		instanceIP = os.Getenv(defaultInstanceIPEnvVarName)
-	default:
-		instanceIP = os.Getenv(c.InstanceIPEnvVarName)
-	}
-
-	return InitializedEbpf{
-		Enabled:            c.Enabled,
-		InstanceIP:         instanceIP,
-		BPFFSPath:          c.BPFFSPath,
-		CgroupPath:         c.CgroupPath,
-		ProgramsSourcePath: c.ProgramsSourcePath,
-		TCAttachIface:      c.TCAttachIface,
-	}, nil
-}
-
-type InitializedEbpf struct {
-	Enabled            bool
-	InstanceIP         string
-	BPFFSPath          string
-	CgroupPath         string
-	ProgramsSourcePath string
-	TCAttachIface      string
-}
-
 type Log struct {
 	// Enabled determines whether iptables rules logging is activated. When
 	// true, each packet matching an iptables rule will have its details logged,
@@ -542,7 +486,6 @@ type Config struct {
 
 	KumaDPUser string   `json:"kumaDPUser" envconfig:"kuma_dp_user"` // KUMA_TRANSPARENT_PROXY_KUMA_DP_USER
 	Redirect   Redirect `json:"redirect"`
-	Ebpf       Ebpf     `json:"ebpf"`
 	// DropInvalidPackets when enabled, kuma-dp will configure iptables to drop
 	// packets that are considered invalid. This is useful in scenarios where
 	// out-of-order packets bypass DNAT by iptables and reach the application
@@ -619,14 +562,13 @@ func (c Config) WithStdout(stdout io.Writer) Config {
 
 // Custom Marshal logic to avoid rendering empty values for specific fields.
 // Since we're working with a value type (Config) rather than pointers, this approach
-// ensures that unnecessary fields (like ebpf, comments, log, and executables) are omitted
+// ensures that unnecessary fields (like comments, log, and executables) are omitted
 // from the JSON output when they are not enabled or contain no meaningful data
 func (c Config) MarshalJSON() ([]byte, error) {
 	type ConfigAlias Config
 
 	type ConfigAliasOmitEmpty struct {
 		ConfigAlias
-		Ebpf        any `json:"ebpf,omitempty"`
 		Comments    any `json:"comments,omitempty"`
 		Log         any `json:"log,omitempty"`
 		Executables any `json:"iptablesExecutables,omitempty"`
@@ -634,14 +576,9 @@ func (c Config) MarshalJSON() ([]byte, error) {
 
 	result := ConfigAliasOmitEmpty{
 		ConfigAlias: ConfigAlias(c),
-		Ebpf:        c.Ebpf,
 		Comments:    c.Comments,
 		Log:         c.Log,
 		Executables: c.Executables,
-	}
-
-	if !c.Ebpf.Enabled {
-		result.Ebpf = nil
 	}
 
 	if !c.Comments.Disabled {
@@ -792,7 +729,6 @@ type InitializedConfigIPvX struct {
 	// text. This helps in identifying and organizing iptables rules created by
 	// the transparent proxy, making them easier to manage and debug
 	Comments   InitializedComments
-	Ebpf       InitializedEbpf
 	KumaDPUser string
 
 	enabled bool
@@ -956,15 +892,6 @@ func DefaultConfig() Config {
 			VNet: VNet{
 				Networks: []string{},
 			},
-		},
-		Ebpf: Ebpf{
-			Enabled:              false,
-			InstanceIP:           "",
-			InstanceIPEnvVarName: "",
-			BPFFSPath:            "/run/kuma/bpf",
-			CgroupPath:           "/sys/fs/cgroup",
-			ProgramsSourcePath:   "/tmp/kuma-ebpf",
-			TCAttachIface:        "",
 		},
 		Log: Log{
 			Enabled: false,

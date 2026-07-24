@@ -2,49 +2,47 @@
 package v1alpha1_test
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	test_xds "github.com/kumahq/kuma/v2/pkg/test/xds"
-	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
-	xds_samples "github.com/kumahq/kuma/v2/pkg/test/xds/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/plugin/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	test_xds "github.com/kumahq/kuma/v3/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/v3/pkg/test/xds/samples"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshTimeout", func() {
@@ -70,6 +68,7 @@ var _ = Describe("MeshTimeout", func() {
 		resources         []core_xds.Resource
 		toRules           core_rules.ToRules
 		fromRules         core_rules.FromRules
+		unifiedNaming     bool
 		expectedListeners []string
 		expectedClusters  []string
 	}
@@ -87,7 +86,7 @@ var _ = Describe("MeshTimeout", func() {
 			AddServiceProtocol("other-service", core_meta.ProtocolHTTP).
 			AddServiceProtocol("second-service", core_meta.ProtocolTCP).
 			Build()
-		proxy := xds_builders.Proxy().
+		proxyBuilder := xds_builders.Proxy().
 			WithDataplane(builders.Dataplane().
 				WithName("backend").
 				WithMesh("default").
@@ -118,8 +117,13 @@ var _ = Describe("MeshTimeout", func() {
 			).
 			WithPolicies(
 				xds_builders.MatchedPolicies().WithPolicy(api.MeshTimeoutType, given.toRules, given.fromRules),
-			).
-			Build()
+			)
+		if given.unifiedNaming {
+			proxyBuilder = proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{
+				Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
+			})
+		}
+		proxy := proxyBuilder.Build()
 
 		// when
 		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
@@ -253,7 +257,7 @@ var _ = Describe("MeshTimeout", func() {
 						Address: "127.0.0.1",
 						Port:    80,
 					}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("1h"),
 							Http: &api.Http{
@@ -262,11 +266,67 @@ var _ = Describe("MeshTimeout", func() {
 								MaxStreamDuration:     test.ParseDuration("10m"),
 								MaxConnectionDuration: test.ParseDuration("10m"),
 							},
-						}},
+						},
 					}},
 				},
 			},
 			expectedClusters:  []string{"basic_inbound_cluster.golden.yaml"},
+			expectedListeners: []string{"basic_inbound_listener.golden.yaml"},
+		}),
+		Entry("basic inbound route (unified naming)", sidecarTestCase{
+			unifiedNaming: true,
+			resources: []core_xds.Resource{
+				{
+					Name:     "inbound",
+					Origin:   metadata.OriginInbound,
+					Resource: httpInboundListenerWith(),
+				},
+				{
+					Name:     "inbound",
+					Origin:   metadata.OriginInbound,
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))),
+				},
+			},
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{
+						Address: "127.0.0.1",
+						Port:    80,
+					}: []*core_rules.Rule{
+						{
+							Subset: subsetutils.Subset{},
+							Conf: api.Conf{
+								ConnectionTimeout: test.ParseDuration("10s"),
+								IdleTimeout:       test.ParseDuration("1h"),
+								Http: &api.Http{
+									RequestTimeout:        test.ParseDuration("5s"),
+									StreamIdleTimeout:     test.ParseDuration("1s"),
+									MaxStreamDuration:     test.ParseDuration("10m"),
+									MaxConnectionDuration: test.ParseDuration("10m"),
+								},
+							},
+						},
+					},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{
+						Address: "127.0.0.1",
+						Port:    80,
+					}: {{
+						Conf: api.Conf{
+							ConnectionTimeout: test.ParseDuration("10s"),
+							IdleTimeout:       test.ParseDuration("1h"),
+							Http: &api.Http{
+								RequestTimeout:        test.ParseDuration("5s"),
+								StreamIdleTimeout:     test.ParseDuration("1s"),
+								MaxStreamDuration:     test.ParseDuration("10m"),
+								MaxConnectionDuration: test.ParseDuration("10m"),
+							},
+						},
+					}},
+				},
+			},
+			expectedClusters:  []string{"basic_inbound_cluster_unified_naming.golden.yaml"},
 			expectedListeners: []string{"basic_inbound_listener.golden.yaml"},
 		}),
 		Entry("basic inbound route without defaults", sidecarTestCase{
@@ -416,7 +476,7 @@ var _ = Describe("MeshTimeout", func() {
 						Address: "127.0.0.1",
 						Port:    80,
 					}: {{
-						Conf: &api.Rule{Default: api.Conf{
+						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("1h"),
 							Http: &api.Http{
@@ -425,7 +485,7 @@ var _ = Describe("MeshTimeout", func() {
 								MaxStreamDuration:     test.ParseDuration("10m"),
 								MaxConnectionDuration: test.ParseDuration("10m"),
 							},
-						}},
+						},
 					}},
 				},
 			},
@@ -624,100 +684,41 @@ var _ = Describe("MeshTimeout", func() {
 		}),
 	)
 
-	type gatewayTestCase struct {
-		rules          core_rules.GatewayRules
-		meshhttproutes core_rules.GatewayRules
-		routes         []*core_mesh.MeshGatewayRouteResource
-	}
-	DescribeTable("should generate proper Envoy config", func(given gatewayTestCase) {
-		resources := xds_context.NewResources()
-		resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
-			Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
-		}
-		resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-			Items: append([]*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()}, given.routes...),
+	It("should duplicate inbound routes for spiffeID matches", func() {
+		resourceSet := core_xds.NewResourceSet()
+		for _, res := range []core_xds.Resource{
+			{
+				Name:     "inbound",
+				Origin:   metadata.OriginInbound,
+				Resource: httpInboundListenerWith(),
+			},
+			{
+				Name:     "inbound",
+				Origin:   metadata.OriginInbound,
+				Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+			},
+		} {
+			r := res
+			resourceSet.Add(&r)
 		}
 
 		xdsCtx := *xds_builders.Context().
 			WithMeshBuilder(samples.MeshDefaultBuilder()).
-			WithResources(resources).
-			AddServiceProtocol("other-service", core_meta.ProtocolHTTP).
-			AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+			WithResources(xds_context.NewResources()).
 			Build()
+
+		inboundListener := core_rules.InboundListener{Address: "127.0.0.1", Port: 80}
 		proxy := xds_builders.Proxy().
-			WithDataplane(samples.GatewayDataplaneBuilder()).
-			WithRouting(xds_builders.Routing().
-				WithOutboundTargets(
-					xds_builders.EndpointMap().
-						AddEndpoint("backend", xds_samples.HttpEndpointBuilder()).
-						AddEndpoint("other-service", xds_samples.HttpEndpointBuilder()),
-				),
-			).
+			WithDataplane(builders.Dataplane().
+				WithName("backend").
+				WithMesh("default").
+				WithAddress("127.0.0.1").
+				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
 			WithPolicies(xds_builders.MatchedPolicies().
-				WithGatewayPolicy(api.MeshTimeoutType, given.rules).
-				WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes)).
-			Build()
-
-		Expect(gateway_plugin.NewPlugin().(core_plugins.ProxyPlugin).Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed())
-		gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-		generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
-		Expect(err).NotTo(HaveOccurred())
-
-		httpRoutePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-		// when
-		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-		nameSplit := strings.Split(GinkgoT().Name(), " ")
-		name := nameSplit[len(nameSplit)-1]
-
-		// then
-		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.listener.golden.yaml", name))))
-		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.cluster.golden.yaml", name))))
-		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.route.golden.yaml", name))))
-	},
-		Entry("basic", gatewayTestCase{
-			rules: core_rules.GatewayRules{
-				FromRules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "192.168.0.1", Port: 8080}: {
-						{
-							Subset: subsetutils.MeshSubset(),
-							Conf: api.Conf{
-								IdleTimeout: test.ParseDuration("1h"),
-								Http: &api.Http{
-									RequestTimeout:        test.ParseDuration("311s"),
-									StreamIdleTimeout:     test.ParseDuration("1s"),
-									MaxStreamDuration:     test.ParseDuration("10m"),
-									MaxConnectionDuration: test.ParseDuration("10m"),
-									RequestHeadersTimeout: test.ParseDuration("99s"),
-								},
-							},
-						},
-					},
-				},
-				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-					{Address: "192.168.0.1", Port: 8080}: {
-						{Conf: &api.Rule{
-							Default: api.Conf{
-								IdleTimeout: test.ParseDuration("1h"),
-								Http: &api.Http{
-									RequestTimeout:        test.ParseDuration("311s"),
-									StreamIdleTimeout:     test.ParseDuration("1s"),
-									MaxStreamDuration:     test.ParseDuration("10m"),
-									MaxConnectionDuration: test.ParseDuration("10m"),
-									RequestHeadersTimeout: test.ParseDuration("99s"),
-								},
-							},
-						}},
-					},
-				},
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshSubset(),
+				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
+					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+						inboundListener: {
+							{
 								Conf: api.Conf{
 									ConnectionTimeout: test.ParseDuration("10s"),
 									IdleTimeout:       test.ParseDuration("1h"),
@@ -728,134 +729,372 @@ var _ = Describe("MeshTimeout", func() {
 										MaxConnectionDuration: test.ParseDuration("10m"),
 									},
 								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-		Entry("no-default-idle-timeout", gatewayTestCase{
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshSubset(),
-								Conf: api.Conf{
-									ConnectionTimeout: test.ParseDuration("10s"),
-									IdleTimeout:       test.ParseDuration("1h"),
-									Http: &api.Http{
-										RequestTimeout:        test.ParseDuration("5s"),
-										MaxStreamDuration:     test.ParseDuration("10m"),
-										MaxConnectionDuration: test.ParseDuration("10m"),
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-		Entry("no-route-level-timeouts", gatewayTestCase{
-			routes: []*core_mesh.MeshGatewayRouteResource{
-				builders.GatewayRoute().
-					WithName("sample-gateway-route").
-					WithGateway("sample-gateway").
-					WithExactMatchHttpRoute("/", "backend", "other-service").
-					Build(),
-			},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshService("backend"),
-								Conf: api.Conf{
-									Http: &api.Http{
-										RequestTimeout: test.ParseDuration("24s"),
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-		Entry("route-level-timeouts", gatewayTestCase{
-			meshhttproutes: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshSubset(),
-								Conf: meshhttproute_api.PolicyDefault{
-									Rules: []meshhttproute_api.Rule{
-										{
-											Matches: []meshhttproute_api.Match{{
-												Path: &meshhttproute_api.PathMatch{
-													Type:  meshhttproute_api.Exact,
-													Value: "/",
-												},
-											}},
-											Default: meshhttproute_api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
-													Weight:    pointer.To(uint(100)),
-												}},
-											},
-										},
-										{
-											Matches: []meshhttproute_api.Match{{
-												Path: &meshhttproute_api.PathMatch{
-													Type:  meshhttproute_api.Exact,
-													Value: "/another-route",
-												},
-												Method: pointer.To[meshhttproute_api.Method]("GET"),
-											}},
-											Default: meshhttproute_api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
-													Weight:    pointer.To(uint(100)),
-												}},
-											},
-										},
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{
-									{
-										Key:   core_rules.RuleMatchesHashTag,
-										Value: "L2t9uuHxXPXUg5ULwRirUaoxN4BU/zlqyPK8peSWm2g=",
+							},
+							{
+								Match: &common_api.Match{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffe://default/client",
 									},
 								},
 								Conf: api.Conf{
 									Http: &api.Http{
-										RequestTimeout:    test.ParseDuration("24s"),
-										StreamIdleTimeout: test.ParseDuration("99s"),
+										RequestTimeout:    test.ParseDuration("2s"),
+										StreamIdleTimeout: test.ParseDuration("3s"),
 									},
 								},
-							}},
+							},
+							{
+								Match: &common_api.Match{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffe://default/client-stream",
+									},
+								},
+								Conf: api.Conf{
+									Http: &api.Http{
+										StreamIdleTimeout: test.ParseDuration("4s"),
+									},
+								},
+							},
 						},
 					},
-				},
-			},
-		}))
-})
+				})).
+			Build()
 
-func getResourceYaml(list core_xds.ResourceList) []byte {
-	actualResource, err := util_proto.ToYAML(list[0].Resource)
-	Expect(err).ToNot(HaveOccurred())
-	return actualResource
-}
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+
+		listenerYaml, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listenerYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "matched_spiffe_inbound.listener.golden.yaml")))
+	})
+
+	It("should merge overlapping spiffeID matches before duplicating inbound routes", func() {
+		resourceSet := core_xds.NewResourceSet()
+		for _, res := range []core_xds.Resource{
+			{
+				Name:     "inbound",
+				Origin:   metadata.OriginInbound,
+				Resource: httpInboundListenerWith(),
+			},
+			{
+				Name:     "inbound",
+				Origin:   metadata.OriginInbound,
+				Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+			},
+		} {
+			r := res
+			resourceSet.Add(&r)
+		}
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			Build()
+
+		inboundListener := core_rules.InboundListener{Address: "127.0.0.1", Port: 80}
+		proxy := xds_builders.Proxy().
+			WithDataplane(builders.Dataplane().
+				WithName("backend").
+				WithMesh("default").
+				WithAddress("127.0.0.1").
+				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+			WithPolicies(xds_builders.MatchedPolicies().
+				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
+					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+						inboundListener: {
+							{
+								Match: &common_api.Match{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.PrefixMatchType,
+										Value: "spiffe://default/",
+									},
+								},
+								Conf: api.Conf{
+									Http: &api.Http{
+										RequestTimeout:    test.ParseDuration("5s"),
+										StreamIdleTimeout: test.ParseDuration("10s"),
+									},
+								},
+							},
+							{
+								Match: &common_api.Match{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffe://default/client",
+									},
+								},
+								Conf: api.Conf{
+									Http: &api.Http{
+										StreamIdleTimeout: test.ParseDuration("3s"),
+									},
+								},
+							},
+						},
+					},
+				})).
+			Build()
+
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+
+		listenerYaml, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listenerYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "matched_spiffe_precedence.listener.golden.yaml")))
+	})
+
+	It("should not apply common inbound defaults for matched-only spiffeID rules", func() {
+		resourceSet := core_xds.NewResourceSet()
+		for _, res := range []core_xds.Resource{
+			{
+				Name:     "inbound",
+				Origin:   metadata.OriginInbound,
+				Resource: httpInboundListenerWith(),
+			},
+			{
+				Name:     "inbound",
+				Origin:   metadata.OriginInbound,
+				Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+			},
+		} {
+			r := res
+			resourceSet.Add(&r)
+		}
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			Build()
+
+		inboundListener := core_rules.InboundListener{Address: "127.0.0.1", Port: 80}
+		proxy := xds_builders.Proxy().
+			WithDataplane(builders.Dataplane().
+				WithName("backend").
+				WithMesh("default").
+				WithAddress("127.0.0.1").
+				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+			WithPolicies(xds_builders.MatchedPolicies().
+				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
+					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+						inboundListener: {
+							{
+								Match: &common_api.Match{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffe://default/client",
+									},
+								},
+								Conf: api.Conf{
+									Http: &api.Http{
+										RequestTimeout:    test.ParseDuration("2s"),
+										StreamIdleTimeout: test.ParseDuration("3s"),
+									},
+								},
+							},
+							{
+								Match: &common_api.Match{
+									SpiffeID: &common_api.SpiffeIDMatch{
+										Type:  common_api.ExactMatchType,
+										Value: "spiffe://default/client-stream",
+									},
+								},
+								Conf: api.Conf{
+									Http: &api.Http{
+										StreamIdleTimeout: test.ParseDuration("4s"),
+									},
+								},
+							},
+						},
+					},
+				})).
+			Build()
+
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+
+		listenerYaml, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listenerYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "matched_only_spiffe_inbound.listener.golden.yaml")))
+
+		clusterYaml, err := util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(clusterYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "matched_only_spiffe_inbound.cluster.golden.yaml")))
+	})
+
+	It("should scope SNI rules to the selected zone-egress filter chain", func() {
+		rs := core_xds.NewResourceSet()
+		for _, res := range []core_xds.Resource{
+			zoneEgressListenerResource(),
+			{
+				Name:     "mes-http",
+				Origin:   metadata.OriginEgress,
+				Resource: test_xds.ClusterWithName("mes-http"),
+			},
+			{
+				Name:     "mes-tcp",
+				Origin:   metadata.OriginEgress,
+				Resource: test_xds.ClusterWithName("mes-tcp"),
+			},
+		} {
+			r := res
+			rs.Add(&r)
+		}
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			Build()
+
+		meshTimeout := api.NewMeshTimeoutResource()
+		meshTimeout.SetMeta(&test_model.ResourceMeta{
+			Mesh:   "default",
+			Name:   "zone-egress-timeout",
+			Labels: map[string]string{},
+		})
+		meshTimeout.Spec = &api.MeshTimeout{
+			TargetRef: &common_api.TargetRef{
+				Kind:        common_api.Dataplane,
+				SectionName: pointer.To("ze-port"),
+			},
+			Rules: &[]api.Rule{{
+				Matches: &[]common_api.Match{{
+					SNI: &common_api.SNIMatch{
+						Type:  common_api.SNIExactMatchType,
+						Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+					},
+				}},
+				Default: api.Conf{
+					ConnectionTimeout: test.ParseDuration("7s"),
+					IdleTimeout:       test.ParseDuration("13s"),
+					Http: &api.Http{
+						RequestTimeout:        test.ParseDuration("2s"),
+						StreamIdleTimeout:     test.ParseDuration("4s"),
+						MaxStreamDuration:     test.ParseDuration("30s"),
+						MaxConnectionDuration: test.ParseDuration("40s"),
+						RequestHeadersTimeout: test.ParseDuration("5s"),
+					},
+				},
+			}},
+		}
+		Expect(meshTimeout.Validate()).To(Succeed())
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(zoneEgressOnlyDataplane()).
+			WithZone("zone-1").
+			WithPolicies(xds_builders.MatchedPolicies().
+				With(func(policies *core_xds.MatchedPolicies) {
+					policies.Dynamic[api.MeshTimeoutType] = core_xds.TypedMatchingPolicies{
+						DataplanePolicies: []core_model.Resource{meshTimeout},
+					}
+				})).
+			Build()
+
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(rs, xdsCtx, proxy)).To(Succeed())
+
+		listenerYaml, err := util_yaml.GetResourcesToYaml(rs, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listenerYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "zone_egress_sni.listener.golden.yaml")))
+
+		clusterYaml, err := util_yaml.GetResourcesToYaml(rs, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(clusterYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "zone_egress_sni.cluster.golden.yaml")))
+	})
+
+	It("should merge overlapping SNI rules before configuring a zone-egress filter chain", func() {
+		rs := core_xds.NewResourceSet()
+		for _, res := range []core_xds.Resource{
+			zoneEgressListenerResource(),
+			{
+				Name:     "mes-http",
+				Origin:   metadata.OriginEgress,
+				Resource: test_xds.ClusterWithName("mes-http"),
+			},
+			{
+				Name:     "mes-tcp",
+				Origin:   metadata.OriginEgress,
+				Resource: test_xds.ClusterWithName("mes-tcp"),
+			},
+		} {
+			r := res
+			rs.Add(&r)
+		}
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			Build()
+
+		meshTimeout := api.NewMeshTimeoutResource()
+		meshTimeout.SetMeta(&test_model.ResourceMeta{
+			Mesh:   "default",
+			Name:   "zone-egress-timeout-precedence",
+			Labels: map[string]string{},
+		})
+		meshTimeout.Spec = &api.MeshTimeout{
+			TargetRef: &common_api.TargetRef{
+				Kind:        common_api.Dataplane,
+				SectionName: pointer.To("ze-port"),
+			},
+			Rules: &[]api.Rule{
+				{
+					Matches: &[]common_api.Match{{
+						SNI: &common_api.SNIMatch{
+							Type:  common_api.SNIExactMatchType,
+							Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+						},
+					}},
+					Default: api.Conf{
+						ConnectionTimeout: test.ParseDuration("7s"),
+						IdleTimeout:       test.ParseDuration("13s"),
+						Http: &api.Http{
+							RequestHeadersTimeout: test.ParseDuration("5s"),
+							RequestTimeout:        test.ParseDuration("11s"),
+						},
+					},
+				},
+				{
+					Matches: &[]common_api.Match{{
+						SNI: &common_api.SNIMatch{
+							Type:  common_api.SNIExactMatchType,
+							Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+						},
+					}},
+					Default: api.Conf{
+						ConnectionTimeout: test.ParseDuration("3s"),
+						Http: &api.Http{
+							RequestTimeout: test.ParseDuration("2s"),
+						},
+					},
+				},
+			},
+		}
+		Expect(meshTimeout.Validate()).To(Succeed())
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(zoneEgressOnlyDataplane()).
+			WithZone("zone-1").
+			WithPolicies(xds_builders.MatchedPolicies().
+				With(func(policies *core_xds.MatchedPolicies) {
+					policies.Dynamic[api.MeshTimeoutType] = core_xds.TypedMatchingPolicies{
+						DataplanePolicies: []core_model.Resource{meshTimeout},
+					}
+				})).
+			Build()
+
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(rs, xdsCtx, proxy)).To(Succeed())
+
+		listenerYaml, err := util_yaml.GetResourcesToYaml(rs, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(listenerYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "zone_egress_sni_precedence.listener.golden.yaml")))
+
+		clusterYaml, err := util_yaml.GetResourcesToYaml(rs, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(clusterYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "zone_egress_sni_precedence.cluster.golden.yaml")))
+	})
+})
 
 func httpOutboundListener() envoy_common.NamedResource {
 	return createListener(
@@ -877,7 +1116,7 @@ func httpListenerWithSeveralMeshHTTPRoutes(service string, meshHTTPRoute kri.Ide
 
 func httpInboundListenerWith() envoy_common.NamedResource {
 	return createListener(
-		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP),
+		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP, true),
 		HttpInboundRoutes(
 			envoy_names.GetInboundRouteName("backend"),
 			"backend",
@@ -888,6 +1127,49 @@ func httpInboundListenerWith() envoy_common.NamedResource {
 				)},
 			}},
 		))
+}
+
+func zoneEgressOnlyDataplane() *builders.DataplaneBuilder {
+	return builders.Dataplane().
+		WithName("zone-egress-1").
+		WithMesh("default").
+		WithAddress("192.168.0.10").
+		WithoutInbounds().
+		With(func(d *core_mesh.DataplaneResource) {
+			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
+				Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+				Address: "192.168.0.10",
+				Port:    10002,
+				Name:    "ze-port",
+			}}
+		})
+}
+
+func zoneEgressListenerResource() core_xds.Resource {
+	name := naming.ContextualZoneEgressListenerName("ze-port")
+	return core_xds.Resource{
+		Name:   name,
+		Origin: metadata.OriginEgress,
+		Resource: NewListenerBuilder(envoy_common.APIV3, name).
+			Configure(InboundListener("192.168.0.10", 10002, core_xds.SocketAddressProtocolTCP, true)).
+			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
+				Configure(MatchTransportProtocol("tls")).
+				Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
+				Configure(HttpConnectionManager("mes-http", false, nil, true)).
+				Configure(AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("mes-http"))),
+			)).
+			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-tcp").
+				Configure(MatchTransportProtocol("tls")).
+				Configure(MatchServerNames("sni.extsvc.default.zone-1.redis.6379")).
+				Configure(TcpProxyDeprecated(
+					"mes-tcp",
+					envoy_common.NewCluster(
+						envoy_common.WithService("mes-tcp"),
+						envoy_common.WithWeight(100),
+					),
+				)),
+			)).MustBuild(),
+	}
 }
 
 func createListener(builder *ListenerBuilder, route FilterChainBuilderOpt) envoy_common.NamedResource {

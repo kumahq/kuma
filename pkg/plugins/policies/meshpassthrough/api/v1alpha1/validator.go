@@ -9,10 +9,10 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var (
@@ -36,7 +36,6 @@ func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TargetRef) v
 	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
-			common_api.MeshSubset,
 			common_api.Dataplane,
 		},
 	})
@@ -102,8 +101,12 @@ func validateDefault(conf Conf) validators.ValidationError {
 			if match.Port == nil && strings.HasPrefix(match.Value, "*") && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "wildcard domains doesn't work for all ports and layer 7 protocol")
 			}
-			if !strings.HasPrefix(match.Value, "*") {
-				isValid := govalidator.IsDNSName(match.Value)
+			valueToValidate := match.Value
+			if strings.HasPrefix(match.Value, "*.") {
+				valueToValidate = match.Value[2:]
+			}
+			if !strings.HasPrefix(valueToValidate, "*") {
+				isValid := govalidator.IsDNSName(valueToValidate)
 				if !isValid {
 					verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value")
 				}

@@ -8,11 +8,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	policy "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	policy "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 // MeshTrust defines trusted Certificate Authority (CA) bundles for a trust domain in the mesh. It establishes trust relationships for service-to-service mTLS authentication by specifying which CA certificates are trusted to verify service identities, supporting PEM-encoded CA bundles and enabling secure cross-service communication within the trust domain.
@@ -109,7 +109,7 @@ func (l *MeshTrustList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshTrust{}, &MeshTrustList{})
+	knownTypes = append(knownTypes, &MeshTrust{}, &MeshTrustList{})
 	registry.RegisterObjectType(&policy.MeshTrust{}, &MeshTrust{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

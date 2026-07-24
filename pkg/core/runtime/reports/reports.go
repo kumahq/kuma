@@ -14,17 +14,18 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/sha256"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/sha256"
 )
 
 const (
@@ -96,9 +97,9 @@ func fetchNumOfServices(ctx context.Context, rt core_runtime.Runtime) (int, int,
 		internalServices += len(insight.Spec.Services)
 	}
 
-	externalServicesList := mesh.ExternalServiceResourceList{}
+	externalServicesList := meshexternalservice_api.MeshExternalServiceResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(ctx, &externalServicesList); err != nil {
-		return 0, 0, errors.Wrap(err, "could not fetch external services")
+		return 0, 0, errors.Wrap(err, "could not fetch mesh external services")
 	}
 	return internalServices, len(externalServicesList.Items), nil
 }
@@ -252,12 +253,12 @@ func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer, extraFn c
 	go func() {
 		err := buffer.dispatch(rt, pingHost, pingPort, "start", extraFn)
 		if err != nil {
-			log.V(2).Info("failed sending usage info", "cause", err.Error())
+			log.V(1).Info("failed sending usage info", "cause", err.Error())
 		}
 		for range time.Tick(time.Second * pingInterval) {
 			err := buffer.dispatch(rt, pingHost, pingPort, "ping", extraFn)
 			if err != nil {
-				log.V(2).Info("failed sending usage info", "cause", err.Error())
+				log.V(1).Info("failed sending usage info", "cause", err.Error())
 			}
 		}
 	}()

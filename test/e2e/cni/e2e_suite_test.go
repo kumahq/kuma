@@ -5,9 +5,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/test/e2e/cni"
-	"github.com/kumahq/kuma/v2/test/framework/report"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/test/e2e/cni"
+	"github.com/kumahq/kuma/v3/test/framework/report"
 )
 
 func TestE2E(t *testing.T) {
@@ -16,5 +16,5 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Taint controller", Label("job-1"), Label("kind-not-supported"), Label("legacy-k3s-not-supported"), cni.AppDeploymentWithCniAndTaintController)
+	_ = Describe("Taint controller", Label("job-0"), Label("kind-not-supported"), Label("legacy-k3s-not-supported"), cni.AppDeploymentWithCniAndTaintController)
 )

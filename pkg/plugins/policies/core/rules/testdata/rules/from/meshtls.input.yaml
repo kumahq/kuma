@@ -1,0 +1,26 @@
+# MeshTLS With overrides
+type: MeshTLS
+name: default
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        mode: Strict
+---
+type: MeshTLS
+name: override
+mesh: default
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: foo
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        mode: Permissive

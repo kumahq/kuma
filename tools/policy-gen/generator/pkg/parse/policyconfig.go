@@ -11,7 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 type ResourceScope string
@@ -36,6 +36,7 @@ type PolicyConfig struct {
 	HasTo                        bool
 	HasFrom                      bool
 	HasRules                     bool
+	RuleHasMatches               bool
 	HasStatus                    bool
 	GoModule                     string
 	ResourceDir                  string
@@ -48,6 +49,7 @@ type PolicyConfig struct {
 	IsFromAsRules                bool
 	RegisterGenerator            bool
 	Description                  string
+	Order                        int
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -92,11 +94,40 @@ func Policy(path string) (PolicyConfig, error) {
 		}
 	}
 
-	cfg, err := newPolicyConfig(packageName, mainStruct.Name.String(), mainComment, fields)
+	ruleFields := ruleStructFields(f)
+
+	cfg, err := newPolicyConfig(packageName, mainStruct.Name.String(), mainComment, fields, ruleFields)
 	if err != nil {
 		return PolicyConfig{}, err
 	}
 	return cfg, nil
+}
+
+func ruleStructFields(f *ast.File) map[string]bool {
+	fields := map[string]bool{}
+	ast.Inspect(f, func(n ast.Node) bool {
+		gd, ok := n.(*ast.GenDecl)
+		if !ok || gd.Tok != token.TYPE {
+			return true
+		}
+		for _, spec := range gd.Specs {
+			ts, ok := spec.(*ast.TypeSpec)
+			if !ok || ts.Name.String() != "Rule" {
+				continue
+			}
+			st, ok := ts.Type.(*ast.StructType)
+			if !ok {
+				continue
+			}
+			for _, field := range st.Fields.List {
+				for _, name := range field.Names {
+					fields[name.Name] = true
+				}
+			}
+		}
+		return true
+	})
+	return fields
 }
 
 func parseMainComment(cg *ast.CommentGroup) (string, map[string]string, []string, error) {
@@ -139,7 +170,7 @@ func parseBool(markers map[string]string, key string) (bool, bool) {
 	return false, false
 }
 
-func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map[string]bool) (PolicyConfig, error) {
+func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map[string]bool, ruleFields map[string]bool) (PolicyConfig, error) {
 	description, markers, kubebuilderMarkers, err := parseMainComment(mainComment)
 	if err != nil {
 		return PolicyConfig{}, err
@@ -153,6 +184,7 @@ func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map
 		HasTo:               fields["To"],
 		HasFrom:             fields["From"],
 		HasRules:            fields["Rules"],
+		RuleHasMatches:      ruleFields["Matches"],
 		KubebuilderMarkers:  kubebuilderMarkers,
 		Description:         description,
 		IsPolicy:            true,
@@ -223,6 +255,14 @@ func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map
 		res.ShortName = string(result)
 	}
 	res.Path = strings.ToLower(res.Plural)
+
+	if v, ok := markers["kuma:policy:order"]; ok {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			return res, errors.Errorf("couldn't parse %s as int for kuma:policy:order", v)
+		}
+		res.Order = n
+	}
 
 	return res, nil
 }

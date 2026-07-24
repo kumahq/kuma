@@ -2,31 +2,32 @@ package meshtrafficpermission
 
 import (
 	"fmt"
-	"net"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	policies_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	policies_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func externalService(mesh string, ip string) InstallFunc {
 	return YamlUniversal(fmt.Sprintf(`
-type: ExternalService
+type: MeshExternalService
+name: external-service
 mesh: "%s"
-name: es-1
-tags:
-  kuma.io/service: external-service
-  kuma.io/protocol: http
-networking:
-  address: "%s"
-`, mesh, net.JoinHostPort(ip, "80")))
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: "%s"
+      port: 80
+`, mesh, ip))
 }
 
 func mtlsAndEgressMeshUniversal(name string) InstallFunc {
@@ -48,8 +49,6 @@ func MeshTrafficPermission() {
 	const meshName = "mtp-test"
 	const namespace = "mtp-test"
 
-	var clientPodName string
-
 	BeforeAll(func() {
 		// Global
 		err := NewClusterSetup().
@@ -62,8 +61,10 @@ func MeshTrafficPermission() {
 		// Universal Zone 1
 		NewClusterSetup().
 			Install(Parallel(
-				TestServerUniversal("test-server", meshName,
+				TestServerUniversal(
+					"test-server", meshName,
 					WithArgs([]string{"echo", "--instance", "echo"}),
+					WithLabels(map[string]string{"kuma.io/service": "test-server"}),
 				),
 				TestServerExternalServiceUniversal("external-service", 80, false, WithDockerContainerName("kuma-es-4_external-service-mtp-test")),
 			)).
@@ -75,9 +76,6 @@ func MeshTrafficPermission() {
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			SetupInGroup(multizone.KubeZone1, &group)
 		Expect(group.Wait()).To(Succeed())
-
-		clientPodName, err = PodNameOfApp(multizone.KubeZone1, "demo-client", namespace)
-		Expect(err).ToNot(HaveOccurred())
 
 		esIp := multizone.UniZone1.GetApp("external-service").GetIP()
 		Expect(multizone.Global.Install(externalService(meshName, esIp))).To(Succeed())
@@ -122,10 +120,10 @@ func MeshTrafficPermission() {
 	}
 
 	It("should allow the traffic with allow-all meshtrafficpermission", func() {
-		// given no mesh traffic permissions
-		trafficBlocked("test-server.mesh")
+		serverHostname := fmt.Sprintf("test-server.svc.%s.mesh.local", multizone.UniZone1.ZoneName())
 
-		// when mesh traffic permission with MeshService
+		trafficBlocked(serverHostname)
+
 		yaml := `
 type: MeshTrafficPermission
 name: mtp-1
@@ -133,130 +131,21 @@ mesh: mtp-test
 spec:
  targetRef:
    kind: Mesh
- from:
-   - targetRef:
-       kind: Mesh
-     default:
-       action: Allow
+ rules:
+   - default:
+       allow:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://mtp-test
 `
 		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then
-		trafficAllowed("test-server.mesh")
-	})
-
-	It("should allow the traffic with kuma.io/zone", func() {
-		// given no mesh traffic permissions
-		trafficBlocked("test-server.mesh")
-
-		// when mesh traffic permission with MeshService
-		yaml := fmt.Sprintf(`
-type: MeshTrafficPermission
-name: mtp-2
-mesh: mtp-test
-spec:
- targetRef:
-   kind: MeshService
-   name: test-server
- from:
-   - targetRef:
-       kind: MeshSubset
-       tags:
-         kuma.io/zone: %s 
-     default:
-       action: Allow
-`, multizone.KubeZone1.ZoneName())
-		err := YamlUniversal(yaml)(multizone.Global)
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		trafficAllowed("test-server.mesh")
-	})
-
-	It("should allow the traffic with k8s.kuma.io/namespace", func() {
-		// given no mesh traffic permissions
-		trafficBlocked("test-server.mesh")
-
-		// when mesh traffic permission with MeshSubset
-		yaml := `
-type: MeshTrafficPermission
-name: mtp-3
-mesh: mtp-test
-spec:
- targetRef:
-   kind: MeshService
-   name: test-server
- from:
-   - targetRef:
-       kind: MeshSubset
-       tags:
-         k8s.kuma.io/namespace: mtp-test
-     default:
-       action: Allow
-`
-		err := YamlUniversal(yaml)(multizone.Global)
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		trafficAllowed("test-server.mesh")
-	})
-
-	It("should allow the traffic with tags added dynamically on Kubernetes", func() {
-		// given no mesh traffic permissions
-		trafficBlocked("test-server.mesh")
-
-		// when mesh traffic permission with MeshSubset
-		yaml := `
-type: MeshTrafficPermission
-name: mtp-4
-mesh: mtp-test
-spec:
- targetRef:
-   kind: MeshService
-   name: test-server
- from:
-   - targetRef:
-       kind: MeshSubset
-       tags:
-         newtag: client
-     default:
-       action: Allow
-`
-		err := YamlUniversal(yaml)(multizone.Global)
-		Expect(err).ToNot(HaveOccurred())
-
-		// and when Kubernetes pod is labeled
-		err = k8s.RunKubectlE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(namespace), "label", "pod", clientPodName, "newtag=client")
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		trafficAllowed("test-server.mesh")
+		trafficAllowed(serverHostname)
 	})
 
 	It("should allow the traffic to the external service through the egress", func() {
-		// given no mesh traffic permissions
-		trafficBlocked("external-service.mesh")
-
-		// when mesh traffic permission with MeshSubset
-		yaml := `
-type: MeshTrafficPermission
-name: mtp-5
-mesh: mtp-test
-spec:
- targetRef:
-   kind: MeshService
-   name: external-service
- from:
-   - targetRef:
-       kind: Mesh
-     default:
-       action: Allow
-`
-		err := YamlUniversal(yaml)(multizone.Global)
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		trafficAllowed("external-service.mesh")
+		Skip("MeshTrafficPermission cannot gate a MeshExternalService without Zone Proxy + MeshIdentity (SNI rules); tracked in https://github.com/kumahq/kuma/issues/17160")
+		trafficAllowed("external-service.extsvc.mesh.local")
 	})
 }

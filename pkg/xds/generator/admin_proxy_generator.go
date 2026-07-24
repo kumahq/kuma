@@ -8,18 +8,17 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
+	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
 
 var staticEndpointPaths = []*envoy_common.StaticEndpointPath{
@@ -61,10 +60,14 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	adminPort := proxy.Metadata.GetAdminPort()
 	readinessPort := proxy.Metadata.GetReadinessPort()
 	if readinessPort == 0 {
-		return nil, errors.New("ReadinessPort has to be in (0, 65353] range")
+		return nil, errors.New("ReadinessPort has to be in (0, 65535] range")
 	}
+	// AdminProxyGenerator also runs for zone ingress/egress, which aren't mesh-scoped
+	// (xdsCtx.Mesh.Resource is nil for them), so unlike mesh-scoped generators we can't
+	// use unified_naming.Enabled here: it would always see a nil mesh and report unified
+	// naming as disabled for zone proxies.
 	// TODO(unified-resource-naming): adjust when legacy naming is removed
-	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
+	unifiedNamingEnabled := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	// We assume that Admin API must be available on a loopback interface (while users
 	// can override the default value `127.0.0.1` in the Bootstrap Server section of `kuma-cp` config,
 	// the only reasonable alternatives are `::1`, `0.0.0.0` or `::`).
@@ -146,7 +149,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 			Configure(envoy_listeners.ServerSideStaticMTLS(proxy.EnvoyAdminMTLSCerts)),
 		))
 
-		listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP).
+		listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
 			WithOverwriteName(envoyAdminListenerName).
 			Configure(envoy_listeners.TLSInspector()).
 			Configure(filterChains...).
@@ -168,7 +171,10 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	})
 
 	var xdsEndpoint core_xds.Endpoint
-	if proxy.Metadata.HasFeature(types.FeatureReadinessUnixSocket) {
+	if proxy.Metadata.HasFeature(xds_types.FeatureReadinessUnixSocket) {
+		// Legacy: older DPs still advertise the UDS readiness feature.
+		// New DPs no longer set this; they expose readiness via TCP.
+		// TODO: remove when FeatureReadinessUnixSocket is removed.
 		xdsEndpoint = core_xds.Endpoint{
 			UnixDomainPath: core_xds.ReadinessReporterSocketName(proxy.Metadata.WorkDir),
 		}

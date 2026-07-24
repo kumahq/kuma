@@ -8,11 +8,11 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 var allowedKinds = map[string]struct{}{
@@ -49,25 +49,17 @@ func (d *DataplaneResource) Validate() error {
 				"inbound cannot be defined for delegated gateways")
 		}
 
+		if len(d.Spec.GetNetworking().GetListeners()) > 0 {
+			err.AddViolationAt(net.Field("listeners"),
+				"listeners cannot be defined for delegated gateways")
+		}
+
 		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 		err.Add(validateProbes(d.Spec.GetProbes()))
 
 	case d.Spec.IsBuiltinGateway():
-		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
-			err.AddViolationAt(net.Field("inbound"), "inbound cannot be defined for builtin gateways")
-		}
-
-		if len(d.Spec.GetNetworking().GetOutbound()) > 0 {
-			err.AddViolationAt(net.Field("outbound"), "outbound cannot be defined for builtin gateways")
-		}
-
-		if d.Spec.GetProbes() != nil {
-			err.AddViolationAt(net.Field("probes"), "probes cannot be defined for builtin gateways")
-		}
-
-		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
-		err.Add(validateNetworking(d.Spec.GetNetworking()))
+		err.AddViolationAt(net.Field("gateway").Field("type"), "BUILTIN gateways are no longer supported, use DELEGATED instead")
 
 	default:
 		err.Add(validateNetworking(d.Spec.GetNetworking()))

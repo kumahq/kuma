@@ -158,7 +158,9 @@ components:
               description: MeshMetric configuration.
               properties:
                 applications:
-                  description: Applications is a list of application that Dataplane Proxy will scrape
+                  description: |-
+                    Applications is a list of applications that Dataplane Proxy will scrape.
+                    Ignored on zone-proxy-only Dataplanes (zone ingress/egress exist without a co-located workload).
                   items:
                     properties:
                       address:
@@ -189,7 +191,7 @@ components:
                           backendRef:
                             description: |-
                               BackendRef is a reference to a MeshOpenTelemetryBackend resource that
-                              defines the collector endpoint. Mutually exclusive with Endpoint.
+                              defines the collector endpoint.
                             properties:
                               kind:
                                 description: Kind of the backend resource.
@@ -200,25 +202,12 @@ components:
                                 additionalProperties:
                                   type: string
                                 description: |-
-                                  Labels to match the referenced resource. Use for cross-zone references
-                                  where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-                                  Name. When multiple resources match, the oldest by creation time wins.
+                                  Labels to match the referenced resource. When multiple resources match,
+                                  the oldest by creation time wins.
                                 type: object
-                              name:
-                                description: |-
-                                  Name of the referenced resource (metadata.name). Use for same-cluster
-                                  references. Mutually exclusive with Labels.
-                                type: string
                             required:
                               - kind
                             type: object
-                          endpoint:
-                            default: ""
-                            description: |-
-                              Endpoint for OpenTelemetry collector.
-
-                              Deprecated: use BackendRef instead.
-                            type: string
                           refreshInterval:
                             description: RefreshInterval defines how frequent metrics should be pushed to collector
                             type: string
@@ -347,7 +336,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -367,8 +355,8 @@ components:
                   type: string
                 name:
                   description: |-
-                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    Name of the referenced resource. Can only be used with kinds: `MeshService`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: |-

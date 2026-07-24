@@ -4,19 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_generator "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/generator"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	model "github.com/kumahq/kuma/v2/pkg/core/xds"
-	policies_generator "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/generator"
-	gateway_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
-	util_envoy "github.com/kumahq/kuma/v2/pkg/util/envoy"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/core"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/egress"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-	generator_secrets "github.com/kumahq/kuma/v2/pkg/xds/generator/secrets"
-	"github.com/kumahq/kuma/v2/pkg/xds/template"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_generator "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/generator"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/v3/pkg/core/xds"
+	policies_generator "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/generator"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/core"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/egress"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	generator_secrets "github.com/kumahq/kuma/v3/pkg/xds/generator/secrets"
+	"github.com/kumahq/kuma/v3/pkg/xds/template"
 )
 
 type ProxyTemplateGenerator struct {
@@ -24,6 +22,9 @@ type ProxyTemplateGenerator struct {
 }
 
 func (g *ProxyTemplateGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+	if len(g.ProxyTemplate.GetConf().GetResources()) > 0 || len(g.ProxyTemplate.GetConf().GetModifications()) > 0 {
+		return nil, fmt.Errorf("ProxyTemplate.Conf.Resources and ProxyTemplate.Conf.Modifications are no longer applied; use MeshProxyPatch instead")
+	}
 	resources := model.NewResourceSet()
 	for i, name := range g.ProxyTemplate.GetConf().GetImports() {
 		generator := &ProxyTemplateProfileSource{ProfileName: name}
@@ -32,33 +33,6 @@ func (g *ProxyTemplateGenerator) Generate(ctx context.Context, xdsCtx xds_contex
 		} else {
 			resources.AddSet(rs)
 		}
-	}
-	generator := &ProxyTemplateRawSource{Resources: g.ProxyTemplate.GetConf().GetResources()}
-	if rs, err := generator.Generate(xdsCtx, proxy); err != nil {
-		return nil, fmt.Errorf("resources: %s", err)
-	} else {
-		resources.AddSet(rs)
-	}
-	return resources, nil
-}
-
-type ProxyTemplateRawSource struct {
-	Resources []*mesh_proto.ProxyTemplateRawResource
-}
-
-func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, _ *model.Proxy) (*model.ResourceSet, error) {
-	resources := model.NewResourceSet()
-	for i, r := range s.Resources {
-		res, err := util_envoy.ResourceFromYaml(r.Resource)
-		if err != nil {
-			return nil, fmt.Errorf("raw.resources[%d]{name=%q}.resource: %s", i, r.Name, err)
-		}
-
-		resources.Add(&model.Resource{
-			Name:     r.Name,
-			Origin:   metadata.OriginProxyTemplateRaw,
-			Resource: res,
-		})
 	}
 	return resources, nil
 }
@@ -81,9 +55,7 @@ func NewDefaultProxyProfile() core.ResourceGenerator {
 		PrometheusEndpointGenerator{},
 		TransparentProxyGenerator{},
 		InboundProxyGenerator{},
-		OutboundProxyGenerator{},
 		DirectAccessProxyGenerator{},
-		TracingProxyGenerator{},
 		ProbeProxyGenerator{},
 		DNSGenerator{},
 		ZoneProxyListenerGenerator{},
@@ -120,20 +92,6 @@ func init() {
 	RegisterProfile(core_mesh.ProfileDefaultProxy, NewDefaultProxyProfile())
 	RegisterProfile(metadata.ProxyTemplateProfileIngressProxy, core.CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
 	RegisterProfile(metadata.ProxyTemplateProfileEgressProxy, NewEgressProxyProfile())
-	// we register this so that kumactl does not fail validation of profiles registered by plugins (only "gateway-proxy" for now)
-	// a proper solution for this is to rewrite as a custom ResourceManager
-	// TODO: https://github.com/kumahq/kuma/issues/5144
-	RegisterProfile(gateway_metadata.ProfileGatewayProxy, NewFailingProfile())
-}
-
-type FailingResourceGenerator struct{}
-
-func (c FailingResourceGenerator) Generate(context.Context, *model.ResourceSet, xds_context.Context, *model.Proxy) (*model.ResourceSet, error) {
-	panic("generator for this resource should not be called")
-}
-
-func NewFailingProfile() core.ResourceGenerator {
-	return FailingResourceGenerator{}
 }
 
 func RegisterProfile(profileName string, generator core.ResourceGenerator) {

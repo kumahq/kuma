@@ -45,10 +45,6 @@
                     },
                     "type": "array",
                     "description": "List of policies to skip creating by default when the mesh is created. e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all policies."
-                },
-                "meshServices": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.MeshServices",
-                    "additionalProperties": true
                 }
             },
             "additionalProperties": true,
@@ -240,34 +236,6 @@
             "title": "Rules",
             "description": "Rules defines a set of rules for data plane proxies to be member of the mesh."
         },
-        "kuma.mesh.v1alpha1.Mesh.MeshServices": {
-            "properties": {
-                "mode": {
-                    "enum": [
-                        "Disabled",
-                        0,
-                        "Everywhere",
-                        1,
-                        "ReachableBackends",
-                        2,
-                        "Exclusive",
-                        3
-                    ],
-                    "oneOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "integer"
-                        }
-                    ],
-                    "title": "Mode"
-                }
-            },
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Mesh Services"
-        },
         "kuma.mesh.v1alpha1.Mesh.Mtls": {
             "properties": {
                 "enabledBackend": {
@@ -400,7 +368,7 @@
             "properties": {
                 "name": {
                     "type": "string",
-                    "description": "Name of the backend, can be then used in Mesh.tracing.defaultBackend or in TrafficTrace"
+                    "description": "Name of the backend, can be then used in Mesh.tracing.defaultBackend"
                 },
                 "sampling": {
                     "additionalProperties": true,
@@ -420,7 +388,7 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Tracing Backend",
-            "description": "TracingBackend defines tracing backend available to mesh. Backends can be used in TrafficTrace rules."
+            "description": "TracingBackend defines tracing backend available to mesh."
         }
     }
 }

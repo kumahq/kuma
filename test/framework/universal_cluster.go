@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"net"
@@ -19,18 +20,18 @@ import (
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	"github.com/kumahq/kuma/v2/pkg/util/template"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
-	kssh "github.com/kumahq/kuma/v2/test/framework/ssh"
-	"github.com/kumahq/kuma/v2/test/framework/universal"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/util/template"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
+	kssh "github.com/kumahq/kuma/v3/test/framework/ssh"
+	"github.com/kumahq/kuma/v3/test/framework/universal"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
 type UniversalCluster struct {
@@ -143,7 +144,6 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	env := map[string]string{"KUMA_MODE": mode, "KUMA_DNS_SERVER_PORT": "53"}
 
 	if Config.IPV6 {
-		env["KUMA_DNS_SERVER_CIDR"] = "fd00:fd00::/64"
 		env["KUMA_IPAM_MESH_SERVICE_CIDR"] = "fd00:fd01::/64"
 		env["KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"] = "fd00:fd02::/64"
 		env["KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"] = "fd00:fd03::/64"
@@ -347,9 +347,10 @@ func (c *UniversalCluster) CreateZoneEgress(
 
 // CreateDataplaneProxy starts kuma-dp for an app registered as a regular
 // Dataplane. The dpyaml must be a Dataplane resource manifest that may include
-// a listeners section.
-func (c *UniversalCluster) CreateDataplaneProxy(app *UniversalApp, name, ip, dpyaml, token string) error {
-	if err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, false, "", 0, nil, false, ""); err != nil {
+// a listeners section. envs is optional kuma-dp environment overrides; pass
+// nil to use defaults.
+func (c *UniversalCluster) CreateDataplaneProxy(app *UniversalApp, name, ip, dpyaml, token string, envs map[string]string) error {
+	if err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, false, "", 0, envs, false, ""); err != nil {
 		return err
 	}
 	c.mutex.Lock()
@@ -376,6 +377,20 @@ func (c *UniversalCluster) GetAppEnvoyTunnelE(name string) (envoy_admin.Tunnel, 
 		return nil, errors.Errorf("no tunnel with name %+q", name)
 	}
 	return t, nil
+}
+
+// RegisterAppEnvoyTunnel creates an Envoy admin tunnel for an already-deployed
+// app. Call this explicitly for apps where you need Envoy admin access.
+func (c *UniversalCluster) RegisterAppEnvoyTunnel(name string) error {
+	app := c.GetApp(name)
+	if app == nil {
+		return errors.Errorf("app %q not found", name)
+	}
+	c.mutex.Lock()
+	c.networking[name] = app.universalNetworking
+	c.createEnvoyTunnel(name)
+	c.mutex.Unlock()
+	return nil
 }
 
 func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
@@ -522,7 +537,7 @@ func (c *UniversalCluster) DeleteApp(appname string) error {
 
 func (c *UniversalCluster) DeleteMesh(mesh string) error {
 	now := time.Now()
-	_, err := retry.DoWithRetryE(c.t, "remove mesh", DefaultRetries, 1*time.Second,
+	_, err := retry.DoWithRetryContextE(c.t, context.Background(), "remove mesh", DefaultRetries, 1*time.Second,
 		func() (string, error) {
 			return "", c.GetKumactlOptions().KumactlDelete("mesh", mesh, "")
 		})

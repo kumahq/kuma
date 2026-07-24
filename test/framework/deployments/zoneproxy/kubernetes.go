@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
 
 const zoneProxyTypeLabel = "k8s.kuma.io/zone-proxy-type"
@@ -30,6 +30,24 @@ func (d *k8sDeployment) egressName() string {
 	return fmt.Sprintf("%s-egress", d.opts.Name)
 }
 
+// workloadServiceAccount returns a ServiceAccount whose name kuma uses as the
+// derived kuma.io/workload value (default behavior when WorkloadLabels is
+// unset on the CP). The Pod gets this SA via ServiceAccountName, which the
+// admission webhook permits — unlike a manual kuma.io/workload Pod label,
+// which it denies (#14928).
+func (d *k8sDeployment) workloadServiceAccount() *corev1.ServiceAccount {
+	return &corev1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceAccount",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      d.opts.Workload,
+			Namespace: d.opts.Namespace,
+		},
+	}
+}
+
 func (d *k8sDeployment) ingressDeployment() *appsv1.Deployment {
 	replicas := int32(1)
 	name := d.ingressName()
@@ -38,8 +56,30 @@ func (d *k8sDeployment) ingressDeployment() *appsv1.Deployment {
 		"app":          name,
 		"kuma.io/mesh": d.opts.Mesh,
 	}
+	podSpec := corev1.PodSpec{
+		Containers: []corev1.Container{
+			{
+				Name:            name,
+				Image:           framework.Config.GetUniversalImage(),
+				ImagePullPolicy: corev1.PullIfNotPresent,
+				Command:         []string{"/usr/bin/sleep"},
+				Args:            []string{"3600"},
+				Ports: []corev1.ContainerPort{
+					{
+						ContainerPort: port,
+						Name:          "zi-main",
+					},
+				},
+				Resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceMemory: resource.MustParse("64Mi"),
+					},
+				},
+			},
+		},
+	}
 	if d.opts.Workload != "" {
-		podLabels["kuma.io/workload"] = d.opts.Workload
+		podSpec.ServiceAccountName = d.opts.Workload
 	}
 	return &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -65,28 +105,7 @@ func (d *k8sDeployment) ingressDeployment() *appsv1.Deployment {
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: podLabels,
 				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:            name,
-							Image:           framework.Config.GetUniversalImage(),
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Command:         []string{"/usr/bin/sleep"},
-							Args:            []string{"3600"},
-							Ports: []corev1.ContainerPort{
-								{
-									ContainerPort: port,
-									Name:          "zi-main",
-								},
-							},
-							Resources: corev1.ResourceRequirements{
-								Limits: corev1.ResourceList{
-									corev1.ResourceMemory: resource.MustParse("64Mi"),
-								},
-							},
-						},
-					},
-				},
+				Spec: podSpec,
 			},
 		},
 	}
@@ -131,8 +150,30 @@ func (d *k8sDeployment) egressDeployment() *appsv1.Deployment {
 		"app":          name,
 		"kuma.io/mesh": d.opts.Mesh,
 	}
+	podSpec := corev1.PodSpec{
+		Containers: []corev1.Container{
+			{
+				Name:            name,
+				Image:           framework.Config.GetUniversalImage(),
+				ImagePullPolicy: corev1.PullIfNotPresent,
+				Command:         []string{"/usr/bin/sleep"},
+				Args:            []string{"3600"},
+				Ports: []corev1.ContainerPort{
+					{
+						ContainerPort: port,
+						Name:          "ze-main",
+					},
+				},
+				Resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceMemory: resource.MustParse("64Mi"),
+					},
+				},
+			},
+		},
+	}
 	if d.opts.Workload != "" {
-		podLabels["kuma.io/workload"] = d.opts.Workload
+		podSpec.ServiceAccountName = d.opts.Workload
 	}
 	return &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -158,28 +199,7 @@ func (d *k8sDeployment) egressDeployment() *appsv1.Deployment {
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: podLabels,
 				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:            name,
-							Image:           framework.Config.GetUniversalImage(),
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Command:         []string{"/usr/bin/sleep"},
-							Args:            []string{"3600"},
-							Ports: []corev1.ContainerPort{
-								{
-									ContainerPort: port,
-									Name:          "ze-main",
-								},
-							},
-							Resources: corev1.ResourceRequirements{
-								Limits: corev1.ResourceList{
-									corev1.ResourceMemory: resource.MustParse("64Mi"),
-								},
-							},
-						},
-					},
-				},
+				Spec: podSpec,
 			},
 		},
 	}
@@ -217,6 +237,9 @@ func (d *k8sDeployment) egressService() *corev1.Service {
 
 func (d *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	var funcs []framework.InstallFunc
+	if d.opts.Workload != "" {
+		funcs = append(funcs, framework.YamlK8sObject(d.workloadServiceAccount()))
+	}
 	if d.opts.IngressPort > 0 {
 		name := d.ingressName()
 		funcs = append(funcs,

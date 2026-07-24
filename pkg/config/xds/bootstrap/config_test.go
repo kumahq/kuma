@@ -9,17 +9,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	. "github.com/kumahq/kuma/v2/pkg/config/xds/bootstrap"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	. "github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
 )
 
 var _ = Describe("BootstrappServerConfig", func() {
 	It("should be loadable from configuration file", func() {
 		// given
 		cfg := BootstrapServerConfig{}
-
-		fileError := os.WriteFile("/tmp/corefile", []byte("abc"), 0o600)
-		Expect(fileError).ToNot(HaveOccurred())
 
 		// when
 		err := config.Load(filepath.Join("testdata", "valid-config.input.yaml"), &cfg)
@@ -34,7 +31,7 @@ var _ = Describe("BootstrappServerConfig", func() {
 		Expect(cfg.Params.XdsHost).To(Equal("kuma-control-plane.internal"))
 		Expect(cfg.Params.XdsPort).To(Equal(uint32(10101)))
 		Expect(cfg.Params.XdsConnectTimeout.Duration).To(Equal(2 * time.Second))
-		Expect(cfg.Params.CorefileTemplatePath).To(Equal("/tmp/corefile"))
+		Expect(cfg.Params.XdsGrpcMaxReceiveMessageBytes).To(Equal(uint32(33554432)))
 	})
 
 	Context("with modified environment variables", func() {
@@ -55,13 +52,14 @@ var _ = Describe("BootstrappServerConfig", func() {
 		It("should be loadable from environment variables", func() {
 			// setup
 			env := map[string]string{
-				"KUMA_BOOTSTRAP_SERVER_API_VERSION":                  "v3",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS":         "192.168.0.1",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":            "4321",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH": "/var/log",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":              "kuma-control-plane.internal",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":              "10101",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":   "2s",
+				"KUMA_BOOTSTRAP_SERVER_API_VERSION":                               "v3",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS":                      "192.168.0.1",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":                         "4321",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH":              "/var/log",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                           "kuma-control-plane.internal",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                           "10101",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":                "2s",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES": "33554432",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -83,6 +81,7 @@ var _ = Describe("BootstrappServerConfig", func() {
 			Expect(cfg.Params.XdsHost).To(Equal("kuma-control-plane.internal"))
 			Expect(cfg.Params.XdsPort).To(Equal(uint32(10101)))
 			Expect(cfg.Params.XdsConnectTimeout.Duration).To(Equal(2 * time.Second))
+			Expect(cfg.Params.XdsGrpcMaxReceiveMessageBytes).To(Equal(uint32(33554432)))
 		})
 	})
 

@@ -17,12 +17,12 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config/intercp"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/metrics"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/intercp"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
 )
 
 var log = core.Log.WithName("intercp-server")
@@ -47,9 +47,12 @@ func New(
 	certificate tls.Certificate,
 	caCert x509.Certificate,
 	instanceId string,
+	maxMsgSize int,
 ) (*InterCpServer, error) {
 	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
+		grpc.MaxRecvMsgSize(maxMsgSize),
+		grpc.MaxSendMsgSize(maxMsgSize),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			Time:    grpcKeepAliveTime,
 			Timeout: grpcKeepAliveTime,

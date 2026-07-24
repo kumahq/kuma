@@ -13,12 +13,13 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	k8s_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	k8s_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("Defaulter", func() {
@@ -126,6 +127,9 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
+				"labels": {
+				  "kuma.io/origin": "global"
+				},
 				"annotations": {
 				  "kuma.io/display-name": "empty"
 				}
@@ -180,6 +184,9 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
+				"labels": {
+				  "kuma.io/origin": "global"
+				},
 				"annotations": {
 				  "kuma.io/display-name": "empty"
 				}
@@ -206,11 +213,11 @@ var _ = Describe("Defaulter", func() {
 		}),
 		Entry("should not override mesh label if it's already set", testCase{
 			checker: globalChecker(),
-			kind:    string(mesh.TrafficRouteType),
+			kind:    string(meshexternalservice_api.MeshExternalServiceType),
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -218,25 +225,52 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/mesh": "my-mesh-1"
                 }
               },
-              "spec": {}
+              "spec": {
+                "match": {
+                  "port": 80,
+                  "protocol": "http"
+                },
+                "endpoints": [
+                  {
+                    "address": "example.com",
+                    "port": 80
+                  }
+                ]
+              }
             }
 `,
 			expected: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
                 "labels": {
                   "kuma.io/mesh": "my-mesh-1",
+                  "kuma.io/origin": "global",
                   "k8s.kuma.io/namespace": "example"
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
                 }
               },
-              "spec": {}
+              "spec": {
+                "match": {
+                  "port": 80,
+                  "protocol": "http",
+                  "type": ""
+                },
+                "endpoints": [
+                  {
+                    "address": "example.com",
+                    "port": 80
+                  }
+                ]
+              },
+              "status": {
+                "vip": {}
+              }
             }
 `,
 		}),
@@ -321,50 +355,6 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/origin": "zone",
                   "kuma.io/zone": "zone-1",
                   "kuma.io/policy-role": "workload-owner"
-                },
-                "annotations": {
-                  "kuma.io/display-name": "empty"
-                }
-              },
-              "spec": {
-                "targetRef": {
-                  "kind": "Mesh"
-                }
-              }
-            }
-`,
-		}),
-		Entry("should not set zone label when origin is set to global, federated zone", testCase{
-			checker: zoneChecker(true, false),
-			kind:    string(v1alpha1.MeshTrafficPermissionType),
-			inputObject: `
-            {
-              "apiVersion": "kuma.io/v1alpha1",
-              "kind": "MeshTrafficPermission",
-              "metadata": {
-                "namespace": "example",
-                "name": "empty",
-                "labels": {
-                  "kuma.io/origin": "global"
-                }
-              },
-              "spec": {
-                "targetRef": {
-                  "kind": "Mesh"
-                }
-              }
-            }
-`,
-			expected: `
-            {
-              "apiVersion": "kuma.io/v1alpha1",
-              "kind": "MeshTrafficPermission",
-              "metadata": {
-                "namespace": "example",
-                "name": "empty",
-                "labels": {
-                  "kuma.io/mesh": "default",
-                  "kuma.io/origin": "global"
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
@@ -485,7 +475,7 @@ var _ = Describe("Defaulter", func() {
               }
             }`,
 		}),
-		Entry("should not add origin label on Global", testCase{
+		Entry("should add origin=global label on Global", testCase{
 			checker: globalChecker(),
 			kind:    string(v1alpha1.MeshTrafficPermissionType),
 			inputObject: `
@@ -514,6 +504,7 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
+                  "kuma.io/origin": "global",
                   "kuma.io/policy-role": "workload-owner"
                 },
                 "annotations": {

@@ -2,8 +2,6 @@
 package v1alpha1_test
 
 import (
-	"context"
-	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -12,54 +10,41 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	meshroute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	meshhttproute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_policies "github.com/kumahq/kuma/v2/pkg/test/policies"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
-	xds_samples "github.com/kumahq/kuma/v2/pkg/test/xds/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/endpoints/v3"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	meshroute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
+	meshhttproute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/v3/pkg/test/xds/samples"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/endpoints/v3"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshLoadBalancingStrategy", func() {
-	backendMeshServiceIdentifier := kri.Identifier{
-		ResourceType: "MeshService",
-		Mesh:         "default",
-		Name:         "backend",
-		SectionName:  "",
-	}
-
 	type testCase struct {
 		resources []core_xds.Resource
 		proxy     *core_xds.Proxy
@@ -251,7 +236,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "egress-listener",
 					Origin: metadata.OriginEgress,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
 							Configure(MatchServerNames("eds-cluster{mesh=mesh-1}")).
@@ -390,7 +375,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "egress-listener",
 					Origin: metadata.OriginEgress,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
 							Configure(MatchServerNames("eds-cluster{mesh=mesh-1}")).
@@ -1395,366 +1380,192 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithMeshBuilder(samples.MeshMTLSBuilder()).
 				Build(),
 		}),
-	)
-	type gatewayTestCase struct {
-		name           string
-		endpointMap    *xds_builders.EndpointMapBuilder
-		gatewayRoutes  bool
-		rules          core_rules.GatewayRules
-		meshhttproutes core_rules.GatewayRules
-		meshservices   []*meshservice_api.MeshServiceResource
-	}
-	DescribeTable("should generate proper Envoy config for MeshGateways",
-		func(given gatewayTestCase) {
-			Expect(given.name).ToNot(BeEmpty())
-			resources := xds_context.NewResources()
-			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
-				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
-			}
-			if given.gatewayRoutes {
-				resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-					Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute(), samples.BackendGatewaySecondRoute()},
-				}
-			}
-			if len(given.meshservices) > 0 {
-				resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
-					Items: given.meshservices,
-				}
-			}
-
-			xdsCtx := *xds_builders.Context().
-				WithResources(resources).
-				WithEndpointMap(given.endpointMap).
-				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-				Build()
-			proxy := xds_builders.Proxy().
-				WithZone("test-zone").
-				WithDataplane(builders.Dataplane().
-					WithName("sample-gateway").
-					WithAddress("192.168.0.1").
-					WithBuiltInGateway("sample-gateway").
-					AddBuiltInGatewayTags(map[string]string{
-						"k8s.io/node":   "node1",
-						"k8s.io/az":     "test",
-						"k8s.io/region": "test",
-					})).
+		Entry("locality_aware_inbound_tags_disabled", testCase{
+			resources: []core_xds.Resource{
+				{
+					Name:   "backend",
+					Origin: metadata.OriginOutbound,
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
+						Configure(clusters.EdsCluster()).
+						MustBuild(),
+				},
+				{
+					Name:   "backend",
+					Origin: metadata.OriginOutbound,
+					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
+						createEndpointWithLabels("192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
+						createEndpointWithLabels("192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
+						createEndpointWithLabels("192.168.1.3", map[string]string{"k8s.io/az": "test"}),
+						createEndpointWithLabels("192.168.1.4", map[string]string{"k8s.io/region": "test"}),
+						createEndpointWith("zone-2", "192.168.1.5", map[string]string{}),
+						createEndpointWith("zone-3", "192.168.1.6", map[string]string{}),
+						createEndpointWith("zone-4", "192.168.1.7", map[string]string{}),
+						createEndpointWith("zone-5", "192.168.1.8", map[string]string{}),
+					}),
+				},
+				{
+					Name:   "payment",
+					Origin: metadata.OriginOutbound,
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
+						Configure(clusters.ProvidedEndpointCluster(
+							false,
+							createEndpointWith("zone-1", "192.168.0.1", map[string]string{"k8s.io/node": "node1"}),
+							createEndpointWith("zone-1", "192.168.0.2", map[string]string{"k8s.io/node": "node2"}),
+							createEndpointWith("zone-2", "192.168.0.3", map[string]string{}),
+						)).MustBuild(),
+				},
+				{
+					Name:     "backend",
+					Origin:   metadata.OriginOutbound,
+					Resource: backendListener(),
+				},
+				{
+					Name:     "payments",
+					Origin:   metadata.OriginOutbound,
+					Resource: paymentsListener(),
+				},
+			},
+			proxy: xds_builders.Proxy().
+				WithZone("zone-1").
+				WithDataplane(
+					builders.Dataplane().
+						WithLabels(map[string]string{
+							"k8s.io/node":   "node1",
+							"k8s.io/az":     "test",
+							"k8s.io/region": "test",
+						}),
+				).
+				WithOutbounds(xds_types.Outbounds{
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "backend",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "payment",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+				}).
+				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
-						WithGatewayPolicy(api.MeshLoadBalancingStrategyType, given.rules).
-						WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes),
+						WithToPolicy(api.MeshLoadBalancingStrategyType, core_rules.ToRules{
+							Rules: []*core_rules.Rule{
+								{
+									Subset: subsetutils.MeshService("backend"),
+									Conf: api.Conf{
+										LoadBalancer: &api.LoadBalancer{
+											Type: api.RandomType,
+										},
+										LocalityAwareness: &api.LocalityAwareness{
+											LocalZone: &api.LocalZone{
+												AffinityTags: &[]api.AffinityTag{
+													{
+														Key:    "k8s.io/node",
+														Weight: pointer.To[uint32](9000),
+													},
+													{
+														Key:    "k8s.io/az",
+														Weight: pointer.To[uint32](900),
+													},
+													{
+														Key:    "k8s.io/region",
+														Weight: pointer.To[uint32](90),
+													},
+												},
+											},
+											CrossZone: &api.CrossZone{
+												FailoverThreshold: &api.FailoverThreshold{Percentage: intstr.FromString("99")},
+												Failover: &[]api.Failover{
+													{
+														To: api.ToZone{
+															Type:  api.AnyExcept,
+															Zones: &[]string{"zone-3", "zone-4", "zone-5"},
+														},
+													},
+													{
+														From: &api.FromZone{
+															Zones: []string{"zone-1"},
+														},
+														To: api.ToZone{
+															Type:  api.Only,
+															Zones: &[]string{"zone-3"},
+														},
+													},
+													{
+														To: api.ToZone{
+															Type:  api.Only,
+															Zones: &[]string{"zone-4"},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								{
+									Subset: subsetutils.MeshService("payment"),
+									Conf: api.Conf{
+										HashPolicies: &[]api.HashPolicy{
+											{
+												Type: api.QueryParameterType,
+												QueryParameter: &api.QueryParameter{
+													Name: "queryparam",
+												},
+												Terminal: pointer.To(true),
+											},
+											{
+												Type: api.ConnectionType,
+												Connection: &api.Connection{
+													SourceIP: pointer.To(true),
+												},
+												Terminal: pointer.To(false),
+											},
+										},
+										LoadBalancer: &api.LoadBalancer{
+											Type: api.RingHashType,
+											RingHash: &api.RingHash{
+												MinRingSize:  pointer.To[uint32](100),
+												MaxRingSize:  pointer.To[uint32](1000),
+												HashFunction: pointer.To(api.MurmurHash2Type),
+											},
+										},
+										LocalityAwareness: &api.LocalityAwareness{
+											LocalZone: &api.LocalZone{
+												AffinityTags: &[]api.AffinityTag{
+													{
+														Key:    "k8s.io/node",
+														Weight: pointer.To[uint32](9000),
+													},
+													{
+														Key:    "k8s.io/az",
+														Weight: pointer.To[uint32](900),
+													},
+													{
+														Key:    "k8s.io/region",
+														Weight: pointer.To[uint32](90),
+													},
+												},
+											},
+											CrossZone: &api.CrossZone{
+												Failover: &[]api.Failover{
+													{
+														To: api.ToZone{
+															Type:  api.Only,
+															Zones: &[]string{"zone-2"},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						}),
 				).
-				Build()
-			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
-			}
-			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
-			Expect(err).NotTo(HaveOccurred())
-
-			httpRoutePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			// when
-			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			// then
-			resource, err := util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.ListenerType)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.listeners.golden.yaml", given.name))))
-			resource, err = util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.ClusterType)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.clusters.golden.yaml", given.name))))
-			resource, err = util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.EndpointType)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.endpoints.golden.yaml", given.name))))
-			resource, err = util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.RouteType)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.routes.golden.yaml", given.name))))
-		},
-		Entry("basic outbound cluster", gatewayTestCase{
-			name:          "basic",
-			gatewayRoutes: true,
-			endpointMap: xds_builders.EndpointMap().
-				AddEndpoints("backend",
-					createEndpointBuilderWith("test-zone", "192.168.1.1", map[string]string{}),
-					createEndpointBuilderWith("test-zone-2", "192.168.1.2", map[string]string{}),
-				),
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{},
-								Conf: api.Conf{
-									HashPolicies: &[]api.HashPolicy{
-										{
-											Type: api.QueryParameterType,
-											QueryParameter: &api.QueryParameter{
-												Name: "queryparam",
-											},
-											Terminal: pointer.To(true),
-										},
-										{
-											Type: api.ConnectionType,
-											Connection: &api.Connection{
-												SourceIP: pointer.To(true),
-											},
-											Terminal: pointer.To(false),
-										},
-									},
-									LoadBalancer: &api.LoadBalancer{
-										Type: api.RingHashType,
-										RingHash: &api.RingHash{
-											MinRingSize:  pointer.To[uint32](100),
-											MaxRingSize:  pointer.To[uint32](1000),
-											HashFunction: pointer.To(api.MurmurHash2Type),
-										},
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-		Entry("locality aware gateway", gatewayTestCase{
-			name:          "locality_aware",
-			gatewayRoutes: true,
-			endpointMap: xds_builders.EndpointMap().
-				AddEndpoints("backend",
-					createEndpointBuilderWith("test-zone", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
-					createEndpointBuilderWith("test-zone", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
-					createEndpointBuilderWith("test-zone", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
-					createEndpointBuilderWith("test-zone", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
-					createEndpointBuilderWith("zone-2", "192.168.1.5", map[string]string{}),
-					createEndpointBuilderWith("zone-3", "192.168.1.6", map[string]string{}),
-					createEndpointBuilderWith("zone-4", "192.168.1.7", map[string]string{}),
-					createEndpointBuilderWith("zone-5", "192.168.1.8", map[string]string{}),
-				),
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{},
-								Conf: api.Conf{
-									LocalityAwareness: &api.LocalityAwareness{
-										LocalZone: &api.LocalZone{
-											AffinityTags: &[]api.AffinityTag{
-												{
-													Key:    "k8s.io/node",
-													Weight: pointer.To[uint32](9000),
-												},
-												{
-													Key:    "k8s.io/az",
-													Weight: pointer.To[uint32](900),
-												},
-												{
-													Key:    "k8s.io/region",
-													Weight: pointer.To[uint32](90),
-												},
-											},
-										},
-										CrossZone: &api.CrossZone{
-											Failover: &[]api.Failover{
-												{
-													To: api.ToZone{
-														Type:  api.AnyExcept,
-														Zones: &[]string{"zone-3", "zone-4", "zone-5"},
-													},
-												},
-												{
-													From: &api.FromZone{
-														Zones: []string{"zone-1"},
-													},
-													To: api.ToZone{
-														Type:  api.Only,
-														Zones: &[]string{"zone-3"},
-													},
-												},
-												{
-													To: api.ToZone{
-														Type:  api.Only,
-														Zones: &[]string{"zone-4"},
-													},
-												},
-											},
-										},
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-		Entry("no cross zone", gatewayTestCase{
-			name:          "no-cross-zone",
-			gatewayRoutes: true,
-			endpointMap: xds_builders.EndpointMap().
-				AddEndpoints("backend",
-					createEndpointBuilderWith("test-zone", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
-					createEndpointBuilderWith("test-zone", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
-					createEndpointBuilderWith("test-zone", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
-					createEndpointBuilderWith("test-zone", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
-					createEndpointBuilderWith("zone-2", "192.168.1.5", map[string]string{}),
-					createEndpointBuilderWith("zone-3", "192.168.1.6", map[string]string{}),
-					createEndpointBuilderWith("zone-4", "192.168.1.7", map[string]string{}),
-					createEndpointBuilderWith("zone-5", "192.168.1.8", map[string]string{}),
-				),
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{},
-								Conf: api.Conf{
-									LocalityAwareness: &api.LocalityAwareness{
-										CrossZone: &api.CrossZone{
-											Failover: &[]api.Failover{
-												{
-													To: api.ToZone{
-														Type: api.None,
-													},
-												},
-											},
-										},
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-		Entry("real MeshService targeted to real MeshService", gatewayTestCase{
-			name: "real-MeshService-targeted-to-real-MeshService",
-			endpointMap: xds_builders.EndpointMap().
-				AddEndpoints("backend",
-					createEndpointBuilderWith("test-zone", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
-					createEndpointBuilderWith("test-zone", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
-					createEndpointBuilderWith("test-zone", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
-					createEndpointBuilderWith("test-zone", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
-					createEndpointBuilderWith("zone-2", "192.168.1.5", map[string]string{}),
-					createEndpointBuilderWith("zone-3", "192.168.1.6", map[string]string{}),
-					createEndpointBuilderWith("zone-4", "192.168.1.7", map[string]string{}),
-					createEndpointBuilderWith("zone-5", "192.168.1.8", map[string]string{}),
-				),
-			meshservices: []*meshservice_api.MeshServiceResource{
-				{
-					Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
-					Spec: &meshservice_api.MeshService{
-						Selector: meshservice_api.Selector{},
-						Ports: []meshservice_api.Port{{
-							Port:        80,
-							TargetPort:  pointer.To(intstr.FromInt(8084)),
-							AppProtocol: core_meta.ProtocolHTTP,
-						}},
-						Identities: &[]meshservice_api.MeshServiceIdentity{
-							{
-								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-								Value: "backend",
-							},
-							{
-								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-								Value: "other-backend",
-							},
-						},
-					},
-					Status: &meshservice_api.MeshServiceStatus{
-						VIPs: []meshservice_api.VIP{{
-							IP: "10.0.0.1",
-						}},
-					},
-				},
-			},
-			meshhttproutes: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{
-								test_policies.NewRule(subsetutils.MeshSubset(), meshhttproute_api.PolicyDefault{
-									Rules: []meshhttproute_api.Rule{{
-										Matches: []meshhttproute_api.Match{{
-											Path: &meshhttproute_api.PathMatch{
-												Type:  meshhttproute_api.Exact,
-												Value: "/",
-											},
-										}},
-										Default: meshhttproute_api.RuleConf{
-											BackendRefs: &[]common_api.BackendRef{{
-												TargetRef: builders.TargetRefService("backend"),
-												Port:      pointer.To(uint32(80)),
-												Weight:    pointer.To(uint(100)),
-											}},
-										},
-									}},
-								}),
-							},
-						},
-					},
-				},
-			},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							ResourceRules: map[kri.Identifier]outbound.ResourceRule{
-								backendMeshServiceIdentifier: {
-									Conf: []any{
-										api.Conf{
-											LocalityAwareness: &api.LocalityAwareness{
-												LocalZone: &api.LocalZone{
-													AffinityTags: &[]api.AffinityTag{
-														{
-															Key:    "k8s.io/node",
-															Weight: pointer.To[uint32](9000),
-														},
-														{
-															Key:    "k8s.io/az",
-															Weight: pointer.To[uint32](900),
-														},
-														{
-															Key:    "k8s.io/region",
-															Weight: pointer.To[uint32](90),
-														},
-													},
-												},
-												CrossZone: &api.CrossZone{
-													Failover: &[]api.Failover{
-														{
-															To: api.ToZone{
-																Type:  api.AnyExcept,
-																Zones: &[]string{"zone-3", "zone-4", "zone-5"},
-															},
-														},
-														{
-															From: &api.FromZone{
-																Zones: []string{"zone-1"},
-															},
-															To: api.ToZone{
-																Type:  api.Only,
-																Zones: &[]string{"zone-3"},
-															},
-														},
-														{
-															To: api.ToZone{
-																Type:  api.Only,
-																Zones: &[]string{"zone-4"},
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+				Build(),
+			context: *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				Build(),
 		}),
 	)
 })
@@ -1769,13 +1580,15 @@ func createEndpointWith(zone string, ip string, extraTags map[string]string) cor
 		Build()
 }
 
-func createEndpointBuilderWith(zone string, ip string, extraTags map[string]string) *xds_builders.EndpointBuilder {
-	return xds_builders.Endpoint().
+func createEndpointWithLabels(ip string, labels map[string]string) core_xds.Endpoint {
+	e := xds_builders.Endpoint().
 		WithTarget(ip).
 		WithPort(8080).
-		WithTags(mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), mesh_proto.ZoneTag, zone).
-		AddTagsMap(extraTags).
-		WithZone(zone)
+		WithTags(mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), mesh_proto.ZoneTag, "zone-1").
+		WithZone("zone-1").
+		Build()
+	e.Labels = labels
+	return *e
 }
 
 // TODO move to routing builder

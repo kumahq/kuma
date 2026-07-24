@@ -7,12 +7,12 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
-	"github.com/kumahq/kuma/v2/test/server/types"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/test/server/types"
 )
 
 func MeshService() {
@@ -21,7 +21,7 @@ func MeshService() {
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")).
+			Install(MTLSMeshUniversal(meshName)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(`
 type: MeshMultiZoneService
@@ -91,8 +91,8 @@ name: meshhttproutems-route-1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       app: demo-client
   to:
     - targetRef:
@@ -139,7 +139,8 @@ spec:
 `, meshName))(multizone.Global)).To(Succeed())
 
 		execRequest := func(path string) (types.EchoResponse, error) {
-			return client.CollectEchoResponse(multizone.KubeZone1, "demo-client", "test-server:80"+path,
+			return client.CollectEchoResponse(
+				multizone.KubeZone1, "demo-client", "test-server:80"+path,
 				client.FromKubernetesPod(meshName, "demo-client"),
 			)
 		}

@@ -1,27 +1,19 @@
 package install
 
 import (
-	"strings"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	install_context "github.com/kumahq/kuma/v2/app/kumactl/cmd/install/context"
-	kumactl_data "github.com/kumahq/kuma/v2/app/kumactl/data"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/install/k8s"
-	"github.com/kumahq/kuma/v2/pkg/util/data"
+	install_context "github.com/kumahq/kuma/v3/app/kumactl/cmd/install/context"
+	kumactl_data "github.com/kumahq/kuma/v3/app/kumactl/data"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/install/k8s"
+	"github.com/kumahq/kuma/v3/pkg/util/data"
 )
 
 type demoTemplateArgs struct {
 	Namespace       string
 	SystemNamespace string
 	Zone            string
-}
-
-type GatewayFilter struct{}
-
-func (GatewayFilter) Filter(name string) bool {
-	return !strings.HasSuffix(name, "gateway.yaml")
 }
 
 func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
@@ -41,12 +33,7 @@ func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
 				return errors.Wrap(err, "Failed to read template files")
 			}
 
-			var filter templateFilter = NoneFilter{}
-			if ctx.Args.WithoutGateway {
-				filter = GatewayFilter{}
-			}
-
-			renderedFiles, err := renderFilesWithFilter(templateFiles, templateArgs, simpleTemplateRenderer, filter)
+			renderedFiles, err := renderFilesWithFilter(templateFiles, templateArgs, simpleTemplateRenderer, NoneFilter{})
 			if err != nil {
 				return errors.Wrap(err, "Failed to render template files")
 			}
@@ -67,6 +54,5 @@ func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
 	cmd.Flags().StringVar(&ctx.Args.Zone, "zone", ctx.Args.Zone, "Zone in which to install demo")
 	cmd.Flags().StringVar(&ctx.Args.Namespace, "namespace", ctx.Args.Namespace, "Namespace to install demo to")
 	cmd.Flags().StringVar(&ctx.Args.SystemNamespace, "system-namespace", ctx.Args.SystemNamespace, "System namespace of the control plane")
-	cmd.Flags().BoolVar(&ctx.Args.WithoutGateway, "without-gateway", ctx.Args.WithoutGateway, "Skip MeshGateway resources")
 	return cmd
 }

@@ -6,8 +6,8 @@ import (
 
 	"github.com/patrickmn/go-cache"
 
-	api_types "github.com/kumahq/kuma/v2/api/openapi/types"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
+	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
 )
 
 type cachedGlobalInsightService struct {
@@ -26,7 +26,7 @@ func NewCachedGlobalInsightService(globalInsightService GlobalInsightService, te
 	}
 }
 
-func (gis *cachedGlobalInsightService) GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsight, error) {
+func (gis *cachedGlobalInsightService) GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsightBase, error) {
 	tenantID, err := gis.tenants.GetID(ctx)
 	if err != nil {
 		return nil, err
@@ -42,5 +42,5 @@ func (gis *cachedGlobalInsightService) GetGlobalInsight(ctx context.Context) (*a
 		return insight, nil
 	}
 
-	return obj.(*api_types.GlobalInsight), nil
+	return obj.(*api_types.GlobalInsightBase), nil
 }

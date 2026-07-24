@@ -7,13 +7,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	core_system "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/defaults"
-	resources_memory "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/defaults"
+	resources_memory "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("Envoy Admin CA defaults", func() {
@@ -23,7 +23,7 @@ var _ = Describe("Envoy Admin CA defaults", func() {
 		manager := core_manager.NewResourceManager(store)
 
 		// when
-		err := defaults.EnsureEnvoyAdminCaExists(context.Background(), manager, logr.Discard(), kuma_cp.Config{})
+		err := defaults.EnsureEnvoyAdminCaExists(context.Background(), manager, logr.Discard(), kuma_cp.Config{}, context.Background())
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

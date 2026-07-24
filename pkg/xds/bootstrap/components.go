@@ -1,16 +1,15 @@
 package bootstrap
 
 import (
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 )
 
 func RegisterBootstrap(rt core_runtime.Runtime) error {
 	generator, err := NewDefaultBootstrapGenerator(
 		rt.ResourceManager(),
 		rt.Config().BootstrapServer,
-		rt.Config().Proxy,
 		rt.Config().DpServer.TlsCertFile,
 		map[string]bool{
 			string(mesh_proto.DataplaneProxyType): rt.Config().DpServer.Authn.DpProxy.Type != dp_server.DpServerAuthNone,
@@ -20,7 +19,6 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().DpServer.Authn.EnableReloadableTokens,
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
-		rt.Config().Experimental.DeltaXds,
 		rt.Config().Experimental.InboundTagsDisabled,
 		rt.Config().Experimental.MeshPassthroughMatcherAPI,
 		rt.Config().BootstrapServer.Params.EnvoyAdminUnixSocket,

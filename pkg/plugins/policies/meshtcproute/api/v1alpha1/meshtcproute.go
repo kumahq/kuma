@@ -2,7 +2,7 @@
 package v1alpha1
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // NOTICE: This policy defines its own `GetDefault` method so that it can have the given
@@ -12,6 +12,7 @@ import (
 // MeshTCPRoute configures routing for TCP traffic between services in the mesh. It enables traffic splitting and weighted load balancing across different backend endpoints, useful for canary deployments, blue-green deployments, and gradual traffic migration for TCP-based services.
 // +kuma:policy:singular_display_name=Mesh TCP Route
 // +kuma:policy:skip_get_default=true
+// +kuma:policy:order=200
 type MeshTCPRoute struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

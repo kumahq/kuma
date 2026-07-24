@@ -1,57 +1,29 @@
 InboundRules:
   :0:
   - conf:
-      BaseEntry:
-        default:
-          connectionTimeout: 22s
-          http:
-            requestTimeout: 22s
-        targetRef:
-          kind: Mesh
+      connectionLimits:
+        maxConnections: 22
+    match: null
     origin:
       Resource:
         creationTime: "0001-01-01T00:00:00Z"
-        kri: kri_mt_mesh-1___mt-2_
+        kri: kri_mcb_mesh-1___mcb-2_
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
-        name: mt-2
-        type: MeshTimeout
-      RuleIndex: 0
-  - conf:
-      BaseEntry:
-        default:
-          connectionTimeout: 33s
-          http:
-            requestTimeout: 33s
-        targetRef:
-          kind: Mesh
-    origin:
-      Resource:
-        creationTime: "0001-01-01T00:00:00Z"
-        kri: kri_mt_mesh-1___mt-1_
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mt-1
-        type: MeshTimeout
+        name: mcb-2
+        type: MeshCircuitBreaker
       RuleIndex: 0
 Rules:
   :0:
   - Conf:
-      connectionTimeout: 33s
-      http:
-        requestTimeout: 33s
+      connectionLimits:
+        maxConnections: 22
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mt_mesh-1___mt-2_
+      kri: kri_mcb_mesh-1___mcb-2_
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
-      name: mt-2
-      type: MeshTimeout
-    - creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mt_mesh-1___mt-1_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mt-1
-      type: MeshTimeout
+      name: mcb-2
+      type: MeshCircuitBreaker
     OriginByMatches: {}
     Subset: []

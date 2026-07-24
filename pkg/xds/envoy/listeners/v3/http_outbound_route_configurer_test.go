@@ -4,12 +4,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 )
 
 var _ = Describe("HttpOutboundRouteConfigurer", func() {
@@ -100,7 +100,6 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                       - match:
                           prefix: /
                         route:
-                          timeout: 0s
                           weightedClusters:
                             clusters:
                             - name: backend-0
@@ -267,7 +266,6 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                           cluster: backend-0
                           hostRewriteLiteral: test
                           prefixRewrite: /another
-                          timeout: 0s
                   statPrefix: "127_0_0_1_18080"
                   internalAddressConfig:
                     cidrRanges:

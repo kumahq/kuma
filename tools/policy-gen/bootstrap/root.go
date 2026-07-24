@@ -26,6 +26,7 @@ type config struct {
 	generateFrom      bool
 	isPolicy          bool
 	hasStatus         bool
+	order             int
 }
 
 func (c config) policyPath() string {
@@ -105,6 +106,7 @@ func generateType(c config) error {
 		"generateFrom":      c.generateFrom,
 		"isPolicy":          c.isPolicy,
 		"hasStatus":         c.hasStatus,
+		"order":             c.order,
 	})
 	if err != nil {
 		return err
@@ -142,6 +144,7 @@ func generatePlugin(c config) error {
 		"generateTargetRef": c.generateTargetRef,
 		"generateTo":        c.generateTo,
 		"generateFrom":      c.generateFrom,
+		"order":             c.order,
 	})
 }
 
@@ -157,7 +160,7 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVar(&cfg.name, "name", "", "The name of the policy (UpperCamlCase)")
 	rootCmd.Flags().StringVar(&cfg.basePath, "path", "pkg/plugins/policies", "Where to put the generated code")
-	rootCmd.Flags().StringVar(&cfg.gomodule, "gomodule", "github.com/kumahq/kuma/v2", "Where to put the generated code")
+	rootCmd.Flags().StringVar(&cfg.gomodule, "gomodule", "github.com/kumahq/kuma/v3", "Where to put the generated code")
 	rootCmd.Flags().StringVar(&cfg.version, "version", "v1alpha1", "The version to use")
 	rootCmd.Flags().BoolVar(&cfg.skipValidator, "skip-validator", false, "don't generator a validator empty file")
 	rootCmd.Flags().BoolVar(&cfg.force, "force", false, "Overwrite any existing code")
@@ -166,6 +169,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&cfg.generateFrom, "generate-from", false, "Generate 'from' array for incoming traffic configuration")
 	rootCmd.Flags().BoolVar(&cfg.isPolicy, "is-policy", false, "Resource is a policy")
 	rootCmd.Flags().BoolVar(&cfg.hasStatus, "has-status", false, "Resource has a status field")
+	rootCmd.Flags().IntVar(&cfg.order, "order", 0, "Execution order of the policy plugin relative to others (lower runs first)")
 }
 
 var typeTemplate = template.Must(template.New("").Option("missingkey=error").Parse(
@@ -174,13 +178,16 @@ package {{ .version }}
 {{- if or .generateTargetRef (or .generateTo .generateFrom) }}
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 {{- end}}
 
 // {{ .name }} TODO add some description for public usage!
 // +kuma:policy:skip_registration=true
 // +kuma:policy:is_policy={{ .isPolicy }}
+{{- if .isPolicy }}
+// +kuma:policy:order={{ .order }}
+{{- end}}
 type {{ .name }} struct {
 	{{- if .generateTargetRef }}
 	// TargetRef is a reference to the resource the policy takes an effect on.
@@ -239,23 +246,24 @@ var pluginTemplate = template.Must(template.New("").Option("missingkey=error").P
 	`package {{ .version }}
 
 import (
-	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
 
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	{{- if .generateTargetRef }}
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	api "{{ .package }}"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	{{- end}}
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	api "{{ .package }}"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
 var log = core.Log.WithName("{{.name}}")
 
-type plugin struct {
-}
+type plugin struct{}
+
+func (p plugin) Order() int { return api.{{.name}}ResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
@@ -279,10 +287,10 @@ var validatorTemplate = template.Must(template.New("").Option("missingkey=error"
 
 import (
 	{{- if or .generateTargetRef (or .generateTo .generateFrom) }}
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	{{- end}}
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
 func (r *{{.name}}Resource) validate() error {

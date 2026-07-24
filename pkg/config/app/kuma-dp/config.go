@@ -10,10 +10,10 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 )
 
 var DefaultConfig = func() Config {
@@ -43,16 +43,11 @@ var DefaultConfig = func() Config {
 			IPv6Enabled:               true,
 			StrictInboundPortsEnabled: true,
 			OtelPipeEnabled:           true,
+			ReusePortEnabled:          true,
 		},
 		DNS: DNS{
-			Enabled:                   true,
-			CoreDNSPort:               15053,
-			EnvoyDNSPort:              15054,
-			CoreDNSBinaryPath:         "coredns",
-			CoreDNSConfigTemplatePath: "",
-			ConfigDir:                 "", // if left empty, a temporary directory will be generated automatically
-			PrometheusPort:            19153,
-			CoreDNSLogging:            false,
+			Enabled:   true,
+			ProxyPort: 15053,
 		},
 		ApplicationProbeProxyServer: ApplicationProbeProxyServer{
 			Port: 0,
@@ -99,6 +94,8 @@ type ControlPlane struct {
 	CaCert string `json:"caCert" envconfig:"kuma_control_plane_ca_cert"`
 	// CaCertFile defines a file for Certificate Authority that will be used to verify connection to the Control Plane.
 	CaCertFile string `json:"caCertFile" envconfig:"kuma_control_plane_ca_cert_file"`
+	// TlsSkipVerify disables verification of the Control Plane's TLS certificate. Insecure, intended for development and testing only.
+	TlsSkipVerify bool `json:"tlsSkipVerify" envconfig:"kuma_control_plane_tls_skip_verify"`
 }
 
 type ApiServer struct {
@@ -143,10 +140,7 @@ type Dataplane struct {
 	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
-	// ReadinessUnixSocketDisabled disables readiness check via Unix socket.
-	// TODO: remove in 2.15 or higher, see: https://github.com/kumahq/kuma/issues/14039
-	ReadinessUnixSocketDisabled bool `json:"readinessUnixSocketDisabled,omitempty" envconfig:"kuma_readiness_unix_socket_disabled"`
-	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
+	// Port that exposes kuma-dp readiness status on localhost. Must be in (0, 65535]; 0 is rejected.
 	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
 	// ResilientComponentBaseBackoff defines the base backoff between restarts of resilient components
 	ResilientComponentBaseBackoff config_types.Duration `json:"resilientComponentBaseBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_base_backoff"`
@@ -243,8 +237,6 @@ type DataplaneRuntime struct {
 	TransparentProxy *tproxy_config.DataplaneConfig `json:"transparentProxy,omitempty" envconfig:"kuma_dataplane_runtime_transparent_proxy"`
 	// BindOutbounds configure dataplane to bind to real loopback addresses
 	BindOutbounds bool `json:"bindOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_bind_outbounds"`
-	// EnvoyXdsTransportProtocolVariant configures the way Envoy receives updates from the control-plane.
-	EnvoyXdsTransportProtocolVariant string `json:"envoyXdsTransportProtocolVariant,omitempty" envconfig:"kuma_dataplane_runtime_envoy_xds_transport_protocol_variant"`
 	// UnifiedResourceNamingEnabled enables the new naming format for Envoy resource and stat names.
 	// When set to true, the data plane proxy uses:
 	// - KRI-based format for resources tied to distinct Kuma resources
@@ -266,6 +258,10 @@ type DataplaneRuntime struct {
 	// listener configuration on this specific dataplane. When set, the CP generates
 	// Listener.FilterChainMatcher instead of per-filter-chain FilterChainMatch fields.
 	MeshPassthroughMatcherAPIEnabled bool `json:"meshPassthroughMatcherAPIEnabled,omitempty" envconfig:"kuma_dataplane_runtime_mesh_passthrough_matcher_api_enabled"`
+	// ReusePortEnabled controls whether kuma-dp advertises FeatureReusePort to the CP.
+	// When true, the CP generates Envoy listeners with enable_reuse_port=true so each worker
+	// owns its own LISTEN socket. Default: true.
+	ReusePortEnabled bool `json:"reusePortEnabled" envconfig:"kuma_dataplane_runtime_reuse_port_enabled"`
 }
 
 type Spire struct {
@@ -370,8 +366,8 @@ func (d *Dataplane) Validate() error {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
 
-	if d.ReadinessPort > 65353 || d.ReadinessPort == 0 {
-		errs = multierr.Append(errs, errors.Errorf(".ReadinessPort has to be in (0, 65353] range"))
+	if d.ReadinessPort > 65535 || d.ReadinessPort == 0 {
+		errs = multierr.Append(errs, errors.Errorf(".ReadinessPort has to be in (0, 65535] range"))
 	}
 
 	return errs
@@ -392,15 +388,6 @@ func (d *DataplaneRuntime) Validate() error {
 	var errs error
 	if d.BinaryPath == "" {
 		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
-	}
-	if d.EnvoyXdsTransportProtocolVariant != "" {
-		switch d.EnvoyXdsTransportProtocolVariant {
-		case "DELTA_GRPC":
-		case "GRPC":
-		default:
-			errs = multierr.Append(
-				errs, errors.Errorf(".EnvoyXdsTransportProtocolVariant invalid value: %s . Must be one of: DELTA_GRPC or GRPC when defined", d.EnvoyXdsTransportProtocolVariant))
-		}
 	}
 	return errs
 }
@@ -426,42 +413,19 @@ func (d *ApiServer) Validate() error {
 type DNS struct {
 	config.BaseConfig
 
-	// If true then builtin DNS functionality is enabled and CoreDNS server is started
+	// If true then builtin DNS functionality is enabled and the embedded DNS proxy is started
 	Enabled bool `json:"enabled,omitempty" envconfig:"kuma_dns_enabled"`
 
-	// ProxyPort defines the port of the embedded DNS proxy (if non 0 then the embedded proxy replaces coreDNS + Envoy. recommended value: 15053)
+	// ProxyPort defines the port on which the embedded DNS proxy listens. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.
 	ProxyPort uint32 `json:"proxyPort,omitempty" envconfig:"kuma_dns_proxy_port"`
-	// CoreDNSPort defines a port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.
-	CoreDNSPort uint32 `json:"coreDnsPort,omitempty" envconfig:"kuma_dns_core_dns_port"`
-	// EnvoyDNSPort defines a port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one.
-	EnvoyDNSPort uint32 `json:"envoyDnsPort,omitempty" envconfig:"kuma_dns_envoy_dns_port"`
-	// CoreDNSBinaryPath defines a path to CoreDNS binary.
-	CoreDNSBinaryPath string `json:"coreDnsBinaryPath,omitempty" envconfig:"kuma_dns_core_dns_binary_path"`
-	// CoreDNSConfigTemplatePath defines a path to a CoreDNS config template.
-	CoreDNSConfigTemplatePath string `json:"coreDnsConfigTemplatePath,omitempty" envconfig:"kuma_dns_core_dns_config_template_path"`
-	// Dir to store auto-generated DNS Server config in.
-	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dns_config_dir"`
-	// PrometheusPort where Prometheus stats will be exposed for the DNS Server
-	PrometheusPort uint32 `json:"prometheusPort,omitempty" envconfig:"kuma_dns_prometheus_port"`
-	// If true then CoreDNS logging is enabled
-	CoreDNSLogging bool `json:"coreDNSLogging,omitempty" envconfig:"kuma_dns_enable_logging"`
 }
 
 func (d *DNS) Validate() error {
 	if !d.Enabled {
 		return nil
 	}
-	if d.CoreDNSPort > 65353 {
-		return errors.New(".CoreDNSPort has to be in [0, 65353] range")
-	}
-	if d.EnvoyDNSPort > 65353 {
-		return errors.New(".EnvoyDNSPort has to be in [0, 65353] range")
-	}
-	if d.PrometheusPort > 65353 {
-		return errors.New(".PrometheusPort has to be in [0, 65353] range")
-	}
-	if d.CoreDNSBinaryPath == "" {
-		return errors.New(".CoreDNSBinaryPath cannot be empty")
+	if d.ProxyPort == 0 || d.ProxyPort > 65535 {
+		return errors.New(".ProxyPort has to be in (0, 65535] range")
 	}
 	return nil
 }
@@ -476,8 +440,8 @@ func (p *ApplicationProbeProxyServer) Validate() error {
 	if p.Port == 0 {
 		return nil
 	}
-	if p.Port > 65353 {
-		return errors.New(".Port has to be in [0, 65353] range")
+	if p.Port > 65535 {
+		return errors.New(".Port has to be in [0, 65535] range")
 	}
 	return nil
 }

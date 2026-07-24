@@ -9,26 +9,27 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	"github.com/kumahq/kuma/v2/pkg/intercp/catalog"
-	"github.com/kumahq/kuma/v2/pkg/intercp/client"
-	"github.com/kumahq/kuma/v2/pkg/intercp/envoyadmin"
-	"github.com/kumahq/kuma/v2/pkg/intercp/server"
-	intercp_tls "github.com/kumahq/kuma/v2/pkg/intercp/tls"
-	kds_envoyadmin "github.com/kumahq/kuma/v2/pkg/kds/envoyadmin"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/intercp/catalog"
+	"github.com/kumahq/kuma/v3/pkg/intercp/client"
+	"github.com/kumahq/kuma/v3/pkg/intercp/envoyadmin"
+	"github.com/kumahq/kuma/v3/pkg/intercp/server"
+	intercp_tls "github.com/kumahq/kuma/v3/pkg/intercp/tls"
+	kds_envoyadmin "github.com/kumahq/kuma/v3/pkg/kds/envoyadmin"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
 )
 
 var log = core.Log.WithName("inter-cp")
 
 func Setup(rt runtime.Runtime) error {
 	cfg := rt.Config().InterCp
+	maxMsgSize := int(rt.Config().Multizone.Global.KDS.MaxMsgSize)
 	defaults := &intercp_tls.DefaultsComponent{
 		ResManager: rt.ResourceManager(),
 		Log:        log.WithName("defaults"),
@@ -41,6 +42,7 @@ func Setup(rt runtime.Runtime) error {
 		Id:          rt.GetInstanceId(),
 		Address:     cfg.Catalog.InstanceAddress,
 		InterCpPort: cfg.Server.Port,
+		Version:     cfg.Catalog.InstanceVersion,
 	}
 
 	pool := rt.InterCPClientPool()
@@ -58,7 +60,7 @@ func Setup(rt runtime.Runtime) error {
 			ClientCert: certs.client,
 		})
 
-		interCpServer, err := server.New(cfg.Server, rt.Metrics(), certs.server, certs.ca, instance.Id)
+		interCpServer, err := server.New(cfg.Server, rt.Metrics(), certs.server, certs.ca, instance.Id, maxMsgSize)
 		if err != nil {
 			return errors.Wrap(err, "could not start inter-cp server")
 		}
@@ -97,8 +99,10 @@ func Setup(rt runtime.Runtime) error {
 	)
 }
 
-func DefaultClientPool() *client.Pool {
-	return client.NewPool(client.New, 5*time.Minute, core.Now)
+func DefaultClientPool(maxMsgSize int) *client.Pool {
+	return client.NewPool(func(serverURL string, tlsCfg *client.TLSConfig) (client.Conn, error) {
+		return client.New(serverURL, tlsCfg, maxMsgSize)
+	}, 5*time.Minute, core.Now)
 }
 
 func PooledEnvoyAdminClientFn(pool *client.Pool) envoyadmin.NewClientFn {

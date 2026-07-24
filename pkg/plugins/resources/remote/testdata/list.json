@@ -2,27 +2,49 @@
     "total": 2,
     "items": [
         {
-            "type": "TrafficRoute",
+            "type": "MeshExternalService",
             "mesh": "default",
             "name": "one",
             "creationTime": "2018-07-17T16:05:36.995Z",
             "modificationTime": "2019-07-17T16:05:36.995Z",
-            "conf": {
-                "loadBalancer": {
-                    "roundRobin": {}
-                }
+            "spec": {
+                "match": {
+                    "type": "HostnameGenerator",
+                    "port": 9000,
+                    "protocol": "http"
+                },
+                "endpoints": [
+                    {
+                        "address": "192.168.0.1",
+                        "port": 27017
+                    }
+                ]
+            },
+            "status": {
+                "vip": {}
             }
         },
         {
-            "type": "TrafficRoute",
+            "type": "MeshExternalService",
             "mesh": "demo",
             "name": "two",
             "creationTime": "2018-07-17T16:05:36.995Z",
             "modificationTime": "2019-07-17T16:05:36.995Z",
-            "conf": {
-                "loadBalancer": {
-                    "leastRequest": {}
-                }
+            "spec": {
+                "match": {
+                    "type": "HostnameGenerator",
+                    "port": 9000,
+                    "protocol": "http"
+                },
+                "endpoints": [
+                    {
+                        "address": "192.168.0.1",
+                        "port": 27017
+                    }
+                ]
+            },
+            "status": {
+                "vip": {}
             }
         }
     ],

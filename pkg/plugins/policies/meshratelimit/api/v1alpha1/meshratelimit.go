@@ -4,11 +4,12 @@ package v1alpha1
 import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // MeshRateLimit protects services from being overwhelmed by limiting the rate of incoming requests or connections. It supports local rate limiting for both HTTP (requests per interval) and TCP (connections per interval) traffic with customizable response codes and headers for rate-limited requests.
 // +kuma:policy:is_from_as_rules=true
+// +kuma:policy:order=900
 type MeshRateLimit struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -18,12 +19,13 @@ type MeshRateLimit struct {
 	From *[]From `json:"from,omitempty"`
 	// To list makes a match between clients and corresponding configurations
 	To *[]To `json:"to,omitempty"`
-	// Rules defines inbound rate limiting configurations. Currently limited to
-	// selecting all inbound traffic, as L7 matching is not yet implemented.
+	// Rules defines inbound rate limiting configurations.
 	Rules *[]Rule `json:"rules,omitempty"`
 }
 
 type Rule struct {
+	// Matches define additional conditions for applying this rate limit rule.
+	Matches *[]common_api.Match `json:"matches,omitempty"`
 	// Default contains configuration of the inbound rate limits
 	Default Conf `json:"default,omitempty"`
 }

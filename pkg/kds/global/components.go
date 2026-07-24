@@ -5,14 +5,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/kds/mux"
-	"github.com/kumahq/kuma/v2/pkg/kds/service"
-	kds_server "github.com/kumahq/kuma/v2/pkg/kds/v2/server"
-	kds_sync_store "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/kds/mux"
+	"github.com/kumahq/kuma/v3/pkg/kds/service"
+	kds_server "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
 )
 
 var (
@@ -31,7 +31,6 @@ func Setup(rt runtime.Runtime) error {
 		rt,
 		rt.KDSContext().TypesSentByGlobal,
 		"global",
-		rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
 		rt.KDSContext().GlobalProvidedFilter,
 		rt.KDSContext().GlobalResourceMapper,
 		rt.Config().Multizone.Global.KDS.NackBackoff.Duration,

@@ -9,12 +9,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	reconcile_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/reconcile"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
 )
 
 type staticReconciler struct {
@@ -75,17 +76,17 @@ var _ = Describe("Event Based Watchdog", func() {
 			EventBus:   eventBus,
 			Reconciler: reconciler,
 			ProvidedTypes: map[core_model.ResourceType]struct{}{
-				mesh.TrafficPermissionType: {},
-				mesh.TrafficLogType:        {},
-				mesh.TrafficRouteType:      {},
+				meshexternalservice_api.MeshExternalServiceType: {},
+				mesh.DataplaneType:   {},
+				mesh.ZoneIngressType: {},
 			},
 			Metrics: kdsMetrics,
 			Log:     logr.Discard(),
 			NewFlushTicker: func() *time.Ticker {
 				return &time.Ticker{C: flushCh}
 			},
-			NewFullResyncTicker: func() *time.Ticker {
-				return &time.Ticker{C: fullResyncCh}
+			NewFullResyncTicker: func() (*time.Ticker, context.CancelFunc) {
+				return &time.Ticker{C: fullResyncCh}, func() {}
 			},
 		}
 		go func() {
@@ -114,11 +115,11 @@ var _ = Describe("Event Based Watchdog", func() {
 	It("should reconcile on the events flush", func() {
 		// when
 		eventBus.Send(events.ResourceChangedEvent{
-			Type: mesh.TrafficPermissionType,
+			Type: meshexternalservice_api.MeshExternalServiceType,
 		})
 		eventBus.Send(events.TriggerKDSResyncEvent{
 			NodeID: "1",
-			Type:   mesh.TrafficLogType,
+			Type:   mesh.DataplaneType,
 		})
 		// Send is not blocking so there is no guarantee that we execute flush before watchdog consumed events
 		time.Sleep(500 * time.Millisecond)
@@ -127,8 +128,8 @@ var _ = Describe("Event Based Watchdog", func() {
 		// then
 		changedResTypes := <-reconciler.changedResTypes
 		Expect(changedResTypes).To(HaveLen(2))
-		Expect(changedResTypes).To(HaveKey(mesh.TrafficPermissionType))
-		Expect(changedResTypes).To(HaveKey(mesh.TrafficLogType))
+		Expect(changedResTypes).To(HaveKey(meshexternalservice_api.MeshExternalServiceType))
+		Expect(changedResTypes).To(HaveKey(mesh.DataplaneType))
 		Eventually(func(g Gomega) {
 			metric := test_metrics.FindMetric(metrics, "kds_delta_generation", "reason", ReasonEvent, "zone_name", "1")
 			g.Expect(metric).ToNot(BeNil())
@@ -149,5 +150,15 @@ var _ = Describe("Event Based Watchdog", func() {
 			g.Expect(metric).ToNot(BeNil())
 			g.Expect(*metric.Histogram.SampleCount).To(BeEquivalentTo(2))
 		}, "10s", "50ms").Should(Succeed())
+	})
+
+	It("should not re-arm a delayed full resync ticker after shutdown", func() {
+		ticker, cleanup := newDelayedFullResyncTicker(20*time.Millisecond, 40*time.Millisecond)
+		defer cleanup()
+
+		ticker.Stop()
+		cleanup()
+
+		Consistently(ticker.C, 150*time.Millisecond, 10*time.Millisecond).ShouldNot(Receive())
 	})
 }, Ordered)

@@ -6,15 +6,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/defaults/mesh"
-	policies_defaults "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/defaults"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/defaults/mesh"
+	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 )
 
 var _ = Describe("TimeoutConfigurer", func() {
@@ -46,25 +45,15 @@ var _ = Describe("TimeoutConfigurer", func() {
 		},
 	}
 
-	timeoutResource := &core_mesh.TimeoutResource{
-		Spec: &mesh_proto.Timeout{
-			Sources: []*mesh_proto.Selector{{
-				Match: mesh_proto.MatchAnyService(),
-			}},
-			Destinations: []*mesh_proto.Selector{{
-				Match: mesh_proto.MatchAnyService(),
-			}},
-			Conf: &mesh_proto.Timeout_Conf{
-				ConnectTimeout: util_proto.Duration(policies_defaults.DefaultConnectTimeout),
-				Tcp: &mesh_proto.Timeout_Conf_Tcp{
-					IdleTimeout: util_proto.Duration(policies_defaults.DefaultIdleTimeout),
-				},
-				Http: &mesh_proto.Timeout_Conf_Http{
-					IdleTimeout:       util_proto.Duration(policies_defaults.DefaultIdleTimeout),
-					RequestTimeout:    util_proto.Duration(policies_defaults.DefaultRequestTimeout),
-					StreamIdleTimeout: util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout),
-				},
-			},
+	timeoutConf := &mesh_proto.Timeout_Conf{
+		ConnectTimeout: util_proto.Duration(policies_defaults.DefaultConnectTimeout),
+		Tcp: &mesh_proto.Timeout_Conf_Tcp{
+			IdleTimeout: util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+		},
+		Http: &mesh_proto.Timeout_Conf_Http{
+			IdleTimeout:       util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+			RequestTimeout:    util_proto.Duration(policies_defaults.DefaultRequestTimeout),
+			StreamIdleTimeout: util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout),
 		},
 	}
 
@@ -107,7 +96,7 @@ typedExtensionProtocolOptions:
       maxStreamDuration: 105s`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: timeoutResource.Spec.GetConf(),
+			timeout: timeoutConf,
 			expected: `
 connectTimeout: 5s
 edsClusterConfig:
@@ -174,7 +163,7 @@ typedExtensionProtocolOptions:
       maxStreamDuration: 105s`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: timeoutResource.Spec.GetConf(),
+			timeout: timeoutConf,
 			expected: `
 connectTimeout: 5s
 edsClusterConfig:

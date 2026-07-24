@@ -9,11 +9,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	policy "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	policy "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 // MeshLoadBalancingStrategy configures how traffic is distributed across service instances. It supports multiple load balancing algorithms (round-robin, least request, ring hash, random, maglev), locality-aware routing to prefer nearby instances, and cross-zone failover strategies for high availability.
@@ -99,7 +99,7 @@ func (l *MeshLoadBalancingStrategyList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshLoadBalancingStrategy{}, &MeshLoadBalancingStrategyList{})
+	knownTypes = append(knownTypes, &MeshLoadBalancingStrategy{}, &MeshLoadBalancingStrategyList{})
 	registry.RegisterObjectType(&policy.MeshLoadBalancingStrategy{}, &MeshLoadBalancingStrategy{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

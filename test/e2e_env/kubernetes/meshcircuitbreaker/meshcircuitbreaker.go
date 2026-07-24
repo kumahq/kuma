@@ -6,15 +6,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	meshretry_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func MeshCircuitBreaker() {
@@ -26,8 +25,7 @@ func MeshCircuitBreaker() {
 			Install(
 				Yaml(
 					builders.Mesh().
-						WithName(mesh).
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere),
+						WithName(mesh),
 				),
 			).
 			Install(NamespaceWithSidecarInjection(namespace)).
@@ -93,7 +91,7 @@ spec:
 			return client.CollectResponsesAndFailures(
 				kubernetes.Cluster,
 				"demo-client",
-				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
+				fmt.Sprintf("test-server.%s.default.meshcircuitbreaker", namespace),
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithNumberOfRequests(10),
 			)
@@ -110,7 +108,7 @@ spec:
 			return client.CollectResponsesAndFailures(
 				kubernetes.Cluster,
 				"demo-client",
-				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
+				fmt.Sprintf("test-server.%s.default.meshcircuitbreaker", namespace),
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithNumberOfRequests(10),
 				// increase processing time of a request to increase a probability of triggering maxPendingRequest limit
@@ -135,7 +133,9 @@ spec:
     kind: Mesh
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: test-server
+        namespace: %s
       default:
         connectionLimits:
           maxConnectionPools: 1
@@ -143,7 +143,7 @@ spec:
           maxPendingRequests: 1
           maxRequests: 1
           maxRetries: 1
-`, Config.KumaNamespace, mesh)),
+`, Config.KumaNamespace, mesh, namespace)),
 		Entry("inbound circuit breaker", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker

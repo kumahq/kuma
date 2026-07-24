@@ -3,9 +3,9 @@ package v1alpha1_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/test/resources/validators"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
 )
 
 var _ = Describe("validator", func() {
@@ -36,27 +36,10 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: Mesh
-`),
-		ErrorCase("spec.to.targetRef error",
-			validators.Violation{
-				Field:   "spec.to[0].targetRef.kind",
-				Message: "value 'MeshService' is not supported",
-			}, `
-type: MeshTCPRoute
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-- targetRef:
-    kind: MeshService
-    name: backend
 `),
 		ErrorCase("invalid backendRefs",
 			validators.Violation{
@@ -67,8 +50,7 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -89,8 +71,7 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -109,8 +90,7 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -126,30 +106,11 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
     name: backend
-`),
-		Entry("accepts MeshGateway with listener tags targeted route", `
-type: MeshTCPRoute
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-  tags:
-    port: 6000
-to:
-- targetRef:
-    kind: Mesh
-  rules:
-  - default:
-      backendRefs:
-      - kind: MeshService
-        name: other
 `),
 		Entry("MeshService and MeshMultiZoneService", `
 type: MeshTCPRoute

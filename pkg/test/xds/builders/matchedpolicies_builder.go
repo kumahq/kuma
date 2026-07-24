@@ -1,11 +1,9 @@
 package builders
 
 import (
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 )
 
 type MatchedPoliciesBuilder struct {
@@ -14,8 +12,7 @@ type MatchedPoliciesBuilder struct {
 
 func MatchedPolicies() *MatchedPoliciesBuilder {
 	return &MatchedPoliciesBuilder{res: &xds.MatchedPolicies{
-		RateLimitsInbound: map[mesh_proto.InboundInterface][]*core_mesh.RateLimitResource{},
-		Dynamic:           map[core_model.ResourceType]xds.TypedMatchingPolicies{},
+		Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{},
 	}}
 }
 
@@ -65,10 +62,5 @@ func (mp *MatchedPoliciesBuilder) WithPolicy(resourceType core_model.ResourceTyp
 		ToRules:   toRules,
 		FromRules: fromRules,
 	}
-	return mp
-}
-
-func (mp *MatchedPoliciesBuilder) WithRateLimitsInbound(ratelimitInbound map[mesh_proto.InboundInterface][]*core_mesh.RateLimitResource) *MatchedPoliciesBuilder {
-	mp.res.RateLimitsInbound = ratelimitInbound
 	return mp
 }

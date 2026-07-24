@@ -29,22 +29,12 @@
       }
     },
     {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/maxDirectResponseBodySizeBytes",
-      "value": 0
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/maxDirectResponseBodySizeBytes",
-      "value": 0
-    },
-    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
       "value": {
         "directResponse": {
           "body": {
-            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"dataplane\":\"test-server\",\"instance\":\"1\",\"instances\":\",1,\",\"kuma_io_protocol\":\"http\",\"kuma_io_protocols\":\",http,\",\"kuma_io_service\":\"test-server\",\"kuma_io_services\":\",test-server,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"mesh\":\"envoyconfig\",\"service\":\"test-server\",\"team\":\"server-owners\",\"teams\":\",server-owners,\",\"version\":\"v1\",\"versions\":\",v1,\",\"zone\":\"kuma-3\"}}}}"
+            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"dataplane\":\"test-server\",\"instance\":\"1\",\"instances\":\",1,\",\"kuma.proxy_role\":\"sidecar\",\"kuma_io_protocol\":\"http\",\"kuma_io_protocols\":\",http,\",\"kuma_io_service\":\"test-server\",\"kuma_io_services\":\",test-server,\",\"kuma_io_zone\":\"kuma-3\",\"kuma_io_zones\":\",kuma-3,\",\"mesh\":\"envoyconfig\",\"service\":\"test-server\",\"team\":\"server-owners\",\"teams\":\",server-owners,\",\"version\":\"v1\",\"versions\":\",v1,\",\"zone\":\"kuma-3\"}}}}"
           },
           "status": 200
         },
@@ -56,7 +46,7 @@
           {
             "header": {
               "key": "Etag",
-              "value": "ca483df016391e8196bfba73ae79912d05be416e61c4164578d536ed3dd62f42"
+              "value": "950769ac873104e19768a1006397762f1cbacfcea5447b08cf6d391933b4b0db"
             }
           }
         ]
@@ -74,7 +64,7 @@
             {
               "name": "If-None-Match",
               "stringMatch": {
-                "exact": "ca483df016391e8196bfba73ae79912d05be416e61c4164578d536ed3dd62f42"
+                "exact": "950769ac873104e19768a1006397762f1cbacfcea5447b08cf6d391933b4b0db"
               }
             }
           ],
@@ -92,7 +82,7 @@
             "portValue": 5670
           }
         },
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filters": [
@@ -176,6 +166,13 @@
         "type": "STATIC"
       },
       "envoyconfig_demo-client__kuma-3_msvc_3000": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -235,6 +232,13 @@
         }
       },
       "envoyconfig_test-server__kuma-3_msvc_80": {
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
@@ -300,6 +304,13 @@
       },
       "inbound:passthrough:ipv4": {
         "altStatName": "inbound_passthrough_ipv4",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "inbound:passthrough:ipv4",
@@ -313,6 +324,13 @@
       },
       "inbound:passthrough:ipv6": {
         "altStatName": "inbound_passthrough_ipv6",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "inbound:passthrough:ipv6",
@@ -326,6 +344,13 @@
       },
       "kuma:envoy:admin": {
         "altStatName": "kuma_envoy_admin",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:envoy:admin",
@@ -351,6 +376,13 @@
       },
       "kuma:readiness": {
         "altStatName": "kuma_readiness",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "kuma:readiness",
@@ -376,6 +408,13 @@
       },
       "localhost:8080": {
         "altStatName": "localhost_8080",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "localhost:8080",
@@ -420,6 +459,13 @@
       },
       "outbound:passthrough:ipv4": {
         "altStatName": "outbound_passthrough_ipv4",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "outbound:passthrough:ipv4",
@@ -427,6 +473,13 @@
       },
       "outbound:passthrough:ipv6": {
         "altStatName": "outbound_passthrough_ipv6",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "lbPolicy": "CLUSTER_PROVIDED",
         "name": "outbound:passthrough:ipv6",
@@ -434,6 +487,13 @@
       },
       "self_transparentproxy_no_destination_inbound": {
         "altStatName": "self_transparentproxy_no_destination_inbound",
+        "circuitBreakers": {
+          "thresholds": [
+            {
+              "trackRemaining": true
+            }
+          ]
+        },
         "connectTimeout": "5s",
         "name": "self_transparentproxy_no_destination_inbound",
         "type": "STATIC"
@@ -464,6 +524,14 @@
                     "envoy.transport_socket_match": {
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
+                    },
+                    "io.kuma.labels": {
+                      "kuma.io/display-name": "demo-client",
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig",
+                      "kuma.io/origin": "zone",
+                      "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -505,6 +573,14 @@
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
                       "version": "v1"
+                    },
+                    "io.kuma.labels": {
+                      "kuma.io/display-name": "test-server",
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig",
+                      "kuma.io/origin": "zone",
+                      "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -525,7 +601,7 @@
             "portValue": 5670
           }
         },
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filters": [
@@ -588,7 +664,7 @@
           }
         },
         "bindToPort": false,
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filters": [
@@ -747,7 +823,7 @@
             "portValue": 15006
           }
         },
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filterChainMatch": {
@@ -776,7 +852,7 @@
             "portValue": 15006
           }
         },
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filterChainMatch": {
@@ -805,7 +881,7 @@
             "portValue": 0
           }
         },
-        "enableReusePort": false,
+        "enableReusePort": true,
         "filterChains": [
           {
             "filters": [

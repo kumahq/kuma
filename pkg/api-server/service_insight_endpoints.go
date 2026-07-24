@@ -9,13 +9,13 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	rest_unversioned "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/unversioned"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/v2/pkg/insights"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	rest_unversioned "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/unversioned"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v3/pkg/insights"
 )
 
 type serviceInsightEndpoints struct {
@@ -176,6 +176,9 @@ func (s *serviceInsightEndpoints) paginateResources(request *restful.Request, re
 		o, err := strconv.Atoi(page.offset)
 		if err != nil {
 			return store.ErrorInvalid(fmt.Sprintf("invalid offset: %s", err.Error()))
+		}
+		if o < 0 {
+			return store.ErrorInvalid("invalid offset: must be non-negative")
 		}
 		offset = o
 	}

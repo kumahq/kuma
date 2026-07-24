@@ -4,9 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 
-	"github.com/pkg/errors"
-
-	util_rsa "github.com/kumahq/kuma/v2/pkg/util/rsa"
+	util_rsa "github.com/kumahq/kuma/v3/pkg/util/rsa"
 )
 
 type staticSigningKeyAccessor struct {
@@ -37,8 +35,4 @@ func (s *staticSigningKeyAccessor) GetPublicKey(ctx context.Context, keyID KeyID
 		}
 	}
 	return key, nil
-}
-
-func (s *staticSigningKeyAccessor) GetLegacyKey(context.Context, KeyID) ([]byte, error) {
-	return nil, errors.New("not supported")
 }

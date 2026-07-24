@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/kumahq/kuma/v2/pkg/core/tracing"
+	"github.com/kumahq/kuma/v3/pkg/core/tracing"
 )
 
 // panicSpan is a fake span that panics when End() is called

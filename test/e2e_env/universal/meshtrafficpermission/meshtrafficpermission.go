@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func MeshTrafficPermissionUniversal() {
@@ -22,6 +22,7 @@ func MeshTrafficPermissionUniversal() {
 				"test-server",
 				meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+				WithLabels(map[string]string{"kuma.io/service": "test-server", "team": "server-owners"}),
 			)).
 			Install(TestServerUniversal(
 				"test-server-tcp",
@@ -29,6 +30,7 @@ func MeshTrafficPermissionUniversal() {
 				WithArgs([]string{"echo", "--instance", "test-server-tcp"}),
 				WithServiceName("test-server-tcp"),
 				WithProtocol("tcp"),
+				WithLabels(map[string]string{"kuma.io/service": "test-server-tcp", "team": "server-owners"}),
 			)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
@@ -71,7 +73,7 @@ func MeshTrafficPermissionUniversal() {
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(statusCode))
@@ -112,20 +114,19 @@ name: mtp-1
 mesh: meshtrafficpermission
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Allow
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
+ rules:
+   - default:
+       allow:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client
 `
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		trafficAllowed("test-server.mesh")
+		trafficAllowed("test-server.svc.mesh.local")
 	})
 
 	It("should allow the traffic with meshtrafficpermission based on MeshService (tcp)", func() {
@@ -139,50 +140,21 @@ name: mtp-2
 mesh: meshtrafficpermission
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server-tcp
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Allow
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server-tcp
+ rules:
+   - default:
+       allow:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client
 `
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		trafficAllowed("test-server-tcp.mesh")
-	})
-
-	It("should allow the traffic with traffic permission based on non standard tag", func() {
-		// given no mesh traffic permission
-		httpTrafficBlocked(403)
-		tcpTrafficBlocked()
-
-		// when
-		yaml := `
-type: MeshTrafficPermission
-name: mtp-3
-mesh: meshtrafficpermission
-spec:
-  targetRef:
-    kind: MeshSubset
-    tags:
-      team: server-owners
-  from:
-    - targetRef:
-        kind: MeshSubset
-        tags: 
-          team: client-owners
-      default:
-        action: Allow
-`
-		err := YamlUniversal(yaml)(universal.Cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		trafficAllowed("test-server.mesh")
-		trafficAllowed("test-server-tcp.mesh")
+		trafficAllowed("test-server-tcp.svc.mesh.local")
 	})
 
 	It("should be able to allow the traffic with permissive mTLS (http)", func() {
@@ -203,14 +175,15 @@ name: mtp-4
 mesh: meshtrafficpermission
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Deny`
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
+ rules:
+   - default:
+       deny:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client`
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 		// then
@@ -239,14 +212,15 @@ name: mtp-5
 mesh: meshtrafficpermission
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server-tcp
- from:
-   - targetRef:
-       kind: MeshService
-       name: demo-client
-     default:
-       action: Deny`
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server-tcp
+ rules:
+   - default:
+       deny:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client`
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 		// then

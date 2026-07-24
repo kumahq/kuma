@@ -4,7 +4,7 @@ OAPI_GEN := ./build/tools-${GOOS}-${GOARCH}/oapi-gen
 POLICY_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/policy-gen/generator
 
 PROTO_DIRS ?= ./pkg/config ./api ./pkg/plugins ./test/server/grpc/api
-GO_MODULE ?= github.com/kumahq/kuma/v2
+GO_MODULE ?= github.com/kumahq/kuma/v3
 
 HELM_VALUES_FILE ?= "deployments/charts/kuma/values.yaml"
 HELM_CRD_DIR ?= "deployments/charts/kuma/crds/"
@@ -155,7 +155,7 @@ api/openapi/types%/: ; @mkdir -p $@
 #   | $$(@D)          - Order-only prerequisite: ensure directory exists, but don't
 #                       rebuild if directory timestamp changes (avoids spurious rebuilds)
 define OAS_RULE
-$(call OAS_OUT,$(1)): $(1) api/openapi/openapi.cfg.yaml | $$(@D)
+$(call OAS_OUT,$(1)): $(1) api/openapi/openapi.cfg.yaml mise.toml | $$(@D)
 	@$$(OAPI_CODEGEN) -config api/openapi/openapi.cfg.yaml -o $$@ $$<
 endef
 

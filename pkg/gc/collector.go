@@ -8,16 +8,16 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/kumahq/kuma/v2/api/generic"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v3/api/generic"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 )
 
 type (
@@ -106,7 +106,7 @@ func (d *collector) cleanup(ctx context.Context, now time.Time, insightType Insi
 		}
 	}
 	for rk, age := range onDelete {
-		d.log.Info(fmt.Sprintf("deleting %s which is offline for %v", resourceType, age), "name", rk.Name, "mesh", rk.Mesh)
+		d.log.Info("deleting resource which is offline", "resourceType", resourceType, "offlineFor", age, "name", rk.Name, "mesh", rk.Mesh)
 		resource := registry.Global().MustNewObject(core_model.ResourceType(resourceType))
 		if err := d.rm.Delete(ctx, resource, store.DeleteBy(rk)); err != nil {
 			d.log.Error(err, "unable to delete", "resourceType", resourceType, "name", rk.Name, "mesh", rk.Mesh)

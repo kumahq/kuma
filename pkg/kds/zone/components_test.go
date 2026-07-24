@@ -8,28 +8,28 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	kds_context "github.com/kumahq/kuma/v2/pkg/kds/context"
-	"github.com/kumahq/kuma/v2/pkg/kds/mux"
-	kds_client_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/client"
-	sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/grpc"
-	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
-	"github.com/kumahq/kuma/v2/pkg/test/kds/setup"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
+	"github.com/kumahq/kuma/v3/pkg/kds/mux"
+	kds_client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
+	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/grpc"
+	"github.com/kumahq/kuma/v3/pkg/test/kds/samples"
+	"github.com/kumahq/kuma/v3/pkg/test/kds/setup"
 )
 
 var _ = Describe("Zone Sync", func() {
@@ -217,12 +217,13 @@ var _ = Describe("Zone Sync", func() {
 			go func() {
 				defer GinkgoRecover()
 				defer wg.Done()
+				kdsStream := kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, "global-inst", "", len(kdsCtx.TypesSentByGlobal))
 				syncClient := kds_client_v2.NewKDSSyncClient(
 					core.Log.WithName("kds-sink"),
 					kdsCtx.TypesSentByGlobal,
-					kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, "global-inst", "", len(kdsCtx.TypesSentByGlobal)),
+					kdsStream,
 					sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
-					0,
+					kds_client_v2.SyncClientConfig{},
 				)
 				_ = syncClient.Receive()
 			}()

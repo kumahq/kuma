@@ -12,13 +12,6 @@ import (
 
 // Annotations that can be used by the end users.
 const (
-	// Deprecated: use KumaMeshLabel as a label from pkg/plugins/runtime/k8s/metadata/labels.go instead of this annotation.
-	//
-	// KumaMeshAnnotation defines a Pod annotation that
-	// associates a given Pod with a particular Mesh.
-	// Annotation value must be the name of a Mesh resource.
-	KumaMeshAnnotation = "kuma.io/mesh"
-
 	// KumaSidecarInjectionAnnotation defines a Pod/Namespace annotation that
 	// gives users an ability to enable or disable sidecar-injection
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"
@@ -78,9 +71,8 @@ const (
 	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
 
 	// KumaBuiltinDNS the sidecar will use its builtin DNS
-	KumaBuiltinDNS        = "kuma.io/builtin-dns"
-	KumaBuiltinDNSPort    = "kuma.io/builtin-dns-port"
-	KumaBuiltinDNSLogging = "kuma.io/builtin-dns-logging"
+	KumaBuiltinDNS     = "kuma.io/builtin-dns"
+	KumaBuiltinDNSPort = "kuma.io/builtin-dns-port"
 
 	// KumaTrafficTransparentProxyConfig is an annotation used to pass a YAML with the transparent proxy
 	// configuration in CNI mode, allowing the new logic to retrieve the config from the annotation
@@ -135,10 +127,6 @@ const (
 
 	// HeadlessService is "true" when the Service had ClusterIP: None, otherwise "false"
 	HeadlessService = "k8s.kuma.io/is-headless-service"
-
-	// KumaXdsTransportProtocolVariant allows to specify mode in which control-plane exchange configuration with the sidecar.
-	// Available value is DELTA_GRPC
-	KumaXdsTransportProtocolVariant = "kuma.io/xds-transport-protocol-variant"
 
 	// KumaServiceAccount specifies the ServiceAccount associated with the Pod.
 	KumaServiceAccount = "k8s.kuma.io/service-account"
@@ -210,12 +198,6 @@ const (
 	KumaReachableBackends                              = "kuma.io/reachable-backends"
 	CNCFNetworkAnnotation                              = "k8s.v1.cni.cncf.io/networks"
 	KumaCNI                                            = "kuma-cni"
-	KumaTransparentProxyingEbpf                        = "kuma.io/transparent-proxying-ebpf"
-	KumaTransparentProxyingEbpfBPFFSPath               = "kuma.io/transparent-proxying-ebpf-bpf-fs-path"
-	KumaTransparentProxyingEbpfCgroupPath              = "kuma.io/transparent-proxying-ebpf-cgroup-path"
-	KumaTransparentProxyingEbpfTCAttachIface           = "kuma.io/transparent-proxying-ebpf-tc-attach-iface"
-	KumaTransparentProxyingEbpfInstanceIPEnvVarName    = "kuma.io/transparent-proxying-ebpf-instance-ip-env-var-name"
-	KumaTransparentProxyingEbpfProgramsSourcePath      = "kuma.io/transparent-proxying-ebpf-programs-source-path"
 )
 
 // Annotations related to the gateway

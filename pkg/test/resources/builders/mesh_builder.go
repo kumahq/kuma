@@ -6,14 +6,14 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 type MeshBuilder struct {
@@ -122,13 +122,6 @@ func (m *MeshBuilder) WithoutPassthrough() *MeshBuilder {
 		m.res.Spec.Networking.Outbound = &mesh_proto.Networking_Outbound{}
 	}
 	m.res.Spec.Networking.Outbound.Passthrough = proto.Bool(false)
-	return m
-}
-
-func (m *MeshBuilder) WithMeshServicesEnabled(enabled mesh_proto.Mesh_MeshServices_Mode) *MeshBuilder {
-	m.res.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{
-		Mode: enabled,
-	}
 	return m
 }
 

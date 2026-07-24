@@ -4,22 +4,22 @@ import (
 	"hash/fnv"
 	"slices"
 
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshextsvc "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	meshsvc "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
-	meshzoneaddress_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	meshfaultinjection_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshextsvc "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	meshsvc "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
+	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	meshfaultinjection_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 type ResourceMap map[core_model.ResourceType]core_model.ResourceList
@@ -39,7 +39,7 @@ func (rm ResourceMap) listOrEmpty(resourceType core_model.ResourceType) core_mod
 func (rm ResourceMap) Hash() []byte {
 	hasher := fnv.New128a()
 	for _, k := range maps.SortedKeys(rm) {
-		hasher.Write(core_model.ResourceListHash(rm[k]))
+		hasher.Write(resourceListXDSHash(rm[k]))
 	}
 	return hasher.Sum(nil)
 }
@@ -69,50 +69,6 @@ func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.
 	return r.MeshLocalResources.listOrEmpty(resourceType)
 }
 
-func (r Resources) ExternalServices() *core_mesh.ExternalServiceResourceList {
-	return r.ListOrEmpty(core_mesh.ExternalServiceType).(*core_mesh.ExternalServiceResourceList)
-}
-
-func (r Resources) HealthChecks() *core_mesh.HealthCheckResourceList {
-	return r.ListOrEmpty(core_mesh.HealthCheckType).(*core_mesh.HealthCheckResourceList)
-}
-
-func (r Resources) TrafficTraces() *core_mesh.TrafficTraceResourceList {
-	return r.ListOrEmpty(core_mesh.TrafficTraceType).(*core_mesh.TrafficTraceResourceList)
-}
-
-func (r Resources) TrafficRoutes() *core_mesh.TrafficRouteResourceList {
-	return r.ListOrEmpty(core_mesh.TrafficRouteType).(*core_mesh.TrafficRouteResourceList)
-}
-
-func (r Resources) Retries() *core_mesh.RetryResourceList {
-	return r.ListOrEmpty(core_mesh.RetryType).(*core_mesh.RetryResourceList)
-}
-
-func (r Resources) TrafficPermissions() *core_mesh.TrafficPermissionResourceList {
-	return r.ListOrEmpty(core_mesh.TrafficPermissionType).(*core_mesh.TrafficPermissionResourceList)
-}
-
-func (r Resources) TrafficLogs() *core_mesh.TrafficLogResourceList {
-	return r.ListOrEmpty(core_mesh.TrafficLogType).(*core_mesh.TrafficLogResourceList)
-}
-
-func (r Resources) FaultInjections() *core_mesh.FaultInjectionResourceList {
-	return r.ListOrEmpty(core_mesh.FaultInjectionType).(*core_mesh.FaultInjectionResourceList)
-}
-
-func (r Resources) Timeouts() *core_mesh.TimeoutResourceList {
-	return r.ListOrEmpty(core_mesh.TimeoutType).(*core_mesh.TimeoutResourceList)
-}
-
-func (r Resources) RateLimits() *core_mesh.RateLimitResourceList {
-	return r.ListOrEmpty(core_mesh.RateLimitType).(*core_mesh.RateLimitResourceList)
-}
-
-func (r Resources) CircuitBreakers() *core_mesh.CircuitBreakerResourceList {
-	return r.ListOrEmpty(core_mesh.CircuitBreakerType).(*core_mesh.CircuitBreakerResourceList)
-}
-
 func (r Resources) ServiceInsights() *core_mesh.ServiceInsightResourceList {
 	return r.ListOrEmpty(core_mesh.ServiceInsightType).(*core_mesh.ServiceInsightResourceList)
 }
@@ -129,28 +85,8 @@ func (r Resources) Dataplanes() *core_mesh.DataplaneResourceList {
 	return r.ListOrEmpty(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList)
 }
 
-func (r Resources) Gateways() *core_mesh.MeshGatewayResourceList {
-	return r.ListOrEmpty(core_mesh.MeshGatewayType).(*core_mesh.MeshGatewayResourceList)
-}
-
-func (r Resources) GatewayRoutes() *core_mesh.MeshGatewayRouteResourceList {
-	return r.ListOrEmpty(core_mesh.MeshGatewayRouteType).(*core_mesh.MeshGatewayRouteResourceList)
-}
-
-func (r Resources) ProxyTemplates() *core_mesh.ProxyTemplateResourceList {
-	return r.ListOrEmpty(core_mesh.ProxyTemplateType).(*core_mesh.ProxyTemplateResourceList)
-}
-
 func (r Resources) Secrets() *system.SecretResourceList {
 	return r.ListOrEmpty(system.SecretType).(*system.SecretResourceList)
-}
-
-func (r Resources) MeshGateways() *core_mesh.MeshGatewayResourceList {
-	return r.ListOrEmpty(core_mesh.MeshGatewayType).(*core_mesh.MeshGatewayResourceList)
-}
-
-func (r Resources) VirtualOutbounds() *core_mesh.VirtualOutboundResourceList {
-	return r.ListOrEmpty(core_mesh.VirtualOutboundType).(*core_mesh.VirtualOutboundResourceList)
 }
 
 func (r Resources) MeshFaultInjections() *meshfaultinjection_api.MeshFaultInjectionResourceList {
@@ -265,44 +201,4 @@ func (r Resources) MeshZoneAddresses() *meshzoneaddress_api.MeshZoneAddressResou
 		}
 	}
 	return list.(*meshzoneaddress_api.MeshZoneAddressResourceList)
-}
-
-type MeshGatewayDataplanes struct {
-	Mesh       *core_mesh.MeshResource
-	Gateways   []*core_mesh.MeshGatewayResource
-	Dataplanes []*core_mesh.DataplaneResource
-}
-
-func (r Resources) gatewaysAndDataplanesForMesh(localMesh *core_mesh.MeshResource) map[xds.MeshName]MeshGatewayDataplanes {
-	gatewaysByMesh := map[xds.MeshName]MeshGatewayDataplanes{}
-
-	type meshResourcesTuple struct {
-		mesh      *core_mesh.MeshResource
-		resources ResourceMap
-	}
-
-	var meshResourcesTuples []meshResourcesTuple
-	for _, mesh := range r.Meshes().Items {
-		var resources ResourceMap
-		switch {
-		case mesh.GetMeta().GetName() == localMesh.GetMeta().GetName():
-			resources = r.MeshLocalResources
-		default:
-			resources = r.CrossMeshResources[mesh.GetMeta().GetName()]
-		}
-		meshResourcesTuples = append(meshResourcesTuples, meshResourcesTuple{
-			mesh:      mesh,
-			resources: resources,
-		})
-	}
-
-	for _, meshResourceTuple := range meshResourcesTuples {
-		gatewaysByMesh[meshResourceTuple.mesh.GetMeta().GetName()] = MeshGatewayDataplanes{
-			Mesh:       meshResourceTuple.mesh,
-			Gateways:   meshResourceTuple.resources.listOrEmpty(core_mesh.MeshGatewayType).(*core_mesh.MeshGatewayResourceList).Items,
-			Dataplanes: meshResourceTuple.resources.listOrEmpty(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList).Items,
-		}
-	}
-
-	return gatewaysByMesh
 }

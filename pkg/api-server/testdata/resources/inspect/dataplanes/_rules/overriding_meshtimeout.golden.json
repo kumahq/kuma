@@ -8,42 +8,7 @@
  },
  "rules": [
   {
-   "fromRules": [
-    {
-     "inbound": {
-      "port": 8080,
-      "tags": {
-       "kuma.io/service": "foo"
-      }
-     },
-     "rules": [
-      {
-       "conf": {
-        "connectionTimeout": "20s",
-        "idleTimeout": "20s",
-        "http": {
-         "requestTimeout": "5s"
-        }
-       },
-       "matchers": [],
-       "origin": [
-        {
-         "labels": {},
-         "mesh": "default",
-         "name": "default",
-         "type": "MeshTimeout"
-        },
-        {
-         "labels": {},
-         "mesh": "default",
-         "name": "override",
-         "type": "MeshTimeout"
-        }
-       ]
-      }
-     ]
-    }
-   ],
+   "fromRules": [],
    "inboundRules": [
     {
      "inbound": {
@@ -127,86 +92,7 @@
      "resourceSectionName": ""
     }
    ],
-   "toRules": [
-    {
-     "conf": {
-      "connectionTimeout": "2s",
-      "idleTimeout": "20s",
-      "http": {
-       "requestTimeout": "15s"
-      }
-     },
-     "matchers": [
-      {
-       "key": "kuma.io/service",
-       "not": false,
-       "value": "foo"
-      }
-     ],
-     "origin": [
-      {
-       "labels": {},
-       "mesh": "default",
-       "name": "default",
-       "type": "MeshTimeout"
-      },
-      {
-       "labels": {},
-       "mesh": "default",
-       "name": "override",
-       "type": "MeshTimeout"
-      }
-     ]
-    },
-    {
-     "conf": {
-      "connectionTimeout": "2s",
-      "idleTimeout": "20s",
-      "http": {
-       "requestTimeout": "20s"
-      }
-     },
-     "matchers": [
-      {
-       "key": "kuma.io/service",
-       "not": false,
-       "value": "bar"
-      }
-     ],
-     "origin": [
-      {
-       "labels": {},
-       "mesh": "default",
-       "name": "default",
-       "type": "MeshTimeout"
-      },
-      {
-       "labels": {},
-       "mesh": "default",
-       "name": "override",
-       "type": "MeshTimeout"
-      }
-     ]
-    },
-    {
-     "conf": {
-      "connectionTimeout": "2s",
-      "idleTimeout": "20s",
-      "http": {
-       "requestTimeout": "10s"
-      }
-     },
-     "matchers": [],
-     "origin": [
-      {
-       "labels": {},
-       "mesh": "default",
-       "name": "default",
-       "type": "MeshTimeout"
-      }
-     ]
-    }
-   ],
+   "toRules": [],
    "type": "MeshTimeout",
    "warnings": []
   }

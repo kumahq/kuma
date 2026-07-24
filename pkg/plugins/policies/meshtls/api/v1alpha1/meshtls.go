@@ -2,13 +2,14 @@
 package v1alpha1
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 )
 
 // MeshTLS configures TLS and mutual TLS (mTLS) settings for secure communication between services in the mesh. It allows you to enforce encryption, configure TLS versions and cipher suites, and control whether mTLS is required (strict mode) or optional (permissive mode) for inbound traffic.
 // +kuma:policy:singular_display_name=Mesh TLS
 // +kuma:policy:is_from_as_rules=true
+// +kuma:policy:order=300
 type MeshTLS struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

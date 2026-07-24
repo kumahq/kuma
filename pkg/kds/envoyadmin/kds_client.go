@@ -13,22 +13,22 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.opentelemetry.io/otel/trace"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	config_util "github.com/kumahq/kuma/v2/pkg/config"
-	config_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_system "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_tracing "github.com/kumahq/kuma/v2/pkg/core/tracing"
-	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
-	"github.com/kumahq/kuma/v2/pkg/kds/service"
-	util_grpc "github.com/kumahq/kuma/v2/pkg/util/grpc"
-	"github.com/kumahq/kuma/v2/pkg/util/k8s"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	config_util "github.com/kumahq/kuma/v3/pkg/config"
+	config_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_tracing "github.com/kumahq/kuma/v3/pkg/core/tracing"
+	"github.com/kumahq/kuma/v3/pkg/envoy/admin"
+	"github.com/kumahq/kuma/v3/pkg/kds/service"
+	util_grpc "github.com/kumahq/kuma/v3/pkg/util/grpc"
+	"github.com/kumahq/kuma/v3/pkg/util/k8s"
 )
 
 const reverseUnaryRPCService = "kuma.mesh.v1alpha1.KDSZoneEnvoyAdminService"
@@ -134,7 +134,7 @@ func doRequest[T message]( //nolint:nonamedreturns
 	}
 }
 
-func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
+func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat, usedOnly bool) ([]byte, error) {
 	requestType := "StatsRequest"
 	mkMsg := func(reqId, typ, name, mesh string) util_grpc.ReverseUnaryMessage {
 		return &mesh_proto.StatsRequest{
@@ -143,6 +143,7 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 			ResourceName: name,
 			ResourceMesh: mesh,
 			Format:       format,
+			UsedOnly:     usedOnly,
 		}
 	}
 	resp, err := doRequest[*mesh_proto.StatsResponse](ctx, k.tracer, k.resManager, proxy, requestType, k.rpcs.Stats, mkMsg)

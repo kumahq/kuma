@@ -15,7 +15,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 //go:embed rest.yaml
@@ -192,6 +192,7 @@ var MeshRateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName:          "Mesh Rate Limit",
 	PluralDisplayName:            "Mesh Rate Limits",
 	IsPluginOriginated:           true,
+	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
 	HasFromTargetRef:             true,
@@ -200,4 +201,5 @@ var MeshRateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mrl",
 	IsFromAsRules:                true,
+	Order:                        900,
 }

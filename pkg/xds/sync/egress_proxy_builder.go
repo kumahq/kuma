@@ -6,18 +6,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/faultinjections"
-	"github.com/kumahq/kuma/v2/pkg/core/permissions"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	"github.com/kumahq/kuma/v2/pkg/core/ratelimits"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/ordered"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	xds_topology "github.com/kumahq/kuma/v2/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 type EgressProxyBuilder struct {
@@ -65,46 +61,20 @@ func (p *EgressProxyBuilder) Build(
 		meshName := mesh.GetMeta().GetName()
 		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(meshName)
 
-		trafficPermissions := meshCtx.Resources.TrafficPermissions().Items
-		externalServices := meshCtx.Resources.ExternalServices().Items
-		faultInjections := meshCtx.Resources.FaultInjections().Items
-		rateLimits := meshCtx.Resources.RateLimits().Items
 		mes := meshCtx.Resources.MeshExternalServices().Items
 
 		meshResources := &core_xds.MeshResources{
-			Mesh:             mesh,
-			ExternalServices: externalServices,
+			Mesh: mesh,
 			EndpointMap: xds_topology.BuildEgressEndpointMap(
 				ctx,
 				mesh,
 				p.zone,
 				zoneIngresses,
-				externalServices,
 				mes,
 				meshCtx.DataSourceLoader,
 			),
-			ExternalServicePermissionMap: permissions.BuildExternalServicesPermissionsMapForZoneEgress(
-				externalServices,
-				trafficPermissions,
-			),
-			ExternalServiceFaultInjections: faultinjections.BuildExternalServiceFaultInjectionMapForZoneEgress(
-				externalServices,
-				faultInjections,
-			),
-			ExternalServiceRateLimits: ratelimits.BuildExternalServiceRateLimitMapForZoneEgress(
-				externalServices,
-				rateLimits,
-			),
 			Dynamic:   core_xds.ExternalServiceDynamicPolicies{},
 			Resources: meshCtx.Resources.MeshLocalResources,
-		}
-
-		for _, es := range externalServices {
-			policies, err := matchEgressPolicies(es.Spec.GetTags(), meshCtx.Resources)
-			if err != nil {
-				return nil, err
-			}
-			meshResources.Dynamic[es.Spec.GetService()] = policies
 		}
 
 		for serviceName := range meshResources.EndpointMap {
@@ -142,7 +112,7 @@ func (p *EgressProxyBuilder) Build(
 
 func matchEgressPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.PluginOriginatedPolicies, error) {
 	pluginPolicies := core_xds.PluginOriginatedPolicies{}
-	for _, plugin := range core_plugins.Plugins().PolicyPlugins(ordered.Policies) {
+	for _, plugin := range core_plugins.Plugins().PolicyPlugins() {
 		egressPlugin, ok := plugin.Plugin.(core_plugins.EgressPolicyPlugin)
 		if !ok {
 			continue

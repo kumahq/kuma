@@ -13,8 +13,8 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (r *HTTPRouteReconciler) updateStatus(ctx context.Context, route *gatewayapi.HTTPRoute, conditions ParentConditions) error {
@@ -55,25 +55,34 @@ func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentCo
 	// existing status yet.
 	var ownedStatuses []gatewayapi.RouteParentStatus
 	for ref, conditions := range parentConditions {
-		previousStatus := gatewayapi.RouteParentStatus{
-			ParentRef:      ref,
-			ControllerName: common.ControllerName,
+		if len(conditions) == 0 {
+			continue
 		}
+
+		var previousStatus *gatewayapi.RouteParentStatus
 
 		// Look through previous statuses for one belonging to the same ref
 		// go abusing pointers as option types makes it very painful
-		for _, candidatePreviousStatus := range previousStatuses {
+		for i, candidatePreviousStatus := range previousStatuses {
 			if reflect.DeepEqual(candidatePreviousStatus.ParentRef, ref) {
-				previousStatus = candidatePreviousStatus
+				previousStatus = &previousStatuses[i]
 			}
+		}
+
+		status := gatewayapi.RouteParentStatus{
+			ParentRef:      ref,
+			ControllerName: common.ControllerName,
+		}
+		if previousStatus != nil {
+			status = *previousStatus
 		}
 
 		for _, condition := range conditions {
 			condition.ObservedGeneration = route.GetGeneration()
-			kube_apimeta.SetStatusCondition(&previousStatus.Conditions, condition)
+			kube_apimeta.SetStatusCondition(&status.Conditions, condition)
 		}
 
-		ownedStatuses = append(ownedStatuses, previousStatus)
+		ownedStatuses = append(ownedStatuses, status)
 	}
 
 	// Sort our controlled statuses by parent ref to ensure deterministic

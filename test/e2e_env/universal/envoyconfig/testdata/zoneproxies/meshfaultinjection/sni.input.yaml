@@ -1,0 +1,20 @@
+type: MeshFaultInjection
+name: mfi-zone-proxy
+mesh: envoyconfig-zoneproxies
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/listener-zoneegress: enabled
+  rules:
+    - matches:
+        - sni:
+            type: Exact
+            value: sni.extsvc.envoyconfig-zoneproxies.kuma-3.mes-zone-proxy.80
+      default:
+        http:
+          - abort:
+              httpStatus: 503
+              percentage: 50

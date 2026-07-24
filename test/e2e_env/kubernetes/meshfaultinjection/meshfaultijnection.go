@@ -6,14 +6,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func MeshFaultInjection() {
@@ -67,8 +66,7 @@ spec:
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(Yaml(builders.Mesh().
-				WithName(mesh).
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive))).
+				WithName(mesh))).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(YamlK8s(mtp)).
 			Install(Parallel(

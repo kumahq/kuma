@@ -13,10 +13,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	util_k8s "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	util_k8s "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 )
 
 // podReady returns false when any of the following is true:
@@ -149,17 +149,18 @@ func (ic *InboundConverter) inboundForServiceless(zone string, pod *kube_core.Po
 	}
 }
 
-// Deprecated: LegacyInboundInterfacesFor is currently only used for delegated gateway and Mesh without MeshService exclusive
-// to not change order of inbounds.
+// Deprecated: LegacyInboundInterfacesFor is used for delegated gateway
+// and while inbound tags are still enabled, to not change order of inbounds.
 // For gateway we pick first inbound to take tags from. Delegated gateway identity relies on this.
-// For Dataplanes when MeshService is disabled we base identity and routing on inbound tags
+// For Dataplanes with inbound tags enabled we base identity and routing on inbound tags.
 // TODO: We should revisit this when we rework identity. More in https://github.com/kumahq/kuma/issues/3339
 func (ic *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	return ic.inboundInterfacesFor(ctx, zone, pod, services)
 }
 
-// InboundInterfacesFor should be used when MeshService mode is Exclusive. This function deduplicates inbounds by address and port.
-// Since MeshService does not need tags we can safely deduplicate inbounds
+// InboundInterfacesFor should be used when inbound tags are disabled.
+// This function deduplicates inbounds by address and port.
+// Since inbounds carry no tags in that model we can safely deduplicate them.
 func (ic *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	inbounds, err := ic.inboundInterfacesFor(ctx, zone, pod, services)
 	if err != nil {
@@ -170,9 +171,15 @@ func (ic *InboundConverter) InboundInterfacesFor(ctx context.Context, zone strin
 }
 
 func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	nodeLabels, err := ic.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
-	if err != nil {
-		return nil, err
+	// Node labels only end up on inbound tags, so skip fetching them when tags
+	// are disabled; PodToDataplane copies them onto the Dataplane labels itself.
+	var nodeLabels map[string]string
+	if !ic.InboundTagsDisabled {
+		var err error
+		nodeLabels, err = ic.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound

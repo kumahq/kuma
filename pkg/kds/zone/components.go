@@ -1,13 +1,15 @@
 package zone
 
 import (
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/kds/mux"
-	"github.com/kumahq/kuma/v2/pkg/kds/service"
-	kds_server "github.com/kumahq/kuma/v2/pkg/kds/v2/server"
-	kds_sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
+	"net/url"
+
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/kds/mux"
+	"github.com/kumahq/kuma/v3/pkg/kds/service"
+	kds_server "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
+	kds_sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
 )
 
 var (
@@ -28,7 +30,6 @@ func Setup(rt core_runtime.Runtime) error {
 		rt,
 		kdsCtx.TypesSentByZone,
 		zone,
-		rt.Config().Multizone.Zone.KDS.RefreshInterval.Duration,
 		kdsCtx.ZoneProvidedFilter,
 		kdsCtx.ZoneResourceMapper,
 		rt.Config().Multizone.Zone.KDS.NackBackoff.Duration,
@@ -57,8 +58,12 @@ func Setup(rt core_runtime.Runtime) error {
 		rt,
 		deltaServer,
 	)
+	peer := rt.Config().Multizone.Zone.GlobalAddress
+	if u, err := url.Parse(peer); err == nil {
+		peer = u.Redacted()
+	}
 	return rt.Add(component.NewResilientComponent(
-		kdsZoneLog.WithName("kds-mux-client"),
+		kdsZoneLog.WithName("kds-mux-client").WithValues("peer", peer),
 		muxClient,
 		rt.Config().General.ResilientComponentBaseBackoff.Duration,
 		rt.Config().General.ResilientComponentMaxBackoff.Duration,

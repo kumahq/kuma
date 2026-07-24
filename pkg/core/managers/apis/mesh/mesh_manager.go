@@ -6,16 +6,17 @@ import (
 
 	"github.com/pkg/errors"
 
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
-	defaults_mesh "github.com/kumahq/kuma/v2/pkg/defaults/mesh"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
+	defaults_mesh "github.com/kumahq/kuma/v3/pkg/defaults/mesh"
 )
 
 func NewMeshManager(
@@ -27,15 +28,20 @@ func NewMeshManager(
 	extensions context.Context,
 	config kuma_cp.Config,
 ) core_manager.ResourceManager {
+	var cpZone string
+	if config.Multizone != nil {
+		cpZone = config.Multizone.Zone.Name
+	}
 	meshManager := &meshManager{
-		store:                      store,
-		otherManagers:              otherManagers,
-		caManagers:                 caManagers,
-		registry:                   registry,
-		meshValidator:              validator,
-		unsafeDelete:               config.Store.UnsafeDelete,
-		extensions:                 extensions,
-		createMeshRoutingResources: config.Defaults.CreateMeshRoutingResources,
+		store:         store,
+		otherManagers: otherManagers,
+		caManagers:    caManagers,
+		registry:      registry,
+		meshValidator: validator,
+		unsafeDelete:  config.Store.UnsafeDelete,
+		extensions:    extensions,
+		cpMode:        config.Mode,
+		cpZone:        cpZone,
 	}
 	if config.Store.Type == config_store.KubernetesStore {
 		meshManager.k8sStore = true
@@ -45,16 +51,17 @@ func NewMeshManager(
 }
 
 type meshManager struct {
-	store                      core_store.ResourceStore
-	otherManagers              core_manager.ResourceManager
-	caManagers                 core_ca.Managers
-	registry                   core_registry.TypeRegistry
-	meshValidator              MeshValidator
-	unsafeDelete               bool
-	extensions                 context.Context
-	createMeshRoutingResources bool
-	k8sStore                   bool
-	systemNamespace            string
+	store           core_store.ResourceStore
+	otherManagers   core_manager.ResourceManager
+	caManagers      core_ca.Managers
+	registry        core_registry.TypeRegistry
+	meshValidator   MeshValidator
+	unsafeDelete    bool
+	extensions      context.Context
+	k8sStore        bool
+	systemNamespace string
+	cpMode          config_core.CpMode
+	cpZone          string
 }
 
 func (m *meshManager) Get(ctx context.Context, resource core_model.Resource, fs ...core_store.GetOptionsFunc) error {
@@ -102,9 +109,11 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 		mesh,
 		mesh.Spec.GetSkipCreatingInitialPolicies(),
 		m.extensions,
-		m.createMeshRoutingResources,
 		m.k8sStore,
 		m.systemNamespace,
+		m.cpMode,
+		m.cpZone,
+		false, // reconcileExistingOnly
 	); err != nil {
 		return err
 	}

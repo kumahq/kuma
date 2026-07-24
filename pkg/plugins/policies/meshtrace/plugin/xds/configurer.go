@@ -16,13 +16,13 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	"github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 type Configurer struct {
@@ -38,8 +38,7 @@ type Configurer struct {
 	Mesh                  string
 	Zone                  string
 	WorkloadKRI           string
-	// ResolvedOtelName is the resolved backend name for OTel (from backendRef or inline endpoint).
-	// When empty, falls back to backend.OpenTelemetry.Endpoint for naming.
+	// ResolvedOtelName is the resolved MeshOpenTelemetryBackend name for OTel, used for naming.
 	ResolvedOtelName string
 	// ResolvedOtelUseHTTP is true when the resolved backend uses HTTP protocol.
 	ResolvedOtelUseHTTP bool
@@ -144,12 +143,8 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.OpenTelemetry != nil && !c.SkipOpenTelemetry {
-			otelName := c.ResolvedOtelName
-			if otelName == "" {
-				otelName = backend.OpenTelemetry.Endpoint
-			}
 			name := getNameOrDefault(
-				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(otelName))),
+				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(c.ResolvedOtelName))),
 				GetTracingClusterName(OpenTelemetryProviderName),
 			)
 			var tracing *envoy_trace.Tracing_Http

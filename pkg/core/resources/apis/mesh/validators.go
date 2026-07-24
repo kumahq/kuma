@@ -10,14 +10,15 @@ import (
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
@@ -423,15 +424,12 @@ func ValidateTargetRef(
 		if len(pointer.Deref(ref.Labels)) > 0 && (pointer.Deref(ref.Name) != "" || pointer.Deref(ref.Namespace) != "") {
 			err.AddViolation("labels", "either labels or name and namespace must be specified")
 		}
-	case common_api.MeshServiceSubset, common_api.MeshGateway:
+	case common_api.MeshServiceSubset:
 		err.Add(requiredField("name", pointer.Deref(ref.Name), ref.Kind))
 		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("proxyTypes", pointer.Deref(ref.ProxyTypes), ref.Kind))
 		err.Add(ValidateSelector(validators.RootedAt("tags"), pointer.Deref(ref.Tags), ValidateTagsOpts{}))
-		if ref.Kind == common_api.MeshGateway && len(pointer.Deref(ref.Tags)) > 0 && !opts.GatewayListenerTagsAllowed {
-			err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		}
 		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
 		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
@@ -457,7 +455,23 @@ func ValidateMatch(match common_api.Match) validators.ValidationError {
 	if match.SpiffeID != nil {
 		_, err := spiffeid.FromString(match.SpiffeID.Value)
 		if err != nil {
-			verr.AddViolation("spiffeID", "must be a valid Spiffe ID")
+			verr.AddViolation("spiffeID", fmt.Sprintf("must be a valid Spiffe ID: %s", err))
+		}
+	}
+	if match.SNI != nil {
+		switch match.SNI.Type {
+		case common_api.SNIExactMatchType:
+		case "":
+			verr.AddViolation("sni.type", "must be set")
+		default:
+			verr.AddViolation("sni.type", fmt.Sprintf("unrecognized type %q, supported values are: Exact", match.SNI.Type))
+		}
+		if match.SNI.Value == "" {
+			verr.AddViolation("sni.value", "must be set")
+		} else {
+			for _, violation := range k8s_validation.IsDNS1123Subdomain(match.SNI.Value) {
+				verr.AddViolation("sni.value", violation)
+			}
 		}
 	}
 	return verr

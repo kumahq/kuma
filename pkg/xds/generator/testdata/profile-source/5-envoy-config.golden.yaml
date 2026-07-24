@@ -1,91 +1,10 @@
 resources:
-- name: db
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    name: db
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          alpnProtocols:
-          - kuma
-          combinedValidationContext:
-            defaultValidationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: spiffe://demo/db
-                sanType: URI
-            validationContextSdsSecretConfig:
-              name: system_mtls_ca_demo
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_demo
-            sdsConfig:
-              ads: {}
-              resourceApiVersion: V3
-        sni: db{mesh=demo}
-    type: EDS
-    typedExtensionProtocolOptions:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicitHttpConfig:
-          http2ProtocolOptions: {}
-- name: elastic
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    healthChecks:
-    - healthyThreshold: 2
-      interval: 5s
-      tcpHealthCheck: {}
-      timeout: 4s
-      unhealthyThreshold: 3
-    name: elastic
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          alpnProtocols:
-          - kuma
-          combinedValidationContext:
-            defaultValidationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: spiffe://demo/elastic
-                sanType: URI
-            validationContextSdsSecretConfig:
-              name: system_mtls_ca_demo
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_demo
-            sdsConfig:
-              ads: {}
-              resourceApiVersion: V3
-        sni: elastic{mesh=demo}
-    type: EDS
-    typedExtensionProtocolOptions:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicitHttpConfig:
-          http2ProtocolOptions: {}
 - name: self_inbound_dp_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 10s
     loadAssignment:
       clusterName: self_inbound_dp_80
@@ -101,6 +20,9 @@ resources:
 - name: system_envoy_admin
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     loadAssignment:
       clusterName: system_envoy_admin
@@ -116,6 +38,9 @@ resources:
 - name: system_probe_readiness
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - trackRemaining: true
     connectTimeout: 5s
     loadAssignment:
       clusterName: system_probe_readiness
@@ -123,82 +48,11 @@ resources:
       - lbEndpoints:
         - endpoint:
             address:
-              pipe:
-                path: /tmp/kuma-readiness-reporter.sock
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 9903
     name: system_probe_readiness
     type: STATIC
-- name: db
-  resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: db
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.3
-              portValue: 5432
-        loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              role: master
-            envoy.transport_socket_match:
-              role: master
-- name: elastic
-  resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: elastic
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.4
-              portValue: 9200
-        loadBalancingWeight: 1
-- name: outbound:127.0.0.1:54321
-  resource:
-    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
-    address:
-      socketAddress:
-        address: 127.0.0.1
-        portValue: 54321
-    filterChains:
-    - filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: db
-          idleTimeout: 0s
-          statPrefix: db
-    metadata:
-      filterMetadata:
-        io.kuma.tags:
-          kuma.io/service: db
-    name: outbound:127.0.0.1:54321
-    trafficDirection: OUTBOUND
-- name: outbound:127.0.0.1:59200
-  resource:
-    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
-    address:
-      socketAddress:
-        address: 127.0.0.1
-        portValue: 59200
-    filterChains:
-    - filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: elastic
-          idleTimeout: 0s
-          statPrefix: elastic
-    metadata:
-      filterMetadata:
-        io.kuma.tags:
-          kuma.io/service: elastic
-    name: outbound:127.0.0.1:59200
-    trafficDirection: OUTBOUND
 - name: self_inbound_dp_80
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener

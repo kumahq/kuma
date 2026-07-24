@@ -5,24 +5,24 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	defaults_mesh "github.com/kumahq/kuma/v2/pkg/defaults/mesh"
-	plugins_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/util/net"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
-	xds_tls "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	defaults_mesh "github.com/kumahq/kuma/v3/pkg/defaults/mesh"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/net"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	xds_tls "github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 type InboundProxyGenerator struct{}
@@ -90,7 +90,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		}
 
 		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, inboundListenerName).
-			Configure(envoy_listeners.InboundListener(endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP)).
+			Configure(envoy_listeners.InboundListener(endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 			Configure(envoy_listeners.StatPrefix(statPrefix)).
 			Configure(envoy_listeners.TransparentProxying(proxy)).
 			Configure(envoy_listeners.TagsMetadata(iface.GetTags()))
@@ -98,9 +98,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		switch xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
 		case mesh_proto.CertificateAuthorityBackend_STRICT:
 			listenerBuilder.
-				Configure(envoy_listeners.FilterChain(FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
-					envoy_listeners.NetworkRBAC(inboundListenerName, xdsCtx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]),
-				)))
+				Configure(envoy_listeners.FilterChain(FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil)))
 		case mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
 			listenerBuilder.
 				Configure(envoy_listeners.TLSInspector()).
@@ -118,7 +116,6 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 					FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
 						envoy_listeners.MatchTransportProtocol("tls"),
 						envoy_listeners.MatchApplicationProtocols(xds_tls.KumaALPNProtocols...),
-						envoy_listeners.NetworkRBAC(inboundListenerName, xdsCtx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]),
 					)),
 				)
 		default:
@@ -171,17 +168,11 @@ func FilterChainBuilder(
 	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
 		filterChainBuilder.
 			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
-			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
-			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
-			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
 			Configure(envoy_listeners.HttpInboundRoutes(routeConfigName, virtualHostName, *routes))
 	case core_meta.ProtocolGRPC:
 		filterChainBuilder.
 			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 			Configure(envoy_listeners.GrpcStats()).
-			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
-			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
-			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
 			Configure(envoy_listeners.HttpInboundRoutes(routeConfigName, virtualHostName, *routes))
 	case core_meta.ProtocolKafka:
 		filterChainBuilder.
@@ -200,25 +191,5 @@ func FilterChainBuilder(
 }
 
 func GenerateRoutes(proxy *core_xds.Proxy, endpoint mesh_proto.InboundInterface, cluster envoy_common.Cluster) envoy_common.Routes {
-	routes := envoy_common.Routes{}
-
-	// Iterate over that RateLimits and generate the relevant Routes.
-	// We do assume that the rateLimits resource is sorted, so the most
-	// specific source matches come first.
-	for _, rl := range proxy.Policies.RateLimitsInbound[endpoint] {
-		if rl.Spec.GetConf().GetHttp() == nil {
-			continue
-		}
-
-		routes = append(routes, envoy_common.NewRoute(
-			envoy_common.WithCluster(cluster),
-			envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
-			envoy_common.WithRateLimit(rl.Spec),
-		))
-	}
-
-	// Add the default fall-back route
-	routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
-
-	return routes
+	return envoy_common.Routes{envoy_common.NewRoute(envoy_common.WithCluster(cluster))}
 }

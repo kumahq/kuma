@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 var _ = Describe("MeshTimeout", func() {
@@ -26,19 +26,7 @@ var _ = Describe("MeshTimeout", func() {
 			},
 			Entry("full example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionTimeout: 10s
-      idleTimeout: 1h
-      http:
-        requestTimeout: 0s
-        streamIdleTimeout: 1h
-        maxStreamDuration: 1h
-        maxConnectionDuration: 1h
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -53,8 +41,7 @@ to:
         maxConnectionDuration: 1h`),
 			Entry("only to targetRef", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -69,8 +56,7 @@ to:
         maxConnectionDuration: 1h`),
 			Entry("minimal example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -78,23 +64,9 @@ to:
     default:
       http:
         requestTimeout: 1s`),
-			Entry("top-level TargetRefKind is MeshHTTPRoute", `
-targetRef:
-  kind: MeshHTTPRoute
-  name: route-1
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-        requestTimeout: 1s
-        streamIdleTimeout: 2s
-`),
 			Entry("example MeshExternalService", `
 targetRef:
-  kind: MeshSubset
-  tags:
-    kuma.io/service: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshExternalService
@@ -111,9 +83,7 @@ to:
         requestTimeout: 1s`),
 			Entry("example MeshHTTPRoute", `
 targetRef:
-  kind: MeshSubset
-  tags:
-    kuma.io/service: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshHTTPRoute
@@ -123,9 +93,7 @@ to:
         requestTimeout: 1s`),
 			Entry("example MeshHTTPRoute with labels", `
 targetRef:
-  kind: MeshSubset
-  tags:
-    kuma.io/service: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshHTTPRoute
@@ -134,6 +102,33 @@ to:
     default:
       http:
         requestTimeout: 1s`),
+			Entry("matched inbound rule with route timeouts", `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          type: Exact
+          value: spiffe://default/client
+        sni:
+          type: Exact
+          value: backend.mesh
+    default:
+      http:
+        requestTimeout: 1s
+        streamIdleTimeout: 2s`),
+			Entry("inbound rules and outbound to together", `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      connectionTimeout: 10s
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      connectionTimeout: 10s`),
 		)
 
 		type testCase struct {
@@ -157,7 +152,7 @@ to:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty 'from' and 'to' array", testCase{
+			Entry("empty 'to' array", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
@@ -165,29 +160,12 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from', 'to' or 'rules' has to be defined`,
-			}),
-			Entry("unsupported kind in from selector", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: MeshGatewayRoute
-    default:
-      http:
-        requestTimeout: 1s`,
-				expected: `
-violations:
-  - field: spec.from[0].targetRef.kind
-    message: value 'MeshGatewayRoute' is not supported`,
+    message: at least one of 'to' or 'rules' has to be defined`,
 			}),
 			Entry("unsupported kind in to selector", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshServiceSubset
@@ -220,8 +198,7 @@ violations:
 			Entry("missing timeout configuration", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -234,8 +211,7 @@ violations:
 			Entry("timeout cannot be negative", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -250,8 +226,7 @@ violations:
 			Entry("multiple timeout cannot be negative", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -270,8 +245,7 @@ violations:
 			Entry("multiple timeout cannot be negative", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
@@ -314,16 +288,11 @@ to:
         requestTimeout: 1s
         streamIdleTimeout: 1h
         maxStreamDuration: 1h
-        maxConnectionDuration: 1h
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionTimeout: 11s`,
+        maxConnectionDuration: 1h`,
 				expected: `
 violations:
-  - field: spec.from
-    message: must not be defined
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported
   - field: spec.to[0].targetRef.kind
     message: value 'MeshService' is not supported
   - field: spec.to[0].default.connectionTimeout
@@ -334,35 +303,6 @@ violations:
     message: can't be specified when top-level TargetRef is referencing MeshHTTPRoute
   - field: spec.to[0].default.http.maxConnectionDuration
     message: can't be specified when top-level TargetRef is referencing MeshHTTPRoute`,
-			}),
-			Entry("top-level targetRef is referencing MeshGateway", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshGateway
-  name: gateway-1
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      connectionTimeout: 10s
-      idleTimeout: 1h
-      http:
-        requestTimeout: 1s
-        streamIdleTimeout: 1h
-        maxStreamDuration: 1h
-        maxConnectionDuration: 1h
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionTimeout: 11s`,
-				expected: `
-violations:
-  - field: spec.from
-    message: must not be defined
-  - field: spec.to[0].targetRef.kind
-    message: value 'MeshService' is not supported`,
 			}),
 			Entry("to TargetRef using labels and name for MeshExternalService", testCase{
 				inputYaml: `
@@ -382,41 +322,6 @@ violations:
   - field: spec.to[0].targetRef.labels
     message: either labels or name must be specified`,
 			}),
-			Entry("when rules is defined, to cannot be defined", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-rules:
-  - default:
-      connectionTimeout: 10s
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      connectionTimeout: 10s`,
-				expected: `
-violations:
-  - field: spec
-    message: fields 'to' and 'from' must be empty when 'rules' is defined`,
-			}),
-			Entry("when rules is defined, from cannot be defined", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-rules:
-  - default:
-      connectionTimeout: 10s
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionTimeout: 10s`,
-				expected: `
-violations:
-  - field: spec
-    message: fields 'to' and 'from' must be empty when 'rules' is defined`,
-			}),
 			Entry("rules with empty spec", testCase{
 				inputYaml: `
 targetRef:
@@ -427,6 +332,77 @@ rules:
 violations:
   - field: spec.rules[0].default
     message: at least one timeout should be configured`,
+			}),
+			Entry("empty match entry", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - {}
+    default:
+      http:
+        requestTimeout: 1s`,
+				expected: `
+violations:
+  - field: spec.rules[0].matches[0]
+    message: must specify at least one of 'spiffeID' or 'sni'`,
+			}),
+			Entry("spiffeID match without type", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          value: spiffe://default/client
+    default:
+      http:
+        requestTimeout: 1s`,
+				expected: `
+violations:
+  - field: spec.rules[0].matches[0].spiffeID.type
+    message: must be set`,
+			}),
+			Entry("spiffeID match with unrecognized type", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          type: Regex
+          value: spiffe://default/client
+    default:
+      http:
+        requestTimeout: 1s`,
+				expected: `
+violations:
+  - field: spec.rules[0].matches[0].spiffeID.type
+    message: 'unrecognized type "Regex", supported values are: Exact, Prefix'`,
+			}),
+			Entry("spiffeID match with unsupported timeout fields", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - matches:
+      - spiffeID:
+          type: Exact
+          value: spiffe://default/client
+    default:
+      connectionTimeout: 10s
+      http:
+        requestHeadersTimeout: 2s
+        maxStreamDuration: 3s`,
+				expected: `
+violations:
+  - field: spec.rules[0].default.connectionTimeout
+    message: can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity
+  - field: spec.rules[0].default.http.requestHeadersTimeout
+    message: can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity
+  - field: spec.rules[0].default.http.maxStreamDuration
+    message: can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity`,
 			}),
 		)
 	})

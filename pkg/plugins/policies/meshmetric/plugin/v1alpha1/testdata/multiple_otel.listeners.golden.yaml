@@ -19,7 +19,7 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            maxDirectResponseBodySizeBytes: 669
+            maxDirectResponseBodySizeBytes: 605
             virtualHosts:
             - domains:
               - '*'
@@ -31,11 +31,11 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: 682c56bf6ffe9c2ed2a4c2ac27c5c14c240730f60c84c5fe1a14d94a40686dee
+                      exact: 41e600dc2beb025d9f731cf9b9c5638509cb1f4aad2133cfcb3f5e395a6f6266
                   path: /meshmetric
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}},{"type":"OpenTelemetry","name":"second-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-second-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"dataplane":"dp-1","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","zone":"zone-1"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"OpenTelemetry","name":"otel-collector","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.sock","refreshInterval":"1m0s"}},{"type":"OpenTelemetry","name":"second-collector","openTelemetry":{"endpoint":"/tmp/kuma-otel-second-collector.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"dataplane":"dp-1","kuma.proxy_role":"sidecar","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","zone":"zone-1"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
@@ -43,15 +43,15 @@ resources:
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: 682c56bf6ffe9c2ed2a4c2ac27c5c14c240730f60c84c5fe1a14d94a40686dee
+                    value: 41e600dc2beb025d9f731cf9b9c5638509cb1f4aad2133cfcb3f5e395a6f6266
           statPrefix: _kuma_dynamicconfig
     name: _kuma:dynamicconfig
-- name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
+- name: _kuma:metrics:opentelemetry:otel-collector
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       pipe:
-        path: /tmp/kuma-otel-otel-collector.observability.svc-4317.sock
+        path: /tmp/kuma-otel-otel-collector.sock
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -74,20 +74,20 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
+              name: _kuma:metrics:opentelemetry:otel-collector
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
-          statPrefix: _kuma_metrics_opentelemetry_otel-collector_observability_svc-4317
-    name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
-- name: _kuma:metrics:opentelemetry:second-collector.observability.svc-4317
+                  cluster: _kuma:metrics:opentelemetry:otel-collector
+          statPrefix: _kuma_metrics_opentelemetry_otel-collector
+    name: _kuma:metrics:opentelemetry:otel-collector
+- name: _kuma:metrics:opentelemetry:second-collector
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       pipe:
-        path: /tmp/kuma-otel-second-collector.observability.svc-4317.sock
+        path: /tmp/kuma-otel-second-collector.sock
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -110,11 +110,11 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:metrics:opentelemetry:second-collector.observability.svc-4317
+              name: _kuma:metrics:opentelemetry:second-collector
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: _kuma:metrics:opentelemetry:second-collector.observability.svc-4317
-          statPrefix: _kuma_metrics_opentelemetry_second-collector_observability_svc-4317
-    name: _kuma:metrics:opentelemetry:second-collector.observability.svc-4317
+                  cluster: _kuma:metrics:opentelemetry:second-collector
+          statPrefix: _kuma_metrics_opentelemetry_second-collector
+    name: _kuma:metrics:opentelemetry:second-collector

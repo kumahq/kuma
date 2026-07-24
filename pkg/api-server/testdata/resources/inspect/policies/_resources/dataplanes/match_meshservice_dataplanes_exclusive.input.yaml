@@ -1,0 +1,84 @@
+#/meshes/default/meshtrafficpermissions/foo/_resources/dataplanes 200
+# Exclusive delta: the policy's targetRef selects dataplanes by the "app"
+# label, the same selector a real MeshService resource would use, instead of
+# the raw legacy service name used by the Disabled sibling
+# (match_meshservice_dataplanes.input.yaml).
+# Two dataplanes carry that label and are both selected; a third
+# dataplane belongs to a different MeshService and is excluded.
+type: Mesh
+name: default
+---
+type: MeshService
+name: foo
+mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+spec:
+  selector:
+    dataplaneTags:
+      app: foo
+  ports:
+    - port: 8080
+      targetPort: 8080
+      appProtocol: http
+---
+type: MeshTrafficPermission
+name: foo
+mesh: default
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: foo
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow
+---
+type: Dataplane
+name: foo-dp-1
+mesh: default
+labels:
+  app: foo
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: foo-dp-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        app: foo
+        k8s.kuma.io/namespace: kuma-demo
+        kuma.io/service: foo_kuma-demo_svc_8080
+---
+type: Dataplane
+name: foo-dp-2
+mesh: default
+labels:
+  app: foo
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: foo-dp-2
+networking:
+  address: 127.0.0.2
+  inbound:
+    - port: 8080
+      tags:
+        app: foo
+        k8s.kuma.io/namespace: kuma-demo
+        kuma.io/service: foo_kuma-demo_svc_8080
+---
+type: Dataplane
+name: bar-dp-1
+mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: bar-dp-1
+networking:
+  address: 127.0.0.3
+  inbound:
+    - port: 8080
+      tags:
+        app: bar
+        k8s.kuma.io/namespace: kuma-demo
+        kuma.io/service: bar_kuma-demo_svc_8080

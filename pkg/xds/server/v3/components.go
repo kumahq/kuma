@@ -1,33 +1,31 @@
 package v3
 
 import (
-	"context"
 	"time"
 
 	envoy_service_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/server/config"
 	envoy_server_delta "github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
-	envoy_server_rest "github.com/envoyproxy/go-control-plane/pkg/server/rest/v3"
 	envoy_server_sotw "github.com/envoyproxy/go-control-plane/pkg/server/sotw/v3"
-	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/auth"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
-	generator_meta "github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
-	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
-	xds_callbacks "github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
-	xds_sync "github.com/kumahq/kuma/v2/pkg/xds/sync"
-	xds_template "github.com/kumahq/kuma/v2/pkg/xds/template"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/auth"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
+	generator_meta "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
+	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
+	xds_callbacks "github.com/kumahq/kuma/v3/pkg/xds/server/callbacks"
+	xds_sync "github.com/kumahq/kuma/v3/pkg/xds/sync"
+	xds_template "github.com/kumahq/kuma/v3/pkg/xds/template"
 )
 
 var xdsServerLog = core.Log.WithName("xds").WithName("server")
@@ -42,7 +40,7 @@ func RegisterXDS(
 
 	authenticator := rt.XDS().PerProxyTypeAuthenticator()
 	authCallbacks := auth.NewCallbacks(rt.ReadOnlyResourceManager(), authenticator, auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in DataplaneLifecycle callback
-	workloadLabelValidator := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewWorkloadLabelValidator(rt.ReadOnlyResourceManager()))
+	workloadLabelValidator := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewWorkloadLabelValidator(rt.ReadOnlyResourceManager(), rt.Config().Environment))
 
 	dpLifecycle := xds_callbacks.DataplaneCallbacksToXdsCallbacks(
 		xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration))
@@ -55,7 +53,7 @@ func RegisterXDS(
 		return err
 	}
 
-	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory))
+	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory))
 	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets, otelStatusCache)
 
 	callbacks := util_xds_v3.CallbacksChain{
@@ -88,16 +86,28 @@ func RegisterXDS(
 		deltaCallbacks = append(deltaCallbacks, util_xds_v3.AdaptDeltaCallbacks(cb))
 	}
 
-	rest := envoy_server_rest.NewServer(xdsContext.Cache(), callbacks)
-	sotw := envoy_server_sotw.NewServer(context.Background(), xdsContext.Cache(), callbacks, envoy_server_sotw.WithOrderedADS())
-	delta := envoy_server_delta.NewServer(context.Background(), xdsContext.Cache(), deltaCallbacks, func(o *config.Opts) {
+	sotw := envoy_server_sotw.NewServer(rt.AppContext(), xdsContext.Cache(), callbacks, envoy_server_sotw.WithOrderedADS())
+	delta := envoy_server_delta.NewServer(rt.AppContext(), xdsContext.Cache(), deltaCallbacks, func(o *config.Opts) {
 		o.Ordered = true
 	})
-	newServerAdvanced := envoy_server.NewServerAdvanced(rest, sotw, delta)
 
 	xdsServerLog.Info("registering Aggregated Discovery Service V3 in Dataplane Server")
-	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GrpcServer(), newServerAdvanced)
+	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GrpcServer(), &adsServer{sotw: sotw, delta: delta})
 	return nil
+}
+
+type adsServer struct {
+	envoy_service_discovery.UnimplementedAggregatedDiscoveryServiceServer
+	sotw  envoy_server_sotw.Server
+	delta envoy_server_delta.Server
+}
+
+func (s *adsServer) StreamAggregatedResources(stream envoy_service_discovery.AggregatedDiscoveryService_StreamAggregatedResourcesServer) error {
+	return s.sotw.StreamHandler(stream, envoy_resource.AnyType)
+}
+
+func (s *adsServer) DeltaAggregatedResources(stream envoy_service_discovery.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {
+	return s.delta.DeltaStreamHandler(stream, envoy_resource.AnyType)
 }
 
 func DefaultReconciler(
@@ -106,17 +116,10 @@ func DefaultReconciler(
 	statsCallbacks util_xds.StatsCallbacks,
 	metrics *xds_metrics.Metrics,
 ) xds_sync.SnapshotReconciler {
-	resolver := xds_template.SequentialResolver(
-		&xds_template.SimpleProxyTemplateResolver{
-			ReadOnlyResourceManager: rt.ReadOnlyResourceManager(),
-		},
-		generator.DefaultTemplateResolver,
-	)
-
 	return &reconciler{
 		generator: &TemplateSnapshotGenerator{
 			ResourceSetHooks:      rt.XDS().Hooks.ResourceSetHooks(),
-			ProxyTemplateResolver: resolver,
+			ProxyTemplateResolver: generator.DefaultTemplateResolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
 		statsCallbacks: statsCallbacks,

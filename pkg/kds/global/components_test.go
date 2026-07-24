@@ -8,23 +8,23 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/kds/mux"
-	sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/grpc"
-	kds_setup "github.com/kumahq/kuma/v2/pkg/test/kds/setup"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/kds/mux"
+	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/grpc"
+	kds_setup "github.com/kumahq/kuma/v3/pkg/test/kds/setup"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Global Sync", func() {
@@ -190,10 +190,14 @@ var _ = Describe("Global Sync", func() {
 			Expect(err).ToNot(HaveOccurred())
 			stopCh := make(chan struct{})
 			clientStreams := []*grpc.MockDeltaClientStream{}
-			for _, ss := range serverStreams {
+			zoneNames := []string{}
+			for i, ss := range serverStreams {
 				clientStreams = append(clientStreams, ss.ClientStream(stopCh))
+				// The client-id equals the zone name in production;
+				// it drives attribution on the global ingest path.
+				zoneNames = append(zoneNames, fmt.Sprintf(zoneName, i))
 			}
-			kds_setup.StartDeltaClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, sync_store_v2.GlobalSyncCallback(context.Background(), globalSyncer, false, nil, "kuma-system"))
+			kds_setup.StartDeltaClient(clientStreams, zoneNames, []model.ResourceType{mesh.DataplaneType}, stopCh, sync_store_v2.GlobalSyncCallback(context.Background(), globalSyncer, false, nil, "kuma-system", nil))
 
 			// Create Zone resources for each Kuma CP Zone
 			for i := range numOfZones {

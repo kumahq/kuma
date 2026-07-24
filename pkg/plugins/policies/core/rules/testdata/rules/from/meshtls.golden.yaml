@@ -1,0 +1,45 @@
+InboundRules:
+  127.0.0.1:80:
+  - conf:
+      mode: Strict
+    match: null
+    origin:
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mtls_default___default_
+        mesh: default
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: default
+        type: MeshTLS
+      RuleIndex: 0
+  - conf:
+      mode: Permissive
+    match: null
+    origin:
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        kri: kri_mtls_default___override_
+        mesh: default
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: override
+        type: MeshTLS
+      RuleIndex: 0
+Rules:
+  127.0.0.1:80:
+  - Conf:
+      mode: Permissive
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtls_default___default_
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: default
+      type: MeshTLS
+    - creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtls_default___override_
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: override
+      type: MeshTLS
+    OriginByMatches: {}
+    Subset: []

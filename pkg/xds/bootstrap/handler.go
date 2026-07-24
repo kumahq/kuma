@@ -8,11 +8,11 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
 var log = core.Log.WithName("xds").WithName("bootstrap")
@@ -128,8 +128,7 @@ func createBootstrapResponse(bootstrap []byte, config *KumaDpBootstrap) *types.B
 			Aggregate: aggregate,
 		},
 		Networking: types.NetworkingConfiguration{
-			Address:          config.NetworkingConfig.Address,
-			CorefileTemplate: config.NetworkingConfig.CorefileTemplate,
+			Address: config.NetworkingConfig.Address,
 		},
 	}
 	return &bootstrapConfig

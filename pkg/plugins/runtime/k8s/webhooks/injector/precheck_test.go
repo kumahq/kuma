@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"testing"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
@@ -17,7 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 var _ = Describe("annotation deprecation", func() {
@@ -164,6 +165,67 @@ var _ = Describe("annotation deprecation", func() {
 		),
 	)
 })
+
+func TestHasExplicitMesh(t *testing.T) {
+	type testCase struct {
+		podLabels      map[string]string
+		podAnnotations map[string]string
+		nsLabels       map[string]string
+		nsAnnotations  map[string]string
+		expected       bool
+	}
+
+	testCases := map[string]testCase{
+		"pod label": {
+			podLabels: map[string]string{
+				metadata.KumaMeshLabel: "demo",
+			},
+			expected: true,
+		},
+		"namespace label": {
+			nsLabels: map[string]string{
+				metadata.KumaMeshLabel: "demo",
+			},
+			expected: true,
+		},
+		"pod annotation only": {
+			podAnnotations: map[string]string{
+				metadata.KumaMeshLabel: "demo",
+			},
+			expected: false,
+		},
+		"namespace annotation only": {
+			nsAnnotations: map[string]string{
+				metadata.KumaMeshLabel: "demo",
+			},
+			expected: false,
+		},
+		"no mesh markers": {
+			expected: false,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			pod := &kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Labels:      tc.podLabels,
+					Annotations: tc.podAnnotations,
+				},
+			}
+			ns := &kube_core.Namespace{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Labels:      tc.nsLabels,
+					Annotations: tc.nsAnnotations,
+				},
+			}
+
+			if got := hasExplicitMesh(pod, ns); got != tc.expected {
+				t.Fatalf("hasExplicitMesh() = %v, want %v", got, tc.expected)
+			}
+		})
+	}
+}
 
 func createPod(annotationName, value string) *kube_core.Pod {
 	return &kube_core.Pod{

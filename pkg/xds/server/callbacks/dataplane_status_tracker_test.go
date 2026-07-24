@@ -12,14 +12,14 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
-	. "github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	. "github.com/kumahq/kuma/v3/pkg/xds/server/callbacks"
 )
 
 var _ = Describe("DataplaneStatusTracker", func() {
@@ -33,7 +33,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		tracker = NewDataplaneStatusTracker(runtimeInfo, func(_ *structpb.Struct, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
 			return DataplaneInsightSinkFunc(func(<-chan struct{}) {})
 		})
-		callbacks = v3.AdaptCallbacks(tracker)
+		callbacks = v3.AdaptDeltaCallbacks(tracker)
 		ctx = context.Background()
 	})
 
@@ -44,7 +44,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating start of ADS subscription")
 		// when
-		err := callbacks.OnStreamOpen(ctx, streamID, "")
+		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -63,7 +63,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating end of ADS subscription")
 		// when
-		callbacks.OnStreamClosed(streamID, n)
+		callbacks.OnDeltaStreamClosed(streamID, n)
 
 		By("ensuring ADS subscription final state")
 		// when
@@ -79,7 +79,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating start of ADS subscription")
 		// when
-		err := callbacks.OnStreamOpen(ctx, streamID, "")
+		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -90,10 +90,10 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating initial LDS request")
 		// when
-		discoveryRequest := &envoy_sd.DiscoveryRequest{
+		discoveryRequest := &envoy_sd.DeltaDiscoveryRequest{
 			TypeUrl: "type.googleapis.com/envoy.config.listener.v3.Listener",
 		}
-		err = callbacks.OnStreamRequest(streamID, discoveryRequest)
+		err = callbacks.OnStreamDeltaRequest(streamID, discoveryRequest)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -110,6 +110,63 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			Lds:            &mesh_proto.DiscoveryServiceStats{},
 			Rds:            &mesh_proto.DiscoveryServiceStats{},
 		}))
+	})
+
+	It("should track legacy state-of-the-world ADS flow", func() {
+		// given
+		streamID := int64(1)
+		sotwCallbacks := v3.AdaptCallbacks(tracker)
+		typeURL := "type.googleapis.com/envoy.config.listener.v3.Listener"
+
+		// when
+		err := sotwCallbacks.OnStreamOpen(ctx, streamID, "")
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		accessor, found := tracker.GetStatusAccessor(streamID)
+		Expect(found).To(BeTrue())
+		Expect(accessor).ToNot(BeNil())
+
+		// when
+		discoveryRequest := &envoy_sd.DiscoveryRequest{
+			Node: &envoy_core.Node{
+				Id: "default.example-001",
+			},
+			TypeUrl: typeURL,
+		}
+		err = sotwCallbacks.OnStreamRequest(streamID, discoveryRequest)
+		Expect(err).ToNot(HaveOccurred())
+
+		discoveryResponse := &envoy_sd.DiscoveryResponse{
+			TypeUrl: typeURL,
+			Nonce:   "1",
+		}
+		sotwCallbacks.OnStreamResponse(ctx, streamID, discoveryRequest, discoveryResponse)
+
+		discoveryRequest = &envoy_sd.DiscoveryRequest{
+			TypeUrl:       typeURL,
+			ResponseNonce: "1",
+		}
+		err = sotwCallbacks.OnStreamRequest(streamID, discoveryRequest)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		key, subscription := accessor.GetStatus()
+		Expect(key).To(Equal(core_model.ResourceKey{
+			Mesh: "default",
+			Name: "example-001",
+		}))
+		Expect(subscription.Status.Total.ResponsesSent).To(Equal(uint64(1)))
+		Expect(subscription.Status.Total.ResponsesAcknowledged).To(Equal(uint64(1)))
+		Expect(subscription.Status.Lds.ResponsesSent).To(Equal(uint64(1)))
+		Expect(subscription.Status.Lds.ResponsesAcknowledged).To(Equal(uint64(1)))
+
+		// when
+		sotwCallbacks.OnStreamClosed(streamID, &envoy_core.Node{})
+
+		// then
+		_, found = tracker.GetStatusAccessor(streamID)
+		Expect(found).To(BeFalse())
 	})
 
 	type testCase struct {
@@ -136,7 +193,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating start of subscription")
 			// when
-			err := callbacks.OnStreamOpen(ctx, streamID, "")
+			err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -147,7 +204,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating initial xDS request")
 			// when
-			discoveryRequest := &envoy_sd.DiscoveryRequest{
+			discoveryRequest := &envoy_sd.DeltaDiscoveryRequest{
 				Node: &envoy_core.Node{
 					Id: "default.example-001",
 					Metadata: &structpb.Struct{
@@ -167,7 +224,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 				},
 				TypeUrl: given.TypeUrl,
 			}
-			err = callbacks.OnStreamRequest(streamID, discoveryRequest)
+			err = callbacks.OnStreamDeltaRequest(streamID, discoveryRequest)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -206,11 +263,11 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating initial xDS response")
 			// when
-			discoveryResponse := &envoy_sd.DiscoveryResponse{
+			discoveryResponse := &envoy_sd.DeltaDiscoveryResponse{
 				TypeUrl: given.TypeUrl,
 				Nonce:   "1",
 			}
-			callbacks.OnStreamResponse(context.TODO(), streamID, discoveryRequest, discoveryResponse)
+			callbacks.OnStreamDeltaResponse(streamID, discoveryRequest, discoveryResponse)
 			// and
 			key, subscription = accessor.GetStatus()
 			// then
@@ -234,11 +291,11 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating xDS ACK request")
 			// when
-			discoveryRequest = &envoy_sd.DiscoveryRequest{
+			discoveryRequest = &envoy_sd.DeltaDiscoveryRequest{
 				TypeUrl:       given.TypeUrl,
 				ResponseNonce: "1",
 			}
-			err = callbacks.OnStreamRequest(streamID, discoveryRequest)
+			err = callbacks.OnStreamDeltaRequest(streamID, discoveryRequest)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -267,14 +324,14 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating xDS NACK request")
 			// when
-			discoveryRequest = &envoy_sd.DiscoveryRequest{
+			discoveryRequest = &envoy_sd.DeltaDiscoveryRequest{
 				TypeUrl:       given.TypeUrl,
 				ResponseNonce: "1",
 				ErrorDetail: &status.Status{
 					Message: "failed to apply LDS response",
 				},
 			}
-			err = callbacks.OnStreamRequest(streamID, discoveryRequest)
+			err = callbacks.OnStreamDeltaRequest(streamID, discoveryRequest)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -328,7 +385,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		func(given versionTestCase) {
 			// given
 			streamID := int64(1)
-			discoveryRequest := &envoy_sd.DiscoveryRequest{
+			discoveryRequest := &envoy_sd.DeltaDiscoveryRequest{
 				TypeUrl: "type.googleapis.com/envoy.config.listener.v3.Listener",
 				Node: &envoy_core.Node{
 					Id: "default.example-001",
@@ -341,9 +398,9 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			}
 
 			// when
-			err := callbacks.OnStreamOpen(context.Background(), streamID, "")
+			err := callbacks.OnDeltaStreamOpen(context.Background(), streamID, "")
 			Expect(err).ToNot(HaveOccurred())
-			err = callbacks.OnStreamRequest(streamID, discoveryRequest)
+			err = callbacks.OnStreamDeltaRequest(streamID, discoveryRequest)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

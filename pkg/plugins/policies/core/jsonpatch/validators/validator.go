@@ -2,10 +2,9 @@ package validators
 
 import (
 	"encoding/json"
-	"fmt"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
 func ValidateJsonPatchBlock(
@@ -118,24 +117,10 @@ func validatePath(path *string, op string) validators.ValidationError {
 	return err
 }
 
-func TopLevelTargetRefDeprecations(targetRef *common_api.TargetRef) []string {
-	if targetRef == nil {
-		return nil
-	}
-	replacedByDataplane := map[common_api.TargetRefKind]struct{}{
-		common_api.MeshService:       {},
-		common_api.MeshServiceSubset: {},
-		common_api.MeshSubset:        {},
-	}
-	if _, ok := replacedByDataplane[targetRef.Kind]; ok {
-		return []string{
-			fmt.Sprintf("%s value for 'targetRef.kind' is deprecated, use %s with labels instead", targetRef.Kind, common_api.Dataplane),
-		}
-	}
-	if targetRef.Kind == common_api.MeshHTTPRoute {
-		return []string{
-			fmt.Sprintf("%s value for 'targetRef.kind' is deprecated, use %s in spec.to[].targetRef", common_api.MeshHTTPRoute, common_api.MeshHTTPRoute),
-		}
-	}
+// TopLevelTargetRefDeprecations used to warn about MeshService, MeshServiceSubset,
+// MeshSubset, MeshGateway, and MeshHTTPRoute as top-level targetRef kinds. Those kinds
+// are now rejected outright by top-level targetRef validation, so there is nothing left
+// to deprecate for them.
+func TopLevelTargetRefDeprecations(_ *common_api.TargetRef) []string {
 	return nil
 }

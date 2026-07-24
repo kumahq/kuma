@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	_ "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	_ "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
 var _ = Describe("MeshProxyPatch", func() {
@@ -26,8 +26,7 @@ var _ = Describe("MeshProxyPatch", func() {
 			},
 			Entry("cluster modifications", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 default:
   appendModifications:
   - cluster:
@@ -83,10 +82,7 @@ default:
     `),
 			Entry("listener modifications", `
 targetRef:
-  kind: MeshServiceSubset
-  name: backend
-  tags:
-    version: v2
+  kind: Mesh
 default:
   appendModifications:
   - listener:
@@ -202,9 +198,7 @@ default:
     `),
 			Entry("http filter modifications", `
 targetRef:
-  kind: MeshSubset
-  tags:
-    kuma.io/zone: east
+  kind: Mesh
 default:
   appendModifications:
   - httpFilter:
@@ -256,10 +250,9 @@ default:
   - httpFilter:
       operation: Remove
     `),
-			Entry("modifications for MeshGateway", `
+			Entry("modifications for gateway-style patches", `
 targetRef:
-  kind: MeshGateway
-  name: gateway
+  kind: Mesh
 default:
   appendModifications:
   - cluster:
@@ -608,8 +601,7 @@ default:
 			Entry("multiple types in one modification", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshGateway
-  name: gateway
+  kind: Mesh
 default:
   appendModifications:
   - cluster:

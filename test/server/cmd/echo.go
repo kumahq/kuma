@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
-	"github.com/kumahq/kuma/v2/test/server/types"
+	"github.com/kumahq/kuma/v3/test/server/types"
 )
 
 const secondaryInboundPort = 9090
@@ -133,8 +133,13 @@ func newEchoHTTPCmd() *cobra.Command {
 			}
 			secondInboundMux := http.NewServeMux()
 			secondInboundMux.HandleFunc("/", handleEcho)
+			secondInboundSrv := http.Server{
+				Addr:              net.JoinHostPort(args.ip, strconv.Itoa(secondaryInboundPort)),
+				Handler:           secondInboundMux,
+				ReadHeaderTimeout: time.Second,
+			}
 			go func() {
-				_ = http.ListenAndServe(net.JoinHostPort(args.ip, strconv.Itoa(secondaryInboundPort)), secondInboundMux)
+				_ = secondInboundSrv.ListenAndServe()
 			}()
 			return srv.ListenAndServe()
 		},

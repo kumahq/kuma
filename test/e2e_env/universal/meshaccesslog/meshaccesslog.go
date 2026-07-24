@@ -3,7 +3,6 @@ package meshaccesslog
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -11,21 +10,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/test/e2e_env/universal/gateway"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func TestPlugin() {
 	meshName := "meshaccesslog"
 	var externalServiceDockerName string
 	var tcpSinkDockerName string
-
-	GatewayAddressPort := func(appName string, port int) string {
-		ip := universal.Cluster.GetApp(appName).GetIP()
-		return net.JoinHostPort(ip, strconv.Itoa(port))
-	}
 
 	uniServiceYAML := fmt.Sprintf(`
 type: MeshService
@@ -50,8 +43,10 @@ spec:
 		tcpSinkDockerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshName, AppModeTcpSink)
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
-			Install(TestServerUniversal(
-				"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName)),
+			Install(
+				TestServerUniversal(
+					"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName), WithLabels(map[string]string{"kuma.io/service": "test-server"}),
+				),
 			).
 			Install(YamlUniversal(uniServiceYAML)).
 			Install(YamlUniversal(`
@@ -64,9 +59,6 @@ spec:
       matchLabels:
         kuma.io/origin: zone
         kuma.io/env: universal`)).
-			Install(GatewayProxyUniversal(meshName, "edge-gateway")).
-			Install(YamlUniversal(gateway.MkGateway("edge-gateway", meshName, "edge-gateway", false, "example.kuma.io", "test-server", 8080))).
-			Install(gateway.GatewayClientAppUniversal("gateway-client")).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(universal.Cluster)).To(Succeed())
 	})
@@ -76,17 +68,17 @@ spec:
 	})
 
 	E2EAfterAll(func() {
-		Expect(universal.Cluster.DeleteApp("gateway-client")).To(Succeed())
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	// Always have new MeshAccessLog resources and log sink
 	BeforeEach(func() {
-		Expect(NewClusterSetup().
-			Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
-			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
-			Setup(universal.Cluster),
+		Expect(
+			NewClusterSetup().
+				Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
+				Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}))).
+				Setup(universal.Cluster),
 		).To(Succeed())
 	})
 	E2EAfterEach(func() {
@@ -141,11 +133,13 @@ name: client-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: demo-client
+   kind: Dataplane
+   labels:
+     kuma.io/service: demo-client
  to:
    - targetRef:
-       kind: Mesh
+       kind: MeshService
+       name: test-server
      default:
        backends:
        - type: Tcp
@@ -159,7 +153,7 @@ spec:
 
 		makeRequest := func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+				universal.Cluster, AppModeDemoClient, "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}
@@ -212,7 +206,8 @@ mesh: %s
 spec:
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: test-server
       default:
         backends:
           - type: Tcp
@@ -344,11 +339,13 @@ name: client-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: demo-client
+   kind: Dataplane
+   labels:
+     kuma.io/service: demo-client
  to:
    - targetRef:
-       kind: Mesh
+       kind: MeshService
+       name: test-server
      default:
        backends:
        - type: Tcp
@@ -383,7 +380,7 @@ spec:
 		headerValue := "headervalue"
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+				universal.Cluster, AppModeDemoClient, "test-server.svc.mesh.local",
 				client.WithHeader("X-TeSt", headerValue),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -410,8 +407,9 @@ name: client-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: demo-client
+   kind: Dataplane
+   labels:
+     kuma.io/service: demo-client
  to:
    - targetRef:
        kind: Mesh
@@ -442,14 +440,19 @@ spec:
 
 	It("supports logging traffic to an ExternalService using MeshService (without ZoneIngress)", func() {
 		externalService := fmt.Sprintf(`
-type: ExternalService
-name: external-service
+type: MeshExternalService
+name: ext-service
 mesh: meshaccesslog
-tags:
-  kuma.io/service: ext-service
-  kuma.io/protocol: tcp
-networking:
-  address: "%s:80"
+labels:
+  kuma.io/origin: zone
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: tcp
+  endpoints:
+    - address: "%s"
+      port: 80
 `, externalServiceDockerName)
 		accesslog := fmt.Sprintf(`
 type: MeshAccessLog
@@ -457,11 +460,12 @@ name: client-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: demo-client
+   kind: Dataplane
+   labels:
+     kuma.io/service: demo-client
  to:
    - targetRef:
-       kind: MeshService
+       kind: MeshExternalService
        name: ext-service
      default:
        backends:
@@ -478,7 +482,7 @@ spec:
 		// 52 is empty response but the TCP connection succeeded
 		makeRequest := func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, AppModeDemoClient, "ext-service.mesh",
+				universal.Cluster, AppModeDemoClient, "ext-service.extsvc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Equal(52))
@@ -496,8 +500,9 @@ name: server-outgoing
 mesh: meshaccesslog
 spec:
  targetRef:
-   kind: MeshService
-   name: test-server
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
  rules:
    - default:
        backends:
@@ -513,7 +518,7 @@ spec:
 
 		makeRequest := func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+				universal.Cluster, AppModeDemoClient, "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}
@@ -521,35 +526,5 @@ spec:
 
 		Expect(src).To(Equal("unknown"))
 		Expect(dst).To(Equal("test-server"))
-	})
-
-	It("should log traffic from MeshGateway", func() {
-		yaml := fmt.Sprintf(`
-type: MeshAccessLog
-name: gateway-outgoing
-mesh: meshaccesslog
-spec:
- targetRef:
-   kind: MeshService
-   name: edge-gateway
- to:
-   - targetRef:
-       kind: Mesh
-     default:
-       backends:
-       - type: Tcp
-         tcp:
-           format:
-             type: Plain
-             plain: '%s'
-           address: "%s:9999"
-`, trafficLogFormat, tcpSinkDockerName)
-		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
-
-		src, dst := expectTrafficLogged(gateway.ProxySimpleRequests(universal.Cluster, "echo-v1",
-			GatewayAddressPort("edge-gateway", 8080), "example.kuma.io"))
-
-		Expect(src).To(Equal("edge-gateway"))
-		Expect(dst).To(Equal("*"))
 	})
 }

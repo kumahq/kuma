@@ -7,65 +7,61 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/api-server/customization"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/access"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/datasource"
-	"github.com/kumahq/kuma/v2/pkg/core/dns/lookup"
-	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/dataplane"
-	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/dataplaneinsight"
-	externalservice_managers "github.com/kumahq/kuma/v2/pkg/core/managers/apis/external_service"
-	mesh_managers "github.com/kumahq/kuma/v2/pkg/core/managers/apis/mesh"
-	ratelimit_managers "github.com/kumahq/kuma/v2/pkg/core/managers/apis/ratelimit"
-	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/zone"
-	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/zoneegressinsight"
-	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/zoneingressinsight"
-	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/zoneinsight"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	resources_access "github.com/kumahq/kuma/v2/pkg/core/resources/access"
-	core_apis "github.com/kumahq/kuma/v2/pkg/core/resources/apis"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	runtime_reports "github.com/kumahq/kuma/v2/pkg/core/runtime/reports"
-	secret_cipher "github.com/kumahq/kuma/v2/pkg/core/secrets/cipher"
-	secret_manager "github.com/kumahq/kuma/v2/pkg/core/secrets/manager"
-	"github.com/kumahq/kuma/v2/pkg/dns/vips"
-	"github.com/kumahq/kuma/v2/pkg/dp-server/server"
-	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
-	envoyadmin_access "github.com/kumahq/kuma/v2/pkg/envoy/admin/access"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	"github.com/kumahq/kuma/v2/pkg/insights/globalinsight"
-	"github.com/kumahq/kuma/v2/pkg/intercp"
-	"github.com/kumahq/kuma/v2/pkg/intercp/catalog"
-	"github.com/kumahq/kuma/v2/pkg/intercp/envoyadmin"
-	kds_context "github.com/kumahq/kuma/v2/pkg/kds/context"
-	kds_envoyadmin "github.com/kumahq/kuma/v2/pkg/kds/envoyadmin"
-	"github.com/kumahq/kuma/v2/pkg/metrics"
-	metrics_store "github.com/kumahq/kuma/v2/pkg/metrics/store"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/graph"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres/config"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin"
-	tokens_access "github.com/kumahq/kuma/v2/pkg/tokens/builtin/access"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/issuer"
-	zone2 "github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone"
-	zone_access "github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone/access"
-	mesh_cache "github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	xds_runtime "github.com/kumahq/kuma/v2/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
-	xds_server "github.com/kumahq/kuma/v2/pkg/xds/server"
+	"github.com/kumahq/kuma/v3/pkg/api-server/customization"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/access"
+	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/datasource"
+	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
+	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplane"
+	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplaneinsight"
+	mesh_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
+	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneegressinsight"
+	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneingressinsight"
+	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneinsight"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	core_apis "github.com/kumahq/kuma/v3/pkg/core/resources/apis"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	runtime_reports "github.com/kumahq/kuma/v3/pkg/core/runtime/reports"
+	secret_cipher "github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/v3/pkg/dp-server/server"
+	"github.com/kumahq/kuma/v3/pkg/envoy/admin"
+	envoyadmin_access "github.com/kumahq/kuma/v3/pkg/envoy/admin/access"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
+	"github.com/kumahq/kuma/v3/pkg/intercp"
+	"github.com/kumahq/kuma/v3/pkg/intercp/catalog"
+	"github.com/kumahq/kuma/v3/pkg/intercp/envoyadmin"
+	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
+	kds_envoyadmin "github.com/kumahq/kuma/v3/pkg/kds/envoyadmin"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
+	metrics_store "github.com/kumahq/kuma/v3/pkg/metrics/store"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
+	tokens_access "github.com/kumahq/kuma/v3/pkg/tokens/builtin/access"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/issuer"
+	zone2 "github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone"
+	zone_access "github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone/access"
+	mesh_cache "github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
+	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
 var log = core.Log.WithName("bootstrap")
@@ -80,7 +76,14 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	}
 	core_plugins.Init(cfg.CoreResources.Enabled, core_apis.NameToModule)
 	core_plugins.Init(cfg.Policies.Enabled, policies.NameToModule)
+	policyPlugins := core_plugins.Plugins().PolicyPlugins()
+	policyNames := make([]string, 0, len(policyPlugins))
+	for _, p := range policyPlugins {
+		policyNames = append(policyNames, string(p.Name))
+	}
+	log.Info("policy plugins loaded in order", "policies", policyNames)
 	core_plugins.InitAllIf(cfg.CoreResources.Enabled, "meshidentities", meshidentity.NameToModule)
+	core_plugins.LogRegistered()
 	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
@@ -138,13 +141,17 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		return nil, err
 	}
 	builder.WithCAProvider(caProvider)
-	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics(), func(writer http.ResponseWriter, request *http.Request) bool {
+	dpServer, err := server.NewDpServer(*cfg.DpServer, builder.Metrics(), func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
-	}))
+	})
+	if err != nil {
+		return nil, err
+	}
+	builder.WithDpServer(dpServer)
 	resourceManager := builder.ResourceManager()
 	kdsContext := kds_context.DefaultContext(appCtx, resourceManager, cfg)
 	builder.WithKDSContext(kdsContext)
-	builder.WithInterCPClientPool(intercp.DefaultClientPool())
+	builder.WithInterCPClientPool(intercp.DefaultClientPool(int(cfg.Multizone.Global.KDS.MaxMsgSize)))
 
 	if cfg.Mode == config_core.Global {
 		kdsEnvoyAdminClient := kds_envoyadmin.NewClient(
@@ -419,22 +426,6 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 		),
 	)
 
-	rateLimitValidator := ratelimit_managers.RateLimitValidator{
-		Store: builder.ResourceStore(),
-	}
-	customizableManager.Customize(
-		mesh.RateLimitType,
-		ratelimit_managers.NewRateLimitManager(builder.ResourceStore(), rateLimitValidator),
-	)
-
-	externalServiceValidator := externalservice_managers.ExternalServiceValidator{
-		Store: builder.ResourceStore(),
-	}
-	customizableManager.Customize(
-		mesh.ExternalServiceType,
-		externalservice_managers.NewExternalServiceManager(builder.ResourceStore(), externalServiceValidator),
-	)
-
 	customizableManager.Customize(
 		mesh.DataplaneType,
 		dataplane.NewDataplaneManager(
@@ -522,20 +513,17 @@ func initializeConfigManager(builder *core_runtime.Builder) {
 }
 
 func initializeMeshCache(builder *core_runtime.Builder) error {
-	rsGraphBuilder := xds_context.AnyToAnyReachableServicesGraphBuilder
-	if builder.Config().Experimental.AutoReachableServices {
-		rsGraphBuilder = graph.Builder
+	var mcbOpts []xds_context.MeshContextBuilderOption
+	if builder.Config().XdsServer.PolicyMatchingCacheSize > 0 {
+		mcbOpts = append(mcbOpts, xds_context.WithPolicyMatchingHash())
 	}
 	meshContextBuilder := xds_context.NewMeshContextBuilder(
 		builder.ReadOnlyResourceManager(),
 		xds_server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), builder.Config().Experimental.UseTagFirstVirtualOutboundModel),
-		builder.Config().DNSServer.Domain,
-		builder.Config().DNSServer.ServiceVipPort,
-		rsGraphBuilder,
 		builder.CAProvider(),
+		mcbOpts...,
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(

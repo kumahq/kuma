@@ -12,8 +12,8 @@ import (
 	. "github.com/onsi/gomega"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
 
 var _ = Context("kumactl install control-plane", func() {
@@ -134,7 +134,6 @@ var _ = Context("kumactl install control-plane", func() {
 				"--dataplane-init-version", "greatest",
 				"--tls-api-server-secret", "api-server-secret",
 				"--tls-api-server-client-certs-secret", "api-server-client-secret",
-				"--tls-kds-global-server-secret", "kds-global-secret",
 				"--tls-kds-zone-client-secret", "kds-ca-secret",
 				"--tls-general-ca-secret", "general-tls-secret-ca",
 				"--mode", "zone",
@@ -157,31 +156,6 @@ var _ = Context("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
 		}),
-		Entry("should generate Kubernetes resources using ebpf (experimental)", testCase{
-			extraArgs: []string{
-				"--set", "experimental.ebpf.enabled=true",
-			},
-			goldenFile: "install-control-plane.tproxy-ebpf-experimental-enabled.golden.yaml",
-		}),
-		Entry("should generate Kubernetes resources for Global", testCase{
-			extraArgs: []string{
-				"--mode", "global",
-			},
-			goldenFile: "install-control-plane.global.golden.yaml",
-		}),
-		Entry("should generate Kubernetes resources for Global Universal mode", testCase{
-			extraArgs: []string{
-				"--mode",
-				"global",
-				"--set",
-				"controlPlane.environment=universal",
-				"--set",
-				"postgres.tls.mode=verifyFull",
-				"--set",
-				"postgres.tls.caSecretName=postgres-ca",
-			},
-			goldenFile: "install-control-plane.global-universal-on-k8s.golden.yaml",
-		}),
 		Entry("should generate Kubernetes resources for Zone Universal mode", testCase{
 			extraArgs: []string{
 				"--mode",
@@ -193,7 +167,8 @@ var _ = Context("kumactl install control-plane", func() {
 				"--zone",
 				"zone-1",
 			},
-			goldenFile: "install-control-plane.zone-universal-on-k8s.golden.yaml",
+			includeCRDs: true, // CRDs should be implicitly skipped for universal environment
+			goldenFile:  "install-control-plane.zone-universal-on-k8s.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources for Zone", testCase{
 			extraArgs: []string{
@@ -242,6 +217,13 @@ controlPlane:
   replicas: 2
 `,
 		}),
+		Entry("should skip CRDs with --skip-crds", testCase{
+			extraArgs: []string{
+				"--skip-crds",
+			},
+			includeCRDs: true, // don't add --skip-kinds, rely on --skip-crds flag
+			goldenFile:  "install-control-plane.skip-crds.golden.yaml",
+		}),
 		Entry("should add GatewayClass if CRDs are present and enabled", testCase{
 			extraArgs: []string{
 				"--api-versions", fmt.Sprintf("%s/%s", gatewayapi.GroupVersion.String(), "GatewayClass"),
@@ -271,6 +253,14 @@ controlPlane:
 		Entry("--mode is unknown", errTestCase{
 			extraArgs: []string{"--mode", "test"},
 			errorMsg:  "controlPlane.mode invalid got:'test'",
+		}),
+		Entry("--mode global with default (kubernetes) environment", errTestCase{
+			extraArgs: []string{"--mode", "global"},
+			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
+		}),
+		Entry("--mode global with universal environment is still unsupported", errTestCase{
+			extraArgs: []string{"--mode", "global", "--set", "controlPlane.environment=universal"},
+			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
 		}),
 		Entry("", errTestCase{
 			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "zone-1", "--set", "controlPlane.environment=universal", "--set", "egress.enabled=true"},

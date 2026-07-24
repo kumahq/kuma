@@ -1,0 +1,13 @@
+type: MeshTimeout
+name: mt-display-name
+mesh: multizone-label-validation
+labels:
+  kuma.io/display-name: my-custom-name
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s

@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	meshtrafficpermissions_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	meshtrafficpermissions_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 )
 
 var _ = Describe("MeshTrafficPermission", func() {
@@ -34,64 +34,17 @@ from:
     default:
       action: Allow
   - targetRef:
-      kind: MeshSubset
-      tags:
-        kuma.io/zone: us-east
-        env: dev
-    default:
-      action: Deny
-  - targetRef:
       kind: MeshService
       name: backend
     default:
       action: Allow
-  - targetRef:
-      kind: MeshServiceSubset
-      name: backend
-      tags:
-        version: v1
-    default:
-      action: Deny
-`),
-			Entry("allow MeshSubset at top-level targetRef", `
-targetRef:
-  kind: MeshSubset
-  tags:
-    env: prod
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: Deny
-`),
-			Entry("allow MeshService at top-level targetRef", `
-targetRef:
-  kind: MeshService
-  name: backend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: Deny
-`),
-			Entry("allow MeshServiceSubset at top-level targetRef", `
-targetRef:
-  kind: MeshServiceSubset
-  name: backend
-  tags:
-    version: v2
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: Deny
 `),
 			Entry("full rules example", `
 targetRef:
   kind: Mesh
 rules:
   - default:
-      deny: 
+      deny:
         - spiffeID:
             type: Exact
             value: spiffe://trust.domain/service
@@ -103,6 +56,31 @@ rules:
         - spiffeID:
             type: Exact
             value: spiffe://trust.domain/service-2
+`),
+			Entry("sni-only allow", `
+targetRef:
+  kind: Dataplane
+  sectionName: ze-port
+rules:
+  - default:
+      allow:
+        - sni:
+            type: Exact
+            value: sni.extsvc.default.zone-1.aws-aurora.8443
+`),
+			Entry("spiffeID and sni combined in the same match", `
+targetRef:
+  kind: Dataplane
+  sectionName: ze-port
+rules:
+  - default:
+      allow:
+        - spiffeID:
+            type: Exact
+            value: spiffe://default/ns/backend-ns/sa/backend
+          sni:
+            type: Exact
+            value: sni.extsvc.default.zone-1.aws-aurora.8443
 `),
 		)
 
@@ -130,8 +108,7 @@ rules:
 			Entry("empty 'from' array", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 from: []
 `,
 				expected: `
@@ -142,14 +119,67 @@ violations:
 			Entry("empty 'rules' array", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 rules: []
 `,
 				expected: `
 violations:
   - field: spec
     message: at least one of 'from' or 'rules' has to be defined`,
+			}),
+			Entry("not supported kind at top-level targetRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshSubset
+  tags:
+    env: prod
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      action: Deny
+`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshSubset' is not supported
+`,
+			}),
+			Entry("not supported kind (MeshService) at top-level targetRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      action: Deny
+`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshService' is not supported
+`,
+			}),
+			Entry("not supported kind (MeshServiceSubset) at top-level targetRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshServiceSubset
+  name: backend
+  tags:
+    version: v2
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      action: Deny
+`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshServiceSubset' is not supported
+`,
 			}),
 			Entry("sectionName without from or rules", testCase{
 				inputYaml: `
@@ -168,9 +198,8 @@ violations:
 			Entry("not supported kinds in 'from' array", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
-from: 
+  kind: Mesh
+from:
   - targetRef:
       kind: MeshGatewayRoute
       name: mgr-1
@@ -181,6 +210,33 @@ from:
 violations:
   - field: spec.from[0].targetRef.kind
     message: value 'MeshGatewayRoute' is not supported
+`,
+			}),
+			Entry("not supported subset kinds in 'from' array", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: us-east
+    default:
+      action: Allow
+  - targetRef:
+      kind: MeshServiceSubset
+      name: backend
+      tags:
+        version: v1
+    default:
+      action: Allow
+`,
+				expected: `
+violations:
+  - field: spec.from[0].targetRef.kind
+    message: value 'MeshSubset' is not supported
+  - field: spec.from[1].targetRef.kind
+    message: value 'MeshServiceSubset' is not supported
 `,
 			}),
 			Entry("default is nil", testCase{
@@ -211,6 +267,35 @@ violations:
     message: at least one of 'allow', 'allowWithShadowDeny', 'deny' has to be defined
 `,
 			}),
+			Entry("matches with invalid sni", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane
+  sectionName: ze-port
+rules:
+  - default:
+      allow:
+        - sni:
+            type: Exact
+            value: ""
+      deny:
+        - sni:
+            type: Exact
+      allowWithShadowDeny:
+        - sni:
+            type: Exact
+            value: "not_valid"
+`,
+				expected: `
+violations:
+  - field: spec.rules[0].allow[0].sni.value
+    message: must be set
+  - field: spec.rules[0].allowWithShadowDeny[0].sni.value
+    message: a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+  - field: spec.rules[0].deny[0].sni.value
+    message: must be set
+`,
+			}),
 			Entry("matches with invalid spiffe id", testCase{
 				inputYaml: `
 targetRef:
@@ -233,13 +318,36 @@ rules:
 				expected: `
 violations:
   - field: spec.rules[0].allow[0].spiffeID
-    message: must be a valid Spiffe ID
+    message: 'must be a valid Spiffe ID: scheme is missing or invalid'
   - field: spec.rules[0].allowWithShadowDeny[0].spiffeID
-    message: must be a valid Spiffe ID
+    message: 'must be a valid Spiffe ID: scheme is missing or invalid'
   - field: spec.rules[0].deny[0].spiffeID
-    message: must be a valid Spiffe ID
+    message: 'must be a valid Spiffe ID: scheme is missing or invalid'
 `,
 			}),
 		)
+	})
+
+	Describe("Deprecations()", func() {
+		It("does not recommend MeshSubset for deprecated MeshService from targetRef", func() {
+			mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
+
+			err := core_model.FromYAML([]byte(`
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: MeshService
+      name: backend
+    default:
+      action: Allow
+`), &mtp.Spec)
+			Expect(err).ToNot(HaveOccurred())
+
+			deprecations := mtp.Deprecations()
+
+			Expect(deprecations).To(ContainElement("MeshService value for 'from[].targetRef.kind' is deprecated, use 'rules' with MeshIdentity (spiffeId) instead"))
+			Expect(deprecations).ToNot(ContainElement(ContainSubstring("MeshSubset")))
+		})
 	})
 })

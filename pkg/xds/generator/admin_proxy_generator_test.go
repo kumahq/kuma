@@ -5,33 +5,33 @@ import (
 	"os"
 	"path/filepath"
 
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/tls"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/tls"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 )
 
 var _ = Describe("AdminProxyGenerator", func() {
 	generator := generator.AdminProxyGenerator{}
 
 	type testCase struct {
-		dataplaneFile    string
-		expected         string
-		adminAddress     string
-		adminSocketPath  string
-		readinessPort    uint32
-		features         xds_types.Features
-		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
+		dataplaneFile   string
+		expected        string
+		adminAddress    string
+		adminSocketPath string
+		readinessPort   uint32
+		features        xds_types.Features
 	}
 
 	DescribeTable("should generate envoy config",
@@ -50,11 +50,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
-						Spec: &mesh_proto.Mesh{
-							MeshServices: &mesh_proto.Mesh_MeshServices{
-								Mode: given.meshServicesMode,
-							},
-						},
+						Spec: &mesh_proto.Mesh{},
 					},
 				},
 			}
@@ -131,36 +127,31 @@ var _ = Describe("AdminProxyGenerator", func() {
 			readinessPort: 9400,
 		}),
 		Entry("should generate admin resources, unified naming, readiness with TCP port 9902", testCase{
-			dataplaneFile:    "07.dataplane.input.yaml",
-			expected:         "07.envoy-config.golden.yaml",
-			adminAddress:     "",
-			readinessPort:    9902,
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			dataplaneFile: "07.dataplane.input.yaml",
+			expected:      "07.envoy-config.golden.yaml",
+			adminAddress:  "",
+			readinessPort: 9902,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
 		}),
-		Entry("should generate admin resources, readiness with Unix socket", testCase{
-			dataplaneFile:    "08.dataplane.input.yaml",
-			expected:         "08.envoy-config.golden.yaml",
-			adminAddress:     "127.0.0.1",
-			readinessPort:    9902,
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+		Entry("should generate admin resources, legacy DP advertising readiness Unix socket", testCase{
+			dataplaneFile: "08.dataplane.input.yaml",
+			expected:      "08.envoy-config.golden.yaml",
+			adminAddress:  "127.0.0.1",
+			readinessPort: 9902,
 			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-				xds_types.FeatureReadinessUnixSocket:   true,
+				xds_types.FeatureReadinessUnixSocket: true,
 			},
 		}),
 		Entry("should generate admin resources, admin with Unix socket", testCase{
-			dataplaneFile:    "09.dataplane.input.yaml",
-			expected:         "09.envoy-config.golden.yaml",
-			adminAddress:     "127.0.0.1",
-			adminSocketPath:  "/tmp/kuma-dp/kuma-envoy-admin.sock",
-			readinessPort:    9902,
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			dataplaneFile:   "09.dataplane.input.yaml",
+			expected:        "09.envoy-config.golden.yaml",
+			adminAddress:    "127.0.0.1",
+			adminSocketPath: "/tmp/kuma-dp/kuma-envoy-admin.sock",
+			readinessPort:   9902,
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
-				xds_types.FeatureReadinessUnixSocket:   true,
 			},
 		}),
 	)
@@ -213,9 +204,65 @@ var _ = Describe("AdminProxyGenerator", func() {
 			readinessPort: 9902,
 		}),
 		Entry("should return error when readiness port is 0", testCase{
-			expected:      "ReadinessPort has to be in (0, 65353] range",
+			expected:      "ReadinessPort has to be in (0, 65535] range",
 			adminAddress:  "127.0.0.1",
 			readinessPort: 0,
 		}),
+	)
+
+	// Zone ingress/egress aren't mesh-scoped, so xdsCtx.Mesh.Resource is always nil
+	// for them. AdminProxyGenerator must still honor the unified naming feature flag
+	// in that case instead of silently falling back to legacy naming.
+	DescribeTable("should name the envoy admin cluster for zone proxies based on the unified naming feature",
+		func(unifiedNaming bool, expectedClusterName string) {
+			metadata := &xds.DataplaneMetadata{
+				AdminPort:     9901,
+				ReadinessPort: 9902,
+				Features: map[string]bool{
+					xds_types.FeatureUnifiedResourceNaming: unifiedNaming,
+				},
+			}
+			ctx := xds_context.Context{}
+
+			zoneIngressProxy := &xds.Proxy{
+				Id:         *xds.BuildProxyId("default", "zone-ingress"),
+				APIVersion: envoy_common.APIV3,
+				ZoneIngressProxy: &xds.ZoneIngressProxy{
+					ZoneIngressResource: &core_mesh.ZoneIngressResource{
+						Meta: &test_model.ResourceMeta{Name: "zone-ingress"},
+						Spec: &mesh_proto.ZoneIngress{
+							Networking: &mesh_proto.ZoneIngress_Networking{Address: "10.0.0.1"},
+						},
+					},
+				},
+				Metadata: metadata,
+			}
+			zoneEgressProxy := &xds.Proxy{
+				Id:         *xds.BuildProxyId("default", "zone-egress"),
+				APIVersion: envoy_common.APIV3,
+				ZoneEgressProxy: &xds.ZoneEgressProxy{
+					ZoneEgressResource: &core_mesh.ZoneEgressResource{
+						Meta: &test_model.ResourceMeta{Name: "zone-egress"},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{Address: "10.0.0.2"},
+						},
+					},
+				},
+				Metadata: metadata,
+			}
+
+			for _, proxy := range []*xds.Proxy{zoneIngressProxy, zoneEgressProxy} {
+				resources, err := generator.Generate(context.Background(), nil, ctx, proxy)
+				Expect(err).ToNot(HaveOccurred())
+
+				var clusterNames []string
+				for _, resource := range resources.ListOf(envoy_resource.ClusterType) {
+					clusterNames = append(clusterNames, resource.Name)
+				}
+				Expect(clusterNames).To(ContainElement(expectedClusterName))
+			}
+		},
+		Entry("legacy naming", false, "kuma:envoy:admin"),
+		Entry("unified naming", true, "system_envoy_admin"),
 	)
 })

@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -9,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap"
 )
 
 const (
@@ -114,12 +113,13 @@ func renameCluster(clusterName string, metrics []*io_prometheus_client.Metric) {
 }
 
 func mergeDuplicates(typ *io_prometheus_client.MetricType, metrics []*io_prometheus_client.Metric) []*io_prometheus_client.Metric {
-	hashes := map[string][]*io_prometheus_client.Metric{}
+	hashes := make(map[string][]*io_prometheus_client.Metric, len(metrics))
 	for _, metric := range metrics {
-		hashes[hash(metric)] = append(hashes[hash(metric)], metric)
+		h := hash(metric)
+		hashes[h] = append(hashes[h], metric)
 	}
 
-	var result []*io_prometheus_client.Metric
+	result := make([]*io_prometheus_client.Metric, 0, len(hashes))
 
 	for _, dups := range hashes {
 		merged := &io_prometheus_client.Metric{
@@ -164,7 +164,6 @@ func isMeshOrExternalHttpPrefix(metric *io_prometheus_client.Metric) bool {
 }
 
 func markAsMeshTraffic(metrics []*io_prometheus_client.Metric, pred func(*io_prometheus_client.Metric) bool) []*io_prometheus_client.Metric {
-	var markedMetrics []*io_prometheus_client.Metric
 	for _, metric := range metrics {
 		if pred(metric) {
 			name := MeshTrafficLabelName
@@ -174,20 +173,30 @@ func markAsMeshTraffic(metrics []*io_prometheus_client.Metric, pred func(*io_pro
 				Value: &traffic,
 			})
 		}
-
-		markedMetrics = append(markedMetrics, metric)
 	}
 
-	return markedMetrics
+	return metrics
 }
 
 func hash(metric *io_prometheus_client.Metric) string {
-	pairs := []string{}
-	for _, l := range metric.GetLabel() {
-		pairs = append(pairs, fmt.Sprintf("%s=%s", l.GetName(), l.GetValue()))
+	labels := metric.GetLabel()
+	pairs := make([]string, 0, len(labels))
+	var sz int
+	for _, l := range labels {
+		n, v := l.GetName(), l.GetValue()
+		pairs = append(pairs, n+"="+v)
+		sz += len(n) + len(v) + 2 // '=' and ';'
 	}
 	sort.Strings(pairs)
-	return strings.Join(pairs, ";")
+	var b strings.Builder
+	b.Grow(sz)
+	for i, p := range pairs {
+		if i > 0 {
+			b.WriteByte(';')
+		}
+		b.WriteString(p)
+	}
+	return b.String()
 }
 
 func mergeCounter(metrics []*io_prometheus_client.Metric) *io_prometheus_client.Counter {

@@ -21,9 +21,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
-	tproxy_consts "github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	tproxy_consts "github.com/kumahq/kuma/v3/pkg/transparentproxy/consts"
 )
 
 // Deprecated
@@ -31,26 +31,20 @@ type PodRedirect struct {
 	// while https://github.com/kumahq/kuma/issues/8324 is not implemented, when changing the config,
 	// keep in mind to update all other places listed in the issue
 
-	BuiltinDNSEnabled                        bool
-	BuiltinDNSPort                           uint32
-	ExcludeOutboundPorts                     string
-	RedirectPortOutbound                     uint32
-	RedirectInbound                          bool
-	ExcludeInboundPorts                      string
-	RedirectPortInbound                      uint32
-	IpFamilyMode                             string
-	UID                                      string
-	TransparentProxyEnableEbpf               bool
-	TransparentProxyEbpfBPFFSPath            string
-	TransparentProxyEbpfCgroupPath           string
-	TransparentProxyEbpfTCAttachIface        string
-	TransparentProxyEbpfInstanceIPEnvVarName string
-	TransparentProxyEbpfProgramsSourcePath   string
-	ExcludeOutboundPortsForUIDs              []string
-	DropInvalidPackets                       bool
-	IptablesLogs                             bool
-	ExcludeInboundIPs                        string
-	ExcludeOutboundIPs                       string
+	BuiltinDNSEnabled           bool
+	BuiltinDNSPort              uint32
+	ExcludeOutboundPorts        string
+	RedirectPortOutbound        uint32
+	RedirectInbound             bool
+	ExcludeInboundPorts         string
+	RedirectPortInbound         uint32
+	IpFamilyMode                string
+	UID                         string
+	ExcludeOutboundPortsForUIDs []string
+	DropInvalidPackets          bool
+	IptablesLogs                bool
+	ExcludeInboundIPs           string
+	ExcludeOutboundIPs          string
 }
 
 // Deprecated
@@ -101,32 +95,6 @@ func NewPodRedirectFromAnnotations(annotations metadata.Annotations) (*PodRedire
 	pr.IptablesLogs, _, _ = annotations.GetBoolean(metadata.KumaTrafficIptablesLogs)
 
 	pr.UID, _ = annotations.GetString(metadata.KumaSidecarUID)
-
-	if value, exists, err := annotations.GetEnabled(metadata.KumaTransparentProxyingEbpf); err != nil {
-		return nil, err
-	} else if exists {
-		pr.TransparentProxyEnableEbpf = value
-	}
-
-	if value, exists := annotations.GetString(metadata.KumaTransparentProxyingEbpfBPFFSPath); exists {
-		pr.TransparentProxyEbpfBPFFSPath = value
-	}
-
-	if value, exists := annotations.GetString(metadata.KumaTransparentProxyingEbpfCgroupPath); exists {
-		pr.TransparentProxyEbpfCgroupPath = value
-	}
-
-	if value, exists := annotations.GetString(metadata.KumaTransparentProxyingEbpfTCAttachIface); exists {
-		pr.TransparentProxyEbpfTCAttachIface = value
-	}
-
-	if value, exists := annotations.GetString(metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName); exists {
-		pr.TransparentProxyEbpfInstanceIPEnvVarName = value
-	}
-
-	if value, exists := annotations.GetString(metadata.KumaTransparentProxyingEbpfProgramsSourcePath); exists {
-		pr.TransparentProxyEbpfProgramsSourcePath = value
-	}
 
 	if value, exists := annotations.GetString(
 		metadata.KumaTrafficExcludeInboundIPs,
@@ -206,46 +174,43 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	defaultConfig := tproxy_config.DefaultConfig()
 
 	return slices.Concat(
-		flagsIf(pr.UID != tproxy_consts.OwnerDefaultUID,
+		flagsIf(
+			pr.UID != tproxy_consts.OwnerDefaultUID,
 			flag("kuma-dp-user", pr.UID),
 		),
-		flagsIf(pr.IpFamilyMode != string(defaultConfig.IPFamilyMode),
+		flagsIf(
+			pr.IpFamilyMode != string(defaultConfig.IPFamilyMode),
 			flag("ip-family-mode", pr.IpFamilyMode),
 		),
 		// outbound
-		flagsIf(pr.RedirectPortOutbound != uint32(defaultConfig.Redirect.Outbound.Port),
+		flagsIf(
+			pr.RedirectPortOutbound != uint32(defaultConfig.Redirect.Outbound.Port),
 			flag("redirect-outbound-port", pr.RedirectPortOutbound),
 		),
 		flag("exclude-outbound-ports", pr.ExcludeOutboundPorts),
 		flag("exclude-outbound-ips", pr.ExcludeOutboundIPs),
 		flag("exclude-outbound-ports-for-uids", pr.ExcludeOutboundPortsForUIDs...),
 		// inbound
-		flagsIf(!pr.RedirectInbound,
+		flagsIf(
+			!pr.RedirectInbound,
 			flag("redirect-inbound", "false"),
 		),
-		flagsIf(pr.RedirectInbound,
-			flagsIf(pr.RedirectPortInbound != uint32(defaultConfig.Redirect.Inbound.Port),
+		flagsIf(
+			pr.RedirectInbound,
+			flagsIf(
+				pr.RedirectPortInbound != uint32(defaultConfig.Redirect.Inbound.Port),
 				flag("redirect-inbound-port", pr.RedirectPortInbound),
 			),
 			flag("exclude-inbound-ports", pr.ExcludeInboundPorts),
 			flag("exclude-inbound-ips", pr.ExcludeInboundIPs),
 		),
 		// dns
-		flagsIf(pr.BuiltinDNSEnabled,
+		flagsIf(
+			pr.BuiltinDNSEnabled,
 			flag("redirect-all-dns-traffic", pr.BuiltinDNSEnabled),
-			flagsIf(pr.BuiltinDNSPort != uint32(defaultConfig.Redirect.DNS.Port),
+			flagsIf(
+				pr.BuiltinDNSPort != uint32(defaultConfig.Redirect.DNS.Port),
 				flag("redirect-dns-port", pr.BuiltinDNSPort),
-			),
-		),
-		// ebpf
-		flagsIf(pr.TransparentProxyEnableEbpf,
-			flag("ebpf-enabled", pr.TransparentProxyEnableEbpf),
-			flag("ebpf-bpffs-path", pr.TransparentProxyEbpfBPFFSPath),
-			flag("ebpf-cgroup-path", pr.TransparentProxyEbpfCgroupPath),
-			flag("ebpf-tc-attach-iface", pr.TransparentProxyEbpfTCAttachIface),
-			flag("ebpf-programs-source-path", pr.TransparentProxyEbpfProgramsSourcePath),
-			flagsIf(pr.TransparentProxyEbpfInstanceIPEnvVarName,
-				flag("ebpf-instance-ip", fmt.Sprintf("$(%s)", pr.TransparentProxyEbpfInstanceIPEnvVarName)),
 			),
 		),
 		// other

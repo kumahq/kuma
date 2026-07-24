@@ -5,8 +5,8 @@
 package v1alpha1
 
 import (
-	commonv1alpha1 "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	apiv1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	commonv1alpha1 "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	apiv1alpha1 "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 

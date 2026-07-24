@@ -4,11 +4,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("TransparentProxyingConfigurer", func() {
@@ -23,7 +23,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+			listener, err := NewInboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				Configure(TransparentProxying(given.transparentProxying)).
 				Build()
 			// then
@@ -47,11 +47,11 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
+            enableReusePort: true
             address:
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
             bindToPort: false
 `,
 		}),
@@ -62,11 +62,11 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
+            enableReusePort: true
             address:
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
 `,
 		}),
 	)

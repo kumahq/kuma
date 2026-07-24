@@ -6,13 +6,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/dataplane"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplane"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("Dataplane Manager", func() {
@@ -235,11 +235,7 @@ var _ = Describe("Dataplane Manager", func() {
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		mesh := &core_mesh.MeshResource{
-			Spec: &mesh_proto.Mesh{
-				MeshServices: &mesh_proto.Mesh_MeshServices{
-					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-				},
-			},
+			Spec: &mesh_proto.Mesh{},
 		}
 		err := s.Create(context.Background(), mesh, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -276,11 +272,7 @@ var _ = Describe("Dataplane Manager", func() {
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		mesh := &core_mesh.MeshResource{
-			Spec: &mesh_proto.Mesh{
-				MeshServices: &mesh_proto.Mesh_MeshServices{
-					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-				},
-			},
+			Spec: &mesh_proto.Mesh{},
 		}
 		err := s.Create(context.Background(), mesh, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -315,11 +307,15 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
 	})
 
-	It("should add zone tag to empty inbound when not in Exclusive mode", func() {
-		// setup
+	It("should not add zone tag to empty inbound regardless of meshServices.mode", func() {
+		// setup: mode no longer affects this at all, so a Disabled mesh must
+		// behave exactly like an Exclusive one.
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
-		err := s.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		mesh := &core_mesh.MeshResource{
+			Spec: &mesh_proto.Mesh{},
+		}
+		err := s.Create(context.Background(), mesh, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
@@ -346,7 +342,7 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
+		Expect(actual.Spec.Networking.Inbound[0].Tags).To(BeEmpty())
 	})
 
 	It("should not add zone tag on update when inbound tags empty and Exclusive mode", func() {
@@ -354,11 +350,7 @@ var _ = Describe("Dataplane Manager", func() {
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		mesh := &core_mesh.MeshResource{
-			Spec: &mesh_proto.Mesh{
-				MeshServices: &mesh_proto.Mesh_MeshServices{
-					Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-				},
-			},
+			Spec: &mesh_proto.Mesh{},
 		}
 		err := s.Create(context.Background(), mesh, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())

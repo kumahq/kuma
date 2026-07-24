@@ -6,15 +6,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/defaults/mesh"
-	policies_defaults "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/defaults"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/defaults/mesh"
+	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("TimeoutConfigurer", func() {
@@ -31,25 +30,15 @@ var _ = Describe("TimeoutConfigurer", func() {
 		},
 	}
 
-	timeoutResource := &core_mesh.TimeoutResource{
-		Spec: &mesh_proto.Timeout{
-			Sources: []*mesh_proto.Selector{{
-				Match: mesh_proto.MatchAnyService(),
-			}},
-			Destinations: []*mesh_proto.Selector{{
-				Match: mesh_proto.MatchAnyService(),
-			}},
-			Conf: &mesh_proto.Timeout_Conf{
-				ConnectTimeout: util_proto.Duration(policies_defaults.DefaultConnectTimeout),
-				Tcp: &mesh_proto.Timeout_Conf_Tcp{
-					IdleTimeout: util_proto.Duration(policies_defaults.DefaultIdleTimeout),
-				},
-				Http: &mesh_proto.Timeout_Conf_Http{
-					IdleTimeout:       util_proto.Duration(policies_defaults.DefaultIdleTimeout),
-					RequestTimeout:    util_proto.Duration(policies_defaults.DefaultRequestTimeout),
-					StreamIdleTimeout: util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout),
-				},
-			},
+	timeoutConf := &mesh_proto.Timeout_Conf{
+		ConnectTimeout: util_proto.Duration(policies_defaults.DefaultConnectTimeout),
+		Tcp: &mesh_proto.Timeout_Conf_Tcp{
+			IdleTimeout: util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+		},
+		Http: &mesh_proto.Timeout_Conf_Http{
+			IdleTimeout:       util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+			RequestTimeout:    util_proto.Duration(policies_defaults.DefaultRequestTimeout),
+			StreamIdleTimeout: util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout),
 		},
 	}
 
@@ -110,7 +99,7 @@ trafficDirection: OUTBOUND
 `,
 		}),
 		Entry("default timeout", testCase{
-			timeout: timeoutResource.Spec.GetConf(),
+			timeout: timeoutConf,
 			expected: `
 address:
   socketAddress:
@@ -205,7 +194,7 @@ name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: timeoutResource.Spec.GetConf(),
+			timeout: timeoutConf,
 			expected: `
 address:
   socketAddress:
@@ -311,7 +300,7 @@ name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: timeoutResource.Spec.GetConf(),
+			timeout: timeoutConf,
 			expected: `
 address:
   socketAddress:
@@ -343,7 +332,7 @@ trafficDirection: OUTBOUND`,
 
 	It("should set timeouts for inbound TCP listener", func() {
 		// given
-		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP, true).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 				Configure(TcpProxyDeprecated("localhost:8080", envoy_common.NewCluster(envoy_common.WithName("backend")))).
 				Configure(Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolTCP)))).
@@ -360,7 +349,6 @@ address:
   socketAddress:
     address: 192.168.0.1
     portValue: 8080
-enableReusePort: false
 filterChains:
 - filters:
   - name: envoy.filters.network.tcp_proxy
@@ -371,13 +359,13 @@ filterChains:
       statPrefix: localhost_8080
 name: inbound:192.168.0.1:8080
 trafficDirection: INBOUND
-`
+enableReusePort: true`
 		Expect(actual).To(MatchYAML(expected))
 	})
 
 	It("should set timeouts for inbound HTTP listener", func() {
 		// given
-		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP, true).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 				Configure(HttpConnectionManager("localhost:8080", false, nil, true)).
 				Configure(Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolHTTP)))).
@@ -394,7 +382,6 @@ address:
   socketAddress:
     address: 192.168.0.1
     portValue: 8080
-enableReusePort: false
 filterChains:
 - filters:
   - name: envoy.filters.network.http_connection_manager
@@ -416,7 +403,7 @@ filterChains:
             prefixLen: 128
 name: inbound:192.168.0.1:8080
 trafficDirection: INBOUND
-`
+enableReusePort: true`
 		Expect(actual).To(MatchYAML(expected))
 	})
 })

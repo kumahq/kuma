@@ -5,6 +5,12 @@ metadata:
   name: {{ include "kuma.name" . }}-ingress
   namespace: {{ .Release.Namespace }}
   labels: {{ include "kuma.ingressLabels" . | nindent 4 }}
+  {{- with .Values.ingress.deploymentAnnotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
 spec:
   strategy:
     rollingUpdate:
@@ -76,12 +82,6 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "ingress"
-{{- if .Values.experimental.envoyAdminUnixSocket }}
-            - name: KUMA_READINESS_UNIX_SOCKET_DISABLED
-              value: "true"
-            - name: KUMA_READINESS_PORT
-              value: "9902"
-{{- end }}
           args:
             - run
             - --log-level={{ .Values.ingress.logLevel | default "info" }}
@@ -92,24 +92,39 @@ spec:
 {{- else }}
             - containerPort: 9901
 {{- end }}
+          {{- if .Values.ingress.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
               path: "/ready"
               port: {{ if .Values.experimental.envoyAdminUnixSocket }}9902{{ else }}9901{{ end }}
-            failureThreshold: 12
-            initialDelaySeconds: 60
-            periodSeconds: 5
-            successThreshold: 1
-            timeoutSeconds: 3
+            failureThreshold: {{ .Values.ingress.livenessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.ingress.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ingress.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.ingress.livenessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.ingress.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.ingress.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
               path: "/ready"
               port: {{ if .Values.experimental.envoyAdminUnixSocket }}9902{{ else }}9901{{ end }}
-            failureThreshold: 12
-            initialDelaySeconds: 1
-            periodSeconds: 5
-            successThreshold: 1
-            timeoutSeconds: 3
+            failureThreshold: {{ .Values.ingress.readinessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.ingress.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ingress.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.ingress.readinessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.ingress.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.ingress.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: "/ready"
+              port: {{ if .Values.experimental.envoyAdminUnixSocket }}9902{{ else }}9901{{ end }}
+            failureThreshold: {{ .Values.ingress.startupProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.ingress.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ingress.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.ingress.startupProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.ingress.startupProbe.timeoutSeconds }}
+          {{- end }}
           resources: {{ toYaml .Values.ingress.resources | nindent 12 }}
           {{ with .Values.ingress.lifecycle}}
           lifecycle: {{ . | toYaml | nindent 12 }}

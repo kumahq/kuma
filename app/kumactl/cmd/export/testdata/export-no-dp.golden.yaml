@@ -15,8 +15,9 @@ modificationTime: "0001-01-01T00:00:00Z"
 name: mal-1
 spec:
   targetRef:
-    kind: MeshService
-    name: web
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
   to:
   - default:
       backends:
@@ -34,27 +35,3 @@ spec:
       kind: Mesh
 status: {}
 type: MeshAccessLog
----
-creationTime: "0001-01-01T00:00:00Z"
-mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
-name: retry-all-default
-type: Retry
-conf:
-  http:
-    backOff:
-      baseInterval: 0.025s
-      maxInterval: 0.250s
-    numRetries: 5
-    perTryTimeout: 16s
-    retriableStatusCodes:
-    - 500
-    - 504
-  tcp:
-    maxConnectAttempts: 5
-destinations:
-- match:
-    kuma.io/service: '*'
-sources:
-- match:
-    kuma.io/service: '*'

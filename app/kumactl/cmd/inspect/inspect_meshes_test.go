@@ -11,15 +11,15 @@ import (
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
-	test_kumactl "github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	memory_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/app/kumactl/cmd"
+	test_kumactl "github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	memory_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
 var _ = Describe("kumactl inspect meshes", func() {
@@ -33,16 +33,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 					Offline: 10,
 				},
 				Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{
-					string(mesh.TrafficTraceType):      {Total: 1},
-					string(mesh.TrafficRouteType):      {Total: 2},
-					string(mesh.TrafficLogType):        {Total: 3},
-					string(mesh.HealthCheckType):       {Total: 4},
-					string(mesh.CircuitBreakerType):    {Total: 5},
-					string(mesh.FaultInjectionType):    {Total: 6},
-					string(mesh.TrafficPermissionType): {Total: 7},
-					string(mesh.ProxyTemplateType):     {Total: 8},
-					string(mesh.ExternalServiceType):   {Total: 9},
-					string(mesh.RateLimitType):         {Total: 10},
+					"MeshTrafficPermission": {Total: 9},
 				},
 			},
 		},
@@ -55,16 +46,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 					Offline: 10,
 				},
 				Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{
-					string(mesh.TrafficTraceType):      {Total: 10},
-					string(mesh.TrafficRouteType):      {Total: 20},
-					string(mesh.TrafficLogType):        {Total: 30},
-					string(mesh.HealthCheckType):       {Total: 40},
-					string(mesh.CircuitBreakerType):    {Total: 50},
-					string(mesh.FaultInjectionType):    {Total: 60},
-					string(mesh.TrafficPermissionType): {Total: 70},
-					string(mesh.ProxyTemplateType):     {Total: 80},
-					string(mesh.ExternalServiceType):   {Total: 90},
-					string(mesh.RateLimitType):         {Total: 100},
+					"MeshTrafficPermission": {Total: 90},
 				},
 			},
 		},

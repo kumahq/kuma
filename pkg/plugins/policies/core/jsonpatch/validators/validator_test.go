@@ -5,9 +5,9 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	jsonpatch_validators "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch/validators"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	jsonpatch_validators "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/jsonpatch/validators"
 )
 
 var _ = Describe("JsonPatchBlock Validator", func() {
@@ -316,5 +316,18 @@ var _ = Describe("JsonPatchBlock Validator", func() {
                 message: root path cannot be removed
             `,
 		}),
+	)
+
+	DescribeTable("TopLevelTargetRefDeprecations",
+		func(targetRef *common_api.TargetRef) {
+			Expect(jsonpatch_validators.TopLevelTargetRefDeprecations(targetRef)).To(BeEmpty())
+		},
+		Entry("nil targetRef", nil),
+		Entry("Mesh", &common_api.TargetRef{Kind: common_api.Mesh}),
+		Entry("Dataplane", &common_api.TargetRef{Kind: common_api.Dataplane}),
+		Entry("MeshHTTPRoute", &common_api.TargetRef{Kind: common_api.MeshHTTPRoute}),
+		Entry("MeshService", &common_api.TargetRef{Kind: common_api.MeshService}),
+		Entry("MeshServiceSubset", &common_api.TargetRef{Kind: common_api.MeshServiceSubset}),
+		Entry("MeshSubset", &common_api.TargetRef{Kind: common_api.MeshSubset}),
 	)
 })

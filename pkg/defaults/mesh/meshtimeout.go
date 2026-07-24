@@ -3,12 +3,12 @@ package mesh
 import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	policies_defaults "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/defaults"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var defaultMeshTimeoutResource = func() model.Resource {
@@ -23,11 +23,8 @@ var defaultMeshTimeoutResource = func() model.Resource {
 			},
 
 			// bigger than outbound side timeouts or disabled.
-			From: &[]v1alpha1.From{
+			Rules: &[]v1alpha1.Rule{
 				{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.Mesh,
-					},
 					Default: v1alpha1.Conf{
 						ConnectionTimeout: &kube_meta.Duration{
 							Duration: factor * policies_defaults.DefaultConnectTimeout,
@@ -85,11 +82,8 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 					common_api.Gateway,
 				},
 			},
-			From: &[]v1alpha1.From{
+			Rules: &[]v1alpha1.Rule{
 				{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.Mesh,
-					},
 					Default: v1alpha1.Conf{
 						IdleTimeout: &kube_meta.Duration{
 							Duration: policies_defaults.DefaultGatewayIdleTimeout,

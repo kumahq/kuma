@@ -26,17 +26,5 @@ You can access the control-plane via either the GUI, kubectl, the HTTP API, or t
 
     kumactl install crds --no-config | kubectl apply -f
 
-{{- if and .Values.experimental.ebpf.enabled (not .Values.cni.enabled) }}
-
- WARNING
-
-    When the "noHelmHooks" value is set, Helm will not automatically uninstall
-    the eBPF resources. You will need to manually uninstall these resources after
-    uninstalling Helm release. To do this, run the following command:
-
-    kumactl uninstall ebpf --cleanup-image-registry {{ .Values.global.image.registry }} --cleanup-image-repository {{ .Values.dataPlane.initImage.repository }}
-
-{{- end }}
-
 -------------------------------------------------------------------------------
 {{- end }}

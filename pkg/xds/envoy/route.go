@@ -1,14 +1,13 @@
 package envoy
 
 import (
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 )
 
 type Route struct {
-	Match     *mesh_proto.TrafficRoute_Http_Match
-	Modify    *mesh_proto.TrafficRoute_Http_Modify
-	RateLimit *mesh_proto.RateLimit
-	Clusters  []Cluster
+	Match    *mesh_proto.TrafficRoute_Http_Match
+	Modify   *mesh_proto.TrafficRoute_Http_Modify
+	Clusters []Cluster
 }
 
 func NewRouteFromCluster(cluster Cluster) Route {
@@ -66,11 +65,5 @@ func WithMatchHeaderRegex(name, regex string) NewRouteOpt {
 				Regex: regex,
 			},
 		}
-	})
-}
-
-func WithRateLimit(rl *mesh_proto.RateLimit) NewRouteOpt {
-	return newRouteOptFunc(func(route *Route) {
-		route.RateLimit = rl
 	})
 }

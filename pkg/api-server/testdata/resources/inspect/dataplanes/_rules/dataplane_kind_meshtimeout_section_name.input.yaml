@@ -27,10 +27,8 @@ spec:
     kind: Dataplane
     labels:
       app: demo-app
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         idleTimeout: 7s
         connectionTimeout: 7s
         http:
@@ -45,9 +43,7 @@ spec:
     labels:
       app: demo-app
     sectionName: secondary-port
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         http:
           requestTimeout: 2s

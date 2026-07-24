@@ -3,11 +3,12 @@ package store
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 )
 
 // The Pagination Store is handling only the pagination functionality in the List.
@@ -91,6 +92,12 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 			o, err := strconv.Atoi(opts.PageOffset)
 			if err != nil {
 				return ErrorInvalid(fmt.Sprintf("invalid offset: %s", err.Error()))
+			}
+			if o < 0 {
+				return ErrorInvalid("invalid offset: must be non-negative")
+			}
+			if o > math.MaxInt-pageSize {
+				return ErrorInvalid("invalid offset: exceeds maximum value")
 			}
 			offset = o
 		}

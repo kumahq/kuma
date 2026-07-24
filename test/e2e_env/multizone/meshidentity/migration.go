@@ -1,11 +1,11 @@
 package meshidentity
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -13,20 +13,19 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/kds/hash"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v2/pkg/util/channels"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/kds/hash"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/util/channels"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
 func Migration() {
@@ -39,10 +38,15 @@ func Migration() {
 				builders.Mesh().
 					WithBuiltinMTLSBackend("ca-1").
 					WithEnabledMTLSBackend("ca-1").
-					WithName(meshName).
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+					WithName(meshName),
 			)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName,
+				// legacy builtin mTLS identity: spiffe://<mesh>/<service>
+				meshName,
+				// MeshIdentity per-zone trust domains after migration
+				fmt.Sprintf("%s.%s.mesh.local", meshName, multizone.KubeZone1.ZoneName()),
+				fmt.Sprintf("%s.%s.mesh.local", meshName, multizone.KubeZone2.ZoneName()),
+			)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
@@ -135,7 +139,7 @@ spec:
 	}
 
 	isMeshIdentityReady := func(cluster *K8sCluster, name string, hasSelector bool) (bool, error) {
-		output, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), cluster.GetKubectlOptions(Config.KumaNamespace), "get", "meshidentity", name, "-ojson")
+		output, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), cluster.GetKubectlOptions(Config.KumaNamespace), "get", "meshidentity", name, "-ojson")
 		if err != nil {
 			return false, err
 		}
@@ -159,7 +163,7 @@ spec:
 
 		// and
 		// start constant requests
-		reqError := atomic.Value{}
+		recorder := client.NewTrafficRecorder("meshidentity-migration", 100)
 		stopCh := make(chan struct{})
 		defer close(stopCh)
 		go func() {
@@ -174,7 +178,9 @@ spec:
 					client.FromKubernetesPod(namespace, "demo-client"),
 				)
 				if err != nil {
-					reqError.Store(err)
+					recorder.RecordError("cross-zone kube-zone-1 to kube-zone-2", err)
+				} else {
+					recorder.RecordSuccess("cross-zone kube-zone-1 to kube-zone-2")
 				}
 				// the same zone request
 				_, err = client.CollectEchoResponse(
@@ -182,7 +188,9 @@ spec:
 					client.FromKubernetesPod(namespace, "demo-client"),
 				)
 				if err != nil {
-					reqError.Store(err)
+					recorder.RecordError("same-zone kube-zone-1", err)
+				} else {
+					recorder.RecordSuccess("same-zone kube-zone-1")
 				}
 				time.Sleep(200 * time.Millisecond)
 			}
@@ -347,14 +355,13 @@ spec:
 		Expect(NewClusterSetup().
 			Install(Yaml(
 				builders.Mesh().
-					WithName(meshName).
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+					WithName(meshName),
 			)).
 			Setup(multizone.Global)).To(Succeed())
 
 		// then
 		Consistently(func(g Gomega) {
-			g.Expect(reqError.Load()).To(BeNil())
+			g.Expect(recorder.FirstError()).ToNot(HaveOccurred())
 		}, "5s", "1s").Should(Succeed())
 	})
 }

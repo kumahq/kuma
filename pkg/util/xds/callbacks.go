@@ -25,6 +25,10 @@ type Response interface {
 	GetNonce() string
 	VersionInfo() string
 	GetNumberOfResources() int
+	// ByteSize returns the serialized protobuf size in bytes of the
+	// underlying DiscoveryResponse message. Used to expose payload size
+	// observability for xDS responses.
+	ByteSize() int
 }
 
 // DiscoveryRequest defines interface over real Envoy's DiscoveryRequest.
@@ -48,13 +52,6 @@ type DeltaDiscoveryResponse interface {
 	Response
 	GetRemovedResources() []string
 }
-
-type XdsMode string
-
-const (
-	DELTA_GRPC XdsMode = "DELTA_GRPC"
-	GRPC       XdsMode = "GRPC"
-)
 
 // Callbacks defines Callbacks for xDS streaming requests. The difference over real go-control-plane Callbacks is that it takes an DiscoveryRequest / DiscoveryResponse interface.
 // It helps us to implement Callbacks once for many different versions of Envoy API.

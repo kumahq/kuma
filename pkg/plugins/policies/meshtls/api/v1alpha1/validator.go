@@ -3,12 +3,12 @@ package v1alpha1
 import (
 	"slices"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (r *MeshTLSResource) validate() error {
@@ -31,7 +31,6 @@ func (r *MeshTLSResource) validateTop(targetRef *common_api.TargetRef, isInbound
 	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
-			common_api.MeshSubset,
 			common_api.Dataplane,
 		},
 		IsInboundPolicy: isInboundPolicy,

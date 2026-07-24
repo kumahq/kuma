@@ -15,7 +15,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 //go:embed rest.yaml
@@ -192,6 +192,7 @@ var MeshHTTPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName:          "Mesh HTTP Route",
 	PluralDisplayName:            "Mesh HTTP Routes",
 	IsPluginOriginated:           true,
+	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
 	HasFromTargetRef:             false,
@@ -200,4 +201,5 @@ var MeshHTTPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mhttpr",
 	IsFromAsRules:                false,
+	Order:                        100,
 }

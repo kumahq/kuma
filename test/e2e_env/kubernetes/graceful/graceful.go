@@ -2,7 +2,6 @@ package graceful
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -13,11 +12,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/util/channels"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/pkg/util/channels"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func Graceful() {
@@ -32,61 +30,23 @@ func Graceful() {
 	const namespace = "graceful"
 	const mesh = "graceful"
 
-	// Set up a gateway to be able to send requests constantly.
+	// Front the "graceful" testserver with its own LoadBalancer Service so we
+	// can send requests constantly from outside the cluster while scaling it.
 	// The alternative was to exec to the container, but this introduces a latency of getting into container for every curl
-	gatewayInstnace := func(replicas int) string {
-		return fmt.Sprintf(`
----
-apiVersion: kuma.io/v1alpha1
-kind: MeshGatewayInstance
+	lbService := `
+apiVersion: v1
+kind: Service
 metadata:
-  name: edge-gateway
+  name: graceful-lb
   namespace: graceful
-  labels:
-    kuma.io/mesh: graceful
 spec:
-  replicas: %d
-  serviceType: LoadBalancer
-`, replicas)
-	}
-
-	gateway := `
----
-apiVersion: kuma.io/v1alpha1
-kind: MeshGateway
-metadata:
-  name: edge-gateway
-  namespace: graceful
-mesh: graceful
-spec:
-  selectors:
-  - match:
-      kuma.io/service: edge-gateway_graceful_svc
-  conf:
-    listeners:
-    - port: 8080
-      protocol: HTTP
----
-apiVersion: kuma.io/v1alpha1
-kind: MeshGatewayRoute
-metadata:
-  name: edge-gateway
-  namespace: graceful
-mesh: graceful
-spec:
-  selectors:
-  - match:
-      kuma.io/service: edge-gateway_graceful_svc
-  conf:
-    http:
-      rules:
-      - matches:
-        - path:
-            match: PREFIX
-            value: /
-        backends:
-        - destination:
-            kuma.io/service: graceful_graceful_svc_80
+  type: LoadBalancer
+  selector:
+    app: graceful
+  ports:
+  - name: main
+    port: 8080
+    targetPort: main
 `
 
 	var gwIP string
@@ -99,25 +59,21 @@ spec:
 		err := NewClusterSetup().
 			Install(MeshKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(YamlK8s(gateway)).
-			Install(YamlK8s(gatewayInstnace(1))).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
 				testserver.WithName(name),
 			)).
+			Install(YamlK8s(lbService)).
 			Setup(kubernetes.Cluster)
 		Expect(err).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			address, err := kubernetes.Cluster.GetLBIngressIP("edge-gateway", namespace)
+			address, err := kubernetes.Cluster.GetLBIngressIP("graceful-lb", namespace)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(address).ToNot(BeEmpty())
 			gwIP = address
-		}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
-
-		// remove retries to avoid covering failed request
-		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
+		}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP")
 	})
 
 	AfterEachFailure(func() {
@@ -129,7 +85,7 @@ spec:
 		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	requestThroughGateway := func() error {
+	requestThroughLB := func() error {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+gwIP+":8080", http.NoBody)
 		if err != nil {
 			return err
@@ -158,7 +114,7 @@ spec:
 	DescribeTable("should not drop a request when scaling up and down",
 		func(given testCase) {
 			// given constant traffic between client and server
-			Eventually(requestThroughGateway, "30s", "1s").Should(Succeed())
+			Eventually(requestThroughLB, "30s", "1s").Should(Succeed())
 			var failedErr error
 			closeCh := make(chan struct{})
 			defer close(closeCh)
@@ -167,7 +123,7 @@ spec:
 					if channels.IsClosed(closeCh) {
 						return
 					}
-					if err := requestThroughGateway(); err != nil {
+					if err := requestThroughLB(); err != nil {
 						failedErr = err
 						return
 					}
@@ -199,17 +155,11 @@ spec:
 		Entry("a service", testCase{
 			deploymentName: name,
 			scaleFn: func(replicas int) error {
-				return k8s.RunKubectlE(
-					kubernetes.Cluster.GetTesting(),
+				return k8s.RunKubectlContextE(
+					kubernetes.Cluster.GetTesting(), context.Background(),
 					kubernetes.Cluster.GetKubectlOptions(namespace),
 					"scale", "deployment", name, "--replicas", strconv.Itoa(replicas),
 				)
-			},
-		}),
-		Entry("a gateway", testCase{
-			deploymentName: "edge-gateway",
-			scaleFn: func(replicas int) error {
-				return kubernetes.Cluster.Install(YamlK8s(gatewayInstnace(replicas)))
 			},
 		}),
 	)

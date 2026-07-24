@@ -8,8 +8,8 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 )
 
 func ApplicationProbeProxyDisabled(pod *kube_core.Pod) (bool, error) {
@@ -110,7 +110,7 @@ func overrideProbe(probe *kube_core.Probe, virtualPort uint32,
 		return nil
 	}
 
-	log.V(1).Info(fmt.Sprintf("overriding %s probe", probeName), "container", containerName)
+	log.V(1).Info("overriding probe", "probe", probeName, "container", containerName)
 
 	namedPortResolver(probe.ProbeHandler)
 

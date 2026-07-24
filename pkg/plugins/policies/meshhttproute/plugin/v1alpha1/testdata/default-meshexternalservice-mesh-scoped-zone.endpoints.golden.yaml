@@ -1,0 +1,13 @@
+resources:
+- name: kri_extsvc_default_remote-zone__ext-backend_9000
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: kri_extsvc_default_remote-zone__ext-backend_9000
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.10
+              portValue: 27017
+        loadBalancingWeight: 1

@@ -7,12 +7,12 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	meshtls_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	framework_client "github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	meshtls_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	framework_client "github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func MeshTLS() {
@@ -82,7 +82,7 @@ spec:
 
 		Eventually(func(g Gomega) {
 			resp, err := framework_client.CollectEchoResponse(
-				multizone.KubeZone2, "demo-client", "test-server_multizone-meshtls_svc_80.mesh",
+				multizone.KubeZone2, "demo-client", fmt.Sprintf("test-server.%s.svc.%s.mesh.local", k8sZoneNamespace, multizone.KubeZone1.ZoneName()),
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -96,7 +96,7 @@ spec:
 		// traffic should still works
 		Eventually(func(g Gomega) {
 			resp, err := framework_client.CollectEchoResponse(
-				multizone.KubeZone2, "demo-client", "test-server_multizone-meshtls_svc_80.mesh",
+				multizone.KubeZone2, "demo-client", fmt.Sprintf("test-server.%s.svc.%s.mesh.local", k8sZoneNamespace, multizone.KubeZone1.ZoneName()),
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

@@ -2,6 +2,7 @@ package universal
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -17,7 +18,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"golang.org/x/crypto/ssh"
 
-	kssh "github.com/kumahq/kuma/v2/test/framework/ssh"
+	kssh "github.com/kumahq/kuma/v3/test/framework/ssh"
 )
 
 type NetworkingState struct {
@@ -210,7 +211,7 @@ func (s *Networking) CopyFiles(t testing.TestingT, files map[string]string) erro
 			Logger: logger.Discard,
 		}
 
-		_, err = shell.RunCommandAndGetStdOutE(t, cmd)
+		_, err = shell.RunCommandContextAndGetStdOutE(t, context.Background(), &cmd)
 		if err != nil {
 			return fmt.Errorf("unable to execute scp command to copy file %q to %q onto %q: %w",
 				localPath, destPath, s.RemoteHost.Address, err)

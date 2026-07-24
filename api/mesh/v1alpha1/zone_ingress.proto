@@ -5,7 +5,7 @@ package kuma.mesh.v1alpha1;
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
 
-option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
 
 // ZoneIngress allows us to configure dataplane in the Ingress mode. In this
 // mode, dataplane has only inbound interfaces. Every inbound interface matches
@@ -26,6 +26,7 @@ message ZoneIngress {
   option (kuma.mesh.resource).has_insights = true;
   option (kuma.mesh.resource).short_name = "zi";
   option (kuma.mesh.resource).is_proxy = true;
+  option (kuma.mesh.resource).policy_matching_exempt = true;
   option (kuma.mesh.resource).additional_printer_columns =
     "description=\"Zone name\""
     ",JSONPath=`.spec.zone`"

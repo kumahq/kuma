@@ -6,8 +6,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/sha256"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/sha256"
 )
 
 // NOTICE: This policy defines its own `GetDefault` method so that it can have the given
@@ -17,6 +17,7 @@ import (
 // MeshHTTPRoute configures how HTTP requests are routed between services in the mesh. It enables advanced traffic management including path-based routing, header matching, request/response modification, redirects, URL rewrites, traffic mirroring, and weighted load balancing across service endpoints.
 // +kuma:policy:singular_display_name=Mesh HTTP Route
 // +kuma:policy:skip_get_default=true
+// +kuma:policy:order=100
 type MeshHTTPRoute struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -28,10 +29,7 @@ type MeshHTTPRoute struct {
 }
 
 type To struct {
-	// Hostnames is only valid when targeting MeshGateway and limits the
-	// effects of the rules to requests to this hostname.
-	// Given hostnames must intersect with the hostname of the listeners the
-	// route attaches to.
+	// Hostnames is not currently supported and must not be set.
 	Hostnames *[]string `json:"hostnames,omitempty"`
 	// TargetRef is a reference to the resource that represents a group of
 	// request destinations.
@@ -196,8 +194,7 @@ type URLRewrite struct {
 	Hostname *PreciseHostname `json:"hostname,omitempty"`
 	// Path defines a path rewrite.
 	Path *PathRewrite `json:"path,omitempty"`
-	// HostToBackendHostname rewrites the hostname to the hostname of the
-	// upstream host. This option is only available when targeting MeshGateways.
+	// HostToBackendHostname is not currently supported and must not be set.
 	HostToBackendHostname *bool `json:"hostToBackendHostname,omitempty"`
 }
 

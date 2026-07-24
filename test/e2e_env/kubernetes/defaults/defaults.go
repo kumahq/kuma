@@ -1,14 +1,15 @@
 package defaults
 
 import (
+	"context"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func Defaults() {
@@ -28,7 +29,7 @@ func Defaults() {
 
 	policyCreated := func(typ, name string, namespace ...string) func() bool {
 		return func() bool {
-			output, err := k8s.RunKubectlAndGetOutputE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace...), "get", typ)
+			output, err := k8s.RunKubectlAndGetOutputContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubernetes.Cluster.GetKubectlOptions(namespace...), "get", typ)
 			if err != nil {
 				return false
 			}

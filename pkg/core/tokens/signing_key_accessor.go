@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 )
 
 // SigningKeyAccessor access public part of signing key
@@ -13,9 +13,6 @@ import (
 // So we can easily do this by providing separate implementation for this interface.
 type SigningKeyAccessor interface {
 	GetPublicKey(context.Context, KeyID) (*rsa.PublicKey, error)
-	// GetLegacyKey returns legacy key. In pre 1.4.x version of Kuma, we used symmetric HMAC256 method of signing DP keys.
-	// In that case, we have to retrieve private key even for verification.
-	GetLegacyKey(context.Context, KeyID) ([]byte, error)
 }
 
 type signingKeyAccessor struct {
@@ -43,8 +40,4 @@ func (s *signingKeyAccessor) GetPublicKey(ctx context.Context, keyID KeyID) (*rs
 		return nil, err
 	}
 	return &key.PublicKey, nil
-}
-
-func (s *signingKeyAccessor) GetLegacyKey(ctx context.Context, keyID KeyID) ([]byte, error) {
-	return getKeyBytes(ctx, s.resManager, s.signingKeyPrefix, keyID)
 }

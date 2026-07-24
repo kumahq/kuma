@@ -1,18 +1,19 @@
 package workload
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func Workload() {
@@ -147,8 +148,8 @@ spec:
 `, namespace, mesh)
 
 		// when trying to create pod with manual workload label
-		err := k8s.KubectlApplyFromStringE(
-			kubernetes.Cluster.GetTesting(),
+		err := k8s.KubectlApplyFromStringContextE(
+			kubernetes.Cluster.GetTesting(), context.Background(),
 			kubernetes.Cluster.GetKubectlOptions(namespace),
 			podYAML,
 		)
@@ -193,8 +194,8 @@ spec:
 		}).Should(Succeed())
 
 		// when delete the deployment
-		err = k8s.RunKubectlE(
-			kubernetes.Cluster.GetTesting(),
+		err = k8s.RunKubectlContextE(
+			kubernetes.Cluster.GetTesting(), context.Background(),
 			kubernetes.Cluster.GetKubectlOptions(namespace),
 			"delete", "deployment", appName,
 		)

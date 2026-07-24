@@ -8,11 +8,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	policy "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	policy "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 // MeshIdentity manages service identity and certificate provisioning for workloads in the mesh. It configures how services obtain their identity certificates, supporting multiple providers including bundled certificates (self-signed or user-provided CA), SPIRE integration, and custom SPIFFE ID configuration for secure service-to-service authentication.
@@ -109,7 +109,7 @@ func (l *MeshIdentityList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshIdentity{}, &MeshIdentityList{})
+	knownTypes = append(knownTypes, &MeshIdentity{}, &MeshIdentityList{})
 	registry.RegisterObjectType(&policy.MeshIdentity{}, &MeshIdentity{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

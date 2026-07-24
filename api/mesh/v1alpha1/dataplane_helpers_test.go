@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	. "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 )
 
 var _ = Describe("MultiValueTagSet", func() {
@@ -137,6 +137,74 @@ var _ = Describe("Dataplane_Networking", func() {
 				}),
 			)
 		})
+	})
+
+	Describe("InboundsSelectedBySectionName()", func() {
+		type testCase struct {
+			sectionName string
+			expected    []InboundInterface
+		}
+
+		DescribeTable("should select inbounds regardless of their state",
+			func(given testCase) {
+				networking := &Dataplane_Networking{
+					Address: "192.168.0.1",
+					Inbound: []*Dataplane_Networking_Inbound{
+						{
+							Name:  "main-port",
+							Port:  80,
+							State: Dataplane_Networking_Inbound_Ignored,
+						},
+						{
+							Name:  "secondary-port",
+							Port:  443,
+							State: Dataplane_Networking_Inbound_Ready,
+						},
+					},
+				}
+
+				selectedInbounds := networking.InboundsSelectedBySectionName(given.sectionName)
+
+				Expect(selectedInbounds).To(ConsistOf(given.expected))
+			},
+			Entry("empty sectionName selects all inbounds", testCase{
+				expected: []InboundInterface{
+					{
+						DataplaneAdvertisedIP: "192.168.0.1",
+						DataplaneIP:           "192.168.0.1",
+						DataplanePort:         80,
+						WorkloadIP:            "192.168.0.1",
+						WorkloadPort:          80,
+						InboundName:           "main-port",
+					},
+					{
+						DataplaneAdvertisedIP: "192.168.0.1",
+						DataplaneIP:           "192.168.0.1",
+						DataplanePort:         443,
+						WorkloadIP:            "192.168.0.1",
+						WorkloadPort:          443,
+						InboundName:           "secondary-port",
+					},
+				},
+			}),
+			Entry("matching sectionName selects ignored inbound", testCase{
+				sectionName: "main-port",
+				expected: []InboundInterface{
+					{
+						DataplaneAdvertisedIP: "192.168.0.1",
+						DataplaneIP:           "192.168.0.1",
+						DataplanePort:         80,
+						WorkloadIP:            "192.168.0.1",
+						WorkloadPort:          80,
+						InboundName:           "main-port",
+					},
+				},
+			}),
+			Entry("non-matching sectionName selects no inbounds", testCase{
+				sectionName: "unknown-port",
+				expected:    []InboundInterface{},
+			}),
+		)
 	})
 
 	Describe("GetHealthyInbounds()", func() {
@@ -617,4 +685,25 @@ var _ = Describe("TagSelectorRank", func() {
 			}),
 		)
 	})
+})
+
+var _ = Describe("IsReservedLabelKey", func() {
+	type testCase struct {
+		key      string
+		expected bool
+	}
+
+	DescribeTable("should identify reserved label keys",
+		func(given testCase) {
+			Expect(IsReservedLabelKey(given.key)).To(Equal(given.expected))
+		},
+		Entry("kuma.io/ prefix", testCase{key: "kuma.io/service", expected: true}),
+		Entry("k8s.kuma.io/ prefix", testCase{key: "k8s.kuma.io/namespace", expected: true}),
+		Entry("bare kuma.io/", testCase{key: "kuma.io/", expected: true}),
+		Entry("bare k8s.kuma.io/", testCase{key: "k8s.kuma.io/", expected: true}),
+		Entry("non-reserved app label", testCase{key: "app", expected: false}),
+		Entry("non-reserved custom domain", testCase{key: "example.com/foo", expected: false}),
+		Entry("empty string", testCase{key: "", expected: false}),
+		Entry("partial prefix kuma.io without slash", testCase{key: "kuma.io", expected: false}),
+	)
 })

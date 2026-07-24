@@ -1,19 +1,26 @@
 package observability
 
 import (
+	"bytes"
+	"context"
+	_ "embed"
 	"fmt"
-	"slices"
+	"text/template"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
+
+//go:embed jaeger.yaml
+var jaegerManifest string
+
+const jaegerComponent = "jaeger"
 
 type k8SDeployment struct {
 	deploymentName  string
 	namespace       string
 	jaegerApiTunnel *k8s.Tunnel
-	components      []Component
 }
 
 var _ Deployment = &k8SDeployment{}
@@ -30,55 +37,59 @@ func (t *k8SDeployment) TracedServices() ([]string, error) {
 	return tracedServices(fmt.Sprintf("http://%s", t.jaegerApiTunnel.Endpoint()))
 }
 
+func (t *k8SDeployment) TracesForService(service string, limit int) ([]Trace, error) {
+	return tracesForService(fmt.Sprintf("http://%s", t.jaegerApiTunnel.Endpoint()), service, limit)
+}
+
 func (t *k8SDeployment) Name() string {
 	return t.deploymentName
 }
 
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
-	kumactl := framework.NewKumactlOptionsE2E(cluster.GetTesting(), cluster.Name(), true)
-	var strComponents []string
-	for _, component := range t.components {
-		strComponents = append(strComponents, string(component))
-	}
-	yaml, err := kumactl.KumactlInstallObservability(t.namespace, strComponents)
+	yaml, err := renderJaegerManifest(t.namespace)
 	if err != nil {
 		return err
 	}
-	err = k8s.KubectlApplyFromStringE(cluster.GetTesting(),
+	err = k8s.KubectlApplyFromStringContextE(cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(),
 		yaml)
 	if err != nil {
 		return err
 	}
 
-	expectedPods := map[Component]int{
-		JaegerComponent:     1,
-		GrafanaComponent:    1,
-		LokiComponent:       1,
-		PrometheusComponent: 2,
+	if err := framework.NewClusterSetup().
+		Install(framework.WaitNumPods(t.namespace, 1, jaegerComponent)).
+		Install(framework.WaitPodsAvailable(t.namespace, jaegerComponent)).
+		Setup(cluster); err != nil {
+		return err
 	}
 
-	for _, component := range t.components {
-		err := framework.NewClusterSetup().
-			Install(framework.WaitNumPods(t.namespace, expectedPods[component], string(component))).
-			Install(framework.WaitPodsAvailable(t.namespace, string(component))).
-			Setup(cluster)
-		if err != nil {
-			return err
-		}
+	podName, err := framework.PodNameOfApp(cluster, jaegerComponent, t.namespace)
+	if err != nil {
+		return err
 	}
-
-	if slices.Contains(t.components, JaegerComponent) {
-		podName, err := framework.PodNameOfApp(cluster, string(JaegerComponent), t.namespace)
-		if err != nil {
-			return err
-		}
-		t.jaegerApiTunnel = k8s.NewTunnel(cluster.GetKubectlOptions(t.namespace), k8s.ResourceTypePod, podName, 0, 16686)
-		t.jaegerApiTunnel.ForwardPort(cluster.GetTesting())
-	}
+	t.jaegerApiTunnel = k8s.NewTunnel(cluster.GetKubectlOptions(t.namespace), k8s.ResourceTypePod, podName, 0, 16686)
+	t.jaegerApiTunnel.ForwardPort(cluster.GetTesting())
 	return nil
 }
 
 func (t *k8SDeployment) Delete(cluster framework.Cluster) error {
 	return cluster.(*framework.K8sCluster).TriggerDeleteNamespace(t.namespace)
+}
+
+func renderJaegerManifest(namespace string) (string, error) {
+	tmpl, err := template.New("jaeger.yaml").Parse(jaegerManifest)
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, struct {
+		Namespace string
+	}{
+		Namespace: namespace,
+	}); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }

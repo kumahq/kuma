@@ -6,7 +6,7 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/v2/pkg/api-server/types"
+	"github.com/kumahq/kuma/v3/pkg/api-server/types"
 )
 
 const (
@@ -27,6 +27,9 @@ func pagination(request *restful.Request) (page, error) {
 			return page{}, types.InvalidPageSize
 		}
 		pageSize = p
+		if pageSize <= 0 {
+			return page{}, &types.InvalidPageSizeError{Reason: "must be greater than 0"}
+		}
 		if pageSize > maxPageSize {
 			return page{}, types.NewMaxPageSizeExceeded(pageSize, maxPageSize)
 		}

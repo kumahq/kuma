@@ -1,12 +1,15 @@
 package v1alpha1_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	meshaccesslog_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	meshaccesslog_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 )
 
 var _ = Describe("MeshAccessLog", func() {
@@ -27,8 +30,7 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			Entry("mesh from/to example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -57,8 +59,7 @@ to:
 `),
 			Entry("empty format", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -70,8 +71,7 @@ from:
 `),
 			Entry("empty backend list", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -93,8 +93,7 @@ to:
 `),
 			Entry("openTelemetry with backendRef", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -104,12 +103,12 @@ from:
           openTelemetry:
             backendRef:
               kind: MeshOpenTelemetryBackend
-              name: my-otel
+              labels:
+                kuma.io/display-name: my-otel
 `),
 			Entry("openTelemetry with backendRef using labels", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -121,6 +120,21 @@ from:
               kind: MeshOpenTelemetryBackend
               labels:
                 app: otel-collector
+`),
+			Entry("openTelemetry with valid attributes", `
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: otel-collector:4317
+            attributes:
+              - key: "service.version"
+                value: "%KUMA_MESH%"
 `),
 		)
 
@@ -158,8 +172,7 @@ violations:
 			Entry("empty 'path'", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -179,8 +192,7 @@ violations:
 			Entry("invalid 'path'", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -201,8 +213,7 @@ violations:
 			Entry("empty 'key'", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -224,8 +235,7 @@ violations:
 			Entry("empty 'value'", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -247,8 +257,7 @@ violations:
 			Entry("invalid 'key'", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -339,8 +348,7 @@ violations:
 			Entry("'address' not valid", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -363,8 +371,7 @@ violations:
 			Entry("empty format json list", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -393,8 +400,7 @@ violations:
 			Entry("empty format.plain", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -423,8 +429,7 @@ violations:
 			Entry("backend must be defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -446,8 +451,7 @@ violations:
 			Entry("format must be defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -474,8 +478,7 @@ violations:
 			Entry("openTelemetry neither endpoint nor backendRef", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -493,8 +496,7 @@ violations:
 			Entry("openTelemetry both endpoint and backendRef", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -505,18 +507,18 @@ from:
             endpoint: otel-collector:4317
             backendRef:
               kind: MeshOpenTelemetryBackend
-              name: my-otel
+              labels:
+                kuma.io/display-name: my-otel
 `,
 				expected: `
 violations:
   - field: spec.from[0].default.backends[0].openTelemetry
     message: "openTelemetry must have only one type defined: endpoint, backendRef"`,
 			}),
-			Entry("openTelemetry backendRef neither name nor labels", testCase{
+			Entry("openTelemetry backendRef no labels", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh
@@ -530,9 +532,97 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].default.backends[0].openTelemetry.backendRef
-    message: "backendRef must have exactly one defined: name, labels"`,
+    message: "backendRef must have exactly one defined: labels"`,
 			}),
-			Entry("MeshGateway and invalid to kind", testCase{
+			Entry("openTelemetry attribute key with spaces", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: otel-collector:4317
+            attributes:
+              - key: "my custom attribute"
+                value: "%KUMA_MESH%"
+`,
+				expected: fmt.Sprintf(`
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
+    message: %s`, validators.MustMatchOtelAttributeNameFormat),
+			}),
+			Entry("openTelemetry attribute key with placeholders", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: otel-collector:4317
+            attributes:
+              - key: "%KUMA_ZONE%"
+                value: "%KUMA_MESH%"
+`,
+				expected: fmt.Sprintf(`
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
+    message: "%s"`, validators.MustBeStaticOtelAttributeName),
+			}),
+			Entry("openTelemetry attribute key with reserved prefix", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: otel-collector:4317
+            attributes:
+              - key: "otel.attribute"
+                value: "%KUMA_MESH%"
+`,
+				expected: fmt.Sprintf(`
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
+    message: "%s"`, validators.MustNotUseReservedOtelPrefix),
+			}),
+			Entry("openTelemetry attribute keys accumulate violations", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: OpenTelemetry
+          openTelemetry:
+            endpoint: otel-collector:4317
+            attributes:
+              - key: "bad key"
+                value: "%KUMA_MESH%"
+              - key: "%KUMA_ZONE%"
+                value: "%KUMA_ZONE%"
+`,
+				expected: fmt.Sprintf(`
+violations:
+  - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
+    message: %s
+  - field: spec.from[0].default.backends[0].openTelemetry.attributes[1].key
+    message: "%s"`, validators.MustMatchOtelAttributeNameFormat, validators.MustBeStaticOtelAttributeName),
+			}),
+			Entry("top-level MeshGateway is rejected", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshGateway
@@ -552,8 +642,8 @@ to:
 `,
 				expected: `
 violations:
-- field: spec.to[0].targetRef.kind
-  message: value 'MeshService' is not supported`,
+- field: spec.targetRef.kind
+  message: value 'MeshGateway' is not supported`,
 			}),
 		)
 	})

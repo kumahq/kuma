@@ -57,11 +57,6 @@ Create chart name and version as used by the chart label.
 {{ printf "%s" (default $defaultSvcName .Values.controlPlane.service.name) }}
 {{- end }}
 
-{{- define "kuma.controlPlane.globalZoneSync.serviceName" -}}
-{{- $defaultSvcName := printf "%s-global-zone-sync" (include "kuma.name" .) -}}
-{{ printf "%s" (default $defaultSvcName .Values.controlPlane.globalZoneSyncService.name) }}
-{{- end }}
-
 {{- define "kuma.ingress.serviceName" -}}
 {{- $defaultSvcName := printf "%s-ingress" (include "kuma.name" .) -}}
 {{ printf "%s" (default $defaultSvcName .Values.ingress.service.name) }}
@@ -287,10 +282,6 @@ env:
   value: {{ .Values.dataPlane.validationContainer.resources.limits.cpu | default "0" | quote }}
 - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_MEMORY
   value: {{ .Values.dataPlane.validationContainer.resources.limits.memory | default "50M" | quote }}
-{{- if .Values.dataPlane.dnsLogging }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
-  value: "true"
-{{- end }}
 {{- if .Values.transparentProxy.configMap.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
   value: {{ include "kuma.transparentProxyConfigMapName" . | quote }}
@@ -315,12 +306,6 @@ env:
 - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
   value: /var/run/secrets/kuma.io/api-server-client-certs/
 {{- end }}
-{{- if and (eq .Values.controlPlane.mode "global") (or .Values.controlPlane.tls.kdsGlobalServer.secretName .Values.controlPlane.tls.kdsGlobalServer.create) }}
-- name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
-  value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.crt
-- name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
-  value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
-{{- end }}
 {{- if and (eq .Values.controlPlane.mode "zone") (or .Values.controlPlane.tls.kdsZoneClient.secretName .Values.controlPlane.tls.kdsZoneClient.create) }}
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
@@ -329,10 +314,6 @@ env:
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
   value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
-{{- if .Values.experimental.sidecarContainers }}
-- name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-  value: "true"
-{{- end }}
 {{- if .Values.experimental.inboundTagsDisabled }}
 - name: KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
   value: "true"
@@ -347,30 +328,12 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_NAMESPACE
   value: {{ .Values.cni.namespace }}
 {{- end }}
-{{- if .Values.experimental.ebpf.enabled }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
-  value: "true"
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME
-  value: {{ .Values.experimental.ebpf.instanceIPEnvVarName }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
-  value: {{ .Values.experimental.ebpf.bpffsPath }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH
-  value: {{ .Values.experimental.ebpf.cgroupPath }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE
-  value: {{ .Values.experimental.ebpf.tcAttachIface }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
-  value: {{ .Values.experimental.ebpf.programsSourcePath }}
-{{- end }}
 {{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
 - name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
   value: "true"
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
-{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
-- name: KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES
-  value: true
-{{- end }}
 {{- if .Values.dataPlane.features.unifiedResourceNaming }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
   value: "true"
@@ -437,12 +400,6 @@ env:
 {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
 - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
   value: /var/run/secrets/kuma.io/api-server-client-certs/
-{{- end }}
-{{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
-- name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
-  value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.crt
-- name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
-  value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
 {{- end }}
 - name: KUMA_STORE_POSTGRES_TLS_MODE
   value: {{ .Values.postgres.tls.mode }}

@@ -9,21 +9,21 @@ import (
 	. "github.com/onsi/gomega"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend"
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	meshaccesslog_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	meshmetric_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	meshtrace_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	meshaccesslog_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshmetric_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	meshtrace_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var _ = Describe("StatusUpdater", func() {
@@ -61,7 +61,8 @@ var _ = Describe("StatusUpdater", func() {
 			},
 			Protocol: pointer.To(motb_api.ProtocolGRPC),
 		}
-		allOpts := append([]store.CreateOptionsFunc{store.CreateByKey(name, core_model.DefaultMesh)}, opts...)
+		defaultLabels := store.CreateWithLabels(map[string]string{mesh_proto.DisplayName: name})
+		allOpts := append([]store.CreateOptionsFunc{store.CreateByKey(name, core_model.DefaultMesh), defaultLabels}, opts...)
 		Expect(resManager.Create(context.Background(), motb, allOpts...)).To(Succeed())
 	}
 
@@ -140,8 +141,8 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshmetric_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
-								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-								Name: "main-collector",
+								Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+								Labels: map[string]string{mesh_proto.DisplayName: "main-collector"},
 							},
 						},
 					},
@@ -169,8 +170,8 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshtrace_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshtrace_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
-								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-								Name: "trace-collector",
+								Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+								Labels: map[string]string{mesh_proto.DisplayName: "trace-collector"},
 							},
 						},
 					},
@@ -201,8 +202,8 @@ var _ = Describe("StatusUpdater", func() {
 								Type: meshaccesslog_api.OtelTelemetryBackendType,
 								OpenTelemetry: &meshaccesslog_api.OtelBackend{
 									BackendRef: &common_api.BackendResourceRef{
-										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-										Name: "log-collector",
+										Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+										Labels: map[string]string{mesh_proto.DisplayName: "log-collector"},
 									},
 								},
 							},
@@ -233,8 +234,8 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshmetric_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
-								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-								Name: "shared-collector",
+								Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+								Labels: map[string]string{mesh_proto.DisplayName: "shared-collector"},
 							},
 						},
 					},
@@ -252,8 +253,8 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshtrace_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshtrace_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
-								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-								Name: "shared-collector",
+								Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+								Labels: map[string]string{mesh_proto.DisplayName: "shared-collector"},
 							},
 						},
 					},
@@ -281,8 +282,8 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshmetric_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
-								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-								Name: "main-collector",
+								Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+								Labels: map[string]string{mesh_proto.DisplayName: "main-collector"},
 							},
 						},
 					},
@@ -324,8 +325,8 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshmetric_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
-								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-								Name: "main-collector",
+								Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+								Labels: map[string]string{mesh_proto.DisplayName: "main-collector"},
 							},
 						},
 					},
@@ -363,8 +364,8 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshmetric_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
-								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-								Name: "missing-collector",
+								Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+								Labels: map[string]string{mesh_proto.DisplayName: "missing-collector"},
 							},
 						},
 					},
@@ -377,7 +378,7 @@ var _ = Describe("StatusUpdater", func() {
 			Type:    common_api.BackendRefsResolvedCondition,
 			Status:  kube_meta.ConditionFalse,
 			Reason:  common_api.UnresolvedBackendRefsReason,
-			Message: "Unresolved MeshOpenTelemetryBackend references: missing-collector",
+			Message: "Unresolved MeshOpenTelemetryBackend references: labels:kuma.io/display-name=missing-collector",
 		}))
 	})
 
@@ -390,8 +391,8 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshtrace_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshtrace_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
-								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-								Name: "missing-trace-collector",
+								Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+								Labels: map[string]string{mesh_proto.DisplayName: "missing-trace-collector"},
 							},
 						},
 					},
@@ -404,7 +405,7 @@ var _ = Describe("StatusUpdater", func() {
 			Type:    common_api.BackendRefsResolvedCondition,
 			Status:  kube_meta.ConditionFalse,
 			Reason:  common_api.UnresolvedBackendRefsReason,
-			Message: "Unresolved MeshOpenTelemetryBackend references: missing-trace-collector",
+			Message: "Unresolved MeshOpenTelemetryBackend references: labels:kuma.io/display-name=missing-trace-collector",
 		}))
 	})
 
@@ -420,8 +421,8 @@ var _ = Describe("StatusUpdater", func() {
 								Type: meshaccesslog_api.OtelTelemetryBackendType,
 								OpenTelemetry: &meshaccesslog_api.OtelBackend{
 									BackendRef: &common_api.BackendResourceRef{
-										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-										Name: "missing-log-collector",
+										Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+										Labels: map[string]string{mesh_proto.DisplayName: "missing-log-collector"},
 									},
 								},
 							},
@@ -436,7 +437,7 @@ var _ = Describe("StatusUpdater", func() {
 			Type:    common_api.BackendRefsResolvedCondition,
 			Status:  kube_meta.ConditionFalse,
 			Reason:  common_api.UnresolvedBackendRefsReason,
-			Message: "Unresolved MeshOpenTelemetryBackend references: missing-log-collector",
+			Message: "Unresolved MeshOpenTelemetryBackend references: labels:kuma.io/display-name=missing-log-collector",
 		}))
 	})
 
@@ -449,8 +450,8 @@ var _ = Describe("StatusUpdater", func() {
 						Type: meshmetric_api.OpenTelemetryBackendType,
 						OpenTelemetry: &meshmetric_api.OpenTelemetryBackend{
 							BackendRef: &common_api.BackendResourceRef{
-								Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-								Name: "appearing-collector",
+								Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+								Labels: map[string]string{mesh_proto.DisplayName: "appearing-collector"},
 							},
 						},
 					},
@@ -463,7 +464,7 @@ var _ = Describe("StatusUpdater", func() {
 			Type:    common_api.BackendRefsResolvedCondition,
 			Status:  kube_meta.ConditionFalse,
 			Reason:  common_api.UnresolvedBackendRefsReason,
-			Message: "Unresolved MeshOpenTelemetryBackend references: appearing-collector",
+			Message: "Unresolved MeshOpenTelemetryBackend references: labels:kuma.io/display-name=appearing-collector",
 		}))
 
 		createMOTB("appearing-collector")

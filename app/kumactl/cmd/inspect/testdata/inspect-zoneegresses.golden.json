@@ -6,6 +6,7 @@
       "name": "zoneegress-1",
       "creationTime": "2018-07-17T16:05:36.995Z",
       "modificationTime": "2019-07-17T18:08:41Z",
+      "kri": "kri_ze____zoneegress-1_",
       "zoneEgress": {},
       "zoneEgressInsight": {
         "subscriptions": [
@@ -63,6 +64,7 @@
       "name": "zoneegress-2",
       "creationTime": "2018-07-17T16:05:36.995Z",
       "modificationTime": "2019-07-17T18:08:41Z",
+      "kri": "kri_ze____zoneegress-2_",
       "zoneEgress": {},
       "zoneEgressInsight": {
         "subscriptions": [
@@ -122,6 +124,7 @@
       "name": "zoneegress-3",
       "creationTime": "2018-07-17T16:05:36.995Z",
       "modificationTime": "2019-07-17T18:08:41Z",
+      "kri": "kri_ze____zoneegress-3_",
       "zoneEgress": {},
       "zoneEgressInsight": {
         "subscriptions": [

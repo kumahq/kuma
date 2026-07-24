@@ -10,19 +10,19 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	envoy_admin_tls "github.com/kumahq/kuma/v2/pkg/envoy/admin/tls"
-	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
-	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	envoy_admin_tls "github.com/kumahq/kuma/v3/pkg/envoy/admin/tls"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
+	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
 )
 
 type DataplaneWatchdogDependencies struct {
@@ -103,6 +103,7 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
 		d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key)
+		d.EnvoyCpCtx.IdentityManager.Cleanup(d.key)
 		d.lastOtelStatus = nil
 		d.otelStatusSynced = false
 		d.OtelStatusCache.Set(d.key, nil)
@@ -212,6 +213,9 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 	if err != nil {
 		return SyncResult{}, errors.Wrap(err, "could not reconcile")
 	}
+	if syncForConfig && d.XdsMetrics != nil {
+		d.XdsMetrics.DataplaneConfigRegenerated.WithLabelValues(d.key.Mesh).Inc()
+	}
 	d.lastHash = meshCtx.Hash
 	d.lastIdentityHash = identityHash
 
@@ -251,7 +255,15 @@ func (d *DataplaneWatchdog) syncOtelStatus(backends *core_xds.OtelPipeBackends) 
 func hashMeshIdentity(identity *meshidentity_api.MeshIdentityResource) []byte {
 	hasher := fnv.New128a()
 	if identity != nil {
-		_, _ = hasher.Write(core_model.Hash(identity))
+		_, _ = hasher.Write(identity.XDSHash())
+		// Workload identity delivery is additionally gated by MeshIdentity
+		// initialization, so dataplanes must resync when that readiness flips
+		// even though mesh-wide xDS can stay stable.
+		if identity.Status != nil && identity.Status.IsInitialized() {
+			_, _ = hasher.Write([]byte{1})
+		} else {
+			_, _ = hasher.Write([]byte{0})
+		}
 	}
 	return hasher.Sum(nil)
 }

@@ -4,10 +4,7 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_routes_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes/v3"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
 func DomainNames(domainNames ...string) VirtualHostBuilderOpt {
@@ -22,10 +19,23 @@ func DomainNames(domainNames ...string) VirtualHostBuilderOpt {
 	)
 }
 
+// Routes configures routes for inbound virtual hosts and keeps the legacy route
+// timeout override of 0s so Envoy request timeouts stay disabled by default.
 func Routes(routes envoy_common.Routes) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
 		&RoutesConfigurer{
-			Routes: routes,
+			Routes:                routes,
+			ConfigureRouteTimeout: true,
+		})
+}
+
+// OutboundRoutes configures routes for outbound and egress virtual hosts
+// without setting a route timeout so MeshTimeout or Envoy defaults can apply.
+func OutboundRoutes(routes envoy_common.Routes) VirtualHostBuilderOpt {
+	return AddVirtualHostConfigurer(
+		&RoutesConfigurer{
+			Routes:                routes,
+			ConfigureRouteTimeout: false,
 		})
 }
 
@@ -61,14 +71,6 @@ func SetResponseHeader(name string, value string) VirtualHostBuilderOpt {
 			}
 
 			vh.ResponseHeadersToAdd = append(vh.ResponseHeadersToAdd, hsts)
-		}),
-	)
-}
-
-func Retry(retry *core_mesh.RetryResource, protocol core_meta.Protocol) VirtualHostBuilderOpt {
-	return AddVirtualHostConfigurer(
-		VirtualHostMustConfigureFunc(func(vh *envoy_config_route_v3.VirtualHost) {
-			vh.RetryPolicy = envoy_routes_v3.RetryConfig(retry, protocol)
 		}),
 	)
 }

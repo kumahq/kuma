@@ -5,11 +5,12 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // MeshCircuitBreaker protects services from cascading failures by limiting connections and detecting unhealthy instances. It provides connection limits to prevent overload and outlier detection to temporarily remove failing endpoints from the load balancing pool.
 // +kuma:policy:is_from_as_rules=true
+// +kuma:policy:order=1300
 type MeshCircuitBreaker struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

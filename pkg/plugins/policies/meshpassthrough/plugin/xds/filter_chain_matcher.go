@@ -8,10 +8,10 @@ import (
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	ipv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/input_matchers/ip/v3"
 
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	bldrs_matchers "github.com/kumahq/kuma/v2/pkg/envoy/builders/xds/matchers"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	bldrs_matchers "github.com/kumahq/kuma/v3/pkg/envoy/builders/xds/matchers"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 // BuildFilterChainMatcher builds an xds.type.matcher.v3.Matcher tree that selects

@@ -6,11 +6,10 @@ import (
 	"sort"
 	"strings"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	envoy "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v2/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	envoy "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 // tagSets represent map from tags (encoded as string) to number of instances
@@ -61,83 +60,9 @@ func (s tagSets) toAvailableServices() []*mesh_proto.ZoneIngress_AvailableServic
 func GetAvailableServices(
 	skipAvailableServices map[xds.MeshName]struct{},
 	allDataplanes []*core_mesh.DataplaneResource,
-	meshGateways []*core_mesh.MeshGatewayResource,
-	externalServices []*core_mesh.ExternalServiceResource,
 	tagFilters []string,
 ) []*mesh_proto.ZoneIngress_AvailableService {
-	availableServices := GetIngressAvailableServices(skipAvailableServices, allDataplanes, tagFilters)
-	availableExternalServices := GetExternalAvailableServices(externalServices)
-	availableServices = append(availableServices, availableExternalServices...)
-
-	meshGatewayDataplanes := getMeshGateways(allDataplanes, meshGateways)
-
-	for _, meshGateways := range meshGatewayDataplanes {
-		availableMeshGatewayListeners := getIngressAvailableMeshGateways(
-			meshGateways.Mesh,
-			meshGateways.Gateways,
-			meshGateways.Dataplanes,
-		)
-		availableServices = append(availableServices, availableMeshGatewayListeners...)
-	}
-
-	return availableServices
-}
-
-// MeshGatewayDataplanes is a helper type to hold the MeshGateways and Dataplanes for a mesh.
-type MeshGatewayDataplanes struct {
-	Mesh       string
-	Gateways   []*core_mesh.MeshGatewayResource
-	Dataplanes []*core_mesh.DataplaneResource
-}
-
-func getMeshGateways(
-	dataplanes []*core_mesh.DataplaneResource,
-	meshGateways []*core_mesh.MeshGatewayResource,
-) []MeshGatewayDataplanes {
-	meshGatewayDataplanes := []MeshGatewayDataplanes{}
-
-	meshGatewaysByMesh := map[xds.MeshName][]*core_mesh.MeshGatewayResource{}
-	for _, gateway := range meshGateways {
-		gateways := meshGatewaysByMesh[gateway.GetMeta().GetMesh()]
-		meshGatewaysByMesh[gateway.GetMeta().GetMesh()] = append(gateways, gateway)
-	}
-
-	dataplanesByMesh := map[xds.MeshName][]*core_mesh.DataplaneResource{}
-	for _, dataplane := range dataplanes {
-		if !dataplane.Spec.IsBuiltinGateway() {
-			continue
-		}
-		dataplanes := dataplanesByMesh[dataplane.GetMeta().GetMesh()]
-		dataplanesByMesh[dataplane.GetMeta().GetMesh()] = append(dataplanes, dataplane)
-	}
-
-	for meshName, meshGateways := range meshGatewaysByMesh {
-		dataplanes := dataplanesByMesh[meshName]
-
-		meshGatewayDataplanes = append(meshGatewayDataplanes, MeshGatewayDataplanes{
-			Mesh:       meshName,
-			Gateways:   meshGateways,
-			Dataplanes: dataplanes,
-		})
-	}
-
-	return meshGatewayDataplanes
-}
-
-func getIngressAvailableMeshGateways(meshName string, meshGateways []*core_mesh.MeshGatewayResource, dataplanes []*core_mesh.DataplaneResource) []*mesh_proto.ZoneIngress_AvailableService {
-	endpoints := topology.CrossMeshEndpointTags(meshGateways, dataplanes)
-
-	tagSets := tagSets{}
-	for _, endpointTags := range endpoints {
-		tagSets.addInstanceOfTags(meshName, mesh_proto.MergeAs[envoy.Tags](
-			map[string]string{
-				mesh_proto.MeshTag: meshName,
-			},
-			endpointTags,
-		))
-	}
-
-	return tagSets.toAvailableServices()
+	return GetIngressAvailableServices(skipAvailableServices, allDataplanes, tagFilters)
 }
 
 func GetIngressAvailableServices(
@@ -164,17 +89,4 @@ func GetIngressAvailableServices(
 		}
 	}
 	return tagSets.toAvailableServices()
-}
-
-func GetExternalAvailableServices(others []*core_mesh.ExternalServiceResource) []*mesh_proto.ZoneIngress_AvailableService {
-	tagSets := tagSets{}
-	for _, es := range others {
-		tagSets.addInstanceOfTags(es.GetMeta().GetMesh(), es.Spec.Tags)
-	}
-
-	availableServices := tagSets.toAvailableServices()
-	for _, as := range availableServices {
-		as.ExternalService = true
-	}
-	return availableServices
 }

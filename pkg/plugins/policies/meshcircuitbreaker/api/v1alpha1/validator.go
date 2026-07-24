@@ -3,11 +3,11 @@ package v1alpha1
 import (
 	"github.com/shopspring/decimal"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (r *MeshCircuitBreakerResource) validate() error {
@@ -22,7 +22,7 @@ func (r *MeshCircuitBreakerResource) validate() error {
 	}
 	verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules)))
 	verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
-	verr.AddErrorAt(path, validateTo(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), pointer.Deref(r.Spec.To)))
+	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
@@ -33,10 +33,6 @@ func (r *MeshCircuitBreakerResource) validateTop(targetRef *common_api.TargetRef
 	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
-			common_api.MeshSubset,
-			common_api.MeshService,
-			common_api.MeshGateway,
-			common_api.MeshServiceSubset,
 			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
@@ -70,7 +66,7 @@ func validateFrom(from []From) validators.ValidationError {
 	return verr
 }
 
-func validateTo(topTargetRef common_api.TargetRef, to []To) validators.ValidationError {
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
@@ -78,12 +74,10 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
+				common_api.MeshExternalService,
 				common_api.MeshMultiZoneService,
 			},
 		}))
-		if toItem.TargetRef.Kind == common_api.MeshExternalService && topTargetRef.Kind != common_api.Mesh {
-			verr.AddViolationAt(path.Field("targetRef.kind"), "kind MeshExternalService is only allowed with targetRef.kind: Mesh as it is configured on the Zone Egress and shared by all clients in the mesh")
-		}
 		defaultField := path.Field("default")
 		verr.Add(validateDefault(defaultField, toItem.Default))
 	}

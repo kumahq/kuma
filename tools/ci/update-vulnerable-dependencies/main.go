@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kumahq/kuma/v2/tools/ci/update-vulnerable-dependencies/leastcommonversion"
+	"github.com/kumahq/kuma/v3/tools/ci/update-vulnerable-dependencies/leastcommonversion"
 )
 
 func main() {

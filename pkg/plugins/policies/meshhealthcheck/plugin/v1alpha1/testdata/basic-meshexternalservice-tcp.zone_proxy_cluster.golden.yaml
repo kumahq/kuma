@@ -1,0 +1,7 @@
+healthChecks:
+- healthyThreshold: 1
+  interval: 10s
+  tcpHealthCheck: {}
+  timeout: 2s
+  unhealthyThreshold: 3
+name: kri_extsvc_default___example_9000

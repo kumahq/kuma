@@ -6,16 +6,12 @@ import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/selector.proto";
 import "google/protobuf/duration.proto";
 
-option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
 
+// Timeout is retained only for its nested Conf type, which is reused by
+// pkg/defaults/mesh.DefaultInboundTimeout and the Envoy timeout configurer
+// for inbound listeners. The Timeout resource itself has been removed.
 message Timeout {
-  option (kuma.mesh.resource).name = "TimeoutResource";
-  option (kuma.mesh.resource).type = "Timeout";
-  option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
-  option (kuma.mesh.resource).ws.name = "timeout";
-  option (kuma.mesh.resource).allow_to_inspect = true;
-
   // List of selectors to match dataplanes that are sources of traffic.
   repeated Selector sources = 1;
 

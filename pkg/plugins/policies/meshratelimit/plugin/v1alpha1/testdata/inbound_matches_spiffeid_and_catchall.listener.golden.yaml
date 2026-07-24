@@ -1,0 +1,96 @@
+address:
+  socketAddress:
+    address: 127.0.0.1
+    portValue: 17777
+enableReusePort: true
+filterChains:
+- filters:
+  - name: envoy.filters.network.set_filter_state
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.set_filter_state.v3.Config
+      onDownstreamTlsHandshake:
+      - factoryKey: envoy.string
+        formatString:
+          textFormatSource:
+            inlineString: '%DOWNSTREAM_PEER_URI_SAN%'
+        objectKey: kuma.mesh_rate_limit.match.spiffe_id
+        readOnly: true
+        skipIfEmpty: true
+  - name: envoy.filters.network.http_connection_manager
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+      httpFilters:
+      - name: envoy.filters.http.local_ratelimit
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+          statPrefix: rate_limit
+      - name: envoy.filters.http.router
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      internalAddressConfig:
+        cidrRanges:
+        - addressPrefix: 127.0.0.1
+          prefixLen: 32
+        - addressPrefix: ::1
+          prefixLen: 128
+      routeConfig:
+        name: inbound:backend
+        requestHeadersToRemove:
+        - x-kuma-tags
+        validateClusters: false
+        virtualHosts:
+        - domains:
+          - '*'
+          name: backend
+          routes:
+          - match:
+              filterState:
+              - key: kuma.mesh_rate_limit.match.spiffe_id
+                stringMatch:
+                  prefix: spiffe://default/ns/clients/
+              prefix: /
+            route:
+              cluster: backend
+              timeout: 0s
+            typedPerFilterConfig:
+              envoy.filters.http.local_ratelimit:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                filterEnabled:
+                  defaultValue:
+                    numerator: 100
+                  runtimeKey: local_rate_limit_enabled
+                filterEnforced:
+                  defaultValue:
+                    numerator: 100
+                  runtimeKey: local_rate_limit_enforced
+                statPrefix: rate_limit
+                status:
+                  code: TooManyRequests
+                tokenBucket:
+                  fillInterval: 1s
+                  maxTokens: 5
+                  tokensPerFill: 5
+          - match:
+              prefix: /
+            route:
+              cluster: backend
+              timeout: 0s
+            typedPerFilterConfig:
+              envoy.filters.http.local_ratelimit:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                filterEnabled:
+                  defaultValue:
+                    numerator: 100
+                  runtimeKey: local_rate_limit_enabled
+                filterEnforced:
+                  defaultValue:
+                    numerator: 100
+                  runtimeKey: local_rate_limit_enforced
+                statPrefix: rate_limit
+                tokenBucket:
+                  fillInterval: 10s
+                  maxTokens: 100
+                  tokensPerFill: 100
+      statPrefix: "127_0_0_1_17777"
+name: inbound:127.0.0.1:17777
+trafficDirection: INBOUND

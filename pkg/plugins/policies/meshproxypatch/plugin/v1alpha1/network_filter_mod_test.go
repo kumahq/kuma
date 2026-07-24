@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("Network Filter modifications", func() {
@@ -309,6 +309,34 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                       cluster: backend
                 name: inbound:192.168.0.1:8081`,
+		}),
+		Entry("should match listener by legacy name against a unified-naming listener", testCase{
+			listeners: []string{
+				`
+                name: self_transparentproxy_passthrough_outbound_ipv4
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.tcp_proxy
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                      cluster: backend`,
+			},
+			modifications: []string{
+				`
+                networkFilter:
+                   operation: Remove
+                   match:
+                     listenerName: outbound:passthrough:ipv4
+`,
+			},
+			expected: `
+            resources:
+            - name: self_transparentproxy_passthrough_outbound_ipv4
+              resource:
+                '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                filterChains:
+                - {}
+                name: self_transparentproxy_passthrough_outbound_ipv4`,
 		}),
 		Entry("should remove all filters of given name from all listeners", testCase{
 			listeners: []string{

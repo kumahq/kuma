@@ -12,16 +12,17 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var (
@@ -30,15 +31,13 @@ var (
 )
 
 type PodConverter struct {
-	ServiceGetter       kube_client.Reader
-	NodeGetter          kube_client.Reader
-	ResourceConverter   k8s_common.Converter
-	InboundConverter    InboundConverter
-	Zone                string
-	SystemNamespace     string
-	Mode                config_core.CpMode
-	KubeOutboundsAsVIPs bool
-	WorkloadLabels      []string
+	NodeGetter        kube_client.Reader
+	ResourceConverter k8s_common.Converter
+	InboundConverter  InboundConverter
+	Zone              string
+	SystemNamespace   string
+	Mode              config_core.CpMode
+	WorkloadLabels    []string
 }
 
 func (p *PodConverter) PodToDataplane(
@@ -46,13 +45,12 @@ func (p *PodConverter) PodToDataplane(
 	dataplane *mesh_k8s.Dataplane,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
-	others []*mesh_k8s.Dataplane,
 	mesh *core_mesh.MeshResource,
 ) error {
 	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
 	previousMesh := dataplane.Mesh
 	dataplane.Mesh = mesh.Meta.GetName()
-	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others, mesh.Spec.MeshServicesMode())
+	dataplaneProto, err := p.dataplaneFor(ctx, pod, services)
 	if err != nil {
 		return err
 	}
@@ -62,17 +60,28 @@ func (p *PodConverter) PodToDataplane(
 	}
 	// we need to validate if the labels have changed
 	workloadName := computeWorkloadName(pod.Labels, p.WorkloadLabels, pod.Spec.ServiceAccountName)
-	labels, err := model.ComputeLabels(
+	// Copy the allow-listed node labels onto the Dataplane labels, the same set
+	// that lands on inbound tags.
+	var nodeLabels map[string]string
+	if p.InboundConverter.InboundTagsDisabled {
+		nodeLabels, err = p.InboundConverter.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
+		if err != nil {
+			return err
+		}
+	}
+
+	labels, err := resource_labels.Compute(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		currentSpec,
-		mergeLabels(dataplane.GetLabels(), pod.Labels),
+		mergeLabels(dataplane.GetLabels(), pod.Labels, nodeLabels),
 		dataplane.Mesh,
-		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
-		model.WithMode(p.Mode),
-		model.WithK8s(true),
-		model.WithZone(p.Zone),
-		model.WithServiceAccount(pod.Spec.ServiceAccountName),
-		model.WithWorkload(workloadName),
+		dataplane.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		resource_labels.WithMode(p.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(p.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+		resource_labels.WithWorkload(workloadName),
 	)
 	if err != nil {
 		return err
@@ -104,16 +113,17 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		return err
 	}
 	// we need to validate if the labels have changed
-	labels, err := model.ComputeLabels(
+	labels, err := resource_labels.Compute(
 		core_mesh.ZoneIngressResourceTypeDescriptor,
 		currentSpec,
 		mergeLabels(zoneIngress.GetLabels(), pod.Labels),
 		model.NoMesh,
-		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
-		model.WithMode(p.Mode),
-		model.WithK8s(true),
-		model.WithZone(p.Zone),
-		model.WithServiceAccount(pod.Spec.ServiceAccountName),
+		zoneIngress.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		resource_labels.WithMode(p.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(p.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
 	)
 	if err != nil {
 		return err
@@ -145,16 +155,17 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 		return err
 	}
 	// we need to validate if the labels have changed
-	labels, err := model.ComputeLabels(
+	labels, err := resource_labels.Compute(
 		core_mesh.ZoneEgressResourceTypeDescriptor,
 		currentSpec,
 		mergeLabels(zoneEgress.GetLabels(), pod.Labels),
 		model.NoMesh,
-		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
-		model.WithMode(p.Mode),
-		model.WithK8s(true),
-		model.WithZone(p.Zone),
-		model.WithServiceAccount(pod.Spec.ServiceAccountName),
+		zoneEgress.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		resource_labels.WithMode(p.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(p.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
 	)
 	if err != nil {
 		return err
@@ -194,8 +205,6 @@ func (p *PodConverter) dataplaneFor(
 	ctx context.Context,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
-	others []*mesh_k8s.Dataplane,
-	msMode mesh_proto.Mesh_MeshServices_Mode,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{}}
 	annotations := metadata.Annotations(pod.Annotations)
@@ -314,7 +323,15 @@ func (p *PodConverter) dataplaneFor(
 		if len(regularServices) > 0 || len(zoneProxyServices) == 0 {
 			var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 			var err error
-			if msMode == mesh_proto.Mesh_MeshServices_Exclusive {
+			// Deduplicating inbounds by address:port is only safe when inbound
+			// tags are disabled: identity and MeshService matching then rely on
+			// the workload rather than per-service inbound tags, so collapsing
+			// several services that select the same port loses nothing. When
+			// inbound tags are enabled each service produces a distinctly tagged
+			// inbound with its own Ready/Ignored state; deduplication would drop
+			// one of them (e.g. keep an Ignored inbound over a Ready one), so we
+			// keep every inbound like the tagged path does.
+			if p.InboundConverter.InboundTagsDisabled {
 				ifaces, err = p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, regularServices)
 				if err != nil {
 					return nil, err
@@ -328,33 +345,31 @@ func (p *PodConverter) dataplaneFor(
 			dataplane.Networking.Inbound = ifaces
 		}
 
-		if msMode == mesh_proto.Mesh_MeshServices_Exclusive {
-			// portSvc tracks which service already claimed each address:port to produce
-			// actionable conflict messages instead of generic validator errors.
-			type portEntry struct {
-				svcName string
-				typ     mesh_proto.Dataplane_Networking_Listener_Type
+		// portSvc tracks which service already claimed each address:port to produce
+		// actionable conflict messages instead of generic validator errors.
+		type portEntry struct {
+			svcName string
+			typ     mesh_proto.Dataplane_Networking_Listener_Type
+		}
+		portSvc := map[string]portEntry{}
+		for _, zpSvc := range zoneProxyServices {
+			listeners, lErr := ListenersForService(pod, zpSvc)
+			if lErr != nil {
+				return nil, lErr
 			}
-			portSvc := map[string]portEntry{}
-			for _, zpSvc := range zoneProxyServices {
-				listeners, lErr := ListenersForService(pod, zpSvc)
-				if lErr != nil {
-					return nil, lErr
-				}
-				for _, l := range listeners {
-					key := fmt.Sprintf("%s:%d", l.Address, l.Port)
-					if existing, ok := portSvc[key]; ok {
-						if existing.typ != l.Type {
-							return nil, errors.Errorf("conflicting listener types on port %d: services %q and %q have different %s labels, please remove one of the Services",
-								l.Port, existing.svcName, zpSvc.Name, metadata.KumaZoneProxyTypeLabel)
-						}
-						converterLog.V(1).Info("duplicate zone proxy services on the same port: ignoring the second service",
-							"service", existing.svcName, "ignoredService", zpSvc.Name, "port", l.Port)
-						continue
+			for _, l := range listeners {
+				key := fmt.Sprintf("%s:%d", l.Address, l.Port)
+				if existing, ok := portSvc[key]; ok {
+					if existing.typ != l.Type {
+						return nil, errors.Errorf("conflicting listener types on port %d: services %q and %q have different %s labels, please remove one of the Services",
+							l.Port, existing.svcName, zpSvc.Name, metadata.KumaZoneProxyTypeLabel)
 					}
-					portSvc[key] = portEntry{zpSvc.Name, l.Type}
-					dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, l)
+					converterLog.V(1).Info("duplicate zone proxy services on the same port: ignoring the second service",
+						"service", existing.svcName, "ignoredService", zpSvc.Name, "port", l.Port)
+					continue
 				}
+				portSvc[key] = portEntry{zpSvc.Name, l.Type}
+				dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, l)
 			}
 		}
 
@@ -369,14 +384,6 @@ func (p *PodConverter) dataplaneFor(
 				dataplane.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
 			}
 		}
-	}
-
-	if !p.KubeOutboundsAsVIPs {
-		ofaces, err := p.OutboundInterfacesFor(ctx, pod, others, tp.ReachableServices)
-		if err != nil {
-			return nil, err
-		}
-		dataplane.Networking.Outbound = ofaces
 	}
 
 	metrics, err := MetricsFor(pod)
@@ -508,12 +515,14 @@ func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateM
 	return aggregateConfig, nil
 }
 
-func mergeLabels(existingLabels map[string]string, podLabels map[string]string) map[string]string {
+func mergeLabels(existingLabels map[string]string, labelSets ...map[string]string) map[string]string {
 	mergedLabels := map[string]string{}
 	if existingLabels != nil {
 		mergedLabels = maps.Clone(existingLabels)
 	}
-	maps.Copy(mergedLabels, podLabels)
+	for _, labels := range labelSets {
+		maps.Copy(mergedLabels, labels)
+	}
 	return mergedLabels
 }
 

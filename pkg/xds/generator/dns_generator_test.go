@@ -8,26 +8,25 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	model "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 )
 
 var _ = Describe("DNSGenerator", func() {
 	type testCase struct {
-		dataplaneFile    string
-		expected         string
-		features         map[string]bool
-		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
-		dpLabels         map[string]string
-		dpMesh           string
+		dataplaneFile string
+		expected      string
+		features      map[string]bool
+		dpLabels      map[string]string
+		dpMesh        string
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -41,11 +40,7 @@ var _ = Describe("DNSGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
-						Spec: &mesh_proto.Mesh{
-							MeshServices: &mesh_proto.Mesh_MeshServices{
-								Mode: given.meshServicesMode,
-							},
-						},
+						Spec: &mesh_proto.Mesh{},
 					},
 					VIPDomains: []xds_types.VIPDomains{
 						{Address: "240.0.0.1", Domains: []string{"httpbin.mesh"}},
@@ -111,9 +106,6 @@ var _ = Describe("DNSGenerator", func() {
 			expected:      "3-envoy-config.golden.yaml",
 		}),
 		Entry("04. DNS using proxy map", testCase{
-			features: map[string]bool{
-				"feature-embedded-dns": true,
-			},
 			dataplaneFile: "4-dataplane.input.yaml",
 			expected:      "4-envoy-config.golden.yaml",
 			dpLabels: map[string]string{
@@ -124,11 +116,9 @@ var _ = Describe("DNSGenerator", func() {
 			dpMesh: "default",
 		}),
 		Entry("05. DNS using proxy with unified naming", testCase{
-			dataplaneFile:    "5-dataplane.input.yaml",
-			expected:         "5-envoy-config.golden.yaml",
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
+			dataplaneFile: "5-dataplane.input.yaml",
+			expected:      "5-envoy-config.golden.yaml",
 			features: map[string]bool{
-				"feature-embedded-dns":            true,
 				"feature-unified-resource-naming": true,
 			},
 			dpLabels: map[string]string{

@@ -15,18 +15,19 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var _ = Describe("PodReconciler", func() {
@@ -65,11 +66,11 @@ var _ = Describe("PodReconciler", func() {
 					Namespace: "demo",
 					Name:      "pod-with-kuma-sidecar-and-ip",
 					Annotations: map[string]string{
-						"kuma.io/mesh":             "poc",
 						"kuma.io/sidecar-injected": "true",
 					},
 					Labels: map[string]string{
-						"app": "sample",
+						"app":          "sample",
+						"kuma.io/mesh": "poc",
 					},
 					UID: "pod-with-kuma-sidecar-and-ip-demo",
 				},
@@ -106,11 +107,11 @@ var _ = Describe("PodReconciler", func() {
 					Namespace: "demo",
 					Name:      "pod-with-duplicated-inbound",
 					Annotations: map[string]string{
-						"kuma.io/mesh":             "poc-ms",
 						"kuma.io/sidecar-injected": "true",
 					},
 					Labels: map[string]string{
-						"app": "sample-ms",
+						"app":          "sample-ms",
+						"kuma.io/mesh": "poc-ms",
 					},
 					UID: "pod-with-duplicated-inbound-demo",
 				},
@@ -199,12 +200,12 @@ var _ = Describe("PodReconciler", func() {
 					Namespace: "demo",
 					Name:      "pod-with-custom-admin-port",
 					Annotations: map[string]string{
-						"kuma.io/mesh":             "poc",
 						"kuma.io/sidecar-injected": "true",
 						"kuma.io/envoy-admin-port": "9999",
 					},
 					Labels: map[string]string{
-						"app": "sample",
+						"app":          "sample",
+						"kuma.io/mesh": "poc",
 					},
 					UID: "pod-with-custom-admin-port-demo",
 				},
@@ -545,11 +546,11 @@ var _ = Describe("PodReconciler", func() {
 					Namespace: "demo",
 					Name:      "zone-proxy-pod",
 					Annotations: map[string]string{
-						"kuma.io/mesh":             "poc",
 						"kuma.io/sidecar-injected": "true",
 					},
 					Labels: map[string]string{
-						"app": "zone-proxy",
+						"app":          "zone-proxy",
+						"kuma.io/mesh": "poc",
 					},
 					UID: "zone-proxy-pod-demo",
 				},
@@ -599,6 +600,9 @@ var _ = Describe("PodReconciler", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Name: "poc",
 				},
+				Spec: &apiextensionsv1.JSON{
+					Raw: []byte(`{"meshServices":{"mode":"Disabled"}}`),
+				},
 			},
 			&mesh_k8s.Mesh{
 				ObjectMeta: kube_meta.ObjectMeta{
@@ -617,7 +621,6 @@ var _ = Describe("PodReconciler", func() {
 			Log:           core.Log.WithName("test"),
 			PodConverter: PodConverter{
 				ResourceConverter: k8s.NewSimpleConverter(),
-				ServiceGetter:     kubeClient,
 				Mode:              config_core.Zone,
 				Zone:              "zone-1",
 				SystemNamespace:   "kuma-system",
@@ -1099,7 +1102,7 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should emit warning event when zone proxy Services exist but MeshServices mode is not Exclusive", func() {
+	It("should create Dataplane listeners for zone proxy pod even when MeshServices mode is not Exclusive", func() {
 		// given - zone-proxy-pod is in mesh "poc" which has no MeshServices mode (defaults to Disabled)
 		req := kube_ctrl.Request{
 			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "zone-proxy-pod"},
@@ -1114,6 +1117,36 @@ var _ = Describe("PodReconciler", func() {
 
 		var event string
 		Eventually(fakeRecorder.Events).Should(Receive(&event))
-		Expect(event).To(ContainSubstring("ZoneProxyListenersSkipped"))
+		Expect(event).To(ContainSubstring("CreatedKumaDataplane"))
+
+		dataplane := &mesh_k8s.Dataplane{}
+		err = kubeClient.Get(context.Background(), kube_types.NamespacedName{Namespace: "demo", Name: "zone-proxy-pod"}, dataplane)
+		Expect(err).ToNot(HaveOccurred())
+		spec, err := dataplane.GetSpec()
+		Expect(err).ToNot(HaveOccurred())
+		dataplaneSpec := spec.(*mesh_proto.Dataplane)
+		Expect(dataplaneSpec.Networking.Listeners).To(HaveLen(1))
+		Expect(dataplaneSpec.Networking.Listeners[0].Type).To(Equal(mesh_proto.Dataplane_Networking_Listener_ZoneIngress))
+	})
+})
+
+var _ = Describe("MeshUpdateIgnoredPredicate", func() {
+	predicate := MeshUpdateIgnoredPredicate{}
+	mesh := &mesh_k8s.Mesh{}
+
+	It("drops Update events", func() {
+		Expect(predicate.Update(event.UpdateEvent{ObjectOld: mesh, ObjectNew: mesh})).To(BeFalse())
+	})
+
+	It("keeps the predicate.Funcs default of true for Create events", func() {
+		Expect(predicate.Create(event.CreateEvent{Object: mesh})).To(BeTrue())
+	})
+
+	It("keeps the predicate.Funcs default of true for Delete events", func() {
+		Expect(predicate.Delete(event.DeleteEvent{Object: mesh})).To(BeTrue())
+	})
+
+	It("keeps the predicate.Funcs default of true for Generic events", func() {
+		Expect(predicate.Generic(event.GenericEvent{Object: mesh})).To(BeTrue())
 	})
 })

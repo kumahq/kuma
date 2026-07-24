@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -9,10 +10,10 @@ import (
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
-	"github.com/kumahq/kuma/v2/test/framework/universal"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
+	"github.com/kumahq/kuma/v3/test/framework/universal"
 )
 
 var _ ControlPlane = &UniversalControlPlane{}
@@ -66,6 +67,10 @@ func (c *UniversalControlPlane) GetName() string {
 	return c.name
 }
 
+func (c *UniversalControlPlane) Mode() core.CpMode {
+	return c.mode
+}
+
 func (c *UniversalControlPlane) GetKDSInsecureServerAddress() string {
 	return c.getKDSServerAddress(false)
 }
@@ -116,8 +121,8 @@ func (c *UniversalControlPlane) generateToken(
 ) (string, error) {
 	description := fmt.Sprintf("generating %s token", tokenPath)
 
-	return retry.DoWithRetryE(
-		c.t,
+	return retry.DoWithRetryContextE(
+		c.t, context.Background(),
 		description,
 		DefaultRetries,
 		DefaultTimeout,
@@ -145,8 +150,8 @@ func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
 		return "", nil
 	}
 
-	return retry.DoWithRetryE(
-		c.t, "fetching user admin token",
+	return retry.DoWithRetryContextE(
+		c.t, context.Background(), "fetching user admin token",
 		DefaultRetries,
 		DefaultTimeout,
 		func() (string, error) {

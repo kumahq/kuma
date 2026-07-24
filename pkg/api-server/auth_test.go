@@ -13,13 +13,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
-	"github.com/kumahq/kuma/v2/pkg/config/access"
-	config "github.com/kumahq/kuma/v2/pkg/config/api-server"
-	"github.com/kumahq/kuma/v2/pkg/plugins/authn/api-server/certs"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/tls"
-	http2 "github.com/kumahq/kuma/v2/pkg/util/http"
+	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
+	"github.com/kumahq/kuma/v3/pkg/config/access"
+	config "github.com/kumahq/kuma/v3/pkg/config/api-server"
+	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/tls"
+	http2 "github.com/kumahq/kuma/v3/pkg/util/http"
 )
 
 var _ = Describe("Auth test", func() {
@@ -55,10 +55,11 @@ var _ = Describe("Auth test", func() {
 			certPath,
 			filepath.Join("..", "..", "test", "certs", "client", "client.pem"),
 			filepath.Join("..", "..", "test", "certs", "client", "client.key"),
+			false,
 		)).To(Succeed())
 
 		httpsClientWithoutCerts = &http.Client{}
-		Expect(http2.ConfigureMTLS(httpsClientWithoutCerts, certPath, "", "")).To(Succeed())
+		Expect(http2.ConfigureMTLS(httpsClientWithoutCerts, certPath, "", "", false)).To(Succeed())
 
 		// wait for both http and https server
 		Eventually(func(g Gomega) {
@@ -118,6 +119,49 @@ var _ = Describe("Auth test", func() {
 		// then
 		Expect(rr.Code).To(Equal(403))
 		Expect(rr.Body.Bytes()).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-https-bad-creds.golden.json")))
+	})
+
+	It("should block admin access when Origin is a cross-origin domain", func() {
+		// This simulates a browser fetch() from evil.com to localhost:5681.
+		// The browser connects over loopback, but the Origin header reveals a
+		// non-localhost origin.  LocalhostAuthenticator must NOT grant admin.
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Host = fmt.Sprintf("localhost:%d", httpPort)
+		req.Header.Set("Origin", "https://evil.com")
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(403))
+	})
+
+	It("should grant admin when Origin is same-origin localhost (GUI use case)", func() {
+		// Simulates the Kuma GUI: browser on localhost fetching from the same
+		// localhost:port.  Origin matches Host, so admin should be granted.
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Host = fmt.Sprintf("localhost:%d", httpPort)
+		req.Header.Set("Origin", fmt.Sprintf("http://localhost:%d", httpPort))
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(200))
+	})
+
+	It("should block admin when a proxy header is present on a loopback request", func() {
+		// X-Forwarded-For on a loopback-sourced request signals a reverse proxy
+		// laundering remote traffic.  Admin must be denied.
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Host = fmt.Sprintf("localhost:%d", httpPort)
+		req.Header.Set("X-Forwarded-For", "203.0.113.1")
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(403))
 	})
 
 	It("should be able to access config on localhost using HTTP", func() {

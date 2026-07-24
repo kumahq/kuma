@@ -55,6 +55,11 @@ store:
       keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
       # Path to the root certificate. Used in verifyCa and verifyFull modes.
       caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
+    # TolerateNewerDBVersions makes `migrate up` a no-op when the DB is at a
+    # newer version than the binary, and relaxes the boot-time migration gate
+    # from strict equality (dbVer == fileVer) to dbVer >= fileVer. Intended
+    # for blue/green CP upgrades where a newer CP owns schema migrations.
+    tolerateNewerDBVersions: false # ENV: KUMA_STORE_POSTGRES_TOLERATE_NEWER_DB_VERSIONS
     # ReadReplica is a setting for a DB replica used only for read queries
     readReplica:
       # Host of the Postgres DB read replica. If not set, read replica is not used.
@@ -100,6 +105,12 @@ bootstrapServer:
     xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
+    # Cap on the gRPC C-Core receive flow-control window for the kuma-dp xDS
+    # client. Set as the GoogleGrpc channel arg `grpc.max_receive_message_length`.
+    # Default 4 MiB is large enough for gateway DPs with 450+ listeners; the
+    # gRPC C-Core default of 4 MiB sizes the per-stream HTTP/2 receive window
+    # too small for the initial xDS push on those DPs and stalls the stream.
+    xdsGrpcMaxReceiveMessageBytes: 4194304 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
   # Whether the MADS server is enabled
@@ -128,6 +139,8 @@ xdsServer:
   dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
   # Interval for flushing status of Dataplanes connected to the Control Plane
   dataplaneStatusFlushInterval: 10s # ENV: KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL
+  # Maximum number of policy matching results kept in the shared Dataplane xDS reconciliation cache. Set to 0 to disable.
+  policyMatchingCacheSize: 10000 # ENV: KUMA_XDS_SERVER_POLICY_MATCHING_CACHE_SIZE
   # Backoff that is executed when Control Plane is sending the response that was previously rejected by Dataplane
   nackBackoff: 5s # ENV: KUMA_XDS_SERVER_NACK_BACKOFF
   # A delay between proxy terminating a connection and the CP trying to deregister the proxy.
@@ -200,8 +213,7 @@ apiServer:
   # If true, then API Server will operate in read only mode (serving GET requests)
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
-  corsAllowedDomains:
-    - ".*" # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
+  corsAllowedDomains: [] # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
   # Can be used if you use a reverse proxy
   rootUrl: "" # ENV: KUMA_API_SERVER_ROOT_URL
   # The path to serve the API from
@@ -391,26 +403,6 @@ runtime:
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
         # Redirect port for DNS
         port: 15053 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT
-        # Enable coredns query logging if true
-        logging: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
-        # Use the embedded DNS instead (This is an experimental feature)
-        experimentalProxy: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY
-      # EBPF defines configuration for the ebpf, when transparent proxy is marked to be
-      # installed using ebpf instead of iptables
-      ebpf:
-        # Install transparent proxy using ebpf
-        enabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
-        # Name of the environmental variable which will include IP address of the pod
-        instanceIPEnvVarName: INSTANCE_IP # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME
-        # Path where BPF file system will be mounted for pinning ebpf programs and maps
-        bpffsPath: /sys/fs/bpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
-        # Path of mounted cgroup2
-        cgroupPath: /sys/fs/cgroup # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH
-        # Name of the network interface which should be used to attach to it TC programs
-        # when not specified, we will try to automatically determine it
-        tcAttachIface: "" # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE
-        # Path where compiled eBPF programs are placed
-        programsSourcePath: /tmp/kuma-ebpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
       # IgnoredServiceSelectorLabels defines a list ignored labels in Service selector.
       # If Pod matches a Service with ignored labels, but does not match it fully, it gets Ignored inbound.
       # It is useful when you change Service selector and expect traffic to be sent immediately.
@@ -463,9 +455,6 @@ runtime:
     # If this is set to true, deleting a Mesh will not delete resources that belong to that Mesh.
     # This can be useful when resources are managed in Argo CD where creation/deletion is managed there.
     skipMeshOwnerReference: false # ENV: KUMA_RUNTIME_KUBERNETES_SKIP_MESH_OWNER_REFERENCE
-    # If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
-    # The downside is that control plane requires permission to read Secrets in all namespaces.
-    supportGatewaySecretsInAllNamespaces: false # ENV: KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES
     # WorkloadLabels is a prioritized list of pod labels to use for generating the kuma.io/workload label on DataplaneProxy.
     # The first non-empty label value found will be used. If no labels match, falls back to ServiceAccount name.
     # Default is empty list (uses ServiceAccount as workload identifier).
@@ -480,8 +469,6 @@ runtime:
     dataplaneCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE
     # ZoneResourceCleanupAge defines how long ZoneIngress and ZoneEgress should be offline to be cleaned up by GC
     zoneResourceCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE
-    # VIPRefreshInterval defines how often all meshes' VIPs should be recomputed
-    vipRefreshInterval: 500ms # ENV: KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL
     # Spire defines default configuration of the spire properties
     spire:
       # SocketPath is the location of the socket file one the host
@@ -495,8 +482,6 @@ defaults:
   skipMeshCreation: false # ENV: KUMA_DEFAULTS_SKIP_MESH_CREATION
   # If true, it skips creating the default tenant resources
   skipTenantResources: false # ENV: KUMA_DEFAULTS_SKIP_TENANT_RESOURCES
-  # If true, it creates the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh
-  createMeshRoutingResources: false # ENV: KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES
   # If true, it skips creating default hostname generators
   skipHostnameGenerators: false # ENV: KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS
 # Metrics configuration
@@ -556,14 +541,24 @@ general:
   # ResilientComponentMaxBackoff configures max backoff for restarting resilient component:
   # KDS sync, Insight resync, PostgresEventListener, etc.
   resilientComponentMaxBackoff: 1m # ENV: KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF
+  # CertGenerationBaseBackoff configures the base backoff before retrying dataplane certificate
+  # generation after a failure (e.g. a misconfigured CA backend), so a failing backend is not
+  # called on every DP sync tick.
+  certGenerationBaseBackoff: 5s # ENV: KUMA_GENERAL_CERT_GENERATION_BASE_BACKOFF
+  # CertGenerationMaxBackoff configures the max backoff before retrying dataplane certificate
+  # generation after a failure (e.g. a misconfigured CA backend).
+  certGenerationMaxBackoff: 5m # ENV: KUMA_GENERAL_CERT_GENERATION_MAX_BACKOFF
+  # CertGenerationCircuitBreakerMinProxies is the number of distinct proxies that must fail
+  # certificate generation against the same backend before its circuit breaker opens and
+  # short-circuits further attempts. Kept well above 1 so a single misbehaving proxy can never
+  # trip a whole backend. In a mesh with fewer proxies than this the circuit breaker never opens
+  # and only the per-proxy backoff applies (still bounded), so small deployments may want to lower
+  # it. 0 disables the circuit breaker, leaving only per-proxy backoff.
+  certGenerationCircuitBreakerMinProxies: 10 # ENV: KUMA_GENERAL_CERT_GENERATION_CIRCUIT_BREAKER_MIN_PROXIES
 # DNS Server configuration
 dnsServer:
   # The domain that the server will resolve the services for
   domain: "mesh" # ENV: KUMA_DNS_SERVER_DOMAIN
-  # The CIDR range used to allocate
-  CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
-  # Will create a service "<kuma.io/service>.mesh" dns entry for every service.
-  serviceVipEnabled: true # ENV: KUMA_DNS_SERVER_SERVICE_VIP_ENABLED
   # The port to use along with the `<kuma.io/service>.mesh` dns entry
   serviceVipPort: 80 # ENV: KUMA_DNS_SERVICE_SERVICE_VIP_PORT
 # Multizone mode
@@ -572,8 +567,6 @@ multizone:
     kds:
       # Port of a gRPC server that serves Kuma Discovery Service (KDS).
       grpcPort: 5685 # ENV: KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT
-      # Interval for refreshing state of the world
-      refreshInterval: 1s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL
       # Interval for flushing Zone Insights (stats of multi-zone communication)
       zoneInsightFlushInterval: 10s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL
       # TlsEnabled turns on TLS for KDS
@@ -599,6 +592,8 @@ multizone:
       # Response backoff is a time Global CP waits before sending ACK/NACK.
       # This is a way to slow down Zone CP from sending resources too often.
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF
+      # If true, Global CP logs full DeltaDiscoveryResponse payloads received from Zone CPs at V(1) instead of compact summaries.
+      logPayloads: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_LOG_PAYLOADS
       tracing:
         # Defines whether tracing is enabled for all gRPC methods
         # of GlobalKDSServer and KDSSyncService or completely disabled
@@ -609,8 +604,6 @@ multizone:
     # GlobalAddress URL of Global Kuma CP
     globalAddress: # ENV KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
     kds:
-      # Interval for refreshing state of the world
-      refreshInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL
       # RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
       rootCaFile: # ENV: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
       # If true, TLS connection to the server won't be verified.
@@ -626,6 +619,8 @@ multizone:
       # Response backoff is a time Zone CP waits before sending ACK/NACK.
       # This is a way to slow down Global CP from sending resources too often.
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF
+      # If true, Zone CP logs full DeltaDiscoveryResponse payloads received from Global CP at V(1) instead of compact summaries.
+      logPayloads: false # ENV: KUMA_MULTIZONE_ZONE_KDS_LOG_PAYLOADS
     # disableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
     disableOriginLabelValidation: false # ENV: KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION
     # IngressUpdateInterval is the interval between the CP updating the list of
@@ -673,6 +668,10 @@ dpServer:
   # Tokens e2e tests, which started flaking a lot after introducing explicit
   # 1s timeout)
   readHeaderTimeout: 5s # ENV: KUMA_DP_SERVER_READ_HEADER_TIMEOUT
+  # GracefulShutdownTimeout should be smaller than controller-runtime's
+  # shutdown budget (30s upstream default) and the pod's
+  # terminationGracePeriodSeconds.
+  gracefulShutdownTimeout: 10s # ENV: KUMA_DP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT
   # Authn defines an authentication configuration for the DP Server
   authn:
     # Configuration for data plane proxy authentication.
@@ -819,15 +818,6 @@ access:
       groups: ["mesh-system:unauthenticated", "mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS
 # Configuration of experimental features of Kuma
 experimental:
-  # If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
-  # This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
-  kubeOutboundsAsVIPs: true # ENV: KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS
-  # Tag first virtual outbound model is compressed version of default Virtual Outbound model
-  # It is recommended to use tag first model for deployments with more than 2k services
-  # You can enable this flag on existing deployment. In order to downgrade cp with this flag enabled
-  # you need to first disable this flag and redeploy cp, after config is rewritten to default
-  # format you can downgrade your cp
-  useTagFirstVirtualOutboundModel: false # ENV: KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL
   # List of prefixes that will be used to filter out tags by keys from ingress' available services section.
   # This can trim the size of the ZoneIngress object significantly.
   # The drawback is that you cannot use filtered out tags for traffic routing.
@@ -835,27 +825,12 @@ experimental:
   ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
   # KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
   kdsEventBasedWatchdog:
-    # If true, then experimental event based watchdog to generate KDS snapshot is used.
-    enabled: false # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED
     # How often we flush changes when experimental event based watchdog is used.
-    flushInterval: 5s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
+    flushInterval: 1s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
     # How often we schedule full KDS resync when experimental event based watchdog is used.
-    fullResyncInterval: 60s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
+    fullResyncInterval: 1s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
     # If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
     delayFullResync: false # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
-  # If true then control plane computes reachable services automatically based on MeshTrafficPermission.
-  # Lack of MeshTrafficPermission is treated as Deny the traffic.
-  autoReachableServices: false # ENV: KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES
-  # Enables sidecar containers in Kubernetes if supported by the Kubernetes
-  # environment.
-  sidecarContainers: false # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-  # If true uses Delta xDS to deliver changes to sidecars.
-  deltaXds: false # ENV: KUMA_EXPERIMENTAL_DELTA_XDS
-proxy:
-  gateway:
-    # Sets the envoy runtime value to limit maximum number of incoming
-    # connections to a builtin gateway data plane proxy
-    globalDownstreamMaxConnections: 50000 # ENV: KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS
 tracing:
   openTelemetry:
     endpoint: "" # e.g. otel-collector:4317
@@ -933,3 +908,9 @@ meshService:
   generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL
   # How long we wait before deleting a MeshService if all Dataplanes are gone
   deletionGracePeriod: 1h # ENV: KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD
+  # Controls propagation of user-defined labels from MeshService to generated resources.
+  labelPropagation:
+    # If true, propagate allowed user-defined labels from MeshService to generated resources.
+    enabled: false # ENV: KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED
+    # List of non-reserved label keys eligible for propagation. When empty and enabled is true, all non-reserved labels are propagated. Reserved kuma.io/ and k8s.kuma.io/ keys are rejected.
+    allowedLabelKeys: [] # ENV: KUMA_MESH_SERVICE_LABEL_PROPAGATION_ALLOWED_LABEL_KEYS

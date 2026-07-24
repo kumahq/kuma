@@ -3,20 +3,20 @@ package zoneproxy
 import (
 	"slices"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/core/xds/origin"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
-	plugins_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	envoy_endpoints "github.com/kumahq/kuma/v2/pkg/xds/envoy/endpoints"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/core/xds/origin"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	envoy_endpoints "github.com/kumahq/kuma/v3/pkg/xds/envoy/endpoints"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 )
 
 func GenerateCDS(
@@ -97,7 +97,7 @@ func GenerateEDS(
 // CreateFilterChain builds filter chains for a listener with mTLS enabled.
 // TLSInspector checks the SNI value, which contains service name and tags in
 // the format "backend{cluster=2,version=1}". For every unique destination
-// from TrafficRoutes, MeshHTTPRoutes, and GatewayRoutes we create a
+// from MeshHTTPRoutes and MeshTCPRoutes we create a
 // FilterChainsMatcher. Limitation: extra tags on outbound in Universal mode
 // do not work across zones. Traffic is not decrypted, so certificates and
 // mTLS settings are not needed here.

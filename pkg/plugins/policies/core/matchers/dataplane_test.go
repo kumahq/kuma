@@ -10,16 +10,15 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	meshaccesslog_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshtrafficpermission_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	test_matchers "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_resources "github.com/kumahq/kuma/v2/pkg/test/resources"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtrafficpermission_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	test_matchers "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_resources "github.com/kumahq/kuma/v3/pkg/test/resources"
 )
 
 var _ = Describe("MatchedPolicies", func() {
@@ -188,22 +187,6 @@ var _ = Describe("MatchedPolicies", func() {
 			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
 		},
 		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "meshexternalservice")),
-	)
-
-	DescribeTable("should match MeshGateways",
-		func(given testCase) {
-			dpp := readDPP(given.dppFile)
-
-			resources, _ := readPolicies(given.policiesFile)
-
-			policies, err := matchers.MatchedPolicies(meshaccesslog_api.MeshAccessLogType, dpp, resources)
-			Expect(err).ToNot(HaveOccurred())
-
-			bytes, err := yaml.Marshal(policies.GatewayRules)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
-		},
-		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "meshgateways")),
 	)
 
 	type dataplaneTestCase struct {

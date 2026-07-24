@@ -5,12 +5,19 @@
  "creationTime": "0001-01-01T00:00:00Z",
  "modificationTime": "0001-01-01T00:00:00Z",
  "labels": {
+  "kuma.io/display-name": "with-status",
   "kuma.io/env": "universal",
   "kuma.io/mesh": "default",
   "kuma.io/origin": "zone",
   "kuma.io/zone": "default"
  },
  "kri": "kri_msvc_default_default__with-status_",
+ "snis": [
+  {
+   "port": 8082,
+   "sni": "sni.msvc.default.default.with-status.8082"
+  }
+ ],
  "spec": {
   "state": "Unavailable",
   "selector": {

@@ -2,24 +2,27 @@ package builtin
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
-	ca_issuer "github.com/kumahq/kuma/v2/pkg/core/ca/issuer"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_system "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_validators "github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/plugins/ca/builtin/config"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
+	ca_issuer "github.com/kumahq/kuma/v3/pkg/core/ca/issuer"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_validators "github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin/config"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var log = core.Log.WithName("ca").WithName("builtin")
@@ -51,10 +54,15 @@ func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh core_model.R
 			return err
 		}
 
-		if err := b.create(ctx, mesh, backend); err != nil {
+		notAfter, err := b.create(ctx, mesh, backend)
+		if err != nil {
 			return errors.Wrapf(err, "failed to create CA for mesh %q and backend %q", mesh, backend.Name)
 		}
-		log.Info("CA created", "mesh", meshName)
+		kv := []any{"mesh", meshName, "backend", backend.Name}
+		if !notAfter.IsZero() {
+			kv = append(kv, "notAfter", notAfter)
+		}
+		log.Info("CA created", kv...)
 	}
 	return nil
 }
@@ -82,24 +90,24 @@ func (b *builtinCaManager) UsedSecrets(mesh string, backend *mesh_proto.Certific
 	}, nil
 }
 
-func (b *builtinCaManager) create(ctx context.Context, mesh core_model.Resource, backend *mesh_proto.CertificateAuthorityBackend) error {
+func (b *builtinCaManager) create(ctx context.Context, mesh core_model.Resource, backend *mesh_proto.CertificateAuthorityBackend) (time.Time, error) {
 	meshName := mesh.GetMeta().GetName()
 	cfg := &config.BuiltinCertificateAuthorityConfig{}
 	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
-		return errors.Wrap(err, "could not convert backend config to BuiltinCertificateAuthorityConfig")
+		return time.Time{}, errors.Wrap(err, "could not convert backend config to BuiltinCertificateAuthorityConfig")
 	}
 
 	var opts []certOptsFn
 	if cfg.GetCaCert().GetExpiration() != "" {
 		duration, err := core_mesh.ParseDuration(cfg.GetCaCert().GetExpiration())
 		if err != nil {
-			return err
+			return time.Time{}, err
 		}
 		opts = append(opts, withExpirationTime(duration))
 	}
 	keyPair, err := newRootCa(meshName, int(cfg.GetCaCert().GetRSAbits().GetValue()), opts...)
 	if err != nil {
-		return errors.Wrapf(err, "failed to generate a Root CA cert for Mesh %q", meshName)
+		return time.Time{}, errors.Wrapf(err, "failed to generate a Root CA cert for Mesh %q", meshName)
 	}
 
 	certSecret := &core_system.SecretResource{
@@ -109,7 +117,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh core_model.Resource,
 	}
 	if err := b.secretManager.Create(ctx, certSecret, core_store.CreateWithOwner(mesh), core_store.CreateBy(certSecretResKey(meshName, backend.Name))); err != nil {
 		if !core_store.IsAlreadyExists(err) {
-			return err
+			return time.Time{}, err
 		}
 		log.V(1).Info("CA certificate already exists. Nothing to create", "mesh", meshName, "backend", backend.Name)
 	}
@@ -121,11 +129,27 @@ func (b *builtinCaManager) create(ctx context.Context, mesh core_model.Resource,
 	}
 	if err := b.secretManager.Create(ctx, keySecret, core_store.CreateWithOwner(mesh), core_store.CreateBy(keySecretResKey(meshName, backend.Name))); err != nil {
 		if !core_store.IsAlreadyExists(err) {
-			return err
+			return time.Time{}, err
 		}
 		log.V(1).Info("CA secret key already exists. Nothing to create", "mesh", meshName, "backend", backend.Name)
 	}
-	return nil
+
+	persisted, err := b.getCa(ctx, meshName, backend.Name)
+	if err != nil {
+		log.V(1).Info("could not read persisted CA to derive notAfter", "mesh", meshName, "backend", backend.Name, "error", err)
+		return time.Time{}, nil
+	}
+	block, _ := pem.Decode(persisted.CertPEM)
+	if block == nil {
+		log.V(1).Info("could not decode persisted CA cert PEM to read notAfter", "mesh", meshName, "backend", backend.Name)
+		return time.Time{}, nil
+	}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		log.V(1).Info("could not parse persisted CA cert to read notAfter", "mesh", meshName, "backend", backend.Name, "error", err)
+		return time.Time{}, nil
+	}
+	return cert.NotAfter.UTC(), nil
 }
 
 func certSecretResKey(mesh string, backendName string) core_model.ResourceKey {

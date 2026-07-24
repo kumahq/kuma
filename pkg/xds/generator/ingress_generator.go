@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"slices"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/zoneproxy"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/zoneproxy"
 )
 
 type IngressGenerator struct{}
@@ -28,7 +28,10 @@ func (i IngressGenerator) Generate(
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 	cp := xdsCtx.ControlPlane
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
+	// ZoneIngress isn't scoped to a single mesh (xdsCtx.Mesh is empty for zone proxies),
+	// so unlike mesh-scoped generators we can't use unified_naming.Enabled here: it
+	// would always see a nil mesh and report unified naming as disabled.
+	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
 	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
 	zoneIngress := proxy.ZoneIngressProxy.ZoneIngressResource
@@ -40,7 +43,7 @@ func (i IngressGenerator) Generate(
 	statPrefix := getName(inboundContextualID, "")
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
-		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.TLSInspector())
 

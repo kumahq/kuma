@@ -32,6 +32,7 @@ UNIVERSAL_E2E_PKG_LIST ?= ./test/e2e_env/universal
 MULTIZONE_E2E_PKG_LIST ?= ./test/e2e_env/multizone
 GINKGO_E2E_TEST_FLAGS ?=
 GINKGO_E2E_LABEL_FILTERS ?=
+E2E_GOLDEN_FILES_LABEL ?= golden-files-e2e
 
 GINKGO_TEST_E2E = $(GOENV) $(GINKGO_TEST) -v $(GINKGO_E2E_TEST_FLAGS) --label-filter="$(GINKGO_E2E_LABEL_FILTERS)"
 ifdef DEBUG
@@ -65,7 +66,7 @@ endif
 define gen-k8sclusters
 .PHONY: test/e2e/k8s/start/cluster/$1
 test/e2e/k8s/start/cluster/$1:
-	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/start
+	CLUSTER=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/cluster/start/with-retry
 
 .PHONY: test/e2e/k8s/load/images/$1
 test/e2e/k8s/load/images/$1:
@@ -93,7 +94,10 @@ test/e2e/list:
 	@echo $(ALL_TESTS)
 
 .PHONY: test/e2e/k8s/start
-test/e2e/k8s/start: $(K8SCLUSTERS_START_TARGETS)
+test/e2e/k8s/start:
+	$(Q)for cluster in $(K8SCLUSTERS); do \
+		$(MAKE) test/e2e/k8s/start/cluster/$$cluster || exit $$?; \
+	done
 	$(MAKE) $(K8SCLUSTERS_LOAD_IMAGES_TARGETS) # execute after start targets
 
 .PHONY: test/e2e/k8s/stop
@@ -176,4 +180,27 @@ test/e2e-multizone: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run multizone e2e
 	$(MAKE) docker/tag
 	$(MAKE) test/e2e/k8s/start
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
+	$(MAKE) test/e2e/k8s/stop
+
+.PHONY: test/e2e-golden-files
+test/e2e-golden-files: ## Run the e2e specs that own golden files
+	$(MAKE) UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) test/e2e-golden-files-universal
+	$(MAKE) UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) test/e2e-golden-files-multizone
+
+.PHONY: test/e2e-golden-files-universal
+test/e2e-golden-files-universal: $(E2E_DEPS_TARGETS) $(E2E_UNIVERSAL_BIN_DEPS) k8s/docker/network/create ## Run universal e2e golden-file specs
+	$(MAKE) docker/tag/test
+	UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(E2E_ENV_VARS) \
+		$(GOENV) $(GINKGO_TEST) -v $(GINKGO_E2E_TEST_FLAGS) --fail-on-empty \
+		--label-filter="$(call append_label_filter,$(E2E_GOLDEN_FILES_LABEL))" \
+		$(UNIVERSAL_E2E_PKG_LIST)
+
+.PHONY: test/e2e-golden-files-multizone
+test/e2e-golden-files-multizone: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run multizone e2e golden-file specs
+	$(MAKE) docker/tag
+	$(MAKE) test/e2e/k8s/start
+	KUMA_DEFAULT_RETRIES=60 KUMA_DEFAULT_TIMEOUT=6s UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(E2E_ENV_VARS) \
+		$(GOENV) $(GINKGO_TEST) -v $(GINKGO_E2E_TEST_FLAGS) --fail-on-empty \
+		--label-filter="$(call append_label_filter,$(E2E_GOLDEN_FILES_LABEL))" \
+		$(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop

@@ -9,7 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
 )
 
 var statsLogger = core.Log.WithName("stats-callbacks")
@@ -20,6 +20,19 @@ const (
 	userErrorType           = "user"
 	otherErrorType          = "other"
 	noErrorType             = "no_error"
+	// closureWindow is the maximum delay between sending a large xDS
+	// response and observing stream closure that we treat as evidence of
+	// gRPC C-Core receive flow-control window depletion (see
+	// kumahq/kuma#16355). The reported real-world failure cancels the
+	// stream within a few hundred milliseconds; 5s leaves a comfortable
+	// margin without inflating false positives.
+	closureWindow = 5 * time.Second
+	// sizeThreshold is the minimum response size (in bytes) that we
+	// consider "large" for the purposes of suspecting receive-window
+	// depletion. The default gRPC max_receive_message_length is 4 MiB;
+	// 1 MiB triggers the heuristic well below that ceiling so we also
+	// catch configurations near the limit.
+	sizeThreshold = 1 << 20
 )
 
 type VersionExtractor = func(metadata *structpb.Struct) string
@@ -40,17 +53,27 @@ type StatsCallbacks interface {
 	DeltaCallbacks
 }
 
+type lastSend struct {
+	size    int
+	sentAt  time.Time
+	typeURL string
+	nodeID  string
+}
+
 type statsCallbacks struct {
 	NoopCallbacks
-	responsesSentMetric    *prometheus.CounterVec
-	requestsReceivedMetric *prometheus.CounterVec
-	versionsMetric         *prometheus.GaugeVec
-	deliveryMetric         prometheus.Histogram
-	deliveryMetricName     string
-	streamsActive          int
-	configsQueue           map[string]time.Time
-	versionsForStream      map[int64]string
-	versionExtractor       VersionExtractor
+	responsesSentMetric         *prometheus.CounterVec
+	responseBytesMetric         *prometheus.HistogramVec
+	requestsReceivedMetric      *prometheus.CounterVec
+	versionsMetric              *prometheus.GaugeVec
+	likelyWindowDepletionMetric *prometheus.CounterVec
+	deliveryMetric              prometheus.Histogram
+	deliveryMetricName          string
+	streamsActive               int
+	configsQueue                map[string]time.Time
+	versionsForStream           map[int64]string
+	lastSendByStream            map[int64]lastSend
+	versionExtractor            VersionExtractor
 	sync.RWMutex
 }
 
@@ -81,6 +104,7 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string, versionExtr
 	stats := &statsCallbacks{
 		configsQueue:      map[string]time.Time{},
 		versionsForStream: map[int64]string{},
+		lastSendByStream:  map[int64]lastSend{},
 		versionExtractor:  versionExtractor,
 	}
 
@@ -89,6 +113,15 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string, versionExtr
 		Help: "Number of responses sent by the server to a client",
 	}, []string{"type_url"})
 	if err := metrics.Register(stats.responsesSentMetric); err != nil {
+		return nil, err
+	}
+
+	stats.responseBytesMetric = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    dsType + "_responses_sent_bytes",
+		Help:    "Size in bytes of DiscoveryResponse messages sent by the server",
+		Buckets: prometheus.ExponentialBuckets(1024, 2, 16),
+	}, []string{"type_url"})
+	if err := metrics.Register(stats.responseBytesMetric); err != nil {
 		return nil, err
 	}
 
@@ -129,6 +162,14 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string, versionExtr
 		return nil, err
 	}
 
+	stats.likelyWindowDepletionMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: dsType + "_stream_likely_window_depletion_total",
+		Help: "xDS streams that closed within 5s of sending a >=1 MiB response - likely gRPC C-Core receive flow-control window depletion (kumahq/kuma#16355).",
+	}, []string{"type_url"})
+	if err := metrics.Register(stats.likelyWindowDepletionMetric); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
@@ -141,11 +182,21 @@ func (s *statsCallbacks) OnStreamOpen(context.Context, int64, string) error {
 
 func (s *statsCallbacks) OnStreamClosed(streamID int64) {
 	s.Lock()
-	defer s.Unlock()
 	s.streamsActive--
+	var last lastSend
+	var hasLast bool
 	if ver, ok := s.versionsForStream[streamID]; ok {
 		s.versionsMetric.WithLabelValues(ver).Dec()
 		delete(s.versionsForStream, streamID)
+	}
+	if lastSend, ok := s.lastSendByStream[streamID]; ok {
+		delete(s.lastSendByStream, streamID)
+		last = lastSend
+		hasLast = true
+	}
+	s.Unlock()
+	if hasLast {
+		s.maybeReportWindowDepletion(last)
 	}
 }
 
@@ -160,7 +211,11 @@ func (s *statsCallbacks) OnStreamRequest(_ int64, request DiscoveryRequest) erro
 		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK", noErrorType).Inc()
 	}
 
-	if configTime, exists := s.takeConfigTimeFromQueue(request.VersionInfo()); exists {
+	// SotW content hashes are not seeded per node, so two nodes serving
+	// identical resources for a type can share a version string. Key the
+	// queue by nodeID+version to avoid one node's ACK consuming another's
+	// in-flight entry.
+	if configTime, exists := s.takeConfigTimeFromQueue(request.NodeId() + request.VersionInfo()); exists {
 		s.deliveryMetric.Observe(float64(core.Now().Sub(configTime).Milliseconds()))
 	}
 	return nil
@@ -184,7 +239,10 @@ func (s *statsCallbacks) OnStreamResponse(streamID int64, request DiscoveryReque
 		s.Unlock()
 	}
 
+	size := response.ByteSize()
 	s.responsesSentMetric.WithLabelValues(response.GetTypeUrl()).Inc()
+	s.responseBytesMetric.WithLabelValues(response.GetTypeUrl()).Observe(float64(size))
+	s.recordLastSend(streamID, size, response.GetTypeUrl(), request.NodeId())
 }
 
 func (s *statsCallbacks) OnDeltaStreamOpen(context.Context, int64, string) error {
@@ -196,11 +254,21 @@ func (s *statsCallbacks) OnDeltaStreamOpen(context.Context, int64, string) error
 
 func (s *statsCallbacks) OnDeltaStreamClosed(streamID int64) {
 	s.Lock()
-	defer s.Unlock()
 	s.streamsActive--
+	var last lastSend
+	var hasLast bool
 	if ver, ok := s.versionsForStream[streamID]; ok {
 		s.versionsMetric.WithLabelValues(ver).Dec()
 		delete(s.versionsForStream, streamID)
+	}
+	if lastSend, ok := s.lastSendByStream[streamID]; ok {
+		delete(s.lastSendByStream, streamID)
+		last = lastSend
+		hasLast = true
+	}
+	s.Unlock()
+	if hasLast {
+		s.maybeReportWindowDepletion(last)
 	}
 }
 
@@ -232,7 +300,41 @@ func (s *statsCallbacks) OnStreamDeltaResponse(streamID int64, request DeltaDisc
 		s.Unlock()
 	}
 
+	size := response.ByteSize()
 	s.responsesSentMetric.WithLabelValues(response.GetTypeUrl()).Inc()
+	s.responseBytesMetric.WithLabelValues(response.GetTypeUrl()).Observe(float64(size))
+	s.recordLastSend(streamID, size, response.GetTypeUrl(), request.NodeId())
+}
+
+func (s *statsCallbacks) recordLastSend(streamID int64, size int, typeURL, nodeID string) {
+	s.Lock()
+	defer s.Unlock()
+	s.lastSendByStream[streamID] = lastSend{
+		size:    size,
+		sentAt:  core.Now(),
+		typeURL: typeURL,
+		nodeID:  nodeID,
+	}
+}
+
+// maybeReportWindowDepletion emits the warning log and increments the
+// counter when the most recent send on a now-closed stream matches the
+// receive-window-depletion signature: a large response immediately
+// followed by stream closure. See kumahq/kuma#16355.
+func (s *statsCallbacks) maybeReportWindowDepletion(last lastSend) {
+	elapsed := core.Now().Sub(last.sentAt)
+	if elapsed >= closureWindow || last.size < sizeThreshold {
+		return
+	}
+	s.likelyWindowDepletionMetric.WithLabelValues(last.typeURL).Inc()
+	statsLogger.Info(
+		"xds stream closed within window of sending a large response; likely caller-side gRPC receive-window depletion. "+
+			"If using google_grpc xDS transport, raise KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES.",
+		"dataplane", last.nodeID,
+		"elapsed", elapsed,
+		"bytes", last.size,
+		"typeURL", last.typeURL,
+	)
 }
 
 func classifyError(err string) string {

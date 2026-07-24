@@ -5,6 +5,12 @@ metadata:
   name: {{ include "kuma.name" . }}-egress
   namespace: {{ .Release.Namespace }}
   labels: {{ include "kuma.egressLabels" . | nindent 4 }}
+  {{- with .Values.egress.deploymentAnnotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
 spec:
   strategy:
     rollingUpdate:
@@ -75,12 +81,6 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
             - name: KUMA_DATAPLANE_PROXY_TYPE
               value: "egress"
-{{- if .Values.experimental.envoyAdminUnixSocket }}
-            - name: KUMA_READINESS_UNIX_SOCKET_DISABLED
-              value: "true"
-            - name: KUMA_READINESS_PORT
-              value: "9902"
-{{- end }}
           args:
             - run
             - --log-level={{ .Values.egress.logLevel | default "info" }}
@@ -91,24 +91,39 @@ spec:
 {{- else }}
             - containerPort: 9901
 {{- end }}
+          {{- if .Values.egress.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
               path: "/ready"
               port: {{ if .Values.experimental.envoyAdminUnixSocket }}9902{{ else }}9901{{ end }}
-            failureThreshold: 12
-            initialDelaySeconds: 60
-            periodSeconds: 5
-            successThreshold: 1
-            timeoutSeconds: 3
+            failureThreshold: {{ .Values.egress.livenessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.egress.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.egress.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.egress.livenessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.egress.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.egress.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
               path: "/ready"
               port: {{ if .Values.experimental.envoyAdminUnixSocket }}9902{{ else }}9901{{ end }}
-            failureThreshold: 12
-            initialDelaySeconds: 1
-            periodSeconds: 5
-            successThreshold: 1
-            timeoutSeconds: 3
+            failureThreshold: {{ .Values.egress.readinessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.egress.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.egress.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.egress.readinessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.egress.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.egress.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: "/ready"
+              port: {{ if .Values.experimental.envoyAdminUnixSocket }}9902{{ else }}9901{{ end }}
+            failureThreshold: {{ .Values.egress.startupProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.egress.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.egress.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.egress.startupProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.egress.startupProbe.timeoutSeconds }}
+          {{- end }}
           resources: {{ toYaml .Values.egress.resources | nindent 12 }}
           volumeMounts:
 {{- if not .Values.egress.automountServiceAccountToken }}

@@ -3,11 +3,11 @@ package bootstrap
 import (
 	"time"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
 type KumaDpBootstrap struct {
@@ -16,8 +16,7 @@ type KumaDpBootstrap struct {
 }
 
 type NetworkingConfig struct {
-	CorefileTemplate []byte
-	Address          string
+	Address string
 }
 
 type AggregateMetricsConfig struct {
@@ -70,29 +69,29 @@ type configParameters struct {
 	// data planes during upgrades.
 	//
 	// Context: https://github.com/kumahq/kuma/issues/13885
-	AppProbeProxyEnabled bool
-	AdminAccessLogPath   string
-	XdsHost              string
-	XdsPort              uint32
-	XdsConnectTimeout    time.Duration
-	Workdir              string
-	MetricsCertPath      string
-	MetricsKeyPath       string
-	DataplaneToken       string
-	DataplaneTokenPath   string
-	DataplaneResource    string
-	CertBytes            []byte
-	Version              *mesh_proto.Version
-	HdsEnabled           bool
-	DynamicMetadata      map[string]string
-	DNSPort              uint32
-	ProxyType            string
-	Features             xds_types.Features
-	IsGatewayDataplane   bool
-	Resources            types.ProxyResources
-	SystemCaPath         string
-	TransparentProxy     *tproxy_config.DataplaneConfig
-	IPv6Enabled          bool
-	SpireSocketPath      string
-	OtelEnvInventory     *core_xds.OtelBootstrapInventory
+	AppProbeProxyEnabled          bool
+	AdminAccessLogPath            string
+	XdsHost                       string
+	XdsPort                       uint32
+	XdsConnectTimeout             time.Duration
+	XdsGrpcMaxReceiveMessageBytes uint32
+	Workdir                       string
+	MetricsCertPath               string
+	MetricsKeyPath                string
+	DataplaneToken                string
+	DataplaneTokenPath            string
+	DataplaneResource             string
+	CertBytes                     []byte
+	Version                       *mesh_proto.Version
+	HdsEnabled                    bool
+	DynamicMetadata               map[string]string
+	DNSPort                       uint32
+	ProxyType                     string
+	Features                      xds_types.Features
+	Resources                     types.ProxyResources
+	SystemCaPath                  string
+	TransparentProxy              *tproxy_config.DataplaneConfig
+	IPv6Enabled                   bool
+	SpireSocketPath               string
+	OtelEnvInventory              *core_xds.OtelBootstrapInventory
 }

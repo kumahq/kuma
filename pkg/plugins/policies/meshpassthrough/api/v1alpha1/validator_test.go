@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
 
 var _ = Describe("MeshPassthrough", func() {

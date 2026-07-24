@@ -9,7 +9,7 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
 
-option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
 
 // Dataplane defines a configuration of a side-car proxy.
 message Dataplane {
@@ -22,6 +22,7 @@ message Dataplane {
   option (kuma.mesh.resource).scope_namespace = true;
   option (kuma.mesh.resource).has_insights = true;
   option (kuma.mesh.resource).is_proxy = true;
+  option (kuma.mesh.resource).policy_matching_exempt = true;
   option (kuma.mesh.resource).additional_printer_columns =
     "description=\"Service tag of the first "
     "inbound\",JSONPath=`.spec.networking.inbound[0].tags[\'kuma\\.io/"

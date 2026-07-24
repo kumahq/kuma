@@ -11,10 +11,10 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
 type denyingValidator struct{}
@@ -29,7 +29,7 @@ func (d *denyingValidator) Handle(context.Context, kube_admission.Request) kube_
 }
 
 func (d *denyingValidator) Supports(req kube_admission.Request) bool {
-	gvk := mesh_k8s.GroupVersion.WithKind("TrafficRoute")
+	gvk := mesh_k8s.GroupVersion.WithKind("Mesh")
 	return req.Kind.Group == gvk.Group && req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version
 }
 
@@ -47,15 +47,15 @@ var _ = Describe("Composite Validator", func() {
 		handler = composite.IntoWebhook(scheme)
 
 		kubeTypes = k8s_registry.NewTypeRegistry()
-		err := kubeTypes.RegisterObjectType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRoute{
+		err := kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{
 			TypeMeta: kube_meta.TypeMeta{
 				APIVersion: mesh_k8s.GroupVersion.String(),
-				Kind:       "TrafficRoute",
+				Kind:       "Mesh",
 			},
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		err = kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{})
+		err = kubeTypes.RegisterObjectType(&mesh_proto.Dataplane{}, &mesh_k8s.Dataplane{})
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -64,23 +64,16 @@ var _ = Describe("Composite Validator", func() {
 		yaml := `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "TrafficRoute",
-			  "mesh": "demo",
+			  "kind": "Mesh",
 			  "metadata": {
-				"namespace": "example",
 				"name": "empty",
 				"creationTimestamp": null
 			  },
 			  "spec": {
-				"conf": {
-				  "destination": {
-				    "path": "/random"
-				  }
-				}
 			  }
 			}
 			`
-		obj, err := kubeTypes.NewObject(&mesh_proto.TrafficRoute{})
+		obj, err := kubeTypes.NewObject(&mesh_proto.Mesh{})
 		Expect(err).ToNot(HaveOccurred())
 
 		req := kube_admission.Request{
@@ -109,7 +102,7 @@ var _ = Describe("Composite Validator", func() {
 		yaml := `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "Mesh",
+			  "kind": "Dataplane",
 			  "metadata": {
 				"name": "empty",
 				"creationTimestamp": null
@@ -118,7 +111,7 @@ var _ = Describe("Composite Validator", func() {
 			  }
 			}
 			`
-		obj, err := kubeTypes.NewObject(&mesh_proto.Mesh{})
+		obj, err := kubeTypes.NewObject(&mesh_proto.Dataplane{})
 		Expect(err).ToNot(HaveOccurred())
 
 		req := kube_admission.Request{

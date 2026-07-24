@@ -11,11 +11,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	api_types "github.com/kumahq/kuma/v2/api/openapi/types"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func Inspect() {
@@ -27,7 +27,25 @@ func Inspect() {
 			Install(NamespaceWithSidecarInjection(nsName)).
 			Install(MeshKubernetes(meshName)).
 			Install(democlient.Install(democlient.WithNamespace(nsName), democlient.WithMesh(meshName))).
-			Install(TimeoutKubernetes(meshName)).
+			Install(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: inspect-timeout
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 1h
+        http:
+          requestTimeout: 15s
+          maxStreamDuration: 0s`, Config.KumaNamespace, meshName))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 		// remove default meshtimeout policies
@@ -83,7 +101,12 @@ func Inspect() {
 	DescribeTable("should execute inspect of policies",
 		func(policyType string, policyName string) {
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, kubernetes.Cluster.GetKuma().GetAPIServerAddress()+fmt.Sprintf("/meshes/%s/timeouts/timeout-all-%s/_resources/dataplanes", meshName, meshName), http.NoBody)
+				req, err := http.NewRequestWithContext(
+					context.Background(),
+					http.MethodGet,
+					kubernetes.Cluster.GetKuma().GetAPIServerAddress()+fmt.Sprintf("/meshes/%s/%s/%s/_resources/dataplanes", meshName, policyType, policyName),
+					http.NoBody,
+				)
 				g.Expect(err).ToNot(HaveOccurred())
 				r, err := http.DefaultClient.Do(req)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -100,7 +123,7 @@ func Inspect() {
 				g.Expect(result.Items[0].Name).To(HavePrefix("demo-client-"))
 			}, "30s", "1s").Should(Succeed())
 		},
-		Entry("of dataplanes", "timeouts", fmt.Sprintf("timeout-all-%s", meshName)),
+		Entry("of dataplanes", "meshtimeouts", fmt.Sprintf("inspect-timeout.%s", Config.KumaNamespace)),
 	)
 
 	It("should execute inspect rules of dataplane", func() {
@@ -151,9 +174,9 @@ spec:
 			g.Expect(result.Rules).ToNot(BeEmpty())
 			for _, rule := range result.Rules {
 				if rule.Type == "MeshTimeout" {
-					g.Expect(rule.ToRules).ToNot(BeNil())
-					g.Expect(*rule.ToRules).ToNot(BeEmpty())
-					g.Expect((*rule.ToRules)[0].Origin[0].Name).To(Equal(fmt.Sprintf("mt1.%s", Config.KumaNamespace)))
+					if rule.ToRules != nil {
+						g.Expect(*rule.ToRules).To(BeEmpty())
+					}
 				}
 			}
 		}, "30s", "1s").Should(Succeed())

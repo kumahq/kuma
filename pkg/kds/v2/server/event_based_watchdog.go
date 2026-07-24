@@ -10,12 +10,12 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/go-logr/logr"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	"github.com/kumahq/kuma/v2/pkg/kds/v2/reconcile"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 type EventBasedWatchdog struct {
@@ -26,7 +26,7 @@ type EventBasedWatchdog struct {
 	Metrics             *Metrics
 	Log                 logr.Logger
 	NewFlushTicker      func() *time.Ticker
-	NewFullResyncTicker func() *time.Ticker
+	NewFullResyncTicker func() (*time.Ticker, context.CancelFunc)
 }
 
 func (e *EventBasedWatchdog) Start(ctx context.Context) {
@@ -43,7 +43,8 @@ func (e *EventBasedWatchdog) Start(ctx context.Context) {
 	})
 	flushTicker := e.NewFlushTicker()
 	defer flushTicker.Stop()
-	fullResyncTicker := e.NewFullResyncTicker()
+	fullResyncTicker, cancelFullResyncTicker := e.NewFullResyncTicker()
+	defer cancelFullResyncTicker()
 	defer fullResyncTicker.Stop()
 
 	// for the first reconcile assign all types

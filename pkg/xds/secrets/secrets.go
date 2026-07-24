@@ -14,13 +14,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/metrics"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
 )
 
 var log = core.Log.WithName("xds").WithName("secrets")
@@ -69,7 +71,7 @@ func (c *Info) ExpiringSoon() bool {
 	return core.Now().After(c.Generation.Add(c.CertLifetime() / 5 * 4))
 }
 
-func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metrics metrics.Metrics) (Secrets, error) {
+func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metrics metrics.Metrics, limiter issuer.Limiter) (Secrets, error) {
 	certGenerationsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Help: "Number of generated certificates",
 		Name: "cert_generation",
@@ -78,11 +80,21 @@ func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metric
 		return nil, err
 	}
 
+	certGenerationFailuresMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Help: "Number of failed certificate generations",
+		Name: "cert_generation_failure",
+	}, []string{"mesh"})
+	if err := metrics.Register(certGenerationFailuresMetric); err != nil {
+		return nil, err
+	}
+
 	return &secrets{
-		caProvider:            caProvider,
-		identityProvider:      identityProvider,
-		cachedCerts:           map[certCacheKey]*certs{},
-		certGenerationsMetric: certGenerationsMetric,
+		caProvider:                   caProvider,
+		identityProvider:             identityProvider,
+		limiter:                      limiter,
+		cachedCerts:                  map[certCacheKey]*certs{},
+		certGenerationsMetric:        certGenerationsMetric,
+		certGenerationFailuresMetric: certGenerationFailuresMetric,
 	}, nil
 }
 
@@ -94,10 +106,16 @@ type certCacheKey struct {
 type secrets struct {
 	caProvider       CaProvider
 	identityProvider IdentityProvider
+	// limiter throttles issuance: per-proxy backoff plus a per-backend circuit
+	// breaker. Its state is in-memory only, so a kuma-cp restart or a DP
+	// reconnecting to a different replica resets it - a known trade-off tracked
+	// in https://github.com/kumahq/kuma/issues/17473.
+	limiter issuer.Limiter
 
 	sync.RWMutex
-	cachedCerts           map[certCacheKey]*certs
-	certGenerationsMetric *prometheus.CounterVec
+	cachedCerts                  map[certCacheKey]*certs
+	certGenerationsMetric        *prometheus.CounterVec
+	certGenerationFailuresMetric *prometheus.CounterVec
 }
 
 var _ Secrets = &secrets{}
@@ -183,6 +201,10 @@ func (s *secrets) get(
 
 	resourceKey := model.MetaToResourceKey(resource.GetMeta())
 	resourceKey.Mesh = meshName
+	key := certCacheKey{
+		resource:  resourceKey,
+		proxyType: proxyType,
+	}
 	certs := s.certs(proxyType, resourceKey)
 
 	if updateKinds, debugReason := s.shouldGenerateCerts(
@@ -191,45 +213,72 @@ func (s *secrets) get(
 		mesh,
 		otherMeshes,
 	); len(updateKinds) > 0 {
+		backend := issuerKRI(mesh)
+		source := resourceKey
+
+		// A previous generation failed and we're within a backoff (or the
+		// backend circuit is open) - return an error without calling the CA. We
+		// must NOT serve stale certs here: a nil error lets the watchdog advance
+		// its hash (dataplane_watchdog.go) and skip subsequent ticks, so the
+		// backoff would never elapse. Returning the error keeps the hash stale
+		// so ticks keep re-checking (cheaply, without hitting the CA).
+		if ok, retryAfter := s.limiter.Allow(backend, source); !ok {
+			return nil, nil, MeshCa{}, errors.Errorf("backing off certificate generation for mesh %q backend %q after a previous failure (retry after %s)", meshName, backend.SectionName, retryAfter)
+		}
+
 		log.Info(
 			"generating certificate",
 			string(resource.Descriptor().Name), resourceKey, "reason", debugReason,
 		)
 
-		certs, err := s.generateCerts(ctx, tags, mesh, otherMeshes, certs, updateKinds)
+		newCerts, err := s.generateCerts(ctx, tags, mesh, otherMeshes, certs, updateKinds)
+		s.limiter.Record(backend, source, err == nil)
 		if err != nil {
+			s.certGenerationFailuresMetric.WithLabelValues(meshName).Inc()
+			// Debug level: the raw CA backend error can carry sensitive detail
+			// (credentials, IAM denials). The failure is surfaced by the
+			// cert_generation_failure / cert_generation_backoff / _circuit_open
+			// metrics and the returned error.
+			log.V(1).Info(
+				"could not generate certificate, backing off before retrying",
+				string(resource.Descriptor().Name), resourceKey, "error", err,
+			)
 			return nil, nil, MeshCa{}, errors.Wrap(err, "could not generate certificates")
 		}
 
-		key := certCacheKey{
-			resource:  resourceKey,
-			proxyType: proxyType,
-		}
 		s.Lock()
-		s.cachedCerts[key] = certs
+		s.cachedCerts[key] = newCerts
 		s.Unlock()
 
-		caMap := map[string]*core_xds.CaSecret{
-			meshName: certs.ownCa.CaSecret,
-		}
-		for _, otherCa := range certs.otherCas {
-			caMap[otherCa.Mesh] = otherCa.CaSecret
-		}
-		return certs.identity, caMap, certs.allInOneCa, nil
+		return newCerts.identity, caMap(newCerts, meshName), newCerts.allInOneCa, nil
 	}
 
 	if certs == nil { // previous "if" should guarantee that the certs are always there
 		return nil, nil, MeshCa{}, errors.New("certificates were not generated")
 	}
 
-	caMap := map[string]*core_xds.CaSecret{
+	return certs.identity, caMap(certs, meshName), certs.allInOneCa, nil
+}
+
+func caMap(certs *certs, meshName string) map[string]*core_xds.CaSecret {
+	result := map[string]*core_xds.CaSecret{
 		meshName: certs.ownCa.CaSecret,
 	}
 	for _, otherCa := range certs.otherCas {
-		caMap[otherCa.Mesh] = otherCa.CaSecret
+		result[otherCa.Mesh] = otherCa.CaSecret
 	}
+	return result
+}
 
-	return certs.identity, caMap, certs.allInOneCa, nil
+// issuerKRI identifies the CA backend issuing a mesh's dataplane certs, used as
+// the circuit-breaker key. A CA backend is a section of the Mesh resource, so
+// it's the Mesh KRI with the enabled backend name as the section name.
+func issuerKRI(mesh *core_mesh.MeshResource) kri.Identifier {
+	id := kri.From(mesh)
+	if backend := mesh.GetEnabledCertificateAuthorityBackend(); backend != nil {
+		id = kri.WithSectionName(id, backend.GetName())
+	}
+	return id
 }
 
 func (s *secrets) Cleanup(proxyType mesh_proto.ProxyType, dpKey model.ResourceKey) {
@@ -240,6 +289,9 @@ func (s *secrets) Cleanup(proxyType mesh_proto.ProxyType, dpKey model.ResourceKe
 	s.Lock()
 	delete(s.cachedCerts, key)
 	s.Unlock()
+	// Drop the proxy's issuance backoff state too. The limiter is shared, so
+	// this also clears any MeshIdentity backoff for the same proxy.
+	s.limiter.Forget(dpKey)
 }
 
 func (s *secrets) shouldGenerateCerts(info *Info, tags mesh_proto.MultiValueTagSet, ownMesh *core_mesh.MeshResource, otherMeshInfos []*core_mesh.MeshResource) (UpdateKinds, string) {

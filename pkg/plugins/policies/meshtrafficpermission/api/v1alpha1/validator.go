@@ -1,11 +1,11 @@
 package v1alpha1
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (r *MeshTrafficPermissionResource) validate() error {
@@ -30,9 +30,6 @@ func (r *MeshTrafficPermissionResource) validateTop(targetRef *common_api.Target
 	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
-			common_api.MeshSubset,
-			common_api.MeshService,
-			common_api.MeshServiceSubset,
 			common_api.Dataplane,
 		},
 		IsInboundPolicy: isInboundPolicy,
@@ -70,9 +67,7 @@ func validateFrom(from []From) validators.ValidationError {
 		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
 				common_api.MeshService,
-				common_api.MeshServiceSubset,
 			},
 		}))
 

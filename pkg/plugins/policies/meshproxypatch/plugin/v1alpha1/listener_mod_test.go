@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("Listener modifications", func() {
@@ -178,6 +178,30 @@ var _ = Describe("Listener modifications", func() {
                 name: inbound:192.168.0.1:8081
                 trafficDirection: INBOUND`,
 		}),
+		Entry("should remove listener by legacy name against a unified-naming listener", testCase{
+			listeners: []string{
+				`
+                name: self_transparentproxy_passthrough_outbound_ipv4
+                trafficDirection: OUTBOUND`,
+				`
+                name: inbound:192.168.0.1:8081
+                trafficDirection: INBOUND`,
+			},
+			modifications: []string{
+				`
+                listener:
+                   operation: Remove
+                   match:
+                     name: outbound:passthrough:ipv4`,
+			},
+			expected: `
+            resources:
+            - name: inbound:192.168.0.1:8081
+              resource:
+                '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                name: inbound:192.168.0.1:8081
+                trafficDirection: INBOUND`,
+		}),
 		Entry("should remove all inbound listeners", testCase{
 			listeners: []string{
 				`
@@ -268,9 +292,9 @@ var _ = Describe("Listener modifications", func() {
                   socketAddress:
                     address: 192.168.0.1
                     portValue: 8080
-                enableReusePort: false
                 name: inbound:192.168.0.1:8080
                 tcpFastOpenQueueLength: 88
+                enableReusePort: false
                 trafficDirection: INBOUND
             `,
 		}),

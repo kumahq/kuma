@@ -2,8 +2,6 @@
 package v1alpha1_test
 
 import (
-	"context"
-	"fmt"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -11,39 +9,33 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhealthcheck/plugin/v1alpha1"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	meshtcproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	meshtcproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	test_matchers "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_policies "github.com/kumahq/kuma/v2/pkg/test/policies"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
-	xds_samples "github.com/kumahq/kuma/v2/pkg/test/xds/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/plugin/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	test_matchers "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/v3/pkg/test/xds/samples"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshHealthCheck", func() {
@@ -272,476 +264,87 @@ var _ = Describe("MeshHealthCheck", func() {
 		}),
 	)
 
-	type gatewayTestCase struct {
-		name           string
-		gatewayRoutes  []*core_mesh.MeshGatewayRouteResource
-		meshhttproutes core_rules.GatewayRules
-		meshtcproutes  core_rules.GatewayRules
-		meshservices   []*meshservice_api.MeshServiceResource
-		rules          core_rules.GatewayRules
+	type zoneProxyTestCase struct {
+		resources       []*core_xds.Resource
+		toRules         core_rules.ToRules
+		expectedCluster string
 	}
-	DescribeTable("should generate proper Envoy config for MeshGateways",
-		func(given gatewayTestCase) {
-			Expect(given.name).ToNot(BeEmpty())
-			resources := xds_context.NewResources()
 
-			gateway := &core_mesh.MeshGatewayResource{
-				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
-				Spec: &mesh_proto.MeshGateway{
-					Selectors: []*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								mesh_proto.ServiceTag: "sample-gateway",
-							},
-						},
-					},
-					Conf: &mesh_proto.MeshGateway_Conf{
-						Listeners: []*mesh_proto.MeshGateway_Listener{
-							{
-								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
-								Port:     8080,
-								Tags: map[string]string{
-									"protocol": "http",
-								},
-							},
-							{
-								Protocol: mesh_proto.MeshGateway_Listener_TCP,
-								Port:     8081,
-								Tags: map[string]string{
-									"protocol": "tcp",
-								},
-							},
-						},
-					},
-				},
+	mesMHCKRI := kri.Identifier{
+		ResourceType: meshexternalservice_api.MeshExternalServiceType,
+		Mesh:         "default",
+		Name:         "example",
+		SectionName:  "9000",
+	}
+
+	DescribeTable("should generate proper Envoy config for mesh-scoped zone proxy",
+		func(given zoneProxyTestCase) {
+			resourceSet := core_xds.NewResourceSet()
+			for _, r := range given.resources {
+				resourceSet.Add(r)
 			}
-			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
-				Items: []*core_mesh.MeshGatewayResource{gateway},
-			}
-			if len(given.gatewayRoutes) > 0 {
-				resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-					Items: given.gatewayRoutes,
-				}
-			}
-			if len(given.meshservices) > 0 {
-				resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
-					Items: given.meshservices,
-				}
-			}
+
+			mes := builders.MeshExternalService().Build()
 
 			xdsCtx := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
-				WithResources(resources).
-				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+				WithMeshLocalResources([]core_model.Resource{mes}).
 				Build()
+
 			proxy := xds_builders.Proxy().
-				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().
-					WithGatewayPolicy(api.MeshHealthCheckType, given.rules).
-					WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes).
-					WithGatewayPolicy(meshtcproute_api.MeshTCPRouteType, given.meshtcproutes)).
+				With(func(p *core_xds.Proxy) {
+					p.Dataplane = &core_mesh.DataplaneResource{
+						Meta: &test_model.ResourceMeta{Name: "zone-proxy", Mesh: "default"},
+						Spec: &mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "10.0.0.1",
+								Listeners: []*mesh_proto.Dataplane_Networking_Listener{{
+									Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+									Address: "10.0.0.1",
+									Port:    10002,
+									Name:    "ze-port",
+									State:   mesh_proto.Dataplane_Networking_Listener_Ready,
+								}},
+							},
+						},
+					}
+				}).
+				WithPolicies(
+					xds_builders.MatchedPolicies().WithToPolicy(api.MeshHealthCheckType, given.toRules),
+				).
 				Build()
-			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
-			}
-			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
-			Expect(err).NotTo(HaveOccurred())
 
-			httpRoutePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(p.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
 
-			tcpRoutePlugin := meshtcproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(tcpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			// when
-			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			getResourcesYaml := func(list core_xds.ResourceList) []byte {
-				resources, err := list.ToDeltaDiscoveryResponse()
-				Expect(err).ToNot(HaveOccurred())
-				actual, err := util_proto.ToYAML(resources)
-				Expect(err).ToNot(HaveOccurred())
-
-				return actual
-			}
-
-			// then
-			Expect(getResourcesYaml(generatedResources.ListOf(envoy_resource.ClusterType))).
-				To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
+			Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[0].Resource)).
+				To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", given.expectedCluster)))
 		},
-		Entry("basic outbound cluster with HTTP health check", gatewayTestCase{
-			name:          "basic",
-			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{},
-								Conf: api.Conf{
-									Interval:                     test.ParseDuration("10s"),
-									Timeout:                      test.ParseDuration("2s"),
-									UnhealthyThreshold:           pointer.To[int32](3),
-									HealthyThreshold:             pointer.To[int32](1),
-									InitialJitter:                test.ParseDuration("13s"),
-									IntervalJitter:               test.ParseDuration("15s"),
-									IntervalJitterPercent:        pointer.To[int32](10),
-									HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
-									FailTrafficOnPanic:           pointer.To(true),
-									EventLogPath:                 pointer.To("/tmp/log.txt"),
-									AlwaysLogHealthCheckFailures: pointer.To(false),
-									NoTrafficInterval:            test.ParseDuration("16s"),
-									Http: &api.HttpHealthCheck{
-										Disabled: pointer.To(false),
-										Path:     pointer.To("/health"),
-										RequestHeadersToAdd: &api.HeaderModifier{
-											Add: &[]api.HeaderKeyValue{
-												{
-													Name:  "x-some-header",
-													Value: "value",
-												},
-											},
-											Set: &[]api.HeaderKeyValue{
-												{
-													Name:  "x-some-other-header",
-													Value: "value",
-												},
-											},
-										},
-										ExpectedStatuses: &[]int32{200, 201},
-									},
-									ReuseConnection: pointer.To(true),
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-		Entry("HTTP HealthCheck to real MeshService", gatewayTestCase{
-			name: "real-mesh-service-meshhttproute",
-			meshservices: []*meshservice_api.MeshServiceResource{
-				{
-					Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
-					Spec: &meshservice_api.MeshService{
-						Selector: meshservice_api.Selector{},
-						Ports: []meshservice_api.Port{{
-							Port:        80,
-							TargetPort:  pointer.To(intstr.FromInt(8084)),
-							AppProtocol: core_meta.ProtocolHTTP,
-						}},
-						Identities: &[]meshservice_api.MeshServiceIdentity{
-							{
-								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-								Value: "backend",
+		Entry("MeshExternalService cluster with TCP health check on zone proxy", zoneProxyTestCase{
+			resources: []*core_xds.Resource{{
+				Name:   mesMHCKRI.String(),
+				Origin: metadata.OriginEgress,
+				Resource: clusters.NewClusterBuilder(envoy_common.APIV3, mesMHCKRI.String()).
+					MustBuild(),
+				ResourceOrigin: mesMHCKRI,
+				Protocol:       core_meta.ProtocolTCP,
+			}},
+			toRules: core_rules.ToRules{
+				ResourceRules: outbound.ResourceRules{
+					mesMHCKRI: {
+						Conf: []any{api.Conf{
+							Interval:           test.ParseDuration("10s"),
+							Timeout:            test.ParseDuration("2s"),
+							UnhealthyThreshold: pointer.To[int32](3),
+							HealthyThreshold:   pointer.To[int32](1),
+							Tcp: &api.TcpHealthCheck{
+								Disabled: pointer.To(false),
 							},
-							{
-								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-								Value: "other-backend",
-							},
-						},
-					},
-					Status: &meshservice_api.MeshServiceStatus{
-						VIPs: []meshservice_api.VIP{{
-							IP: "10.0.0.1",
 						}},
 					},
 				},
 			},
-			meshhttproutes: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{
-								test_policies.NewRule(subsetutils.MeshSubset(), meshhttproute_api.PolicyDefault{
-									Rules: []meshhttproute_api.Rule{{
-										Matches: []meshhttproute_api.Match{{
-											Path: &meshhttproute_api.PathMatch{
-												Type:  meshhttproute_api.Exact,
-												Value: "/",
-											},
-										}},
-										Default: meshhttproute_api.RuleConf{
-											BackendRefs: &[]common_api.BackendRef{{
-												TargetRef: builders.TargetRefService("backend"),
-												Port:      pointer.To(uint32(80)),
-												Weight:    pointer.To(uint(100)),
-											}},
-										},
-									}},
-								}),
-							},
-						},
-					},
-				},
-			},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{},
-								Conf: api.Conf{
-									Interval:                     test.ParseDuration("10s"),
-									Timeout:                      test.ParseDuration("2s"),
-									UnhealthyThreshold:           pointer.To[int32](3),
-									HealthyThreshold:             pointer.To[int32](1),
-									InitialJitter:                test.ParseDuration("13s"),
-									IntervalJitter:               test.ParseDuration("15s"),
-									IntervalJitterPercent:        pointer.To[int32](10),
-									HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
-									FailTrafficOnPanic:           pointer.To(true),
-									EventLogPath:                 pointer.To("/tmp/log.txt"),
-									AlwaysLogHealthCheckFailures: pointer.To(false),
-									NoTrafficInterval:            test.ParseDuration("16s"),
-									Http: &api.HttpHealthCheck{
-										Disabled: pointer.To(false),
-										Path:     pointer.To("/health"),
-										RequestHeadersToAdd: &api.HeaderModifier{
-											Add: &[]api.HeaderKeyValue{
-												{
-													Name:  "x-some-header",
-													Value: "value",
-												},
-											},
-											Set: &[]api.HeaderKeyValue{
-												{
-													Name:  "x-some-other-header",
-													Value: "value",
-												},
-											},
-										},
-										ExpectedStatuses: &[]int32{200, 201},
-									},
-									ReuseConnection: pointer.To(true),
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-		Entry("real MeshService targeted HTTP HealthCheck to real MeshService", gatewayTestCase{
-			name: "real-mesh-service-target-real-mesh-service-meshhttproute",
-			meshservices: []*meshservice_api.MeshServiceResource{
-				{
-					Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
-					Spec: &meshservice_api.MeshService{
-						Selector: meshservice_api.Selector{},
-						Ports: []meshservice_api.Port{{
-							Port:        80,
-							TargetPort:  pointer.To(intstr.FromInt(8084)),
-							AppProtocol: core_meta.ProtocolHTTP,
-						}},
-						Identities: &[]meshservice_api.MeshServiceIdentity{
-							{
-								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-								Value: "backend",
-							},
-							{
-								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-								Value: "other-backend",
-							},
-						},
-					},
-					Status: &meshservice_api.MeshServiceStatus{
-						VIPs: []meshservice_api.VIP{{
-							IP: "10.0.0.1",
-						}},
-					},
-				},
-			},
-			meshhttproutes: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{
-								test_policies.NewRule(subsetutils.MeshSubset(), meshhttproute_api.PolicyDefault{
-									Rules: []meshhttproute_api.Rule{{
-										Matches: []meshhttproute_api.Match{{
-											Path: &meshhttproute_api.PathMatch{
-												Type:  meshhttproute_api.Exact,
-												Value: "/",
-											},
-										}},
-										Default: meshhttproute_api.RuleConf{
-											BackendRefs: &[]common_api.BackendRef{{
-												TargetRef: builders.TargetRefService("backend"),
-												Port:      pointer.To(uint32(80)),
-												Weight:    pointer.To(uint(100)),
-											}},
-										},
-									}},
-								}),
-							},
-						},
-					},
-				},
-			},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							ResourceRules: map[kri.Identifier]outbound.ResourceRule{
-								backendMeshServiceIdentifier: {
-									Conf: []any{
-										api.Conf{
-											Interval:                     test.ParseDuration("10s"),
-											Timeout:                      test.ParseDuration("2s"),
-											UnhealthyThreshold:           pointer.To[int32](3),
-											HealthyThreshold:             pointer.To[int32](1),
-											InitialJitter:                test.ParseDuration("13s"),
-											IntervalJitter:               test.ParseDuration("15s"),
-											IntervalJitterPercent:        pointer.To[int32](10),
-											HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
-											FailTrafficOnPanic:           pointer.To(true),
-											EventLogPath:                 pointer.To("/tmp/log.txt"),
-											AlwaysLogHealthCheckFailures: pointer.To(false),
-											NoTrafficInterval:            test.ParseDuration("16s"),
-											Http: &api.HttpHealthCheck{
-												Disabled: pointer.To(false),
-												Path:     pointer.To("/health"),
-												RequestHeadersToAdd: &api.HeaderModifier{
-													Add: &[]api.HeaderKeyValue{
-														{
-															Name:  "x-some-header",
-															Value: "value",
-														},
-													},
-													Set: &[]api.HeaderKeyValue{
-														{
-															Name:  "x-some-other-header",
-															Value: "value",
-														},
-													},
-												},
-												ExpectedStatuses: &[]int32{200, 201},
-											},
-											ReuseConnection: pointer.To(true),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}),
-		Entry("basic outbound cluster with TCP/HTTP health check and MeshTCPRoute/MeshHTTPRoute", gatewayTestCase{
-			name: "basic-meshhttproute",
-			meshhttproutes: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshSubset(),
-								Conf: meshhttproute_api.PolicyDefault{
-									Rules: []meshhttproute_api.Rule{{
-										Matches: []meshhttproute_api.Match{{
-											Path: &meshhttproute_api.PathMatch{
-												Type:  meshhttproute_api.Exact,
-												Value: "/",
-											},
-										}},
-										Default: meshhttproute_api.RuleConf{
-											BackendRefs: &[]common_api.BackendRef{{
-												TargetRef: builders.TargetRefService("backend"),
-												Weight:    pointer.To(uint(100)),
-											}},
-										},
-									}},
-								},
-							}},
-						},
-					},
-				},
-			},
-			meshtcproutes: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8081, "*"): {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.MeshSubset(),
-								Conf: meshtcproute_api.Rule{
-									Default: meshtcproute_api.RuleConf{
-										BackendRefs: &[]common_api.BackendRef{{
-											TargetRef: builders.TargetRefService("backend"),
-											Weight:    pointer.To(uint(100)),
-										}},
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{},
-								Conf: api.Conf{
-									Interval:                     test.ParseDuration("10s"),
-									Timeout:                      test.ParseDuration("2s"),
-									UnhealthyThreshold:           pointer.To[int32](3),
-									HealthyThreshold:             pointer.To[int32](1),
-									InitialJitter:                test.ParseDuration("13s"),
-									IntervalJitter:               test.ParseDuration("15s"),
-									IntervalJitterPercent:        pointer.To[int32](10),
-									HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
-									FailTrafficOnPanic:           pointer.To(true),
-									EventLogPath:                 pointer.To("/tmp/log.txt"),
-									AlwaysLogHealthCheckFailures: pointer.To(false),
-									NoTrafficInterval:            test.ParseDuration("16s"),
-									Http: &api.HttpHealthCheck{
-										Disabled: pointer.To(false),
-										Path:     pointer.To("/health"),
-										RequestHeadersToAdd: &api.HeaderModifier{
-											Add: &[]api.HeaderKeyValue{
-												{
-													Name:  "x-some-header",
-													Value: "value",
-												},
-											},
-											Set: &[]api.HeaderKeyValue{
-												{
-													Name:  "x-some-other-header",
-													Value: "value",
-												},
-											},
-										},
-										ExpectedStatuses: &[]int32{200, 201},
-									},
-									ReuseConnection: pointer.To(true),
-								},
-							}},
-						},
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8081, "*"): {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{},
-								Conf: api.Conf{
-									Interval:                     test.ParseDuration("10s"),
-									Timeout:                      test.ParseDuration("2s"),
-									UnhealthyThreshold:           pointer.To[int32](3),
-									HealthyThreshold:             pointer.To[int32](1),
-									InitialJitter:                test.ParseDuration("13s"),
-									IntervalJitter:               test.ParseDuration("15s"),
-									IntervalJitterPercent:        pointer.To[int32](10),
-									HealthyPanicThreshold:        pointer.To(intstr.FromString("72.9")),
-									FailTrafficOnPanic:           pointer.To(true),
-									EventLogPath:                 pointer.To("/tmp/log.txt"),
-									AlwaysLogHealthCheckFailures: pointer.To(false),
-									NoTrafficInterval:            test.ParseDuration("16s"),
-									ReuseConnection:              pointer.To(true),
-								},
-							}},
-						},
-					},
-				},
-			},
+			expectedCluster: "basic-meshexternalservice-tcp.zone_proxy_cluster.golden.yaml",
 		}),
 	)
 })

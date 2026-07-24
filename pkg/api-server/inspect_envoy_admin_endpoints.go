@@ -7,18 +7,18 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/v2/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
-	"github.com/kumahq/kuma/v2/pkg/envoy/admin/access"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/envoy/admin"
+	"github.com/kumahq/kuma/v3/pkg/envoy/admin/access"
 )
 
 const (
@@ -190,7 +190,13 @@ func (cl *inspectClient) inspectProxy(request *restful.Request, response *restfu
 			contentType = restful.MIME_JSON
 			format = v1alpha1.AdminOutputFormat_JSON
 		}
-		res, err = cl.adminClient.Stats(ctx, proxy, format)
+		usedOnly := true
+		if v := request.QueryParameter("usedonly"); v != "" {
+			if parsed, perr := strconv.ParseBool(v); perr == nil {
+				usedOnly = parsed
+			}
+		}
+		res, err = cl.adminClient.Stats(ctx, proxy, format, usedOnly)
 	}
 	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")

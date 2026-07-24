@@ -3,10 +3,10 @@ package policy
 import (
 	"sort"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 )
 
 type ServiceIterator interface {
@@ -33,26 +33,6 @@ func ToOutboundServicesOf(dataplane *core_mesh.DataplaneResource) ServiceIterato
 		oface := outbounds[idx]
 		idx++
 		return oface.GetService(), true
-	})
-}
-
-func ToServicesOf(destinations core_xds.DestinationMap) ServiceIterator {
-	services := make([]core_xds.ServiceName, 0, len(destinations))
-	for service := range destinations {
-		services = append(services, service)
-	}
-	return ToServices(services)
-}
-
-func ToServices(services []core_xds.ServiceName) ServiceIterator {
-	idx := 0
-	return ServiceIteratorFunc(func() (core_xds.ServiceName, bool) {
-		if len(services) <= idx {
-			return "", false
-		}
-		service := services[idx]
-		idx++
-		return service, true
 	})
 }
 

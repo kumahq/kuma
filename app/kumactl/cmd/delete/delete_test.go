@@ -9,16 +9,16 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/resources"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	memory_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	"github.com/kumahq/kuma/v3/app/kumactl/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/resources"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	memory_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
 )
 
 var _ = Describe("kumactl delete ", func() {
@@ -142,83 +142,11 @@ var _ = Describe("kumactl delete ", func() {
 					// then
 					Expect(err).ToNot(HaveOccurred())
 				},
-				Entry("circuit-breaker", testCase{
-					typ:             "circuit-breaker",
-					name:            "web",
-					resource:        func() core_model.Resource { return core_mesh.NewCircuitBreakerResource() },
-					expectedMessage: "deleted CircuitBreaker \"web\"\n",
-				}),
 				Entry("dataplanes", testCase{
 					typ:             "dataplane",
 					name:            "web",
 					resource:        func() core_model.Resource { return core_mesh.NewDataplaneResource() },
 					expectedMessage: "deleted Dataplane \"web\"\n",
-				}),
-				Entry("external-services", testCase{
-					typ:             "external-service",
-					name:            "httpbin",
-					resource:        func() core_model.Resource { return core_mesh.NewExternalServiceResource() },
-					expectedMessage: "deleted ExternalService \"httpbin\"\n",
-				}),
-				Entry("fault-injections", testCase{
-					typ:             "fault-injection",
-					name:            "web",
-					resource:        func() core_model.Resource { return core_mesh.NewFaultInjectionResource() },
-					expectedMessage: "deleted FaultInjection \"web\"\n",
-				}),
-				Entry("healthchecks", testCase{
-					typ:             "healthcheck",
-					name:            "web-to-backend",
-					resource:        func() core_model.Resource { return core_mesh.NewHealthCheckResource() },
-					expectedMessage: "deleted HealthCheck \"web-to-backend\"\n",
-				}),
-				Entry("proxytemplate", testCase{
-					typ:             "proxytemplate",
-					name:            "test-pt",
-					resource:        func() core_model.Resource { return core_mesh.NewProxyTemplateResource() },
-					expectedMessage: "deleted ProxyTemplate \"test-pt\"\n",
-				}),
-				Entry("retries", testCase{
-					typ:             "retry",
-					name:            "web-to-backend",
-					resource:        func() core_model.Resource { return core_mesh.NewRetryResource() },
-					expectedMessage: "deleted Retry \"web-to-backend\"\n",
-				}),
-				Entry("rate-limits", testCase{
-					typ:             "rate-limit",
-					name:            "100-rps",
-					resource:        func() core_model.Resource { return core_mesh.NewRateLimitResource() },
-					expectedMessage: "deleted RateLimit \"100-rps\"\n",
-				}),
-				Entry("timeouts", testCase{
-					typ:             "timeout",
-					name:            "web",
-					resource:        func() core_model.Resource { return core_mesh.NewTimeoutResource() },
-					expectedMessage: "deleted Timeout \"web\"\n",
-				}),
-				Entry("traffic-logs", testCase{
-					typ:             "traffic-log",
-					name:            "all-requests",
-					resource:        func() core_model.Resource { return core_mesh.NewTrafficLogResource() },
-					expectedMessage: "deleted TrafficLog \"all-requests\"\n",
-				}),
-				Entry("traffic-permissions", testCase{
-					typ:             "traffic-permission",
-					name:            "everyone-to-everyone",
-					resource:        func() core_model.Resource { return core_mesh.NewTrafficPermissionResource() },
-					expectedMessage: "deleted TrafficPermission \"everyone-to-everyone\"\n",
-				}),
-				Entry("traffic-routes", testCase{
-					typ:             "traffic-route",
-					name:            "web-to-backend",
-					resource:        func() core_model.Resource { return core_mesh.NewTrafficRouteResource() },
-					expectedMessage: "deleted TrafficRoute \"web-to-backend\"\n",
-				}),
-				Entry("traffic-traces", testCase{
-					typ:             "traffic-trace",
-					name:            "web",
-					resource:        func() core_model.Resource { return core_mesh.NewTrafficTraceResource() },
-					expectedMessage: "deleted TrafficTrace \"web\"\n",
 				}),
 				Entry("secrets", testCase{
 					typ:             "secret",
@@ -301,54 +229,6 @@ var _ = Describe("kumactl delete ", func() {
 					name:            "web",
 					resource:        func() core_model.Resource { return core_mesh.NewDataplaneResource() },
 					expectedMessage: "Error: there is no Dataplane with name \"web\"\n",
-				}),
-				Entry("healthchecks", testCase{
-					typ:             "healthcheck",
-					name:            "web-to-backend",
-					resource:        func() core_model.Resource { return core_mesh.NewHealthCheckResource() },
-					expectedMessage: "Error: there is no HealthCheck with name \"web-to-backend\"\n",
-				}),
-				Entry("retries", testCase{
-					typ:             "retry",
-					name:            "web-to-backend",
-					resource:        func() core_model.Resource { return core_mesh.NewRetryResource() },
-					expectedMessage: "Error: there is no Retry with name \"web-to-backend\"\n",
-				}),
-				Entry("traffic-permissions", testCase{
-					typ:             "traffic-permission",
-					name:            "everyone-to-everyone",
-					resource:        func() core_model.Resource { return core_mesh.NewTrafficPermissionResource() },
-					expectedMessage: "Error: there is no TrafficPermission with name \"everyone-to-everyone\"\n",
-				}),
-				Entry("traffic-logs", testCase{
-					typ:             "traffic-log",
-					name:            "all-requests",
-					resource:        func() core_model.Resource { return core_mesh.NewTrafficLogResource() },
-					expectedMessage: "Error: there is no TrafficLog with name \"all-requests\"\n",
-				}),
-				Entry("traffic-routes", testCase{
-					typ:             "traffic-route",
-					name:            "web-to-backend",
-					resource:        func() core_model.Resource { return core_mesh.NewTrafficRouteResource() },
-					expectedMessage: "Error: there is no TrafficRoute with name \"web-to-backend\"\n",
-				}),
-				Entry("traffic-traces", testCase{
-					typ:             "traffic-trace",
-					name:            "web",
-					resource:        func() core_model.Resource { return core_mesh.NewTrafficRouteResource() },
-					expectedMessage: "Error: there is no TrafficTrace with name \"web\"\n",
-				}),
-				Entry("fault-injections", testCase{
-					typ:             "fault-injection",
-					name:            "web",
-					resource:        func() core_model.Resource { return core_mesh.NewFaultInjectionResource() },
-					expectedMessage: "Error: there is no FaultInjection with name \"web\"\n",
-				}),
-				Entry("fault-injections", testCase{
-					typ:             "circuit-breaker",
-					name:            "web",
-					resource:        func() core_model.Resource { return core_mesh.NewCircuitBreakerResource() },
-					expectedMessage: "Error: there is no CircuitBreaker with name \"web\"\n",
 				}),
 				Entry("secret", testCase{
 					typ:             "secret",

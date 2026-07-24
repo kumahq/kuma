@@ -9,11 +9,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
 func AppDeploymentWithCniAndTaintController() {
@@ -24,11 +24,26 @@ metadata:
   name: default
 `
 
+	hostnameGenerator := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: HostnameGenerator
+metadata:
+  name: cni-taint-connectivity
+  namespace: %s
+spec:
+  template: '{{ .DisplayName }}.{{ .Namespace }}.svc.mesh.local'
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/origin: zone
+        kuma.io/managed-by: k8s-controller
+`, Config.KumaNamespace)
+
 	var cluster Cluster
 	var k8sCluster *K8sCluster
 	nodeName := fmt.Sprintf(
 		"second-%s",
-		strings.ToLower(random.UniqueId()),
+		strings.ToLower(random.UniqueID()),
 	)
 
 	setup := func() {
@@ -39,7 +54,7 @@ metadata:
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
+			strings.ToLower(random.UniqueID()),
 		)
 
 		err := NewClusterSetup().
@@ -51,6 +66,7 @@ metadata:
 				WithCNI(),
 			)).
 			Install(YamlK8s(defaultMesh)).
+			Install(YamlK8s(hostnameGenerator)).
 			Setup(cluster)
 		// here we could patch the "command" of the CNI, kubectl patch ...
 		Expect(err).ToNot(HaveOccurred())
@@ -61,6 +77,7 @@ metadata:
 	})
 
 	E2EAfterEach(func() {
+		ControlPlaneAssertions(cluster)
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
@@ -99,19 +116,11 @@ metadata:
 
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
-					cluster, "demo-client", "test-server_kuma-test_svc_80.mesh",
+					cluster, "demo-client", "test-server.kuma-test.svc.mesh.local",
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-			}, "10s", "1s").Should(Succeed())
-
-			Eventually(func(g Gomega) { // should access a service with . instead of _
-				_, err := client.CollectEchoResponse(
-					cluster, "demo-client", "test-server.kuma-test.svc.80.mesh",
-					client.FromKubernetesPod(TestNamespace, "demo-client"),
-				)
-				g.Expect(err).ToNot(HaveOccurred())
-			}, "10s", "1s").Should(Succeed())
+			}, "30s", "1s").Should(Succeed())
 		},
 	)
 }

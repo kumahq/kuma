@@ -8,11 +8,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	policy "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	policy "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 // MeshMetric enables collection and export of service mesh metrics. It configures sidecar and application metrics scraping, allows customization of which metrics are published, and supports exporting to Prometheus or OpenTelemetry backends for monitoring and observability.
@@ -111,7 +111,7 @@ func (l *MeshMetricList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshMetric{}, &MeshMetricList{})
+	knownTypes = append(knownTypes, &MeshMetric{}, &MeshMetricList{})
 	registry.RegisterObjectType(&policy.MeshMetric{}, &MeshMetric{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),

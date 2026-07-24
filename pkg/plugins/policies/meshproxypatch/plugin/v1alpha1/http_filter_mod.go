@@ -9,13 +9,13 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_metadata "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/jsonpatch"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_metadata "github.com/kumahq/kuma/v3/pkg/xds/envoy/metadata/v3"
 )
 
 type httpFilterModificator api.HTTPFilterMod
@@ -148,7 +148,7 @@ func (h *httpFilterModificator) listenerMatches(resource *core_xds.Resource) boo
 	if h.Match == nil {
 		return true
 	}
-	if h.Match.ListenerName != nil && *h.Match.ListenerName != resource.Name {
+	if h.Match.ListenerName != nil && !listenerNameMatches(*h.Match.ListenerName, resource.Name) {
 		return false
 	}
 	if h.Match.Origin != nil && *h.Match.Origin != string(resource.Origin) {

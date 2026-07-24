@@ -6,12 +6,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
-	"github.com/kumahq/kuma/v2/test/server/types"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/test/server/types"
 )
 
 func MeshTCPRoute(config *Config) func() {
@@ -27,7 +27,7 @@ func MeshTCPRoute(config *Config) func() {
 				kubernetes.Cluster,
 				config.Mesh,
 				v1alpha1.MeshTCPRouteResourceTypeDescriptor,
-				core_mesh.ExternalServiceResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
 			)).To(Succeed())
 		})
 
@@ -36,35 +36,43 @@ func MeshTCPRoute(config *Config) func() {
 			// given
 			Expect(kubernetes.Cluster.Install(framework.YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
-kind: ExternalService
+kind: MeshExternalService
 metadata:
   name: external-http-service-mtcprd
-mesh: %s
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
 spec:
-  tags:
-    kuma.io/service: external-http-service-mtcprd
-    kuma.io/protocol: http
-  networking:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
     # .svc.cluster.local is needed, otherwise Kubernetes will resolve this
     # to the real IP
-    address: external-service.%s.svc.cluster.local:80
-`, config.Mesh, config.NamespaceOutsideMesh)))).To(Succeed())
+    - address: external-service.%s.svc.cluster.local
+      port: 80
+`, config.CpNamespace, config.Mesh, config.NamespaceOutsideMesh)))).To(Succeed())
 
 			Expect(kubernetes.Cluster.Install(framework.YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
-kind: ExternalService
+kind: MeshExternalService
 metadata:
   name: external-tcp-service-mtcprd
-mesh: %s
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
 spec:
-  tags:
-    kuma.io/service: external-tcp-service-mtcprd
-    kuma.io/protocol: tcp
-  networking:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: tcp
+  endpoints:
     # .svc.cluster.local is needed, otherwise Kubernetes will resolve this
     # to the real IP
-    address: external-tcp-service.%s.svc.cluster.local:80
-`, config.Mesh, config.NamespaceOutsideMesh)))).To(Succeed())
+    - address: external-tcp-service.%s.svc.cluster.local
+      port: 80
+`, config.CpNamespace, config.Mesh, config.NamespaceOutsideMesh)))).To(Succeed())
 
 			// when
 			Expect(framework.YamlK8s(fmt.Sprintf(`
@@ -77,8 +85,9 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: %[2]s-gateway-admin_%[2]s_svc_8444
+    kind: Dataplane
+    labels:
+      app: %[2]s-gateway
   to:
   - targetRef:
       kind: MeshService
@@ -88,10 +97,12 @@ spec:
         backendRefs:
         - kind: MeshService
           name: test-server_%[2]s_svc_80
-        - kind: MeshService
+        - kind: MeshExternalService
           name: external-http-service-mtcprd
-        - kind: MeshService
+          port: 80
+        - kind: MeshExternalService
           name: external-tcp-service-mtcprd
+          port: 80
 `, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
 
 			// then

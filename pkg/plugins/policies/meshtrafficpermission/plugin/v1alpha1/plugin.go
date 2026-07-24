@@ -5,22 +5,25 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	v3 "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	v3 "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var (
@@ -29,6 +32,8 @@ var (
 )
 
 type plugin struct{}
+
+func (p plugin) Order() int { return api.MeshTrafficPermissionResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
@@ -44,12 +49,18 @@ func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_cont
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.ZoneEgressProxy != nil {
-		return p.configureEgress(rs, proxy, unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource))
+		// ZoneEgress isn't scoped to a single mesh (ctx.Mesh is empty for zone proxies),
+		// so unlike mesh-scoped plugins we can't use unified_naming.Enabled here: it
+		// would always see a nil mesh and report unified naming as disabled.
+		unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
+		return p.configureEgress(rs, proxy, unifiedNaming)
 	}
 
 	if proxy.Dataplane == nil || proxy.Dataplane.Spec.IsBuiltinGateway() {
 		return nil
 	}
+
+	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
 
 	if !ctx.Mesh.Resource.MTLSEnabled() && proxy.WorkloadIdentity == nil {
 		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
@@ -58,7 +69,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
+	if err := p.configureZoneEgressListeners(rs, mtp); err != nil {
+		return err
+	}
+
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
 		if res.Origin != metadata.OriginInbound {
 			continue
@@ -72,7 +86,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		}
 
 		inboundRules, ok := mtp.FromRules.InboundRules[key]
-		if !ok || len(inboundRules) == 0 {
+		if (!ok || len(inboundRules) == 0) && proxy.WorkloadIdentity == nil {
 			err := p.configureLegacyRules(mtp, key, listener, res, proxy)
 			if err != nil {
 				return err
@@ -91,20 +105,25 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 					return err
 				}
 			}
+			if hasSNIMatch(inboundRules) {
+				if err := ensureTLSInspector(listener); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
 }
 
+// configureLegacyRules now only serves two callers: dataplanes still relying on the old
+// MeshTrafficPermission `Rules` format, and zone egress (see configureEgress). Legacy
+// TrafficPermission no longer contributes to xDS generation, so the absence of an old-format
+// rule always means default-deny.
 func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key core_rules.InboundListener, listener *envoy_listener.Listener, resource *core_xds.Resource, proxy *core_xds.Proxy) error {
 	//nolint:staticcheck // SA1019 configureLegacyRules explicitly uses old Rules format for legacy RBAC
 	rules, ok := mtp.FromRules.Rules[key]
 	if !ok {
-		if len(proxy.Policies.TrafficPermissions) == 0 {
-			rules = p.denyRules()
-		} else {
-			return nil
-		}
+		rules = p.denyRules()
 	}
 
 	configurer := &v3.LegacyRBACConfigurer{
@@ -122,6 +141,63 @@ func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key cor
 		}
 	}
 	return nil
+}
+
+func (p plugin) configureZoneEgressListeners(rs *core_xds.ResourceSet, mtp core_xds.TypedMatchingPolicies) error {
+	for _, res := range rs.Resources(envoy_resource.ListenerType) {
+		if res.Origin != metadata.OriginEgress {
+			continue
+		}
+		listener := res.Resource.(*envoy_listener.Listener)
+		dpAddress := listener.GetAddress().GetSocketAddress()
+		key := core_rules.InboundListener{
+			Address: dpAddress.GetAddress(),
+			Port:    dpAddress.GetPortValue(),
+		}
+		configurer := &v3.RBACConfigurer{
+			StatsName:    res.Name,
+			InboundRules: mtp.FromRules.InboundRules[key],
+		}
+		for _, filterChain := range listener.FilterChains {
+			if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
+				continue
+			}
+			if err := configurer.Configure(filterChain); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func hasSNIMatch(rules []*inbound.Rule) bool {
+	hasSNI := func(matches *[]common_api.Match) bool {
+		for _, m := range pointer.Deref(matches) {
+			if m.SNI != nil {
+				return true
+			}
+		}
+		return false
+	}
+	for _, rule := range rules {
+		conf, ok := rule.Conf.(api.RuleConf)
+		if !ok {
+			continue
+		}
+		if hasSNI(conf.Deny) || hasSNI(conf.Allow) || hasSNI(conf.AllowWithShadowDeny) {
+			return true
+		}
+	}
+	return false
+}
+
+func ensureTLSInspector(listener *envoy_listener.Listener) error {
+	for _, lf := range listener.ListenerFilters {
+		if lf.Name == envoy_listeners_v3.TlsInspectorName {
+			return nil
+		}
+	}
+	return (&envoy_listeners_v3.TLSInspectorConfigurer{}).Configure(listener)
 }
 
 func (p plugin) denyRules() core_rules.Rules {
@@ -162,55 +238,10 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy,
 			continue
 		}
 
-		esNames := []string{}
-		for _, es := range resource.ExternalServices {
-			name := es.Spec.GetService()
-			if name != "" {
-				esNames = append(esNames, es.Spec.GetService())
-			}
-		}
-		// egress is configured for all meshes so we cannot use mesh context in this case
 		mesNames := []string{}
 		for _, mes := range resource.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType).GetItems() {
 			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
 			mesNames = append(mesNames, destinationname.MustResolve(unifiedNaming, meshExtSvc, meshExtSvc.Spec.Match))
-		}
-
-		for _, esName := range esNames {
-			var rules core_rules.FromRules
-			if policies, ok := resource.Dynamic[esName]; ok {
-				if mtp, ok := policies[api.MeshTrafficPermissionType]; ok {
-					rules = mtp.FromRules
-				}
-			}
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
-			if len(rules.Rules) == 0 {
-				if resource.ExternalServicePermissionMap[esName] == nil {
-					rules = core_rules.FromRules{
-						Rules: map[core_rules.InboundListener]core_rules.Rules{
-							{}: p.denyRules(),
-						},
-					}
-				} else {
-					continue
-				}
-			}
-
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
-			for _, rule := range rules.Rules {
-				configurer := &v3.LegacyRBACConfigurer{
-					StatsName: listeners.Egress.Name,
-					Rules:     rule,
-					Mesh:      meshName,
-				}
-				for _, filterChain := range listeners.Egress.FilterChains {
-					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
-						if err := configurer.Configure(filterChain); err != nil {
-							return err
-						}
-					}
-				}
-			}
 		}
 
 		for _, mesName := range mesNames {

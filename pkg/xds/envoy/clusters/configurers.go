@@ -5,25 +5,13 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters/v3"
-	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters/v3"
+	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
-
-func OutlierDetection(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.OutlierDetectionConfigurer{CircuitBreaker: circuitBreaker})
-	})
-}
-
-func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.CircuitBreakerConfigurer{CircuitBreaker: circuitBreaker})
-	})
-}
 
 func ClientSideMTLS(
 	tracker core_xds.SecretsTracker,
@@ -192,15 +180,6 @@ func ProvidedCustomEndpointCluster(hasIPv6 bool, allowsMixingEndpoints bool, end
 	})
 }
 
-func HealthCheck(protocol core_meta.Protocol, healthCheck *core_mesh.HealthCheckResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.HealthCheckConfigurer{
-			HealthCheck: healthCheck,
-			Protocol:    protocol,
-		})
-	})
-}
-
 // LbSubset is required for MetadataMatch in Weighted Cluster in TCP Proxy to work.
 // Subset loadbalancing is used in two use cases
 //  1. TrafficRoute for splitting traffic. Example: TrafficRoute that splits 10% of the traffic to version 1 of the service backend and 90% traffic to version 2 of the service backend
@@ -296,6 +275,20 @@ func UpstreamTLSContext(config *envoy_tls.UpstreamTlsContext) ClusterBuilderOpt 
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.UpstreamTLSContextConfigure{
 			Config: config,
+		})
+	})
+}
+
+// UpstreamTLSContextWithZoneMatches configures a cluster-wide default
+// UpstreamTlsContext plus per-zone overrides added as transport_socket_match
+// entries keyed on the kuma.io/zone endpoint metadata. It is used for
+// MeshMultiZoneService clusters whose endpoints span zones with different SNI
+// expectations (new mesh-scoped zone proxy vs. legacy ZoneIngress).
+func UpstreamTLSContextWithZoneMatches(config *envoy_tls.UpstreamTlsContext, zoneMatches map[string]*envoy_tls.UpstreamTlsContext) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.UpstreamTLSContextConfigure{
+			Config:      config,
+			ZoneMatches: zoneMatches,
 		})
 	})
 }

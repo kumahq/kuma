@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (r *MeshRateLimitResource) validate() error {
@@ -36,11 +36,6 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, isI
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshGateway,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
-				common_api.MeshHTTPRoute,
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
@@ -50,9 +45,6 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, isI
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
 			IsInboundPolicy: isInboundPolicy,
@@ -72,7 +64,44 @@ func validateRules(topTargetRef common_api.TargetRef, rules []Rule) validators.V
 	}
 	for idx, ruleItem := range rules {
 		path := validators.RootedAt("rules").Index(idx)
+		verr.Add(validateRuleMatches(path, pointer.Deref(ruleItem.Matches), ruleItem.Default))
 		verr.Add(validateDefault(path.Field("default"), ruleItem.Default))
+	}
+	return verr
+}
+
+func validateRuleMatches(path validators.PathBuilder, matches []common_api.Match, conf Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	hasSpiffeID := false
+	for idx, match := range matches {
+		matchPath := path.Field("matches").Index(idx)
+		verr.AddErrorAt(matchPath, mesh.ValidateMatch(match))
+		if match.SpiffeID == nil && match.SNI == nil {
+			verr.AddViolationAt(matchPath, "must specify at least one of 'spiffeID' or 'sni'")
+			continue
+		}
+		if match.SpiffeID != nil {
+			hasSpiffeID = true
+			switch match.SpiffeID.Type {
+			case common_api.ExactMatchType, common_api.PrefixMatchType:
+			case "":
+				verr.AddViolationAt(matchPath.Field("spiffeID").Field("type"), "must be set")
+			default:
+				verr.AddViolationAt(matchPath.Field("spiffeID").Field("type"), fmt.Sprintf("unrecognized type %q, supported values are: Exact, Prefix", match.SpiffeID.Type))
+			}
+		}
+	}
+	if hasSpiffeID {
+		verr.Add(validateSourceConditionedRule(path.Field("default"), conf))
+	}
+	return verr
+}
+
+func validateSourceConditionedRule(path validators.PathBuilder, conf Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	const msg = "can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity"
+	if pointer.Deref(conf.Local).TCP != nil {
+		verr.AddViolationAt(path.Field("local").Field("tcp"), msg)
 	}
 	return verr
 }

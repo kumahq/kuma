@@ -1,8 +1,8 @@
 package builders
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func TargetRefMesh() common_api.TargetRef {
@@ -15,6 +15,20 @@ func TargetRefMeshSubset(kv ...string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: common_api.MeshSubset,
 		Tags: pointer.To(TagsKVToMap(kv)),
+	}
+}
+
+func TargetRefDataplaneLabels(kv ...string) common_api.TargetRef {
+	return common_api.TargetRef{
+		Kind:   common_api.Dataplane,
+		Labels: pointer.To(TagsKVToMap(kv)),
+	}
+}
+
+func TargetRefDataplaneName(name string) common_api.TargetRef {
+	return common_api.TargetRef{
+		Kind: common_api.Dataplane,
+		Name: &name,
 	}
 }
 
@@ -61,13 +75,6 @@ func TargetRefMeshServiceLabels(labels map[string]string, sectionName string) co
 func TargetRefMeshExternalService(name string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: common_api.MeshExternalService,
-		Name: &name,
-	}
-}
-
-func TargetRefMeshGateway(name string) *common_api.TargetRef {
-	return &common_api.TargetRef{
-		Kind: common_api.MeshGateway,
 		Name: &name,
 	}
 }

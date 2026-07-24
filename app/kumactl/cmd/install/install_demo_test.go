@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
 )
 
 var _ = Context("kumactl install demo", func() {
@@ -41,12 +41,6 @@ var _ = Context("kumactl install demo", func() {
 				"--zone", "aws", "--namespace", "not-kuma-demo",
 			},
 			goldenFile: "install-demo.overrides.golden.yaml",
-		}),
-		Entry("should respect --without-gateway", testCase{
-			extraArgs: []string{
-				"--without-gateway",
-			},
-			goldenFile: "install-demo.without-gateway.golden.yaml",
 		}),
 	)
 })

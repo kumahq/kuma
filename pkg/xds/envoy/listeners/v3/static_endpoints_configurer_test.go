@@ -4,10 +4,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("StaticEndpointsConfigurer", func() {
@@ -24,7 +24,7 @@ var _ = Describe("StaticEndpointsConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				WithOverwriteName(given.listenerName).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(StaticEndpoints(true, given.listenerName, []*envoy_common.StaticEndpointPath{
@@ -53,11 +53,11 @@ var _ = Describe("StaticEndpointsConfigurer", func() {
 			expected: `
             name: kuma:metrics:prometheus
             trafficDirection: INBOUND
+            enableReusePort: true
             address:
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
             filterChains:
             - filters:
               - name: envoy.filters.network.http_connection_manager

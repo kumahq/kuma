@@ -12,18 +12,17 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	xds_config "github.com/kumahq/kuma/v2/pkg/config/xds"
-	bootstrap_config "github.com/kumahq/kuma/v2/pkg/config/xds/bootstrap"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	bootstrap_config "github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
 type BootstrapGenerator interface {
@@ -33,13 +32,11 @@ type BootstrapGenerator interface {
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
 	serverConfig *bootstrap_config.BootstrapServerConfig,
-	proxyConfig xds_config.Proxy,
 	dpServerCertFile string,
 	authEnabledForProxyType map[string]bool,
 	enableReloadableTokens bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
-	deltaXdsEnabled bool,
 	inboundTagsDisabled bool,
 	meshPassthroughMatcherAPI bool,
 	envoyAdminUnixSocket bool,
@@ -56,14 +53,12 @@ func NewDefaultBootstrapGenerator(
 	return &bootstrapGenerator{
 		resManager:                resManager,
 		config:                    serverConfig,
-		proxyConfig:               proxyConfig,
 		xdsCertFile:               dpServerCertFile,
 		authEnabledForProxyType:   authEnabledForProxyType,
 		enableReloadableTokens:    enableReloadableTokens,
 		dpServerCert:              dpServerCert,
 		hdsEnabled:                hdsEnabled,
 		defaultAdminPort:          defaultAdminPort,
-		deltaXdsEnabled:           deltaXdsEnabled,
 		inboundTagsDisabled:       inboundTagsDisabled,
 		meshPassthroughMatcherAPI: meshPassthroughMatcherAPI,
 		envoyAdminUnixSocket:      envoyAdminUnixSocket,
@@ -73,14 +68,12 @@ func NewDefaultBootstrapGenerator(
 type bootstrapGenerator struct {
 	resManager                core_manager.ResourceManager
 	config                    *bootstrap_config.BootstrapServerConfig
-	proxyConfig               xds_config.Proxy
 	authEnabledForProxyType   map[string]bool
 	enableReloadableTokens    bool
 	xdsCertFile               string
 	dpServerCert              *x509.Certificate
 	hdsEnabled                bool
 	defaultAdminPort          uint32
-	deltaXdsEnabled           bool
 	inboundTagsDisabled       bool
 	meshPassthroughMatcherAPI bool
 	envoyAdminUnixSocket      bool
@@ -104,15 +97,16 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 
 	proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 	params := configParameters{
-		Id:                 proxyId.String(),
-		AdminAddress:       b.config.Params.AdminAddress,
-		AdminAccessLogPath: b.adminAccessLogPath(request.OperatingSystem),
-		XdsHost:            b.xdsHost(request),
-		XdsPort:            b.config.Params.XdsPort,
-		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout.Duration,
-		DataplaneToken:     request.DataplaneToken,
-		DataplaneTokenPath: request.DataplaneTokenPath,
-		DataplaneResource:  request.DataplaneResource,
+		Id:                            proxyId.String(),
+		AdminAddress:                  b.config.Params.AdminAddress,
+		AdminAccessLogPath:            b.adminAccessLogPath(request.OperatingSystem),
+		XdsHost:                       b.xdsHost(request),
+		XdsPort:                       b.config.Params.XdsPort,
+		XdsConnectTimeout:             b.config.Params.XdsConnectTimeout.Duration,
+		XdsGrpcMaxReceiveMessageBytes: b.config.Params.XdsGrpcMaxReceiveMessageBytes,
+		DataplaneToken:                request.DataplaneToken,
+		DataplaneTokenPath:            request.DataplaneTokenPath,
+		DataplaneResource:             request.DataplaneResource,
 		Version: &mesh_proto.Version{
 			KumaDp: &mesh_proto.KumaDpVersion{
 				Version:   request.Version.KumaDp.Version,
@@ -183,17 +177,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			return nil, kumaDpBootstrap, err
 		}
 
-		if dataplane.Spec.IsBuiltinGateway() {
-			params.IsGatewayDataplane = true
-		}
 		kumaDpBootstrap.NetworkingConfig.Address = dataplane.Spec.GetNetworking().GetAddress()
-		if b.config.Params.CorefileTemplatePath != "" {
-			corefileTemplate, err := os.ReadFile(b.config.Params.CorefileTemplatePath)
-			if err != nil {
-				return nil, kumaDpBootstrap, errors.Wrap(err, "could not read Corefile template")
-			}
-			kumaDpBootstrap.NetworkingConfig.CorefileTemplate = corefileTemplate
-		}
 		params.Service = dataplane.IdentifyingName(b.inboundTagsDisabled)
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 
@@ -214,7 +198,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, kumaDpBootstrap, err
 	}
 
-	config, err := genConfig(params, b.proxyConfig, b.enableReloadableTokens, meshResource)
+	config, err := genConfig(params, b.enableReloadableTokens, meshResource)
 	if err != nil {
 		return nil, kumaDpBootstrap, errors.Wrap(err, "failed creating bootstrap conf")
 	}

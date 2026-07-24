@@ -6,10 +6,10 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/portforward"
-	"github.com/kumahq/kuma/v2/test/framework/report"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/portforward"
+	"github.com/kumahq/kuma/v3/test/framework/report"
 )
 
 var Cluster *framework.K8sCluster
@@ -28,9 +28,6 @@ func SetupAndGetState() []byte {
 		[]framework.KumaDeploymentOption{
 			framework.WithEgress(),
 			framework.WithEgressEnvoyAdminTunnel(),
-			framework.WithCtlOpts(map[string]string{
-				"--set": "controlPlane.supportGatewaySecretsInAllNamespaces=true", // needed for test/e2e_env/kubernetes/gateway/gatewayapi.go:470
-			}),
 			// Occasionally CP will lose a leader in the E2E test just because of this deadline,
 			// which does not make sense in such controlled environment (one k3d node, one instance of the CP).
 			// 100s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
@@ -40,9 +37,6 @@ func SetupAndGetState() []byte {
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
 	)
-	if framework.Config.KumaExperimentalSidecarContainers {
-		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS", "true"))
-	}
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))
 	}, "90s", "3s").Should(Succeed())

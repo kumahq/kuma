@@ -1,12 +1,14 @@
 package graceful
 
 import (
+	"context"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func Eviction() {
@@ -58,8 +60,8 @@ spec:
 
 		// when it's evicted
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				kubernetes.Cluster.GetTesting(),
+			out, err := k8s.RunKubectlAndGetOutputContextE(
+				kubernetes.Cluster.GetTesting(), context.Background(),
 				kubernetes.Cluster.GetKubectlOptions(nsName),
 				"get",
 				"pod", "to-be-evicted",

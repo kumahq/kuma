@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type TargetRefKind string
@@ -17,7 +17,6 @@ var (
 	Mesh                 TargetRefKind = "Mesh"
 	Dataplane            TargetRefKind = "Dataplane"
 	MeshSubset           TargetRefKind = "MeshSubset"
-	MeshGateway          TargetRefKind = "MeshGateway"
 	MeshService          TargetRefKind = "MeshService"
 	MeshExternalService  TargetRefKind = "MeshExternalService"
 	MeshMultiZoneService TargetRefKind = "MeshMultiZoneService"
@@ -29,7 +28,6 @@ var order = map[TargetRefKind]int{
 	Mesh:                 1,
 	Dataplane:            2,
 	MeshSubset:           3,
-	MeshGateway:          4,
 	MeshService:          5,
 	MeshExternalService:  6,
 	MeshMultiZoneService: 7,
@@ -62,7 +60,7 @@ func (k TargetRefKind) IsRealResource() bool {
 // actual resources (e.g., MeshExternalService, MeshMultiZoneService, and MeshService) was introduced.
 func (k TargetRefKind) IsOldKind() bool {
 	switch k {
-	case Mesh, MeshSubset, MeshServiceSubset, MeshService, MeshGateway, MeshHTTPRoute:
+	case Mesh, MeshSubset, MeshServiceSubset, MeshService, MeshHTTPRoute:
 		return true
 	default:
 		return false
@@ -88,10 +86,10 @@ type TargetRef struct {
 	UsesSyntacticSugar bool `json:"-"`
 
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
+	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
 	Kind TargetRefKind `json:"kind"`
-	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
-	// `MeshServiceSubset` and `MeshGatewayRoute`
+	// Name of the referenced resource. Can only be used with kinds: `MeshService`
+	// and `MeshServiceSubset`
 	Name *string `json:"name,omitempty"`
 	// Tags used to select a subset of proxies by tags. Can only be used with kinds
 	// `MeshSubset` and `MeshServiceSubset`
@@ -140,13 +138,12 @@ func selectsLabels(tr TargetRef) bool {
 }
 
 func IncludesGateways(ref TargetRef) bool {
-	isGateway := ref.Kind == MeshGateway
 	isMeshKind := ref.Kind == Mesh || ref.Kind == MeshSubset
 	isGatewayInProxyTypes := len(pointer.Deref(ref.ProxyTypes)) == 0 || slices.Contains(pointer.Deref(ref.ProxyTypes), Gateway)
 	isGatewayCompatible := isMeshKind && isGatewayInProxyTypes
 	isMeshHTTPRoute := ref.Kind == MeshHTTPRoute
 
-	return isGateway || isGatewayCompatible || isMeshHTTPRoute
+	return isGatewayCompatible || isMeshHTTPRoute
 }
 
 // +kubebuilder:validation:Enum=MeshOpenTelemetryBackend
@@ -157,18 +154,13 @@ const (
 )
 
 // BackendResourceRef is a reference to a backend resource within the same
-// mesh. Used by observability policies to point at a
-// MeshOpenTelemetryBackend. Use Name for same-cluster references, Labels
-// for cross-zone references where KDS hashes the resource name.
+// mesh. Used by observability policies to point at a MeshOpenTelemetryBackend
+// via label matching. When multiple resources match, the oldest by creation time wins.
 type BackendResourceRef struct {
 	// Kind of the backend resource.
 	Kind BackendResourceKind `json:"kind"`
-	// Name of the referenced resource (metadata.name). Use for same-cluster
-	// references. Mutually exclusive with Labels.
-	Name string `json:"name,omitempty"`
-	// Labels to match the referenced resource. Use for cross-zone references
-	// where KDS adds a hash suffix to metadata.name. Mutually exclusive with
-	// Name. When multiple resources match, the oldest by creation time wins.
+	// Labels to match the referenced resource. When multiple resources match,
+	// the oldest by creation time wins.
 	Labels map[string]string `json:"labels,omitempty"`
 }
 

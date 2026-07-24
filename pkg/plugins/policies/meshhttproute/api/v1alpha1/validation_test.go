@@ -3,9 +3,9 @@ package v1alpha1_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/test/resources/validators"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
 )
 
 var _ = Describe("validation", func() {
@@ -33,8 +33,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: BlahBlah
@@ -49,16 +48,15 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: Mesh
 `),
-		ErrorCase("spec.to.targetRef MeshService not allowed with top MeshGateway",
+		ErrorCase("top-level MeshGateway is rejected",
 			validators.Violation{
-				Field:   `spec.to[0].targetRef.kind`,
-				Message: `value 'MeshService' is not supported`,
+				Field:   `spec.targetRef.kind`,
+				Message: `value 'MeshGateway' is not supported`,
 			}, `
 type: MeshHTTPRoute
 mesh: mesh-1
@@ -86,8 +84,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -113,8 +110,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -150,8 +146,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -185,8 +180,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -226,8 +220,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -262,8 +255,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -287,8 +279,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -314,8 +305,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -336,14 +326,13 @@ to:
 				Message: `must not be defined`,
 			}, {
 				Field:   "spec.to[0].rules[0].default.filters[0].urlRewrite.hostToBackendHostname",
-				Message: "can only be set with MeshGateway",
+				Message: validators.MustNotBeSet,
 			}}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -364,33 +353,6 @@ to:
           - kind: MeshService
             name: backend
 `),
-		ErrorCase("top level MeshGateway requires backendRefs",
-			validators.Violation{
-				Field:   `spec.to[0].rules[0].default.backendRefs`,
-				Message: `must not be empty`,
-			}, `
-type: MeshHTTPRoute
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-- targetRef:
-    kind: Mesh
-  rules:
-    - matches:
-      - path:
-          type: PathPrefix
-          value: /
-      default:
-        filters:
-          - type: URLRewrite
-            urlRewrite:
-              path:
-                type: ReplacePrefixMatch
-                replacePrefixMatch: /other
-`),
 		ErrorCases("invalid backendRef in requestMirror",
 			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.name`,
@@ -400,8 +362,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -507,8 +468,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -575,6 +535,30 @@ to:
             urlRewrite:
               hostname: a23456789-a23456789-a234567890.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a2345678.com.
 `),
+		ErrorCase("top-level MeshGateway is rejected even with an otherwise valid route", validators.Violation{
+			Field:   `spec.targetRef.kind`,
+			Message: `value 'MeshGateway' is not supported`,
+		}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+- targetRef:
+    kind: MeshService
+    name: backend
+  rules:
+    - matches:
+      - path:
+          value: /
+          type: PathPrefix
+      default:
+        backendRefs:
+          - kind: MeshService
+            name: backend
+`),
 	)
 	DescribeValidCases(
 		api.NewMeshHTTPRouteResource,
@@ -583,8 +567,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to: []
 `),
 		Entry("prefix rewrite with prefix match", `
@@ -592,8 +575,7 @@ type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
@@ -615,52 +597,6 @@ to:
               path:
                 type: ReplacePrefixMatch
                 replacePrefixMatch: /other
-`),
-		Entry("MeshGateway to Mesh allowed", `
-type: MeshHTTPRoute
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-- targetRef:
-    kind: Mesh
-  rules:
-    - matches:
-      - path:
-          value: /
-          type: PathPrefix
-      default:
-        filters:
-          - type: URLRewrite
-            urlRewrite:
-              hostToBackendHostname: true
-        backendRefs:
-          - kind: MeshService
-            name: backend
-`),
-		Entry("MeshGateway with hostnames allowed", `
-type: MeshHTTPRoute
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-- targetRef:
-    kind: Mesh
-  hostnames:
-    - exammple.com
-  rules:
-    - matches:
-      - path:
-          value: /
-          type: PathPrefix
-      default:
-        backendRefs:
-          - kind: MeshService
-            name: backend
 `),
 		Entry("MeshService and MeshMultiZoneService", `
 type: MeshHTTPRoute

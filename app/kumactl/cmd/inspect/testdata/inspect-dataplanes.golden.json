@@ -7,6 +7,7 @@
       "name": "experiment",
       "creationTime": "2018-07-17T16:05:36.995Z",
       "modificationTime": "2019-07-17T18:08:41Z",
+      "kri": "kri_dp_default___experiment_",
       "dataplane": {
         "networking": {
           "address": "127.0.0.1",
@@ -103,6 +104,7 @@
       "name": "degraded-dp",
       "creationTime": "2018-07-17T16:05:36.995Z",
       "modificationTime": "2019-07-17T18:08:41Z",
+      "kri": "kri_dp_default___degraded-dp_",
       "dataplane": {
         "networking": {
           "address": "127.0.0.1",
@@ -198,6 +200,7 @@
       "name": "offline-dp",
       "creationTime": "2018-07-17T16:05:36.995Z",
       "modificationTime": "2019-07-17T18:08:41Z",
+      "kri": "kri_dp_default___offline-dp_",
       "dataplane": {
         "networking": {
           "address": "127.0.0.1",
@@ -294,6 +297,7 @@
       "name": "example",
       "creationTime": "2018-07-17T16:05:36.995Z",
       "modificationTime": "2019-07-17T18:08:41Z",
+      "kri": "kri_dp_default___example_",
       "dataplane": {
         "networking": {
           "address": "127.0.0.1",

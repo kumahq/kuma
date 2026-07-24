@@ -9,11 +9,11 @@ import (
 	"google.golang.org/protobuf/proto"
 	"sigs.k8s.io/yaml"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/ingress"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/ingress"
 )
 
 var _ = Describe("Ingress Dataplane", func() {
@@ -222,34 +222,6 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 				Mesh: "mesh1",
 			},
-			{
-				Instances: 1,
-				Tags: map[string]string{
-					"service":          "httpbin",
-					"version":          "v1",
-					mesh_proto.ZoneTag: "zone-1",
-				},
-				Mesh:            "mesh1",
-				ExternalService: true,
-			},
-		}
-		externalServices := []*core_mesh.ExternalServiceResource{
-			{
-				Meta: &test_model.ResourceMeta{
-					Mesh: "mesh1",
-					Name: "es-1",
-				},
-				Spec: &mesh_proto.ExternalService{
-					Networking: &mesh_proto.ExternalService_Networking{
-						Address: "127.0.0.1",
-					},
-					Tags: map[string]string{
-						"service":          "httpbin",
-						"version":          "v1",
-						mesh_proto.ZoneTag: "zone-1",
-					},
-				},
-			},
 		}
 		others := []*core_mesh.DataplaneResource{
 			{
@@ -302,7 +274,7 @@ var _ = Describe("Ingress Dataplane", func() {
 			},
 		}
 		Expect(
-			ingress.GetAvailableServices(nil, others, nil, externalServices, nil),
+			ingress.GetAvailableServices(nil, others, nil),
 		).To(BeComparableTo(services, cmp.Comparer(proto.Equal)))
 	})
 

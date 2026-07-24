@@ -1,12 +1,12 @@
 package generator
 
 import (
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	observability_v1 "github.com/kumahq/kuma/v2/api/observability/v1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/mads"
-	"github.com/kumahq/kuma/v2/pkg/mads/generator"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	observability_v1 "github.com/kumahq/kuma/v3/api/observability/v1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/mads"
+	"github.com/kumahq/kuma/v3/pkg/mads/generator"
 )
 
 var log = core.Log.WithName("mads").WithName("v1").WithName("generator")
@@ -56,7 +56,7 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 				Name:        dataplane.GetMeta().GetName(),
 				Address:     mads.Address(dataplane, prometheusEndpoint),
 				MetricsPath: prometheusEndpoint.GetPath(),
-				Labels:      mads.DataplaneLabels(dataplane, args.MeshGateways),
+				Labels:      mads.DataplaneLabels(dataplane),
 			}},
 		}
 

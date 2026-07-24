@@ -5,24 +5,30 @@ import (
 	"encoding/json"
 	"time"
 
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/josephburnett/jd/v2"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/cla"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
-	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
-	v3 "github.com/kumahq/kuma/v2/pkg/xds/server/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/sync"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
+	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/cla"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
+	xds_hooks "github.com/kumahq/kuma/v3/pkg/xds/hooks"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
+	v3 "github.com/kumahq/kuma/v3/pkg/xds/server/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
 
 type ProxyConfig map[string]any
@@ -61,6 +67,10 @@ func (p *ProxyConfigInspector) Get(ctx context.Context, name string, shadow bool
 		return nil, err
 	}
 
+	if identity, _ := meshidentity_api.BestMatched(proxy.Dataplane.GetMeta().GetLabels(), p.meshContext.Resources.MeshIdentities().Items); identity != nil && identity.Status != nil && identity.Status.IsInitialized() {
+		proxy.WorkloadIdentity = dummyIdentity(identity)
+	}
+
 	envoyCtx := xds_context.Context{
 		Mesh: p.meshContext,
 		ControlPlane: &xds_context.ControlPlaneContext{
@@ -80,6 +90,21 @@ func (p *ProxyConfigInspector) Get(ctx context.Context, name string, shadow bool
 
 func (p *ProxyConfigInspector) mesh() string {
 	return p.meshContext.Resource.GetMeta().GetName()
+}
+
+func dummyIdentity(identity *meshidentity_api.MeshIdentityResource) *core_xds.WorkloadIdentity {
+	identifier := kri.From(identity)
+	secretName := identifier.String()
+	return &core_xds.WorkloadIdentity{
+		KRI:            identifier,
+		ManagementMode: core_xds.KumaManagementMode,
+		IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+			return bldrs_tls.SdsSecretConfigSource(
+				secretName,
+				bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+			)
+		},
+	}
 }
 
 func Diff(before, after ProxyConfig) ([]api_common.JsonPatchItem, error) {

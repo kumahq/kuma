@@ -9,23 +9,21 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/generate"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/dns/vips"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	cache_mesh "github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/server"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/generate"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	cache_mesh "github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
 var _ = Describe("Workload generator", func() {
@@ -44,10 +42,6 @@ var _ = Describe("Workload generator", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			"zone",
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
-			".mesh",
-			80,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			nil,
 		)
 		meshCache, err := cache_mesh.NewCache(

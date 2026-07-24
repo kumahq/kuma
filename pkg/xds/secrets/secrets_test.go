@@ -6,23 +6,26 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"github.com/sethvargo/go-retry"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/secrets/cipher"
-	secrets_manager "github.com/kumahq/kuma/v2/pkg/core/secrets/manager"
-	secrets_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	ca_builtin "github.com/kumahq/kuma/v2/pkg/plugins/ca/builtin"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	. "github.com/kumahq/kuma/v2/pkg/xds/secrets"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
+	secrets_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
+	secrets_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	ca_builtin "github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	. "github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 var _ = Describe("Secrets", Ordered, func() {
@@ -145,7 +148,7 @@ var _ = Describe("Secrets", Ordered, func() {
 		identityProvider, err := NewIdentityProvider(caManagers, metrics)
 		Expect(err).ToNot(HaveOccurred())
 
-		secrets, err = NewSecrets(caProvider, identityProvider, metrics)
+		secrets, err = NewSecrets(caProvider, identityProvider, metrics, newTestLimiter(metrics, 5*time.Second))
 		Expect(err).ToNot(HaveOccurred())
 
 		now = time.Now()
@@ -400,4 +403,192 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(secrets.Info(mesh_proto.EgressProxyType, core_model.MetaToResourceKey(newZoneEgress().Meta))).To(BeNil())
 		})
 	})
+
+	Context("certificate generation backoff", func() {
+		const backoffBase = 5 * time.Second
+
+		var calls int
+		var failingSecrets Secrets
+		var failMetrics core_metrics.Metrics
+
+		failingMesh := func() *core_mesh.MeshResource {
+			return &core_mesh.MeshResource{
+				Meta: &model.ResourceMeta{Name: "default"},
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "ca-1",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "ca-1",
+								Type: "failing",
+								DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
+									Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
+										Expiration: "1h",
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+		}
+
+		BeforeEach(func() {
+			calls = 0
+			caManagers := core_ca.Managers{
+				"failing": &failingCaManager{calls: &calls},
+			}
+
+			m, err := core_metrics.NewMetrics("local")
+			Expect(err).ToNot(HaveOccurred())
+			failMetrics = m
+
+			caProvider, err := NewCaProvider(caManagers, m)
+			Expect(err).ToNot(HaveOccurred())
+			identityProvider, err := NewIdentityProvider(caManagers, m)
+			Expect(err).ToNot(HaveOccurred())
+			// deterministic (no jitter) backoff so the test is stable
+			failingSecrets, err = NewSecrets(caProvider, identityProvider, m, newTestLimiter(m, backoffBase))
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should not call the CA on every tick after a failure", func() {
+			// when the first attempt fails
+			_, _, err := failingSecrets.GetForDataPlane(context.Background(), newDataplane(), failingMesh(), nil)
+
+			// then it starts a backoff and records a failure
+			Expect(err).To(HaveOccurred())
+			Expect(calls).To(Equal(1))
+			Expect(test_metrics.FindMetric(failMetrics, "cert_generation_failure").GetCounter().GetValue()).To(Equal(1.0))
+			Expect(test_metrics.FindMetric(failMetrics, "cert_generation_backoff").GetGauge().GetValue()).To(Equal(1.0))
+
+			// when subsequent ticks happen within the backoff window
+			for range 5 {
+				_, _, err = failingSecrets.GetForDataPlane(context.Background(), newDataplane(), failingMesh(), nil)
+				Expect(err).To(HaveOccurred())
+			}
+
+			// then the CA is not called again
+			Expect(calls).To(Equal(1))
+
+			// when the backoff window passes
+			now = now.Add(backoffBase + time.Second)
+			_, _, err = failingSecrets.GetForDataPlane(context.Background(), newDataplane(), failingMesh(), nil)
+
+			// then the CA is retried
+			Expect(err).To(HaveOccurred())
+			Expect(calls).To(Equal(2))
+		})
+	})
+
+	Context("does not serve stale certs while backing off", func() {
+		dpCert := func() *mesh_proto.CertificateAuthorityBackend_DpCert {
+			return &mesh_proto.CertificateAuthorityBackend_DpCert{
+				Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{Expiration: "1h"},
+			}
+		}
+		// mesh with a working builtin backend (ca-1) and a failing one (ca-2)
+		meshWith := func(enabled string) *core_mesh.MeshResource {
+			return &core_mesh.MeshResource{
+				Meta: &model.ResourceMeta{Name: "default"},
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: enabled,
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{Name: "ca-1", Type: "builtin", DpCert: dpCert()},
+							{Name: "ca-2", Type: "failing", DpCert: dpCert()},
+						},
+					},
+				},
+			}
+		}
+
+		It("returns an error instead of stale certs so the watchdog keeps retrying", func() {
+			resStore := memory.NewStore()
+			rm := manager.NewResourceManager(resStore)
+			secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil, false)
+			builtinCaManager := ca_builtin.NewBuiltinCaManager(secretManager)
+
+			var calls int
+			caManagers := core_ca.Managers{
+				"builtin": builtinCaManager,
+				"failing": &failingCaManager{calls: &calls},
+			}
+
+			mesh := meshWith("ca-1")
+			Expect(rm.Create(context.Background(), mesh, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))).To(Succeed())
+			Expect(builtinCaManager.EnsureBackends(context.Background(), mesh, []*mesh_proto.CertificateAuthorityBackend{mesh.Spec.Mtls.Backends[0]})).To(Succeed())
+
+			m, err := core_metrics.NewMetrics("local")
+			Expect(err).ToNot(HaveOccurred())
+			caProvider, err := NewCaProvider(caManagers, m)
+			Expect(err).ToNot(HaveOccurred())
+			identityProvider, err := NewIdentityProvider(caManagers, m)
+			Expect(err).ToNot(HaveOccurred())
+			s, err := NewSecrets(caProvider, identityProvider, m, newTestLimiter(m, 5*time.Second))
+			Expect(err).ToNot(HaveOccurred())
+
+			// given a DP with certs issued by the working backend
+			identity, _, err := s.GetForDataPlane(context.Background(), newDataplane(), meshWith("ca-1"), nil)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(identity).ToNot(BeNil())
+
+			// when the enabled backend switches to a failing one
+			failing := meshWith("ca-2")
+			_, _, err = s.GetForDataPlane(context.Background(), newDataplane(), failing, nil)
+
+			// then generation fails and a backoff starts
+			Expect(err).To(HaveOccurred())
+			Expect(calls).To(Equal(1))
+
+			// and while backing off it returns an error (not stale certs), so the
+			// watchdog keeps its hash stale and keeps retrying; the CA is not hit again
+			_, _, err = s.GetForDataPlane(context.Background(), newDataplane(), failing, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(calls).To(Equal(1))
+		})
+	})
 })
+
+// newTestLimiter builds a limiter with a deterministic (no-jitter) per-proxy
+// backoff and a circuit-breaker threshold above 1, so single-proxy tests
+// exercise the backoff without ever tripping the backend circuit.
+func newTestLimiter(m core_metrics.Metrics, backoff time.Duration) issuer.Limiter {
+	l, err := issuer.NewLimiter(issuer.Config{
+		NewBackoff: func() retry.Backoff { return retry.NewConstant(backoff) },
+		MinProxies: 3,
+		Window:     time.Minute,
+		Cooldown:   30 * time.Second,
+	}, m)
+	Expect(err).ToNot(HaveOccurred())
+	return l
+}
+
+// failingCaManager is a ca.Manager whose GenerateDataplaneCert always fails,
+// used to exercise the certificate generation backoff.
+type failingCaManager struct {
+	calls *int
+}
+
+var _ core_ca.Manager = &failingCaManager{}
+
+func (f *failingCaManager) GenerateDataplaneCert(context.Context, string, *mesh_proto.CertificateAuthorityBackend, mesh_proto.MultiValueTagSet) (core_ca.KeyPair, error) {
+	*f.calls++
+	return core_ca.KeyPair{}, errors.New("failing CA")
+}
+
+func (f *failingCaManager) ValidateBackend(context.Context, string, *mesh_proto.CertificateAuthorityBackend) error {
+	return nil
+}
+
+func (f *failingCaManager) EnsureBackends(context.Context, core_model.Resource, []*mesh_proto.CertificateAuthorityBackend) error {
+	return nil
+}
+
+func (f *failingCaManager) UsedSecrets(string, *mesh_proto.CertificateAuthorityBackend) ([]string, error) {
+	return nil, nil
+}
+
+func (f *failingCaManager) GetRootCert(context.Context, string, *mesh_proto.CertificateAuthorityBackend) ([]core_ca.Cert, error) {
+	return nil, nil
+}

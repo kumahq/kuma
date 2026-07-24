@@ -6,16 +6,15 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"google.golang.org/protobuf/types/known/anypb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_routes_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes/v3"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
 type RoutesConfigurer struct {
-	Routes envoy_common.Routes
+	Routes                envoy_common.Routes
+	ConfigureRouteTimeout bool
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_config_route_v3.VirtualHost) error {
@@ -28,12 +27,6 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_config_route_v3.VirtualHo
 				Route: c.routeAction(route.Clusters, route.Modify),
 			},
 		}
-
-		typedPerFilterConfig, err := c.typedPerFilterConfig(&route)
-		if err != nil {
-			return err
-		}
-		envoyRoute.TypedPerFilterConfig = typedPerFilterConfig
 
 		c.setHeadersModifications(envoyRoute, route.Modify)
 
@@ -167,20 +160,20 @@ func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 
 func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *mesh_proto.TrafficRoute_Http_Modify) *envoy_config_route_v3.RouteAction {
 	routeAction := &envoy_config_route_v3.RouteAction{}
-	if len(clusters) != 0 {
-		// Timeout can be configured only per outbound listener. So all clusters in the split
-		// must have the same timeout. That's why we can take the timeout from the first cluster.
-		if cluster, ok := clusters[0].(*envoy_common.ClusterImpl); ok {
-			routeAction.Timeout = util_proto.Duration(cluster.Timeout().GetHttp().GetRequestTimeout().AsDuration())
-		} else {
-			routeAction.Timeout = util_proto.Duration(0)
-		}
+	if c.ConfigureRouteTimeout && len(clusters) != 0 {
+		routeAction.Timeout = util_proto.Duration(0)
 	}
-	if len(clusters) == 1 {
+
+	switch len(clusters) {
+	case 0:
+		// Leave the cluster unset when no upstreams survive route generation.
+		// Callers currently filter those routes out, but avoiding an empty
+		// WeightedClusters config keeps this helper safe on its own.
+	case 1:
 		routeAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
 			Cluster: clusters[0].Name(),
 		}
-	} else {
+	default:
 		var weightedClusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight
 		for _, cluster := range clusters {
 			cw := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
@@ -241,18 +234,4 @@ func (c RoutesConfigurer) setModifications(routeAction *envoy_config_route_v3.Ro
 			}
 		}
 	}
-}
-
-func (c *RoutesConfigurer) typedPerFilterConfig(route *envoy_common.Route) (map[string]*anypb.Any, error) {
-	typedPerFilterConfig := map[string]*anypb.Any{}
-
-	if route.RateLimit != nil {
-		rateLimit, err := envoy_routes_v3.NewRateLimitConfiguration(envoy_routes_v3.RateLimitConfigurationFromProto(route.RateLimit))
-		if err != nil {
-			return nil, err
-		}
-		typedPerFilterConfig["envoy.filters.http.local_ratelimit"] = rateLimit
-	}
-
-	return typedPerFilterConfig, nil
 }

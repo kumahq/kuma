@@ -5,11 +5,11 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (r *MeshAccessLogResource) validate() error {
@@ -23,7 +23,7 @@ func (r *MeshAccessLogResource) validate() error {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
 	}
 	if r.Spec.To != nil {
-		verr.AddErrorAt(path, validateTo(r.Spec.GetTargetRef().Kind, pointer.Deref(r.Spec.To)))
+		verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
 	}
 	if r.Spec.From != nil {
 		verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
@@ -38,10 +38,6 @@ func (r *MeshAccessLogResource) validateTop(targetRef common_api.TargetRef, isIn
 	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
-			common_api.MeshSubset,
-			common_api.MeshGateway,
-			common_api.MeshService,
-			common_api.MeshServiceSubset,
 			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
@@ -70,33 +66,33 @@ func validateRules(rules []Rule) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, rule := range rules {
 		path := validators.RootedAt("rules").Index(idx)
+		verr.AddErrorAt(path, validateMatches("matches", pointer.Deref(rule.Matches)))
 		verr.AddErrorAt(path.Field("default"), validateDefault(rule.Default))
 	}
 	return verr
 }
 
-func validateTo(topLevelKind common_api.TargetRefKind, to []To) validators.ValidationError {
+func validateMatches(field string, matches []common_api.Match) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, match := range matches {
+		path := validators.RootedAt(field).Index(idx)
+		verr.AddErrorAt(path, mesh.ValidateMatch(match))
+	}
+	return verr
+}
+
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-
-		var supportedKinds []common_api.TargetRefKind
-		switch topLevelKind {
-		case common_api.MeshGateway:
-			supportedKinds = []common_api.TargetRefKind{
-				common_api.Mesh,
-			}
-		default:
-			supportedKinds = []common_api.TargetRefKind{
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
 				common_api.MeshExternalService,
 				common_api.MeshMultiZoneService,
 				common_api.MeshHTTPRoute,
-			}
-		}
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: supportedKinds,
+			},
 		}))
 
 		defaultField := path.Field("default")
@@ -158,10 +154,20 @@ func validateBackend(backend Backend) validators.ValidationError {
 			backend.OpenTelemetry.Endpoint,
 			backend.OpenTelemetry.BackendRef,
 		))
+		verr.AddErrorAt(root, validateOtelAttributes(pointer.Deref(backend.OpenTelemetry.Attributes)))
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
 
+	return verr
+}
+
+func validateOtelAttributes(attributes []OtelAttribute) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, attribute := range attributes {
+		path := validators.RootedAt("attributes").Index(idx)
+		verr.Add(validators.ValidateOtelAttributeName(path.Field("key"), attribute.Key))
+	}
 	return verr
 }
 

@@ -32,7 +32,7 @@ skipRBAC: false
 restartOnSecretChange: true
 
 controlPlane:
-  # -- Environment that control plane is run in, useful when running universal global control plane on k8s
+  # -- Environment that control plane is run in
   environment: "kubernetes"
 
   # -- Labels to add to resources in addition to default labels
@@ -44,7 +44,7 @@ controlPlane:
   # -- Kuma CP log output path: Defaults to /dev/stdout
   logOutputPath: ""
 
-  # -- Kuma CP modes: one of zone,global
+  # -- Kuma CP modes: one of zone,standalone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart
   mode: "zone"
 
   # -- (string) Kuma CP zone, if running multizone
@@ -86,6 +86,9 @@ controlPlane:
           target:
             type: Utilization
             averageUtilization: 80
+
+    # -- Scaling behavior for the HPA (https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#configurable-scaling-behavior). Omit to use Kubernetes defaults.
+    behavior: {}
 
   # -- Node selector for the Kuma Control Plane pods
   nodeSelector:
@@ -185,26 +188,6 @@ controlPlane:
     # -- Map of serviceMonitor annotations.
     annotations: {}
 
-  globalZoneSyncService:
-    # -- Whether to create a k8s service for the global zone sync
-    # service. It will only be created when enabled and deploying the global
-    # control plane.
-    enabled: true
-    # -- Service type of the Global-zone sync
-    type: LoadBalancer
-    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
-    loadBalancerIP:
-    # -- Optionally specify allowed source ranges that can access the load balancer
-    loadBalancerSourceRanges: []
-    # -- Additional annotations to put on the Global Zone Sync Service
-    annotations: { }
-    # -- Port on which Global Zone Sync Service is exposed on Node for service of type NodePort
-    nodePort: 30685
-    # -- Port on which Global Zone Sync Service is exposed
-    port: 5685
-    # -- Protocol of the Global Zone Sync service port
-    protocol: grpc
-
   defaults:
     # -- Whether to skip creating the default Mesh
     skipMeshCreation: false
@@ -265,26 +248,17 @@ controlPlane:
           name: ""
           # -- Kind of the issuer: "Issuer" or "ClusterIssuer"
           kind: "Issuer"
+        # -- DNS names to include in the certificate SANs.
+        # Supports Helm template strings (evaluated via tpl).
+        dnsNames:
+          - '{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}'
+          - '{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}.svc'
+          - '{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}.svc.cluster.local'
     apiServer:
       # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""
       # -- Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
       clientCertsSecretName: ""
-    # - if not creating the global control plane, then do nothing
-    # - if secretName is empty and create is false, then do nothing
-    # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
-    # - if secretName is empty and create is true, then create a secret with a default name and use it
-    # - if secretName is non-empty and create is true, then create the secret using the provided name
-    kdsGlobalServer:
-      # -- Name of the K8s TLS Secret resource. If you set this and don't set
-      # create=true, you have to create the secret manually.
-      secretName: ""
-      # -- Whether to create the TLS secret in helm.
-      create: false
-      # -- The TLS certificate to offer.
-      cert: ""
-      # -- The TLS key to use.
-      key: ""
     # - if not creating the zonal control plane, then do nothing
     # - if secretName is empty and create is false, then do nothing
     # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
@@ -376,9 +350,6 @@ controlPlane:
   containerSecurityContext:
     readOnlyRootFilesystem: true
 
-  # -- If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
-  # The downside is that control plane requires permission to read Secrets in all namespaces.
-  supportGatewaySecretsInAllNamespaces: false
   # -- DNS configuration for the control-plane pod.
   # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
   dns:
@@ -437,16 +408,6 @@ cni:
   # -- it's only useful in tests to trigger a possible race condition
   delayStartupSeconds: 0
 
-  # -- use new CNI (experimental)
-  experimental:
-    imageEbpf:
-      # -- CNI experimental eBPF image registry
-      registry: "docker.io/kumahq"
-      # -- CNI experimental eBPF image repository
-      repository: "merbridge"
-      # -- CNI experimental eBPF image tag
-      tag: "0.8.5"
-
   resources:
     requests:
       cpu: 100m
@@ -465,8 +426,6 @@ cni:
     runAsGroup: 0
 
 dataPlane:
-  # -- If true, then turn on CoreDNS query logging
-  dnsLogging: false
   image:
     # -- The Kuma DP image repository
     repository: "kuma-dp"
@@ -555,6 +514,36 @@ ingress:
       cpu: 1000m
       memory: 512Mi
 
+  # -- Liveness probe settings for the Ingress proxy
+  livenessProbe:
+    # -- Whether to enable the liveness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Readiness probe settings for the Ingress proxy
+  readinessProbe:
+    # -- Whether to enable the readiness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Startup probe settings for the Ingress proxy
+  startupProbe:
+    # -- Whether to enable the startup probe.
+    enabled: false
+    failureThreshold: 60
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
   # -- Pod lifecycle settings (useful for adding a preStop hook, when
   # using AWS ALB or NLB)
   lifecycle: {}
@@ -601,6 +590,8 @@ ingress:
   annotations: { }
   # -- Additional pod annotations
   podAnnotations: { }
+  # -- Annotations to add to the Deployment resource.
+  deploymentAnnotations: { }
   # -- Node Selector for the Ingress pods
   nodeSelector:
     kubernetes.io/os: linux
@@ -712,6 +703,36 @@ egress:
       cpu: 1000m
       memory: 512Mi
 
+  # -- Liveness probe settings for the Egress proxy
+  livenessProbe:
+    # -- Whether to enable the liveness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Readiness probe settings for the Egress proxy
+  readinessProbe:
+    # -- Whether to enable the readiness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Startup probe settings for the Egress proxy
+  startupProbe:
+    # -- Whether to enable the startup probe.
+    enabled: false
+    failureThreshold: 60
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
   service:
     # -- Whether to create the service object
     enabled: true
@@ -729,6 +750,8 @@ egress:
   annotations: { }
   # -- Additional pod annotations
   podAnnotations: { }
+  # -- Annotations to add to the Deployment resource.
+  deploymentAnnotations: { }
   # -- Node Selector for the Egress pods
   nodeSelector:
     kubernetes.io/os: linux
@@ -797,6 +820,39 @@ egress:
       # -- A list of DNS search domains for hostname lookup in the Pod.
       searches: []
 
+# Default pause container image for mesh-scoped zone proxy deployments.
+# Individual meshes[].ingress.image / meshes[].egress.image override per-mesh.
+# Override if registry.k8s.io is not reachable or mirrored elsewhere.
+zoneProxyImage:
+  # -- The pause image registry
+  registry: registry.k8s.io
+  # -- The pause image repository
+  repository: pause
+  # -- The pause image tag
+  tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+
+# Default service settings for mesh zone proxies. Used as fallback when
+# meshes[].ingress.service or meshes[].egress.service fields are not set.
+meshZoneProxyDefaults:
+  ingress:
+    service:
+      # -- Default Service type for zone ingress.
+      type: LoadBalancer
+      # -- Default port for zone ingress Service.
+      port: 10001
+      # -- Container port the zone ingress listens on. Do not change unless the
+      # zone proxy binary is reconfigured.
+      targetPort: 10001
+  egress:
+    service:
+      # -- Default Service type for zone egress.
+      type: ClusterIP
+      # -- Default port for zone egress Service.
+      port: 10002
+      # -- Container port the zone egress listens on. Do not change unless the
+      # zone proxy binary is reconfigured.
+      targetPort: 10002
+
 # List of meshes to deploy zone proxies for.
 meshes:
   - # -- The mesh must already exist or be created separately; this Helm chart will not create it.
@@ -805,30 +861,40 @@ meshes:
     ingress:
       # -- Deploy a zone ingress for this mesh.
       enabled: false
-      # -- Number of replicas. Ignored when hpa.enabled is true.
-      replicas: 1
-      # Pause container image (dummy main container for sidecar injection).
-      # Override if registry.k8s.io is not reachable or mirrored elsewhere.
-      image:
-        # -- The pause image registry
-        registry: registry.k8s.io
-        # -- The pause image repository
-        repository: pause
-        # -- The pause image tag
-        tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+      # -- Per-mesh override for the pause container image. Falls back to
+      # .Values.zoneProxyImage when unset. Partial overrides inherit the
+      # remaining registry/repository/tag fields from the chart-level default.
+      image: {}
       service:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride)
         name: ""
-      # -- Resource requests and limits for the pod (pod-level resources).
-      # Applied to all containers in the pod (pause + injected kuma-sidecar).
-      resources: {}
-      # -- Subset of Kubernetes PodSpec fields applied to the pod template
-      # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
-      #  priorityClassName, securityContext, containerSecurityContext).
-      podSpec: {}
-      # -- Resource requests and limits for the pause container.
-      containerResources: {}
+        # -- (string) Per-mesh override for Service type. Falls back to
+        # meshZoneProxyDefaults.ingress.service.type when unset.
+        type:
+        # -- (int) Per-mesh override for Service port. Falls back to
+        # meshZoneProxyDefaults.ingress.service.port when unset.
+        port:
+        # -- Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.).
+        # Merged directly into the Service spec.
+        spec: {}
+        # -- Annotations to add to the Service resource.
+        annotations: {}
+        # -- Labels to add to the Service resource.
+        labels: {}
+      # -- Deployment-level settings.
+      deployment:
+        # -- Number of replicas. Ignored when hpa.enabled is true.
+        replicas: 1
+        # -- Annotations to add to the Deployment resource.
+        annotations: {}
+        # -- Labels to add to the Deployment resource.
+        labels: {}
+        # -- Subset of Kubernetes PodSpec fields applied to the pod template
+        # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
+        #  priorityClassName, securityContext, containerSecurityContext, resources,
+        #  containerResources).
+        podSpec: {}
       # -- Horizontal Pod Autoscaler settings.
       hpa:
         enabled: false
@@ -843,29 +909,40 @@ meshes:
     egress:
       # -- Deploy a zone egress for this mesh.
       enabled: false
-      replicas: 1
-      # Pause container image (dummy main container for sidecar injection).
-      # Override if registry.k8s.io is not reachable or mirrored elsewhere.
-      image:
-        # -- The pause image registry
-        registry: registry.k8s.io
-        # -- The pause image repository
-        repository: pause
-        # -- The pause image tag
-        tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+      # -- Per-mesh override for the pause container image. Falls back to
+      # .Values.zoneProxyImage when unset. Partial overrides inherit the
+      # remaining registry/repository/tag fields from the chart-level default.
+      image: {}
       service:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride)
         name: ""
-      # -- Resource requests and limits for the pod (pod-level resources).
-      # Applied to all containers in the pod (pause + injected kuma-sidecar).
-      resources: {}
-      # -- Subset of Kubernetes PodSpec fields applied to the pod template
-      # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
-      #  priorityClassName, securityContext, containerSecurityContext).
-      podSpec: {}
-      # -- Resource requests and limits for the pause container.
-      containerResources: {}
+        # -- (string) Per-mesh override for Service type. Falls back to
+        # meshZoneProxyDefaults.egress.service.type when unset.
+        type:
+        # -- (int) Per-mesh override for Service port. Falls back to
+        # meshZoneProxyDefaults.egress.service.port when unset.
+        port:
+        # -- Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.).
+        # Merged directly into the Service spec.
+        spec: {}
+        # -- Annotations to add to the Service resource.
+        annotations: {}
+        # -- Labels to add to the Service resource.
+        labels: {}
+      # -- Deployment-level settings.
+      deployment:
+        # -- Number of replicas. Ignored when hpa.enabled is true.
+        replicas: 1
+        # -- Annotations to add to the Deployment resource.
+        annotations: {}
+        # -- Labels to add to the Deployment resource.
+        labels: {}
+        # -- Subset of Kubernetes PodSpec fields applied to the pod template
+        # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
+        #  priorityClassName, securityContext, containerSecurityContext, resources,
+        #  containerResources).
+        podSpec: {}
       hpa:
         enabled: false
         minReplicas: 2
@@ -889,7 +966,7 @@ kubectl:
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: v1.35.3@sha256:8dad99b604a2c0bafe17f53cadf78482d6f667a6da687f385508f5f4e4696d37
+    tag: v1.36.2@sha256:b0d792e0d8dfb9bb1b922b78b23137e2a34bb6f9667640353a9d2aadd1fd7761
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
@@ -910,17 +987,6 @@ hooks:
   # -- Security context at the container level for crd/webhook/ns
   containerSecurityContext:
     readOnlyRootFilesystem: true
-
-  # -- ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs
-  # Changing below values will potentially break ebpf cleanup completely,
-  # so be cautious when doing so.
-  ebpfCleanup:
-    # -- Security context at the pod level for crd/webhook/cleanup-ebpf
-    podSecurityContext:
-      runAsNonRoot: false
-    # -- Security context at the container level for crd/webhook/cleanup-ebpf
-    containerSecurityContext:
-      readOnlyRootFilesystem: false
 
 transparentProxy:
   configMap:
@@ -986,21 +1052,6 @@ transparentProxy:
           # - "br+:172.18.0.0/16" (matches any interface starting with "br")
           # - "iface:::1/64" (for IPv6)
           networks: []
-      ebpf:
-        # -- Enables eBPF support for handling traffic redirection in the transparent proxy
-        enabled: false
-        # -- The path of the BPF filesystem
-        bpffsPath: /run/kuma/bpf
-        # -- The path of cgroup2
-        cgroupPath: /sys/fs/cgroup
-        # -- The name of the environment variable containing the IP address of the instance (pod/vm)
-        # where transparent proxy will be installed
-        instanceIPEnvVarName: ""
-        # -- Path where compiled eBPF programs and other necessary files for eBPF mode can be found
-        programsSourcePath: /tmp/kuma-ebpf
-        # -- The network interface for TC eBPF programs to bind to. If not provided, it will be
-        # automatically determined
-        tcAttachIface: ""
       retry:
         # -- The maximum number of retry attempts for operations
         maxRetries: 4
@@ -1038,23 +1089,6 @@ transparentProxy:
       verbose: false
 
 experimental:
-  # Configuration for the experimental ebpf mode for transparent proxy
-  ebpf:
-    # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
-    enabled: false
-    # -- Name of the environmental variable which will contain the IP address of a pod
-    instanceIPEnvVarName: INSTANCE_IP
-    # -- Path where BPF file system should be mounted
-    bpffsPath: /sys/fs/bpf
-    # -- Host's cgroup2 path
-    cgroupPath: /sys/fs/cgroup
-    # -- Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty
-    tcAttachIface: ""
-    # -- Path where compiled eBPF programs which will be installed can be found
-    programsSourcePath: /tmp/kuma-ebpf
-  # -- If true, enable native Kubernetes sidecars. This requires at least
-  # Kubernetes v1.29
-  sidecarContainers: false
   # -- If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching.
   inboundTagsDisabled: false
   # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.

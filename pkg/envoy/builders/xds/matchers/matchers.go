@@ -14,10 +14,10 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 )
 
 func NewMatcherBuilder() *Builder[matcher_config.Matcher] {
@@ -86,13 +86,29 @@ func matchesConfigurer(matches []common_api.Match, onMatchBuilder *Builder[match
 
 		var predicates []*matcher_config.Matcher_MatcherList_Predicate
 		for _, match := range matches {
+			var matchPredicates []*matcher_config.Matcher_MatcherList_Predicate
 			if match.SpiffeID != nil {
 				predicate, err := NewPredicate().Configure(SpiffeIDPredicate(match.SpiffeID)).Build()
 				if err != nil {
 					return err
 				}
-				predicates = append(predicates, predicate)
+				matchPredicates = append(matchPredicates, predicate)
 			}
+			if match.SNI != nil {
+				predicate, err := NewPredicate().Configure(SNIPredicate(match.SNI)).Build()
+				if err != nil {
+					return err
+				}
+				matchPredicates = append(matchPredicates, predicate)
+			}
+			if len(matchPredicates) == 0 {
+				continue
+			}
+			perMatch, err := NewPredicate().Configure(AndPredicate(matchPredicates)).Build()
+			if err != nil {
+				return err
+			}
+			predicates = append(predicates, perMatch)
 		}
 
 		combinedPredicate, err := NewPredicate().Configure(CombinedPredicate(predicates)).Build()
@@ -175,6 +191,43 @@ func SpiffeIDPredicate(spiffeID *common_api.SpiffeIDMatch) Configurer[matcher_co
 					ValueMatch: &stringMatcher,
 				},
 			},
+		}
+		return nil
+	}
+}
+
+func SNIPredicate(sni *common_api.SNIMatch) Configurer[matcher_config.Matcher_MatcherList_Predicate] {
+	return func(predicate *matcher_config.Matcher_MatcherList_Predicate) error {
+		stringMatcher := matcher_config.StringMatcher{
+			MatchPattern: &matcher_config.StringMatcher_Exact{
+				Exact: sni.Value,
+			},
+		}
+		predicate.MatchType = &matcher_config.Matcher_MatcherList_Predicate_SinglePredicate_{
+			SinglePredicate: &matcher_config.Matcher_MatcherList_Predicate_SinglePredicate{
+				Input: &xds_config.TypedExtensionConfig{
+					Name:        "envoy.matching.inputs.server_name",
+					TypedConfig: util_proto.MustMarshalAny(&networkv3.ServerNameInput{}),
+				},
+				Matcher: &matcher_config.Matcher_MatcherList_Predicate_SinglePredicate_ValueMatch{
+					ValueMatch: &stringMatcher,
+				},
+			},
+		}
+		return nil
+	}
+}
+
+func AndPredicate(matchers []*matcher_config.Matcher_MatcherList_Predicate) Configurer[matcher_config.Matcher_MatcherList_Predicate] {
+	return func(predicate *matcher_config.Matcher_MatcherList_Predicate) error {
+		if len(matchers) == 1 {
+			predicate.MatchType = matchers[0].MatchType
+		} else if len(matchers) > 1 {
+			predicate.MatchType = &matcher_config.Matcher_MatcherList_Predicate_AndMatcher{
+				AndMatcher: &matcher_config.Matcher_MatcherList_Predicate_PredicateList{
+					Predicate: matchers,
+				},
+			}
 		}
 		return nil
 	}

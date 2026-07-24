@@ -6,12 +6,12 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 )
 
 func EnsureOnlyOneZoneExists(
@@ -19,6 +19,7 @@ func EnsureOnlyOneZoneExists(
 	resManager manager.ResourceManager,
 	logger logr.Logger,
 	cfg kuma_cp.Config,
+	extensions context.Context,
 ) error {
 	if cfg.Mode == config_core.Global {
 		return nil // Zone creation on Zone CP is local to the specific zone

@@ -1,27 +1,25 @@
 package v1alpha1
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	"fmt"
+
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (r *MeshTimeoutResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
-	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
-		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
-	}
-	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
-		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
+	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 {
+		verr.AddViolationAt(path, "at least one of 'to' or 'rules' has to be defined")
 	}
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
-	verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From), topLevel.Kind))
 	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To), topLevel.Kind))
 	verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules), topLevel.Kind))
 	return verr.OrNil()
@@ -36,12 +34,7 @@ func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef, isInb
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
 				common_api.Dataplane,
-				common_api.MeshGateway,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
-				common_api.MeshHTTPRoute,
 			},
 			GatewayListenerTagsAllowed: true,
 			IsInboundPolicy:            isInboundPolicy,
@@ -51,39 +44,10 @@ func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef, isInb
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.Dataplane,
-				common_api.MeshSubset,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 			},
 			IsInboundPolicy: isInboundPolicy,
 		})
 	}
-}
-
-func validateFrom(from []From, topLevelKind common_api.TargetRefKind) validators.ValidationError {
-	var verr validators.ValidationError
-	fromPath := validators.RootedAt("from")
-
-	switch topLevelKind {
-	case common_api.MeshHTTPRoute, common_api.MeshGateway:
-		if len(from) != 0 {
-			verr.AddViolationAt(fromPath, validators.MustNotBeDefined)
-		}
-		return verr
-	}
-
-	for idx, fromItem := range from {
-		path := fromPath.Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-			},
-		}))
-
-		defaultField := path.Field("default")
-		verr.Add(validateDefault(defaultField, fromItem.Default, topLevelKind))
-	}
-	return verr
 }
 
 func validateTo(to []To, topLevelKind common_api.TargetRefKind) validators.ValidationError {
@@ -92,13 +56,12 @@ func validateTo(to []To, topLevelKind common_api.TargetRefKind) validators.Valid
 		path := validators.RootedAt("to").Index(idx)
 
 		var supportedKinds []common_api.TargetRefKind
-		switch topLevelKind {
-		case common_api.MeshHTTPRoute, common_api.MeshGateway:
+		if topLevelKind == common_api.MeshHTTPRoute {
 			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshExternalService,
 			}
-		default:
+		} else {
 			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
@@ -122,8 +85,53 @@ func validateRules(rules []Rule, topLevelKind common_api.TargetRefKind) validato
 	var verr validators.ValidationError
 	for idx, rule := range rules {
 		path := validators.RootedAt("rules").Index(idx)
+		verr.Add(validateMatches(path.Field("matches"), path.Field("default"), pointer.Deref(rule.Matches), rule.Default))
 		verr.Add(validateDefault(path.Field("default"), rule.Default, topLevelKind))
 	}
+	return verr
+}
+
+func validateMatches(matchesPath validators.PathBuilder, defaultPath validators.PathBuilder, matches []common_api.Match, conf Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	hasSpiffeID := false
+	for idx, match := range matches {
+		matchPath := matchesPath.Index(idx)
+		verr.AddErrorAt(matchPath, mesh.ValidateMatch(match))
+		if match.SpiffeID == nil && match.SNI == nil {
+			verr.AddViolationAt(matchPath, "must specify at least one of 'spiffeID' or 'sni'")
+			continue
+		}
+		if match.SpiffeID != nil {
+			hasSpiffeID = true
+			switch match.SpiffeID.Type {
+			case common_api.ExactMatchType, common_api.PrefixMatchType:
+			case "":
+				verr.AddViolationAt(matchPath.Field("spiffeID").Field("type"), "must be set")
+			default:
+				verr.AddViolationAt(matchPath.Field("spiffeID").Field("type"), fmt.Sprintf("unrecognized type %q, supported values are: Exact, Prefix", match.SpiffeID.Type))
+			}
+		}
+	}
+	if hasSpiffeID {
+		verr.Add(validateSourceConditionedTimeouts(defaultPath, conf))
+	}
+	return verr
+}
+
+func validateSourceConditionedTimeouts(path validators.PathBuilder, conf Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	const msg = "can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity"
+
+	verr.Add(validators.ValidateNil(path.Field("connectionTimeout"), conf.ConnectionTimeout, msg))
+	verr.Add(validators.ValidateNil(path.Field("idleTimeout"), conf.IdleTimeout, msg))
+
+	if http := conf.Http; http != nil {
+		httpPath := path.Field("http")
+		verr.Add(validators.ValidateNil(httpPath.Field("requestHeadersTimeout"), http.RequestHeadersTimeout, msg))
+		verr.Add(validators.ValidateNil(httpPath.Field("maxStreamDuration"), http.MaxStreamDuration, msg))
+		verr.Add(validators.ValidateNil(httpPath.Field("maxConnectionDuration"), http.MaxConnectionDuration, msg))
+	}
+
 	return verr
 }
 

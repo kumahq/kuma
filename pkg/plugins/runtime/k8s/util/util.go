@@ -5,15 +5,14 @@ import (
 	"maps"
 	"strings"
 
-	"github.com/go-logr/logr"
 	kube_core "k8s.io/api/core/v1"
 	kube_labels "k8s.io/apimachinery/pkg/labels"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 type ServicePredicate func(*kube_core.Service) bool
@@ -134,25 +133,15 @@ func CopyStringMap(in map[string]string) map[string]string {
 	return out
 }
 
-// MeshOfByLabelOrAnnotation returns the mesh of the given object according to its own
-// annotations or labels or the annotations of its namespace. It treats the annotation
-// directly on the object as deprecated.
-func MeshOfByLabelOrAnnotation(log logr.Logger, obj kube_client.Object, namespace *kube_core.Namespace) string {
+// MeshOfByLabel returns the mesh of the given object according to its own
+// label or the label of its namespace, falling back to the default mesh.
+func MeshOfByLabel(obj kube_client.Object, namespace *kube_core.Namespace) string {
 	if mesh, exists := metadata.Annotations(obj.GetLabels()).GetString(metadata.KumaMeshLabel); exists && mesh != "" {
-		return mesh
-	}
-	if mesh, exists := metadata.Annotations(obj.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" { //nolint:staticcheck
-		log.Info("WARNING: The kuma.io/mesh annotation is no longer supported. Use label instead", "name", obj.GetName(), "namespace", obj.GetNamespace(), "kind", obj.GetObjectKind().GroupVersionKind().Kind)
 		return mesh
 	}
 
 	// Label wasn't found on the object, let's look on the namespace instead
 	if mesh, exists := metadata.Annotations(namespace.GetLabels()).GetString(metadata.KumaMeshLabel); exists && mesh != "" {
-		return mesh
-	}
-
-	if mesh, exists := metadata.Annotations(namespace.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" { //nolint:staticcheck
-		log.Info("WARNING: The kuma.io/mesh annotation is no longer supported. Use label instead", "name", obj.GetName(), "namespace", obj.GetNamespace(), "kind", obj.GetObjectKind().GroupVersionKind().Kind)
 		return mesh
 	}
 

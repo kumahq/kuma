@@ -7,19 +7,20 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	. "github.com/kumahq/kuma/v2/pkg/xds/server/callbacks"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	. "github.com/kumahq/kuma/v3/pkg/xds/server/callbacks"
 )
 
 var _ = Describe("Workload Label Validator", func() {
@@ -30,7 +31,7 @@ var _ = Describe("Workload Label Validator", func() {
 	BeforeEach(func() {
 		memStore := memory.NewStore()
 		resManager = core_manager.NewResourceManager(memStore)
-		validator = NewWorkloadLabelValidator(resManager)
+		validator = NewWorkloadLabelValidator(resManager, config_core.KubernetesEnvironment)
 		streamIDCounter = 1
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
@@ -200,6 +201,30 @@ var _ = Describe("Workload Label Validator", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("mi-more-specific"))
+		})
+	})
+
+	Context("Universal environment with default SPIFFE ID path", func() {
+		// The default Universal path template is "/workload/{{ .Workload }}", so a
+		// MeshIdentity that does not set a custom path still requires the workload
+		// label on the dataplane. Regression for https://github.com/kumahq/kuma bug
+		// where UsesWorkloadLabel ignored the default template and admitted DPs
+		// without the label, producing an unparsable SPIFFE ID downstream.
+		It("should deny connection when MeshIdentity has no path and dataplane has no workload label", func() {
+			universalValidator := NewWorkloadLabelValidator(resManager, config_core.UniversalEnvironment)
+
+			createMeshIdentity("mi-default", "default",
+				map[string]string{"kuma.io/service": "universal-svc"}, nil)
+
+			dp := createDataplane("universal-dp", "default", map[string]string{
+				"kuma.io/service": "universal-svc",
+			})
+
+			err := universalValidator.OnProxyConnected(streamIDCounter, core_model.ResourceKey{Mesh: "default", Name: "universal-dp"}, context.Background(), core_xds.DataplaneMetadata{Resource: dp, ProxyType: mesh_proto.DataplaneProxyType})
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("missing required label 'kuma.io/workload'"))
+			Expect(err.Error()).To(ContainSubstring("/workload/{{ .Workload }}"))
 		})
 	})
 

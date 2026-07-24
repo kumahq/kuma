@@ -4,11 +4,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
 // Those types are not mapped directly to Kubernetes Resource
@@ -18,8 +18,6 @@ var IgnoredTypes = map[model.ResourceType]bool{
 	system.ConfigType:           true,
 	mesh.ZoneIngressInsightType: true, // uses DataplaneInsight under the hood
 	mesh.ZoneEgressInsightType:  true, // uses DataplaneInsight under the hood
-	mesh.MeshGatewayType:        true, // Gateway is only in Universal ATM.
-	mesh.MeshGatewayRouteType:   true, // GatewayRoute is only in Universal ATM.
 }
 
 var _ = Describe("Consistent Kind Types", func() {

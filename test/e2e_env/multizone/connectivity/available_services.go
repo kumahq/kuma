@@ -6,15 +6,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/postgres"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/postgres"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
 )
 
 func AvailableServices() {
@@ -77,7 +77,11 @@ func AvailableServices() {
 
 	It("is always updated on all ZoneIngresses, even if they are offline", func() {
 		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(multizone.UniZone1, "demo-client", "http://test-server.mesh")
+			response, err := client.CollectEchoResponse(
+				multizone.UniZone1,
+				"demo-client",
+				fmt.Sprintf("http://test-server.svc.%s.mesh.local", statefulCluster.ZoneName()),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(Equal("uni-test-server"))
 		}, "30s", "1s").Should(Succeed())
@@ -85,12 +89,12 @@ func AvailableServices() {
 
 		Consistently(func(g Gomega) {
 			ingress := getIngress(g, kumactl, ingress1Port)
-			g.Expect(ingress.GetAvailableServices()).To(HaveLen(1))
+			g.Expect(ingress.GetAvailableServices()).To(BeEmpty())
 		}).Should(Succeed())
 
 		Consistently(func(g Gomega) {
 			ingress := getIngress(g, kumactl, ingress2Port)
-			g.Expect(ingress.GetAvailableServices()).To(HaveLen(1))
+			g.Expect(ingress.GetAvailableServices()).To(BeEmpty())
 		}).Should(Succeed())
 
 		// Kill ingress

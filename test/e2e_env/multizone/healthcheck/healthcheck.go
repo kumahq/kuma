@@ -7,10 +7,10 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func ApplicationOnUniversalClientOnK8s() {
@@ -20,8 +20,7 @@ func ApplicationOnUniversalClientOnK8s() {
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
-			Install(TrafficRouteUniversal(meshName)).
-			Install(TrafficPermissionUniversal(meshName)).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
@@ -65,7 +64,7 @@ func ApplicationOnUniversalClientOnK8s() {
 
 	It("should not load balance requests to unhealthy instance", func() {
 		expectHealthyInstances := func(g Gomega) {
-			instances, err := client.CollectResponsesByInstance(multizone.KubeZone1, "demo-client", "test-server.mesh",
+			instances, err := client.CollectResponsesByInstance(multizone.KubeZone1, "demo-client", "test-server.svc.kuma-5.mesh.local",
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithNumberOfRequests(10),
 			)

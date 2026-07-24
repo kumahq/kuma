@@ -52,6 +52,7 @@ function update_version {
 }
 
 function package {
+  local dev=${1}
   # First package all the charts
   for dir in "${CHARTS_DIR}"/*; do
     if [ ! -d "${dir}" ]; then
@@ -60,12 +61,6 @@ function package {
 
     # Fail if there are uncommitted changes
     git diff --exit-code HEAD -- "${dir}"
-
-    # TODO remove this when Gateway API is no longer experimental
-    # Gateway CRDs are installed conditionally via install missing CRDs job
-    if [[ $(basename "${dir}") == "kuma" ]]; then
-      find "${dir}/crds" -name "*meshgatewayconfigs.yaml" -delete
-    fi
 
     cr package \
       --package-path "${CHARTS_PACKAGE_PATH}" \
@@ -88,6 +83,31 @@ function package {
 
     # Restore files removed above
     git checkout -- "${dir}"
+  done
+
+  # In release mode (no --dev), every Chart.yaml inside the packaged tgz must
+  # carry a real version. A leftover 0.0.0-preview means helm dep update did
+  # not replace the embedded subchart - the chart would ship with a bogus
+  # helm.sh/chart label.
+  if [ -z "${dev}" ]; then
+    verify_packaged
+  fi
+}
+
+function verify_packaged {
+  local f p v
+  local -a bad
+  for f in "${CHARTS_PACKAGE_PATH}"/*.tgz; do
+    bad=()
+    while read -r p; do
+      v=$(tar -zxOf "${f}" "${p}" | yq .version)
+      if [[ ${v} == 0.0.0-preview* ]]; then
+        bad+=("${p}")
+      fi
+    done < <(tar -tzf "${f}" | grep -E 'Chart\.yaml$')
+    if (( ${#bad[@]} > 0 )); then
+      msg_err "packaged chart ${f} ships placeholder version in: ${bad[*]}. helm dep update did not replace the embedded subchart."
+    fi
   done
 }
 
@@ -188,7 +208,7 @@ function main {
 
   case $op in
     package)
-      package
+      package "${dev}"
       ;;
     update-version)
       update_version "${dev}"

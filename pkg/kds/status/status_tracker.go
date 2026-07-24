@@ -14,16 +14,16 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/kds"
-	"github.com/kumahq/kuma/v2/pkg/kds/util"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/kds"
+	"github.com/kumahq/kuma/v3/pkg/kds/util"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
 )
 
 type StatusTracker interface {
@@ -98,7 +98,7 @@ func (c *statusTracker) onStreamOpen(ctx context.Context, streamID int64, typ st
 	// save
 	c.streams[streamID] = state
 
-	c.log.V(1).Info("onStreamOpen", "context", ctx, "streamid", streamID, "type", typ, "subscription", subscription)
+	c.log.V(1).Info("onStreamOpen", "context", ctx, "streamID", streamID, "type", typ, "subscription", subscription)
 	return nil
 }
 
@@ -120,7 +120,7 @@ func (c *statusTracker) onStreamClosed(streamID int64, _ *envoy_core.Node) {
 
 	state := c.streams[streamID]
 	if state == nil {
-		c.log.Info("[WARNING] OnStreamClosed but no state in the status_tracker", "streamid", streamID)
+		c.log.Info("[WARNING] OnStreamClosed but no state in the status_tracker", "streamID", streamID)
 		return
 	}
 
@@ -135,7 +135,7 @@ func (c *statusTracker) onStreamClosed(streamID int64, _ *envoy_core.Node) {
 	// trigger final flush
 	state.Close()
 
-	c.log.V(1).Info("onStreamClosed", "streamid", streamID, "subscription", subscription)
+	c.log.V(1).Info("onStreamClosed", "streamID", streamID, "subscription", subscription)
 }
 
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
@@ -174,7 +174,7 @@ func (c *statusTracker) onStreamRequest(streamID int64, req DiscoveryRequestInfo
 	if state.zone == "" {
 		state.zone = node.Id
 		if err := ReadVersion(node.GetMetadata(), state.subscription.Version); err != nil {
-			c.log.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", node.GetMetadata())
+			c.log.Error(err, "failed to extract version out of the Envoy metadata", "streamID", streamID, "metadata", node.GetMetadata())
 		}
 		go c.createStatusSink(state, c.log).Start(state.ctx, state.stop)
 	}
@@ -213,7 +213,7 @@ func (c *statusTracker) onStreamRequest(streamID int64, req DiscoveryRequestInfo
 		}
 	}
 
-	c.log.V(1).Info("OnStreamRequest", "streamid", streamID, "request", req, "subscription", subscription)
+	c.log.V(1).Info("OnStreamRequest", "streamID", streamID, "request", req, "subscription", subscription)
 	return nil
 }
 
@@ -245,7 +245,7 @@ func (c *statusTracker) onStreamResponse(streamID int64, req DiscoveryRequestInf
 	subscription.Status.Total.ResponsesSent++
 	util.StatsOf(subscription.Status, model.ResourceType(req.GetTypeUrl())).ResponsesSent++
 
-	c.log.V(1).Info("OnStreamResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
+	c.log.V(1).Info("OnStreamResponse", "streamID", streamID, "request", req, "response", resp, "subscription", subscription)
 }
 
 func (c *statusTracker) OnStreamResponse(_ context.Context, streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {

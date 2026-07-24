@@ -8,14 +8,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/api-server/types"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
-	meshaccesslog "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/api-server/types"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
+	meshaccesslog "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
 var _ = Describe("DataplaneInspectEntry", func() {
@@ -47,8 +47,8 @@ var _ = Describe("DataplaneInspectEntry", func() {
 					Service: "web",
 				},
 				MatchedPolicies: map[model.ResourceType][]v1alpha1.ResourceMeta{
-					core_mesh.TimeoutType: {
-						rest.From.Meta(&core_mesh.TimeoutResource{
+					meshexternalservice_api.MeshExternalServiceType: {
+						rest.From.Meta(&meshexternalservice_api.MeshExternalServiceResource{
 							Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "t-1"},
 						}),
 					},

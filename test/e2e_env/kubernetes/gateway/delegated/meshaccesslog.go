@@ -11,10 +11,10 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func MeshAccessLog(config *Config) func() {
@@ -119,7 +119,7 @@ spec:
 					And(
 						HaveField("Start", WithTransform(parseTimestamp, BeTemporally("~", time.Now(), time.Hour))),
 						HaveField("Source", fmt.Sprintf("%s-gateway-admin_%s_svc_8444", config.Mesh, config.Namespace)),
-						HaveField("Destination", fmt.Sprintf("test-server_%s_svc_80", config.Namespace)),
+						HaveField("Destination", "test-server"),
 					),
 				))
 			}, "30s", "1s").Should(Succeed())

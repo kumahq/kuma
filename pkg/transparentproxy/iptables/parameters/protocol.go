@@ -3,8 +3,8 @@ package parameters
 import (
 	"strconv"
 
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/consts"
 )
 
 var _ ParameterBuilder = &ProtocolParameter{}
@@ -101,18 +101,6 @@ func DestinationPortRangeOrValue(exclusion config.Exclusion) *TcpUdpParameter {
 
 func NotDestinationPort[T ~uint16](port T) *TcpUdpParameter {
 	return destinationPort(port, true)
-}
-
-func NotDestinationPortIf[T ~uint16](predicate func() bool, port T) *TcpUdpParameter {
-	return NotDestinationPortIfBool(predicate(), port)
-}
-
-func NotDestinationPortIfBool[T ~uint16](condition bool, port T) *TcpUdpParameter {
-	if condition {
-		return destinationPort(port, true)
-	}
-
-	return nil
 }
 
 func sourcePort[T ~uint16](port T, negative bool) *TcpUdpParameter {

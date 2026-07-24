@@ -6,22 +6,20 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/mads/generator"
-	mads_v1 "github.com/kumahq/kuma/v2/pkg/mads/v1"
-	meshmetrics_generator "github.com/kumahq/kuma/v2/pkg/mads/v1/generator"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/mads/generator"
+	mads_v1 "github.com/kumahq/kuma/v3/pkg/mads/v1"
+	meshmetrics_generator "github.com/kumahq/kuma/v3/pkg/mads/v1/generator"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 )
-
-var log = core.Log.WithName("mads").WithName("v1").WithName("reconcile")
 
 func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache, inboundTagsDisabled bool) *SnapshotGenerator {
 	return &SnapshotGenerator{
@@ -50,10 +48,6 @@ func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]en
 		return nil, err
 	}
 
-	if len(meshes) > 0 && len(meshesWithMeshMetrics) > 0 {
-		log.Info("it is not supported to use both MeshMetrics policy and 'metrics' under Mesh resource. For now MeshMetrics will take precedence. If migrating please remove the 'metrics' section and apply an equivalent MeshMetrics resource")
-	}
-
 	var resources []*core_xds.Resource
 	resourcesPerClientId := map[string]envoy_cache.ResourceSnapshot{}
 	if len(meshesWithMeshMetrics) == 0 {
@@ -62,15 +56,9 @@ func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]en
 			return nil, err
 		}
 
-		meshGateways, err := s.getMeshGateways(ctx, meshes)
-		if err != nil {
-			return nil, err
-		}
-
 		args := generator.Args{
-			Meshes:       meshes,
-			Dataplanes:   dataplanes,
-			MeshGateways: meshGateways,
+			Meshes:     meshes,
+			Dataplanes: dataplanes,
 		}
 
 		resources, err = s.resourceGenerator.Generate(args)
@@ -168,18 +156,6 @@ func (s *SnapshotGenerator) getDataplanes(ctx context.Context, meshes []*core_me
 		dataplanes = append(dataplanes, dataplaneList.Items...)
 	}
 	return dataplanes, nil
-}
-
-func (s *SnapshotGenerator) getMeshGateways(ctx context.Context, meshes []*core_mesh.MeshResource) ([]*core_mesh.MeshGatewayResource, error) {
-	meshGateways := make([]*core_mesh.MeshGatewayResource, 0)
-	for _, mesh := range meshes {
-		meshGatewayList := &core_mesh.MeshGatewayResourceList{}
-		if err := s.resourceManager.List(ctx, meshGatewayList, core_store.ListByMesh(mesh.Meta.GetName())); err != nil {
-			return nil, err
-		}
-		meshGateways = append(meshGateways, meshGatewayList.Items...)
-	}
-	return meshGateways, nil
 }
 
 func createSnapshot(resources []*core_xds.Resource) envoy_cache.ResourceSnapshot {

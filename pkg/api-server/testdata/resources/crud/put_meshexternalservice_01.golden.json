@@ -5,12 +5,19 @@
  "creationTime": "0001-01-01T00:00:00Z",
  "modificationTime": "0001-01-01T00:00:00Z",
  "labels": {
+  "kuma.io/display-name": "mes-tcp",
   "kuma.io/env": "universal",
   "kuma.io/mesh": "default",
   "kuma.io/origin": "zone",
   "kuma.io/zone": "default"
  },
  "kri": "kri_extsvc_default_default__mes-tcp_",
+ "snis": [
+  {
+   "port": 4242,
+   "sni": "sni.extsvc.default.default.mes-tcp.4242"
+  }
+ ],
  "spec": {
   "match": {
    "type": "HostnameGenerator",

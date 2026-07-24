@@ -10,17 +10,24 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
-	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
-	tproxy_consts "github.com/kumahq/kuma/v2/pkg/transparentproxy/consts"
-	tproxy_validate "github.com/kumahq/kuma/v2/pkg/transparentproxy/validate"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+	tproxy_consts "github.com/kumahq/kuma/v3/pkg/transparentproxy/consts"
+	tproxy_validate "github.com/kumahq/kuma/v3/pkg/transparentproxy/validate"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 const defaultLogName = "transparentproxy.validator"
+
+// shouldSkipValidation returns true when the given IP version should not be
+// validated. IPv6 is skipped when the node has no local IPv6 address or the
+// mode is IPv4-only. IPv4 is never skipped.
+func shouldSkipValidation(ipv6, hasLocalIPv6Addr, validateOnlyIPv4 bool) bool {
+	return ipv6 && (!hasLocalIPv6Addr || validateOnlyIPv4)
+}
 
 func newInstallTransparentProxyValidator() *cobra.Command {
 	ipFamilyMode := tproxy_config.IPFamilyModeDualStack
@@ -62,7 +69,7 @@ The result will be shown as text in stdout as well as the exit code.
 			validateOnlyIPv4 := ipFamilyMode == tproxy_config.IPFamilyModeIPv4
 
 			validate := func(ipv6 bool) error {
-				if ipv6 && !hasLocalIPv6Addr || validateOnlyIPv4 {
+				if shouldSkipValidation(ipv6, hasLocalIPv6Addr, validateOnlyIPv4) {
 					return nil
 				}
 

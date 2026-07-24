@@ -6,16 +6,16 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/access"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/server/types"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone"
-	zone_access "github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone/access"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/access"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/server/types"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone"
+	zone_access "github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone/access"
 )
 
 var log = core.Log.WithName("token-ws")

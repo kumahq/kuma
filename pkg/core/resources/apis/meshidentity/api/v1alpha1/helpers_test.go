@@ -4,14 +4,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var _ = Describe("MeshIdentity Helper", func() {
@@ -259,7 +259,7 @@ var _ = Describe("MeshIdentity Helper", func() {
 	})
 
 	DescribeTable("UsesWorkloadLabel",
-		func(pathTemplate *string, expected bool) {
+		func(env config_core.EnvironmentType, pathTemplate *string, expected bool) {
 			// given
 			mi := &meshidentity_api.MeshIdentity{}
 			if pathTemplate != nil {
@@ -269,18 +269,20 @@ var _ = Describe("MeshIdentity Helper", func() {
 			}
 
 			// when
-			result := mi.UsesWorkloadLabel()
+			result := mi.UsesWorkloadLabel(env)
 
 			// then
 			Expect(result).To(Equal(expected))
 		},
-		Entry("nil SpiffeID", nil, false),
-		Entry("uses workload label", pointer.To("/ns/{{ .Namespace }}/workload/{{ label \"kuma.io/workload\" }}"), true),
-		Entry("uses workload label with extra spaces", pointer.To("/workload/{{  label  \"kuma.io/workload\"  }}"), true),
-		Entry("uses .Workload placeholder", pointer.To("/ns/{{ .Namespace }}/workload/{{ .Workload }}"), true),
-		Entry("uses .Workload placeholder with extra spaces", pointer.To("/workload/{{  .Workload  }}"), true),
-		Entry("does not use workload label", pointer.To("/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"), false),
-		Entry("uses different label", pointer.To("/ns/{{ .Namespace }}/label/{{ label \"app\" }}"), false),
-		Entry("empty path", pointer.To(""), false),
+		Entry("nil SpiffeID on Kubernetes uses default SA template", config_core.KubernetesEnvironment, nil, false),
+		Entry("nil SpiffeID on Universal falls back to default workload template", config_core.UniversalEnvironment, nil, true),
+		Entry("uses workload label", config_core.KubernetesEnvironment, pointer.To("/ns/{{ .Namespace }}/workload/{{ label \"kuma.io/workload\" }}"), true),
+		Entry("uses workload label with extra spaces", config_core.KubernetesEnvironment, pointer.To("/workload/{{  label  \"kuma.io/workload\"  }}"), true),
+		Entry("uses .Workload placeholder", config_core.KubernetesEnvironment, pointer.To("/ns/{{ .Namespace }}/workload/{{ .Workload }}"), true),
+		Entry("uses .Workload placeholder with extra spaces", config_core.KubernetesEnvironment, pointer.To("/workload/{{  .Workload  }}"), true),
+		Entry("does not use workload label", config_core.KubernetesEnvironment, pointer.To("/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"), false),
+		Entry("uses different label", config_core.KubernetesEnvironment, pointer.To("/ns/{{ .Namespace }}/label/{{ label \"app\" }}"), false),
+		Entry("empty path on Kubernetes", config_core.KubernetesEnvironment, pointer.To(""), false),
+		Entry("empty path on Universal", config_core.UniversalEnvironment, pointer.To(""), false),
 	)
 })

@@ -1,12 +1,12 @@
 package builders
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	meshtimeout_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type MeshTimeoutBuilder struct {
@@ -49,19 +49,20 @@ func (m *MeshTimeoutBuilder) WithNamespace(namespace string) *MeshTimeoutBuilder
 	return m
 }
 
-func (m *MeshTimeoutBuilder) AddFrom(targetRef common_api.TargetRef, conf meshtimeout_api.Conf) *MeshTimeoutBuilder {
-	m.res.Spec.From = pointer.To(append(pointer.Deref(m.res.Spec.From), meshtimeout_api.From{
+func (m *MeshTimeoutBuilder) AddTo(targetRef common_api.TargetRef, conf meshtimeout_api.Conf) *MeshTimeoutBuilder {
+	m.res.Spec.To = pointer.To(append(pointer.Deref(m.res.Spec.To), meshtimeout_api.To{
 		TargetRef: targetRef,
 		Default:   conf,
 	}))
 	return m
 }
 
-func (m *MeshTimeoutBuilder) AddTo(targetRef common_api.TargetRef, conf meshtimeout_api.Conf) *MeshTimeoutBuilder {
-	m.res.Spec.To = pointer.To(append(pointer.Deref(m.res.Spec.To), meshtimeout_api.To{
-		TargetRef: targetRef,
-		Default:   conf,
-	}))
+func (m *MeshTimeoutBuilder) AddRule(matches []common_api.Match, conf meshtimeout_api.Conf) *MeshTimeoutBuilder {
+	rule := meshtimeout_api.Rule{Default: conf}
+	if len(matches) > 0 {
+		rule.Matches = pointer.To(matches)
+	}
+	m.res.Spec.Rules = pointer.To(append(pointer.Deref(m.res.Spec.Rules), rule))
 	return m
 }
 

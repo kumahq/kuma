@@ -13,20 +13,20 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/merge"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/merge"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 )
 
 const RuleMatchesHashTag = "__rule-matches-hash__"
@@ -193,18 +193,24 @@ func BuildFromRules(
 
 	for inb, policies := range matchedPoliciesByInbound {
 		fromList := []PolicyItemWithMeta{}
+		supportsFromList := true
 		for _, p := range policies.GetItems() {
 			policyWithFrom, ok := p.GetSpec().(core_model.PolicyWithFromList)
 			if !ok {
-				return FromRules{}, nil
+				// Policy type doesn't support the legacy 'from' list (e.g. it only has 'rules').
+				// InboundRules are still built below independently of 'from' support.
+				supportsFromList = false
+				break
 			}
 			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta(), policyWithFrom.GetTargetRef())...)
 		}
-		rules, err := BuildRules(fromList, true)
-		if err != nil {
-			return FromRules{}, err
+		if supportsFromList {
+			rules, err := BuildRules(fromList, true)
+			if err != nil {
+				return FromRules{}, err
+			}
+			rulesByInbound[inb] = rules
 		}
-		rulesByInbound[inb] = rules
 
 		rulesNew, err := inbound.BuildRules(policies)
 		if err != nil {

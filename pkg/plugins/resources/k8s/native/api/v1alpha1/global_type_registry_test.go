@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
 var _ = Describe("global TypeRegistry", func() {
@@ -47,56 +47,6 @@ var _ = Describe("global TypeRegistry", func() {
 				expectedType: &DataplaneInsight{},
 				expectedKind: "DataplaneInsight",
 			}),
-			Entry("ExternalService", testCase{
-				inputType:    &mesh_proto.ExternalService{},
-				expectedType: &ExternalService{},
-				expectedKind: "ExternalService",
-			}),
-			Entry("HealthCheck", testCase{
-				inputType:    &mesh_proto.HealthCheck{},
-				expectedType: &HealthCheck{},
-				expectedKind: "HealthCheck",
-			}),
-			Entry("ProxyTemplate", testCase{
-				inputType:    &mesh_proto.ProxyTemplate{},
-				expectedType: &ProxyTemplate{},
-				expectedKind: "ProxyTemplate",
-			}),
-			Entry("TrafficPermission", testCase{
-				inputType:    &mesh_proto.TrafficPermission{},
-				expectedType: &TrafficPermission{},
-				expectedKind: "TrafficPermission",
-			}),
-			Entry("TrafficLog", testCase{
-				inputType:    &mesh_proto.TrafficLog{},
-				expectedType: &TrafficLog{},
-				expectedKind: "TrafficLog",
-			}),
-			Entry("TrafficRoute", testCase{
-				inputType:    &mesh_proto.TrafficRoute{},
-				expectedType: &TrafficRoute{},
-				expectedKind: "TrafficRoute",
-			}),
-			Entry("TrafficTrace", testCase{
-				inputType:    &mesh_proto.TrafficTrace{},
-				expectedType: &TrafficTrace{},
-				expectedKind: "TrafficTrace",
-			}),
-			Entry("FaultInjection", testCase{
-				inputType:    &mesh_proto.FaultInjection{},
-				expectedType: &FaultInjection{},
-				expectedKind: "FaultInjection",
-			}),
-			Entry("Retry", testCase{
-				inputType:    &mesh_proto.Retry{},
-				expectedType: &Retry{},
-				expectedKind: "Retry",
-			}),
-			Entry("RateLimit", testCase{
-				inputType:    &mesh_proto.RateLimit{},
-				expectedType: &RateLimit{},
-				expectedKind: "RateLimit",
-			}),
 		)
 	})
 
@@ -133,46 +83,6 @@ var _ = Describe("global TypeRegistry", func() {
 				inputType:    &mesh_proto.DataplaneInsight{},
 				expectedType: &DataplaneInsightList{},
 				expectedKind: "DataplaneInsightList",
-			}),
-			Entry("ExternalServiceList", testCase{
-				inputType:    &mesh_proto.ExternalService{},
-				expectedType: &ExternalServiceList{},
-				expectedKind: "ExternalServiceList",
-			}),
-			Entry("HealthCheckList", testCase{
-				inputType:    &mesh_proto.HealthCheck{},
-				expectedType: &HealthCheckList{},
-				expectedKind: "HealthCheckList",
-			}),
-			Entry("ProxyTemplateList", testCase{
-				inputType:    &mesh_proto.ProxyTemplate{},
-				expectedType: &ProxyTemplateList{},
-				expectedKind: "ProxyTemplateList",
-			}),
-			Entry("TrafficPermissionList", testCase{
-				inputType:    &mesh_proto.TrafficPermission{},
-				expectedType: &TrafficPermissionList{},
-				expectedKind: "TrafficPermissionList",
-			}),
-			Entry("TrafficLogList", testCase{
-				inputType:    &mesh_proto.TrafficLog{},
-				expectedType: &TrafficLogList{},
-				expectedKind: "TrafficLogList",
-			}),
-			Entry("TrafficRouteList", testCase{
-				inputType:    &mesh_proto.TrafficRoute{},
-				expectedType: &TrafficRouteList{},
-				expectedKind: "TrafficRouteList",
-			}),
-			Entry("TrafficTraceList", testCase{
-				inputType:    &mesh_proto.TrafficTrace{},
-				expectedType: &TrafficTraceList{},
-				expectedKind: "TrafficTraceList",
-			}),
-			Entry("RetryList", testCase{
-				inputType:    &mesh_proto.Retry{},
-				expectedType: &RetryList{},
-				expectedKind: "RetryList",
 			}),
 		)
 	})

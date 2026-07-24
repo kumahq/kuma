@@ -2,50 +2,42 @@
 package v1alpha1_test
 
 import (
-	"context"
-	"fmt"
 	"path/filepath"
 
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/plugin/v1alpha1"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	meshtcproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	meshtcproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	test_matchers "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_policies "github.com/kumahq/kuma/v2/pkg/test/policies"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	test_xds "github.com/kumahq/kuma/v2/pkg/test/xds"
-	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
-	xds_samples "github.com/kumahq/kuma/v2/pkg/test/xds/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/plugin/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	test_matchers "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	test_xds "github.com/kumahq/kuma/v3/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/v3/pkg/test/xds/samples"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshCircuitBreaker", func() {
@@ -60,6 +52,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		resources       []*core_xds.Resource
 		toRules         core_rules.ToRules
 		fromRules       core_rules.FromRules
+		withoutPolicy   bool
+		unifiedNaming   bool
 		expectedCluster []string
 	}
 
@@ -105,6 +99,17 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		}
 	}
 
+	clusterWithExistingCircuitBreakers := func(name string) *envoy_cluster.Cluster {
+		cluster := test_xds.ClusterWithName(name).(*envoy_cluster.Cluster)
+		cluster.CircuitBreakers = &envoy_cluster.CircuitBreakers{
+			Thresholds: []*envoy_cluster.CircuitBreakers_Thresholds{{
+				Priority:       envoy_config_core_v3.RoutingPriority_DEFAULT,
+				MaxConnections: util_proto.UInt32(66),
+			}},
+		}
+		return cluster
+	}
+
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
 			resourceSet := core_xds.NewResourceSet()
@@ -133,14 +138,19 @@ var _ = Describe("MeshCircuitBreaker", func() {
 							mesh_proto.ServiceTag: "second-service",
 						},
 					}},
-				}).
-				WithPolicies(
+				})
+			if given.unifiedNaming {
+				proxy = proxy.WithMetadata(&core_xds.DataplaneMetadata{
+					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
+				})
+			}
+			if !given.withoutPolicy {
+				proxy = proxy.WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, given.fromRules),
-				).
-				Build()
+				)
+			}
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-
-			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
+			Expect(plugin.Apply(resourceSet, context, proxy.Build())).To(Succeed())
 
 			for idx, expected := range given.expectedCluster {
 				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[idx].Resource)).
@@ -169,6 +179,28 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			expectedCluster: []string{"outbound_cluster_connection_limits.golden.yaml"},
+		}),
+		Entry("basic outbound cluster without MeshCircuitBreaker", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   metadata.OriginOutbound,
+					Resource: test_xds.ClusterWithName("other-service"),
+				},
+			},
+			withoutPolicy:   true,
+			expectedCluster: []string{"outbound_cluster_track_remaining_only.golden.yaml"},
+		}),
+		Entry("basic outbound cluster preserves existing circuit breakers without MeshCircuitBreaker", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   metadata.OriginOutbound,
+					Resource: clusterWithExistingCircuitBreakers("other-service"),
+				},
+			},
+			withoutPolicy:   true,
+			expectedCluster: []string{"outbound_cluster_existing_circuit_breakers.golden.yaml"},
 		}),
 		Entry("basic outbound cluster with outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -285,11 +317,39 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: &api.Rule{Default: api.Conf{ConnectionLimits: genConnectionLimits()}},
+						Conf: api.Conf{ConnectionLimits: genConnectionLimits()},
 					}},
 				},
 			},
 			expectedCluster: []string{"inbound_cluster_connection_limits.golden.yaml"},
+		}),
+		Entry("basic inbound cluster with connection limits (unified naming)", sidecarTestCase{
+			unifiedNaming: true,
+			resources: []*core_xds.Resource{
+				{
+					Name:     "inbound",
+					Origin:   metadata.OriginInbound,
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), builders.FirstInboundPort)),
+				},
+			},
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
+						{
+							Subset: subsetutils.Subset{},
+							Conf: api.Conf{
+								ConnectionLimits: genConnectionLimits(),
+							},
+						},
+					},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
+						Conf: api.Conf{ConnectionLimits: genConnectionLimits()},
+					}},
+				},
+			},
+			expectedCluster: []string{"inbound_cluster_connection_limits_unified_naming.golden.yaml"},
 		}),
 		Entry("basic inbound cluster with outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -310,7 +370,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: &api.Rule{Default: api.Conf{OutlierDetection: genOutlierDetection(false)}},
+						Conf: api.Conf{OutlierDetection: genOutlierDetection(false)},
 					}},
 				},
 			},
@@ -337,10 +397,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								OutlierDetection: genOutlierDetection(true),
-							},
+						Conf: api.Conf{
+							OutlierDetection: genOutlierDetection(true),
 						},
 					}},
 				},
@@ -369,11 +427,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								ConnectionLimits: genConnectionLimits(),
-								OutlierDetection: genOutlierDetection(false),
-							},
+						Conf: api.Conf{
+							ConnectionLimits: genConnectionLimits(),
+							OutlierDetection: genOutlierDetection(false),
 						},
 					}},
 				},
@@ -402,11 +458,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: &api.Rule{
-							Default: api.Conf{
-								ConnectionLimits: genConnectionLimits(),
-								OutlierDetection: genOutlierDetection(true),
-							},
+						Conf: api.Conf{
+							ConnectionLimits: genConnectionLimits(),
+							OutlierDetection: genOutlierDetection(true),
 						},
 					}},
 				},
@@ -470,162 +524,154 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		}),
 	)
 
-	type gatewayTestCase struct {
-		name           string
-		gatewayRoutes  []*core_mesh.MeshGatewayRouteResource
-		meshhttproutes core_rules.GatewayRules
-		meshtcproutes  core_rules.GatewayRules
-		meshservices   []*meshservice_api.MeshServiceResource
-		rules          core_rules.GatewayRules
+	type zoneProxyTestCase struct {
+		resources       []*core_xds.Resource
+		toRules         core_rules.ToRules
+		withoutPolicy   bool
+		expectedCluster string
 	}
-	DescribeTable("should generate proper Envoy config for MeshGateways",
-		func(given gatewayTestCase) {
-			Expect(given.name).ToNot(BeEmpty())
-			resources := xds_context.NewResources()
-			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
-				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
-			}
-			if len(given.gatewayRoutes) > 0 {
-				resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-					Items: given.gatewayRoutes,
-				}
-			}
-			if len(given.meshservices) > 0 {
-				resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
-					Items: given.meshservices,
-				}
-			}
+
+	mesKRI := kri.Identifier{
+		ResourceType: meshexternalservice_api.MeshExternalServiceType,
+		Mesh:         "default",
+		Name:         "example",
+		SectionName:  "9000",
+	}
+
+	DescribeTable("should generate proper Envoy config for mesh-scoped zone proxy",
+		func(given zoneProxyTestCase) {
+			resourceSet := core_xds.NewResourceSet()
+			resourceSet.Add(given.resources...)
+
+			mes := builders.MeshExternalService().Build()
 
 			xdsCtx := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
-				WithResources(resources).
-				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+				WithMeshLocalResources([]core_model.Resource{mes}).
 				Build()
+
 			proxy := xds_builders.Proxy().
-				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().
-					WithGatewayPolicy(api.MeshCircuitBreakerType, given.rules).
-					WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes).
-					WithGatewayPolicy(meshtcproute_api.MeshTCPRouteType, given.meshtcproutes),
-				).
-				Build()
-			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
-			}
-			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
-			Expect(err).NotTo(HaveOccurred())
-
-			httpRoutePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			tcpRoutePlugin := meshtcproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(tcpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			// when
-			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			// then
-			resource, err := util_yaml.GetResourcesToYaml(generatedResources, envoy_resource.ClusterType)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(resource).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
-		},
-		Entry("basic outbound cluster with connection limits", gatewayTestCase{
-			name:          "basic",
-			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{subsetutils.Tag{
-									Key:   mesh_proto.ServiceTag,
-									Value: "backend",
+				With(func(p *core_xds.Proxy) {
+					p.Dataplane = &core_mesh.DataplaneResource{
+						Meta: &test_model.ResourceMeta{Name: "zone-proxy", Mesh: "default"},
+						Spec: &mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "10.0.0.1",
+								Listeners: []*mesh_proto.Dataplane_Networking_Listener{{
+									Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+									Address: "10.0.0.1",
+									Port:    10002,
+									Name:    "ze-port",
+									State:   mesh_proto.Dataplane_Networking_Listener_Ready,
 								}},
-								Conf: api.Conf{
-									ConnectionLimits: genConnectionLimits(),
-								},
-							}},
+							},
 						},
+					}
+				})
+			if !given.withoutPolicy {
+				proxy = proxy.WithPolicies(
+					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, core_rules.FromRules{}),
+				)
+			}
+
+			p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(p.Apply(resourceSet, xdsCtx, proxy.Build())).To(Succeed())
+
+			Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[0].Resource)).
+				To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", given.expectedCluster)))
+		},
+		Entry("MeshExternalService cluster with connection limits on zone proxy", zoneProxyTestCase{
+			resources: []*core_xds.Resource{{
+				Name:           mesKRI.String(),
+				Origin:         metadata.OriginEgress,
+				Resource:       test_xds.ClusterWithName(mesKRI.String()),
+				ResourceOrigin: mesKRI,
+			}},
+			toRules: core_rules.ToRules{
+				ResourceRules: outbound.ResourceRules{
+					mesKRI: {
+						Conf: []any{api.Conf{ConnectionLimits: genConnectionLimits()}},
 					},
 				},
 			},
+			expectedCluster: "basic-meshexternalservice.zone_proxy_cluster.golden.yaml",
 		}),
-		Entry("real MeshService targeted to real MeshService", gatewayTestCase{
-			name: "real-MeshService-targeted-to-real-MeshService",
-			meshservices: []*meshservice_api.MeshServiceResource{
-				{
-					Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
-					Spec: &meshservice_api.MeshService{
-						Selector: meshservice_api.Selector{},
-						Ports: []meshservice_api.Port{{
-							Port:        80,
-							TargetPort:  pointer.To(intstr.FromInt(8084)),
-							AppProtocol: core_meta.ProtocolHTTP,
-						}},
-						Identities: &[]meshservice_api.MeshServiceIdentity{
-							{
-								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-								Value: "backend",
-							},
-							{
-								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-								Value: "other-backend",
-							},
-						},
-					},
-					Status: &meshservice_api.MeshServiceStatus{
-						VIPs: []meshservice_api.VIP{{
-							IP: "10.0.0.1",
-						}},
+		Entry("MeshExternalService cluster without MeshCircuitBreaker on zone proxy", zoneProxyTestCase{
+			resources: []*core_xds.Resource{{
+				Name:           mesKRI.String(),
+				Origin:         metadata.OriginEgress,
+				Resource:       test_xds.ClusterWithName(mesKRI.String()),
+				ResourceOrigin: mesKRI,
+			}},
+			withoutPolicy:   true,
+			expectedCluster: "basic-meshexternalservice-track-remaining.zone_proxy_cluster.golden.yaml",
+		}),
+		Entry("MeshExternalService cluster with outlier detection on zone proxy", zoneProxyTestCase{
+			resources: []*core_xds.Resource{{
+				Name:           mesKRI.String(),
+				Origin:         metadata.OriginEgress,
+				Resource:       test_xds.ClusterWithName(mesKRI.String()),
+				ResourceOrigin: mesKRI,
+			}},
+			toRules: core_rules.ToRules{
+				ResourceRules: outbound.ResourceRules{
+					mesKRI: {
+						Conf: []any{api.Conf{OutlierDetection: genOutlierDetection(false)}},
 					},
 				},
 			},
-			meshhttproutes: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{
-								test_policies.NewRule(subsetutils.MeshSubset(), meshhttproute_api.PolicyDefault{
-									Rules: []meshhttproute_api.Rule{{
-										Matches: []meshhttproute_api.Match{{
-											Path: &meshhttproute_api.PathMatch{
-												Type:  meshhttproute_api.Exact,
-												Value: "/",
-											},
-										}},
-										Default: meshhttproute_api.RuleConf{
-											BackendRefs: &[]common_api.BackendRef{{
-												TargetRef: builders.TargetRefService("backend"),
-												Port:      pointer.To(uint32(80)),
-												Weight:    pointer.To(uint(100)),
-											}},
-										},
-									}},
-								}),
-							},
-						},
-					},
-				},
-			},
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							ResourceRules: map[kri.Identifier]outbound.ResourceRule{
-								backendMeshServiceIdentifier: {
-									Conf: []any{
-										api.Conf{
-											ConnectionLimits: genConnectionLimits(),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			expectedCluster: "basic-meshexternalservice-outlier.zone_proxy_cluster.golden.yaml",
 		}),
 	)
+
+	It("should enable track remaining on clusters regardless of origin", func() {
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:     "prometheus",
+			Origin:   metadata.OriginPrometheus,
+			Resource: test_xds.ClusterWithName("prometheus"),
+		})
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resourceSet, xds_samples.SampleContext(), xds_builders.Proxy().Build())).To(Succeed())
+
+		cluster := resourceSet.ListOf(envoy_resource.ClusterType)[0].Resource.(*envoy_cluster.Cluster)
+		Expect(cluster.GetCircuitBreakers().GetThresholds()).To(HaveLen(1))
+		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].GetPriority()).To(Equal(envoy_config_core_v3.RoutingPriority_DEFAULT))
+		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].TrackRemaining).To(BeTrue())
+	})
+
+	It("should enable track remaining for ZoneEgressProxy without MeshCircuitBreaker", func() {
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(&core_xds.Resource{
+			Name:           mesKRI.String(),
+			Origin:         metadata.OriginEgress,
+			Resource:       test_xds.ClusterWithName(mesKRI.String()),
+			ResourceOrigin: mesKRI,
+		})
+
+		proxy := xds_builders.Proxy().
+			With(func(p *core_xds.Proxy) {
+				p.ZoneEgressProxy = &core_xds.ZoneEgressProxy{
+					ZoneEgressResource: &core_mesh.ZoneEgressResource{
+						Meta: &test_model.ResourceMeta{Name: "zone-egress", Mesh: "default"},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{
+								Address: "10.0.0.1",
+								Port:    10002,
+							},
+						},
+					},
+				}
+			}).
+			Build()
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resourceSet, xds_samples.SampleContext(), proxy)).To(Succeed())
+
+		cluster := resourceSet.ListOf(envoy_resource.ClusterType)[0].Resource.(*envoy_cluster.Cluster)
+		Expect(cluster.GetCircuitBreakers().GetThresholds()).To(HaveLen(1))
+		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].GetPriority()).To(Equal(envoy_config_core_v3.RoutingPriority_DEFAULT))
+		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].TrackRemaining).To(BeTrue())
+	})
 })

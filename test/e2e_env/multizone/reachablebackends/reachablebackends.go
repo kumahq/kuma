@@ -7,12 +7,11 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func ReachableBackends() {
@@ -49,10 +48,9 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Sidecar"]
-    tags:
-      kuma.io/service: client-server_reachable-backends_svc_80
+    kind: Dataplane
+    labels:
+      app: client-server
   default:
     passthroughMode: None`, Config.KumaNamespace, meshName)
 
@@ -117,7 +115,6 @@ spec:
 				Yaml(
 					builders.Mesh().
 						WithName(meshName).
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).
 						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
 						WithEgressRoutingEnabled().
 						WithoutPassthrough(),

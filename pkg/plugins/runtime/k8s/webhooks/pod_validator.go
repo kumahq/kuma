@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-logr/logr"
 	v1 "k8s.io/api/admission/v1"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -13,9 +12,10 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 )
 
 func NewPodValidatorWebhook(decoder admission.Decoder, client kube_client.Client, disallowMultipleMeshesPerNamespace bool) *PodValidator {
@@ -33,11 +33,17 @@ type PodValidator struct {
 }
 
 func (h *PodValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
+	var resp admission.Response
 	switch req.Operation {
 	case v1.Create, v1.Update:
-		return h.ValidatePod(ctx, req)
+		resp = h.ValidatePod(ctx, req)
+	default:
+		resp = admission.Allowed("")
 	}
-	return admission.Allowed("")
+	if !resp.Allowed {
+		k8s_common.LogWebhookRejection(req, resp)
+	}
+	return resp
 }
 
 func (h *PodValidator) ValidatePod(ctx context.Context, req admission.Request) admission.Response {
@@ -67,7 +73,7 @@ func (h *PodValidator) validateMultipleMeshesPerNamespace(ctx context.Context, p
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("failed to get namespace: %w", err))
 	}
 
-	podMesh := util.MeshOfByLabelOrAnnotation(logr.Discard(), pod, ns)
+	podMesh := util.MeshOfByLabel(pod, ns)
 
 	// Create a selector to find dataplanes NOT in our mesh
 	// This is much more efficient than listing all dataplanes and filtering

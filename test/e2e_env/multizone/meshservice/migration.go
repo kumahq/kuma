@@ -8,10 +8,10 @@ import (
 	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/pkg/kds/hash"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/kds/hash"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Migration() {
@@ -89,19 +89,7 @@ func Migration() {
 		}).Should(Succeed())
 	}
 
-	noMeshServices := func() {
-		// call hasMeshServices with no names
-		hasMeshServices()
-	}
-
-	It("should automatically create MeshServices when the mode is 'Exclusive'", func() {
-		// given
-		noMeshServices()
-
-		// when enable 'mode: Exclusive'
-		Expect(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")(multizone.Global)).To(Succeed())
-
-		// then
+	It("should automatically create MeshServices", func() {
 		hasMeshServices(
 			hash.HashedName(meshName, "demo-client", Kuma1, namespace),
 			hash.HashedName(meshName, "test-server", Kuma1, namespace),
@@ -136,12 +124,13 @@ spec:
 		)
 	})
 
-	It("should delete automatically created MeshServices when the mode is 'Disabled'", func() {
-		// when mode is 'Disabled'
-		Expect(MTLSMeshWithMeshServicesUniversal(meshName, "Disabled")(multizone.Global)).To(Succeed())
+	It("should keep automatically created MeshServices when the mesh is re-applied", func() {
+		Expect(MTLSMeshUniversal(meshName)(multizone.Global)).To(Succeed())
 
-		// then
 		hasMeshServices(
+			hash.HashedName(meshName, "demo-client", Kuma1, namespace),
+			hash.HashedName(meshName, "test-server", Kuma1, namespace),
+			hash.HashedName(meshName, "test-server", Kuma4),
 			hash.HashedName(meshName, "manually-created-ms", Kuma4),
 		)
 	})

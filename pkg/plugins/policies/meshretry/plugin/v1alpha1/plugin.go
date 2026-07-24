@@ -5,30 +5,31 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
-	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/plugin/xds"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
+	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/plugin/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
+
+func (p plugin) Order() int { return api.MeshRetryResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
@@ -45,13 +46,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 
 	listeners := xds.GatherListeners(rs)
-	routes := xds.GatherRoutes(rs)
 
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, ctx.Mesh); err != nil {
-		return err
-	}
-
-	if err := applyToGateway(policies.GatewayRules, routes.Gateway, listeners.Gateway, proxy); err != nil {
 		return err
 	}
 
@@ -92,59 +88,6 @@ func applyToOutbounds(
 
 		if err := configurer.ConfigureListener(listener); err != nil {
 			return err
-		}
-	}
-
-	return nil
-}
-
-func applyToGateway(
-	rules core_rules.GatewayRules,
-	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
-	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
-	proxy *core_xds.Proxy,
-) error {
-	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
-		listenerKey := core_rules.InboundListener{
-			Address: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
-			Port:    listenerInfo.Listener.Port,
-		}
-		listener, ok := gatewayListeners[listenerKey]
-		if !ok {
-			continue
-		}
-
-		toRules, ok := rules.ToRules.ByListener[listenerKey]
-		if !ok {
-			continue
-		}
-
-		var protocol core_meta.Protocol
-		switch listenerInfo.Listener.Protocol {
-		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
-			protocol = core_meta.ProtocolHTTP
-		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
-			protocol = core_meta.ProtocolTCP
-		}
-		configurer := plugin_xds.DeprecatedConfigurer{
-			Rules:    toRules.Rules,
-			Protocol: protocol,
-			Element:  subsetutils.MeshElement(),
-		}
-
-		if err := configurer.ConfigureListener(listener); err != nil {
-			return err
-		}
-
-		for _, listenerHostname := range listenerInfo.ListenerHostnames {
-			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
-			if !ok {
-				continue
-			}
-
-			if err := configurer.ConfigureRoute(route); err != nil {
-				return err
-			}
 		}
 	}
 

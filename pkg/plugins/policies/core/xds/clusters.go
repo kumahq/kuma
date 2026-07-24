@@ -4,11 +4,11 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	gateway_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
-	generator_metadata "github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
+	gateway_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
+	generator_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 type Clusters struct {
@@ -18,6 +18,15 @@ type Clusters struct {
 	Gateway       map[string]*envoy_cluster.Cluster
 	Egress        map[string]*envoy_cluster.Cluster
 	Prometheus    *envoy_cluster.Cluster
+}
+
+func GatherAllClusters(rs *core_xds.ResourceSet) []*envoy_cluster.Cluster {
+	var clusters []*envoy_cluster.Cluster
+	for _, res := range rs.Resources(envoy_resource.ClusterType) {
+		cluster := res.Resource.(*envoy_cluster.Cluster)
+		clusters = append(clusters, cluster)
+	}
+	return clusters
 }
 
 func GatherClusters(rs *core_xds.ResourceSet) Clusters {

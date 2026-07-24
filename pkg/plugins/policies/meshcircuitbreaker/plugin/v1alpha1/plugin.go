@@ -4,30 +4,32 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	plugin_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 )
 
 var _ core_plugins.EgressPolicyPlugin = &plugin{}
 
 type plugin struct{}
+
+func (p plugin) Order() int { return api.MeshCircuitBreakerResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
@@ -50,25 +52,25 @@ func (p plugin) Apply(
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
+	applyTrackRemaining(policies_xds.GatherAllClusters(rs))
+
 	if proxy.ZoneEgressProxy != nil {
 		return applyToEgressRealResources(rs, proxy)
 	}
+
+	clusters := policies_xds.GatherClusters(rs)
+
 	policies, ok := proxy.Policies.Dynamic[api.MeshCircuitBreakerType]
 	if !ok {
 		return nil
 	}
 
-	clusters := policies_xds.GatherClusters(rs)
-
-	if err := applyToInbounds(policies.FromRules, clusters.Inbound, proxy.Dataplane); err != nil {
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
+	if err := applyToInbounds(policies.FromRules, clusters.Inbound, proxy.Dataplane, unifiedNaming); err != nil {
 		return err
 	}
 
 	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds); err != nil {
-		return err
-	}
-
-	if err := applyToGateways(ctx.Mesh, proxy, rs, policies.GatewayRules, clusters.Gateway); err != nil {
 		return err
 	}
 
@@ -79,11 +81,19 @@ func (p plugin) Apply(
 	return nil
 }
 
+func applyTrackRemaining(clusters []*envoy_cluster.Cluster) {
+	for _, cluster := range clusters {
+		plugin_xds.EnsureTrackRemaining(cluster)
+	}
+}
+
 func applyToInbounds(
 	fromRules core_rules.FromRules,
 	inboundClusters map[string]*envoy_cluster.Cluster,
 	dataplane *core_mesh.DataplaneResource,
+	unifiedNaming bool,
 ) error {
+	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 	for _, inbound := range dataplane.Spec.Networking.GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
@@ -92,7 +102,9 @@ func applyToInbounds(
 			Port:    iface.DataplanePort,
 		}
 
-		cluster, ok := inboundClusters[envoy_names.GetInboundClusterName(inbound.ServicePort, iface.DataplanePort)]
+		legacyClusterName := envoy_names.GetInboundClusterName(inbound.ServicePort, iface.DataplanePort)
+		clusterName := getName(naming.MustContextualInboundName(dataplane, iface.InboundName), legacyClusterName)
+		cluster, ok := inboundClusters[clusterName]
 		if !ok {
 			continue
 		}
@@ -122,69 +134,6 @@ func applyToOutbounds(
 	for cluster, serviceName := range targetedClusters {
 		if err := configure(rules.Rules, subsetutils.KumaServiceTagElement(serviceName), cluster); err != nil {
 			return err
-		}
-	}
-
-	return nil
-}
-
-func applyToGateways(
-	meshCtx xds_context.MeshContext,
-	proxy *core_xds.Proxy,
-	rs *core_xds.ResourceSet,
-	gatewayRules core_rules.GatewayRules,
-	gatewayClusters map[string]*envoy_cluster.Cluster,
-) error {
-	resourcesByOrigin := rs.IndexByOrigin(core_xds.NonMeshExternalService)
-
-	for _, listenerInfo := range gateway.ExtractGatewayListeners(proxy) {
-		rules, ok := gatewayRules.ToRules.ByListener[core_rules.InboundListener{
-			Address: proxy.Dataplane.Spec.GetNetworking().Address,
-			Port:    listenerInfo.Listener.Port,
-		}]
-		if !ok {
-			continue
-		}
-		for _, listenerHostnames := range listenerInfo.ListenerHostnames {
-			for _, hostInfo := range listenerHostnames.HostInfos {
-				destinations := gateway.RouteDestinationsMutable(hostInfo.Entries())
-				for _, dest := range destinations {
-					clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
-					if err != nil {
-						continue
-					}
-					cluster, ok := gatewayClusters[clusterName]
-					if !ok {
-						continue
-					}
-
-					serviceName := dest.Destination[mesh_proto.ServiceTag]
-
-					if err := configure(
-						rules.Rules,
-						subsetutils.KumaServiceTagElement(serviceName),
-						cluster,
-					); err != nil {
-						return err
-					}
-
-					// This happens when using MeshGatewayRoutes
-					if dest.BackendRef == nil {
-						continue
-					}
-					if realRef := dest.BackendRef.Resource(); !realRef.IsEmpty() {
-						resources := resourcesByOrigin[realRef]
-						if err := applyToRealResource(
-							meshCtx,
-							rules.ResourceRules,
-							realRef,
-							resources,
-						); err != nil {
-							return err
-						}
-					}
-				}
-			}
 		}
 	}
 
@@ -263,8 +212,9 @@ func applyToRealResources(
 	meshCtx xds_context.MeshContext,
 	rs *core_xds.ResourceSet,
 	rules outbound.ResourceRules,
+	filters ...func(*core_xds.Resource) bool,
 ) error {
-	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
+	for uri, resType := range rs.IndexByOrigin(filters...) {
 		if err := applyToRealResource(meshCtx, rules, uri, resType); err != nil {
 			return err
 		}

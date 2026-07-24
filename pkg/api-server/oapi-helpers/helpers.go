@@ -1,11 +1,11 @@
 package oapi_helpers
 
 import (
-	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	rules_common "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	rules_common "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func ResourceToMeta(m core_model.Resource) api_common.Meta {

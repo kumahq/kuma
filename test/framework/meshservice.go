@@ -1,8 +1,8 @@
 package framework
 
 import (
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 )
 
 func GetMeshServiceStatus(cluster Cluster, meshServiceName, meshName string) (*meshservice_api.MeshService, *meshservice_api.MeshServiceStatus, error) {
@@ -15,4 +15,16 @@ func GetMeshServiceStatus(cluster Cluster, meshServiceName, meshName string) (*m
 		return nil, nil, err
 	}
 	return res.GetSpec().(*meshservice_api.MeshService), res.GetStatus().(*meshservice_api.MeshServiceStatus), nil
+}
+
+func GetMeshServiceLabels(cluster Cluster, meshServiceName, meshName string) (map[string]string, error) {
+	out, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshservice", "-m", meshName, meshServiceName, "-ojson")
+	if err != nil {
+		return nil, err
+	}
+	res, err := rest.JSON.Unmarshal([]byte(out), meshservice_api.MeshServiceResourceTypeDescriptor)
+	if err != nil {
+		return nil, err
+	}
+	return res.GetMeta().GetLabels(), nil
 }
