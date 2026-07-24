@@ -185,7 +185,7 @@ var _ = Describe("MADS http service", func() {
 				Mesh: testMesh.GetMeta().GetName(),
 			},
 			Spec: &meshmetric_api.MeshMetric{
-				TargetRef: &common_api.TargetRef{
+				TargetRef: &common_api.TopLevelTargetRef{
 					Kind: common_api.Mesh,
 				},
 				Default: meshmetric_api.Conf{
