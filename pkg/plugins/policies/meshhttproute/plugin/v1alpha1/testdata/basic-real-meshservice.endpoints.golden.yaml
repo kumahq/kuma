@@ -8,7 +8,7 @@ resources:
       - endpoint:
           address:
             socketAddress:
-              address: 192.168.0.5
+              address: 192.168.0.6
               portValue: 8084
         loadBalancingWeight: 1
         metadata:
@@ -34,8 +34,22 @@ resources:
         metadata:
           filterMetadata:
             envoy.lb:
-              app: backend
               kuma.io/protocol: http
+              region: eu
             envoy.transport_socket_match:
-              app: backend
               kuma.io/protocol: http
+              region: eu
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.5
+              portValue: 8084
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              region: us
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              region: us
