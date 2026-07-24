@@ -179,10 +179,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		if err != nil {
 			return nil, kumaDpBootstrap, err
 		}
-		err = b.getMetricsConfig(ctx, dataplane, &kumaDpBootstrap, meshResource)
-		if err != nil {
-			return nil, kumaDpBootstrap, err
-		}
 
 	default:
 		return nil, kumaDpBootstrap, errors.Errorf("unknown proxy type %v", params.ProxyType)
@@ -225,45 +221,6 @@ func ISSANMismatchErr(err error) bool {
 		return false
 	}
 	return strings.HasPrefix(err.Error(), "A data plane proxy is trying to connect to the control plane using")
-}
-
-func (b *bootstrapGenerator) getMetricsConfig(
-	_ context.Context,
-	dataplane *core_mesh.DataplaneResource,
-	kumaDpBootstrap *KumaDpBootstrap,
-	meshResource *core_mesh.MeshResource,
-) error {
-	config, err := dataplane.GetPrometheusConfig(meshResource)
-	if err != nil {
-		return err
-	}
-	if config != nil {
-		aggregateConfig := []AggregateMetricsConfig{}
-		for _, config := range config.GetAggregate() {
-			if config.GetEnabled() != nil && !config.GetEnabled().GetValue() {
-				continue
-			}
-			aggregateConfig = append(aggregateConfig, AggregateMetricsConfig{
-				Address: b.getMetricsAddress(config, dataplane),
-				Name:    config.Name,
-				Port:    config.Port,
-				Path:    config.Path,
-			})
-		}
-		kumaDpBootstrap.AggregateMetricsConfig = aggregateConfig
-	}
-	return nil
-}
-
-func (b *bootstrapGenerator) getMetricsAddress(
-	metricsConfig *mesh_proto.PrometheusAggregateMetricsConfig,
-	dataplane *core_mesh.DataplaneResource,
-) string {
-	if metricsConfig.Address != "" {
-		return metricsConfig.Address
-	}
-
-	return dataplane.Spec.GetNetworking().GetAddress()
 }
 
 func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {

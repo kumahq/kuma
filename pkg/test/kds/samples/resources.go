@@ -192,11 +192,8 @@ var (
 		TargetRef: &common_api.TopLevelTargetRef{
 			Kind: "Mesh",
 		},
-		From: &[]meshaccesslog.From{
+		Rules: &[]meshaccesslog.Rule{
 			{
-				TargetRef: common_api.TargetRef{
-					Kind: "Mesh",
-				},
 				Default: meshaccesslog.Conf{
 					Backends: &[]meshaccesslog.Backend{
 						{

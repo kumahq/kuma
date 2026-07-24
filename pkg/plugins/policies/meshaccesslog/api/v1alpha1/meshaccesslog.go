@@ -8,7 +8,6 @@ import (
 )
 
 // MeshAccessLog configures access logging for traffic between services in the mesh. It allows you to capture and export request/response logs to various backends (file, TCP, or OpenTelemetry) for monitoring, debugging, and auditing purposes.
-// +kuma:policy:is_from_as_rules=true
 // +kuma:policy:has_status=true
 // +kuma:policy:order=600
 type MeshAccessLog struct {
@@ -18,8 +17,6 @@ type MeshAccessLog struct {
 	TargetRef *common_api.TopLevelTargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
 	To *[]To `json:"to,omitempty"`
-	// From list makes a match between clients and corresponding configurations
-	From *[]From `json:"from,omitempty"`
 	// Rules defines inbound access log configurations.
 	Rules *[]Rule `json:"rules,omitempty"`
 }
@@ -38,15 +35,6 @@ type To struct {
 	// destinations.
 	TargetRef common_api.OutboundTargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of destinations referenced in
-	// 'targetRef'
-	Default Conf `json:"default"`
-}
-
-type From struct {
-	// TargetRef is a reference to the resource that represents a group of
-	// clients.
-	TargetRef common_api.TargetRef `json:"targetRef"`
-	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
 	Default Conf `json:"default"`
 }

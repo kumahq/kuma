@@ -1,4 +1,3 @@
-//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -24,7 +23,6 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -104,7 +102,7 @@ var _ = Describe("MeshTLS", func() {
 								WithService("frontend"),
 						),
 				).
-				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getFromRules(pointer.Deref(policy.Spec.From))))
+				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getRulesAsFromRules(pointer.Deref(policy.Spec.Rules))))
 
 			if given.features != nil {
 				proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{
@@ -404,26 +402,17 @@ func getPolicy(caseName string) *api.MeshTLSResource {
 	return meshTLS
 }
 
-func getFromRules(froms []api.From) core_rules.FromRules {
-	var legacyRules []*core_rules.Rule
+func getRulesAsFromRules(policyRules []api.Rule) core_rules.FromRules {
 	var rules []*inbound.Rule
 
-	for _, from := range froms {
-		legacyRules = append(legacyRules, &core_rules.Rule{
-			Subset: subsetutils.Subset{},
-			Conf:   from.Default,
-		})
+	for _, rule := range policyRules {
 		rules = append(rules, &inbound.Rule{
-			Conf:   from.Default,
+			Conf:   rule.Default,
 			Origin: common.Origin{},
 		})
 	}
 
 	return core_rules.FromRules{
-		Rules: map[core_rules.InboundListener]core_rules.Rules{
-			{Address: "127.0.0.1", Port: 17777}: legacyRules,
-			{Address: "127.0.0.1", Port: 17778}: legacyRules,
-		},
 		InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 			{Address: "127.0.0.1", Port: 17777}: rules,
 			{Address: "127.0.0.1", Port: 17778}: rules,

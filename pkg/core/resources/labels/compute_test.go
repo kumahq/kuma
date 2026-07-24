@@ -97,47 +97,14 @@ var _ = Describe("ComputePolicyRole", func() {
 			namespace:    resource_labels.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.ProducerPolicyRole,
 		}),
-		Entry("workload-owner policy with from", testCase{
+		Entry("workload-owner policy with rules", testCase{
 			policy: builders.MeshAccessLog().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFrom(builders.TargetRefMesh(), builders.MeshAccessLogConf().
+				AddRule(builders.MeshAccessLogConf().
 					AddBackends(make([]meshaccesslog_api.Backend, 0))).
 				Build().Spec,
 			namespace:    resource_labels.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.WorkloadOwnerPolicyRole,
-		}),
-		Entry("workload-owner policy with both from and to", testCase{
-			policy: builders.MeshAccessLog().
-				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMesh(), builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				AddFrom(builders.TargetRefMesh(), builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				Build().Spec,
-			namespace:   resource_labels.NewNamespace("kuma-demo", false),
-			expectedErr: "it's not allowed to mix 'to' and 'from' arrays in the same policy",
-		}),
-		Entry("consumer policy with from", testCase{
-			policy: builders.MeshAccessLog().
-				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend", "backend-ns", ""), builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				AddFrom(builders.TargetRefMesh(), builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				Build().Spec,
-			namespace:   resource_labels.NewNamespace("kuma-demo", false),
-			expectedErr: "it's not allowed to mix 'to' and 'from' arrays in the same policy",
-		}),
-		Entry("system policy with both from and to", testCase{
-			policy: builders.MeshAccessLog().
-				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMesh(), builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				AddFrom(builders.TargetRefMesh(), builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				Build().Spec,
-			namespace:    resource_labels.NewNamespace("kuma-system", true),
-			expectedRole: mesh_proto.SystemPolicyRole,
 		}),
 		Entry("policy with consumer and producer to-items", testCase{
 			policy: builders.MeshTimeout().

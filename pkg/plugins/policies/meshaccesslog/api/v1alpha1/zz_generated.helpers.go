@@ -14,23 +14,6 @@ func (x *MeshAccessLog) GetTargetRef() common_api.TargetRef {
 	return x.TargetRef.ToTargetRef()
 }
 
-func (x *From) GetTargetRef() common_api.TargetRef {
-	return x.TargetRef
-}
-
-func (x *From) GetDefault() interface{} {
-	return x.Default
-}
-
-func (x *MeshAccessLog) GetFromList() []core_model.PolicyItem {
-	var result []core_model.PolicyItem
-	for _, itm := range pointer.Deref(x.From) {
-		item := itm
-		result = append(result, &item)
-	}
-	return result
-}
-
 func (x *To) GetTargetRef() common_api.TargetRef {
 	return x.TargetRef.ToTargetRef()
 }

@@ -18,16 +18,15 @@ func genExternalResources(
 	proxy *core_xds.Proxy,
 	resources *core_xds.MeshResources,
 	secretsTracker core_xds.SecretsTracker,
-	unifiedNaming bool,
 ) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error) {
 	rs := core_xds.NewResourceSet()
 
 	var filterChainBuilders []*envoy_listeners.FilterChainBuilder
 
-	for _, cluster := range getExternalServicesClusters(resources, unifiedNaming) {
+	for _, cluster := range getExternalServicesClusters(resources) {
 		filterChainBuilders = append(
 			filterChainBuilders,
-			buildExternalServiceFilterChain(proxy, resources, secretsTracker, cluster, unifiedNaming),
+			buildExternalServiceFilterChain(proxy, resources, secretsTracker, cluster),
 		)
 
 		cds, err := genExternalServicesCDS(proxy, resources.EndpointMap[cluster.Service()], cluster)
@@ -42,7 +41,6 @@ func genExternalResources(
 
 func getExternalServicesClusters(
 	resources *core_xds.MeshResources,
-	unifiedNaming bool,
 ) []envoy_common.Cluster {
 	svcAcc := envoy_common.NewServicesAccumulator(nil)
 	localResources := xds_context.Resources{MeshLocalResources: resources.Resources}
@@ -63,11 +61,7 @@ func getExternalServicesClusters(
 
 		sniUsed[ref.SNI] = struct{}{}
 
-		clusterName := naming.GetNameOrFallback(
-			unifiedNaming,
-			ref.Resource().String(),
-			ref.LegacyServiceName,
-		)
+		clusterName := ref.Resource().String()
 
 		cluster := xds.NewClusterBuilder().
 			WithName(clusterName).
@@ -120,18 +114,17 @@ func buildExternalServiceFilterChain(
 	resources *core_xds.MeshResources,
 	secretsTracker core_xds.SecretsTracker,
 	cluster envoy_common.Cluster,
-	unifiedNaming bool,
 ) *envoy_listeners.FilterChainBuilder {
 	meshName := resources.Mesh.GetMeta().GetName()
 	endpoints := resources.EndpointMap[cluster.Service()]
 	getName := naming.GetNameOrFallbackFunc(endpoints[0].IsMeshExternalService)
-	esName := naming.GetNameOrFallback(unifiedNaming, cluster.Name(), cluster.Service())
+	esName := cluster.Name()
 	filterChainName := getName(esName, envoy_names.GetEgressFilterChainName(esName, meshName))
 	routeConfigName := getName(esName, envoy_names.GetOutboundRouteName(esName))
 	virtualHostName := esName
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, filterChainName).
-		Configure(envoy_listeners.ServerSideMTLS(resources.Mesh, secretsTracker, nil, nil, unifiedNaming, false)).
+		Configure(envoy_listeners.ServerSideMTLS(resources.Mesh, secretsTracker, nil, nil, true, false)).
 		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS)).
 		Configure(envoy_listeners.MatchServerNames(cluster.SNI()))
 

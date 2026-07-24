@@ -299,6 +299,70 @@ var _ = Describe("Secrets", Ordered, func() {
 			// then
 			Expect(secrets.Info(mesh_proto.DataplaneProxyType, core_model.MetaToResourceKey(newDataplane().Meta))).To(BeNil())
 		})
+
+		Context("when inbound tags are disabled", func() {
+			newTaglessDataplane := func(labels map[string]string) *core_mesh.DataplaneResource {
+				dp := newDataplane()
+				dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
+				dp.Meta.(*model.ResourceMeta).Labels = labels
+				return dp
+			}
+
+			It("should fall back to the kuma.io/workload label for identity", func() {
+				// given a dataplane with no inbound tags but a workload label
+				dataplane := newTaglessDataplane(map[string]string{"kuma.io/workload": "web"})
+
+				// when
+				identity, ca, err := secrets.GetForDataPlane(context.Background(), dataplane, newMesh("default"), nil)
+
+				// then a cert is still generated, keyed off the workload label
+				Expect(err).ToNot(HaveOccurred())
+				Expect(identity.PemCerts).ToNot(BeEmpty())
+				Expect(ca).To(HaveLen(1))
+
+				info := secrets.Info(mesh_proto.DataplaneProxyType, core_model.MetaToResourceKey(dataplane.Meta))
+				Expect(info.Tags).To(Equal(mesh_proto.MultiValueTagSet{
+					"kuma.io/service": map[string]bool{
+						"web": true,
+					},
+				}))
+			})
+
+			It("should error rather than issue a cert with no SAN when the workload label is also missing", func() {
+				// given a dataplane with neither inbound tags nor a workload label
+				dataplane := newTaglessDataplane(nil)
+
+				// when
+				_, _, err := secrets.GetForDataPlane(context.Background(), dataplane, newMesh("default"), nil)
+
+				// then
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("GetAllInOne should fall back to the kuma.io/workload label for identity", func() {
+				// given a dataplane with no inbound tags but a workload label
+				dataplane := newTaglessDataplane(map[string]string{"kuma.io/workload": "web"})
+
+				// when
+				identity, ca, err := secrets.GetAllInOne(context.Background(), newMesh("default"), dataplane, nil)
+
+				// then a cert is still generated, keyed off the workload label
+				Expect(err).ToNot(HaveOccurred())
+				Expect(identity.PemCerts).ToNot(BeEmpty())
+				Expect(ca.PemCerts).ToNot(BeEmpty())
+			})
+
+			It("GetAllInOne should error rather than issue a cert with no SAN when the workload label is also missing", func() {
+				// given a dataplane with neither inbound tags nor a workload label
+				dataplane := newTaglessDataplane(nil)
+
+				// when
+				_, _, err := secrets.GetAllInOne(context.Background(), newMesh("default"), dataplane, nil)
+
+				// then
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 
 	Context("zone egress", func() {

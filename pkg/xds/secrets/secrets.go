@@ -156,7 +156,11 @@ func (s *secrets) GetForDataPlane(
 	mesh *core_mesh.MeshResource,
 	otherMeshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error) {
-	identity, cas, _, err := s.get(ctx, mesh_proto.DataplaneProxyType, dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
+	tags, err := identityTags(dataplane)
+	if err != nil {
+		return nil, nil, err
+	}
+	identity, cas, _, err := s.get(ctx, mesh_proto.DataplaneProxyType, dataplane, tags, mesh, otherMeshes)
 	return identity, cas, err
 }
 
@@ -166,7 +170,11 @@ func (s *secrets) GetAllInOne(
 	dataplane *core_mesh.DataplaneResource,
 	otherMeshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	identity, _, allInOne, err := s.get(ctx, mesh_proto.DataplaneProxyType, dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
+	tags, err := identityTags(dataplane)
+	if err != nil {
+		return nil, nil, err
+	}
+	identity, _, allInOne, err := s.get(ctx, mesh_proto.DataplaneProxyType, dataplane, tags, mesh, otherMeshes)
 	return identity, allInOne.CaSecret, err
 }
 

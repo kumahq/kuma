@@ -14,7 +14,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: mesh1:backend
-- name: inbound:10.0.0.1:10001
+- name: self_inbound_zi_10001
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -37,5 +37,6 @@ resources:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-    name: inbound:10.0.0.1:10001
+    name: self_inbound_zi_10001
+    statPrefix: self_inbound_zi_10001
     trafficDirection: INBOUND

@@ -1,20 +1,16 @@
-# it should handle policies with 'from' when IsFromAsRules is set to true
+# it should handle MeshTLS policies with 'rules'
 type: MeshTLS
 name: matched-for-rules-mtls-aaaaaa
 mesh: mesh-1
 spec:
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         mode: Strict
 ---
 type: MeshTLS
 name: matched-for-rules-mtls-bbbbbb
 mesh: mesh-1
 spec:
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         mode: Permissive
