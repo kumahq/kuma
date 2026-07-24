@@ -43,7 +43,7 @@ func BuildEgressEndpointMap(
 
 	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil, false, map[core_xds.ServiceName]struct{}{})
 
-	fillExternalServicesReachableFromZone(ctx, outbound, meshExternalServices, mesh, loader, localZone)
+	fillMeshExternalServicesOutbounds(ctx, outbound, meshExternalServices, mesh, loader)
 
 	for serviceName, endpoints := range outbound {
 		var newEndpoints []core_xds.Endpoint
@@ -556,21 +556,18 @@ func fillIngressOutbounds(
 	return uint32(len(ziInstances))
 }
 
-func fillExternalServicesReachableFromZone(
+func fillMeshExternalServicesOutbounds(
 	ctx context.Context,
 	outbound core_xds.EndpointMap,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	mesh *core_mesh.MeshResource,
 	loader datasource.Loader,
-	zone string,
 ) {
 	for _, mes := range meshExternalServices {
-		if mes.IsReachableFromZone(zone) {
-			err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, false)
-			if err != nil {
-				outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
-				continue
-			}
+		err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, false)
+		if err != nil {
+			outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+			continue
 		}
 	}
 }
@@ -702,7 +699,7 @@ func fillExternalServicesOutboundsThroughEgress(
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
 		serviceName := destinationname.MustResolve(false, mes, mes.Spec.Match)
-		locality := GetLocality(getZone(serviceTags))
+		locality := GetLocality(nil)
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
 			Protocol:      mes.Spec.Match.Protocol,
