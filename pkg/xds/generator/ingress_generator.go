@@ -13,7 +13,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/zoneproxy"
 )
@@ -28,19 +27,14 @@ func (i IngressGenerator) Generate(
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 	cp := xdsCtx.ControlPlane
-	// ZoneIngress isn't scoped to a single mesh (xdsCtx.Mesh is empty for zone proxies),
-	// so unlike mesh-scoped generators we can't use unified_naming.Enabled here: it
-	// would always see a nil mesh and report unified naming as disabled.
-	unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
-	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 
 	zoneIngress := proxy.ZoneIngressProxy.ZoneIngressResource
 	address := zoneIngress.Spec.GetNetworking().GetAddress()
 	port := zoneIngress.Spec.GetNetworking().GetPort()
 
 	inboundContextualID := naming.MustContextualInboundName(zoneIngress, port)
-	listenerName := getName(inboundContextualID, envoy_names.GetInboundListenerName(address, port))
-	statPrefix := getName(inboundContextualID, "")
+	listenerName := inboundContextualID
+	statPrefix := inboundContextualID
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
@@ -75,17 +69,17 @@ func (i IngressGenerator) Generate(
 			meshResources.MeshMultiZoneServices(),
 		)
 
-		services := zoneproxy.GetServices(dest, mr.EndpointMap, availableServices[meshName], unifiedNaming)
+		services := zoneproxy.GetServices(dest, mr.EndpointMap, availableServices[meshName])
 
 		clusters = slices.Concat(clusters, services.Clusters())
 
-		cds, err := zoneproxy.GenerateCDS(proxy, dest, services, meshName, metadata.OriginIngress, unifiedNaming)
+		cds, err := zoneproxy.GenerateCDS(proxy, dest, services, meshName, metadata.OriginIngress)
 		if err != nil {
 			return nil, err
 		}
 		rs.AddSet(cds)
 
-		eds, err := zoneproxy.GenerateEDS(proxy, mr.EndpointMap, services, meshName, metadata.OriginIngress, unifiedNaming)
+		eds, err := zoneproxy.GenerateEDS(proxy, mr.EndpointMap, services, meshName, metadata.OriginIngress)
 		if err != nil {
 			return nil, err
 		}

@@ -2,7 +2,6 @@ package egress
 
 import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -22,7 +21,6 @@ func genInternalResources(
 
 	rs := core_xds.NewResourceSet()
 
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, resources.Mesh)
 	meshName := resources.Mesh.GetMeta().GetName()
 
 	availableServicesMap := map[string]*mesh_proto.ZoneIngress_AvailableService{}
@@ -55,15 +53,15 @@ func genInternalResources(
 		xds_context.Resources{MeshLocalResources: resources.Resources},
 	)
 
-	services := zoneproxy.GetServices(destinations, resources.EndpointMap, availableServices, unifiedNaming)
+	services := zoneproxy.GetServices(destinations, resources.EndpointMap, availableServices)
 
-	cds, err := zoneproxy.GenerateCDS(proxy, destinations, services, meshName, metadata.OriginEgress, unifiedNaming)
+	cds, err := zoneproxy.GenerateCDS(proxy, destinations, services, meshName, metadata.OriginEgress)
 	if err != nil {
 		return nil, nil, err
 	}
 	rs.AddSet(cds)
 
-	eds, err := zoneproxy.GenerateEDS(proxy, resources.EndpointMap, services, meshName, metadata.OriginEgress, unifiedNaming)
+	eds, err := zoneproxy.GenerateEDS(proxy, resources.EndpointMap, services, meshName, metadata.OriginEgress)
 	if err != nil {
 		return nil, nil, err
 	}
