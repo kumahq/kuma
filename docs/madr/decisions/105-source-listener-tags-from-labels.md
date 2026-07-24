@@ -92,7 +92,7 @@ Write labels under a new listener key and add `listenerLabels`/`labels` to the `
 
 ### Option 4: Fill `io.kuma.tags` from labels when tags are gone
 
-Keep one key and one selector. When a listener has no tags, fill them from the label-based identity of whatever the listener stands for: the destination resource for an outbound, the proxy's own `Dataplane` for an inbound. That identity can be written two ways, and the sub-options below split on which: copy the resource's labels, or write the single `kuma.io/kri` the resource's identity already computes to.
+Keep one key and one selector. When a listener has no tags, fill them from the identity of whatever the listener stands for: the destination resource for an outbound, the proxy itself for an inbound. That identity can be written two ways, and the sub-options below split on which: copy the resource's labels, or write a single synthesized identifier the control plane computes. This MADR settles on the synthesized identifier under a new key, `kuma.io/unified-name`.
 
 A policy that used to say `kuma.io/service: backend` becomes a match on the destination's synthesized KRI, which is the form this MADR settles on (sub-option B):
 
@@ -100,16 +100,16 @@ A policy that used to say `kuma.io/service: backend` becomes a match on the dest
 match:
   origin: outbound
   listenerTags:
-    kuma.io/kri: kri_msvc_default_east_kuma-demo_backend_http
+    kuma.io/unified-name: kri_msvc_default_east_kuma-demo_backend_http
 ```
 
-The same rewrite on an inbound listener keys on the proxy's own `Dataplane` KRI, with the inbound's port as the section name:
+The same rewrite on an inbound listener keys on a stable self-reference, `self_inbound_dp_<sectionName>`, with the inbound's port as the section name. It is deliberately not the `Dataplane`'s KRI: on Kubernetes that KRI's name segment is the Pod name, hash and all, so it is unwritable and rotates on every rollout (see sub-option B):
 
 ```yaml
 match:
   origin: inbound
   listenerTags:
-    kuma.io/kri: kri_dp_default_east_kuma-demo_backend-7f9c_http
+    kuma.io/unified-name: self_inbound_dp_http
 ```
 
 * Good, because there is no API change. The selector people already use starts working again, and it is safe to ship as a patch.
@@ -124,10 +124,10 @@ Option 4 says where the values come from. It does not say what we write. There a
 
 ### What we write into the tags
 
-| Direction    | Sub-option A, the resource's labels   | Sub-option B, a synthesized `kuma.io/kri`                   | Sub-option C, KRI outbound, labels inbound          |
+| Direction    | Sub-option A, the resource's labels   | Sub-option B, a synthesized `kuma.io/unified-name`          | Sub-option C, KRI outbound, labels inbound          |
 |:-------------|:--------------------------------------|:------------------------------------------------------------|:-----------------------------------------------------|
 | **Outbound** | labels of the destination `Mesh*Service` | KRI of `outbound.Resource`, section name is the port      | KRI of `outbound.Resource`, section name is the port |
-| **Inbound**  | labels of the proxy's own `Dataplane` | KRI of that `Dataplane`, section name is the inbound's port | labels of the proxy's own `Dataplane`                |
+| **Inbound**  | labels of the proxy's own `Dataplane` | `self_inbound_dp_<sectionName>`, section name is the inbound's port | labels of the proxy's own `Dataplane`                |
 
 #### Sub-option A: copy the resource's labels
 
@@ -148,30 +148,45 @@ match:
 * Bad, because we copy whatever labels the resource happens to have. On Kubernetes that is every label on the `Service`. Which keys we should copy is left open, in the implementation notes.
 * Bad, because copying the resource's whole label set regenerates the listener on every label update, unless we copy only a fixed set of keys we choose. Clusters are unaffected, since they never carry `io.kuma.tags`.
 
-#### Sub-option B: synthesize a `kuma.io/kri` tag
+#### Sub-option B: synthesize a `kuma.io/unified-name` tag
 
-Add one key Kuma computes rather than copies. A KRI names a resource exactly. It can also name one part of that resource, a single port, in a field called the section name. That is what lets a KRI tell the two listeners of a two-port service apart, which labels cannot.
+Add one key Kuma computes rather than copies, and write it under a new name, `kuma.io/unified-name`, that says what it is: a single, stable, machine-generated name for what the listener stands for. The value is direction-specific, because the two directions identify different things.
 
-For an outbound, we already have it: `outbound.Resource` holds the destination's KRI with the port as its section name (`core/xds/types/outbound.go:8-24`). For an inbound we would build it, with one line we already have elsewhere: `kri.WithSectionName(kri.FromResourceMeta(dp.GetMeta(), DataplaneType), portName)`. `InboundIdentifyingName` (`dataplane_helpers.go:179-189`) does exactly this, but it is gated on `InboundTagsDisabled` and falls back to a plain service name, so we would call the two `kri` helpers directly rather than reuse it.
+**Outbound.** We already have the value: `outbound.Resource` holds the destination's KRI with the port as its section name (`core/xds/types/outbound.go:8-24`). A KRI names a resource exactly, and its section name names one port, which is what lets it tell the two listeners of a two-port service apart, which labels cannot.
 
 ```yaml
 match:
   origin: outbound
   listenerTags:
-    kuma.io/kri: kri_msvc_default_east_kuma-demo_backend_http
+    kuma.io/unified-name: kri_msvc_default_east_kuma-demo_backend_http
 ```
 
 The format is `kri_<shortName>_<mesh>_<zone>_<namespace>_<name>_<sectionName>`, always seven fields, with absent parts left as empty segments (`kri.go:28-39`). The short names are `msvc`, `mzsvc` and `extsvc`; the section name is the port, by name or by number when unnamed (`meshservice/api/v1alpha1/helpers.go:89`, `:118-120`). The same `MeshMultiZoneService` from the collision example is `kri_mzsvc_default__kuma-system_backend_http`: it is created on global, so it has no zone, and the doubled underscore is that empty field rather than a typo.
 
-Note this is a tag we synthesize, not a label we store. A `kuma.io/kri` label would be a derived copy of labels the resource already carries, since `kri.FromResourceMeta` (`kri.go:86-92`) builds the identifier out of `kuma.io/zone`, `k8s.kuma.io/namespace` and the display name. It would need recomputing and syncing, and it still could not carry a section name, because a label belongs to a resource while a listener belongs to a port.
+**Inbound.** The obvious symmetric move is the `Dataplane`'s own KRI, `kri.WithSectionName(kri.FromResourceMeta(dp.GetMeta(), DataplaneType), portName)`, which `InboundIdentifyingName` (`dataplane_helpers.go:181-190`) already builds. It does not work. `kri.FromResourceMeta` (`kri.go:86-92`) takes the KRI's name segment from the display name, and on Kubernetes a `Dataplane` is one-per-Pod with its name set to the Pod name (`pod_controller.go:117`, carried into `kuma.io/display-name` at `compute.go:150`). So the inbound KRI would be `kri_dp_default_east_kuma-demo_backend-7f9c8d6b5-xk2p9_http`, carrying the ReplicaSet hash and Pod suffix. That value cannot be written ahead of time, differs on every replica, and rotates on every rollout, which is exactly the silent match-nothing failure this MADR exists to remove. The churn argument that makes KRI the right call outbound is inverted here: a `Dataplane`'s identity on Kubernetes *is* an ephemeral Pod.
 
-* Good, because it is exact and unambiguous. `ResourceType` is part of the KRI (`kri.go:38`), so it separates the destination kinds that labels cannot.
-* Good, because it answers per-port targeting. The two listeners of a two-port `MeshService` finally differ.
-* Good, because it is one bounded, stable key that moves only when identity moves, so it does not add to the churn described in the reliability section.
-* Good, because it needs no API change and backports cleanly: `kri.Identifier` and its format are identical on release-2.13 and release-2.14.
-* Bad, because the value is opaque and positional, and a typo matches nothing silently, which is the failure mode this MADR exists to fix.
-* Bad, because it overlaps `match.name` wherever unified naming is on, since the listener name is already the KRI there.
+So the inbound value is not an identity at all, it is a fixed self-reference, `self_inbound_dp_<sectionName>`, with the inbound's port as the section name (by name, or by number when unnamed):
+
+```yaml
+match:
+  origin: inbound
+  listenerTags:
+    kuma.io/unified-name: self_inbound_dp_http
+```
+
+This is enough because the inbound match never has to identify the proxy: a `MeshProxyPatch` has already selected it through `spec.targetRef`, so the listener match only has to say which of that proxy's inbounds is meant, and the port is the only thing that distinguishes them. `self_inbound_dp_<sectionName>` is stable across rollouts, identical on every replica, and knowable when the policy is written, while keeping the per-port selectivity a section name gives.
+
+Note this is a tag we synthesize, not a label we store. A `kuma.io/unified-name` label would need recomputing and syncing, and it still could not carry a section name, because a label belongs to a resource while a listener belongs to a port.
+
+* Good, because it is exact and unambiguous on the outbound. `ResourceType` is part of the KRI (`kri.go:38`), so it separates the destination kinds that labels cannot.
+* Good, because it answers per-port targeting in both directions. The two listeners of a two-port `MeshService` differ by KRI section name, and the two inbounds of a two-port proxy differ by `self_inbound_dp_<port>`.
+* Good, because the inbound value is stable and writable: it holds no Pod identity, so it survives rollouts and is the same on every replica of a workload one `MeshProxyPatch` targets.
+* Good, because it is one bounded key that moves only when identity moves (outbound) or never (inbound), so it does not add to the churn described in the reliability section.
+* Good, because it needs no API change and backports cleanly: `kri.Identifier` and its format are identical on release-2.13 and release-2.14, and `self_inbound_dp_<sectionName>` is a constant string.
+* Bad, because the outbound value is opaque and positional, and a typo matches nothing silently, which is the failure mode this MADR exists to fix.
+* Bad, because the outbound KRI overlaps `match.name` wherever unified naming is on, since the listener name is already the KRI there.
 * Bad, because legacy outbounds have no KRI, so the key is absent in case 1 and users have to know which world they are in.
+* Bad, because the two directions carry different value shapes under one key, so users have to know an outbound reads a KRI and an inbound reads `self_inbound_dp_<port>`.
 
 #### Sub-option C: KRI on the outbound, labels on the inbound
 
@@ -191,12 +206,13 @@ Low for the fact that a destination appears at all. The outbound exists because 
 
 * Nothing that matches today can break, because the affected listeners have empty `io.kuma.tags` and every non-empty selector already fails against them.
 * Traffic is unaffected. `io.kuma.tags` only exists on listeners and only our matcher reads it. Clusters and endpoints use other keys that we don't touch, so there is no path from here to load balancing, mTLS or endpoint selection.
-* The KRI is built at generation time from the resource's own identity, `kri.FromResourceMeta` reading `kuma.io/zone`, `k8s.kuma.io/namespace` and the display name (`kri.go:86-92`), so it copes with whatever a resource arrived with. Labels are not recomputed for resources that came from elsewhere, so a `MeshService` synced from global keeps the labels it arrived with and its KRI reflects them. A `MeshMultiZoneService` has no `kuma.io/zone` label at all, so its KRI simply carries an empty zone segment, `kri_mzsvc_default__kuma-system_backend_http`, rather than a wrong one.
+* The outbound KRI is built at generation time from the resource's own identity, `kri.FromResourceMeta` reading `kuma.io/zone`, `k8s.kuma.io/namespace` and the display name (`kri.go:86-92`), so it copes with whatever a resource arrived with. Labels are not recomputed for resources that came from elsewhere, so a `MeshService` synced from global keeps the labels it arrived with and its KRI reflects them. A `MeshMultiZoneService` has no `kuma.io/zone` label at all, so its KRI simply carries an empty zone segment, `kri_mzsvc_default__kuma-system_backend_http`, rather than a wrong one.
+* The inbound value depends on nothing but the port, so it never moves. `self_inbound_dp_<sectionName>` is a constant string with the inbound's port spliced in; it does not read the `Dataplane`'s name, labels or identity, so it is immune to the Pod-name churn that ruled the `Dataplane` KRI out. This is the concrete reason the inbound direction departs from sub-option B's original "KRI both ways" reading: an outbound stands for a stable named resource whose KRI moves only on a real identity change, but an inbound stands for a Pod whose name is ephemeral, so the same mechanism would churn on every rollout and be unwritable.
 * Listener metadata changes only when identity moves. Editing an arbitrary label on a `MeshService`, a status update in particular, does not change its KRI, so the outbound listeners of proxies that talk to it are regenerated to identical bytes and thrown away. The trigger to regenerate is not new, we hash a `MeshService` by its version so any write to it already re-runs every proxy in the mesh, and `autoVersion` hashes each resource type against the previous snapshot and the reconciler returns early when the bytes match (`pkg/xds/server/v3/reconcile.go:69-91`). Choosing the KRI over the resource's whole label set is what keeps that early return firing: only a rename, a move of namespace or zone, or a re-home across control planes shifts the KRI, and those are rare and are real identity changes.
-* This is the churn argument for picking sub-option B over copying labels. Copying the label set wholesale would tie listener churn to how often people deploy, keys like `app.kubernetes.io/version` and `argocd.argoproj.io/instance` change on every rollout, and each change would replace a listener on every proxy reaching that service, for labels nobody selects on. The single synthesized `kuma.io/kri` key sidesteps this entirely.
-* Memory on the proxy is a small, bounded addition. Each affected listener gains one key whose value is a KRI string, on the order of tens of bytes, against endpoints that already carry the full unfiltered `Dataplane` label set per pod (`pkg/xds/topology/outbound.go:384`, `:421`). A proxy reaching 200 destinations holds roughly one extra KRI per outbound listener, a few kilobytes in total, against the megabytes of endpoint labels it already holds. The control plane keeps a snapshot per proxy, so the same ratio applies there. Because the value is one bounded key rather than a copied label set, there is no heavily-labelled-`Service` worst case to bound, which is the second reason sub-option B is preferred to copying labels.
+* This is the churn argument for picking sub-option B over copying labels. Copying the label set wholesale would tie listener churn to how often people deploy, keys like `app.kubernetes.io/version` and `argocd.argoproj.io/instance` change on every rollout, and each change would replace a listener on every proxy reaching that service, for labels nobody selects on. The single synthesized `kuma.io/unified-name` key sidesteps this entirely.
+* Memory on the proxy is a small, bounded addition. Each affected listener gains one key whose value is a short string, on the order of tens of bytes, against endpoints that already carry the full unfiltered `Dataplane` label set per pod (`pkg/xds/topology/outbound.go:384`, `:421`). A proxy reaching 200 destinations holds roughly one extra value per outbound listener, a few kilobytes in total, against the megabytes of endpoint labels it already holds. The control plane keeps a snapshot per proxy, so the same ratio applies there. Because the value is one bounded key rather than a copied label set, there is no heavily-labelled-`Service` worst case to bound, which is the second reason sub-option B is preferred to copying labels.
 * This adds to a config we are otherwise trying to shrink. `InboundTagsDisabled` exists to cut memory, and #11065 wants to strip tags from endpoints for the same reason. One bounded key per emptied listener is about as little as the fix can add, and it lands on listeners rather than endpoints, but it still adds rather than removes, so we write no more than the selector needs.
-* Every affected golden file already has an `io.kuma.tags` block, because we write the key even when it is empty. What changes is that the empty ones gain a single `kuma.io/kri` entry. It is a big mechanical diff across the golden files, and it is worth reading to confirm every emptied listener gets the KRI we expect and nothing else.
+* Every affected golden file already has an `io.kuma.tags` block, because we write the key even when it is empty. What changes is that the empty ones gain a single `kuma.io/unified-name` entry. It is a big mechanical diff across the golden files, and it is worth reading to confirm every emptied listener gets the value we expect and nothing else.
 
 ## Backport
 
@@ -217,22 +233,22 @@ None
 
 ## Decision
 
-Listener `io.kuma.tags` is filled wherever it is otherwise empty, using **sub-option B**: a synthesized `kuma.io/kri` tag in both directions. The `kuma.io/display-name` examples that remain in the body, in sub-option A and in the contrast block under "Which labels sub-option A would reach for", show what labels would look like on a listener; they are not the selector this decision endorses.
+Listener `io.kuma.tags` is filled wherever it is otherwise empty, using **sub-option B**: a synthesized tag under a new key, `kuma.io/unified-name`. The value is direction-specific. The `kuma.io/display-name` examples that remain in the body, in sub-option A and in the contrast block under "Which labels sub-option A would reach for", show what labels would look like on a listener; they are not the selector this decision endorses.
 
-1. Outbound listeners get a `kuma.io/kri` tag holding the KRI of the destination `Mesh*Service`, with the port as its section name. KRI is stable and moves only when identity moves, so it avoids the churn and the memory cost of copying the resource's whole label set on every update, and its section name tells the listeners of a multi-port destination apart, which labels cannot.
-2. Inbound listeners whose tags are empty get a `kuma.io/kri` tag holding the KRI of the proxy's own `Dataplane`, with the inbound's port as its section name. The rule keys on the tags being empty, not on `InboundTagsDisabled`, because a hand-written Universal `Dataplane` can have tagless inbounds with the flag off. The KRI is used here rather than the `Dataplane`'s labels for a concrete reason: `Dataplane` labels are shared across all of a proxy's inbounds, so a label selector cannot target one inbound listener, whereas the KRI's section name carries the port and can.
+1. Outbound listeners get a `kuma.io/unified-name` tag holding the KRI of the destination `Mesh*Service`, with the port as its section name. KRI is stable and moves only when identity moves, so it avoids the churn and the memory cost of copying the resource's whole label set on every update, and its section name tells the listeners of a multi-port destination apart, which labels cannot.
+2. Inbound listeners whose tags are empty get a `kuma.io/unified-name` tag holding a fixed self-reference, `self_inbound_dp_<sectionName>`, where `<sectionName>` is the inbound's port, by name or by number when unnamed. The rule keys on the tags being empty, not on `InboundTagsDisabled`, because a hand-written Universal `Dataplane` can have tagless inbounds with the flag off. The value is deliberately not the `Dataplane`'s KRI: on Kubernetes a `Dataplane` is one-per-Pod and its name is the Pod name, so the KRI's name segment would carry the ReplicaSet hash and Pod suffix, giving a value that is unwritable ahead of time, differs per replica and rotates on every rollout. That is the silent match-nothing failure this MADR exists to fix. The self-reference sidesteps it: a `MeshProxyPatch` has already chosen the proxy through `spec.targetRef`, so the listener match only has to pick which inbound of that proxy is meant, and the port does that. `self_inbound_dp_<sectionName>` is stable, identical on every replica, and knowable when the policy is written, while its port keeps the per-port selectivity a section name gives.
 
-`kuma.io/kri` is a tag we synthesize, not a label we store (see sub-option B). It never becomes a resource label; the control plane writes it straight into `io.kuma.tags` at generation time.
+`kuma.io/unified-name` is a tag we synthesize, not a label we store (see sub-option B). It never becomes a resource label; the control plane writes it straight into `io.kuma.tags` at generation time.
 
-Point 2 is worth stating explicitly, because the flag's name suggests the opposite. Turning off inbound tags should not turn off listener tags. The flag decides what goes on the `Dataplane`'s inbounds, and the listener still has to say what it is. An inbound listener always carries a filled `io.kuma.tags`: from tags when they exist, from the synthesized `kuma.io/kri` when they don't. We never leave it empty.
+Point 2 is worth stating explicitly, because the flag's name suggests the opposite. Turning off inbound tags should not turn off listener tags. The flag decides what goes on the `Dataplane`'s inbounds, and the listener still has to say what it is. An inbound listener always carries a filled `io.kuma.tags`: from tags when they exist, from the synthesized `kuma.io/unified-name` when they don't. We never leave it empty.
 
 Both directions strip `kuma.io/mesh`, which is what the outbound path already does. Legacy paths keep working as they do today, meaning a `Dataplane` with real outbound tags, or inbounds with tags enabled.
 
-Group targeting by a user label such as `team: payments`, billed above as the main advantage Option 4 has over Option 1, is delivered only by sub-option A and is therefore out of scope for this decision. `kuma.io/kri` names one exact resource and cannot match a set. Copying user labels to bring group targeting back is left as the open question in the implementation notes, since it trades KRI's exactness for listener churn and per-key configuration.
+Group targeting by a user label such as `team: payments`, billed above as the main advantage Option 4 has over Option 1, is delivered only by sub-option A and is therefore out of scope for this decision. `kuma.io/unified-name` names one exact resource or one exact inbound and cannot match a set. Copying user labels to bring group targeting back is left as the open question in the implementation notes, since it trades the exactness of a single key for listener churn and per-key configuration.
 
 There is no `MeshProxyPatch` API change. The fix is entirely in how we fill the listener metadata. It is unconditional and has no new flag.
 
-Policies matching `kuma.io/service: <name>` have to be rewritten against the KRI, `kuma.io/kri: <kri>`.
+Policies matching `kuma.io/service: <name>` have to be rewritten against `kuma.io/unified-name`: the destination KRI on an outbound, `self_inbound_dp_<port>` on an inbound.
 
 ## Deep dive
 
@@ -353,7 +369,7 @@ Two call sites use it, `:74` for services and `:116` for serviceless, both wrapp
 
 The flag is a Kubernetes-side stripper only. `tagsOrEmpty` lives in the pod converter, so it never touches a Universal `Dataplane`, whose inbounds keep whatever tags their author wrote. Universal reaches the same empty state in a different way: `validateNetworking` (`dataplane_validator.go:105-111`) only requires `kuma.io/service` on an inbound that has tags at all, and that rule is not gated on the flag. A hand-written `Dataplane` with tagless inbounds is therefore valid on any control plane, in either environment, with or without the flag, and its inbound listeners get `io.kuma.tags: {}` today. So the fallback keys on "the tags are empty" rather than on the flag, which is also all `inbound_proxy_generator.go:96` can see.
 
-The fix for an emptied inbound does not read these labels directly. It synthesizes the `Dataplane`'s KRI, `kri.FromResourceMeta(dp.GetMeta(), DataplaneType)` with the inbound's port as the section name. That KRI is built from the `Dataplane`'s own identity, its name, mesh, zone and namespace, which live on the resource's computed labels and are always present regardless of the flag, since the flag strips tags and never touches labels. So the inbound KRI is available in both environments and does not depend on Pod labels surviving anywhere.
+The fix for an emptied inbound reads none of these labels. It writes `self_inbound_dp_<sectionName>` with the inbound's port as the section name, a constant string that depends on nothing but the port. This is even more robust than reading the `Dataplane`'s identity: it is available in both environments, survives the flag, and does not depend on Pod labels or the `Dataplane`'s name surviving anywhere. Sub-option B's original reading synthesized the `Dataplane`'s KRI here, `kri.FromResourceMeta(dp.GetMeta(), DataplaneType)` with the port as section name, but on Kubernetes that KRI's name segment is the Pod name, so it churns on every rollout and cannot be written ahead of time; the self-reference is what this decision writes instead.
 
 Where the label data sits still matters, for two reasons. The KRI's zone and namespace segments are read from these computed labels, and the open question of copying user labels for group targeting (sub-option A) depends on them. On Universal the `Dataplane`'s metadata labels are whatever `Compute` puts there at write time (`dataplane_manager.go:66`, `:108`): `kuma.io/display-name`, `kuma.io/mesh`, `kuma.io/origin`, `kuma.io/zone`, `kuma.io/env: universal`, `kuma.io/proxy-type`, plus `kuma.io/listener-zoneingress`/`kuma.io/listener-zoneegress` on gateways. Alongside those sit any labels the author wrote under `metadata.labels`, kept verbatim. `kuma.io/workload` is not among them, because `WithWorkload` is only passed by the Kubernetes pod converter (`pod_converter.go:74`). There `kuma.io/display-name` is the `Dataplane`'s own name rather than a service's, which is exactly what the inbound KRI names.
 
@@ -379,7 +395,7 @@ Node labels are the one thing neither the KRI nor a label fallback can restore. 
 Four places actually fall back to labels:
 
 * `pkg/core/resources/apis/mesh/dataplane_helpers.go:193-204`, `IdentifyingName` returns the `kuma.io/workload` label when tags are disabled, otherwise the `kuma.io/service` tag. Used by `mads/v1/generator/assignments.go:50`, `meshtrace/plugin.go:266`, `meshaccesslog/plugin.go:108` and `meshmetric/plugin.go:146`.
-* `pkg/core/resources/apis/mesh/dataplane_helpers.go:181-190`, `InboundIdentifyingName` returns the `Dataplane` KRI with the port as section name. This is the precedent the inbound half of this fix follows: the same KRI, minus the flag gate.
+* `pkg/core/resources/apis/mesh/dataplane_helpers.go:181-190`, `InboundIdentifyingName` returns the `Dataplane` KRI with the port as section name. It looks like the precedent for the inbound half, and an earlier reading of this MADR followed it, but the inbound fix deliberately does not: that KRI's name segment is the Pod name on Kubernetes, so the inbound writes the port-only `self_inbound_dp_<sectionName>` instead.
 * `pkg/plugins/runtime/k8s/controllers/meshservice_controller.go:374-385`, the selector swaps `DataplaneTags` for `DataplaneLabels` using the same Service selector keys.
 * `meshloadbalancingstrategy`, in `priority.go:123-137` (`resolveAffinityValues`) and `locality_aware.go:151-154`, prefers inbound tags and falls back to Pod labels, filtered down to affinity keys so unrelated labels don't leak.
 
@@ -389,7 +405,7 @@ Everywhere else the data is dropped or the rule is relaxed:
 * `pkg/core/resources/apis/mesh/dataplane_validator.go:105-111` turns the `kuma.io/service` requirement into a no-op.
 * `pkg/xds/topology/outbound.go:386`, `:423` still derive `Locality` from `getZone(inboundTags)`, tags only.
 * `pkg/core/xds/types.go:138`, `:422`, `:435`: `Protocol()`, `ContainsTags` and selector matching are tags only.
-* `pkg/xds/generator/inbound_proxy_generator.go:96`, the inbound listener's tags, which is the gap this MADR closes, by synthesizing the `Dataplane` KRI when they are empty.
+* `pkg/xds/generator/inbound_proxy_generator.go:96`, the inbound listener's tags, which is the gap this MADR closes, by writing `self_inbound_dp_<sectionName>` when they are empty.
 
 ### Endpoint `Locality` under `InboundTagsDisabled`
 
@@ -472,7 +488,7 @@ Third, it is narrower than its name suggests, and messier. It has one consumer, 
 
 So it is a local-zone, Kubernetes-only, unfiltered, single-consumer channel that reads like a general identity surface. Worth knowing before assuming it carries labels broadly, or that a listener could just read from it.
 
-Note also what `io.kuma.labels` confirms about the shape of our fix. The endpoint path solved the same class of problem by writing identity into xDS metadata for a later stage to read. We do the same for listeners, and we merge into the existing `io.kuma.tags` rather than add a second key, because the constraint that forced the split on endpoints doesn't exist here. Where the endpoint path shipped the labels themselves, the listener fix writes one synthesized `kuma.io/kri` value into that one key; a single stable identifier is enough for a selector, and it avoids copying a label set the endpoints already carry.
+Note also what `io.kuma.labels` confirms about the shape of our fix. The endpoint path solved the same class of problem by writing identity into xDS metadata for a later stage to read. We do the same for listeners, and we merge into the existing `io.kuma.tags` rather than add a second key, because the constraint that forced the split on endpoints doesn't exist here. Where the endpoint path shipped the labels themselves, the listener fix writes one synthesized `kuma.io/unified-name` value into that one key; a single stable identifier is enough for a selector, and it avoids copying a label set the endpoints already carry.
 
 ### Where the KRI comes from
 
@@ -551,7 +567,7 @@ The resulting outbound listener for `MeshService` `backend` in namespace `kuma-d
 metadata:
   filterMetadata:
     io.kuma.tags:
-      kuma.io/kri: kri_msvc_default_east_kuma-demo_backend_http
+      kuma.io/unified-name: kri_msvc_default_east_kuma-demo_backend_http
 ```
 
 The same listener under sub-option A, shown for contrast, is what copying the labels would produce:
@@ -571,10 +587,10 @@ metadata:
 
 ### Implementation notes
 
-* The outbound half needs nothing threaded. `DestinationService` (`meshroute/listeners.go:68-72`) already carries the `Outbound`, and `outbound.Resource` is the destination's KRI with the port as its section name, so the generators write `outbound.Resource.String()` under `kuma.io/kri`. Sub-option A would instead have to carry the resolved `core.Destination`, or its labels, through from `CollectServices`; sub-option B does not.
-* Both outbound generators share the `TagsOrNil().WithoutTags(MeshTag)` line and both need updating: `meshtcproute/plugin/v1alpha1/listeners.go:41` and `meshhttproute/plugin/v1alpha1/listeners.go:78`. When `outbound.Resource` is set (the new world, `LegacyOutbound == nil`) they write the KRI tag; the legacy branch keeps writing the real outbound tags.
-* The inbound half is two call sites, not one: `inbound_proxy_generator.go:96` and `meshtls/plugin.go:376`, which rebuilds the inbound listener when a `MeshTLS` policy applies. Both need to synthesize `kri.WithSectionName(kri.FromResourceMeta(dp.GetMeta(), DataplaneType), portName)` and write it under `kuma.io/kri` when `GetTags()` is empty. `InboundIdentifyingName` (`dataplane_helpers.go:181-190`) already builds this KRI but is gated on `InboundTagsDisabled` and falls back to a service name, so call the two `kri` helpers directly rather than reuse it. If only the first call site is changed, "an inbound listener always carries a filled `io.kuma.tags`" is false whenever `MeshTLS` is in play, and the tags a proxy gets depend on which generator produced its listener. `pkg/xds/context/context.go:40` already carries `InboundTagsDisabled` into the xDS context, though the rule keys on the tags being empty, not on the flag.
+* The outbound half needs nothing threaded. `DestinationService` (`meshroute/listeners.go:68-72`) already carries the `Outbound`, and `outbound.Resource` is the destination's KRI with the port as its section name, so the generators write `outbound.Resource.String()` under `kuma.io/unified-name`. Sub-option A would instead have to carry the resolved `core.Destination`, or its labels, through from `CollectServices`; sub-option B does not.
+* Both outbound generators share the `TagsOrNil().WithoutTags(MeshTag)` line and both need updating: `meshtcproute/plugin/v1alpha1/listeners.go:41` and `meshhttproute/plugin/v1alpha1/listeners.go:78`. When `outbound.Resource` is set (the new world, `LegacyOutbound == nil`) they write the KRI under `kuma.io/unified-name`; the legacy branch keeps writing the real outbound tags.
+* The inbound half is two call sites, not one: `inbound_proxy_generator.go:96` and `meshtls/plugin.go:376`, which rebuilds the inbound listener when a `MeshTLS` policy applies. Both need to write `self_inbound_dp_<sectionName>` under `kuma.io/unified-name` when `GetTags()` is empty, splicing in the inbound's port as the section name. It is a constant prefix plus the port, so nothing needs threading and there is no dependency on `Dataplane` name or labels. Do **not** reuse `InboundIdentifyingName` (`dataplane_helpers.go:181-190`) or `kri.FromResourceMeta(dp.GetMeta(), DataplaneType)` here: on Kubernetes those put the Pod name in the value, which is the ephemeral churn this decision rejects for the inbound. If only the first call site is changed, "an inbound listener always carries a filled `io.kuma.tags`" is false whenever `MeshTLS` is in play, and the tags a proxy gets depend on which generator produced its listener. `pkg/xds/context/context.go:40` already carries `InboundTagsDisabled` into the xDS context, though the rule keys on the tags being empty, not on the flag.
 * Legacy branches keep their current behaviour: `LegacyOutbound != nil`, and inbounds with tags enabled.
 * Out of scope, noted because this fix rewrites the same metadata and should stay consistent with it. Two neighbours are left alone on purpose. Node labels (see "Case 3" in the deep dive) only ever lived in the inbound tags, so a selector on `topology.kubernetes.io/zone` or `kubernetes.io/hostname` breaks under the flag, and neither the KRI nor a `Dataplane`-label fallback can restore it without also propagating those node labels onto the `Dataplane`'s labels. And the endpoint path fixed the same class of bug with a second key (`io.kuma.labels`) rather than by filling `envoy.lb` from labels; the reasoning for why listeners merge and endpoints split is in the `io.kuma.labels` section. Both would add metadata we are otherwise trying to keep minimal, so this MADR takes neither on and each is a separate follow-up.
-* Open question: whether to also copy user labels so group targeting works, which is the one capability sub-option A has that the KRI does not. If we do, we should copy only labels whose keys are on a list we choose ourselves, rather than every label the resource happens to carry. The candidates and what each one buys are in "Which labels sub-option A would reach for" above: the six computed keys are bounded, stable and already the ones we tell people to match on, while user labels are neither bounded nor stable and on Kubernetes arrive wholesale from the `Service`. A fixed list keeps the metadata small, keeps rollouts from churning listeners, and keeps the config dump free of labels nobody selects on. It needs settling before any group-targeting variant ships, because it is easier to add keys later than to take them away, and because such a variant would write these labels alongside the `kuma.io/kri` the decision already commits to.
+* Open question: whether to also copy user labels so group targeting works, which is the one capability sub-option A has that the KRI does not. If we do, we should copy only labels whose keys are on a list we choose ourselves, rather than every label the resource happens to carry. The candidates and what each one buys are in "Which labels sub-option A would reach for" above: the six computed keys are bounded, stable and already the ones we tell people to match on, while user labels are neither bounded nor stable and on Kubernetes arrive wholesale from the `Service`. A fixed list keeps the metadata small, keeps rollouts from churning listeners, and keeps the config dump free of labels nobody selects on. It needs settling before any group-targeting variant ships, because it is easier to add keys later than to take them away, and because such a variant would write these labels alongside the `kuma.io/unified-name` the decision already commits to.
 * A list we choose ourselves and group targeting pull against each other. Group targeting by a user label such as `team: payments` only works if that key reaches the listener, and we cannot know those keys up front. Either the list holds computed labels only and group targeting goes away, which is why the decision leaves it out of scope, or operators name the extra keys themselves and group targeting survives at the cost of configuration. The middle option is to reuse `MeshServiceLabelPropagation.AllowedLabelKeys`, which already exists, already rejects reserved keys and is already validated. It does not gate the Kubernetes path today, so wiring it in would mean extending it rather than adding a flag. Note its current default is "empty means allow all", which is the opposite of what we want here.
