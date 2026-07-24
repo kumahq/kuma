@@ -13,13 +13,13 @@ resources:
         metadata:
           filterMetadata:
             envoy.lb:
+              k8s.io/node: node2
               kuma.io/protocol: http
               kuma.io/zone: zone-1
             envoy.transport_socket_match:
+              k8s.io/node: node2
               kuma.io/protocol: http
               kuma.io/zone: zone-1
-            io.kuma.labels:
-              k8s.io/node: node2
       loadBalancingWeight: 1
       locality:
         zone: zone-1
@@ -32,13 +32,13 @@ resources:
         metadata:
           filterMetadata:
             envoy.lb:
+              k8s.io/az: test
               kuma.io/protocol: http
               kuma.io/zone: zone-1
             envoy.transport_socket_match:
+              k8s.io/az: test
               kuma.io/protocol: http
               kuma.io/zone: zone-1
-            io.kuma.labels:
-              k8s.io/az: test
       loadBalancingWeight: 900
       locality:
         subZone: k8s.io/az=test
@@ -52,13 +52,13 @@ resources:
         metadata:
           filterMetadata:
             envoy.lb:
+              k8s.io/node: node1
               kuma.io/protocol: http
               kuma.io/zone: zone-1
             envoy.transport_socket_match:
+              k8s.io/node: node1
               kuma.io/protocol: http
               kuma.io/zone: zone-1
-            io.kuma.labels:
-              k8s.io/node: node1
       loadBalancingWeight: 9000
       locality:
         subZone: k8s.io/node=node1
@@ -72,13 +72,13 @@ resources:
         metadata:
           filterMetadata:
             envoy.lb:
+              k8s.io/region: test
               kuma.io/protocol: http
               kuma.io/zone: zone-1
             envoy.transport_socket_match:
+              k8s.io/region: test
               kuma.io/protocol: http
               kuma.io/zone: zone-1
-            io.kuma.labels:
-              k8s.io/region: test
       loadBalancingWeight: 90
       locality:
         subZone: k8s.io/region=test

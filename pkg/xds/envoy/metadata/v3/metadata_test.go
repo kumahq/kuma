@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 var _ = Describe("Metadata()", func() {
@@ -63,74 +62,27 @@ var _ = Describe("Metadata()", func() {
 	)
 })
 
-var _ = Describe("EndpointMetadataWithLabels()", func() {
-	It("should encode tags under envoy.lb and labels under LbLabelsKey when both are present", func() {
-		// given: both tags and labels — labels live under a separate key so consumers
-		// can fall back to them when an affinity tag is absent from inbound tags.
-		t := tags.Tags{
-			"version": "v2",
-			"region":  "us",
-		}
-		labels := map[string]string{"app": "backend"}
-
-		// when
-		metadata := EndpointMetadataWithLabels(t, labels)
-
-		// then
-		Expect(metadata).ToNot(BeNil())
-		Expect(metadata.GetFilterMetadata()).To(HaveKey("envoy.lb"))
-		Expect(metadata.GetFilterMetadata()).To(HaveKey(LbLabelsKey))
-		Expect(metadata.GetFilterMetadata()[LbLabelsKey].GetFields()["app"].GetStringValue()).To(Equal("backend"))
-	})
-
-	It("should return label-based metadata under LbLabelsKey when tags are absent", func() {
-		// given: nil tags simulate KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
+var _ = Describe("EndpointMetadata() label fallback", func() {
+	It("should encode resource labels under envoy.lb when inbound tags are absent", func() {
+		// given: nil tags simulate KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED, so the
+		// endpoint's load-balancing identity comes from resource labels instead.
 		labels := map[string]string{
 			"app":     "frontend",
 			"version": "v3",
 		}
 
-		// when
-		metadata := EndpointMetadataWithLabels(nil, labels)
+		// when: callers fold labels into the same envoy.lb key
+		metadata := EndpointMetadata(labels)
 
-		// then: labels are placed under io.kuma.labels
+		// then
 		Expect(metadata).ToNot(BeNil())
-		Expect(metadata.GetFilterMetadata()).To(HaveKey(LbLabelsKey))
-		Expect(metadata.GetFilterMetadata()).ToNot(HaveKey("envoy.lb"))
-		fields := metadata.GetFilterMetadata()[LbLabelsKey].GetFields()
+		Expect(metadata.GetFilterMetadata()).To(HaveKey("envoy.lb"))
+		fields := metadata.GetFilterMetadata()["envoy.lb"].GetFields()
 		Expect(fields["app"].GetStringValue()).To(Equal("frontend"))
 		Expect(fields["version"].GetStringValue()).To(Equal("v3"))
 	})
 
-	It("should return nil when tags are absent and labels are empty", func() {
-		// when
-		metadata := EndpointMetadataWithLabels(nil, map[string]string{})
-
-		// then
-		Expect(metadata).To(BeNil())
-	})
-})
-
-var _ = Describe("ExtractLbLabels()", func() {
-	It("should return empty tags for nil metadata", func() {
-		// when
-		result := ExtractLbLabels(nil)
-		// then
-		Expect(result).To(BeEmpty())
-	})
-
-	It("should return empty tags when LbLabelsKey is absent from metadata", func() {
-		// given: regular tag-based metadata has no LbLabelsKey entry
-		metadata := EndpointMetadata(tags.Tags{"region": "eu", "version": "v1"})
-
-		// when
-		result := ExtractLbLabels(metadata)
-
-		// then
-		Expect(result).To(BeEmpty())
-	})
-
-	It("should round-trip labels through EndpointMetadataWithLabels and ExtractLbLabels", func() {
+	It("should round-trip labels through envoy.lb via ExtractLbTags", func() {
 		// given
 		labels := map[string]string{
 			"app":  "worker",
@@ -138,8 +90,7 @@ var _ = Describe("ExtractLbLabels()", func() {
 		}
 
 		// when
-		metadata := EndpointMetadataWithLabels(nil, labels)
-		result := ExtractLbLabels(metadata)
+		result := ExtractLbTags(EndpointMetadata(labels))
 
 		// then
 		Expect(result).To(HaveLen(2))
