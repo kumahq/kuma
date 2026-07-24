@@ -17,8 +17,8 @@ filterChains:
               message: |
                 custom format [%START_TIME%] %RESPONSE_FLAGS%
           path: /tmp/kuma-al-backend-default.sock
-      cluster: other-service-tcp
-      statPrefix: other-service-tcp
+      cluster: default_other-meshservice-tcp_other-ns_zone-1_msvc_37777
+      statPrefix: default_other-meshservice-tcp_other-ns_zone-1_msvc_37777
 metadata:
   filterMetadata:
     io.kuma.tags: {}

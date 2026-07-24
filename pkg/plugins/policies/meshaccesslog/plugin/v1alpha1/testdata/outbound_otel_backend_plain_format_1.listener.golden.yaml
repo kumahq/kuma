@@ -23,8 +23,8 @@ filterChains:
             - key: kuma.mesh
               value:
                 stringValue: default
-      cluster: foo-service
-      statPrefix: foo-service
+      cluster: default_foo-meshservice-tcp_other-ns_zone-1_msvc_37778
+      statPrefix: default_foo-meshservice-tcp_other-ns_zone-1_msvc_37778
 metadata:
   filterMetadata:
     io.kuma.tags: {}

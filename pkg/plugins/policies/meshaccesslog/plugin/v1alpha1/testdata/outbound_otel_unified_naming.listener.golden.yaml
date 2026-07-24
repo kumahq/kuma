@@ -13,7 +13,7 @@ filterChains:
           '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
           attributes: {}
           body:
-            stringValue: '[%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-service-tcp)
+            stringValue: '[%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-meshservice-tcp)
               took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED%
               bytes'
           grpcService:
@@ -25,8 +25,8 @@ filterChains:
             - key: kuma.mesh
               value:
                 stringValue: default
-      cluster: other-service-tcp
-      statPrefix: other-service-tcp
+      cluster: default_other-meshservice-tcp_other-ns_zone-1_msvc_37777
+      statPrefix: default_other-meshservice-tcp_other-ns_zone-1_msvc_37777
 metadata:
   filterMetadata:
     io.kuma.tags: {}

@@ -16,8 +16,8 @@ filterChains:
               inlineString: |
                 custom format [%START_TIME%] %RESPONSE_FLAGS%
           path: /tmp/log
-      cluster: other-service-tcp
-      statPrefix: other-service-tcp
+      cluster: default_other-meshservice-tcp_other-ns_zone-1_msvc_37777
+      statPrefix: default_other-meshservice-tcp_other-ns_zone-1_msvc_37777
 metadata:
   filterMetadata:
     io.kuma.tags: {}

@@ -66,6 +66,30 @@ var _ = Describe("MeshAccessLog", func() {
 		SectionName:  "",
 	}
 
+	otherMeshServiceTCP := &kri.Identifier{
+		ResourceType: meshservice_api.MeshServiceType,
+		Mesh:         "default",
+		Zone:         "zone-1",
+		Namespace:    "other-ns",
+		Name:         "other-meshservice-tcp",
+	}
+
+	fooMeshServiceTCP := &kri.Identifier{
+		ResourceType: meshservice_api.MeshServiceType,
+		Mesh:         "default",
+		Zone:         "zone-1",
+		Namespace:    "other-ns",
+		Name:         "foo-meshservice-tcp",
+	}
+
+	barMeshServiceTCP := &kri.Identifier{
+		ResourceType: meshservice_api.MeshServiceType,
+		Mesh:         "default",
+		Zone:         "zone-1",
+		Namespace:    "other-ns",
+		Name:         "bar-meshservice-tcp",
+	}
+
 	otelCollectorMotb := otelBackendMotb("otel-collector", "otel-collector", 4317)
 	otherOtelCollectorMotb := otelBackendMotb("other-otel-collector", "other-otel-collector", 5317)
 	otelCollectorBackendRef := &common_api.BackendResourceRef{
@@ -79,7 +103,6 @@ var _ = Describe("MeshAccessLog", func() {
 
 	type sidecarTestCase struct {
 		resources           []core_xds.Resource
-		outbounds           xds_types.Outbounds
 		toRules             core_rules.ToRules
 		fromRules           core_rules.FromRules
 		expectedListeners   []string
@@ -153,19 +176,6 @@ var _ = Describe("MeshAccessLog", func() {
 					Features: given.features,
 				}).
 				WithDataplane(dpBuilder).
-				WithOutbounds(append(
-					given.outbounds, &xds_types.Outbound{
-						LegacyOutbound: builders.Outbound().
-							WithService("other-service-http").
-							WithAddress("127.0.0.1").
-							WithPort(27777).Build(),
-					}, &xds_types.Outbound{
-						LegacyOutbound: builders.Outbound().
-							WithService("other-service-tcp").
-							WithAddress("127.0.0.1").
-							WithPort(37777).Build(),
-					},
-				)).
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, given.toRules, given.fromRules),
 				).
@@ -184,27 +194,6 @@ var _ = Describe("MeshAccessLog", func() {
 				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[i].Resource)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", expectedCluster)))
 			}
 		},
-		Entry("basic outbound route", sidecarTestCase{
-			resources: []core_xds.Resource{
-				otherServiceHTTPListener(),
-			},
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
-						},
-					},
-				},
-			},
-			expectedListeners: []string{"basic_outbound.listener.golden.yaml"},
-		}),
 		Entry("basic outbound route from real MeshService", sidecarTestCase{
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
@@ -449,19 +438,20 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("outbound tcpproxy with file backend and default format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+									},
+								}},
+							},
 						},
 					},
 				},
@@ -470,22 +460,23 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("outbound tcpproxy with file backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-									Format: &api.Format{
-										Plain: pointer.To("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+										Format: &api.Format{
+											Plain: pointer.To("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -494,25 +485,26 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("outbound tcpproxy with file backend and json format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-									Format: &api.Format{
-										Json: pointer.To([]api.JsonValue{
-											{Key: "protocol", Value: "%PROTOCOL%"},
-											{Key: "duration", Value: "%DURATION%"},
-										}),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+										Format: &api.Format{
+											Json: pointer.To([]api.JsonValue{
+												{Key: "protocol", Value: "%PROTOCOL%"},
+												{Key: "duration", Value: "%DURATION%"},
+											}),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -521,19 +513,20 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("outbound tcpproxy with tcp backend and default format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.TCPBackendType,
-								Tcp: &api.TCPBackend{
-									Address: "logging.backend",
-								},
-							}},
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.TCPBackendType,
+									Tcp: &api.TCPBackend{
+										Address: "logging.backend",
+									},
+								}},
+							},
 						},
 					},
 				},
@@ -545,74 +538,58 @@ var _ = Describe("MeshAccessLog", func() {
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
-				outboundServiceTCPListener("foo-service", 37778),
-				outboundServiceTCPListener("bar-service", 37779),
-			},
-			outbounds: xds_types.Outbounds{
-				{LegacyOutbound: builders.Outbound().
-					WithService("foo-service").
-					WithAddress("127.0.0.1").
-					WithPort(37778).Build()},
-				{LegacyOutbound: builders.Outbound().
-					WithService("bar-service").
-					WithAddress("127.0.0.1").
-					WithPort(37779).Build()},
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
+				outboundRealServiceTCPListener(*fooMeshServiceTCP, 37778),
+				outboundRealServiceTCPListener(*barMeshServiceTCP, 37779),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service-tcp",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: otelCollectorBackendRef,
-								},
-							}},
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: otelCollectorBackendRef,
+									},
+								}},
+							},
 						},
 					},
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "foo-service",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: otelCollectorBackendRef,
-									Body: &apiextensionsv1.JSON{
-										Raw: []byte("%KUMA_MESH%"),
+					*fooMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: otelCollectorBackendRef,
+										Body: &apiextensionsv1.JSON{
+											Raw: []byte("%KUMA_MESH%"),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "bar-service",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: otherOtelCollectorBackendRef,
-									Body: &apiextensionsv1.JSON{
-										Raw: []byte(`{
-										  "kvlistValue": {
-											"values": [
-											  {"key": "mesh", "value": {"stringValue": "%KUMA_MESH%"}}
-											]
-										  }
-									    }`),
+					*barMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: otherOtelCollectorBackendRef,
+										Body: &apiextensionsv1.JSON{
+											Raw: []byte(`{
+											  "kvlistValue": {
+												"values": [
+												  {"key": "mesh", "value": {"stringValue": "%KUMA_MESH%"}}
+												]
+											  }
+										    }`),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -630,74 +607,58 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("outbound tcpproxy with opentelemetry backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
-				outboundServiceTCPListener("foo-service", 37778),
-				outboundServiceTCPListener("bar-service", 37779),
-			},
-			outbounds: xds_types.Outbounds{
-				{LegacyOutbound: builders.Outbound().
-					WithService("foo-service").
-					WithAddress("127.0.0.1").
-					WithPort(37778).Build()},
-				{LegacyOutbound: builders.Outbound().
-					WithService("bar-service").
-					WithAddress("127.0.0.1").
-					WithPort(37779).Build()},
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
+				outboundRealServiceTCPListener(*fooMeshServiceTCP, 37778),
+				outboundRealServiceTCPListener(*barMeshServiceTCP, 37779),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service-tcp",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: otelCollectorBackendRef,
-								},
-							}},
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: otelCollectorBackendRef,
+									},
+								}},
+							},
 						},
 					},
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "foo-service",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: otelCollectorBackendRef,
-									Body: &apiextensionsv1.JSON{
-										Raw: []byte("%KUMA_MESH%"),
+					*fooMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: otelCollectorBackendRef,
+										Body: &apiextensionsv1.JSON{
+											Raw: []byte("%KUMA_MESH%"),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "bar-service",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: otherOtelCollectorBackendRef,
-									Body: &apiextensionsv1.JSON{
-										Raw: []byte(`{
-										  "kvlistValue": {
-											"values": [
-											  {"key": "mesh", "value": {"stringValue": "%KUMA_MESH%"}}
-											]
-										  }
-									    }`),
+					*barMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: otherOtelCollectorBackendRef,
+										Body: &apiextensionsv1.JSON{
+											Raw: []byte(`{
+											  "kvlistValue": {
+												"values": [
+												  {"key": "mesh", "value": {"stringValue": "%KUMA_MESH%"}}
+												]
+											  }
+										    }`),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -715,22 +676,23 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("outbound tcpproxy with tcp backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.TCPBackendType,
-								Tcp: &api.TCPBackend{
-									Address: "logging.backend",
-									Format: &api.Format{
-										Plain: pointer.To("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.TCPBackendType,
+									Tcp: &api.TCPBackend{
+										Address: "logging.backend",
+										Format: &api.Format{
+											Plain: pointer.To("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -739,53 +701,37 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("outbound tcpproxy with tcp backend and json format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.TCPBackendType,
-								Tcp: &api.TCPBackend{
-									Address: "logging.backend",
-									Format: &api.Format{
-										Json: pointer.To([]api.JsonValue{
-											{Key: "protocol", Value: "%PROTOCOL%"},
-											{Key: "duration", Value: "%DURATION%"},
-										}),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.TCPBackendType,
+									Tcp: &api.TCPBackend{
+										Address: "logging.backend",
+										Format: &api.Format{
+											Json: pointer.To([]api.JsonValue{
+												{Key: "protocol", Value: "%PROTOCOL%"},
+												{Key: "duration", Value: "%DURATION%"},
+											}),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
 			},
 			expectedListeners: []string{"outbound_tcp_backend_json_format.listener.golden.yaml"},
 		}),
-		Entry("basic outbound route without match", sidecarTestCase{
+		Entry("outbound route with no matching MeshAccessLog policy", sidecarTestCase{
 			resources: []core_xds.Resource{
 				otherServiceHTTPListener(),
 			},
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
-						},
-					},
-				},
-			},
+			toRules:           core_rules.ToRules{},
 			expectedListeners: []string{"outbound_route_without_match.listener.golden.yaml"},
 		}),
 		Entry("basic inbound route", sidecarTestCase{
@@ -1172,7 +1118,7 @@ var _ = Describe("MeshAccessLog", func() {
 		)
 
 		resourceSet := core_xds.NewResourceSet()
-		outboundListener := outboundServiceTCPListener("other-service-tcp", 37777)
+		outboundListener := outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777)
 		resourceSet.Add(&outboundListener)
 
 		motb := motb_api.NewMeshOpenTelemetryBackendResource()
@@ -1226,31 +1172,21 @@ var _ = Describe("MeshAccessLog", func() {
 							}),
 					),
 			).
-			WithOutbounds(xds_types.Outbounds{
-				{
-					LegacyOutbound: builders.Outbound().
-						WithService("other-service-tcp").
-						WithAddress("127.0.0.1").
-						WithPort(37777).Build(),
-				},
-			}).
 			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service-tcp",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: &common_api.BackendResourceRef{
-										Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
-										Labels: map[string]string{mesh_proto.DisplayName: backendName},
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: &common_api.BackendResourceRef{
+											Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+											Labels: map[string]string{mesh_proto.DisplayName: backendName},
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -1284,7 +1220,7 @@ var _ = Describe("MeshAccessLog", func() {
 
 	It("should skip access log for dangling opentelemetry backendRef", func() {
 		resourceSet := core_xds.NewResourceSet()
-		outboundListener := outboundServiceTCPListener("other-service-tcp", 37777)
+		outboundListener := outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777)
 		resourceSet.Add(&outboundListener)
 
 		// No MOTB resources - the backendRef will be dangling
@@ -1327,31 +1263,21 @@ var _ = Describe("MeshAccessLog", func() {
 							}),
 					),
 			).
-			WithOutbounds(xds_types.Outbounds{
-				{
-					LegacyOutbound: builders.Outbound().
-						WithService("other-service-tcp").
-						WithAddress("127.0.0.1").
-						WithPort(37777).Build(),
-				},
-			}).
 			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service-tcp",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: &common_api.BackendResourceRef{
-										Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
-										Labels: map[string]string{"kuma.io/display-name": "non-existent-backend"},
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: &common_api.BackendResourceRef{
+											Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+											Labels: map[string]string{"kuma.io/display-name": "non-existent-backend"},
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -1404,21 +1330,22 @@ func otherServiceHTTPListener() core_xds.Resource {
 	return *listener
 }
 
-func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
+func outboundRealServiceTCPListener(serviceResourceKRI kri.Identifier, port int32) core_xds.Resource {
 	listener, err := meshtcproute_plugin.GenerateOutboundListener(
 		&core_xds.Proxy{
 			APIVersion: envoy_common.APIV3,
 		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
-				Address: "127.0.0.1",
-				Port:    port,
+				Address:  "127.0.0.1",
+				Port:     uint32(port),
+				Resource: serviceResourceKRI,
 			},
 			Protocol:            core_meta.ProtocolTCP,
-			KumaServiceTagValue: service,
+			KumaServiceTagValue: serviceName(serviceResourceKRI, port),
 		},
 		[]envoy_common.Split{
-			xds.NewSplitBuilder().WithClusterName(service).Build(),
+			xds.NewSplitBuilder().WithClusterName(serviceName(serviceResourceKRI, port)).Build(),
 		},
 		false,
 	)

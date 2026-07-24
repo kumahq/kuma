@@ -27,8 +27,8 @@ filterChains:
             - key: kuma.mesh
               value:
                 stringValue: default
-      cluster: bar-service
-      statPrefix: bar-service
+      cluster: default_bar-meshservice-tcp_other-ns_zone-1_msvc_37779
+      statPrefix: default_bar-meshservice-tcp_other-ns_zone-1_msvc_37779
 metadata:
   filterMetadata:
     io.kuma.tags: {}
