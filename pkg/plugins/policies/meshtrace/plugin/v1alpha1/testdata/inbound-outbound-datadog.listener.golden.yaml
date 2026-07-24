@@ -78,7 +78,7 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                 collectorCluster: meshtrace:datadog
-                serviceName: backend_OUTBOUND_other-service
+                serviceName: backend_OUTBOUND_default_backend_backend-ns_zone-1_msvc_80
             randomSampling:
               value: 50
             spawnUpstreamSpan: false
