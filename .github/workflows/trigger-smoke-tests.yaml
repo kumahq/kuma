@@ -1,9 +1,9 @@
 name: "trigger-smoke-tests"
 
-# Auto-triggers Kong/kong-mesh-smoke for a single version when that version's
-# release-tag build (build-test-distribute) completes. Per-branch/event-driven,
-# not a batch fan-out over all versions. workflow_dispatch re-runs one version
-# by hand.
+# Auto-triggers the downstream enterprise smoke-test workflow for a single
+# version when that version's release-tag build (build-test-distribute)
+# completes. Per-branch/event-driven, not a batch fan-out over all versions.
+# workflow_dispatch re-runs one version by hand.
 on:
   workflow_run:
     workflows: ["build-test-distribute"]
@@ -60,13 +60,13 @@ jobs:
             PRODUCT_VERSION="${BASH_REMATCH[1]}"
           else
             echo "'${RAW}' is not a recognized release version/tag; skipping smoke dispatch."
-            echo "is_release=false" >> "$GITHUB_OUTPUT"
+            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           if [[ -n "${MANUAL_VERSION}" ]]; then
             # deliberate operator override; may target an archived version
-            echo "is_release=true" >> "$GITHUB_OUTPUT"
+            echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
             echo "product_version=${PRODUCT_VERSION}" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -76,7 +76,7 @@ jobs:
           TAG="${RAW}"
           if ! TAG_REF_JSON="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" 2>/dev/null)"; then
             echo "'${TAG}' is not an existing tag ref; skipping smoke dispatch."
-            echo "is_release=false" >> "$GITHUB_OUTPUT"
+            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           OBJ_TYPE="$(jq -r '.object.type' <<< "${TAG_REF_JSON}")"
@@ -87,37 +87,35 @@ jobs:
           fi
           if [[ "${OBJ_SHA}" != "${HEAD_SHA}" ]]; then
             echo "'${TAG}' does not currently point at built commit ${HEAD_SHA}; skipping smoke dispatch."
-            echo "is_release=false" >> "$GITHUB_OUTPUT"
+            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "is_release=true" >> "$GITHUB_OUTPUT"
+          echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
           echo "product_version=${PRODUCT_VERSION}" >> "$GITHUB_OUTPUT"
 
-      - name: "Trigger Kong/kong-mesh-smoke"
-        if: steps.version.outputs.is_release == 'true'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - name: "Trigger downstream smoke test"
+        if: steps.version.outputs.should_dispatch == 'true'
         env:
+          # smoke.yaml only triggers on pull_request/push/schedule/workflow_dispatch
+          # (no repository_dispatch), so this must be a workflow_dispatch run, not
+          # a repository_dispatch event. Needs a Kong org admin to provision a
+          # cross-org (kumahq -> Kong) token with `actions:write` on the target
+          # repo; no existing kumahq secret has that scope.
+          GH_TOKEN: ${{ secrets.KONG_MESH_SMOKE_DISPATCH_TOKEN }}
+          SMOKE_OWNER: ${{ secrets.NOTIFY_OWNER }}
+          SMOKE_REPO: ${{ secrets.KONG_MESH_SMOKE_REPO }}
           PRODUCT_VERSION: ${{ steps.version.outputs.product_version }}
-        with:
-          # Same cross-org (kumahq -> Kong) PAT already used by pr-merged.yaml
-          # (KUMA_UPGRADE, to Kong/kong-mesh) and sync_kuma_oas_to_kuma-gui.yaml
-          # (SYNC_KUMA_OAS, to Kong/kuma-gui). Needs a Kong org admin to add
-          # Kong/kong-mesh-smoke to its repo access list; no new secret required.
-          github-token: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
-          script: |
-            await github.rest.repos.createDispatchEvent({
-              owner: "Kong",
-              repo: "kong-mesh-smoke",
-              event_type: "KUMA_SMOKE_TEST",
-              client_payload: {
-                product_name: "kuma",
-                product_version: process.env.PRODUCT_VERSION,
-                k8s_provider_k3d: true,
-                k8s_provider_gke: true,
-                k8s_provider_eks: true,
-                uni_provider_gcp: true,
-                uni_provider_aws: true,
-                run_tf_provider_tests: false,
-              },
-            });
+        run: |
+          set -euo pipefail
+          gh workflow run smoke.yaml \
+            --repo "${SMOKE_OWNER}/${SMOKE_REPO}" \
+            --ref main \
+            --field product_name=kuma \
+            --field product_version="${PRODUCT_VERSION}" \
+            --field k8s_provider_k3d=true \
+            --field k8s_provider_gke=true \
+            --field k8s_provider_eks=true \
+            --field uni_provider_gcp=true \
+            --field uni_provider_aws=true \
+            --field run_tf_provider_tests=false
