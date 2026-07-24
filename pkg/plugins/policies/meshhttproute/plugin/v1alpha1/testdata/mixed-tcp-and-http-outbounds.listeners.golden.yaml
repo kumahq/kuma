@@ -32,7 +32,7 @@ resources:
                   prefix: /
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: backend
+                  cluster: default_backend___msvc_80
                   timeout: 0s
           statPrefix: default_backend___msvc_80
     metadata:

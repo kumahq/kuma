@@ -1279,9 +1279,32 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 				},
 			}
+			meshSvcUs := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "backend-us", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
+						AppProtocol: core_meta.ProtocolHTTP,
+						Name:        pointer.To("test-port"),
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{
+							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+							Value: "backend-us",
+						},
+					},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.9",
+					}},
+				},
+			}
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
-				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc, &meshSvcUs},
 			}
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("default_backend___msvc_80", xds_builders.Endpoint().
@@ -1289,20 +1312,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithPort(8084).
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend")).
-				AddEndpoints("backend",
-					xds_builders.Endpoint().
-						WithTarget("192.168.0.4").
-						WithPort(8084).
-						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
-					xds_builders.Endpoint().
-						WithTarget("192.168.0.5").
-						WithPort(8084).
-						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+				AddEndpoint("default_backend-us___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.5").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend-us", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
-					AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 					WithResources(resources).
 					Build(),
 				proxy: xds_builders.Proxy().
@@ -1333,7 +1349,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: builders.TargetRefMeshService("backend", "", "test-port"),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},
@@ -1351,7 +1367,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefServiceSubset("backend", "region", "us"),
+													TargetRef: builders.TargetRefMeshService("backend-us", "", "test-port"),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},
@@ -1379,7 +1395,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: builders.TargetRefMeshService("backend", "", "test-port"),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},
@@ -1904,21 +1920,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend")).
-				AddEndpoints("backend",
-					xds_builders.Endpoint().
-						WithTarget("192.168.0.4").
-						WithPort(8084).
-						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
-					xds_builders.Endpoint().
-						WithTarget("192.168.0.5").
-						WithPort(8084).
-						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
-					AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 					WithResources(resources).
 					Build(),
 				proxy: xds_builders.Proxy().
@@ -1948,7 +1952,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},
@@ -1963,7 +1967,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},
@@ -2003,27 +2007,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend")).
-				AddEndpoints("backend",
-					xds_builders.Endpoint().
-						WithTarget("192.168.0.4").
-						WithPort(8084).
-						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
-					xds_builders.Endpoint().
-						WithTarget("192.168.0.5").
-						WithPort(8084).
-						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us")).
-				AddEndpoint("other-tcp", xds_builders.Endpoint().
-					WithTarget("192.168.0.10").
-					WithPort(8084).
-					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "other-tcp", mesh_proto.ProtocolTag, string(core_meta.ProtocolTCP), "region", "eu"))
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
-					AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-					AddServiceProtocol("other-tcp", core_meta.ProtocolTCP).
 					WithResources(resources).
 					Build(),
 				proxy: xds_builders.Proxy().
@@ -2053,7 +2039,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},
@@ -2095,21 +2081,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend")).
-				AddEndpoints("backend",
-					xds_builders.Endpoint().
-						WithTarget("192.168.0.4").
-						WithPort(8084).
-						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
-					xds_builders.Endpoint().
-						WithTarget("192.168.0.5").
-						WithPort(8084).
-						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
-					AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 					WithResources(resources).
 					Build(),
 				proxy: xds_builders.Proxy().
@@ -2140,7 +2114,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												}},
 												Default: api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefServiceSubset("alias-backend", mesh_proto.ZoneTag, "zone-2"),
+														TargetRef: builders.TargetRefMeshService("alias-backend", "", "80"),
 														Weight:    pointer.To(uint(100)),
 													}},
 												},
@@ -2154,7 +2128,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												}},
 												Default: api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefService("backend"),
+														TargetRef: builders.TargetRefMeshService("backend", "", "80"),
 														Weight:    pointer.To(uint(100)),
 													}},
 												},
@@ -2603,7 +2577,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolGRPC), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
-					AddServiceProtocol("backend", core_meta.ProtocolGRPC).
 					WithResources(resources).
 					Build(),
 				proxy: xds_builders.Proxy().
@@ -2633,7 +2606,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},

@@ -32,19 +32,19 @@ resources:
                   path: /v1/specific
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: backend
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   path: /v1
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: backend
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   prefix: /v1/
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: backend
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   headers:
@@ -54,7 +54,7 @@ resources:
                   prefix: /
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: backend
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   prefix: /

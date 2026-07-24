@@ -32,37 +32,37 @@ resources:
                   path: /v1
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: backend
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   prefix: /v1/
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: backend
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   path: /v2
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: backend-c72efb5be46fae6b
+                  cluster: default_backend-us___msvc_80
                   timeout: 0s
               - match:
                   prefix: /v2/
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: backend-c72efb5be46fae6b
+                  cluster: default_backend-us___msvc_80
                   timeout: 0s
               - match:
                   path: /v3
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: backend-c72efb5be46fae6b
+                  cluster: default_backend-us___msvc_80
                   timeout: 0s
               - match:
                   prefix: /v3/
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: backend-c72efb5be46fae6b
+                  cluster: default_backend-us___msvc_80
                   timeout: 0s
               - match:
                   path: /v4
@@ -84,7 +84,7 @@ resources:
                       exact: "true"
                 name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: backend
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   prefix: /
