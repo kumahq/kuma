@@ -30,3 +30,6 @@ violations:
   message: port must be defined for Mysql protocol
 - field: spec.default.appendMatch[13].value
   message: provided DNS has incorrect value
+- field: spec.default.appendMatch[10].port
+  message: protocol http without a port cannot be combined with protocol http2 on
+    the same destination; [grpc http http2] cannot share a port

@@ -47,6 +47,9 @@ var _ = Describe("MeshPassthrough", func() {
 			Entry("full failing example", testCase{
 				file: "full-invalid",
 			}),
+			Entry("all-ports L7 protocol conflicts", testCase{
+				file: "l7-all-ports-conflict",
+			}),
 		)
 	})
 })

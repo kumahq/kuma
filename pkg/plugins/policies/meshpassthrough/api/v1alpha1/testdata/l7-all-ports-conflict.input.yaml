@@ -1,0 +1,32 @@
+targetRef:
+  kind: Dataplane
+default:
+  passthroughMode: Matched
+  appendMatch:
+  # Regression for the "same domain, grpc + http" incident: grpc on a specific port plus http
+  # with no port. The port-less http applies to every port (including 4317) and collides with
+  # grpc there, so this must be rejected by the CP rather than reaching Envoy.
+  - type: Domain
+    value: datadog.datadog.svc.cluster.local
+    protocol: grpc
+    port: 4317
+  - type: Domain
+    value: datadog.datadog.svc.cluster.local
+    protocol: http
+  # A second, IP-scoped collision: same IP, http without a port + grpc on a port.
+  - type: IP
+    value: 10.0.0.1
+    protocol: http
+  - type: IP
+    value: 10.0.0.1
+    protocol: grpc
+    port: 9000
+  # Sanity: these do NOT collide (different specific ports) and must not be flagged.
+  - type: Domain
+    value: ok.example.com
+    protocol: http2
+    port: 5000
+  - type: Domain
+    value: ok.example.com
+    protocol: grpc
+    port: 5001

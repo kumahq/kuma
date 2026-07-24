@@ -1,0 +1,7 @@
+violations:
+- field: spec.default.appendMatch[1].port
+  message: protocol http without a port cannot be combined with protocol grpc on the
+    same destination; [grpc http http2] cannot share a port
+- field: spec.default.appendMatch[2].port
+  message: protocol http without a port cannot be combined with protocol grpc on the
+    same destination; [grpc http http2] cannot share a port

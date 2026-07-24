@@ -115,5 +115,67 @@ func validateDefault(conf Conf) validators.ValidationError {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("type"), fmt.Sprintf("provided type %s is not supported, one of Domain, IP, or CIDR is supported", match.Type))
 		}
 	}
+	verr.Add(validateAllPortsL7Conflicts(pointer.Deref(conf.AppendMatch)))
+	return verr
+}
+
+// validateAllPortsL7Conflicts rejects configurations where an L7 match (http/http2/grpc)
+// without a port collides with a different L7 protocol on the same "scope". http, http2 and
+// grpc share identical filter-chain matching (transport raw_buffer + application protocols
+// http/1.1,h2c), so two of them cannot select a filter chain on the same port. A match with no
+// port applies to every port, so it conflicts with any different-protocol L7 match regardless of
+// that match's port. This case is missed by the per-port check above (which only inspects
+// matches that declare a port) and, left unvalidated, produces a listener Envoy rejects with a
+// duplicate filter-chain match error (e.g. the same domain configured for both grpc and http).
+//
+// Matches are grouped by scope: all Domain matches share one scope (their filter chains are named
+// by protocol+port only), while each IP/CIDR value is its own scope (its chains embed the
+// address). Only a shared scope can collide.
+func validateAllPortsL7Conflicts(matches []Match) validators.ValidationError {
+	var verr validators.ValidationError
+
+	scopeOf := func(m Match) (string, bool) {
+		if !slices.Contains(notAllowedProtocolsOnTheSamePort, m.Protocol) {
+			return "", false
+		}
+		switch m.Type {
+		case "Domain":
+			return "domain", true
+		case "IP", "CIDR":
+			return string(m.Type) + ":" + m.Value, true
+		default:
+			return "", false
+		}
+	}
+
+	scopeProtocols := map[string]map[ProtocolType]bool{}
+	for _, match := range matches {
+		if scope, ok := scopeOf(match); ok {
+			if scopeProtocols[scope] == nil {
+				scopeProtocols[scope] = map[ProtocolType]bool{}
+			}
+			scopeProtocols[scope][match.Protocol] = true
+		}
+	}
+
+	for i, match := range matches {
+		scope, ok := scopeOf(match)
+		if !ok || match.Port != nil {
+			continue
+		}
+		var conflicting []string
+		for protocol := range scopeProtocols[scope] {
+			if protocol != match.Protocol {
+				conflicting = append(conflicting, string(protocol))
+			}
+		}
+		if len(conflicting) > 0 {
+			slices.Sort(conflicting)
+			verr.AddViolationAt(
+				validators.RootedAt("appendMatch").Index(i).Field("port"),
+				fmt.Sprintf("protocol %s without a port cannot be combined with protocol %s on the same destination; %v cannot share a port", match.Protocol, conflicting[0], notAllowedProtocolsOnTheSamePort),
+			)
+		}
+	}
 	return verr
 }
