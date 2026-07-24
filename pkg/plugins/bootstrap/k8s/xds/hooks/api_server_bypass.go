@@ -1,8 +1,10 @@
 package hooks
 
 import (
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -11,6 +13,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	transparent_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	xds_hooks "github.com/kumahq/kuma/v3/pkg/xds/hooks"
 )
 
@@ -34,11 +37,15 @@ func (h ApiServerBypass) Modify(resources *core_xds.ResourceSet, ctx xds_context
 	if proxy.Dataplane == nil {
 		return nil
 	}
-	if ctx.Mesh.Resource.Spec.IsPassthrough() {
+	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
+	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
+	outboundPassThroughClusterName := nameOrDefault(naming.ContextualTransparentProxyName("outbound", 4), transparent_metadata.TransparentOutboundNameIPv4)
+	if _, ok := resources.Resources(envoy_resource.ClusterType)[outboundPassThroughClusterName]; ok {
+		// default outbound passthrough is in effect for this proxy, so it can already reach the API Server
 		return nil
 	}
 
-	getNameOrDefault := system_names.GetNameOrDefault(unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource))
+	getNameOrDefault := system_names.GetNameOrDefault(unifiedNaming)
 
 	name := getNameOrDefault(
 		system_names.MustBeSystemName("kube_api_server_bypass"),

@@ -134,6 +134,22 @@ spec:
 			meshName,
 			Config.KumaNamespace,
 		)
+
+		disableMeshPassthrough := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshPassthrough
+metadata:
+  name: disable-default-passthrough
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    passthroughMode: None
+`, Config.KumaNamespace, meshName)
+
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
 				testserver.WithNamespace(namespace),
@@ -142,7 +158,8 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterAll(func() {
+		E2EAfterAll(func() {
+			Expect(kubernetes.Cluster.Install(DeleteYamlK8s(disableMeshPassthrough))).To(Succeed())
 			Expect(kubernetes.Cluster.Install(YamlK8s(
 				samples.MeshMTLSBuilder().
 					WithName(meshName).
@@ -174,10 +191,10 @@ spec:
 			Expect(kubernetes.Cluster.Install(YamlK8s(
 				samples.MeshMTLSBuilder().
 					WithName(meshName).
-					WithoutPassthrough().
 					WithMeshExternalServiceTrafficForbidden().
 					WithEgressRoutingEnabled().KubeYaml()),
 			)).To(Succeed())
+			Expect(kubernetes.Cluster.Install(YamlK8s(disableMeshPassthrough))).To(Succeed())
 
 			// then traffic doesn't work
 			Eventually(func(g Gomega) {

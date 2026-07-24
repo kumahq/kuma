@@ -29,11 +29,10 @@ import (
 
 var _ = Describe("MeshPassthrough", func() {
 	type testCase struct {
-		resources               []*core_xds.Resource
-		singleItemRules         core_rules.SingleItemRules
-		meshPassthroughDisabled bool
-		listenersGolden         string
-		clustersGolden          string
+		resources       []*core_xds.Resource
+		singleItemRules core_rules.SingleItemRules
+		listenersGolden string
+		clustersGolden  string
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -41,12 +40,8 @@ var _ = Describe("MeshPassthrough", func() {
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
 
-			mesh := samples.MeshDefaultBuilder()
-			if given.meshPassthroughDisabled {
-				mesh.WithoutPassthrough()
-			}
 			context := *xds_builders.Context().
-				WithMeshBuilder(mesh).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithApiVersion(envoy_common.APIV3).
@@ -580,42 +575,6 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "disabled_on_policy.listeners.golden.yaml",
 			clustersGolden:  "disabled_on_policy.clusters.golden.yaml",
 		}),
-		Entry("enabled on policy but disabled on mesh", testCase{
-			resources: []*core_xds.Resource{
-				{
-					Name:   "outbound:passthrough:ipv4",
-					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
-						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
-							}...)),
-						)).MustBuild(),
-				},
-			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "api.example.com",
-									Port:     pointer.To[uint32](443),
-									Protocol: api.ProtocolType("tls"),
-								},
-							},
-						},
-					},
-				},
-			},
-			meshPassthroughDisabled: true,
-			listenersGolden:         "enabled_on_policy.listeners.golden.yaml",
-			clustersGolden:          "enabled_on_policy.clusters.golden.yaml",
-		}),
 		Entry("enabled on policy and on mesh", testCase{
 			resources: []*core_xds.Resource{
 				{
@@ -653,9 +612,8 @@ var _ = Describe("MeshPassthrough", func() {
 					},
 				},
 			},
-			meshPassthroughDisabled: false,
-			listenersGolden:         "enabled_on_policy_and_mesh.listeners.golden.yaml",
-			clustersGolden:          "enabled_on_policy_and_mesh.clusters.golden.yaml",
+			listenersGolden: "enabled_on_policy_and_mesh.listeners.golden.yaml",
+			clustersGolden:  "enabled_on_policy_and_mesh.clusters.golden.yaml",
 		}),
 	)
 })

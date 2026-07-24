@@ -190,7 +190,7 @@ ifndef K3D_HELM_DEPLOY_NO_CNI
 		--set $(KUMA_SETTINGS_PREFIX)cni.enabled=true \
 		--set $(KUMA_SETTINGS_PREFIX)cni.chained=true \
 		--set $(KUMA_SETTINGS_PREFIX)cni.netDir=/var/lib/rancher/k3s/agent/etc/cni/net.d/ \
-		--set $(KUMA_SETTINGS_PREFIX)cni.binDir=/bin/ \
+		--set $(KUMA_SETTINGS_PREFIX)cni.binDir=/var/lib/rancher/k3s/data/cni/ \
 		--set $(KUMA_SETTINGS_PREFIX)cni.confName=10-flannel.conflist
 endif
 
@@ -416,6 +416,15 @@ k3d/cluster/deploy/wait/mesh:
 	  sleep 1; \
 	done
 
+.PHONY: k3d/cluster/deploy/wait/cni
+k3d/cluster/deploy/wait/cni:
+ifndef K3D_HELM_DEPLOY_NO_CNI
+	$(Q)echo "Waiting for $(PROJECT_NAME)-cni-node DaemonSet to be ready..."
+	$(Q)$(KUBECTL) rollout status daemonset/$(PROJECT_NAME)-cni-node \
+		--namespace kube-system \
+		--timeout 120s >/dev/null
+endif
+
 # --- Deploy: kumactl ---
 
 .PHONY: k3d/cluster/deploy/kumactl/install
@@ -491,6 +500,7 @@ k3d/cluster/deploy/helm:
 	$(Q)$(MAKE) k3d/cluster/load
 	$(Q)$(MAKE) k3d/cluster/deploy/helm/clean
 	$(Q)$(MAKE) k3d/cluster/deploy/helm/upgrade
+	$(Q)$(MAKE) k3d/cluster/deploy/wait/cni
 	$(Q)$(MAKE) k3d/cluster/deploy/wait/cp
 
 # --- Deploy: demo ---
