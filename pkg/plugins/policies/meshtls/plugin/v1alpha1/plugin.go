@@ -381,7 +381,6 @@ func configureListener(
 	}
 
 	protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
-	service := inbound.GetService()
 	cluster := policies_xds.NewClusterBuilder().WithName(clusterName).Build()
 	routes := generator.GenerateRoutes(proxy, iface, cluster)
 	ciphers := pointer.Deref(conf.TlsCiphers)
@@ -394,7 +393,6 @@ func configureListener(
 			clusterName,
 			xdsCtx,
 			iface,
-			service,
 			&routes,
 			conf.TlsVersion,
 			ciphers,
