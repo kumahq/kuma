@@ -1,8 +1,8 @@
 resources:
-- name: default_backend-eu___msvc_80
+- name: kri_msvc_default___backend-eu_kafka-port
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: default_backend-eu___msvc_80
+    clusterName: kri_msvc_default___backend-eu_kafka-port
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -17,10 +17,10 @@ resources:
               kuma.io/protocol: kafka
             envoy.transport_socket_match:
               kuma.io/protocol: kafka
-- name: default_backend-us___msvc_80
+- name: kri_msvc_default___backend-us_kafka-port
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: default_backend-us___msvc_80
+    clusterName: kri_msvc_default___backend-us_kafka-port
     endpoints:
     - lbEndpoints:
       - endpoint:

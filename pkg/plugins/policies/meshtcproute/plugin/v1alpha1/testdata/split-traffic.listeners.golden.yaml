@@ -1,5 +1,5 @@
 resources:
-- name: outbound:127.0.0.1:10001
+- name: kri_msvc_default___backend_tcp-port
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -11,19 +11,20 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          statPrefix: default_backend___msvc_80
+          statPrefix: kri_msvc_default___backend_tcp-port
           weightedClusters:
             clusters:
-            - name: default_backend-eu___msvc_80
+            - name: kri_msvc_default___backend-eu_tcp-port
               weight: 40
-            - name: default_backend-us___msvc_80
+            - name: kri_msvc_default___backend-us_http-port
               weight: 15
-            - name: default_other-backend___msvc_80
+            - name: kri_msvc_default___other-backend_http-port
               weight: 15
-            - name: default_externalservice___extsvc_8007
+            - name: kri_extsvc_default___externalservice_
               weight: 15
     metadata:
       filterMetadata:
         io.kuma.tags: {}
-    name: outbound:127.0.0.1:10001
+    name: kri_msvc_default___backend_tcp-port
+    statPrefix: kri_msvc_default___backend_tcp-port
     trafficDirection: OUTBOUND
