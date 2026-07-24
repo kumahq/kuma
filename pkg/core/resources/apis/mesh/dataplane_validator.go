@@ -358,7 +358,9 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 		return result
 	}
 	result.Add(ValidateTags(validators.RootedAt("tags"), gateway.Tags, ValidateTagsOpts{
-		RequireService:      true,
+		// Require service tag only if gateway has any tags (old setup).
+		// With InboundTagsDisabled gateways have no tags (new setup).
+		RequireService:      len(gateway.Tags) > 0,
 		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
 	}),
 	)
