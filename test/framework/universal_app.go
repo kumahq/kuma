@@ -42,8 +42,9 @@ const (
 	// tarballs across universal e2e runs, so the DP compatibility install reuses
 	// them instead of re-downloading from packages.konghq.com every run. CI
 	// persists it via actions/cache; on self-hosted runners it survives between
-	// runs on its own. It is bind-mounted into every app container at
-	// dpBinaryCacheMountPath.
+	// runs on its own. It is bind-mounted at dpBinaryCacheMountPath into app
+	// containers on the local docker backend (a host bind-mount is meaningless
+	// for the remote backend).
 	dpBinaryCacheHostDir   = "/tmp/kuma-dp-binaries-cache"
 	dpBinaryCacheMountPath = "/kuma-dp-binaries-cache"
 )
@@ -373,10 +374,11 @@ func (s *UniversalApp) CreateDP(
 		url := fmt.Sprintf("https://packages.konghq.com/public/kuma-binaries-release/raw/names/kuma-linux-%[2]s/versions/%[1]s/kuma-%[1]s-linux-%[2]s.tar.gz", dpVersion, Config.Arch)
 		newPathOut := fmt.Sprintf("/tmp/kuma/kuma-%s/bin", dpVersion)
 
-		// Extract straight from the cached tarball on a hit; on a miss download it,
-		// populate the cache atomically (cp+mv) for future runs, and extract the
-		// download. The cache populate is best-effort (|| true) so a read-only mount
-		// never fails the install.
+		// Try to extract straight from the cached tarball; extraction doubles as the
+		// integrity check. On a miss or a corrupt entry, download, extract that, and
+		// atomically (re)populate the cache via a unique mktemp temp + mv so a fresh
+		// good copy overwrites any bad one. Cache writes are best-effort (|| true) so
+		// a read-only mount never fails the install.
 		cacheFile := fmt.Sprintf("%s/kuma-%s-linux-%s.tar.gz", dpBinaryCacheMountPath, dpVersion, Config.Arch)
 
 		// Run the install synchronously so a failed download fails the test fast
@@ -384,14 +386,11 @@ func (s *UniversalApp) CreateDP(
 		installScript := fmt.Sprintf(`set -e
 rm -f /usr/bin/kuma-dp /usr/bin/envoy
 mkdir -p /tmp/kuma/
-if [ -f '%[1]s' ]; then
-  tarball='%[1]s'
-else
+if ! { [ -f '%[1]s' ] && tar xzf '%[1]s' --directory /tmp/kuma/ 2>/dev/null; }; then
   curl --no-progress-bar --fail '%[2]s' -o /tmp/kuma/kuma.tar.gz
-  cp /tmp/kuma/kuma.tar.gz '%[1]s.tmp.'"$$" && mv '%[1]s.tmp.'"$$" '%[1]s' || true
-  tarball=/tmp/kuma/kuma.tar.gz
+  tmp=$(mktemp '%[1]s.XXXXXX') && cp /tmp/kuma/kuma.tar.gz "$tmp" && mv "$tmp" '%[1]s' || true
+  tar xzf /tmp/kuma/kuma.tar.gz --directory /tmp/kuma/
 fi
-tar xzf "$tarball" --directory /tmp/kuma/
 cp %[3]s/kuma-dp /usr/bin/kuma-dp
 cp %[3]s/envoy /usr/bin/envoy
 `, cacheFile, url, newPathOut)
