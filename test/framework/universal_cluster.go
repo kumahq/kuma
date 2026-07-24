@@ -416,6 +416,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		UniversalAppRunOptions{
 			DockerBackend: c.dockerBackend,
 			DPConcurrency: 0,
+			DPVersion:     opts.dpVersion,
 			EnableIPv6:    opts.isipv6,
 			Verbose:       *opts.verbose,
 			Capabilities:  caps,

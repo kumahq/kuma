@@ -73,9 +73,8 @@ spec:
 		})
 
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
+			"cluster.kri_extsvc_%s_default_%s_http-external-service_80.upstream_rq_total",
 			meshName,
-			"http-external-service",
 			Config.KumaNamespace,
 		)
 
@@ -131,11 +130,26 @@ spec:
 `, Config.KumaNamespace, meshName)
 
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
+			"cluster.kri_extsvc_%s_default_%s_mesh-external-service-rbac_80.upstream_rq_total",
 			meshName,
-			"mesh-external-service-rbac",
 			Config.KumaNamespace,
 		)
+
+		disableMeshPassthrough := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshPassthrough
+metadata:
+  name: disable-default-passthrough
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    passthroughMode: None
+`, Config.KumaNamespace, meshName)
+
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
 				testserver.WithNamespace(namespace),
@@ -144,7 +158,8 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterAll(func() {
+		E2EAfterAll(func() {
+			Expect(kubernetes.Cluster.Install(DeleteYamlK8s(disableMeshPassthrough))).To(Succeed())
 			Expect(kubernetes.Cluster.Install(YamlK8s(
 				samples.MeshMTLSBuilder().
 					WithName(meshName).
@@ -176,10 +191,10 @@ spec:
 			Expect(kubernetes.Cluster.Install(YamlK8s(
 				samples.MeshMTLSBuilder().
 					WithName(meshName).
-					WithoutPassthrough().
 					WithMeshExternalServiceTrafficForbidden().
 					WithEgressRoutingEnabled().KubeYaml()),
 			)).To(Succeed())
+			Expect(kubernetes.Cluster.Install(YamlK8s(disableMeshPassthrough))).To(Succeed())
 
 			// then traffic doesn't work
 			Eventually(func(g Gomega) {
@@ -213,9 +228,8 @@ spec:
       port: 80
 `, Config.KumaNamespace, meshName)
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
+			"cluster.kri_extsvc_%s_default_%s_tcp-external-service_80.upstream_rq_total",
 			meshName,
-			"tcp-external-service",
 			Config.KumaNamespace,
 		)
 		BeforeAll(func() {
@@ -316,10 +330,10 @@ spec:
 		}
 		filter := func(serviceName string) string {
 			return fmt.Sprintf(
-				"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total", // cx
+				"cluster.kri_extsvc_%s_default_%s_%s_80.upstream_rq_total", // cx
 				meshName,
-				serviceName,
 				Config.KumaNamespace,
+				serviceName,
 			)
 		}
 		BeforeAll(func() {

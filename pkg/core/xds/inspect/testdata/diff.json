@@ -1,17 +1,17 @@
 [
   {
     "op": "test",
-    "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:192.168.0.1:80/filterChains/0/filters/0/typedConfig/idleTimeout",
+    "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_80/filterChains/0/filters/0/typedConfig/idleTimeout",
     "value": "123s"
   },
   {
     "op": "remove",
-    "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:192.168.0.1:80/filterChains/0/filters/0/typedConfig/idleTimeout",
+    "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_80/filterChains/0/filters/0/typedConfig/idleTimeout",
     "value": "123s"
   },
   {
     "op": "add",
-    "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:192.168.0.1:80/filterChains/0/filters/0/typedConfig/idleTimeout",
+    "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_80/filterChains/0/filters/0/typedConfig/idleTimeout",
     "value": "3600s"
   }
 ]

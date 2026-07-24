@@ -8,6 +8,43 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `from` removed from `MeshTLS`
+
+The deprecated `from` field has been removed from the `MeshTLS` policy. Use the `rules` field instead.
+
+**Action required**
+
+Migrate any `MeshTLS` resources using `from` to use `rules` before upgrading.
+
+**Warning**: Un-migrated `from` configurations are silently ignored after upgrade — the `from` field no longer exists in the schema and the data is discarded during deserialization. The impact depends on your CA backend configuration:
+- **CA backend mode `PERMISSIVE`**: workloads fall back to permissive TLS when you intended strict
+- **CA backend mode `STRICT` or workload has identity**: workloads default to strict mTLS, potentially breaking connectivity if the `from` policy was intentionally permissive
+
+Before upgrading, audit your cluster for affected resources:
+```bash
+kubectl get meshtls -A -o yaml | grep -B5 'from:'
+```
+
+```yaml
+# Before (deprecated)
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        mode: Strict
+
+# After
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        mode: Strict
+```
+
 ### Legacy `ExternalService` resource removed
 
 The legacy `ExternalService` resource has been removed. Its CRD, API
@@ -313,6 +350,68 @@ spec:
   rules:
     - default:
         idleTimeout: 1h
+```
+
+### `from` removed from `MeshCircuitBreaker`
+
+The deprecated `spec.from` array has been removed from `MeshCircuitBreaker`.
+Circuit breaking for incoming traffic is now configured exclusively through
+`spec.rules`. `spec.from` is silently dropped on create/update: if
+`spec.rules` or `spec.to` is also set, the resource is accepted but `from` has
+no effect on inbound configuration; if `from` was the only field set, the
+resulting spec has neither `to` nor `rules`, so the request is rejected by
+validation.
+
+**Action required**
+
+Before upgrading, migrate every `MeshCircuitBreaker` that uses `spec.from` to
+`spec.rules`. A `from` entry targeting `kind: Mesh` (all clients) maps to a
+single catch-all rule:
+
+```yaml
+# before
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionLimits:
+          maxConnections: 1024
+# after
+spec:
+  rules:
+    - default:
+        connectionLimits:
+          maxConnections: 1024
+```
+
+### `from` removed from `MeshAccessLog`
+
+The deprecated `spec.from` array has been removed from `MeshAccessLog`. Access logging for incoming traffic is now configured exclusively through `spec.rules`. `spec.from` is silently dropped on create/update: if `spec.rules` or `spec.to` is also set, the resource is accepted but `from` has no effect on inbound configuration; if `from` was the only field set, the resulting spec has neither `to` nor `rules`, so the request is rejected by validation.
+
+**Action required**
+
+Before upgrading, migrate every `MeshAccessLog` that uses `spec.from` to `spec.rules`. A `from` entry targeting `kind: Mesh` (all clients) maps to a single catch-all rule:
+
+```yaml
+# before
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: File
+            file:
+              path: /tmp/access.log
+# after
+spec:
+  rules:
+    - default:
+        backends:
+          - type: File
+            file:
+              path: /tmp/access.log
 ```
 
 ### Auto reachable services removed
@@ -679,6 +778,21 @@ If any `MeshMetric` policy still sets `openTelemetry.endpoint`, create a
 the policy to reference it via `openTelemetry.backendRef` before upgrading.
 Policies that still set `openTelemetry.endpoint` will fail validation.
 
+### `MeshAccessLog` OpenTelemetry backend no longer accepts an inline `endpoint`
+
+The deprecated `default.backends[].openTelemetry.endpoint` /
+`rules[].default.backends[].openTelemetry.endpoint` field has been removed
+from the `MeshAccessLog` policy. `backendRef`, pointing at a
+`MeshOpenTelemetryBackend` resource, is now the only way to configure an
+OpenTelemetry access log backend.
+
+**Action required**
+
+If any `MeshAccessLog` policy still sets `openTelemetry.endpoint`, create a
+`MeshOpenTelemetryBackend` resource with the equivalent endpoint and update
+the policy to reference it via `openTelemetry.backendRef` before upgrading.
+Policies that still set `openTelemetry.endpoint` will fail validation.
+
 ### `MeshLoadBalancingStrategy` load-balancer-specific `hashPolicies` removed
 
 The deprecated `spec.to[].default.loadBalancer.ringHash.hashPolicies` and
@@ -707,6 +821,96 @@ If any `MeshTrace` policy still sets `openTelemetry.endpoint`, create a
 `MeshOpenTelemetryBackend` resource with the equivalent endpoint and update
 the policy to reference it via `openTelemetry.backendRef` before upgrading.
 Policies that still set `openTelemetry.endpoint` will fail validation.
+
+### `Mesh.spec.tracing` removed
+
+The inline `tracing` field (and its `Tracing`/`TracingBackend`/
+`DatadogTracingBackendConfig`/`ZipkinTracingBackendConfig` types) has been
+removed from the `Mesh` resource spec. The `MeshTrace` policy has been the GA
+replacement for configuring tracing and is unaffected by this change.
+
+**Action required**
+
+Migrate any `Mesh` resources that still configure `spec.tracing` to a
+`MeshTrace` policy before upgrading. A `Mesh` spec that still sets `tracing`
+continues to apply successfully; the field is silently ignored by the control
+plane.
+
+### `Mesh.spec.routing.localityAwareLoadBalancing` removed
+
+The inline `routing.localityAwareLoadBalancing` field has been removed from
+the `Mesh` resource spec. The `MeshLoadBalancingStrategy` policy has been the
+GA replacement for configuring locality-aware load balancing and is
+unaffected by this change.
+
+**Action required**
+
+Migrate any `Mesh` resources that still configure
+`spec.routing.localityAwareLoadBalancing` to a `MeshLoadBalancingStrategy`
+policy before upgrading. A `Mesh` spec that still sets
+`routing.localityAwareLoadBalancing` continues to apply successfully; the
+field is silently ignored by the control plane.
+
+### `Mesh.spec.logging` removed
+
+The inline `logging` field (and its `Logging`/`LoggingBackend`/
+`FileLoggingBackendConfig`/`TcpLoggingBackendConfig` types) has been removed
+from the `Mesh` resource spec. The `MeshAccessLog` policy has been the GA
+replacement for configuring access logging and is unaffected by this change.
+
+**Action required**
+
+Migrate any `Mesh` resources that still configure `spec.logging` to a
+`MeshAccessLog` policy before upgrading. A `Mesh` spec that still sets
+`logging` continues to apply successfully; the field is silently ignored by
+the control plane.
+
+### Per-zone MeshExternalService routing removed
+
+A `MeshExternalService` labeled with `kuma.io/zone` is no longer restricted to
+being reached only from that zone via a routing path through the remote
+zone's ingress and egress. It is now reachable directly through the local
+zone egress from every zone, the same as an unlabeled `MeshExternalService`.
+
+**Action required**
+
+None for typical usage; existing `kuma.io/zone` labels on `MeshExternalService`
+resources are no longer used to gate reachability and can be removed. If you
+relied on the label to force all traffic through a specific zone's egress
+(for example, because only that zone has network-level access to the
+external endpoint), that forwarding no longer happens: every zone's local
+egress now dials the external endpoint directly, so make sure each zone's
+network path to the endpoint is in place before upgrading.
+
+### `MeshInsight.policies` removed in favor of `resources`
+
+The deprecated `policies` field (a map of policy type to a `total` count) has
+been removed from `MeshInsight`. The `resources` field, which reports a
+`total` count for every resource type (policies included), has been the
+replacement since it was introduced and is unaffected by this change.
+
+**Action required**
+
+Update any automation or dashboards that read `MeshInsight.policies` (via the
+REST API or `kumactl inspect meshes`) to read the equivalent entry from
+`MeshInsight.resources` instead, keyed by the same resource type name.
+
+### `Mesh.spec.networking.outbound.passthrough` removed
+
+The inline `networking.outbound.passthrough` field has been removed from the
+`Mesh` resource spec. The `MeshPassthrough` policy is the replacement for
+controlling the default outbound passthrough cluster and is unaffected by
+this change. After upgrading, the control plane always behaves as if
+`passthrough` was `true` (its previous default) unless a `MeshPassthrough`
+policy says otherwise.
+
+**Action required**
+
+Migrate any `Mesh` resources that still set `networking.outbound.passthrough`
+to `false` to a `MeshPassthrough` policy with `targetRef.kind: Mesh` and
+`default.passthroughMode: None` before upgrading. A `Mesh` spec that still
+sets `networking.outbound.passthrough` continues to apply successfully; the
+field is silently ignored by the control plane.
 
 ## Upgrade to `2.13.7`
 
@@ -1315,18 +1519,20 @@ KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS="system:serviceaccount:kuma-system:kuma-co
 
 This is already configured by default via Helm template with `KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS`.
 
-### MeshTrust spec.origin Field Deprecated
+### MeshTrust spec.origin Field Removed
 
-The `spec.origin` field in MeshTrust resources has been moved to `status.origin`.
+The `spec.origin` field in MeshTrust resources has been removed. The origin is
+now reported through `status.origin`.
 
 **What changed:**
-- `spec.origin` is now deprecated and will be removed in a future release
+- `spec.origin` is no longer part of the MeshTrust API or Kubernetes CRD schema
+- Manifests and API requests that still set `spec.origin` can be rejected as unknown-field input
 - The field is automatically populated in `status.origin` by the MeshIdentity status updater
-- Setting `spec.origin` continues to work but emits a deprecation warning
 
 **Action required:**
 
-No immediate action required, but update any automation or tooling that references `spec.origin` to use `status.origin` instead.
+Before upgrading, remove `spec.origin` from MeshTrust manifests and update any
+automation or tooling that reads it to use `status.origin` instead.
 
 **Example:**
 

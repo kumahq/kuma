@@ -29,7 +29,7 @@ func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.R
 	cache := envoy_cache.NewSnapshotCache(false, hasher, util_xds.NewLogger(log))
 	reconciler := mads_reconcile.NewReconciler(
 		cache,
-		mads_reconcile.NewSnapshotGenerator(rm, mads_generator.MonitoringAssignmentsGenerator{InboundTagsDisabled: inboundTagsDisabled}, meshCache, inboundTagsDisabled),
+		mads_reconcile.NewSnapshotGenerator(rm, meshCache, inboundTagsDisabled),
 	)
 	// We use the clientIds from the reconciler from the node hasher
 	hasher.GetIds = reconciler.KnownClientIds

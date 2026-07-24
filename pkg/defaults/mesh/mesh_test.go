@@ -2,10 +2,13 @@ package mesh_test
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -22,12 +25,13 @@ import (
 )
 
 var _ = Describe("EnsureDefaultMeshResources", func() {
+	var rawStore core_store.ResourceStore
 	var resManager manager.ResourceManager
 	var defaultMesh *core_mesh.MeshResource
 
 	BeforeEach(func() {
-		store := memory.NewStore()
-		resManager = manager.NewResourceManager(store)
+		rawStore = memory.NewStore()
+		resManager = manager.NewResourceManager(rawStore)
 		defaultMesh = core_mesh.NewMeshResource()
 
 		err := resManager.Create(context.Background(), defaultMesh, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
@@ -170,6 +174,52 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			err = resManager.Get(context.Background(), healed, core_store.GetByKey("mesh-circuit-breaker-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(healed.GetMeta().GetLabels()).To(HaveKeyWithValue(mesh_proto.ZoneTag, "zone-1"))
+		})
+
+		It("should migrate a legacy combined MeshTimeout default that predates the rules/to split", func() {
+			// given a combined default MeshTimeout, as an older CP version stored it,
+			// with both 'rules' and 'to' set (now mutually exclusive)
+			legacy := meshtimeout.NewMeshTimeoutResource()
+			legacy.Spec = &meshtimeout.MeshTimeout{
+				TargetRef: &common_api.TargetRef{
+					Kind: common_api.Mesh,
+					ProxyTypes: &[]common_api.TargetRefProxyType{
+						common_api.Sidecar,
+					},
+				},
+				Rules: &[]meshtimeout.Rule{
+					{Default: meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Hour}}},
+				},
+				To: &[]meshtimeout.To{
+					{
+						TargetRef: common_api.TargetRef{Kind: common_api.Mesh},
+						Default:   meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Hour}},
+					},
+				},
+			}
+			// bypass resManager.Create, which would validate against the current
+			// (already-fixed) rules: writing directly to the store simulates data
+			// an older CP already persisted before this constraint was restored.
+			err := rawStore.Create(context.Background(), legacy, core_store.CreateByKey("mesh-timeout-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when EnsureDefaultMeshResources runs
+			err = mesh.EnsureDefaultMeshResources(context.Background(), resManager, defaultMesh, []string{}, context.Background(), false, "", config_core.Zone, "zone-1", false)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then the legacy resource is migrated to 'rules' only
+			migrated := meshtimeout.NewMeshTimeoutResource()
+			err = resManager.Get(context.Background(), migrated, core_store.GetByKey("mesh-timeout-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(migrated.Spec.To).To(BeNil())
+			Expect(migrated.Spec.Rules).ToNot(BeNil())
+
+			// and a separate 'to' resource now carries the outbound defaults
+			toResource := meshtimeout.NewMeshTimeoutResource()
+			err = resManager.Get(context.Background(), toResource, core_store.GetByKey("mesh-timeout-to-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(toResource.Spec.To).ToNot(BeNil())
+			Expect(toResource.Spec.Rules).To(BeNil())
 		})
 
 		It("should not recreate a default policy deleted by an operator", func() {

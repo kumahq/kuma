@@ -56,10 +56,10 @@
    "path": "meshaccesslogs",
    "pluralDisplayName": "Mesh Access Logs",
    "policy": {
-    "hasFromTargetRef": true,
+    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
     "hasToTargetRef": true,
-    "isFromAsRules": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -73,10 +73,10 @@
    "path": "meshcircuitbreakers",
    "pluralDisplayName": "Mesh Circuit Breakers",
    "policy": {
-    "hasFromTargetRef": true,
+    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
     "hasToTargetRef": true,
-    "isFromAsRules": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -320,10 +320,10 @@
    "path": "meshtlses",
    "pluralDisplayName": "Mesh TLSes",
    "policy": {
-    "hasFromTargetRef": true,
+    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
     "hasToTargetRef": false,
-    "isFromAsRules": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,

@@ -88,13 +88,13 @@ spec:
 
 		lastFailureStats := stats.StatItem{Name: "", Value: float64(0)}
 		grpcFailureStats := func(g Gomega) *stats.Stats {
-			s, err := admin.GetStats("cluster.meshretry-grpc_test-server__kuma-3_msvc_80.grpc.failure")
+			s, err := admin.GetStats("cluster.kri_msvc_meshretry-grpc_kuma-3__test-server_80.grpc.failure")
 			g.Expect(err).ToNot(HaveOccurred())
 			fmt.Printf("current failure stats %v\n", s)
 			return s
 		}
 		grpcSuccessStats := func(g Gomega) *stats.Stats {
-			s, err := admin.GetStats("cluster.meshretry-grpc_test-server__kuma-3_msvc_80.grpc.success")
+			s, err := admin.GetStats("cluster.kri_msvc_meshretry-grpc_kuma-3__test-server_80.grpc.success")
 			g.Expect(err).ToNot(HaveOccurred())
 			return s
 		}

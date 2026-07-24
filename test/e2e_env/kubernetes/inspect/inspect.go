@@ -91,11 +91,11 @@ spec:
 		stdout, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", "-m", meshName, dataplaneName, "--type=config-dump")
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(stdout).To(ContainSubstring(`"name": "inbound:passthrough:ipv4"`))
-		Expect(stdout).To(ContainSubstring(`"name": "inbound:passthrough:ipv6"`))
-		Expect(stdout).To(ContainSubstring(`"name": "kuma:envoy:admin"`))
-		Expect(stdout).To(ContainSubstring(`"name": "outbound:passthrough:ipv4"`))
-		Expect(stdout).To(ContainSubstring(`"name": "outbound:passthrough:ipv6"`))
+		Expect(stdout).To(ContainSubstring(`"name": "self_transparentproxy_passthrough_inbound_ipv4"`))
+		Expect(stdout).To(ContainSubstring(`"name": "self_transparentproxy_passthrough_inbound_ipv6"`))
+		Expect(stdout).To(ContainSubstring(`"name": "system_envoy_admin"`))
+		Expect(stdout).To(ContainSubstring(`"name": "self_transparentproxy_passthrough_outbound_ipv4"`))
+		Expect(stdout).To(ContainSubstring(`"name": "self_transparentproxy_passthrough_outbound_ipv6"`))
 	})
 
 	DescribeTable("should execute inspect of policies",

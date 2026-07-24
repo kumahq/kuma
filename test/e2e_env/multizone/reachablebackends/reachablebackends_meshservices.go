@@ -34,17 +34,26 @@ mtls:
   backends:
   - name: ca-1
     type: builtin
-networking:
-  outbound:
-    passthrough: false
 routing:
   zoneEgress: true
+`, meshName)
+
+	disableDefaultPassthrough := fmt.Sprintf(`
+type: MeshPassthrough
+mesh: %s
+name: disable-default-passthrough
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    passthroughMode: None
 `, meshName)
 
 	BeforeAll(func() {
 		// Global
 		err := NewClusterSetup().
 			Install(YamlUniversal(mesh)).
+			Install(YamlUniversal(disableDefaultPassthrough)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())

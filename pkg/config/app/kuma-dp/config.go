@@ -40,10 +40,11 @@ var DefaultConfig = func() Config {
 			DynamicConfiguration: DynamicConfiguration{
 				RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			},
-			IPv6Enabled:               true,
-			StrictInboundPortsEnabled: true,
-			OtelPipeEnabled:           true,
-			ReusePortEnabled:          true,
+			IPv6Enabled:                  true,
+			StrictInboundPortsEnabled:    true,
+			OtelPipeEnabled:              true,
+			ReusePortEnabled:             true,
+			UnifiedResourceNamingEnabled: true,
 		},
 		DNS: DNS{
 			Enabled:   true,

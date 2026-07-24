@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -18,6 +19,7 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/v3/api/observability/v1"
 	mads_config "github.com/kumahq/kuma/v3/pkg/config/mads"
@@ -29,10 +31,15 @@ import (
 	rest_error_types "github.com/kumahq/kuma/v3/pkg/core/rest/errors/types"
 	mads_v1 "github.com/kumahq/kuma/v3/pkg/mads/v1"
 	"github.com/kumahq/kuma/v3/pkg/mads/v1/service"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
+	meshmetric_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	"github.com/kumahq/kuma/v3/pkg/util/test"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
 var _ = Describe("MADS http service", func() {
@@ -49,6 +56,9 @@ var _ = Describe("MADS http service", func() {
 	const refreshInterval = 250 * time.Millisecond
 
 	const defaultFetchTimeout = 1 * time.Second
+
+	// keep the mesh context short-lived so each reconcile picks up new dataplanes
+	const cacheExpiration = time.Millisecond
 	BeforeEach(func() {
 		resManager = core_manager.NewResourceManager(memory.NewStore())
 	})
@@ -58,7 +68,19 @@ var _ = Describe("MADS http service", func() {
 		cfg.AssignmentRefreshInterval = config_types.Duration{Duration: refreshInterval}
 		cfg.DefaultFetchTimeout = config_types.Duration{Duration: defaultFetchTimeout}
 
-		svc := service.NewService(cfg, resManager, logr.Discard(), nil, false)
+		meshContextBuilder := xds_context.NewMeshContextBuilder(
+			resManager,
+			server.MeshResourceTypes(),
+			net.LookupIP,
+			"",
+			nil,
+		)
+		newMetrics, err := metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		meshCache, err := mesh.NewCache(cacheExpiration, meshContextBuilder, newMetrics)
+		Expect(err).ToNot(HaveOccurred())
+
+		svc := service.NewService(cfg, resManager, logr.Discard(), meshCache, false)
 		ctx, cancel := context.WithCancel(context.Background())
 		svc.Start(ctx)
 
@@ -137,8 +159,8 @@ var _ = Describe("MADS http service", func() {
 	})
 
 	Context("with resources", func() {
-		createMesh := func(mesh *core_mesh.MeshResource) error {
-			return resManager.Create(context.Background(), mesh, store.CreateByKey(mesh.GetMeta().GetName(), model.NoMesh))
+		createMesh := func(resource *core_mesh.MeshResource) error {
+			return resManager.Create(context.Background(), resource, store.CreateByKey(resource.GetMeta().GetName(), model.NoMesh))
 		}
 
 		createDataPlane := func(dp *core_mesh.DataplaneResource) error {
@@ -146,17 +168,37 @@ var _ = Describe("MADS http service", func() {
 			return err
 		}
 
-		mesh := &core_mesh.MeshResource{
+		createMeshMetric := func(mm *meshmetric_api.MeshMetricResource) error {
+			return resManager.Create(context.Background(), mm, store.CreateByKey(mm.GetMeta().GetName(), mm.GetMeta().GetMesh()))
+		}
+
+		testMesh := &core_mesh.MeshResource{
 			Meta: &test_model.ResourceMeta{
 				Name: "test",
 			},
-			Spec: &v1alpha1.Mesh{
-				Metrics: &v1alpha1.Metrics{
-					EnabledBackend: "prometheus-1",
-					Backends: []*v1alpha1.MetricsBackend{
+			Spec: &v1alpha1.Mesh{},
+		}
+
+		meshMetric := &meshmetric_api.MeshMetricResource{
+			Meta: &test_model.ResourceMeta{
+				Name: "mesh-metric",
+				Mesh: testMesh.GetMeta().GetName(),
+			},
+			Spec: &meshmetric_api.MeshMetric{
+				TargetRef: &common_api.TargetRef{
+					Kind: common_api.Mesh,
+				},
+				Default: meshmetric_api.Conf{
+					Backends: &[]meshmetric_api.Backend{
 						{
-							Name: "prometheus-1",
-							Type: v1alpha1.MetricsPrometheusType,
+							Type: meshmetric_api.PrometheusBackendType,
+							Prometheus: &meshmetric_api.PrometheusBackend{
+								Port: 5670,
+								Path: "/metrics",
+								Tls: &meshmetric_api.PrometheusTls{
+									Mode: meshmetric_api.Disabled,
+								},
+							},
 						},
 					},
 				},
@@ -166,7 +208,7 @@ var _ = Describe("MADS http service", func() {
 		dp1 := &core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{
 				Name: "dp-1",
-				Mesh: mesh.GetMeta().GetName(),
+				Mesh: testMesh.GetMeta().GetName(),
 			},
 			Spec: &v1alpha1.Dataplane{
 				Networking: &v1alpha1.Dataplane_Networking{
@@ -184,7 +226,7 @@ var _ = Describe("MADS http service", func() {
 		dp2 := &core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{
 				Name: "dp-2",
-				Mesh: mesh.GetMeta().GetName(),
+				Mesh: testMesh.GetMeta().GetName(),
 			},
 			Spec: &v1alpha1.Dataplane{
 				Networking: &v1alpha1.Dataplane_Networking{
@@ -216,7 +258,8 @@ var _ = Describe("MADS http service", func() {
 
 		BeforeEach(func() {
 			// given
-			Expect(createMesh(mesh)).To(Succeed())
+			Expect(createMesh(testMesh)).To(Succeed())
+			Expect(createMeshMetric(meshMetric)).To(Succeed())
 			Expect(createDataPlane(dp1)).To(Succeed())
 			setupServer()
 		})

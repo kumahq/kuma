@@ -29,7 +29,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/reachablebackends"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/resilience"
 	multizone_sync "github.com/kumahq/kuma/v3/test/e2e_env/multizone/sync"
-	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/unifiednaming"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/validation"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/zonedisable"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -82,7 +81,6 @@ var (
 	_ = Describe("MeshServiceReachableBackends", Label("job-1"), reachablebackends.MeshServicesWithReachableBackendsOption, Ordered)
 	_ = Describe("MeshTLS", Label("job-3"), meshtls.MeshTLS, Ordered)
 	_ = Describe("MeshIdentity", Label("job-0"), meshidentity.Identity, Ordered)
-	_ = Describe("Unified Resource Naming", Label("job-3"), unifiednaming.UnifiedNaming, Ordered)
 	_ = Describe("MeshIdentity Migration", Label("job-0"), meshidentity.Migration, Ordered)
 	_ = Describe("CNI Configuration", Label("job-3"), Label("kind-not-supported"), cni.ExcludeOutboundPort, Ordered)
 	_ = Describe("MeshProxy", Label("job-2"), meshproxy.Connectivity, Ordered)

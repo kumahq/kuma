@@ -3,10 +3,8 @@ syntax = "proto3";
 package kuma.mesh.v1alpha1;
 
 import "api/mesh/options.proto";
-import "api/mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
-import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
 
@@ -37,24 +35,17 @@ message Mesh {
   // +optional
   Mtls mtls = 1;
 
-  // Tracing settings.
-  // +optional
-  Tracing tracing = 2;
+  reserved 2;
+  reserved "tracing";
 
-  // Logging settings.
-  // +optional
-  Logging logging = 3;
+  reserved 3;
+  reserved "logging";
 
-  // Configuration for metrics collected and exposed by dataplanes.
-  //
-  // Settings defined here become defaults for every dataplane in a given Mesh.
-  // Additionally, it is also possible to further customize this configuration
-  // for each dataplane individually using Dataplane resource.
-  // +optional
-  Metrics metrics = 4;
+  reserved 4;
+  reserved "metrics";
 
-  // Networking settings of the mesh
-  Networking networking = 5;
+  reserved 5;
+  reserved "networking";
 
   // Routing settings of the mesh
   Routing routing = 6;
@@ -152,118 +143,10 @@ message CertificateAuthorityBackend {
   RootChain rootChain = 6;
 }
 
-// Networking defines the networking configuration of the mesh
-message Networking {
-  // Outbound describes the common mesh outbound settings
-  message Outbound {
-    // Control the passthrough cluster
-    google.protobuf.BoolValue passthrough = 1;
-  }
-
-  // Outbound settings
-  Outbound outbound = 1;
-}
-
-// Tracing defines tracing configuration of the mesh.
-message Tracing {
-  // Name of the default backend
-  string defaultBackend = 1;
-
-  // List of available tracing backends
-  repeated TracingBackend backends = 2;
-}
-
-// TracingBackend defines tracing backend available to mesh.
-message TracingBackend {
-  // Name of the backend, can be then used in Mesh.tracing.defaultBackend
-  string name = 1;
-
-  // Percentage of traces that will be sent to the backend (range 0.0 - 100.0).
-  // Empty value defaults to 100.0%
-  google.protobuf.DoubleValue sampling = 2;
-
-  // Type of the backend (Kuma ships with 'zipkin')
-  string type = 3;
-
-  // Configuration of the backend
-  google.protobuf.Struct conf = 4;
-}
-
-message DatadogTracingBackendConfig {
-  // Address of datadog collector.
-  string address = 1;
-
-  // Port of datadog collector
-  uint32 port = 2;
-
-  // Determines if datadog service name should be split based on traffic
-  // direction and destination. For example, with `splitService: true` and a
-  // `backend` service that communicates with a couple of databases, you would
-  // get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
-  // `backend_OUTBOUND_db2` in Datadog. Default: false
-  bool splitService = 3;
-}
-
-message ZipkinTracingBackendConfig {
-  // Address of Zipkin collector.
-  string url = 1;
-
-  // Generate 128bit traces. Default: false
-  bool traceId128bit = 2;
-
-  // Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
-  // httpJson see
-  // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
-  string apiVersion = 3;
-
-  // Determines whether client and server spans will share the same span
-  // context. Default: true.
-  // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
-  google.protobuf.BoolValue sharedSpanContext = 4;
-}
-
-message Logging {
-  // Name of the default backend
-  string defaultBackend = 1;
-
-  // List of available logging backends
-  repeated LoggingBackend backends = 2;
-}
-
-// LoggingBackend defines logging backend available to mesh. Backends can be
-// used in TrafficLog rules.
-message LoggingBackend {
-  // Name of the backend, can be then used in Mesh.logging.defaultBackend or in
-  // TrafficLogging
-  string name = 1;
-
-  // Format of access logs. Placeholders available on
-  // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-  string format = 2;
-
-  // Type of the backend (Kuma ships with 'tcp' and 'file')
-  string type = 3;
-
-  // Configuration of the backend
-  google.protobuf.Struct conf = 4;
-}
-
-// FileLoggingBackendConfig defines configuration for file based access logs
-message FileLoggingBackendConfig {
-  // Path to a file that logs will be written to
-  string path = 1;
-}
-
-// TcpLoggingBackendConfig defines configuration for TCP based access logs
-message TcpLoggingBackendConfig {
-  // Address to TCP service that will receive logs
-  string address = 1;
-}
-
 // Routing defines configuration for the routing in the mesh
 message Routing {
-  // Enable the Locality Aware Load Balancing
-  bool localityAwareLoadBalancing = 1;
+  reserved 1;
+  reserved "localityAwareLoadBalancing";
 
   // Enable routing traffic to services in other zone or external services
   // through ZoneEgress. Default: false

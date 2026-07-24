@@ -2,12 +2,9 @@ package mads
 
 import (
 	"fmt"
-	"net"
 	"regexp"
-	"strconv"
 	"strings"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 )
 
@@ -17,12 +14,6 @@ func IndexMeshes(meshes []*core_mesh.MeshResource) map[string]*core_mesh.MeshRes
 		index[mesh.Meta.GetName()] = mesh
 	}
 	return index
-}
-
-func Address(dataplane *core_mesh.DataplaneResource, endpoint *mesh_proto.PrometheusMetricsBackendConfig) string {
-	// TODO: handle a case where Dataplane's IP is unknown
-	// For now, we export such a Dataplane with an empty IP address, so that the error state will be at least visible on the Prometheus side
-	return net.JoinHostPort(dataplane.GetIP(), strconv.FormatUint(uint64(endpoint.GetPort()), 10))
 }
 
 func MultiValue(values []string) string {

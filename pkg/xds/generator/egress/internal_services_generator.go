@@ -14,7 +14,6 @@ import (
 
 func genInternalResources(
 	proxy *core_xds.Proxy,
-	xdsCtx xds_context.Context,
 	resources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error) {
 	if !resources.Mesh.ZoneEgressEnabled() {
@@ -37,7 +36,7 @@ func genInternalResources(
 				continue
 			case len(endpoints) == 0:
 				continue
-			case endpoints[0].IsExternalService() && endpoints[0].IsReachableFromZone(xdsCtx.ControlPlane.Zone):
+			case endpoints[0].IsExternalService():
 				continue
 			}
 

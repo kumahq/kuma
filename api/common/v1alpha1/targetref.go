@@ -16,22 +16,42 @@ type TargetRefKind string
 var (
 	Mesh                 TargetRefKind = "Mesh"
 	Dataplane            TargetRefKind = "Dataplane"
-	MeshSubset           TargetRefKind = "MeshSubset"
 	MeshService          TargetRefKind = "MeshService"
 	MeshExternalService  TargetRefKind = "MeshExternalService"
 	MeshMultiZoneService TargetRefKind = "MeshMultiZoneService"
-	MeshServiceSubset    TargetRefKind = "MeshServiceSubset"
 	MeshHTTPRoute        TargetRefKind = "MeshHTTPRoute"
 )
+
+// meshSubset and meshServiceSubset are legacy kinds that predate real
+// resources (MeshService, MeshExternalService, MeshMultiZoneService). They
+// stay unexported: the wire values are still valid and must keep their
+// current validation/matching behavior, but no new Go code should reference
+// them directly.
+const (
+	meshSubset        TargetRefKind = "MeshSubset"
+	meshServiceSubset TargetRefKind = "MeshServiceSubset"
+)
+
+// LegacyMeshSubsetKind returns the legacy MeshSubset wire value without
+// re-exporting the kind constant.
+func LegacyMeshSubsetKind() TargetRefKind {
+	return meshSubset
+}
+
+// LegacyMeshServiceSubsetKind returns the legacy MeshServiceSubset wire value
+// without re-exporting the kind constant.
+func LegacyMeshServiceSubsetKind() TargetRefKind {
+	return meshServiceSubset
+}
 
 var order = map[TargetRefKind]int{
 	Mesh:                 1,
 	Dataplane:            2,
-	MeshSubset:           3,
+	meshSubset:           3,
 	MeshService:          5,
 	MeshExternalService:  6,
 	MeshMultiZoneService: 7,
-	MeshServiceSubset:    8,
+	meshServiceSubset:    8,
 	MeshHTTPRoute:        9,
 }
 
@@ -49,7 +69,7 @@ func (k TargetRefKind) Compare(o TargetRefKind) int {
 
 func (k TargetRefKind) IsRealResource() bool {
 	switch k {
-	case MeshSubset, MeshServiceSubset:
+	case meshSubset, meshServiceSubset:
 		return false
 	default:
 		return true
@@ -60,7 +80,7 @@ func (k TargetRefKind) IsRealResource() bool {
 // actual resources (e.g., MeshExternalService, MeshMultiZoneService, and MeshService) was introduced.
 func (k TargetRefKind) IsOldKind() bool {
 	switch k {
-	case Mesh, MeshSubset, MeshServiceSubset, MeshService, MeshHTTPRoute:
+	case Mesh, meshSubset, meshServiceSubset, MeshService, MeshHTTPRoute:
 		return true
 	default:
 		return false
@@ -138,7 +158,7 @@ func selectsLabels(tr TargetRef) bool {
 }
 
 func IncludesGateways(ref TargetRef) bool {
-	isMeshKind := ref.Kind == Mesh || ref.Kind == MeshSubset
+	isMeshKind := ref.Kind == Mesh || ref.Kind == meshSubset
 	isGatewayInProxyTypes := len(pointer.Deref(ref.ProxyTypes)) == 0 || slices.Contains(pointer.Deref(ref.ProxyTypes), Gateway)
 	isGatewayCompatible := isMeshKind && isGatewayInProxyTypes
 	isMeshHTTPRoute := ref.Kind == MeshHTTPRoute
@@ -180,7 +200,7 @@ func (b BackendRef) ReferencesRealObject() bool {
 	switch b.Kind {
 	case MeshService:
 		return pointer.Deref(b.SectionName) != "" || b.Port != nil
-	case MeshServiceSubset:
+	case meshServiceSubset:
 		return false
 	// empty targetRef should not be treated as real object
 	case "":

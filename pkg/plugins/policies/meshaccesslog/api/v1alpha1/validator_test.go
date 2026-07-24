@@ -28,22 +28,9 @@ var _ = Describe("MeshAccessLog", func() {
 				// then
 				Expect(verr).ToNot(HaveOccurred())
 			},
-			Entry("mesh from/to example", `
+			Entry("to example", `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      backends:
-        - type: Tcp
-          tcp:
-            format:
-              type: Json
-              json:
-                - key: "start_time"
-                  value: "%START_TIME%"
-            address: 127.0.0.1:5000
 to:
   - targetRef:
       kind: MeshService
@@ -57,13 +44,26 @@ to:
              plain: '{"start_time": "%START_TIME%"}'
            path: '/tmp/logs.txt'
 `),
+			Entry("rules example", `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      backends:
+        - type: Tcp
+          tcp:
+            format:
+              type: Json
+              json:
+                - key: "start_time"
+                  value: "%START_TIME%"
+            address: 127.0.0.1:5000
+`),
 			Entry("empty format", `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: File
           file:
@@ -72,10 +72,8 @@ from:
 			Entry("empty backend list", `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends: []
 `),
 			Entry("MeshMultiZoneService", `
@@ -94,10 +92,8 @@ to:
 			Entry("openTelemetry with backendRef", `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: OpenTelemetry
           openTelemetry:
@@ -109,10 +105,8 @@ from:
 			Entry("openTelemetry with backendRef using labels", `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: OpenTelemetry
           openTelemetry:
@@ -124,14 +118,15 @@ from:
 			Entry("openTelemetry with valid attributes", `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: OpenTelemetry
           openTelemetry:
-            endpoint: otel-collector:4317
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              labels:
+                kuma.io/display-name: my-otel
             attributes:
               - key: "service.version"
                 value: "%KUMA_MESH%"
@@ -159,7 +154,7 @@ from:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty 'from' and 'to' array", testCase{
+			Entry("empty 'to' and 'rules' array", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
@@ -167,16 +162,14 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from', 'to' or 'rules' has to be defined`,
+    message: at least one of 'to' or 'rules' has to be defined`,
 			}),
 			Entry("empty 'path'", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: File
           file:
@@ -186,17 +179,15 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backends[0].file.path
+  - field: spec.rules[0].default.backends[0].file.path
     message: file backend requires a valid path`,
 			}),
 			Entry("invalid 'path'", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: File
           file:
@@ -207,17 +198,15 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backends[0].file.path
+  - field: spec.rules[0].default.backends[0].file.path
     message: file backend requires a valid path`,
 			}),
 			Entry("empty 'key'", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: File
           file:
@@ -229,17 +218,15 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backends[0].file.format.json[0].key
+  - field: spec.rules[0].default.backends[0].file.format.json[0].key
     message: key cannot be empty`,
 			}),
 			Entry("empty 'value'", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: File
           file:
@@ -251,17 +238,15 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backends[0].file.format.json[0].value
+  - field: spec.rules[0].default.backends[0].file.format.json[0].value
     message: value cannot be empty`,
 			}),
 			Entry("invalid 'key'", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: File
           file:
@@ -274,7 +259,7 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backends[0].file.format.json[0]
+  - field: spec.rules[0].default.backends[0].file.format.json[0]
     message: is not a valid JSON object`,
 			}),
 			Entry("'default' not defined in to", testCase{
@@ -290,17 +275,16 @@ violations:
 - field: spec.to[0].default.backends
   message: 'must be defined'`,
 			}),
-			Entry("'default' not defined in from", testCase{
+			Entry("'default.backends' not defined in rules", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
+rules:
+  - default: {}
 `,
 				expected: `
 violations:
-- field: spec.from[0].default.backends
+- field: spec.rules[0].default.backends
   message: 'must be defined'`,
 			}),
 			Entry("sectionName with outbound policies", testCase{
@@ -319,13 +303,23 @@ violations:
 - field: spec.to[0].default.backends
   message: must be defined`,
 			}),
-			Entry("don't mix from with rules", testCase{
+			Entry("don't mix to with rules", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
+to:
   - targetRef:
       kind: Mesh
+    default:
+      backends:
+        - type: Tcp
+          tcp:
+            format:
+              type: Json
+              json:
+                - key: "start_time"
+                  value: "%START_TIME%"
+            address: google.com
 rules:
   - default:
       backends:
@@ -341,18 +335,14 @@ rules:
 				expected: `
 violations:
 - field: spec
-  message: fields 'to' and 'from' must be empty when 'rules' is defined
-- field: spec.from[0].default.backends
-  message: must be defined`,
+  message: "'to' must be empty when 'rules' is defined"`,
 			}),
 			Entry("'address' not valid", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: Tcp
           tcp:
@@ -365,17 +355,15 @@ from:
 `,
 				expected: `
 violations:
-- field: spec.from[0].default.backends[0].tcp.address
+- field: spec.rules[0].default.backends[0].tcp.address
   message: 'tcp backend requires valid address'`,
 			}),
 			Entry("empty format json list", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: File
           file:
@@ -392,19 +380,17 @@ from:
 `,
 				expected: `
 violations:
-- field: spec.from[0].default.backends[0].file.format.json
+- field: spec.rules[0].default.backends[0].file.format.json
   message: 'must not be empty'
-- field: spec.from[0].default.backends[1].tcp.format.json
+- field: spec.rules[0].default.backends[1].tcp.format.json
   message: 'must not be empty'`,
 			}),
 			Entry("empty format.plain", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: File
           file:
@@ -421,19 +407,17 @@ from:
 `,
 				expected: `
 violations:
-- field: spec.from[0].default.backends[0].file.format.plain
+- field: spec.rules[0].default.backends[0].file.format.plain
   message: 'must not be empty'
-- field: spec.from[0].default.backends[1].tcp.format.plain
+- field: spec.rules[0].default.backends[1].tcp.format.plain
   message: 'must not be empty'`,
 			}),
 			Entry("backend must be defined", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: File
         - type: Tcp
@@ -441,21 +425,19 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backends[0].file
+  - field: spec.rules[0].default.backends[0].file
     message: must be defined
-  - field: spec.from[0].default.backends[1].tcp
+  - field: spec.rules[0].default.backends[1].tcp
     message: must be defined
-  - field: spec.from[0].default.backends[2].openTelemetry
+  - field: spec.rules[0].default.backends[2].openTelemetry
     message: must be defined`,
 			}),
 			Entry("format must be defined", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: File
           file:
@@ -470,59 +452,32 @@ from:
 `,
 				expected: `
 violations:
-- field: spec.from[0].default.backends[0].file.format.plain
+- field: spec.rules[0].default.backends[0].file.format.plain
   message: must be defined
-- field: spec.from[0].default.backends[1].tcp.format.json
+- field: spec.rules[0].default.backends[1].tcp.format.json
   message: must be defined`,
 			}),
-			Entry("openTelemetry neither endpoint nor backendRef", testCase{
+			Entry("openTelemetry backendRef required", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: OpenTelemetry
-          openTelemetry:
-            endpoint: ""
+          openTelemetry: {}
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backends[0].openTelemetry
-    message: "openTelemetry must have exactly one defined: endpoint, backendRef"`,
-			}),
-			Entry("openTelemetry both endpoint and backendRef", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      backends:
-        - type: OpenTelemetry
-          openTelemetry:
-            endpoint: otel-collector:4317
-            backendRef:
-              kind: MeshOpenTelemetryBackend
-              labels:
-                kuma.io/display-name: my-otel
-`,
-				expected: `
-violations:
-  - field: spec.from[0].default.backends[0].openTelemetry
-    message: "openTelemetry must have only one type defined: endpoint, backendRef"`,
+  - field: spec.rules[0].default.backends[0].openTelemetry.backendRef
+    message: "must be defined"`,
 			}),
 			Entry("openTelemetry backendRef no labels", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: OpenTelemetry
           openTelemetry:
@@ -531,84 +486,88 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backends[0].openTelemetry.backendRef
+  - field: spec.rules[0].default.backends[0].openTelemetry.backendRef
     message: "backendRef must have exactly one defined: labels"`,
 			}),
 			Entry("openTelemetry attribute key with spaces", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: OpenTelemetry
           openTelemetry:
-            endpoint: otel-collector:4317
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              labels:
+                kuma.io/display-name: my-otel
             attributes:
               - key: "my custom attribute"
                 value: "%KUMA_MESH%"
 `,
 				expected: fmt.Sprintf(`
 violations:
-  - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
+  - field: spec.rules[0].default.backends[0].openTelemetry.attributes[0].key
     message: %s`, validators.MustMatchOtelAttributeNameFormat),
 			}),
 			Entry("openTelemetry attribute key with placeholders", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: OpenTelemetry
           openTelemetry:
-            endpoint: otel-collector:4317
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              labels:
+                kuma.io/display-name: my-otel
             attributes:
               - key: "%KUMA_ZONE%"
                 value: "%KUMA_MESH%"
 `,
 				expected: fmt.Sprintf(`
 violations:
-  - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
+  - field: spec.rules[0].default.backends[0].openTelemetry.attributes[0].key
     message: "%s"`, validators.MustBeStaticOtelAttributeName),
 			}),
 			Entry("openTelemetry attribute key with reserved prefix", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: OpenTelemetry
           openTelemetry:
-            endpoint: otel-collector:4317
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              labels:
+                kuma.io/display-name: my-otel
             attributes:
               - key: "otel.attribute"
                 value: "%KUMA_MESH%"
 `,
 				expected: fmt.Sprintf(`
 violations:
-  - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
+  - field: spec.rules[0].default.backends[0].openTelemetry.attributes[0].key
     message: "%s"`, validators.MustNotUseReservedOtelPrefix),
 			}),
 			Entry("openTelemetry attribute keys accumulate violations", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       backends:
         - type: OpenTelemetry
           openTelemetry:
-            endpoint: otel-collector:4317
+            backendRef:
+              kind: MeshOpenTelemetryBackend
+              labels:
+                kuma.io/display-name: my-otel
             attributes:
               - key: "bad key"
                 value: "%KUMA_MESH%"
@@ -617,9 +576,9 @@ from:
 `,
 				expected: fmt.Sprintf(`
 violations:
-  - field: spec.from[0].default.backends[0].openTelemetry.attributes[0].key
+  - field: spec.rules[0].default.backends[0].openTelemetry.attributes[0].key
     message: %s
-  - field: spec.from[0].default.backends[0].openTelemetry.attributes[1].key
+  - field: spec.rules[0].default.backends[0].openTelemetry.attributes[1].key
     message: "%s"`, validators.MustMatchOtelAttributeNameFormat, validators.MustBeStaticOtelAttributeName),
 			}),
 			Entry("top-level MeshGateway is rejected", testCase{

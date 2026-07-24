@@ -11,7 +11,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/xds"
@@ -133,14 +132,8 @@ var _ = Describe("InboundProxyGenerator", func() {
 			expected:      "7-envoy-config.golden.yaml",
 			mode:          mesh_proto.CertificateAuthorityBackend_STRICT,
 		}),
-		Entry("08. transparent_proxying=false, ip_addresses=2, ports=2, unified", testCase{
-			dataplaneFile: "8-dataplane.input.yaml",
-			dataplaneMeta: &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
-			expected:      "8-envoy-config.golden.yaml",
-		}),
 		Entry("09. transparent_proxying=false, ip_addresses=2, ports=2, trust with old mesh mtls", testCase{
 			dataplaneFile: "9-dataplane.input.yaml",
-			dataplaneMeta: &model.DataplaneMetadata{Features: map[string]bool{xds_types.FeatureUnifiedResourceNaming: true}},
 			expected:      "9-envoy-config.golden.yaml",
 			casByTrustDomain: map[string][]xds_context.PEMBytes{
 				"my-test.domain.com": {xds_context.PEMBytes("123")},
