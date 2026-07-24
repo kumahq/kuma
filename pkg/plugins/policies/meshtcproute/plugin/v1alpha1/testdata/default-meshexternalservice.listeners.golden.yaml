@@ -11,7 +11,7 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: default_example___extsvc_9090
+          cluster: kri_extsvc_default___example_
           statPrefix: default_example___extsvc_9090
     metadata:
       filterMetadata:

@@ -10,7 +10,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -41,8 +40,6 @@ func GenerateClusters(
 	systemNamespace string,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
@@ -89,7 +86,7 @@ func GenerateClusters(
 						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
 							proxy.SecretsTracker,
-							unifiedNaming,
+							true,
 							meshCtx.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							true,
@@ -115,7 +112,7 @@ func GenerateClusters(
 						if otherMesh.GetMeta().GetName() == upstreamMeshName {
 							edsClusterBuilder.Configure(
 								envoy_clusters.CrossMeshClientSideMTLS(
-									proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
+									proxy.SecretsTracker, true, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
 								),
 							)
 							break
@@ -192,7 +189,7 @@ func GenerateClusters(
 						} else {
 							edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 								proxy.SecretsTracker,
-								unifiedNaming,
+								true,
 								meshCtx.Resource,
 								tlsReady,
 								sni,
@@ -201,7 +198,7 @@ func GenerateClusters(
 							))
 						}
 					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
+						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, true, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
 					}
 				}
 			}
