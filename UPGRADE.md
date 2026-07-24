@@ -770,6 +770,21 @@ Migrate any `Mesh` resources that still configure `spec.tracing` to a
 continues to apply successfully; the field is silently ignored by the control
 plane.
 
+### `Mesh.spec.routing.localityAwareLoadBalancing` removed
+
+The inline `routing.localityAwareLoadBalancing` field has been removed from
+the `Mesh` resource spec. The `MeshLoadBalancingStrategy` policy has been the
+GA replacement for configuring locality-aware load balancing and is
+unaffected by this change.
+
+**Action required**
+
+Migrate any `Mesh` resources that still configure
+`spec.routing.localityAwareLoadBalancing` to a `MeshLoadBalancingStrategy`
+policy before upgrading. A `Mesh` spec that still sets
+`routing.localityAwareLoadBalancing` continues to apply successfully; the
+field is silently ignored by the control plane.
+
 ### `Mesh.spec.logging` removed
 
 The inline `logging` field (and its `Logging`/`LoggingBackend`/
@@ -783,6 +798,53 @@ Migrate any `Mesh` resources that still configure `spec.logging` to a
 `MeshAccessLog` policy before upgrading. A `Mesh` spec that still sets
 `logging` continues to apply successfully; the field is silently ignored by
 the control plane.
+
+### Per-zone MeshExternalService routing removed
+
+A `MeshExternalService` labeled with `kuma.io/zone` is no longer restricted to
+being reached only from that zone via a routing path through the remote
+zone's ingress and egress. It is now reachable directly through the local
+zone egress from every zone, the same as an unlabeled `MeshExternalService`.
+
+**Action required**
+
+None for typical usage; existing `kuma.io/zone` labels on `MeshExternalService`
+resources are no longer used to gate reachability and can be removed. If you
+relied on the label to force all traffic through a specific zone's egress
+(for example, because only that zone has network-level access to the
+external endpoint), that forwarding no longer happens: every zone's local
+egress now dials the external endpoint directly, so make sure each zone's
+network path to the endpoint is in place before upgrading.
+
+### `MeshInsight.policies` removed in favor of `resources`
+
+The deprecated `policies` field (a map of policy type to a `total` count) has
+been removed from `MeshInsight`. The `resources` field, which reports a
+`total` count for every resource type (policies included), has been the
+replacement since it was introduced and is unaffected by this change.
+
+**Action required**
+
+Update any automation or dashboards that read `MeshInsight.policies` (via the
+REST API or `kumactl inspect meshes`) to read the equivalent entry from
+`MeshInsight.resources` instead, keyed by the same resource type name.
+
+### `Mesh.spec.networking.outbound.passthrough` removed
+
+The inline `networking.outbound.passthrough` field has been removed from the
+`Mesh` resource spec. The `MeshPassthrough` policy is the replacement for
+controlling the default outbound passthrough cluster and is unaffected by
+this change. After upgrading, the control plane always behaves as if
+`passthrough` was `true` (its previous default) unless a `MeshPassthrough`
+policy says otherwise.
+
+**Action required**
+
+Migrate any `Mesh` resources that still set `networking.outbound.passthrough`
+to `false` to a `MeshPassthrough` policy with `targetRef.kind: Mesh` and
+`default.passthroughMode: None` before upgrading. A `Mesh` spec that still
+sets `networking.outbound.passthrough` continues to apply successfully; the
+field is silently ignored by the control plane.
 
 ## Upgrade to `2.13.7`
 

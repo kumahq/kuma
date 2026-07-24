@@ -58,7 +58,7 @@ func (g Generator) Generate(
 		// Secrets are generated in relation to a mesh so we need to create a new tracker
 		secretsTracker := envoy_common.NewSecretsTracker(meshName, []string{meshName})
 
-		internal, internalFCB, err := genInternalResources(proxy, xdsCtx, meshResources)
+		internal, internalFCB, err := genInternalResources(proxy, meshResources)
 		if err != nil {
 			return nil, err
 		}

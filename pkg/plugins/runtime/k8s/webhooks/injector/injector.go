@@ -555,6 +555,14 @@ func (i *KumaInjector) NewSidecarContainer(
 	container.SecurityContext.ReadOnlyRootFilesystem = pointer.To(true)
 	container.SecurityContext.AllowPrivilegeEscalation = pointer.To(false)
 
+	if pod.Spec.Resources != nil {
+		// Pod-level resources (spec.resources) already bound the aggregate for
+		// every container in the pod. Stacking the sidecar's own container-level
+		// defaults on top of that would push the aggregate container requests
+		// above the pod-level requests, which Kubernetes rejects at admission.
+		container.Resources = kube_core.ResourceRequirements{}
+	}
+
 	return container, nil
 }
 
