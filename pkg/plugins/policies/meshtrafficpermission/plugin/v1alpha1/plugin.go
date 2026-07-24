@@ -12,7 +12,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
@@ -49,11 +48,10 @@ func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_cont
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.ZoneEgressProxy != nil {
-		// ZoneEgress isn't scoped to a single mesh (ctx.Mesh is empty for zone proxies),
-		// so unlike mesh-scoped plugins we can't use unified_naming.Enabled here: it
-		// would always see a nil mesh and report unified naming as disabled.
-		unifiedNaming := proxy.Metadata.HasFeature(xds_types.FeatureUnifiedResourceNaming)
-		return p.configureEgress(rs, proxy, unifiedNaming)
+		// Zone egress filter chains are always named with unified/system
+		// names now (see egress.Generator.Generate), so the MeshExternalService
+		// destination names matched against them here must agree unconditionally.
+		return p.configureEgress(rs, proxy, true)
 	}
 
 	if proxy.Dataplane == nil || proxy.Dataplane.Spec.IsBuiltinGateway() {

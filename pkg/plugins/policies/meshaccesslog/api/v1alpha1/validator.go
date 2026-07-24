@@ -16,17 +16,14 @@ func (r *MeshAccessLogResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.GetTargetRef(), inbound.AffectsInbounds(r.Spec)))
-	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
-		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
+	if len(pointer.Deref(r.Spec.Rules)) > 0 && len(pointer.Deref(r.Spec.To)) > 0 {
+		verr.AddViolationAt(path, "'to' must be empty when 'rules' is defined")
 	}
-	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
-		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
+	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 {
+		verr.AddViolationAt(path, "at least one of 'to' or 'rules' has to be defined")
 	}
 	if r.Spec.To != nil {
 		verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
-	}
-	if r.Spec.From != nil {
-		verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
 	}
 	if r.Spec.Rules != nil {
 		verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules)))
@@ -44,22 +41,6 @@ func (r *MeshAccessLogResource) validateTop(targetRef common_api.TargetRef, isIn
 		IsInboundPolicy:            isInboundPolicy,
 	})
 	return targetRefErr
-}
-
-func validateFrom(from []From) validators.ValidationError {
-	var verr validators.ValidationError
-	for idx, fromItem := range from {
-		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-			},
-		}))
-
-		defaultField := path.Field("default")
-		verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
-	}
-	return verr
 }
 
 func validateRules(rules []Rule) validators.ValidationError {
