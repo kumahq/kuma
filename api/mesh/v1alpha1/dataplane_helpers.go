@@ -53,6 +53,11 @@ const (
 
 	MeshTag = "kuma.io/mesh"
 
+	// UnifiedNameTag is the io.kuma.tags listener key filled when tags are empty
+	// so listenerTags keeps matching: the destination KRI on an outbound, the
+	// contextual self-reference on an inbound.
+	UnifiedNameTag = "kuma.io/unified-name"
+
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
 	ProtocolTag = "kuma.io/protocol"

@@ -1,0 +1,61 @@
+resources:
+- name: self_inbound_dp_http-port
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    loadAssignment:
+      clusterName: self_inbound_dp_http-port
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 9001
+    name: self_inbound_dp_http-port
+    type: STATIC
+- name: self_inbound_dp_http-port
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 9000
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: self_inbound_dp_http-port
+          idleTimeout: 7200s
+          statPrefix: self_inbound_dp_http-port
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://default/
+                  sanType: URI
+              validationContextSdsSecretConfig:
+                name: system_mtls_ca_default
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: system_mtls_identity_default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/unified-name: self_inbound_dp_http-port
+    name: self_inbound_dp_http-port
+    statPrefix: self_inbound_dp_http-port
+    trafficDirection: INBOUND

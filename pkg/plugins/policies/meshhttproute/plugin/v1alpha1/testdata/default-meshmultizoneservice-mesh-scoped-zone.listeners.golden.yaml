@@ -37,6 +37,7 @@ resources:
           statPrefix: default_multi-backend___mzsvc_80
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/unified-name: kri_mzsvc_default___multi-backend_80
     name: outbound:10.0.0.2:80
     trafficDirection: OUTBOUND

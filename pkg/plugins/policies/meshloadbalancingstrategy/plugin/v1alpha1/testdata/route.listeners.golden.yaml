@@ -89,6 +89,7 @@ resources:
           statPrefix: default_ms-1_ns-1_zone-1_msvc_27777
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/unified-name: kri_msvc_default_zone-1_ns-1_ms-1_
     name: outbound:127.0.0.1:27777
     trafficDirection: OUTBOUND

@@ -27,7 +27,6 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
-	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -75,7 +74,7 @@ func GenerateOutboundListener(
 		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
 		Configure(envoy_listeners.OutboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.TransparentProxying(transparentProxyEnabled)).
-		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
+		Configure(envoy_listeners.TagsMetadata(svc.OutboundListenerTags())).
 		Configure(envoy_listeners.FilterChain(filterChain))
 
 	resource, err := listener.Build()
