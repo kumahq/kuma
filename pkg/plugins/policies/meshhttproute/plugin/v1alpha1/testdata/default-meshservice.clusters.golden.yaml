@@ -1,12 +1,12 @@
 resources:
-- name: default_backend___msvc_80
+- name: kri_msvc_default___backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: default_backend___msvc_80
+    name: kri_msvc_default___backend_80
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
@@ -21,12 +21,12 @@ resources:
                   exact: spiffe://default/backend
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: mesh_ca:secret:default
+              name: system_mtls_ca_default
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: identity_cert:secret:default
+          - name: system_mtls_identity_default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3

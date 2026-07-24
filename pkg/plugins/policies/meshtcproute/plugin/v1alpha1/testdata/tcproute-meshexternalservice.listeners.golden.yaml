@@ -11,7 +11,7 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: default_example2___extsvc_9090
+          cluster: kri_extsvc_default___example2_9090
           statPrefix: default_example___extsvc_9090
     metadata:
       filterMetadata:
@@ -30,7 +30,7 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: default_example2___extsvc_9090
+          cluster: kri_extsvc_default___example2_
           statPrefix: default_example2___extsvc_9090
     metadata:
       filterMetadata:

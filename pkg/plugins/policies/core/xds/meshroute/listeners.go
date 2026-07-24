@@ -25,7 +25,6 @@ func MakeTCPSplit(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) []envoy_common.Split {
 	return makeSplits(
 		map[core_meta.Protocol]struct{}{
@@ -40,7 +39,6 @@ func MakeTCPSplit(
 		servicesAcc,
 		refs,
 		meshCtx,
-		unifiedNaming,
 	)
 }
 
@@ -49,7 +47,6 @@ func MakeHTTPSplit(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) []envoy_common.Split {
 	return makeSplits(
 		map[core_meta.Protocol]struct{}{
@@ -61,7 +58,6 @@ func MakeHTTPSplit(
 		servicesAcc,
 		refs,
 		meshCtx,
-		unifiedNaming,
 	)
 }
 
@@ -197,13 +193,12 @@ func makeSplits(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) []envoy_common.Split {
 	var result []envoy_common.Split
 
 	splitFromRef := func(ref resolve.ResolvedBackendRef) envoy_common.Split {
 		if ref.ReferencesRealResource() {
-			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx, unifiedNaming)
+			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx)
 		}
 
 		return handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef(), meshCtx)
@@ -228,7 +223,6 @@ func handleRealResources(
 	servicesAcc envoy_common.ServicesAccumulator,
 	ref *resolve.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) envoy_common.Split {
 	if ref.Weight == 0 {
 		return nil
@@ -245,10 +239,7 @@ func handleRealResources(
 
 	service := destinationname.MustResolve(false, dest, port)
 
-	clusterName := service
-	if unifiedNaming {
-		clusterName = ref.Resource.String()
-	}
+	clusterName := ref.Resource.String()
 
 	isExternalService := ref.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType
 
