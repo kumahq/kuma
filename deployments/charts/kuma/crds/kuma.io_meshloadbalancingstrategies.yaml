@@ -323,8 +323,8 @@ spec:
                           properties:
                             crossZone:
                               description: |-
-                                CrossZone defines locality aware load balancing priorities when dataplane proxies inside local zone
-                                are unavailable
+                                CrossZone defines locality-aware load balancing priorities for MeshMultiZoneService
+                                targets when dataplane proxies inside the local zone are unavailable.
                               properties:
                                 failover:
                                   description: Failover defines list of load balancing
