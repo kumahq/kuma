@@ -625,7 +625,7 @@ ingress:
               - key: app
                 operator: In
                 values:
-                  - kuma-ingress
+                  - '{{ include "kuma.name" . }}-ingress'
           topologyKey: kubernetes.io/hostname
 
   # -- Topology spread constraints rule for the Kuma Mesh Ingress pods.
@@ -784,7 +784,7 @@ egress:
               - key: app
                 operator: In
                 values:
-                  - kuma-egress
+                  - '{{ include "kuma.name" . }}-egress'
           topologyKey: kubernetes.io/hostname
 
   # -- Topology spread constraints rule for the Kuma Egress pods.
