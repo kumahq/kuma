@@ -456,7 +456,6 @@ func Run() {
 }
 
 var AdditionalProtoTypes = []reflect.Type{
-	reflect.TypeFor[v1alpha1.PrometheusMetricsBackendConfig](),
 	reflect.TypeFor[provided_config.ProvidedCertificateAuthorityConfig](),
 	reflect.TypeFor[builtin_config.BuiltinCertificateAuthorityConfig](),
 	reflect.TypeFor[v1alpha1.DataplaneOverview](),
@@ -846,9 +845,6 @@ var BackendToOneOfs = map[string][]*jsonschema.Schema{
 	"CertificateAuthorityBackend": {
 		{Ref: "/specs/protoresources/providedcertificateauthorityconfig/schema.yaml#/components/schemas/ProvidedCertificateAuthorityConfig"},
 		{Ref: "/specs/protoresources/builtincertificateauthorityconfig/schema.yaml#/components/schemas/BuiltinCertificateAuthorityConfig"},
-	},
-	"MetricsBackend": {
-		{Ref: "/specs/protoresources/prometheusmetricsbackendconfig/schema.yaml#/components/schemas/PrometheusMetricsBackendConfig"},
 	},
 }
 
