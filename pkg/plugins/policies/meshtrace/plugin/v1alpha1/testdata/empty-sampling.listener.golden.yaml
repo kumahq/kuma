@@ -22,7 +22,7 @@ resources:
               prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
-          statPrefix: "127_0_0_1_17777"
+          statPrefix: self_inbound_dp_17777
           tracing:
             customTags:
             - literal:
@@ -35,14 +35,14 @@ resources:
               name: envoy.tracers.zipkin
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
-                collectorCluster: meshtrace:zipkin
+                collectorCluster: system_meshtrace_zipkin_http---jaeger-collector-mesh-observability-9411-api-v2-spans
                 collectorEndpoint: /api/v2/spans
                 collectorEndpointVersion: HTTP_JSON
                 collectorHostname: jaeger-collector.mesh-observability:9411
                 sharedSpanContext: true
                 traceId128bit: true
             spawnUpstreamSpan: false
-    name: inbound:127.0.0.1:17777
+    name: self_inbound_dp_17777
     trafficDirection: INBOUND
 - name: outbound
   resource:
@@ -66,7 +66,7 @@ resources:
               prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
-          statPrefix: "127_0_0_1_27777"
+          statPrefix: kri_msvc_default_zone-1_backend-ns_backend_80
           tracing:
             customTags:
             - literal:
@@ -79,12 +79,12 @@ resources:
               name: envoy.tracers.zipkin
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
-                collectorCluster: meshtrace:zipkin
+                collectorCluster: system_meshtrace_zipkin_http---jaeger-collector-mesh-observability-9411-api-v2-spans
                 collectorEndpoint: /api/v2/spans
                 collectorEndpointVersion: HTTP_JSON
                 collectorHostname: jaeger-collector.mesh-observability:9411
                 sharedSpanContext: true
                 traceId128bit: true
             spawnUpstreamSpan: false
-    name: outbound:127.0.0.1:27777
+    name: kri_msvc_default_zone-1_backend-ns_backend_80
     trafficDirection: OUTBOUND

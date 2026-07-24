@@ -2,6 +2,7 @@ package v1alpha1_test
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path"
 
@@ -98,11 +99,11 @@ var _ = Describe("MeshTLS", func() {
 				).
 				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getRulesAsFromRules(pointer.Deref(policy.Spec.Rules))))
 
-			if given.features != nil {
-				proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{
-					Features: given.features,
-				})
-			}
+			// Outbounds are always built from real resources, so every proxy here
+			// supports unified resource naming.
+			features := xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true}
+			maps.Copy(features, given.features)
+			proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{Features: features})
 
 			proxy := proxyBuilder.Build()
 
@@ -282,6 +283,17 @@ var _ = Describe("MeshTLS", func() {
 	)
 })
 
+// outgoingMeshService identifies the destination the dataplane's only outbound
+// points at, and gives the outbound cluster its unified name.
+var outgoingMeshService = kri.Identifier{
+	ResourceType: "MeshService",
+	Mesh:         "default",
+	Zone:         "zone-1",
+	Namespace:    "backend-ns",
+	Name:         "outgoing",
+	SectionName:  "80",
+}
+
 func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *builders.MeshBuilder) []*core_xds.Resource {
 	return []*core_xds.Resource{
 		{
@@ -317,18 +329,11 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 		{
 			Name:   "outbound",
 			Origin: metadata.OriginOutbound,
-			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outgoing").
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, outgoingMeshService.String()).
 				Configure(clusters.ClientSideMTLS(secretsTracker, false, mesh.Build(), "outgoing", true, nil, false)).
 				MustBuild(),
-			Protocol: core_meta.ProtocolHTTP,
-			ResourceOrigin: kri.Identifier{
-				ResourceType: "MeshService",
-				Mesh:         "default",
-				Zone:         "zone-1",
-				Namespace:    "backend-ns",
-				Name:         "backend",
-				SectionName:  "",
-			},
+			Protocol:       core_meta.ProtocolHTTP,
+			ResourceOrigin: outgoingMeshService,
 		},
 	}
 }

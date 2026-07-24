@@ -70,7 +70,6 @@ var _ = Describe("MeshTrace", func() {
 		singleItemRules core_rules.SingleItemRules
 		outbounds       xds_types.Outbounds
 		goldenFile      string
-		features        xds_types.Features
 		proxyLabels     map[string]string
 		zone            string
 		otelBackends    []*motb_api.MeshOpenTelemetryBackendResource
@@ -81,48 +80,32 @@ var _ = Describe("MeshTrace", func() {
 		Zone:         "zone-1",
 		Namespace:    "backend-ns",
 		Name:         "backend",
-		SectionName:  "",
+		// the MeshService is reached on its port 80, the outbound listener below
+		// only happens to be bound to a different local port
+		SectionName: "80",
 	}
+	// Listeners are named the way the real proxy generators name them once the
+	// destination is a real resource: contextual names for inbounds, the
+	// destination KRI for outbounds.
+	inboundName := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(17777))
+	outboundName := backendMeshServiceIdentifier.String()
 	inboundAndOutboundRealMeshService := func() []core_xds.Resource {
 		return []core_xds.Resource{
 			{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)),
-					)).MustBuild(),
-			}, {
-				Name:   "outbound",
-				Origin: metadata.OriginOutbound,
-				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil, true)),
-					)).MustBuild(),
-				ResourceOrigin: backendMeshServiceIdentifier,
-			},
-		}
-	}
-	// Unified naming listeners use contextual names matching what real proxy generators produce.
-	inboundUnifiedName := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(17777))
-	outboundUnifiedName := backendMeshServiceIdentifier.String()
-	inboundAndOutboundUnifiedNaming := func() []core_xds.Resource {
-		return []core_xds.Resource{
-			{
-				Name:   "inbound",
-				Origin: metadata.OriginInbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3, inboundUnifiedName).
+				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName).
 					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager(inboundUnifiedName, false, nil, true)),
+						Configure(HttpConnectionManager(inboundName, false, nil, true)),
 					)).MustBuild(),
 			}, {
 				Name:   "outbound",
 				Origin: metadata.OriginOutbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3, outboundUnifiedName).
+				Resource: NewListenerBuilder(envoy_common.APIV3, outboundName).
 					Configure(OutboundListener("127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager(outboundUnifiedName, false, nil, true)),
+						Configure(HttpConnectionManager(outboundName, false, nil, true)),
 					)).MustBuild(),
 				ResourceOrigin: backendMeshServiceIdentifier,
 			},
@@ -161,7 +144,9 @@ var _ = Describe("MeshTrace", func() {
 			proxyBuilder := xds_builders.Proxy().
 				WithDataplane(dpBuilder).
 				WithMetadata(&core_xds.DataplaneMetadata{
-					Features: given.features,
+					// Outbounds are always built from real resources, so every
+					// proxy here supports unified resource naming.
+					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
 				}).
 				WithOutbounds(given.outbounds).
 				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules))
@@ -181,91 +166,6 @@ var _ = Describe("MeshTrace", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.cluster.golden.yaml", given.goldenFile)))
 		},
-		Entry("inbound/outbound for zipkin and real MeshService", testCase{
-			resources: inboundAndOutboundRealMeshService(),
-			outbounds: xds_types.Outbounds{
-				{
-					Address:  "127.0.0.1",
-					Port:     27777,
-					Resource: backendMeshServiceIdentifier,
-				},
-			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Tags: &[]api.Tag{
-								{Name: "app", Literal: pointer.To("backend")},
-								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
-								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
-							},
-							Sampling: &api.Sampling{
-								Overall: pointer.To(intstr.FromInt(10)),
-								Client:  pointer.To(intstr.FromInt(20)),
-								Random:  pointer.To(intstr.FromInt(50)),
-							},
-							Backends: &[]api.Backend{{
-								Zipkin: &api.ZipkinBackend{
-									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: true,
-									ApiVersion:        "httpProto",
-									TraceId128Bit:     true,
-								},
-							}},
-						},
-					},
-				},
-			},
-			goldenFile: "inbound-outbound-zipkin-real-meshservice",
-		}),
-		Entry("inbound/outbound for zipkin, real MeshService and unified naming", testCase{
-			resources: inboundAndOutboundUnifiedNaming(),
-			features: xds_types.Features{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
-			outbounds: xds_types.Outbounds{
-				{
-					Address:  "127.0.0.1",
-					Port:     27777,
-					Resource: backendMeshServiceIdentifier,
-				},
-			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Origin: []core_model.ResourceMeta{
-							&test_model.ResourceMeta{
-								Mesh: "default",
-								Name: "mt-1",
-							},
-						},
-						Conf: api.Conf{
-							Tags: &[]api.Tag{
-								{Name: "app", Literal: pointer.To("backend")},
-								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
-								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
-							},
-							Sampling: &api.Sampling{
-								Overall: pointer.To(intstr.FromInt(10)),
-								Client:  pointer.To(intstr.FromInt(20)),
-								Random:  pointer.To(intstr.FromInt(50)),
-							},
-							Backends: &[]api.Backend{{
-								Zipkin: &api.ZipkinBackend{
-									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: true,
-									ApiVersion:        "httpProto",
-									TraceId128Bit:     true,
-								},
-							}},
-						},
-					},
-				},
-			},
-			goldenFile: "inbound-outbound-zipkin-real-meshservice-unified-naming",
-		}),
 		Entry("inbound/outbound for zipkin", testCase{
 			resources: inboundAndOutboundRealMeshService(),
 			outbounds: xds_types.Outbounds{

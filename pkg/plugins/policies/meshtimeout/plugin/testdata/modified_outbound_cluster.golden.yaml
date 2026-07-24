@@ -1,5 +1,5 @@
 connectTimeout: 10s
-name: other-service
+name: kri_msvc_default___other-service_10001
 typedExtensionProtocolOptions:
   envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions

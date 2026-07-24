@@ -6,4 +6,4 @@ healthChecks:
   interval: 10s
   timeout: 2s
   unhealthyThreshold: 3
-name: echo-grpc
+name: kri_msvc_default___echo-grpc_80

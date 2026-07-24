@@ -2,6 +2,7 @@ package v1alpha1_test
 
 import (
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -107,7 +108,6 @@ var _ = Describe("MeshAccessLog", func() {
 		fromRules           core_rules.FromRules
 		expectedListeners   []string
 		expectedClusters    []string
-		features            xds_types.Features
 		dataplaneLabels     map[string]string
 		inboundTagsDisabled bool
 		inboundName         string
@@ -172,8 +172,10 @@ var _ = Describe("MeshAccessLog", func() {
 			proxy := xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithMetadata(&core_xds.DataplaneMetadata{
-					WorkDir:  "/tmp",
-					Features: given.features,
+					WorkDir: "/tmp",
+					// Outbounds are always built from real resources, so every
+					// proxy here supports unified resource naming.
+					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
 				}).
 				WithDataplane(dpBuilder).
 				WithPolicies(
@@ -198,7 +200,7 @@ var _ = Describe("MeshAccessLog", func() {
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{
-						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 					},
 				}}),
 			},
@@ -229,7 +231,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 					{
@@ -238,7 +240,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 					{
@@ -247,7 +249,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-3"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 				}),
@@ -303,7 +305,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 					{
@@ -315,7 +317,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 				}),
@@ -362,7 +364,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 					{
@@ -371,7 +373,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 					{
@@ -380,7 +382,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-3"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 				}),
@@ -414,7 +416,7 @@ var _ = Describe("MeshAccessLog", func() {
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshExternalServiceHTTP, 47777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{
-						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshExternalServiceHTTP, 47777)).Build(),
+						xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshExternalServiceHTTP, 47777)).Build(),
 					},
 				}}),
 			},
@@ -532,78 +534,6 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 			},
 			expectedListeners: []string{"outbound_tcp_backend_default_format.listener.golden.yaml"},
-		}),
-		Entry("outbound tcpproxy with opentelemetry backend, plain format, unified naming", sidecarTestCase{
-			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
-			resources: []core_xds.Resource{
-				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
-				outboundRealServiceTCPListener(*fooMeshServiceTCP, 37778),
-				outboundRealServiceTCPListener(*barMeshServiceTCP, 37779),
-			},
-			toRules: core_rules.ToRules{
-				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
-					*otherMeshServiceTCP: {
-						Conf: []any{
-							api.Conf{
-								Backends: &[]api.Backend{{
-									Type: api.OtelTelemetryBackendType,
-									OpenTelemetry: &api.OtelBackend{
-										BackendRef: otelCollectorBackendRef,
-									},
-								}},
-							},
-						},
-					},
-					*fooMeshServiceTCP: {
-						Conf: []any{
-							api.Conf{
-								Backends: &[]api.Backend{{
-									Type: api.OtelTelemetryBackendType,
-									OpenTelemetry: &api.OtelBackend{
-										BackendRef: otelCollectorBackendRef,
-										Body: &apiextensionsv1.JSON{
-											Raw: []byte("%KUMA_MESH%"),
-										},
-									},
-								}},
-							},
-						},
-					},
-					*barMeshServiceTCP: {
-						Conf: []any{
-							api.Conf{
-								Backends: &[]api.Backend{{
-									Type: api.OtelTelemetryBackendType,
-									OpenTelemetry: &api.OtelBackend{
-										BackendRef: otherOtelCollectorBackendRef,
-										Body: &apiextensionsv1.JSON{
-											Raw: []byte(`{
-											  "kvlistValue": {
-												"values": [
-												  {"key": "mesh", "value": {"stringValue": "%KUMA_MESH%"}}
-												]
-											  }
-										    }`),
-										},
-									},
-								}},
-							},
-						},
-					},
-				},
-			},
-			expectedClusters: []string{
-				"outbound_otel_unified_naming.cluster.golden.yaml",
-				"outbound_otel_unified_naming_1.cluster.golden.yaml",
-			},
-			expectedListeners: []string{
-				"outbound_otel_unified_naming.listener.golden.yaml",
-				"outbound_otel_unified_naming_1.listener.golden.yaml",
-				"outbound_otel_unified_naming_2.listener.golden.yaml",
-			},
-			motbBackends: []*motb_api.MeshOpenTelemetryBackendResource{otelCollectorMotb, otherOtelCollectorMotb},
 		}),
 		Entry("outbound tcpproxy with opentelemetry backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{
@@ -909,13 +839,10 @@ var _ = Describe("MeshAccessLog", func() {
 			expectedListeners: []string{"inbound_route_tags_disabled.listener.golden.yaml"},
 		}),
 		Entry("outbound otel backend with workload identity and legacy placeholder key", sidecarTestCase{
-			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{
-						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 					},
 				}}),
 			},
@@ -955,13 +882,10 @@ var _ = Describe("MeshAccessLog", func() {
 			motbBackends:      []*motb_api.MeshOpenTelemetryBackendResource{otelCollectorMotb},
 		}),
 		Entry("outbound file backend with workload variables", sidecarTestCase{
-			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{
-						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 					},
 				}}),
 			},
@@ -1339,15 +1263,15 @@ func outboundRealServiceTCPListener(serviceResourceKRI kri.Identifier, port int3
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
 				Port:     uint32(port),
-				Resource: serviceResourceKRI,
+				Resource: destinationKRI(serviceResourceKRI, port),
 			},
 			Protocol:            core_meta.ProtocolTCP,
-			KumaServiceTagValue: serviceName(serviceResourceKRI, port),
+			KumaServiceTagValue: legacyServiceName(serviceResourceKRI, port),
 		},
 		[]envoy_common.Split{
-			xds.NewSplitBuilder().WithClusterName(serviceName(serviceResourceKRI, port)).Build(),
+			xds.NewSplitBuilder().WithClusterName(destinationName(serviceResourceKRI, port)).Build(),
 		},
-		false,
+		true,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
@@ -1362,20 +1286,35 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
 				Port:     uint32(port),
-				Resource: serviceResourceKRI,
+				Resource: destinationKRI(serviceResourceKRI, port),
 			},
 			Protocol:            core_meta.ProtocolHTTP,
-			KumaServiceTagValue: serviceName(serviceResourceKRI, port),
+			KumaServiceTagValue: legacyServiceName(serviceResourceKRI, port),
 		},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
-		false,
+		true,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
 }
 
-func serviceName(id kri.Identifier, port int32) string {
+// destinationKRI returns the identifier of a destination as it is carried by an
+// Outbound: the service resource identifier scoped to the port it is reached on.
+func destinationKRI(id kri.Identifier, port int32) kri.Identifier {
+	return kri.WithSectionName(id, strconv.Itoa(int(port)))
+}
+
+// destinationName is the unified (KRI) name Envoy resources for this destination
+// are given, matching what meshroute generates when the proxy supports unified
+// resource naming.
+func destinationName(id kri.Identifier, port int32) string {
+	return destinationKRI(id, port).String()
+}
+
+// legacyServiceName is the value the destination keeps carrying in the
+// `kuma.io/service` tag, which stays legacy-formatted even under unified naming.
+func legacyServiceName(id kri.Identifier, port int32) string {
 	desc, err := registry.Global().DescriptorFor(id.ResourceType)
 	Expect(err).ToNot(HaveOccurred())
 	return destinationname.ResolveLegacyFromKRI(id, desc.ShortName, port)

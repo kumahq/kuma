@@ -16,6 +16,7 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -42,7 +43,7 @@ var _ = Describe("MeshRetry", func() {
 		Zone:         "zone-1",
 		Namespace:    "backend-ns",
 		Name:         "backend",
-		SectionName:  "",
+		SectionName:  "10001",
 	}
 
 	backendMeshExternalServiceIdentifier := kri.Identifier{
@@ -51,25 +52,28 @@ var _ = Describe("MeshRetry", func() {
 		Zone:         "zone-1",
 		Namespace:    "kuma-system",
 		Name:         "backend",
-		SectionName:  "",
+		SectionName:  "10001",
 	}
 
 	httpServiceIdentifier := kri.Identifier{
 		ResourceType: meshservice_api.MeshServiceType,
 		Mesh:         "default",
 		Name:         "http-service",
+		SectionName:  "10001",
 	}
 
 	grpcServiceIdentifier := kri.Identifier{
 		ResourceType: meshservice_api.MeshServiceType,
 		Mesh:         "default",
 		Name:         "grpc-service",
+		SectionName:  "10002",
 	}
 
 	tcpServiceIdentifier := kri.Identifier{
 		ResourceType: meshservice_api.MeshServiceType,
 		Mesh:         "default",
 		Name:         "tcp-service",
+		SectionName:  "10003",
 	}
 
 	type testCase struct {
@@ -97,6 +101,11 @@ var _ = Describe("MeshRetry", func() {
 				WithMesh("default").
 				WithAddress("127.0.0.1").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+			WithMetadata(&core_xds.DataplaneMetadata{
+				// Outbounds are always built from real resources, so every proxy
+				// here supports unified resource naming.
+				Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
+			}).
 			WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshRetryType, given.toRules)).
 			Build()
 
@@ -112,7 +121,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
 				Origin:         metadata.OriginOutbound,
-				Resource:       httpListenerWithSimpleRoute(10001),
+				Resource:       httpListenerWithSimpleRoute(httpServiceIdentifier, 10001),
 				ResourceOrigin: httpServiceIdentifier,
 				Protocol:       core_meta.ProtocolHTTP,
 			}},
@@ -131,7 +140,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
 				Origin:         metadata.OriginOutbound,
-				Resource:       httpListenerWithSimpleRoute(10001),
+				Resource:       httpListenerWithSimpleRoute(httpServiceIdentifier, 10001),
 				ResourceOrigin: httpServiceIdentifier,
 				Protocol:       core_meta.ProtocolHTTP,
 			}},
@@ -155,7 +164,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
 				Origin:         metadata.OriginOutbound,
-				Resource:       httpListenerWithSimpleRoute(10002),
+				Resource:       httpListenerWithSimpleRoute(grpcServiceIdentifier, 10002),
 				ResourceOrigin: grpcServiceIdentifier,
 				Protocol:       core_meta.ProtocolGRPC,
 			}},
@@ -203,7 +212,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
 				Origin:         metadata.OriginOutbound,
-				Resource:       httpListenerWithSimpleRoute(10002),
+				Resource:       httpListenerWithSimpleRoute(grpcServiceIdentifier, 10002),
 				ResourceOrigin: grpcServiceIdentifier,
 				Protocol:       core_meta.ProtocolGRPC,
 			}},
@@ -227,7 +236,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
 				Origin:         metadata.OriginOutbound,
-				Resource:       tcpListener(10003),
+				Resource:       tcpListener(tcpServiceIdentifier, 10003),
 				ResourceOrigin: tcpServiceIdentifier,
 				Protocol:       core_meta.ProtocolTCP,
 			}},
@@ -251,7 +260,7 @@ var _ = Describe("MeshRetry", func() {
 				{
 					Name:           "outbound",
 					Origin:         metadata.OriginOutbound,
-					Resource:       httpListenerWithSeveralMeshHTTPRoutes(10001, kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType)),
+					Resource:       httpListenerWithSeveralMeshHTTPRoutes(kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType), 10001, kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType)),
 					ResourceOrigin: kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType),
 					Protocol:       core_meta.ProtocolHTTP,
 				},
@@ -278,7 +287,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
 				Origin:         metadata.OriginOutbound,
-				Resource:       httpListenerWithSimpleRoute(10001),
+				Resource:       httpListenerWithSimpleRoute(backendMeshServiceIdentifier, 10001),
 				ResourceOrigin: backendMeshServiceIdentifier,
 				Protocol:       core_meta.ProtocolHTTP,
 			}},
@@ -297,7 +306,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
 				Origin:         metadata.OriginOutbound,
-				Resource:       httpListenerWithSimpleRoute(10001),
+				Resource:       httpListenerWithSimpleRoute(backendMeshExternalServiceIdentifier, 10001),
 				ResourceOrigin: backendMeshExternalServiceIdentifier,
 				Protocol:       core_meta.ProtocolHTTP,
 			}},
@@ -324,27 +333,31 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 	return actualListener
 }
 
-func httpListenerWithSeveralMeshHTTPRoutes(port uint32, meshHTTPRoute kri.Identifier) envoy_common.NamedResource {
-	return httpListener(port, AddFilterChainConfigurer(samples.RealMeshHTTPRouteOutboundRoutes("http-service", meshHTTPRoute)))
+func httpListenerWithSeveralMeshHTTPRoutes(destination kri.Identifier, port uint32, meshHTTPRoute kri.Identifier) envoy_common.NamedResource {
+	return httpListener(destination, port, AddFilterChainConfigurer(samples.RealMeshHTTPRouteOutboundRoutes("http-service", meshHTTPRoute)))
 }
 
-func httpListenerWithSimpleRoute(port uint32) envoy_common.NamedResource {
-	return httpListener(port, AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("backend")))
+func httpListenerWithSimpleRoute(destination kri.Identifier, port uint32) envoy_common.NamedResource {
+	return httpListener(destination, port, AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("backend")))
 }
 
-func httpListener(port uint32, route FilterChainBuilderOpt) envoy_common.NamedResource {
-	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", port, core_xds.SocketAddressProtocolTCP).
+// httpListener and tcpListener name the outbound listener after the destination,
+// the way the route generators name it for a real-resource destination.
+func httpListener(destination kri.Identifier, port uint32, route FilterChainBuilderOpt) envoy_common.NamedResource {
+	return NewListenerBuilder(envoy_common.APIV3, destination.String()).
+		Configure(OutboundListener("127.0.0.1", port, core_xds.SocketAddressProtocolTCP)).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-			Configure(HttpConnectionManager(fmt.Sprintf("outbound:127.0.0.1:%d", port), false, nil, true)).
+			Configure(HttpConnectionManager(destination.String(), false, nil, true)).
 			Configure(route))).
 		MustBuild()
 }
 
-func tcpListener(port uint32) envoy_common.NamedResource {
-	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", port, core_xds.SocketAddressProtocolTCP).
+func tcpListener(destination kri.Identifier, port uint32) envoy_common.NamedResource {
+	return NewListenerBuilder(envoy_common.APIV3, destination.String()).
+		Configure(OutboundListener("127.0.0.1", port, core_xds.SocketAddressProtocolTCP)).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 			Configure(TcpProxyDeprecated(
-				fmt.Sprintf("outbound:127.0.0.1:%d", port),
+				destination.String(),
 				envoy_common.NewCluster(
 					envoy_common.WithService("backend"),
 					envoy_common.WithWeight(100),

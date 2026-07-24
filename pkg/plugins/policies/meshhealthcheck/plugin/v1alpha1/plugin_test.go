@@ -16,6 +16,7 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
@@ -45,22 +46,25 @@ var _ = Describe("MeshHealthCheck", func() {
 		ResourceType: "MeshService",
 		Mesh:         "default",
 		Name:         "backend",
-		SectionName:  "",
+		SectionName:  "80",
 	}
 	httpMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
 		Mesh:         "default",
 		Name:         "echo-http",
+		SectionName:  "80",
 	}
 	tcpMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
 		Mesh:         "default",
 		Name:         "echo-tcp",
+		SectionName:  "80",
 	}
 	grpcMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
 		Mesh:         "default",
 		Name:         "echo-grpc",
+		SectionName:  "80",
 	}
 
 	type testCase struct {
@@ -74,7 +78,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			Origin:         metadata.OriginOutbound,
 			ResourceOrigin: httpMeshServiceIdentifier,
 			Protocol:       core_meta.ProtocolHTTP,
-			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, httpServiceTag).
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, httpMeshServiceIdentifier.String()).
 				MustBuild(),
 		},
 		{
@@ -82,7 +86,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			Origin:         metadata.OriginOutbound,
 			ResourceOrigin: httpMeshServiceIdentifier,
 			Protocol:       core_meta.ProtocolHTTP,
-			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, splitHttpServiceTag).
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, httpMeshServiceIdentifier.String()+"-_0_").
 				MustBuild(),
 		},
 	}
@@ -92,7 +96,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			Origin:         metadata.OriginOutbound,
 			ResourceOrigin: tcpMeshServiceIdentifier,
 			Protocol:       core_meta.ProtocolTCP,
-			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, tcpServiceTag).
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, tcpMeshServiceIdentifier.String()).
 				MustBuild(),
 		},
 	}
@@ -102,7 +106,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			Origin:         metadata.OriginOutbound,
 			ResourceOrigin: backendMeshServiceIdentifier,
 			Protocol:       core_meta.ProtocolTCP,
-			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, tcpServiceTag).
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, backendMeshServiceIdentifier.String()).
 				MustBuild(),
 		},
 	}
@@ -112,7 +116,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			Origin:         metadata.OriginOutbound,
 			ResourceOrigin: grpcMeshServiceIdentifier,
 			Protocol:       core_meta.ProtocolGRPC,
-			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, grpcServiceTag).
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, grpcMeshServiceIdentifier.String()).
 				MustBuild(),
 		},
 	}
@@ -134,6 +138,11 @@ var _ = Describe("MeshHealthCheck", func() {
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithMetadata(&core_xds.DataplaneMetadata{
+					// Outbounds are always built from real resources, so every
+					// proxy here supports unified resource naming.
+					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
+				}).
 				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshHealthCheckType, given.toRules)).
 				WithRouting(
 					xds_builders.Routing().

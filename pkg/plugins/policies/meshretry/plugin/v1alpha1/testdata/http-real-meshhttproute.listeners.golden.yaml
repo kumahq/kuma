@@ -154,6 +154,6 @@ filterChains:
                     '@type': type.googleapis.com/envoy.extensions.retry.priority.previous_priorities.v3.PreviousPrioritiesConfig
                     updateFrequency: 5
               timeout: 0s
-      statPrefix: outbound_127_0_0_1_10001
-name: outbound:127.0.0.1:10001
+      statPrefix: kri_msvc_mesh-1___test-service-1_
+name: kri_msvc_mesh-1___test-service-1_
 trafficDirection: OUTBOUND

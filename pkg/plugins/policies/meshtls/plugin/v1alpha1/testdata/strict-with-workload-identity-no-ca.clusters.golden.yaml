@@ -2,4 +2,4 @@ resources:
 - name: outbound
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    name: outgoing
+    name: kri_msvc_default_zone-1_backend-ns_outgoing_80

@@ -16,17 +16,18 @@ filterChains:
             stringValue: default
           grpcService:
             envoyGrpc:
-              clusterName: meshaccesslog:opentelemetry:0
+              clusterName: system_meshaccesslog_otel-collector-4317
           logName: MeshAccessLog
           resourceAttributes:
             values:
             - key: kuma.mesh
               value:
                 stringValue: default
-      cluster: default_foo-meshservice-tcp_other-ns_zone-1_msvc_37778
-      statPrefix: default_foo-meshservice-tcp_other-ns_zone-1_msvc_37778
+      cluster: kri_msvc_default_zone-1_other-ns_foo-meshservice-tcp_37778
+      statPrefix: kri_msvc_default_zone-1_other-ns_foo-meshservice-tcp_37778
 metadata:
   filterMetadata:
     io.kuma.tags: {}
-name: outbound:127.0.0.1:37778
+name: kri_msvc_default_zone-1_other-ns_foo-meshservice-tcp_37778
+statPrefix: kri_msvc_default_zone-1_other-ns_foo-meshservice-tcp_37778
 trafficDirection: OUTBOUND
