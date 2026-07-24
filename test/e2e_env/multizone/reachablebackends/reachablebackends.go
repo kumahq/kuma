@@ -38,7 +38,7 @@ func ReachableBackends() {
 `, namespace)
 
 	meshPassthrough := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1 
+apiVersion: kuma.io/v1alpha1
 kind: MeshPassthrough
 metadata:
   name: disable-passthrough-reachable
@@ -53,6 +53,17 @@ spec:
       app: client-server
   default:
     passthroughMode: None`, Config.KumaNamespace, meshName)
+
+	disableDefaultPassthrough := fmt.Sprintf(`
+type: MeshPassthrough
+mesh: %s
+name: disable-default-passthrough
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    passthroughMode: None
+`, meshName)
 
 	meshExternalService := func(serviceName string) string {
 		return fmt.Sprintf(`
@@ -116,10 +127,10 @@ spec:
 					builders.Mesh().
 						WithName(meshName).
 						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
-						WithEgressRoutingEnabled().
-						WithoutPassthrough(),
+						WithEgressRoutingEnabled(),
 				),
 			).
+			Install(YamlUniversal(disableDefaultPassthrough)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(mmzs)).
 			Install(YamlUniversal(mmzsNotAccessible)).

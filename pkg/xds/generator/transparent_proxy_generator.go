@@ -168,14 +168,9 @@ func (TransparentProxyGenerator) generate(
 	resources := model.NewResourceSet()
 	tpCfg := proxy.GetTransparentProxy()
 
-	var outboundPassThroughCluster envoy_common.NamedResource
-	var err error
-
-	if ctx.Mesh.Resource.Spec.IsPassthrough() {
-		outboundPassThroughCluster, err = CreateOutboundPassThroughCluster(proxy.APIVersion, outboundName)
-		if err != nil {
-			return nil, err
-		}
+	outboundPassThroughCluster, err := CreateOutboundPassThroughCluster(proxy.APIVersion, outboundName)
+	if err != nil {
+		return nil, err
 	}
 
 	outboundStatPrefix := ""
@@ -212,13 +207,11 @@ func (TransparentProxyGenerator) generate(
 		Resource: outboundListener,
 	})
 
-	if ctx.Mesh.Resource.Spec.IsPassthrough() {
-		resources.Add(&model.Resource{
-			Name:     outboundPassThroughCluster.GetName(),
-			Origin:   metadata.OriginTransparent,
-			Resource: outboundPassThroughCluster,
-		})
-	}
+	resources.Add(&model.Resource{
+		Name:     outboundPassThroughCluster.GetName(),
+		Origin:   metadata.OriginTransparent,
+		Resource: outboundPassThroughCluster,
+	})
 	resources.Add(&model.Resource{
 		Name:     inboundListener.GetName(),
 		Origin:   metadata.OriginTransparent,
