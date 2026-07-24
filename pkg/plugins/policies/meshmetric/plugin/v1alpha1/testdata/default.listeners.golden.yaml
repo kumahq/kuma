@@ -69,14 +69,14 @@ resources:
                     stringMatch:
                       exact: c737069abe59b6c80a8e47562ccc9fc8f73d9380f505efd2d8900161f0b51ee4
                   path: /meshmetric
-                name: system_dynamicconfig_/meshmetric_not_modified
+                name: system_dynamicconfig_meshmetric_not_modified
               - directResponse:
                   body:
                     inlineString: '{"observability":{"metrics":{"applications":[{"name":"test-app","path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null}],"extraLabels":{"dataplane":"dp-1","kuma.proxy_role":"sidecar","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","zone":"zone-1"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
-                name: system_dynamicconfig_/meshmetric
+                name: system_dynamicconfig_meshmetric
                 responseHeadersToAdd:
                 - header:
                     key: Etag

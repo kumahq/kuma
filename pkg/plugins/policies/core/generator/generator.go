@@ -6,9 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -31,14 +29,14 @@ func (g generator) Generate(ctx context.Context, rs *xds.ResourceSet, xdsCtx xds
 		}
 	}
 
-	if err := writeUnifiedOtelRoute(rs, xdsCtx, proxy); err != nil {
+	if err := writeUnifiedOtelRoute(rs, proxy); err != nil {
 		return nil, err
 	}
 
 	return rs, nil
 }
 
-func writeUnifiedOtelRoute(rs *xds.ResourceSet, xdsCtx xds_context.Context, proxy *xds.Proxy) error {
+func writeUnifiedOtelRoute(rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	if proxy.OtelPipeBackends.Empty() {
 		return nil
 	}
@@ -56,13 +54,10 @@ func writeUnifiedOtelRoute(rs *xds.ResourceSet, xdsCtx xds_context.Context, prox
 		return errors.Wrap(err, "marshaling otel dp config")
 	}
 
-	unifiedNamingEnabled := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
-	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
-
 	return dynconf.AddConfigRoute(
 		proxy,
 		rs,
-		getNameOrDefault("otel", xds.OtelDynconfPath),
+		"otel",
 		xds.OtelDynconfPath,
 		data,
 	)

@@ -105,14 +105,14 @@ resources:
                     stringMatch:
                       exact: 41e600dc2beb025d9f731cf9b9c5638509cb1f4aad2133cfcb3f5e395a6f6266
                   path: /meshmetric
-                name: system_dynamicconfig_/meshmetric_not_modified
+                name: system_dynamicconfig_meshmetric_not_modified
               - directResponse:
                   body:
                     inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"OpenTelemetry","name":"otel-collector","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.sock","refreshInterval":"1m0s"}},{"type":"OpenTelemetry","name":"second-collector","openTelemetry":{"endpoint":"/tmp/kuma-otel-second-collector.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"dataplane":"dp-1","kuma.proxy_role":"sidecar","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","zone":"zone-1"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
-                name: system_dynamicconfig_/meshmetric
+                name: system_dynamicconfig_meshmetric
                 responseHeadersToAdd:
                 - header:
                     key: Etag

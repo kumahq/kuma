@@ -69,14 +69,14 @@ resources:
                     stringMatch:
                       exact: b4deac1fc1fbbedf3f692736cda09548e4432e0fd2a635c0b5ee8248235029b9
                   path: /meshmetric
-                name: system_dynamicconfig_/meshmetric_not_modified
+                name: system_dynamicconfig_meshmetric_not_modified
               - directResponse:
                   body:
                     inlineString: '{"observability":{"metrics":{"applications":null,"backends":[{"type":"Prometheus","name":null}],"extraLabels":{"dataplane":"zone-ingress-1","kuma.proxy_role":"zone-ingress","mesh":"default"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
-                name: system_dynamicconfig_/meshmetric
+                name: system_dynamicconfig_meshmetric
                 responseHeadersToAdd:
                 - header:
                     key: Etag
