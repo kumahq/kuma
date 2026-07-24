@@ -33,6 +33,11 @@ type Conf struct {
 	// Interval between consecutive health checks.
 	// If not specified then the default value is 1m
 	Interval *k8s.Duration `json:"interval,omitempty"`
+	// If specified, Envoy will use this interval between health checks when a
+	// host is marked unhealthy. This allows unhealthy hosts to be checked more
+	// frequently, so they can be marked healthy again sooner. If not specified,
+	// the standard interval is used.
+	UnhealthyInterval *k8s.Duration `json:"unhealthyInterval,omitempty"`
 	// Maximum time to wait for a health check response.
 	// If not specified then the default value is 15s
 	Timeout *k8s.Duration `json:"timeout,omitempty"`
