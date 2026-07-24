@@ -1,4 +1,22 @@
 resources:
+- name: default_tcp-backend___msvc_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: default_tcp-backend___msvc_80
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.5
+              portValue: 8005
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: tcp
+            envoy.transport_socket_match:
+              kuma.io/protocol: tcp
 - name: tcp-backend
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment

@@ -12,11 +12,10 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: tcp-backend
-          statPrefix: backend
+          statPrefix: default_backend___msvc_80
     metadata:
       filterMetadata:
-        io.kuma.tags:
-          kuma.io/service: backend
+        io.kuma.tags: {}
     name: outbound:127.0.0.1:10001
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:10002
@@ -31,11 +30,10 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: tcp-backend
-          statPrefix: tcp-backend
+          cluster: default_tcp-backend___msvc_80
+          statPrefix: default_tcp-backend___msvc_80
     metadata:
       filterMetadata:
-        io.kuma.tags:
-          kuma.io/service: tcp-backend
+        io.kuma.tags: {}
     name: outbound:127.0.0.1:10002
     trafficDirection: OUTBOUND
