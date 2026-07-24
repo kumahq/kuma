@@ -147,11 +147,10 @@ type TopLevelTargetRef struct {
 	// Kind of the referenced resource
 	// +kubebuilder:validation:Enum=Mesh;Dataplane
 	Kind TopLevelTargetRefKind `json:"kind"`
-	// Name of the referenced resource. Can only be used with kinds: `MeshService`
-	// and `MeshServiceSubset`
+	// Name of the referenced resource. Can only be used with kind `Dataplane`.
 	Name *string `json:"name,omitempty"`
-	// Tags used to select a subset of proxies by tags. Can only be used with kinds
-	// `MeshSubset` and `MeshServiceSubset`
+	// Tags used to select a subset of proxies by tags. Not applicable to the
+	// kinds supported by this field (`Mesh`, `Dataplane`).
 	Tags *map[string]string `json:"tags,omitempty"`
 	// Mesh is reserved for future use to identify cross mesh resources.
 	Mesh *string `json:"mesh,omitempty"`
@@ -201,11 +200,11 @@ type OutboundTargetRef struct {
 	// Kind of the referenced resource
 	// +kubebuilder:validation:Enum=Mesh;MeshService;MeshExternalService;MeshMultiZoneService;MeshHTTPRoute
 	Kind OutboundTargetRefKind `json:"kind"`
-	// Name of the referenced resource. Can only be used with kinds: `MeshService`
-	// and `MeshServiceSubset`
+	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
+	// `MeshExternalService`, `MeshMultiZoneService`, and `MeshHTTPRoute`.
 	Name *string `json:"name,omitempty"`
-	// Tags used to select a subset of proxies by tags. Can only be used with kinds
-	// `MeshSubset` and `MeshServiceSubset`
+	// Tags used to select a subset of proxies by tags. Not applicable to the
+	// kinds supported by this field.
 	Tags *map[string]string `json:"tags,omitempty"`
 	// Mesh is reserved for future use to identify cross mesh resources.
 	Mesh *string `json:"mesh,omitempty"`

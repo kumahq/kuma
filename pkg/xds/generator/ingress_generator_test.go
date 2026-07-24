@@ -444,8 +444,7 @@ var _ = Describe("IngressGenerator", func() {
 								{
 									Spec: &meshhttproute_api.MeshHTTPRoute{
 										TargetRef: &common_api.TopLevelTargetRef{
-											Kind: common_api.MeshService,
-											Name: pointer.To("frontend"),
+											Kind: common_api.Mesh,
 										},
 										To: &[]meshhttproute_api.To{{
 											TargetRef: common_api.OutboundTargetRef{
@@ -538,8 +537,7 @@ var _ = Describe("IngressGenerator", func() {
 								{
 									Spec: &meshhttproute_api.MeshHTTPRoute{
 										TargetRef: &common_api.TopLevelTargetRef{
-											Kind: common_api.MeshService,
-											Name: pointer.To("frontend"),
+											Kind: common_api.Mesh,
 										},
 										To: &[]meshhttproute_api.To{{
 											TargetRef: common_api.OutboundTargetRef{
@@ -633,8 +631,7 @@ var _ = Describe("IngressGenerator", func() {
 								{
 									Spec: &meshtcproute_api.MeshTCPRoute{
 										TargetRef: &common_api.TopLevelTargetRef{
-											Kind: common_api.MeshService,
-											Name: pointer.To("frontend"),
+											Kind: common_api.Mesh,
 										},
 										To: &[]meshtcproute_api.To{{
 											TargetRef: common_api.OutboundTargetRef{
