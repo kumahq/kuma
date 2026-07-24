@@ -9,7 +9,6 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var (
@@ -207,15 +206,6 @@ func TagsKVToMap(tagsKV []string) map[string]string {
 		tags[tagsKV[i]] = tagsKV[i+1]
 	}
 	return tags
-}
-
-func (d *DataplaneBuilder) WithPrometheusMetrics(config *mesh_proto.PrometheusMetricsBackendConfig) *DataplaneBuilder {
-	d.res.Spec.Metrics = &mesh_proto.MetricsBackend{
-		Name: "prometheus-1",
-		Type: mesh_proto.MetricsPrometheusType,
-		Conf: proto.MustToStruct(config),
-	}
-	return d
 }
 
 func (d *DataplaneBuilder) WithDelegatedGateway(name string) *DataplaneBuilder {

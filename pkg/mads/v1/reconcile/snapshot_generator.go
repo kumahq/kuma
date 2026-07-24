@@ -9,9 +9,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
-	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/mads/generator"
 	mads_v1 "github.com/kumahq/kuma/v3/pkg/mads/v1"
 	meshmetrics_generator "github.com/kumahq/kuma/v3/pkg/mads/v1/generator"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
@@ -21,10 +19,9 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 )
 
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache, inboundTagsDisabled bool) *SnapshotGenerator {
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, meshCache *mesh.Cache, inboundTagsDisabled bool) *SnapshotGenerator {
 	return &SnapshotGenerator{
 		resourceManager:     resourceManager,
-		resourceGenerator:   resourceGenerator,
 		meshCache:           meshCache,
 		inboundTagsDisabled: inboundTagsDisabled,
 	}
@@ -32,7 +29,6 @@ func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, 
 
 type SnapshotGenerator struct {
 	resourceManager     core_manager.ReadOnlyResourceManager
-	resourceGenerator   generator.ResourceGenerator
 	meshCache           *mesh.Cache
 	inboundTagsDisabled bool
 }
@@ -43,29 +39,11 @@ func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]en
 		return nil, err
 	}
 
-	meshes, err := s.getMeshesWithPrometheusEnabled(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var resources []*core_xds.Resource
 	resourcesPerClientId := map[string]envoy_cache.ResourceSnapshot{}
 	if len(meshesWithMeshMetrics) == 0 {
-		dataplanes, err := s.getDataplanes(ctx, meshes)
-		if err != nil {
-			return nil, err
-		}
-
-		args := generator.Args{
-			Meshes:     meshes,
-			Dataplanes: dataplanes,
-		}
-
-		resources, err = s.resourceGenerator.Generate(args)
-		if err != nil {
-			return nil, err
-		}
-		resourcesPerClientId[meshmetrics_generator.DefaultKumaClientId] = createSnapshot(resources)
+		// keep an empty snapshot for the default client so MADS subscribers
+		// receive a valid (empty) response when no MeshMetric is configured
+		resourcesPerClientId[meshmetrics_generator.DefaultKumaClientId] = createSnapshot(nil)
 	} else {
 		for clientId, meshes := range meshesWithMeshMetrics {
 			meshMetricConfToDataplanes, err := s.getMatchingDataplanes(ctx, meshes)
@@ -73,7 +51,7 @@ func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]en
 				return nil, err
 			}
 
-			resources, err = meshmetrics_generator.Generate(meshMetricConfToDataplanes, clientId, s.inboundTagsDisabled)
+			resources, err := meshmetrics_generator.Generate(meshMetricConfToDataplanes, clientId, s.inboundTagsDisabled)
 			if err != nil {
 				return nil, err
 			}
@@ -129,33 +107,6 @@ func (s *SnapshotGenerator) getMatchingDataplanes(ctx context.Context, meshesWit
 	}
 
 	return meshMetricConfToDataplanes, nil
-}
-
-func (s *SnapshotGenerator) getMeshesWithPrometheusEnabled(ctx context.Context) ([]*core_mesh.MeshResource, error) {
-	meshList := &core_mesh.MeshResourceList{}
-	if err := s.resourceManager.List(ctx, meshList); err != nil {
-		return nil, err
-	}
-
-	meshes := make([]*core_mesh.MeshResource, 0)
-	for _, mesh := range meshList.Items {
-		if mesh.HasPrometheusMetricsEnabled() {
-			meshes = append(meshes, mesh)
-		}
-	}
-	return meshes, nil
-}
-
-func (s *SnapshotGenerator) getDataplanes(ctx context.Context, meshes []*core_mesh.MeshResource) ([]*core_mesh.DataplaneResource, error) {
-	dataplanes := make([]*core_mesh.DataplaneResource, 0)
-	for _, mesh := range meshes {
-		dataplaneList := &core_mesh.DataplaneResourceList{}
-		if err := s.resourceManager.List(ctx, dataplaneList, core_store.ListByMesh(mesh.Meta.GetName())); err != nil {
-			return nil, err
-		}
-		dataplanes = append(dataplanes, dataplaneList.Items...)
-	}
-	return dataplanes, nil
 }
 
 func createSnapshot(resources []*core_xds.Resource) envoy_cache.ResourceSnapshot {
