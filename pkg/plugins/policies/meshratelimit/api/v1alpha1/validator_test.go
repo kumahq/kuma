@@ -159,6 +159,15 @@ violations:
   - field: spec.rules[0].default.local.tcp.connectionRate.interval
     message: 'must be greater than: 50ms'`,
 			}),
+			Entry("neither to nor rules defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane`,
+				expected: `
+violations:
+  - field: spec
+    message: at least one of 'to' or 'rules' has to be defined`,
+			}),
 			Entry("empty default", testCase{
 				inputYaml: `
 targetRef:

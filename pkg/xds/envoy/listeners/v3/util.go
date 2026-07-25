@@ -96,6 +96,11 @@ func (e *UnexpectedFilterConfigTypeError) Error() string {
 	return fmt.Sprintf("filter config has unexpected type: expected %T, got %T", e.expected, e.actual)
 }
 
+func (e *UnexpectedFilterConfigTypeError) Is(err error) bool {
+	_, ok := err.(*UnexpectedFilterConfigTypeError)
+	return ok
+}
+
 func NewUnexpectedFilterConfigTypeError(actual, expected proto.Message) error {
 	return &UnexpectedFilterConfigTypeError{
 		actual:   actual,

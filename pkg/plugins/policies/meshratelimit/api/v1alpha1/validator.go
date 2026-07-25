@@ -19,6 +19,9 @@ func (r *MeshRateLimitResource) validate() error {
 	if len(pointer.Deref(r.Spec.Rules)) > 0 && len(pointer.Deref(r.Spec.To)) > 0 {
 		verr.AddViolationAt(path, "field 'to' must be empty when 'rules' is defined")
 	}
+	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 {
+		verr.AddViolationAt(path, "at least one of 'to' or 'rules' has to be defined")
+	}
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
 	verr.AddErrorAt(path, validateRules(topLevel, pointer.Deref(r.Spec.Rules)))
