@@ -1,0 +1,21 @@
+{
+ "kind": "SidecarDataplane",
+ "total": 1,
+ "items": [
+  {
+   "type": "dataplane",
+   "matchedPolicies": {
+    "MeshTrafficPermission": [
+     {
+      "type": "MeshTrafficPermission",
+      "mesh": "default",
+      "name": "mtp-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "kri": "kri_mtp_default___mtp-1_"
+     }
+    ]
+   }
+  }
+ ]
+}

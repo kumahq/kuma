@@ -912,21 +912,25 @@ to `false` to a `MeshPassthrough` policy with `targetRef.kind: Mesh` and
 sets `networking.outbound.passthrough` continues to apply successfully; the
 field is silently ignored by the control plane.
 
-### Legacy dataplane inspect endpoints removed
+### Legacy dataplane inspect rules endpoint removed
 
-The legacy `GET /meshes/{mesh}/dataplanes/{dataplane}/policies` and
-`GET /meshes/{mesh}/dataplanes/{dataplane}/rules` endpoints have been
-removed, along with the `kumactl inspect dataplane --type=policies` handlers
-and types that only they used.
+The legacy `GET /meshes/{mesh}/dataplanes/{dataplane}/rules` endpoint has
+been removed.
 
 **Action required**
 
-Use `GET /meshes/{mesh}/dataplanes/{name}/_policies` instead (and the
+Use `GET /meshes/{mesh}/dataplanes/{name}/_rules` instead.
+
+`kumactl inspect dataplane --type=policies` now calls
+`GET /meshes/{mesh}/dataplanes/{name}/_policies` (and the
 `_inbounds/{inbound_kri}/_policies`, `_outbounds/{outbound_kri}/_policies`,
 and `_outbounds/{outbound_kri}/_routes/{route_kri}/_policies` variants for
-per-inbound/outbound scoping). `kumactl inspect dataplane --type=policies`
-now calls the new endpoint automatically and requires no changes to
-invocation.
+per-inbound/outbound scoping) and requires no changes to invocation. The
+underlying `GET /meshes/{mesh}/dataplanes/{dataplane}/policies` HTTP
+endpoint it used to call is still registered — the vendored GUI bundle
+(`app/kuma-ui`) still calls it directly and is re-vendored on its own
+release cadence — but it is deprecated; new integrations should call
+`_policies` instead.
 
 ## Upgrade to `2.13.7`
 
