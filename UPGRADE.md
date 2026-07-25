@@ -919,7 +919,8 @@ been removed.
 
 **Action required**
 
-Use `GET /meshes/{mesh}/dataplanes/{name}/_rules` instead.
+Use `GET /meshes/{mesh}/dataplanes/{name}/_policies` instead (or the
+per-inbound/outbound scoped variants — see below).
 
 `kumactl inspect dataplane --type=policies` now calls
 `GET /meshes/{mesh}/dataplanes/{name}/_policies` (and the

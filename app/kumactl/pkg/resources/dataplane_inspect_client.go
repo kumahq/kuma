@@ -45,9 +45,9 @@ func (h *httpDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, 
 	if statusCode != 200 {
 		return api_common.PoliciesList{}, errors.Errorf("(%d): %s", statusCode, string(b))
 	}
-	response := &api_common.PoliciesList{}
+	var response api_common.PoliciesList
 	if err := json.Unmarshal(b, &response); err != nil {
 		return api_common.PoliciesList{}, err
 	}
-	return *response, nil
+	return response, nil
 }
