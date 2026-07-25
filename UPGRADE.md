@@ -912,6 +912,22 @@ to `false` to a `MeshPassthrough` policy with `targetRef.kind: Mesh` and
 sets `networking.outbound.passthrough` continues to apply successfully; the
 field is silently ignored by the control plane.
 
+### Legacy dataplane inspect endpoints removed
+
+The legacy `GET /meshes/{mesh}/dataplanes/{dataplane}/policies` and
+`GET /meshes/{mesh}/dataplanes/{dataplane}/rules` endpoints have been
+removed, along with the `kumactl inspect dataplane --type=policies` handlers
+and types that only they used.
+
+**Action required**
+
+Use `GET /meshes/{mesh}/dataplanes/{name}/_policies` instead (and the
+`_inbounds/{inbound_kri}/_policies`, `_outbounds/{outbound_kri}/_policies`,
+and `_outbounds/{outbound_kri}/_routes/{route_kri}/_policies` variants for
+per-inbound/outbound scoping). `kumactl inspect dataplane --type=policies`
+now calls the new endpoint automatically and requires no changes to
+invocation.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.
