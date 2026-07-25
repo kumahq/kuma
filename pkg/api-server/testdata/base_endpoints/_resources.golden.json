@@ -259,10 +259,10 @@
    "path": "meshratelimits",
    "pluralDisplayName": "Mesh Rate Limits",
    "policy": {
-    "hasFromTargetRef": true,
+    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
     "hasToTargetRef": true,
-    "isFromAsRules": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
