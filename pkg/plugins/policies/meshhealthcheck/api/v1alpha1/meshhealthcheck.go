@@ -89,8 +89,8 @@ type Conf struct {
 	// This allows faster detection of recovery or continued failure. If not
 	// specified, Envoy will use the same interval for both healthy and unhealthy
 	// endpoints.
-	UnhealthyInterval *k8s.Duration  `json:"unhealthyInterval,omitempty"`
-	Tcp               *TcpHealthCheck `json:"tcp,omitempty"`
+	UnhealthyInterval *k8s.Duration    `json:"unhealthyInterval,omitempty"`
+	Tcp               *TcpHealthCheck  `json:"tcp,omitempty"`
 	Http              *HttpHealthCheck `json:"http,omitempty"`
 	Grpc              *GrpcHealthCheck `json:"grpc,omitempty"`
 	// Reuse health check connection between health checks. Default is true.
