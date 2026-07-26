@@ -1,6 +1,50 @@
 {
   "diff": [
     {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_80/filterChains/0/filters/0/typedConfig/httpFilters/0/typedConfig/matcher",
+      "value": {
+        "matcherList": {
+          "matchers": [
+            {
+              "onMatch": {
+                "action": {
+                  "name": "envoy.filters.rbac.action",
+                  "typedConfig": {
+                    "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+                    "name": "kri_mtp_envoyconfig_kuma-3__allow-all-envoyconfig_"
+                  }
+                }
+              },
+              "predicate": {
+                "singlePredicate": {
+                  "input": {
+                    "name": "envoy.matching.inputs.uri_san",
+                    "typedConfig": {
+                      "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
+                    }
+                  },
+                  "valueMatch": {
+                    "prefix": "spiffe://envoyconfig"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "onNoMatch": {
+          "action": {
+            "name": "envoy.filters.rbac.action",
+            "typedConfig": {
+              "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+              "action": "DENY",
+              "name": "default"
+            }
+          }
+        }
+      }
+    },
+    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_80/filterChains/0/filters/0/typedConfig/httpFilters/0/typedConfig/matcher",
       "value": {
@@ -84,26 +128,6 @@
               "action": "DENY",
               "name": "default"
             }
-          }
-        }
-      }
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_80/filterChains/0/filters/0/typedConfig/httpFilters/0/typedConfig/rules",
-      "value": {
-        "policies": {
-          "MeshTrafficPermission": {
-            "permissions": [
-              {
-                "any": true
-              }
-            ],
-            "principals": [
-              {
-                "any": true
-              }
-            ]
           }
         }
       }
