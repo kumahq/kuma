@@ -1,8 +1,11 @@
 package xds
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
@@ -170,4 +173,32 @@ var _ = Describe("MeshHealthCheck configurer", func() {
 			expectedHcType: HCNone,
 		}),
 	)
+
+	Describe("buildHealthCheck", func() {
+		It("should set UnhealthyInterval when provided", func() {
+			dur := &k8s.Duration{Duration: 10 * time.Second}
+			conf := v1alpha1.Conf{
+				UnhealthyInterval: dur,
+			}
+			hc := buildHealthCheck(conf)
+			Expect(hc.UnhealthyInterval).NotTo(BeNil())
+			Expect(hc.UnhealthyInterval.AsDuration()).To(Equal(10 * time.Second))
+		})
+
+		It("should not set UnhealthyInterval when nil", func() {
+			conf := v1alpha1.Conf{}
+			hc := buildHealthCheck(conf)
+			Expect(hc.UnhealthyInterval).To(BeNil())
+		})
+
+		It("should set NoTrafficInterval when provided", func() {
+			dur := &k8s.Duration{Duration: 30 * time.Second}
+			conf := v1alpha1.Conf{
+				NoTrafficInterval: dur,
+			}
+			hc := buildHealthCheck(conf)
+			Expect(hc.NoTrafficInterval).NotTo(BeNil())
+			Expect(hc.NoTrafficInterval.AsDuration()).To(Equal(30 * time.Second))
+		})
+	})
 })
