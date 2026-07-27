@@ -382,11 +382,9 @@ func ValidateTargetRef(
 		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
 		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
-		err.Add(validateProxyTypes("proxyTypes", ref.ProxyTypes))
 	case common_api.Dataplane:
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
-		err.Add(disallowedField("proxyTypes", pointer.Deref(ref.ProxyTypes), ref.Kind))
 		if len(pointer.Deref(ref.Labels)) > 0 && (pointer.Deref(ref.Name) != "" || pointer.Deref(ref.Namespace) != "") {
 			err.AddViolation("labels", "either labels or name and namespace must be specified")
 		}
@@ -400,12 +398,10 @@ func ValidateTargetRef(
 		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
 		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
-		err.Add(validateProxyTypes("proxyTypes", ref.ProxyTypes))
 	case common_api.MeshService:
 		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		err.Add(disallowedField("proxyTypes", pointer.Deref(ref.ProxyTypes), ref.Kind))
 		if len(pointer.Deref(ref.Labels)) == 0 && pointer.Deref(ref.Name) == "" {
 			err.AddViolation("", fmt.Sprintf("name or labels must be set when kind is %v", ref.Kind))
 		}
@@ -416,7 +412,6 @@ func ValidateTargetRef(
 		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		err.Add(disallowedField("proxyTypes", pointer.Deref(ref.ProxyTypes), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
 		if len(pointer.Deref(ref.Labels)) == 0 && pointer.Deref(ref.Name) == "" {
 			err.AddViolation("", fmt.Sprintf("name or labels must be set when kind is %v", ref.Kind))
@@ -428,7 +423,6 @@ func ValidateTargetRef(
 		err.Add(requiredField("name", pointer.Deref(ref.Name), ref.Kind))
 		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
-		err.Add(disallowedField("proxyTypes", pointer.Deref(ref.ProxyTypes), ref.Kind))
 		err.Add(ValidateSelector(validators.RootedAt("tags"), pointer.Deref(ref.Tags), ValidateTagsOpts{}))
 		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
 		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
@@ -437,7 +431,6 @@ func ValidateTargetRef(
 		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		err.Add(disallowedField("proxyTypes", pointer.Deref(ref.ProxyTypes), ref.Kind))
 		if len(pointer.Deref(ref.Labels)) == 0 && pointer.Deref(ref.Name) == "" {
 			err.AddViolation("", fmt.Sprintf("name or labels must be set when kind is %v", ref.Kind))
 		}
@@ -477,16 +470,6 @@ func ValidateMatch(match common_api.Match) validators.ValidationError {
 	return verr
 }
 
-func validateProxyTypes(field string, proxyTypes *[]common_api.TargetRefProxyType) validators.ValidationError {
-	var err validators.ValidationError
-
-	if proxyTypes != nil && len(pointer.Deref(proxyTypes)) == 0 {
-		err.AddViolation(field, "must be undefined or have at least one element")
-	}
-
-	return err
-}
-
 func validateName(value string, allowedInvalidNames []string) validators.ValidationError {
 	var err validators.ValidationError
 
@@ -500,7 +483,7 @@ func validateName(value string, allowedInvalidNames []string) validators.Validat
 	return err
 }
 
-func disallowedField[T ~string | ~map[string]string | ~[]common_api.TargetRefProxyType](
+func disallowedField[T ~string | ~map[string]string](
 	name string,
 	value T,
 	kind common_api.TargetRefKind,
@@ -528,13 +511,11 @@ func requiredField[T ~string | ~map[string]string](
 	return err
 }
 
-func isSet[T ~string | ~map[string]string | ~[]common_api.TargetRefProxyType](value T) bool {
+func isSet[T ~string | ~map[string]string](value T) bool {
 	switch v := any(value).(type) {
 	case string:
 		return v != ""
 	case map[string]string:
-		return len(v) > 0
-	case []common_api.TargetRefProxyType:
 		return len(v) > 0
 	default:
 		return false

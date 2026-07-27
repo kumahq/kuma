@@ -6,7 +6,6 @@ labels:
 spec:
   targetRef:
     kind: Mesh
-    proxyTypes: [Sidecar]
   rules:
     - default:
         local:
