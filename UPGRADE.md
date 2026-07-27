@@ -89,6 +89,19 @@ regardless of what the mesh's former `meshServices.mode` was set to.
 None. A `Mesh` spec that still sets `meshServices` continues to apply
 successfully; the field is silently ignored by the control plane.
 
+### `routing.zoneEgress` removed from the `Mesh` schema
+
+The `routing.zoneEgress` boolean has been removed from the `Mesh` resource
+spec. Cross-zone and `MeshExternalService` traffic now uses ZoneEgress based on
+actual zone egress topology plus mTLS, rather than an explicit mesh-level
+toggle.
+
+**Action required**
+
+Remove any `routing.zoneEgress` entries from stored `Mesh` resources and
+manifests before upgrading. After the upgrade, that field no longer exists in
+the schema and is ignored during deserialization.
+
 ### MeshService mode no longer disables zone proxy listeners, inspect endpoints, or MeshIdentity initialization
 
 The control plane now generates mesh-scoped zone proxy listeners and serves
@@ -462,13 +475,31 @@ Remove the setting above from your control plane config. Setting
 `KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES` no longer has any effect in Kuma
 3.0.0.
 
-To trim the outbound clusters a proxy receives, configure reachable services or
-reachable backends explicitly on the `Dataplane` (the
-`kuma.io/transparent-proxying-reachable-services` and `kuma.io/reachable-backends`
-annotations on Kubernetes). Traffic that is not permitted by a
-`MeshTrafficPermission` is still denied at the proxy; it is simply no longer
-pruned from the proxy configuration.
+To trim the outbound clusters a proxy receives, configure reachable backends
+explicitly on the `Dataplane` (the `kuma.io/reachable-backends` annotation on
+Kubernetes). Traffic that is not permitted by a `MeshTrafficPermission` is
+still denied at the proxy; it is simply no longer pruned from the proxy
+configuration.
 
+### `reachableServices` / `kuma.io/transparent-proxying-reachable-services` removed
+
+The legacy `kuma.io/service`-based reachable services mechanism has been
+removed in favor of `reachableBackends` (`kuma.io/reachable-backends` on
+Kubernetes), which targets `MeshService`/`MeshExternalService`/
+`MeshMultiZoneService` resources instead of the `kuma.io/service` tag.
+
+The following have been removed:
+
+- `Dataplane.spec.networking.transparentProxying.reachableServices`
+- The `kuma.io/transparent-proxying-reachable-services` annotation on
+  Kubernetes.
+
+**Action required**
+
+Migrate any usage of the annotation or field above to `reachableBackends` /
+`kuma.io/reachable-backends`, referencing the target `MeshService`,
+`MeshExternalService`, or `MeshMultiZoneService` by name/namespace/port
+instead of the `kuma.io/service` tag value.
 
 ### `kumactl install observability` removed
 

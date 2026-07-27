@@ -360,15 +360,6 @@
                     "envoy.transport_socket_match": {
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
-                    },
-                    "io.kuma.labels": {
-                      "kuma.io/display-name": "demo-client",
-                      "kuma.io/env": "universal",
-                      "kuma.io/mesh": "envoyconfig",
-                      "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
-                      "kuma.io/workload": "demo-client",
-                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -410,15 +401,6 @@
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
                       "version": "v1"
-                    },
-                    "io.kuma.labels": {
-                      "kuma.io/display-name": "test-server",
-                      "kuma.io/env": "universal",
-                      "kuma.io/mesh": "envoyconfig",
-                      "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
-                      "kuma.io/workload": "test-server",
-                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -457,7 +439,9 @@
         ],
         "metadata": {
           "filterMetadata": {
-            "io.kuma.tags": {}
+            "io.kuma.tags": {
+              "kuma.io/unified-name": "kri_msvc_envoyconfig_kuma-3__demo-client_3000"
+            }
           }
         },
         "name": "kri_msvc_envoyconfig_kuma-3__demo-client_3000",
@@ -545,7 +529,9 @@
         ],
         "metadata": {
           "filterMetadata": {
-            "io.kuma.tags": {}
+            "io.kuma.tags": {
+              "kuma.io/unified-name": "kri_msvc_envoyconfig_kuma-3__test-server_80"
+            }
           }
         },
         "name": "kri_msvc_envoyconfig_kuma-3__test-server_80",

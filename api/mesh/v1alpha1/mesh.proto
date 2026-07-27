@@ -148,9 +148,8 @@ message Routing {
   reserved 1;
   reserved "localityAwareLoadBalancing";
 
-  // Enable routing traffic to services in other zone or external services
-  // through ZoneEgress. Default: false
-  bool zoneEgress = 2;
+  reserved 2;
+  reserved "zoneEgress";
 
   // If true, blocks traffic to MeshExternalServices.
   // Default: false
