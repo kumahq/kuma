@@ -3,10 +3,10 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: backend
-- name: default_example___extsvc_9090
+- name: kri_extsvc_default___example_
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: default_example___extsvc_9090
+    clusterName: kri_extsvc_default___example_
     endpoints:
     - lbEndpoints:
       - endpoint:
