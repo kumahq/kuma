@@ -108,22 +108,30 @@ func generateFromService(
 		if len(split) == 0 {
 			continue
 		}
-		for _, filter := range route.Filters {
-			if filter.Type == api.RequestMirrorType {
-				// we need to create a split for the mirror backend
-				_ = meshroute_xds.MakeHTTPSplit(
-					clusterCache, servicesAcc,
-					[]resolve.ResolvedBackendRef{*resolve.NewResolvedBackendRef(pointer.To(resolve.LegacyBackendRef(filter.RequestMirror.BackendRef)))},
-					meshCtx,
-				)
+		// mirrored requests go to a cluster of their own, it has no weight so
+		// keep the split only to know which cluster was created for the mirror
+		mirrorSplits := map[int]envoy_common.Split{}
+		for i := range route.Filters {
+			ref, ok := route.MirrorBackendRefs[i]
+			if !ok {
+				continue
 			}
+			mirrorSplit := meshroute_xds.MakeHTTPSplit(
+				clusterCache, servicesAcc,
+				[]resolve.ResolvedBackendRef{ref},
+				meshCtx,
+			)
+			if len(mirrorSplit) == 0 {
+				continue
+			}
+			mirrorSplits[i] = mirrorSplit[0]
 		}
 		routes = append(routes, xds.OutboundRoute{
-			Name:                    route.Name,
-			Match:                   route.Match,
-			Filters:                 route.Filters,
-			Split:                   split,
-			BackendRefToClusterName: clusterCache,
+			Name:         route.Name,
+			Match:        route.Match,
+			Filters:      route.Filters,
+			MirrorSplits: mirrorSplits,
+			Split:        split,
 		})
 	}
 
@@ -234,6 +242,17 @@ func prepareRoutes(
 			routeName = originID.String()
 		}
 
+		mirrorRefs := map[int]resolve.ResolvedBackendRef{}
+
+		for i, filter := range filters {
+			if filter.Type != api.RequestMirrorType || filter.RequestMirror == nil {
+				continue
+			}
+			if rbr, ok := resolve.BackendRef(originID, filter.RequestMirror.BackendRef, meshCtx.ResolveResourceIdentifier); ok {
+				mirrorRefs[i] = rbr
+			}
+		}
+
 		for _, match := range rule.Matches {
 			var refs []resolve.ResolvedBackendRef
 
@@ -246,10 +265,11 @@ func prepareRoutes(
 			routes = append(
 				routes,
 				api.Route{
-					Name:        routeName,
-					Match:       match,
-					Filters:     filters,
-					BackendRefs: refs,
+					Name:              routeName,
+					Match:             match,
+					Filters:           filters,
+					BackendRefs:       refs,
+					MirrorBackendRefs: mirrorRefs,
 				},
 			)
 		}

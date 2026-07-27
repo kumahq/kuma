@@ -2560,6 +2560,240 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("request-mirror-real-resources", func() outboundsTestCase {
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
+						AppProtocol: core_meta.ProtocolHTTP,
+						Name:        pointer.To("test-port"),
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{
+							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+							Value: "backend",
+						},
+					},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.1",
+					}},
+				},
+			}
+			paymentsSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "payments", Mesh: "default",
+					Labels: map[string]string{
+						"app": "payments",
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8086)),
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{
+							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+							Value: "payments",
+						},
+					},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.2",
+					}},
+				},
+			}
+			paymentsMZSvc := meshmultizoneservice_api.MeshMultiZoneServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "payments-mz", Mesh: "default"},
+				Spec: &meshmultizoneservice_api.MeshMultiZoneService{
+					Selector: meshmultizoneservice_api.Selector{
+						MeshService: common_api.LabelSelector{
+							MatchLabels: &map[string]string{
+								"app": "payments",
+							},
+						},
+					},
+					Ports: []meshmultizoneservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+				},
+				Status: &meshmultizoneservice_api.MeshMultiZoneServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.3",
+					}},
+					MeshServices: []meshmultizoneservice_api.MatchedMeshService{
+						{
+							Name: "payments",
+							Mesh: "default",
+						},
+					},
+				},
+			}
+
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc, &paymentsSvc},
+			}
+			resources.MeshLocalResources[meshmultizoneservice_api.MeshMultiZoneServiceType] = &meshmultizoneservice_api.MeshMultiZoneServiceResourceList{
+				Items: []*meshmultizoneservice_api.MeshMultiZoneServiceResource{&paymentsMZSvc},
+			}
+
+			dpBuilder := builders.Dataplane().
+				WithName("web-01").
+				WithAddress("192.168.0.2").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")
+			mc := meshContextWithResources(builders.Mesh(), dpBuilder.Build(), &meshSvc, &paymentsSvc, &paymentsMZSvc)
+
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("default_backend___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
+				AddEndpoint("default_payments___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.6").
+					WithPort(8086).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "payments", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
+				AddEndpoint("default_payments-mz___mzsvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.7").
+					WithPort(8086).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "payments", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP)))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithResources(resources).
+					WithMeshContext(mc).
+					WithEndpointMap(outboundTargets).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(
+						dpBuilder,
+					).
+					WithOutbounds(xds_types.Outbounds{
+						{
+							Port:     builders.FirstOutboundPort,
+							Resource: kri.WithSectionName(kri.From(&meshSvc), "test-port"),
+						},
+					}).
+					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+									backendMeshServiceIdentifier: test_policies.NewOutboundRule(meshSvc.Meta, api.PolicyDefault{
+										Rules: []api.Rule{
+											{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/ms",
+													},
+												}},
+												Default: api.RuleConf{
+													Filters: &[]api.Filter{{
+														Type: api.RequestMirrorType,
+														RequestMirror: &api.RequestMirror{
+															Percentage: pointer.To(intstr.FromString("99.9")),
+															BackendRef: common_api.BackendRef{
+																TargetRef: common_api.TargetRef{
+																	Kind: common_api.MeshService,
+																	Name: pointer.To("payments"),
+																},
+																Port: pointer.To(uint32(80)),
+															},
+														},
+													}},
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: common_api.TargetRef{
+															Kind: common_api.MeshService,
+															Name: pointer.To("backend"),
+														},
+														Weight: pointer.To(uint(100)),
+														Port:   pointer.To(uint32(80)),
+													}},
+												},
+											},
+											{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/mzms",
+													},
+												}},
+												Default: api.RuleConf{
+													Filters: &[]api.Filter{{
+														Type: api.RequestMirrorType,
+														RequestMirror: &api.RequestMirror{
+															BackendRef: common_api.BackendRef{
+																TargetRef: common_api.TargetRef{
+																	Kind: common_api.MeshMultiZoneService,
+																	Name: pointer.To("payments-mz"),
+																},
+																Port: pointer.To(uint32(80)),
+															},
+														},
+													}},
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: common_api.TargetRef{
+															Kind: common_api.MeshService,
+															Name: pointer.To("backend"),
+														},
+														Weight: pointer.To(uint(100)),
+														Port:   pointer.To(uint32(80)),
+													}},
+												},
+											},
+											{
+												// mirror to a MeshService that doesn't exist, the route
+												// is generated without any mirror policy
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/missing",
+													},
+												}},
+												Default: api.RuleConf{
+													Filters: &[]api.Filter{{
+														Type: api.RequestMirrorType,
+														RequestMirror: &api.RequestMirror{
+															BackendRef: common_api.BackendRef{
+																TargetRef: common_api.TargetRef{
+																	Kind: common_api.MeshService,
+																	Name: pointer.To("not-existing"),
+																},
+																Port: pointer.To(uint32(80)),
+															},
+														},
+													}},
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: common_api.TargetRef{
+															Kind: common_api.MeshService,
+															Name: pointer.To("backend"),
+														},
+														Weight: pointer.To(uint(100)),
+														Port:   pointer.To(uint32(80)),
+													}},
+												},
+											},
+										},
+									}),
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
 	)
 })
 

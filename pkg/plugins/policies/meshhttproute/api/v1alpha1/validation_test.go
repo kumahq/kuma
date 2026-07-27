@@ -598,6 +598,54 @@ to:
                 type: ReplacePrefixMatch
                 replacePrefixMatch: /other
 `),
+		Entry("requestMirror to real resources", `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - path:
+          value: /v1
+          type: PathPrefix
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshService
+                name: backend
+                port: 8080
+    - matches:
+      - path:
+          value: /v2
+          type: PathPrefix
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshMultiZoneService
+                name: backend
+                port: 8080
+    - matches:
+      - path:
+          value: /v3
+          type: PathPrefix
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshExternalService
+                name: example
+                port: 8080
+`),
 		Entry("MeshService and MeshMultiZoneService", `
 type: MeshHTTPRoute
 mesh: mesh-1

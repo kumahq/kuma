@@ -99,4 +99,7 @@ type Route struct {
 	Match       Match
 	Filters     []Filter
 	BackendRefs []resolve.ResolvedBackendRef
+	// MirrorBackendRefs contains resolved backendRefs of RequestMirror filters,
+	// keyed by the index of the filter in Filters.
+	MirrorBackendRefs map[int]resolve.ResolvedBackendRef
 }
