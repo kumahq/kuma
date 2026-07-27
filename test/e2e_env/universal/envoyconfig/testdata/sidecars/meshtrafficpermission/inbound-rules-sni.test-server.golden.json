@@ -1,123 +1,35 @@
 {
   "diff": [
     {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_80/filterChains/0/filters/0/typedConfig/httpFilters/0/typedConfig/matcher",
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_80/filterChains/0/filters/0/typedConfig/httpFilters/0/typedConfig/matcher/matcherList/matchers/0",
       "value": {
-        "matcherList": {
-          "matchers": [
-            {
-              "onMatch": {
-                "action": {
-                  "name": "envoy.filters.rbac.action",
-                  "typedConfig": {
-                    "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
-                    "name": "kri_mtp_envoyconfig_kuma-3__allow-all-envoyconfig_"
-                  }
-                }
-              },
-              "predicate": {
-                "singlePredicate": {
-                  "input": {
-                    "name": "envoy.matching.inputs.uri_san",
-                    "typedConfig": {
-                      "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
-                    }
-                  },
-                  "valueMatch": {
-                    "prefix": "spiffe://envoyconfig"
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "onNoMatch": {
+        "onMatch": {
           "action": {
             "name": "envoy.filters.rbac.action",
             "typedConfig": {
               "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
-              "action": "DENY",
-              "name": "default"
+              "name": "kri_mtp_envoyconfig_kuma-3__mtp-1_"
             }
           }
-        }
-      }
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_80/filterChains/0/filters/0/typedConfig/httpFilters/0/typedConfig/matcher",
-      "value": {
-        "matcherList": {
-          "matchers": [
-            {
-              "onMatch": {
-                "action": {
-                  "name": "envoy.filters.rbac.action",
-                  "typedConfig": {
-                    "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
-                    "action": "DENY",
-                    "name": "kri_mtp_envoyconfig_kuma-3__mtp-1_"
-                  }
-                }
-              },
-              "predicate": {
-                "singlePredicate": {
-                  "input": {
-                    "name": "envoy.matching.inputs.server_name",
-                    "typedConfig": {
-                      "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ServerNameInput"
-                    }
-                  },
-                  "valueMatch": {
-                    "exact": "sni.extsvc.envoyconfig.zone-1.blocked.8443"
-                  }
-                }
-              }
-            },
-            {
-              "onMatch": {
-                "action": {
-                  "name": "envoy.filters.rbac.action",
-                  "typedConfig": {
-                    "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
-                    "name": "kri_mtp_envoyconfig_kuma-3__mtp-1_"
-                  }
-                }
-              },
-              "predicate": {
-                "orMatcher": {
+        },
+        "predicate": {
+          "orMatcher": {
+            "predicate": [
+              {
+                "andMatcher": {
                   "predicate": [
                     {
-                      "andMatcher": {
-                        "predicate": [
-                          {
-                            "singlePredicate": {
-                              "input": {
-                                "name": "envoy.matching.inputs.uri_san",
-                                "typedConfig": {
-                                  "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
-                                }
-                              },
-                              "valueMatch": {
-                                "exact": "spiffe://trust-domain.mesh/ns/backend"
-                              }
-                            }
-                          },
-                          {
-                            "singlePredicate": {
-                              "input": {
-                                "name": "envoy.matching.inputs.server_name",
-                                "typedConfig": {
-                                  "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ServerNameInput"
-                                }
-                              },
-                              "valueMatch": {
-                                "exact": "sni.extsvc.envoyconfig.zone-1.aws-aurora.8443"
-                              }
-                            }
+                      "singlePredicate": {
+                        "input": {
+                          "name": "envoy.matching.inputs.uri_san",
+                          "typedConfig": {
+                            "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
                           }
-                        ]
+                        },
+                        "valueMatch": {
+                          "exact": "spiffe://trust-domain.mesh/ns/backend"
+                        }
                       }
                     },
                     {
@@ -129,23 +41,55 @@
                           }
                         },
                         "valueMatch": {
-                          "exact": "sni.extsvc.envoyconfig.zone-1.aws-rds.8443"
+                          "exact": "sni.extsvc.envoyconfig.zone-1.aws-aurora.8443"
                         }
                       }
                     }
                   ]
                 }
+              },
+              {
+                "singlePredicate": {
+                  "input": {
+                    "name": "envoy.matching.inputs.server_name",
+                    "typedConfig": {
+                      "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ServerNameInput"
+                    }
+                  },
+                  "valueMatch": {
+                    "exact": "sni.extsvc.envoyconfig.zone-1.aws-rds.8443"
+                  }
+                }
               }
-            }
-          ]
-        },
-        "onNoMatch": {
+            ]
+          }
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_80/filterChains/0/filters/0/typedConfig/httpFilters/0/typedConfig/matcher/matcherList/matchers/0",
+      "value": {
+        "onMatch": {
           "action": {
             "name": "envoy.filters.rbac.action",
             "typedConfig": {
               "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
               "action": "DENY",
-              "name": "default"
+              "name": "kri_mtp_envoyconfig_kuma-3__mtp-1_"
+            }
+          }
+        },
+        "predicate": {
+          "singlePredicate": {
+            "input": {
+              "name": "envoy.matching.inputs.server_name",
+              "typedConfig": {
+                "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ServerNameInput"
+              }
+            },
+            "valueMatch": {
+              "exact": "sni.extsvc.envoyconfig.zone-1.blocked.8443"
             }
           }
         }
@@ -820,6 +764,30 @@
                                         }
                                       }
                                     ]
+                                  }
+                                }
+                              },
+                              {
+                                "onMatch": {
+                                  "action": {
+                                    "name": "envoy.filters.rbac.action",
+                                    "typedConfig": {
+                                      "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+                                      "name": "kri_mtp_envoyconfig_kuma-3__allow-all-envoyconfig_"
+                                    }
+                                  }
+                                },
+                                "predicate": {
+                                  "singlePredicate": {
+                                    "input": {
+                                      "name": "envoy.matching.inputs.uri_san",
+                                      "typedConfig": {
+                                        "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
+                                      }
+                                    },
+                                    "valueMatch": {
+                                      "prefix": "spiffe://envoyconfig"
+                                    }
                                   }
                                 }
                               }
