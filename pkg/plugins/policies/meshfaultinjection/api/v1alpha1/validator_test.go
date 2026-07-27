@@ -53,13 +53,14 @@ rules:
   - default:
       http: []
 `),
-		Entry("Kind Mesh with to and only gateway", `
+		Entry("Kind Dataplane gateway label with to", `
 type: MeshFaultInjection
 mesh: mesh-1
 name: fi1
 targetRef:
-  kind: Mesh
-  proxyTypes: ["Gateway"]
+  kind: Dataplane
+  labels:
+    kuma.io/proxy-type: gateway
 to:
   - targetRef:
       kind: Mesh

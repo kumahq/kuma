@@ -550,79 +550,6 @@ violations:
     message: "invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'."
 `,
 		}),
-		Entry("MeshService with proxyTypes", testCase{
-			inputYaml: `
-kind: MeshService
-name: "test"
-proxyTypes: ["Sidecar"]
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshService,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.proxyTypes
-    message: must not be set with kind MeshService
-`,
-		}),
-		Entry("MeshServiceSubset with proxyTypes", testCase{
-			inputYaml: `
-kind: MeshServiceSubset
-name: "test"
-proxyTypes: ["Sidecar"]
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					"MeshServiceSubset",
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.proxyTypes
-    message: must not be set with kind MeshServiceSubset
-`,
-		}),
-		Entry("Mesh with empty proxyTypes", testCase{
-			inputYaml: `
-kind: Mesh
-proxyTypes: []
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.Mesh,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.proxyTypes
-    message: must be undefined or have at least one element
-`,
-		}),
-		Entry("Mesh with one proxyTypes", testCase{
-			inputYaml: `
-kind: Mesh
-proxyTypes: ["Sidecar"]
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.Mesh,
-				},
-			},
-			expected: "violations: null",
-		}),
-		Entry("Mesh with no proxyTypes", testCase{
-			inputYaml: `
-kind: Mesh
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.Mesh,
-				},
-			},
-			expected: "violations: null",
-		}),
 		Entry("MeshGateway when it's not supported", testCase{
 			inputYaml: `
 kind: MeshGateway
@@ -931,25 +858,7 @@ violations:
   message: must not be set with kind Dataplane
 `,
 		}),
-		Entry("Dataplane with proxyTypes", testCase{
-			inputYaml: `
-kind: Dataplane
-name: test
-namespace: test-ns
-proxyTypes: ["Sidecar"]
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.Dataplane,
-				},
-			},
-			expected: `
-violations:
-- field: targetRef.proxyTypes
-  message: must not be set with kind Dataplane
-`,
-		}),
-		Entry("Dataplane with proxyTypes", testCase{
+		Entry("Dataplane with sectionName on a non-inbound policy", testCase{
 			inputYaml: `
 kind: Dataplane
 name: test

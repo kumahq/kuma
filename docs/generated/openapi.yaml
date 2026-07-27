@@ -6448,18 +6448,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -6728,18 +6716,6 @@ components:
 
                           will be targeted.
                         type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -7401,18 +7377,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -7953,18 +7917,6 @@ components:
 
                           will be targeted.
                         type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -8252,18 +8204,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -8437,18 +8377,6 @@ components:
 
                           will be targeted.
                         type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -8589,18 +8517,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -8698,20 +8614,6 @@ components:
                                       refers to a real MeshService object
                                     format: int32
                                     type: integer
-                                  proxyTypes:
-                                    description: >-
-                                      ProxyTypes specifies the data plane types
-                                      that are subject to the policy. When not
-                                      specified,
-
-                                      all data plane types are targeted by the
-                                      policy.
-                                    items:
-                                      enum:
-                                        - Sidecar
-                                        - Gateway
-                                      type: string
-                                    type: array
                                   sectionName:
                                     description: >-
                                       SectionName is used to target specific
@@ -8851,20 +8753,6 @@ components:
                                               refers to a real MeshService object
                                             format: int32
                                             type: integer
-                                          proxyTypes:
-                                            description: >-
-                                              ProxyTypes specifies the data plane
-                                              types that are subject to the policy.
-                                              When not specified,
-
-                                              all data plane types are targeted by the
-                                              policy.
-                                            items:
-                                              enum:
-                                                - Sidecar
-                                                - Gateway
-                                              type: string
-                                            type: array
                                           sectionName:
                                             description: >-
                                               SectionName is used to target specific
@@ -9246,18 +9134,6 @@ components:
 
                           will be targeted.
                         type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -9389,18 +9265,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -9749,18 +9613,6 @@ components:
 
                           will be targeted.
                         type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -9894,18 +9746,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -10397,18 +10237,6 @@ components:
 
                           will be targeted.
                         type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -10756,18 +10584,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -11006,18 +10822,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -11713,18 +11517,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -12044,18 +11836,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -12266,18 +12046,6 @@ components:
 
                           will be targeted.
                         type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -12408,18 +12176,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -12924,18 +12680,6 @@ components:
 
                           will be targeted.
                         type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -13075,18 +12819,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -13181,20 +12913,6 @@ components:
                                       refers to a real MeshService object
                                     format: int32
                                     type: integer
-                                  proxyTypes:
-                                    description: >-
-                                      ProxyTypes specifies the data plane types
-                                      that are subject to the policy. When not
-                                      specified,
-
-                                      all data plane types are targeted by the
-                                      policy.
-                                    items:
-                                      enum:
-                                        - Sidecar
-                                        - Gateway
-                                      type: string
-                                    type: array
                                   sectionName:
                                     description: >-
                                       SectionName is used to target specific
@@ -13274,18 +12992,6 @@ components:
 
                           will be targeted.
                         type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -13483,18 +13189,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -13763,18 +13457,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -13931,18 +13613,6 @@ components:
 
                           will be targeted.
                         type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -14311,18 +13981,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -14677,18 +14335,6 @@ components:
 
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
