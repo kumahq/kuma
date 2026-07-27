@@ -20,10 +20,7 @@ var defaultMeshTimeoutResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TargetRef{
-				Kind: common_api.Dataplane,
-				Labels: &map[string]string{
-					mesh_proto.ProxyTypeLabel: string(mesh_proto.SidecarLabel),
-				},
+				Kind: common_api.Mesh,
 			},
 
 			// bigger than outbound side timeouts or disabled.
@@ -58,10 +55,7 @@ var defaultMeshTimeoutToResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TargetRef{
-				Kind: common_api.Dataplane,
-				Labels: &map[string]string{
-					mesh_proto.ProxyTypeLabel: string(mesh_proto.SidecarLabel),
-				},
+				Kind: common_api.Mesh,
 			},
 			To: &[]v1alpha1.To{
 				{
@@ -81,66 +75,6 @@ var defaultMeshTimeoutToResource = func() model.Resource {
 							},
 							StreamIdleTimeout: &kube_meta.Duration{
 								Duration: policies_defaults.DefaultStreamIdleTimeout,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-var defaulMeshGatewaysTimeoutResource = func() model.Resource {
-	return &v1alpha1.MeshTimeoutResource{
-		Spec: &v1alpha1.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
-				Kind: common_api.Dataplane,
-				Labels: &map[string]string{
-					mesh_proto.ProxyTypeLabel: string(mesh_proto.GatewayLabel),
-				},
-			},
-			Rules: &[]v1alpha1.Rule{
-				{
-					Default: v1alpha1.Conf{
-						IdleTimeout: &kube_meta.Duration{
-							Duration: policies_defaults.DefaultGatewayIdleTimeout,
-						},
-						Http: &v1alpha1.Http{
-							StreamIdleTimeout: &kube_meta.Duration{
-								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
-							},
-							RequestHeadersTimeout: &kube_meta.Duration{
-								Duration: policies_defaults.DefaultGatewayRequestHeadersTimeout,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-var defaulMeshGatewaysTimeoutToResource = func() model.Resource {
-	return &v1alpha1.MeshTimeoutResource{
-		Spec: &v1alpha1.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
-				Kind: common_api.Dataplane,
-				Labels: &map[string]string{
-					mesh_proto.ProxyTypeLabel: string(mesh_proto.GatewayLabel),
-				},
-			},
-			To: &[]v1alpha1.To{
-				{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.Mesh,
-					},
-					Default: v1alpha1.Conf{
-						IdleTimeout: &kube_meta.Duration{
-							Duration: policies_defaults.DefaultIdleTimeout,
-						},
-						Http: &v1alpha1.Http{
-							StreamIdleTimeout: &kube_meta.Duration{
-								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
 							},
 						},
 					},
