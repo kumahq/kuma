@@ -24,7 +24,6 @@ type ClientSideMTLSConfigurer struct {
 	SNI                   string
 	UpstreamTLSReady      bool
 	VerifyIdentities      []string
-	UnifiedResourceNaming bool
 	UseMeshTrust          bool
 }
 
@@ -87,7 +86,7 @@ func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_cor
 	if c.VerifyIdentities != nil {
 		verifyIdentities = c.VerifyIdentities
 	}
-	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(identity, ca, c.UpstreamService, sni, verifyIdentities, c.UnifiedResourceNaming, c.UseMeshTrust)
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(identity, ca, c.UpstreamService, sni, verifyIdentities, c.UseMeshTrust)
 	if err != nil {
 		return nil, err
 	}

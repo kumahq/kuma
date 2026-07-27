@@ -35,7 +35,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	xds_tls "github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
@@ -357,17 +356,11 @@ func configureListener(
 	inbound *mesh_proto.Dataplane_Networking_Inbound,
 	conf api.Conf,
 ) (envoy_common.NamedResource, error) {
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
-	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
-
 	inboundContextualID := naming.MustContextualInboundName(proxy.Dataplane, iface.InboundName)
 
-	legacyClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
-	legacyListenerName := envoy_names.GetInboundListenerName(iface.DataplaneIP, iface.DataplanePort)
-
-	listenerName := getName(inboundContextualID, legacyListenerName)
-	statPrefix := getName(inboundContextualID, "")
-	clusterName := getName(inboundContextualID, legacyClusterName)
+	listenerName := inboundContextualID
+	statPrefix := inboundContextualID
+	clusterName := inboundContextualID
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.InboundListener(iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).

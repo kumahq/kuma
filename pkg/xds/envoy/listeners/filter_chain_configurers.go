@@ -57,7 +57,6 @@ func ServerSideMTLS(
 	secrets core_xds.SecretsTracker,
 	tlsVersion *common_tls.Version,
 	tlsCiphers []common_tls.TlsCipher,
-	unifiedResourceNaming bool,
 	useMeshTrust bool,
 ) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
@@ -65,7 +64,6 @@ func ServerSideMTLS(
 		SecretsTracker:        secrets,
 		TlsVersion:            tlsVersion,
 		TlsCiphers:            tlsCiphers,
-		UnifiedResourceNaming: unifiedResourceNaming,
 		UseMeshTrust:          useMeshTrust,
 	})
 }

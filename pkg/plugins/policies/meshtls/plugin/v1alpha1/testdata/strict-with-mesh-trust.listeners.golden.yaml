@@ -1,86 +1,4 @@
 resources:
-- name: inbound:127.0.0.1:17777
-  resource:
-    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
-    address:
-      socketAddress:
-        address: 127.0.0.1
-        portValue: 17777
-    bindToPort: false
-    enableReusePort: false
-    filterChains:
-    - filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:17777
-          idleTimeout: 7200s
-          statPrefix: localhost_17777
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext: {}
-              validationContextSdsSecretConfig:
-                name: system_trust_bundle
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: system_mtls_identity_default
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          requireClientCertificate: true
-    metadata:
-      filterMetadata:
-        io.kuma.tags:
-          kuma.io/service: backend
-    name: inbound:127.0.0.1:17777
-    trafficDirection: INBOUND
-- name: inbound:127.0.0.1:17778
-  resource:
-    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
-    address:
-      socketAddress:
-        address: 127.0.0.1
-        portValue: 17778
-    bindToPort: false
-    enableReusePort: false
-    filterChains:
-    - filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:17778
-          idleTimeout: 7200s
-          statPrefix: localhost_17778
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext: {}
-              validationContextSdsSecretConfig:
-                name: system_trust_bundle
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: system_mtls_identity_default
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          requireClientCertificate: true
-    metadata:
-      filterMetadata:
-        io.kuma.tags:
-          kuma.io/service: frontend
-    name: inbound:127.0.0.1:17778
-    trafficDirection: INBOUND
 - name: inbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -137,3 +55,87 @@ resources:
     name: inbound:passthrough:ipv6
     trafficDirection: INBOUND
     useOriginalDst: true
+- name: self_inbound_dp_17777
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 17777
+    bindToPort: false
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: self_inbound_dp_17777
+          idleTimeout: 7200s
+          statPrefix: self_inbound_dp_17777
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext: {}
+              validationContextSdsSecretConfig:
+                name: system_trust_bundle
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: system_mtls_identity_default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend
+    name: self_inbound_dp_17777
+    statPrefix: self_inbound_dp_17777
+    trafficDirection: INBOUND
+- name: self_inbound_dp_17778
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 17778
+    bindToPort: false
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: self_inbound_dp_17778
+          idleTimeout: 7200s
+          statPrefix: self_inbound_dp_17778
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext: {}
+              validationContextSdsSecretConfig:
+                name: system_trust_bundle
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: system_mtls_identity_default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: frontend
+    name: self_inbound_dp_17778
+    statPrefix: self_inbound_dp_17778
+    trafficDirection: INBOUND

@@ -17,7 +17,6 @@ type ServerSideMTLSConfigurer struct {
 	SecretsTracker        core_xds.SecretsTracker
 	TlsVersion            *common_tls.Version
 	TlsCiphers            []common_tls.TlsCipher
-	UnifiedResourceNaming bool
 	UseMeshTrust          bool
 }
 
@@ -30,7 +29,6 @@ func (c *ServerSideMTLSConfigurer) Configure(filterChain *envoy_listener.FilterC
 	tlsContext, err := tls.CreateDownstreamTlsContext(
 		c.SecretsTracker.RequestCa(c.Mesh.GetMeta().GetName()),
 		c.SecretsTracker.RequestIdentityCert(),
-		c.UnifiedResourceNaming,
 		c.UseMeshTrust,
 	)
 	if err != nil {

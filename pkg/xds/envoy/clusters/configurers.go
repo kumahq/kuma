@@ -15,7 +15,6 @@ import (
 
 func ClientSideMTLS(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	mesh *core_mesh.MeshResource,
 	upstreamService string,
 	upstreamTLSReady bool,
@@ -25,7 +24,6 @@ func ClientSideMTLS(
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
 			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
 			UpstreamMesh:          mesh,
 			UpstreamService:       upstreamService,
 			LocalMesh:             mesh,
@@ -38,7 +36,6 @@ func ClientSideMTLS(
 
 func ClientSideMTLSCustomSNI(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	mesh *core_mesh.MeshResource,
 	upstreamService string,
 	upstreamTLSReady bool,
@@ -48,7 +45,6 @@ func ClientSideMTLSCustomSNI(
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
 			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
 			UpstreamMesh:          mesh,
 			UpstreamService:       upstreamService,
 			LocalMesh:             mesh,
@@ -62,7 +58,6 @@ func ClientSideMTLSCustomSNI(
 
 func ClientSideMultiIdentitiesMTLS(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	mesh *core_mesh.MeshResource,
 	upstreamTLSReady bool,
 	sni string,
@@ -72,7 +67,6 @@ func ClientSideMultiIdentitiesMTLS(
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
 			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
 			UpstreamMesh:          mesh,
 			UpstreamService:       "*",
 			LocalMesh:             mesh,
@@ -87,7 +81,6 @@ func ClientSideMultiIdentitiesMTLS(
 
 func CrossMeshClientSideMTLS(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	localMesh *core_mesh.MeshResource,
 	upstreamMesh *core_mesh.MeshResource,
 	upstreamService string,
@@ -97,7 +90,6 @@ func CrossMeshClientSideMTLS(
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
 			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
 			UpstreamMesh:          upstreamMesh,
 			UpstreamService:       upstreamService,
 			LocalMesh:             localMesh,
