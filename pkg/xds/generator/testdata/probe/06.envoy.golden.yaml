@@ -35,6 +35,7 @@ resources:
                       exact: GET
                   path: /8080/healthz/probe
                 route:
+<<<<<<< HEAD:pkg/xds/generator/testdata/probe/06.envoy.golden.yaml
                   cluster: self_inbound_dp_8080
                   regexRewrite:
                     pattern:
@@ -43,3 +44,14 @@ resources:
           statPrefix: probe_listener
     name: probe:listener
     trafficDirection: INBOUND
+=======
+                  cluster: kri_mzsvc_default___multi-backend_80
+                  timeout: 0s
+          statPrefix: default_multi-backend___mzsvc_80
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/unified-name: kri_mzsvc_default___multi-backend_80
+    name: outbound:10.0.0.2:80
+    trafficDirection: OUTBOUND
+>>>>>>> 4c54d6dd2a (feat(xds): unified-name for empty listener tags (#17563)):pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/default-meshmultizoneservice-mesh-scoped-zone.listeners.golden.yaml

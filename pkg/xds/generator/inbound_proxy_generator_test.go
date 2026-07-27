@@ -288,5 +288,16 @@ var _ = Describe("InboundProxyGenerator", func() {
 				"my-test.domain.com": {xds_context.PEMBytes("123")},
 			},
 		}),
+<<<<<<< HEAD
+=======
+		Entry("10. transparent_proxying=false, no kuma.io/service tag, http protocol", testCase{
+			dataplaneFile: "10-dataplane.input.yaml",
+			expected:      "10-envoy-config.golden.yaml",
+		}),
+		Entry("11. inbound with no tags, listener tags filled with self-reference", testCase{
+			dataplaneFile: "11-dataplane.input.yaml",
+			expected:      "11-envoy-config.golden.yaml",
+		}),
+>>>>>>> 4c54d6dd2a (feat(xds): unified-name for empty listener tags (#17563))
 	)
 })
