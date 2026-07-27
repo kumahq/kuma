@@ -1,12 +1,12 @@
 resources:
-- name: default_backend__remote-zone_msvc_80
+- name: kri_msvc_default_remote-zone__backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: default_backend__remote-zone_msvc_80
+    name: kri_msvc_default_remote-zone__backend_80
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:

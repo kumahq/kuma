@@ -82,7 +82,7 @@ func generateFromService(
 		return nil, nil
 	}
 
-	splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx, unifiedNaming)
+	splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx)
 
 	listener, err := GenerateOutboundListener(proxy, svc, splits, unifiedNaming)
 	if err != nil {
