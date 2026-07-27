@@ -414,6 +414,37 @@ spec:
               path: /tmp/access.log
 ```
 
+### `from` removed from `MeshRateLimit`
+
+The deprecated `spec.from` array has been removed from `MeshRateLimit`. Rate limiting for incoming traffic is now configured exclusively through `spec.rules`. `spec.from` is silently dropped on create/update: if `spec.rules` or `spec.to` is also set, the resource is accepted but `from` has no effect on inbound configuration; if `from` was the only field set, the resulting spec has neither `to` nor `rules`, so the request is rejected by validation.
+
+**Action required**
+
+Before upgrading, migrate every `MeshRateLimit` that uses `spec.from` to `spec.rules`. A `from` entry targeting `kind: Mesh` (all clients) maps to a single catch-all rule:
+
+```yaml
+# before
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        local:
+          http:
+            requestRate:
+              num: 100
+              interval: 10s
+# after
+spec:
+  rules:
+    - default:
+        local:
+          http:
+            requestRate:
+              num: 100
+              interval: 10s
+```
+
 ### Auto reachable services removed
 
 The experimental auto reachable services feature has been removed. The control
