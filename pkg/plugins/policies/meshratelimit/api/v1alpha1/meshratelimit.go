@@ -8,15 +8,12 @@ import (
 )
 
 // MeshRateLimit protects services from being overwhelmed by limiting the rate of incoming requests or connections. It supports local rate limiting for both HTTP (requests per interval) and TCP (connections per interval) traffic with customizable response codes and headers for rate-limited requests.
-// +kuma:policy:is_from_as_rules=true
 // +kuma:policy:order=900
 type MeshRateLimit struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
-	// From list makes a match between clients and corresponding configurations
-	From *[]From `json:"from,omitempty"`
 	// To list makes a match between clients and corresponding configurations
 	To *[]To `json:"to,omitempty"`
 	// Rules defines inbound rate limiting configurations.
@@ -27,15 +24,6 @@ type Rule struct {
 	// Matches define additional conditions for applying this rate limit rule.
 	Matches *[]common_api.Match `json:"matches,omitempty"`
 	// Default contains configuration of the inbound rate limits
-	Default Conf `json:"default,omitempty"`
-}
-
-type From struct {
-	// TargetRef is a reference to the resource that represents a group of
-	// clients.
-	TargetRef common_api.TargetRef `json:"targetRef"`
-	// Default is a configuration specific to the group of clients referenced in
-	// 'targetRef'
 	Default Conf `json:"default,omitempty"`
 }
 

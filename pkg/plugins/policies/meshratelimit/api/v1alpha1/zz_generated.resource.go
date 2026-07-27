@@ -195,11 +195,11 @@ var MeshRateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
-	HasFromTargetRef:             true,
+	HasFromTargetRef:             false,
 	HasRulesTargetRef:            true,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mrl",
-	IsFromAsRules:                true,
+	IsFromAsRules:                false,
 	Order:                        900,
 }

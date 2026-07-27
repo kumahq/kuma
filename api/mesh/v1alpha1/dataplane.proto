@@ -4,7 +4,6 @@ package kuma.mesh.v1alpha1;
 
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
-import "api/mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
@@ -383,12 +382,8 @@ message Dataplane {
   // proxy.
   Networking networking = 1;
 
-  // Configuration for metrics that should be collected and exposed by the
-  // data plane proxy.
-  //
-  // Settings defined here will override their respective defaults
-  // defined at a Mesh level.
-  MetricsBackend metrics = 2;
+  reserved 2;
+  reserved "metrics";
 
   message Probes {
     // Port on which the probe endpoints will be exposed. This cannot overlap

@@ -25,7 +25,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
-	samples2 "github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 )
 
 var _ = Describe("Inspect WS", func() {
@@ -94,7 +93,7 @@ var _ = Describe("Inspect WS", func() {
 					Build(),
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMesh()).
-					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddRule(v1alpha1.Allow).
 					Build(),
 			},
 			contentType: restful.MIME_JSON,
@@ -121,7 +120,7 @@ var _ = Describe("Inspect WS", func() {
 				builders.MeshTrafficPermission().
 					WithMesh("mesh-1").
 					WithTargetRef(builders.TargetRefDataplaneName("backend-1")).
-					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddRule(v1alpha1.Allow).
 					Build(),
 			},
 			contentType: restful.MIME_JSON,
@@ -257,37 +256,6 @@ var _ = Describe("Inspect WS", func() {
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
 				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithAdminPort(3301).WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-
-		Entry("inspect rules empty", testCase{
-			path:    "/meshes/default/dataplanes/web-01/rules",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane_rules_empty.golden.json")),
-			resources: []core_model.Resource{
-				samples2.MeshDefault(),
-				samples2.DataplaneWeb(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect rules basic", testCase{
-			path:    "/meshes/default/dataplanes/web-01/rules",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane_rules.golden.json")),
-			resources: []core_model.Resource{
-				samples2.MeshDefault(),
-				samples2.DataplaneWeb(),
-				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefDataplaneName("web-01")).
-					AddFrom(builders.TargetRefService("client"), v1alpha1.Deny).
-					Build(),
-				builders.MeshAccessLog().
-					WithTargetRef(builders.TargetRefDataplaneName("web-01")).
-					AddTo(builders.TargetRefMesh(), samples2.MeshAccessLogFileConf()).
-					Build(),
-				builders.MeshTrace().
-					WithTargetRef(builders.TargetRefDataplaneName("web-01")).
-					WithZipkinBackend(samples2.ZipkinBackend()).
-					Build(),
 			},
 			contentType: restful.MIME_JSON,
 		}),

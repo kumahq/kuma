@@ -25,6 +25,11 @@ type GatewayListenerInspectEntry struct {
 	Hosts    []HostInspectEntry `json:"hosts"`
 }
 
+// GatewayDataplaneInspectResult is the gateway-kinded variant of the response
+// from the deprecated GET /meshes/{mesh}/dataplanes/{name}/policies endpoint.
+// Nothing in this repo produces it anymore, but DataplaneInspectResponse's
+// Marshal/UnmarshalJSON keep it as a documented, wire-compatible kind for the
+// vendored GUI bundle that still calls the endpoint.
 type GatewayDataplaneInspectResult struct {
 	Gateway   ResourceKeyEntry              `json:"gateway"`
 	Listeners []GatewayListenerInspectEntry `json:"listeners"`

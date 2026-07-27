@@ -11,19 +11,11 @@ import (
 )
 
 type KumaDpBootstrap struct {
-	AggregateMetricsConfig []AggregateMetricsConfig
-	NetworkingConfig       NetworkingConfig
+	NetworkingConfig NetworkingConfig
 }
 
 type NetworkingConfig struct {
 	Address string
-}
-
-type AggregateMetricsConfig struct {
-	Name    string
-	Path    string
-	Address string
-	Port    uint32
 }
 
 type configParameters struct {

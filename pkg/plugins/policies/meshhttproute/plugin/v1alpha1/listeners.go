@@ -105,7 +105,7 @@ func generateFromService(
 	unifiedNaming := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
 
 	for _, route := range prepareRoutes(rules, svc, meshCtx, unifiedNaming) {
-		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx, unifiedNaming)
+		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
 		if len(split) == 0 {
 			continue
 		}
@@ -116,7 +116,6 @@ func generateFromService(
 					clusterCache, servicesAcc,
 					[]resolve.ResolvedBackendRef{*resolve.NewResolvedBackendRef(pointer.To(resolve.LegacyBackendRef(filter.RequestMirror.BackendRef)))},
 					meshCtx,
-					unifiedNaming,
 				)
 			}
 		}

@@ -52,7 +52,6 @@ func (s *ProxyTemplateProfileSource) Generate(ctx context.Context, rs *model.Res
 func NewDefaultProxyProfile() core.ResourceGenerator {
 	return core.CompositeResourceGenerator{
 		AdminProxyGenerator{},
-		PrometheusEndpointGenerator{},
 		TransparentProxyGenerator{},
 		InboundProxyGenerator{},
 		DirectAccessProxyGenerator{},

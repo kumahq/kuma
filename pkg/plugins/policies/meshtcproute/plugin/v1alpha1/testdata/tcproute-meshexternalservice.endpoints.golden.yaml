@@ -3,10 +3,22 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: backend
-- name: default_example2___extsvc_9090
+- name: kri_extsvc_default___example2_
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: default_example2___extsvc_9090
+    clusterName: kri_extsvc_default___example2_
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 127.0.0.1
+              portValue: 10002
+        loadBalancingWeight: 1
+- name: kri_extsvc_default___example2_9090
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: kri_extsvc_default___example2_9090
     endpoints:
     - lbEndpoints:
       - endpoint:

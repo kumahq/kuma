@@ -13,19 +13,6 @@
       }
     ]
   },
-  "metrics": {
-    "enabledBackend": "prometheus-1",
-    "backends": [
-      {
-        "name": "prometheus-1",
-        "type": "prometheus",
-        "conf": {
-          "path": "/non-standard-path",
-          "port": 1234
-        }
-      }
-    ]
-  },
   "routing": {
     "zoneEgress": true
   }
