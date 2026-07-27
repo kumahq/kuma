@@ -367,13 +367,6 @@
                     "type": "array",
                     "description": "List of services that will be accessed directly via IP:PORT Use `*` to indicate direct access to every service in the Mesh. Using `*` to directly access every service is a resource-intensive operation, use it only if needed."
                 },
-                "reachable_services": {
-                    "items": {
-                        "type": "string"
-                    },
-                    "type": "array",
-                    "description": "List of reachable services (represented by the value of `kuma.io/service`) via transparent proxying. Setting an explicit list can dramatically improve the performance of the mesh. If not specified, all services in the mesh are reachable."
-                },
                 "ip_family_mode": {
                     "enum": [
                         "UnSpecified",
@@ -410,7 +403,7 @@
             "properties": {
                 "kind": {
                     "type": "string",
-                    "description": "Type of the backend: MeshService or MeshExternalService  +required"
+                    "description": "Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService  +required"
                 },
                 "name": {
                     "type": "string",

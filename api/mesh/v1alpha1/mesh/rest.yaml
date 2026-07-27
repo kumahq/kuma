@@ -197,11 +197,6 @@ components:
                 If true, blocks traffic to MeshExternalServices.
                 Default: false
               type: boolean
-            zoneEgress:
-              description: |-
-                Enable routing traffic to services in other zone or external services
-                through ZoneEgress. Default: false
-              type: boolean
           type: object
         skipCreatingInitialPolicies:
           description: |-

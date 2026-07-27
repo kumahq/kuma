@@ -9,14 +9,6 @@ import (
 
 func (t *MeshRateLimitResource) Deprecations() []string {
 	var deprecations []string
-	if len(pointer.Deref(t.Spec.From)) > 0 {
-		deprecations = append(deprecations, "'from' field is deprecated, use 'rules' instead")
-		for i, rule := range pointer.Deref(t.Spec.From) {
-			if rule.Default.Local != nil && isStatusInvalid(*rule.Default.Local) {
-				deprecations = append(deprecations, fmt.Sprintf("'spec.from[%d].default.local.http.requestRate.status' must be 400 or higher. Please update your configuration.", i))
-			}
-		}
-	}
 	if len(pointer.Deref(t.Spec.Rules)) > 0 {
 		for i, rule := range pointer.Deref(t.Spec.Rules) {
 			if rule.Default.Local != nil && isStatusInvalid(*rule.Default.Local) {

@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	meshtrafficpermission_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_runtime "github.com/kumahq/kuma/v3/pkg/test/runtime"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
@@ -60,6 +61,9 @@ func initializeStore(ctx context.Context, resourceManager core_manager.ResourceM
 		case core_mesh.MeshType:
 			meshResource := res.(*core_mesh.MeshResource)
 			Expect(resourceManager.Create(ctx, meshResource, store.CreateBy(core_model.MetaToResourceKey(meshResource.GetMeta())))).To(Succeed())
+		case meshtrafficpermission_api.MeshTrafficPermissionType:
+			mtp := res.(*meshtrafficpermission_api.MeshTrafficPermissionResource)
+			Expect(resourceManager.Create(ctx, mtp, store.CreateBy(core_model.MetaToResourceKey(mtp.GetMeta())))).To(Succeed())
 		}
 	}
 }

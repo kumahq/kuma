@@ -38,7 +38,8 @@ resources:
           statPrefix: kri_extsvc_default___external-service_8085
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/unified-name: kri_extsvc_default___external-service_8085
     name: kri_extsvc_default___external-service_8085
     statPrefix: kri_extsvc_default___external-service_8085
     trafficDirection: OUTBOUND
@@ -80,7 +81,8 @@ resources:
           statPrefix: kri_msvc_default___backend_80
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/unified-name: kri_msvc_default___backend_80
     name: kri_msvc_default___backend_80
     statPrefix: kri_msvc_default___backend_80
     trafficDirection: OUTBOUND
