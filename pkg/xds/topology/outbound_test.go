@@ -186,7 +186,7 @@ var _ = Describe("TrafficRoute", func() {
 			}
 
 			// when
-			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil, false)
 
 			Expect(targets).To(HaveLen(4))
 			// and
@@ -259,6 +259,152 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}))
 		})
+
+		It("should merge dataplane labels into endpoint tags when inboundTagsDisabled=true", func() {
+			// given - dataplane with minimal inbound tags (just service) but labels
+			dp := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh:   "default",
+					Name:   "backend-1",
+					Labels: map[string]string{"app": "backend", "version": "v2", "env": "prod"},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags:        map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.ZoneTag: "zone-1"},
+								Port:        8080,
+								ServicePort: 18080,
+							},
+						},
+					},
+				},
+			}
+			dataplanes := []*core_mesh.DataplaneResource{dp}
+
+			// when - inboundTagsDisabled=true
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil, true)
+
+			// then - labels should be merged into endpoint tags
+			Expect(targets).To(HaveLen(1))
+			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
+				{
+					Target: "192.168.0.1",
+					Port:   8080,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "backend",
+						mesh_proto.ZoneTag:    "zone-1",
+						"app":                 "backend",
+						"version":             "v2",
+						"env":                 "prod",
+					},
+					Locality: &core_xds.Locality{Zone: "zone-1"},
+					Weight:   1,
+				},
+			}))
+		})
+
+		It("should preserve inbound tags over labels on key conflict when inboundTagsDisabled=true", func() {
+			// given - dataplane with inbound tag that conflicts with label
+			dp := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh:   "default",
+					Name:   "backend-1",
+					Labels: map[string]string{"app": "backend", mesh_proto.ZoneTag: "label-zone"},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags:        map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.ZoneTag: "inbound-zone"},
+								Port:        8080,
+								ServicePort: 18080,
+							},
+						},
+					},
+				},
+			}
+			dataplanes := []*core_mesh.DataplaneResource{dp}
+
+			// when - inboundTagsDisabled=true
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil, true)
+
+			// then - inbound tag (inbound-zone) wins over label (label-zone)
+			Expect(targets).To(HaveLen(1))
+			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
+				{
+					Target: "192.168.0.1",
+					Port:   8080,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "backend",
+						mesh_proto.ZoneTag:    "inbound-zone", // inbound tag wins
+						"app":                 "backend",      // label merged
+					},
+					Locality: &core_xds.Locality{Zone: "inbound-zone"},
+					Weight:   1,
+				},
+			}))
+		})
+
+		It("should fold the full set of kuma.io labels into endpoint tags when inboundTagsDisabled=true", func() {
+			// given - the labels a real Dataplane carries, not a synthetic subset
+			dp := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh: "default",
+					Name: "backend-1",
+					Labels: map[string]string{
+						"kuma.io/display-name":     "backend",
+						"kuma.io/mesh":             "default",
+						"kuma.io/origin":           "zone",
+						"kuma.io/proxy-type":       "sidecar",
+						"kuma.io/workload":         "backend",
+						"kuma.io/zone":             "zone-1",
+						"k8s.kuma.io/namespace":    "kuma-demo",
+						"k8s.kuma.io/service-name": "backend",
+					},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags:        map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.ZoneTag: "zone-1"},
+								Port:        8080,
+								ServicePort: 18080,
+							},
+						},
+					},
+				},
+			}
+			dataplanes := []*core_mesh.DataplaneResource{dp}
+
+			// when - inboundTagsDisabled=true
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil, true)
+
+			// then - every label lands under the endpoint tags, so it reaches envoy.lb
+			Expect(targets).To(HaveLen(1))
+			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
+				{
+					Target: "192.168.0.1",
+					Port:   8080,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag:      "backend",
+						mesh_proto.ZoneTag:         "zone-1",
+						"kuma.io/display-name":     "backend",
+						"kuma.io/mesh":             "default",
+						"kuma.io/origin":           "zone",
+						"kuma.io/proxy-type":       "sidecar",
+						"kuma.io/workload":         "backend",
+						"k8s.kuma.io/namespace":    "kuma-demo",
+						"k8s.kuma.io/service-name": "backend",
+					},
+					Locality: &core_xds.Locality{Zone: "zone-1"},
+					Weight:   1,
+				},
+			}))
+		})
 	})
 
 	Describe("BuildEndpointMap()", func() {
@@ -283,7 +429,7 @@ var _ = Describe("TrafficRoute", func() {
 						egressAddresses = append(egressAddresses, core_xds.ZoneEgressInstance{Address: n.GetAddress(), Port: n.GetPort()})
 					}
 				}
-				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, nil, given.zoneEgresses, dataSourceLoader, given.mesh.MTLSEnabled(), egressAddresses)
+				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, nil, given.zoneEgresses, dataSourceLoader, given.mesh.MTLSEnabled(), egressAddresses, false)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
