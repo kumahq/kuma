@@ -158,6 +158,7 @@ var _ = Describe("MeshHealthCheck", func() {
 							Timeout:                      test.ParseDuration("2s"),
 							UnhealthyThreshold:           pointer.To[int32](3),
 							HealthyThreshold:             pointer.To[int32](1),
+							UnhealthyInterval:            test.ParseDuration("17s"),
 							InitialJitter:                test.ParseDuration("13s"),
 							IntervalJitter:               test.ParseDuration("15s"),
 							IntervalJitterPercent:        pointer.To[int32](10),
