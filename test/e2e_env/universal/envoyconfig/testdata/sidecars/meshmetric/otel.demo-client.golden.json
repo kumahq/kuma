@@ -51,7 +51,7 @@
       "value": {
         "directResponse": {
           "body": {
-            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":null,\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"kuma.proxy_role\":\"sidecar\",\"mesh\":\"envoyconfig\",\"zone\":\"kuma-3\"}}}}"
+            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":null,\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"kuma.proxy_role\":\"sidecar\",\"kuma.workload\":\"demo-client\",\"mesh\":\"envoyconfig\",\"zone\":\"kuma-3\"}}}}"
           },
           "status": 200
         },
@@ -63,7 +63,7 @@
           {
             "header": {
               "key": "Etag",
-              "value": "cfe284e942f02d15de968b820d0b402132c845345502c7350521c7b2cb85c675"
+              "value": "8ee387433d8ec10b40b3a1c4d0a6f929a2278fec5860f5e821e872e28defb9b0"
             }
           }
         ]
@@ -81,7 +81,7 @@
             {
               "name": "If-None-Match",
               "stringMatch": {
-                "exact": "cfe284e942f02d15de968b820d0b402132c845345502c7350521c7b2cb85c675"
+                "exact": "8ee387433d8ec10b40b3a1c4d0a6f929a2278fec5860f5e821e872e28defb9b0"
               }
             }
           ],
@@ -439,6 +439,7 @@
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
                       "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/workload": "demo-client",
                       "kuma.io/zone": "kuma-3"
                     }
                   }
@@ -488,6 +489,7 @@
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
                       "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/workload": "test-server",
                       "kuma.io/zone": "kuma-3"
                     }
                   }

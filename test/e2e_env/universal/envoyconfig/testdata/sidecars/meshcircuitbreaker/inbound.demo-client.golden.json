@@ -379,6 +379,7 @@
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
                       "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/workload": "demo-client",
                       "kuma.io/zone": "kuma-3"
                     }
                   }
@@ -428,6 +429,7 @@
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
                       "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/workload": "test-server",
                       "kuma.io/zone": "kuma-3"
                     }
                   }
