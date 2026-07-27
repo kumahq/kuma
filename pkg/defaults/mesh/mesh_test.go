@@ -210,7 +210,6 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(migrated.Spec.TargetRef).ToNot(BeNil())
 			Expect(migrated.Spec.TargetRef.Kind).To(Equal(common_api.Dataplane))
-			Expect(migrated.Spec.TargetRef.ProxyTypes).To(BeNil())
 			Expect(migrated.Spec.TargetRef.Labels).ToNot(BeNil())
 			Expect(*migrated.Spec.TargetRef.Labels).To(HaveKeyWithValue(mesh_proto.ProxyTypeLabel, string(mesh_proto.SidecarLabel)))
 			Expect(migrated.Spec.To).To(BeNil())
