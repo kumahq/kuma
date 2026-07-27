@@ -159,9 +159,10 @@ func migrateCombinedMeshTimeoutDefaults(
 // MeshTimeout resources persisted by CP versions that split sidecar/gateway
 // defaults into separate resources. A single mesh-wide default now applies to
 // every proxy type, so the gateway-specific resources are deleted rather than
-// migrated, and any leftover proxyTypes restriction on the surviving
-// mesh-timeout-all/mesh-timeout-to-all resources is cleared so they go back
-// to applying mesh-wide.
+// migrated. Any legacy proxyTypes restriction on the surviving
+// mesh-timeout-all/mesh-timeout-to-all resources needs no migration: the
+// field no longer exists on TargetRef, so it's silently dropped on the next
+// unmarshal, and the resource already applies mesh-wide.
 func migrateGatewayMeshTimeoutDefaults(
 	ctx context.Context,
 	resManager manager.ResourceManager,
@@ -170,16 +171,12 @@ func migrateGatewayMeshTimeoutDefaults(
 	systemNamespace string,
 	logger logr.Logger,
 ) error {
-	resourceKey := func(prefix string) model.ResourceKey {
+	for _, prefix := range []string{"mesh-gateways-timeout-all", "mesh-gateways-timeout-to-all"} {
 		resourceName := fmt.Sprintf("%s-%s", prefix, meshName)
 		if k8sStore {
 			resourceName = fmt.Sprintf("%s.%s", resourceName, systemNamespace)
 		}
-		return model.ResourceKey{Mesh: meshName, Name: resourceName}
-	}
-
-	for _, prefix := range []string{"mesh-gateways-timeout-all", "mesh-gateways-timeout-to-all"} {
-		key := resourceKey(prefix)
+		key := model.ResourceKey{Mesh: meshName, Name: resourceName}
 		if err := resManager.Delete(ctx, v1alpha1.NewMeshTimeoutResource(), store.DeleteBy(key)); err != nil {
 			if store.IsNotFound(err) {
 				continue
@@ -187,25 +184,6 @@ func migrateGatewayMeshTimeoutDefaults(
 			return errors.Wrapf(err, "could not delete legacy default MeshTimeout %q", key.Name)
 		}
 		logger.Info("deleted legacy gateway-specific default MeshTimeout, a single default now applies to every proxy type", "name", key.Name)
-	}
-
-	for _, prefix := range []string{"mesh-timeout-all", "mesh-timeout-to-all"} {
-		key := resourceKey(prefix)
-		existing := v1alpha1.NewMeshTimeoutResource()
-		if err := resManager.Get(ctx, existing, store.GetBy(key), store.GetConsistent()); err != nil {
-			if store.IsNotFound(err) {
-				continue
-			}
-			return errors.Wrapf(err, "could not retrieve default MeshTimeout %q", key.Name)
-		}
-		if existing.Spec.TargetRef == nil || len(pointer.Deref(existing.Spec.TargetRef.ProxyTypes)) == 0 {
-			continue // already migrated, or an operator-modified resource
-		}
-		existing.Spec.TargetRef.ProxyTypes = nil
-		if err := resManager.Update(ctx, existing); err != nil {
-			return errors.Wrapf(err, "could not migrate default MeshTimeout %q", key.Name)
-		}
-		logger.Info("cleared legacy proxyTypes restriction on default MeshTimeout, it now applies mesh-wide", "name", key.Name)
 	}
 	return nil
 }

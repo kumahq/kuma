@@ -3,10 +3,10 @@ package v1alpha1
 
 import (
 	"fmt"
-	"slices"
 	"sort"
 	"strings"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -54,14 +54,6 @@ var order = map[TargetRefKind]int{
 	meshServiceSubset:    8,
 	MeshHTTPRoute:        9,
 }
-
-// +kubebuilder:validation:Enum=Sidecar;Gateway
-type TargetRefProxyType string
-
-var (
-	Sidecar TargetRefProxyType = "Sidecar"
-	Gateway TargetRefProxyType = "Gateway"
-)
 
 func (k TargetRefKind) Compare(o TargetRefKind) int {
 	return order[k] - order[o]
@@ -116,9 +108,6 @@ type TargetRef struct {
 	Tags *map[string]string `json:"tags,omitempty"`
 	// Mesh is reserved for future use to identify cross mesh resources.
 	Mesh *string `json:"mesh,omitempty"`
-	// ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-	// all data plane types are targeted by the policy.
-	ProxyTypes *[]TargetRefProxyType `json:"proxyTypes,omitempty"`
 	// Namespace specifies the namespace of target resource. If empty only resources in policy namespace
 	// will be targeted.
 	Namespace *string `json:"namespace,omitempty"`
@@ -157,13 +146,20 @@ func selectsLabels(tr TargetRef) bool {
 	return tr.Labels != nil
 }
 
+// IncludesGateways reports whether a policy attached with this targetRef could
+// apply to a Gateway-type dataplane. Kind: Mesh (and the legacy MeshSubset) has
+// no way to exclude gateways, so it always includes them; Kind: Dataplane only
+// includes gateways when it explicitly selects them via the computed
+// kuma.io/proxy-type label; MeshHTTPRoute is always gateway-routing.
 func IncludesGateways(ref TargetRef) bool {
-	isMeshKind := ref.Kind == Mesh || ref.Kind == meshSubset
-	isGatewayInProxyTypes := len(pointer.Deref(ref.ProxyTypes)) == 0 || slices.Contains(pointer.Deref(ref.ProxyTypes), Gateway)
-	isGatewayCompatible := isMeshKind && isGatewayInProxyTypes
-	isMeshHTTPRoute := ref.Kind == MeshHTTPRoute
-
-	return isGatewayCompatible || isMeshHTTPRoute
+	switch ref.Kind {
+	case Mesh, meshSubset, MeshHTTPRoute:
+		return true
+	case Dataplane:
+		return pointer.Deref(ref.Labels)[mesh_proto.ProxyTypeLabel] == string(mesh_proto.GatewayLabel)
+	default:
+		return false
+	}
 }
 
 // +kubebuilder:validation:Enum=MeshOpenTelemetryBackend

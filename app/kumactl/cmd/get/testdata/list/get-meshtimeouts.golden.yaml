@@ -33,9 +33,9 @@ items:
   name: timeout-2-dz449dwd8fw4486x
   spec:
     targetRef:
-      kind: Mesh
-      proxyTypes:
-      - Gateway
+      kind: Dataplane
+      labels:
+        kuma.io/proxy-type: gateway
     to:
     - default:
         http:
