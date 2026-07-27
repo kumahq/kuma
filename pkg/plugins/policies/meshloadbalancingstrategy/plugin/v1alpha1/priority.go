@@ -122,7 +122,10 @@ func affinityTagPodLabels(labels map[string]string, conf api.Conf) map[string]st
 
 // resolveAffinityValues returns all values for an affinity tag key.
 // It prefers inbound tags but falls back to pod labels when tags are absent.
-// This is needed when KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED=true strips inbound tags.
+// This is needed when KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED=true strips inbound
+// tags. Callers only pass labels when that flag is set, because that is also the
+// only case where the endpoint side folds labels into its envoy.lb metadata, see
+// configureDPP and topology.endpointIdentity.
 func resolveAffinityValues(inboundTags mesh_proto.MultiValueTagSet, podLabels map[string]string, key string) []string {
 	if values := inboundTags.Values(key); len(values) > 0 {
 		return values

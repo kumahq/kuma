@@ -79,6 +79,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		endpoints,
 		rs,
 		ctx.Mesh,
+		ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled,
 	)
 }
 
@@ -90,11 +91,22 @@ func (p plugin) configureDPP(
 	endpoints policies_xds.EndpointMap,
 	rs *core_xds.ResourceSet,
 	meshCtx xds_context.MeshContext,
+	inboundTagsDisabled bool,
 ) error {
 	if proxy.Dataplane.Spec.IsBuiltinGateway() {
 		return nil
 	}
 	serviceConfs := map[string]api.Conf{}
+
+	// Labels only take part in affinity resolution when inbound tags are
+	// disabled: that is the only case where the endpoint side folds them into
+	// envoy.lb metadata (see topology.endpointIdentity). Keeping both sides
+	// gated on the same flag stops the local proxy from resolving an affinity
+	// value that no endpoint can ever match.
+	var affinityLabels map[string]string
+	if inboundTagsDisabled {
+		affinityLabels = proxy.Dataplane.GetMeta().GetLabels()
+	}
 
 	for _, outbound := range proxy.Outbounds.Filter(xds_types.NonBackendRefFilter) {
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
@@ -119,7 +131,7 @@ func (p plugin) configureDPP(
 	clusterModifier := func(cluster *envoy_cluster.Cluster, conf api.Conf) error {
 		return NewModifier(cluster).
 			Configure(clusterConfigurer(conf)).
-			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound))).
+			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound))).
 			Modify()
 	}
 
@@ -137,7 +149,7 @@ func (p plugin) configureDPP(
 			}
 		}
 		for _, cla := range endpoints[serviceName] {
-			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound)).Modify(); err != nil {
+			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound)).Modify(); err != nil {
 				return err
 			}
 		}
@@ -148,7 +160,7 @@ func (p plugin) configureDPP(
 		svcCtx := rctx.
 			WithID(kri.NoSectionName(r.ResourceOrigin)).
 			WithID(r.ResourceOrigin)
-		if err := p.applyToRealResource(svcCtx, r, proxy); err != nil {
+		if err := p.applyToRealResource(svcCtx, r, proxy, affinityLabels); err != nil {
 			return err
 		}
 	}
@@ -156,7 +168,7 @@ func (p plugin) configureDPP(
 	return nil
 }
 
-func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Conf], r *core_xds.Resource, proxy *core_xds.Proxy) error {
+func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Conf], r *core_xds.Resource, proxy *core_xds.Proxy, affinityLabels map[string]string) error {
 	switch envoyResource := r.Resource.(type) {
 	case *envoy_listener.Listener:
 		return NewModifier(envoyResource).
@@ -165,11 +177,11 @@ func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Con
 	case *envoy_cluster.Cluster:
 		return NewModifier(envoyResource).
 			Configure(clusterConfigurer(rctx.Conf())).
-			Configure(If(envoyResource.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, false, generator_metadata.OriginOutbound))).
+			Configure(If(envoyResource.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound))).
 			Modify()
 	case *envoy_endpoint.ClusterLoadAssignment:
 		return NewModifier(envoyResource).
-			Configure(claConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, false, generator_metadata.OriginOutbound)).
+			Configure(claConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound)).
 			Modify()
 	}
 	return nil

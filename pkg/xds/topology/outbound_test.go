@@ -350,6 +350,64 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}))
 		})
+
+		It("should fold the full set of kuma.io labels into endpoint tags when inboundTagsDisabled=true", func() {
+			// given - the labels a real Dataplane carries, not a synthetic subset
+			dp := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh: "default",
+					Name: "backend-1",
+					Labels: map[string]string{
+						"kuma.io/display-name":     "backend",
+						"kuma.io/mesh":             "default",
+						"kuma.io/origin":           "zone",
+						"kuma.io/proxy-type":       "sidecar",
+						"kuma.io/workload":         "backend",
+						"kuma.io/zone":             "zone-1",
+						"k8s.kuma.io/namespace":    "kuma-demo",
+						"k8s.kuma.io/service-name": "backend",
+					},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags:        map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.ZoneTag: "zone-1"},
+								Port:        8080,
+								ServicePort: 18080,
+							},
+						},
+					},
+				},
+			}
+			dataplanes := []*core_mesh.DataplaneResource{dp}
+
+			// when - inboundTagsDisabled=true
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil, true)
+
+			// then - every label lands under the endpoint tags, so it reaches envoy.lb
+			Expect(targets).To(HaveLen(1))
+			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
+				{
+					Target: "192.168.0.1",
+					Port:   8080,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag:      "backend",
+						mesh_proto.ZoneTag:         "zone-1",
+						"kuma.io/display-name":     "backend",
+						"kuma.io/mesh":             "default",
+						"kuma.io/origin":           "zone",
+						"kuma.io/proxy-type":       "sidecar",
+						"kuma.io/workload":         "backend",
+						"k8s.kuma.io/namespace":    "kuma-demo",
+						"k8s.kuma.io/service-name": "backend",
+					},
+					Locality: &core_xds.Locality{Zone: "zone-1"},
+					Weight:   1,
+				},
+			}))
+		})
 	})
 
 	Describe("BuildEndpointMap()", func() {

@@ -1565,6 +1565,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Build(),
 			context: *xds_builders.Context().
 				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				With(func(ctx *xds_context.Context) {
+					// this entry models KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED, which is
+					// what makes the proxy resolve its own affinity values from labels
+					ctx.ControlPlane.InboundTagsDisabled = true
+				}).
 				Build(),
 		}),
 	)
