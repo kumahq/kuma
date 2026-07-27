@@ -124,6 +124,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	withKDSCtx, cancel := context.WithCancel(metadata.AppendToOutgoingContext(c.ctx,
 		"client-id", c.clientID,
 		KDSVersionHeaderKey, KDSVersionV3,
+		ZoneVersionHeaderKey, ZoneVersionV3,
 		kds.FeaturesMetadataKey, kds.FeatureZonePingHealth,
 		kds.FeaturesMetadataKey, kds.FeatureHashSuffix,
 	))
