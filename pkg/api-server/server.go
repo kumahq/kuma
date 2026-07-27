@@ -520,6 +520,10 @@ func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
+	var mcbOpts []xds_context.MeshContextBuilderOption
+	if cfg.Experimental.InboundTagsDisabled {
+		mcbOpts = append(mcbOpts, xds_context.WithInboundTagsDisabled(true))
+	}
 	apiServer, err := NewApiServer(
 		rt,
 		xds_context.NewMeshContextBuilder(
@@ -528,6 +532,7 @@ func SetupServer(rt runtime.Runtime) error {
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
 			rt.CAProvider(),
+			mcbOpts...,
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

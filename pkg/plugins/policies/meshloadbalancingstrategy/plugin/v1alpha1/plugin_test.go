@@ -1565,6 +1565,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Build(),
 			context: *xds_builders.Context().
 				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				With(func(ctx *xds_context.Context) {
+					// this entry models KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED, which is
+					// what makes the proxy resolve its own affinity values from labels
+					ctx.ControlPlane.InboundTagsDisabled = true
+				}).
 				Build(),
 		}),
 	)
@@ -1580,15 +1585,18 @@ func createEndpointWith(zone string, ip string, extraTags map[string]string) cor
 		Build()
 }
 
+// createEndpointWithLabels models an endpoint built with
+// KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED: the workload labels are folded into
+// the endpoint tags at topology build time (see BuildEdsEndpointMap), so they
+// live under the same envoy.lb key as the system tags.
 func createEndpointWithLabels(ip string, labels map[string]string) core_xds.Endpoint {
-	e := xds_builders.Endpoint().
+	return *xds_builders.Endpoint().
 		WithTarget(ip).
 		WithPort(8080).
 		WithTags(mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), mesh_proto.ZoneTag, "zone-1").
+		AddTagsMap(labels).
 		WithZone("zone-1").
 		Build()
-	e.Labels = labels
-	return *e
 }
 
 // TODO move to routing builder
@@ -1678,6 +1686,11 @@ func serviceName(id kri.Identifier, port int32) string {
 
 func contextWithEgressEnabled() xds_context.Context {
 	return *xds_builders.Context().
-		WithMeshBuilder(samples.MeshMTLSBuilder().WithEgressRoutingEnabled()).
+		WithMeshBuilder(samples.MeshMTLSBuilder()).
+		With(func(ctx *xds_context.Context) {
+			ctx.Mesh.ZoneEgresses = []core_xds.ZoneEgressInstance{
+				{Address: "10.0.0.1", Port: 10002},
+			}
+		}).
 		Build()
 }
