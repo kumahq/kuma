@@ -224,10 +224,6 @@ func (p *PodConverter) dataplaneFor(
 			tp.DirectAccessServices = v
 		}
 
-		if v, exist := annotations.GetList(metadata.KumaTransparentProxyingReachableServicesAnnotation); exist {
-			tp.ReachableServices = v
-		}
-
 		if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
 			var refs ReachableBackendRefs
 			if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
@@ -275,7 +271,6 @@ func (p *PodConverter) dataplaneFor(
 	// Avoid setting an empty TransparentProxying object by checking if any fields are set.
 	// Only assign it if at least one relevant field has a non-zero or non-nil value.
 	if tp.DirectAccessServices != nil ||
-		tp.ReachableServices != nil ||
 		tp.ReachableBackends != nil ||
 		tp.RedirectPortInbound != 0 ||
 		tp.RedirectPortOutbound != 0 ||

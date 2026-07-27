@@ -15,7 +15,8 @@ resources:
           statPrefix: kri_extsvc_default___example2_
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/unified-name: kri_extsvc_default___example2_
     name: kri_extsvc_default___example2_
     statPrefix: kri_extsvc_default___example2_
     trafficDirection: OUTBOUND
@@ -35,7 +36,8 @@ resources:
           statPrefix: kri_extsvc_default___example_
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/unified-name: kri_extsvc_default___example_
     name: kri_extsvc_default___example_
     statPrefix: kri_extsvc_default___example_
     trafficDirection: OUTBOUND
@@ -55,7 +57,8 @@ resources:
           statPrefix: kri_msvc_default___backend_tcp-port
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/unified-name: kri_msvc_default___backend_tcp-port
     name: kri_msvc_default___backend_tcp-port
     statPrefix: kri_msvc_default___backend_tcp-port
     trafficDirection: OUTBOUND

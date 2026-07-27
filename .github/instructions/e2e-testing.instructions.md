@@ -110,7 +110,7 @@ Expect(err).ToNot(HaveOccurred())
 - `WithTransparentProxy(bool)` - Enable/disable tproxy
 - `WithMesh(name)` - Target mesh
 - `WithNamespace(ns)` - Kubernetes namespace
-- `WithReachableServices(services...)` - Limit reachable services
+- `WithReachableBackends(config)` - Limit reachable backends (MeshService/MeshExternalService refs)
 
 ## Ginkgo/Gomega Patterns
 

@@ -24,7 +24,8 @@ resources:
               weight: 40
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/unified-name: kri_msvc_default___backend_kafka-port
     name: kri_msvc_default___backend_kafka-port
     statPrefix: kri_msvc_default___backend_kafka-port
     trafficDirection: OUTBOUND

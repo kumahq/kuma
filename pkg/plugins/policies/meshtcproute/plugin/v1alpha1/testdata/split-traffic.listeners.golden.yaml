@@ -24,7 +24,8 @@ resources:
               weight: 15
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/unified-name: kri_msvc_default___backend_tcp-port
     name: kri_msvc_default___backend_tcp-port
     statPrefix: kri_msvc_default___backend_tcp-port
     trafficDirection: OUTBOUND
