@@ -29,7 +29,6 @@ func Delegated() {
 		CpNamespace:                 Config.KumaNamespace,
 		ObservabilityDeploymentName: "observability-delegated-meshtrace-ms",
 		IPV6:                        Config.IPV6,
-		UseEgress:                   true,
 	}
 	AfterEachFailure(func() {
 		DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.NamespaceOutsideMesh)

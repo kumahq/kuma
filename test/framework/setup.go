@@ -168,10 +168,6 @@ spec:
 	)
 }
 
-func MTLSMeshKubernetesWithEgressRouting(name string) InstallFunc {
-	return MTLSMeshKubernetes(name)
-}
-
 func WaitMeshKubernetesReady(name string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryContextE(

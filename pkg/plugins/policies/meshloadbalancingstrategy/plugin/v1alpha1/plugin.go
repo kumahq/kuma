@@ -137,8 +137,9 @@ func (p plugin) configureDPP(
 				return err
 			}
 		}
+		egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
 		for _, cla := range endpoints[serviceName] {
-			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0, generator_metadata.OriginOutbound)).Modify(); err != nil {
+			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, egressEnabled, generator_metadata.OriginOutbound)).Modify(); err != nil {
 				return err
 			}
 		}
