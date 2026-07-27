@@ -1,8 +1,8 @@
 resources:
-- name: default_multi-backend___mzsvc_80
+- name: kri_mzsvc_default___multi-backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: default_multi-backend___mzsvc_80
+    clusterName: kri_mzsvc_default___multi-backend_80
     endpoints:
     - lbEndpoints:
       - endpoint:

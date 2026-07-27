@@ -113,6 +113,8 @@ func BuildAttachments(matchedPolicies *xds.MatchedPolicies, networking *mesh_pro
 	return attachments
 }
 
+// GroupByAttachment backs the deprecated GET /meshes/{mesh}/dataplanes/{name}/policies
+// endpoint, kept only because the vendored GUI bundle still calls it directly.
 func GroupByAttachment(matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentMap {
 	result := AttachmentMap{}
 
