@@ -75,14 +75,14 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: kri_msvc_default___payments_80
+- name: kri_msvc_default___payments-mirror_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: kri_msvc_default___payments_80
+    name: kri_msvc_default___payments-mirror_80
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
@@ -94,7 +94,7 @@ resources:
             defaultValidationContext:
               matchTypedSubjectAltNames:
               - matcher:
-                  exact: spiffe://default/payments
+                  exact: spiffe://default/payments-mirror
                 sanType: URI
             validationContextSdsSecretConfig:
               name: system_mtls_ca_default
@@ -106,21 +106,21 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: ad55bfd9a68e03831.payments.80.default.ms
+        sni: aad4a090772bd8489.payments-mirror.80.default.ms
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: kri_mzsvc_default___payments-mz_80
+- name: kri_mzsvc_default___payments-mz-mirror_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: kri_mzsvc_default___payments-mz_80
+    name: kri_mzsvc_default___payments-mz-mirror_80
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
@@ -132,7 +132,7 @@ resources:
             defaultValidationContext:
               matchTypedSubjectAltNames:
               - matcher:
-                  exact: spiffe://default/payments
+                  exact: spiffe://default/payments-mirror
                 sanType: URI
             validationContextSdsSecretConfig:
               name: system_mtls_ca_default
@@ -144,7 +144,7 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: ac6c6a94337b2209d.payments-mz.80.default.mzms
+        sni: a2df35fadf2df7e35.payments-mz-mirror.80.default.mzms
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

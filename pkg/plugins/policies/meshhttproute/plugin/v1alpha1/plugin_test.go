@@ -2573,8 +2573,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend",
 						},
 					},
 				},
@@ -2584,11 +2584,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 				},
 			}
-			paymentsSvc := meshservice_api.MeshServiceResource{
+			mirrorSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{
-					Name: "payments", Mesh: "default",
+					Name: "payments-mirror", Mesh: "default",
 					Labels: map[string]string{
-						"app": "payments",
+						"app": "payments-mirror",
 					},
 				},
 				Spec: &meshservice_api.MeshService{
@@ -2600,8 +2600,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "payments",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/payments-mirror",
 						},
 					},
 				},
@@ -2611,13 +2611,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 				},
 			}
-			paymentsMZSvc := meshmultizoneservice_api.MeshMultiZoneServiceResource{
-				Meta: &test_model.ResourceMeta{Name: "payments-mz", Mesh: "default"},
+			mirrorMZSvc := meshmultizoneservice_api.MeshMultiZoneServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "payments-mz-mirror", Mesh: "default"},
 				Spec: &meshmultizoneservice_api.MeshMultiZoneService{
 					Selector: meshmultizoneservice_api.Selector{
 						MeshService: common_api.LabelSelector{
 							MatchLabels: &map[string]string{
-								"app": "payments",
+								"app": "payments-mirror",
 							},
 						},
 					},
@@ -2632,7 +2632,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 					MeshServices: []meshmultizoneservice_api.MatchedMeshService{
 						{
-							Name: "payments",
+							Name: "payments-mirror",
 							Mesh: "default",
 						},
 					},
@@ -2641,17 +2641,17 @@ var _ = Describe("MeshHTTPRoute", func() {
 
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
-				Items: []*meshservice_api.MeshServiceResource{&meshSvc, &paymentsSvc},
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc, &mirrorSvc},
 			}
 			resources.MeshLocalResources[meshmultizoneservice_api.MeshMultiZoneServiceType] = &meshmultizoneservice_api.MeshMultiZoneServiceResourceList{
-				Items: []*meshmultizoneservice_api.MeshMultiZoneServiceResource{&paymentsMZSvc},
+				Items: []*meshmultizoneservice_api.MeshMultiZoneServiceResource{&mirrorMZSvc},
 			}
 
 			dpBuilder := builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
 				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")
-			mc := meshContextWithResources(builders.Mesh(), dpBuilder.Build(), &meshSvc, &paymentsSvc, &paymentsMZSvc)
+			mc := meshContextWithResources(builders.Mesh(), dpBuilder.Build(), &meshSvc, &mirrorSvc, &mirrorMZSvc)
 
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("default_backend___msvc_80", xds_builders.Endpoint().
@@ -2659,16 +2659,16 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithPort(8084).
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
-				AddEndpoint("default_payments___msvc_80", xds_builders.Endpoint().
+				AddEndpoint("default_payments-mirror___msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.6").
 					WithPort(8086).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "payments", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
-				AddEndpoint("default_payments-mz___mzsvc_80", xds_builders.Endpoint().
+					WithTags(mesh_proto.ServiceTag, "payments-mirror", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
+				AddEndpoint("default_payments-mz-mirror___mzsvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.7").
 					WithPort(8086).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "payments", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP)))
+					WithTags(mesh_proto.ServiceTag, "payments-mirror", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP)))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithResources(resources).
@@ -2708,7 +2708,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															BackendRef: common_api.BackendRef{
 																TargetRef: common_api.TargetRef{
 																	Kind: common_api.MeshService,
-																	Name: pointer.To("payments"),
+																	Name: pointer.To("payments-mirror"),
 																},
 																Port: pointer.To(uint32(80)),
 															},
@@ -2738,7 +2738,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															BackendRef: common_api.BackendRef{
 																TargetRef: common_api.TargetRef{
 																	Kind: common_api.MeshMultiZoneService,
-																	Name: pointer.To("payments-mz"),
+																	Name: pointer.To("payments-mz-mirror"),
 																},
 																Port: pointer.To(uint32(80)),
 															},
@@ -2770,7 +2770,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															BackendRef: common_api.BackendRef{
 																TargetRef: common_api.TargetRef{
 																	Kind: common_api.MeshService,
-																	Name: pointer.To("not-existing"),
+																	Name: pointer.To("not-existing-mirror"),
 																},
 																Port: pointer.To(uint32(80)),
 															},

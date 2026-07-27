@@ -46,7 +46,7 @@ resources:
                 route:
                   cluster: kri_msvc_default___backend_80
                   requestMirrorPolicies:
-                  - cluster: kri_mzsvc_default___payments-mz_80
+                  - cluster: kri_mzsvc_default___payments-mz-mirror_80
                   timeout: 0s
               - match:
                   prefix: /mzms/
@@ -54,7 +54,7 @@ resources:
                 route:
                   cluster: kri_msvc_default___backend_80
                   requestMirrorPolicies:
-                  - cluster: kri_mzsvc_default___payments-mz_80
+                  - cluster: kri_mzsvc_default___payments-mz-mirror_80
                   timeout: 0s
               - match:
                   path: /ms
@@ -62,7 +62,7 @@ resources:
                 route:
                   cluster: kri_msvc_default___backend_80
                   requestMirrorPolicies:
-                  - cluster: kri_msvc_default___payments_80
+                  - cluster: kri_msvc_default___payments-mirror_80
                     runtimeFraction:
                       defaultValue:
                         denominator: TEN_THOUSAND
@@ -74,7 +74,7 @@ resources:
                 route:
                   cluster: kri_msvc_default___backend_80
                   requestMirrorPolicies:
-                  - cluster: kri_msvc_default___payments_80
+                  - cluster: kri_msvc_default___payments-mirror_80
                     runtimeFraction:
                       defaultValue:
                         denominator: TEN_THOUSAND

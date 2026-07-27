@@ -35,10 +35,10 @@ resources:
               kuma.io/protocol: http
             envoy.transport_socket_match:
               kuma.io/protocol: http
-- name: kri_msvc_default___payments_80
+- name: kri_msvc_default___payments-mirror_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: kri_msvc_default___payments_80
+    clusterName: kri_msvc_default___payments-mirror_80
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -53,10 +53,10 @@ resources:
               kuma.io/protocol: http
             envoy.transport_socket_match:
               kuma.io/protocol: http
-- name: kri_mzsvc_default___payments-mz_80
+- name: kri_mzsvc_default___payments-mz-mirror_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: kri_mzsvc_default___payments-mz_80
+    clusterName: kri_mzsvc_default___payments-mz-mirror_80
     endpoints:
     - lbEndpoints:
       - endpoint:
