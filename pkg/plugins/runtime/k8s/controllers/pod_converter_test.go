@@ -199,11 +199,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "16.services-for-pod.yaml",
 			dataplane:      "16.dataplane.yaml",
 		}),
-		Entry("17. Pod with reachable services", testCase{
-			pod:            "17.pod.yaml",
-			servicesForPod: "17.services-for-pod.yaml",
-			dataplane:      "17.dataplane.yaml",
-		}),
 		Entry("18. Gateway with non tcp appProtocol", testCase{
 			pod:            "18.pod.yaml",
 			servicesForPod: "18.services-for-pod.yaml",

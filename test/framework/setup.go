@@ -711,7 +711,6 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 				dpp.TransparentProxy = &TransparentProxyConfig{
 					RedirectPortInbound:  redirectPortInbound,
 					RedirectPortOutbound: redirectPortOutbound,
-					ReachableServices:    opts.reachableServices,
 					ReachableBackends:    opts.reachableBackends,
 				}
 			case opts.bindOutbounds:
