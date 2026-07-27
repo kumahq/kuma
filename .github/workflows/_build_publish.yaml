@@ -61,7 +61,7 @@ jobs:
         if: ${{ github.ref_type == 'tag' }}
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
-          version: 2026.5.7
+          version: 2026.7.6
       - name: Assert built binary reports tag version
         if: ${{ github.ref_type == 'tag' }}
         run: |
@@ -83,7 +83,7 @@ jobs:
       - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
-          version: 2026.5.7
+          version: 2026.7.6
       - run: |
           make build
       - id: annotate-image-tag
@@ -144,7 +144,7 @@ jobs:
       - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
-          version: 2026.5.7
+          version: 2026.7.6
       - id: image_meta
         env:
           REGISTRY: ${{ inputs.REGISTRY }}
@@ -264,7 +264,7 @@ jobs:
       - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
-          version: 2026.5.7
+          version: 2026.7.6
       - name: package-helm-chart
         id: package-helm
         env:
