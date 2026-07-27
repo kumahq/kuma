@@ -1679,6 +1679,11 @@ func serviceName(id kri.Identifier, port int32) string {
 
 func contextWithEgressEnabled() xds_context.Context {
 	return *xds_builders.Context().
-		WithMeshBuilder(samples.MeshMTLSBuilder().WithEgressRoutingEnabled()).
+		WithMeshBuilder(samples.MeshMTLSBuilder()).
+		With(func(ctx *xds_context.Context) {
+			ctx.Mesh.ZoneEgresses = []core_xds.ZoneEgressInstance{
+				{Address: "10.0.0.1", Port: 10002},
+			}
+		}).
 		Build()
 }

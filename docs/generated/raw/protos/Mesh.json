@@ -198,10 +198,6 @@
         },
         "kuma.mesh.v1alpha1.Routing": {
             "properties": {
-                "zoneEgress": {
-                    "type": "boolean",
-                    "description": "Enable routing traffic to services in other zone or external services through ZoneEgress. Default: false"
-                },
                 "defaultForbidMeshExternalServiceAccess": {
                     "type": "boolean",
                     "description": "If true, blocks traffic to MeshExternalServices. Default: false"

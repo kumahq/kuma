@@ -49,9 +49,6 @@ spec:
 			}
 			BeforeAll(func() {
 				mesh := samples.MeshMTLSBuilder().WithName(config.Mesh)
-				if config.UseEgress {
-					mesh.WithEgressRoutingEnabled()
-				}
 				err := NewClusterSetup().
 					Install(Yaml(mesh)).
 					Install(MeshTrafficPermissionAllowAllKubernetes(config.Mesh)).

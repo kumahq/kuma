@@ -5,8 +5,6 @@ mtls:
   backends:
     - name: builtin
       type: builtin
-routing:
-  zoneEgress: true
 ---
 type: Dataplane
 mesh: default

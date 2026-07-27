@@ -49,9 +49,6 @@ var _ = Describe("TrafficRoute", func() {
 			Mtls: &mesh_proto.Mesh_Mtls{
 				EnabledBackend: "ca-1",
 			},
-			Routing: &mesh_proto.Routing{
-				ZoneEgress: true,
-			},
 		},
 	}
 	defaultMeshWithoutMTLS := &core_mesh.MeshResource{

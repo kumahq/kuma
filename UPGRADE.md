@@ -89,6 +89,19 @@ regardless of what the mesh's former `meshServices.mode` was set to.
 None. A `Mesh` spec that still sets `meshServices` continues to apply
 successfully; the field is silently ignored by the control plane.
 
+### `routing.zoneEgress` removed from the `Mesh` schema
+
+The `routing.zoneEgress` boolean has been removed from the `Mesh` resource
+spec. Cross-zone and `MeshExternalService` traffic now uses ZoneEgress based on
+actual zone egress topology plus mTLS, rather than an explicit mesh-level
+toggle.
+
+**Action required**
+
+Remove any `routing.zoneEgress` entries from stored `Mesh` resources and
+manifests before upgrading. After the upgrade, that field no longer exists in
+the schema and is ignored during deserialization.
+
 ### MeshService mode no longer disables zone proxy listeners, inspect endpoints, or MeshIdentity initialization
 
 The control plane now generates mesh-scoped zone proxy listeners and serves

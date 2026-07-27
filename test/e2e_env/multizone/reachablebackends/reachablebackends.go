@@ -126,8 +126,7 @@ spec:
 				Yaml(
 					builders.Mesh().
 						WithName(meshName).
-						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
-						WithEgressRoutingEnabled(),
+						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
 				),
 			).
 			Install(YamlUniversal(disableDefaultPassthrough)).

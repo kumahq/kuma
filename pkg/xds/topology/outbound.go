@@ -153,7 +153,7 @@ func BuildEdsEndpointMap(
 		meshServiceDestinations[name] = struct{}{}
 	}
 
-	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.ZoneEgressEnabled(), meshServiceDestinations)
+	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.MTLSEnabled() && len(zoneEgresses) > 0, meshServiceDestinations)
 	endpointWeight := uint32(1)
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
@@ -416,7 +416,7 @@ func BuildCrossMeshEndpointMap(
 		localZone,
 		mesh,
 		otherMesh,
-		mesh.ZoneEgressEnabled(),
+		mesh.MTLSEnabled() && len(zoneEgresses) > 0,
 		map[core_xds.ServiceName]struct{}{},
 	)
 

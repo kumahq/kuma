@@ -26,7 +26,7 @@ func MeshExternalServices() {
 		err := NewClusterSetup().
 			Install(YamlK8s(samples.MeshMTLSBuilder().
 				WithName(meshName).
-				WithEgressRoutingEnabled().KubeYaml())).
+				KubeYaml())).
 			Install(Namespace(namespace)).
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
 			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
@@ -163,7 +163,7 @@ spec:
 			Expect(kubernetes.Cluster.Install(YamlK8s(
 				samples.MeshMTLSBuilder().
 					WithName(meshName).
-					WithEgressRoutingEnabled().KubeYaml()),
+					KubeYaml()),
 			)).To(Succeed())
 		})
 
@@ -192,7 +192,7 @@ spec:
 				samples.MeshMTLSBuilder().
 					WithName(meshName).
 					WithMeshExternalServiceTrafficForbidden().
-					WithEgressRoutingEnabled().KubeYaml()),
+					KubeYaml()),
 			)).To(Succeed())
 			Expect(kubernetes.Cluster.Install(YamlK8s(disableMeshPassthrough))).To(Succeed())
 

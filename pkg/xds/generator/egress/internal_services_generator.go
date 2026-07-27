@@ -15,7 +15,7 @@ func genInternalResources(
 	proxy *core_xds.Proxy,
 	resources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error) {
-	if !resources.Mesh.ZoneEgressEnabled() {
+	if !resources.Mesh.MTLSEnabled() {
 		return nil, nil, nil
 	}
 

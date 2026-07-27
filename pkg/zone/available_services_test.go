@@ -38,7 +38,7 @@ var _ = Describe("AvailableServices Tracker", func() {
 			resourceStore := memory.NewStore()
 			resManager = manager.NewResourceManager(resourceStore)
 
-			Expect(samples.MeshMTLSBuilder().WithEgressRoutingEnabled().Create(resManager)).To(Succeed())
+			Expect(samples.MeshMTLSBuilder().Create(resManager)).To(Succeed())
 
 			meshContextBuilder = xds_context.NewMeshContextBuilder(
 				resManager,
@@ -105,7 +105,7 @@ var _ = Describe("AvailableServices Tracker", func() {
 			metrics, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(samples.MeshMTLSBuilder().WithEgressRoutingEnabled().Create(resManager)).To(Succeed())
+			Expect(samples.MeshMTLSBuilder().Create(resManager)).To(Succeed())
 
 			meshContextBuilder := xds_context.NewMeshContextBuilder(
 				resManager,
