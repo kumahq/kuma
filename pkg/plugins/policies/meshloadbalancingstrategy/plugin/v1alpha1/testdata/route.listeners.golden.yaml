@@ -89,7 +89,8 @@ resources:
           statPrefix: kri_msvc_default_zone-1_ns-1_ms-1_
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/unified-name: kri_msvc_default_zone-1_ns-1_ms-1_
     name: kri_msvc_default_zone-1_ns-1_ms-1_
     statPrefix: kri_msvc_default_zone-1_ns-1_ms-1_
     trafficDirection: OUTBOUND

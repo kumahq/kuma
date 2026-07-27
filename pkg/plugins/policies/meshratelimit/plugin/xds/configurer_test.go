@@ -56,6 +56,38 @@ var _ = Describe("MeshRateLimit configurer", func() {
 		Expect(routes[0].GetTypedPerFilterConfig()).To(BeNil())
 	})
 
+	It("should skip filter chains whose HTTP connection manager filter carries a non-HCM config", func() {
+		filterChain := filterChainWithNonHCMConfig()
+		rules := []*rules_inbound.Rule{{
+			Match: &common_api.Match{
+				SpiffeID: &common_api.SpiffeIDMatch{
+					Type:  common_api.ExactMatchType,
+					Value: "spiffe://default/client",
+				},
+			},
+			Conf: api.Conf{
+				Local: &api.Local{
+					HTTP: &api.LocalHTTP{
+						RequestRate: &api.Rate{Num: 1, Interval: k8s.Duration{Duration: 10 * time.Second}},
+						OnRateLimit: &api.OnRateLimit{
+							Status: pointer.To(uint32(429)),
+						},
+					},
+				},
+			},
+		}}
+
+		// UpdateHTTPConnectionManager returns UnexpectedFilterConfigTypeError,
+		// which ConfigureMatchedRoutesOnFilterChain swallows so mixed listeners
+		// don't fail on non-HTTP chains.
+		Expect(ConfigureMatchedRoutesOnFilterChain(filterChain, api.Conf{}, rules)).To(Succeed())
+
+		hcmFilter := findFilterByName(filterChain, "envoy.filters.network.http_connection_manager")
+		Expect(hcmFilter).ToNot(BeNil())
+		router := &envoy_router.Router{}
+		Expect(util_proto.UnmarshalAnyTo(hcmFilter.GetTypedConfig(), router)).To(Succeed())
+	})
+
 	It("should add the HTTP local rate limit filter for gateway route-specific rate limits", func() {
 		filterChain := httpFilterChainWithSingleRouteNamed("route-1")
 		hcm := httpConnectionManagerFromFilterChain(filterChain)
@@ -139,6 +171,29 @@ func httpFilterChainWithSingleRouteNamed(name string) *envoy_listener.FilterChai
 			},
 		}},
 	}
+}
+
+func filterChainWithNonHCMConfig() *envoy_listener.FilterChain {
+	nonHCMConfig, err := util_proto.MarshalAnyDeterministic(&envoy_router.Router{})
+	Expect(err).ToNot(HaveOccurred())
+
+	return &envoy_listener.FilterChain{
+		Filters: []*envoy_listener.Filter{{
+			Name: "envoy.filters.network.http_connection_manager",
+			ConfigType: &envoy_listener.Filter_TypedConfig{
+				TypedConfig: nonHCMConfig,
+			},
+		}},
+	}
+}
+
+func findFilterByName(filterChain *envoy_listener.FilterChain, name string) *envoy_listener.Filter {
+	for _, filter := range filterChain.GetFilters() {
+		if filter.GetName() == name {
+			return filter
+		}
+	}
+	return nil
 }
 
 func httpConnectionManagerFromFilterChain(filterChain *envoy_listener.FilterChain) *envoy_hcm.HttpConnectionManager {

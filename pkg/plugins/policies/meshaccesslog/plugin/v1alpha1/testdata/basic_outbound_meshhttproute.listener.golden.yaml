@@ -148,7 +148,8 @@ filterChains:
       statPrefix: kri_msvc_default_zone-1_other-ns_other-meshservice-http_
 metadata:
   filterMetadata:
-    io.kuma.tags: {}
+    io.kuma.tags:
+      kuma.io/unified-name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_
 name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_
 statPrefix: kri_msvc_default_zone-1_other-ns_other-meshservice-http_
 trafficDirection: OUTBOUND
