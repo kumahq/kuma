@@ -12,14 +12,10 @@ func (r *MeshTrafficPermissionResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
-	if len(pointer.Deref(r.Spec.From)) > 0 && len(pointer.Deref(r.Spec.Rules)) > 0 {
-		verr.AddViolationAt(path, "field 'from' must be empty when 'rules' is defined")
-	}
-	if len(pointer.Deref(r.Spec.From)) == 0 && len(pointer.Deref(r.Spec.Rules)) == 0 {
-		verr.AddViolationAt(path, "at least one of 'from' or 'rules' has to be defined")
+	if len(pointer.Deref(r.Spec.Rules)) == 0 {
+		verr.AddViolationAt(path, "policy must define rules")
 	}
 	verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules)))
-	verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
 	return verr.OrNil()
 }
 
@@ -56,31 +52,6 @@ func validateMatches(field string, matches []common_api.Match) validators.Valida
 	for idx, match := range matches {
 		path := validators.RootedAt(field).Index(idx)
 		verr.AddErrorAt(path, mesh.ValidateMatch(match))
-	}
-	return verr
-}
-
-func validateFrom(from []From) validators.ValidationError {
-	var verr validators.ValidationError
-	for idx, fromItem := range from {
-		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-				common_api.MeshService,
-			},
-		}))
-
-		defaultField := path.Field("default")
-		verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
-	}
-	return verr
-}
-
-func validateDefault(conf Conf) validators.ValidationError {
-	var verr validators.ValidationError
-	if len(pointer.Deref(conf.Action)) == 0 {
-		verr.AddViolation("action", validators.MustBeDefined)
 	}
 	return verr
 }
