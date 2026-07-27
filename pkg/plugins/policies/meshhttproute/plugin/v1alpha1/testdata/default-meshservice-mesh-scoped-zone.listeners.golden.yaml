@@ -32,7 +32,7 @@ resources:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
-                  cluster: default_backend__remote-zone_msvc_80
+                  cluster: kri_msvc_default_remote-zone__backend_80
                   timeout: 0s
           statPrefix: default_backend__remote-zone_msvc_80
     metadata:

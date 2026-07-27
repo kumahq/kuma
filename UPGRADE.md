@@ -414,6 +414,37 @@ spec:
               path: /tmp/access.log
 ```
 
+### `from` removed from `MeshRateLimit`
+
+The deprecated `spec.from` array has been removed from `MeshRateLimit`. Rate limiting for incoming traffic is now configured exclusively through `spec.rules`. `spec.from` is silently dropped on create/update: if `spec.rules` or `spec.to` is also set, the resource is accepted but `from` has no effect on inbound configuration; if `from` was the only field set, the resulting spec has neither `to` nor `rules`, so the request is rejected by validation.
+
+**Action required**
+
+Before upgrading, migrate every `MeshRateLimit` that uses `spec.from` to `spec.rules`. A `from` entry targeting `kind: Mesh` (all clients) maps to a single catch-all rule:
+
+```yaml
+# before
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        local:
+          http:
+            requestRate:
+              num: 100
+              interval: 10s
+# after
+spec:
+  rules:
+    - default:
+        local:
+          http:
+            requestRate:
+              num: 100
+              interval: 10s
+```
+
 ### Auto reachable services removed
 
 The experimental auto reachable services feature has been removed. The control
@@ -911,6 +942,47 @@ to `false` to a `MeshPassthrough` policy with `targetRef.kind: Mesh` and
 `default.passthroughMode: None` before upgrading. A `Mesh` spec that still
 sets `networking.outbound.passthrough` continues to apply successfully; the
 field is silently ignored by the control plane.
+
+### `MeshTrafficPermission.spec.from` removed
+
+The `from` field (and its legacy client-targetRef-based `Allow`/`Deny`/
+`AllowWithShadowDeny` matching) has been removed from the
+`MeshTrafficPermission` resource spec. The `rules` field, which matches
+clients by `MeshIdentity` (`spiffeID`) or SNI instead of by dataplane tag
+subsets, is now the only supported way to configure traffic permissions and
+is unaffected by this change. A `MeshTrafficPermission` must now define at
+least one entry in `rules`; a spec with only `from` (or with neither `from`
+nor `rules`) fails validation with `policy must define rules`.
+
+**Action required**
+
+Migrate any `MeshTrafficPermission` resources that still configure `from` to
+use `rules` with `MeshIdentity` (`spiffeID`) matches before upgrading.
+Dataplane proxies still on legacy mTLS (no `MeshIdentity`/SPIFFE identity)
+that are matched only by a `from`-based `MeshTrafficPermission` will
+default-deny once that policy is migrated or removed, unless a `rules`-based
+policy is added to allow the same traffic.
+
+### Legacy dataplane inspect rules endpoint removed
+
+The legacy `GET /meshes/{mesh}/dataplanes/{dataplane}/rules` endpoint has
+been removed.
+
+**Action required**
+
+Use `GET /meshes/{mesh}/dataplanes/{name}/_policies` instead (or the
+per-inbound/outbound scoped variants — see below).
+
+`kumactl inspect dataplane --type=policies` now calls
+`GET /meshes/{mesh}/dataplanes/{name}/_policies` (and the
+`_inbounds/{inbound_kri}/_policies`, `_outbounds/{outbound_kri}/_policies`,
+and `_outbounds/{outbound_kri}/_routes/{route_kri}/_policies` variants for
+per-inbound/outbound scoping) and requires no changes to invocation. The
+underlying `GET /meshes/{mesh}/dataplanes/{dataplane}/policies` HTTP
+endpoint it used to call is still registered — the vendored GUI bundle
+(`app/kuma-ui`) still calls it directly and is re-vendored on its own
+release cadence — but it is deprecated; new integrations should call
+`_policies` instead.
 
 ## Upgrade to `2.13.7`
 

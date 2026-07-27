@@ -1,20 +1,9 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/jsonpatch/validators"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (t *MeshTrafficPermissionResource) Deprecations() []string {
-	var deprecations []string
-	if len(pointer.Deref(t.Spec.From)) > 0 {
-		deprecations = append(deprecations, "'from' field is deprecated and will be removed in 3.0, use 'rules' with MeshIdentity (spiffeId) instead")
-	}
-	for _, f := range pointer.Deref(t.Spec.From) {
-		if f.GetTargetRef().Kind == v1alpha1.MeshService {
-			deprecations = append(deprecations, "MeshService value for 'from[].targetRef.kind' is deprecated, use 'rules' with MeshIdentity (spiffeId) instead")
-		}
-	}
-	return append(deprecations, validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)...)
+	return validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)
 }
