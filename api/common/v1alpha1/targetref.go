@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -147,16 +146,16 @@ func selectsLabels(tr TargetRef) bool {
 }
 
 // IncludesGateways reports whether a policy attached with this targetRef could
-// apply to a Gateway-type dataplane. Kind: Mesh (and the legacy MeshSubset) has
-// no way to exclude gateways, so it always includes them; Kind: Dataplane only
-// includes gateways when it explicitly selects them via the computed
-// kuma.io/proxy-type label; MeshHTTPRoute is always gateway-routing.
+// apply to a Gateway-type dataplane (a delegated gateway is an ordinary
+// Dataplane from the CP's perspective, not a distinct kind). Kind: Mesh (and
+// the legacy MeshSubset) has no way to exclude gateways, so it always includes
+// them; Kind: Dataplane never distinguishes gateways from any other dataplane,
+// same as before proxyTypes existed (it was never a valid field on Kind:
+// Dataplane); MeshHTTPRoute is always gateway-routing.
 func IncludesGateways(ref TargetRef) bool {
 	switch ref.Kind {
 	case Mesh, meshSubset, MeshHTTPRoute:
 		return true
-	case Dataplane:
-		return pointer.Deref(ref.Labels)[mesh_proto.ProxyTypeLabel] == string(mesh_proto.GatewayLabel)
 	default:
 		return false
 	}

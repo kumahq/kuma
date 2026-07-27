@@ -18,7 +18,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/proxy-type: gateway
+      version: "v2"
   to:
     - targetRef:
         kind: Mesh
