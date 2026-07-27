@@ -25,11 +25,6 @@
                     "additionalProperties": true,
                     "description": "Networking describes inbound and outbound interfaces of the data plane proxy."
                 },
-                "metrics": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MetricsBackend",
-                    "additionalProperties": true,
-                    "description": "Configuration for metrics that should be collected and exposed by the data plane proxy. Settings defined here will override their respective defaults defined at a Mesh level."
-                },
                 "probes": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Probes",
                     "additionalProperties": true,
@@ -784,27 +779,6 @@
             "type": "object",
             "title": "Kuma Dp Version",
             "description": "KumaDpVersion describes details of Kuma Dataplane version"
-        },
-        "kuma.mesh.v1alpha1.MetricsBackend": {
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "Name of the backend, can be then used in Mesh.metrics.enabledBackend"
-                },
-                "type": {
-                    "type": "string",
-                    "description": "Type of the backend (Kuma ships with 'prometheus')"
-                },
-                "conf": {
-                    "additionalProperties": true,
-                    "type": "object",
-                    "description": "Configuration of the backend"
-                }
-            },
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Metrics Backend",
-            "description": "MetricsBackend defines metric backends"
         },
         "kuma.mesh.v1alpha1.Version": {
             "properties": {

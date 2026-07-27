@@ -499,7 +499,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "\u0026kuma.io/service=demo-client\u0026\u0026kuma.io/zone=kuma-3\u0026\u0026team=client-owners\u0026"
+                          "value": "&kuma.io/service=demo-client&&kuma.io/zone=kuma-3&&team=client-owners&"
                         }
                       }
                     ],
@@ -557,19 +557,43 @@
                 "name": "envoy.filters.network.rbac",
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC",
-                  "rules": {
-                    "policies": {
-                      "MeshTrafficPermission": {
-                        "permissions": [
-                          {
-                            "any": true
+                  "matcher": {
+                    "matcherList": {
+                      "matchers": [
+                        {
+                          "onMatch": {
+                            "action": {
+                              "name": "envoy.filters.rbac.action",
+                              "typedConfig": {
+                                "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+                                "name": "kri_mtp_envoyconfig_kuma-3__allow-all-envoyconfig_"
+                              }
+                            }
+                          },
+                          "predicate": {
+                            "singlePredicate": {
+                              "input": {
+                                "name": "envoy.matching.inputs.uri_san",
+                                "typedConfig": {
+                                  "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
+                                }
+                              },
+                              "valueMatch": {
+                                "prefix": "spiffe://envoyconfig"
+                              }
+                            }
                           }
-                        ],
-                        "principals": [
-                          {
-                            "any": true
-                          }
-                        ]
+                        }
+                      ]
+                    },
+                    "onNoMatch": {
+                      "action": {
+                        "name": "envoy.filters.rbac.action",
+                        "typedConfig": {
+                          "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+                          "action": "DENY",
+                          "name": "default"
+                        }
                       }
                     }
                   },

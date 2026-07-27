@@ -62,25 +62,6 @@ components:
           type: object
         mesh:
           type: string
-        metrics:
-          description: |-
-            Configuration for metrics that should be collected and exposed by the
-            data plane proxy.
-
-            Settings defined here will override their respective defaults
-            defined at a Mesh level.
-          properties:
-            conf:
-              oneOf:
-              - $ref: /specs/protoresources/prometheusmetricsbackendconfig/schema.yaml#/components/schemas/PrometheusMetricsBackendConfig
-              type: object
-            name:
-              description: Name of the backend, can be then used in Mesh.metrics.enabledBackend
-              type: string
-            type:
-              description: Type of the backend (Kuma ships with 'prometheus')
-              type: string
-          type: object
         modificationTime:
           description: Time at which the resource was updated
           format: date-time

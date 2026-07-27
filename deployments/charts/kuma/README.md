@@ -273,7 +273,7 @@ A Helm chart for the Kuma Control Plane
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"registry.k8s.io"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"v1.36.2@sha256:b0d792e0d8dfb9bb1b922b78b23137e2a34bb6f9667640353a9d2aadd1fd7761"` | The kubectl image tag |
+| kubectl.image.tag | string | `"v1.36.3@sha256:6e4fce3c83651edb91b74bc67701c5cd263dd8aa3cd4254b1798d6425a5ab789"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.annotations | object | `{}` | Extra annotations to add to hook Job resources. Useful for tools like ArgoCD that need to control job lifecycle (e.g. argocd.argoproj.io/hook-delete-policy). |

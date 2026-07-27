@@ -82,13 +82,6 @@ type Mesh struct {
 	// mTLS settings.
 	// +optional
 	Mtls *Mesh_Mtls `protobuf:"bytes,1,opt,name=mtls,proto3" json:"mtls,omitempty"`
-	// Configuration for metrics collected and exposed by dataplanes.
-	//
-	// Settings defined here become defaults for every dataplane in a given Mesh.
-	// Additionally, it is also possible to further customize this configuration
-	// for each dataplane individually using Dataplane resource.
-	// +optional
-	Metrics *Metrics `protobuf:"bytes,4,opt,name=metrics,proto3" json:"metrics,omitempty"`
 	// Routing settings of the mesh
 	Routing *Routing `protobuf:"bytes,6,opt,name=routing,proto3" json:"routing,omitempty"`
 	// Constraints that applies to the mesh and its entities
@@ -134,13 +127,6 @@ func (*Mesh) Descriptor() ([]byte, []int) {
 func (x *Mesh) GetMtls() *Mesh_Mtls {
 	if x != nil {
 		return x.Mtls
-	}
-	return nil
-}
-
-func (x *Mesh) GetMetrics() *Metrics {
-	if x != nil {
-		return x.Metrics
 	}
 	return nil
 }
@@ -686,10 +672,9 @@ var File_api_mesh_v1alpha1_mesh_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_mesh_proto_rawDesc = "" +
 	"\n" +
-	"\x1capi/mesh/v1alpha1/mesh.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a\x1fapi/mesh/v1alpha1/metrics.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\"\xbe\b\n" +
+	"\x1capi/mesh/v1alpha1/mesh.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\"\x96\b\n" +
 	"\x04Mesh\x121\n" +
 	"\x04mtls\x18\x01 \x01(\v2\x1d.kuma.mesh.v1alpha1.Mesh.MtlsR\x04mtls\x125\n" +
-	"\ametrics\x18\x04 \x01(\v2\x1b.kuma.mesh.v1alpha1.MetricsR\ametrics\x125\n" +
 	"\arouting\x18\x06 \x01(\v2\x1b.kuma.mesh.v1alpha1.RoutingR\arouting\x12F\n" +
 	"\vconstraints\x18\a \x01(\v2$.kuma.mesh.v1alpha1.Mesh.ConstraintsR\vconstraints\x12@\n" +
 	"\x1bskipCreatingInitialPolicies\x18\b \x03(\tR\x1bskipCreatingInitialPolicies\x1a\xa3\x01\n" +
@@ -708,8 +693,8 @@ const file_api_mesh_v1alpha1_mesh_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:O\xaa\x8c\x89\xa6\x01I\n" +
 	"\fMeshResource\x12\x04Mesh\x18\x01\"\x04mesh:\x0e\n" +
-	"\x04mesh\x12\x06meshesR\x17model.GlobalToZonesFlag\x9a\x01\x01mJ\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x05\x10\x06J\x04\b\t\x10\n" +
-	"R\atracingR\aloggingR\n" +
+	"\x04mesh\x12\x06meshesR\x17model.GlobalToZonesFlag\x9a\x01\x01mJ\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\t\x10\n" +
+	"R\atracingR\aloggingR\ametricsR\n" +
 	"networking\"\xb0\x05\n" +
 	"\x1bCertificateAuthorityBackend\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
@@ -765,32 +750,30 @@ var file_api_mesh_v1alpha1_mesh_proto_goTypes = []any{
 	(*CertificateAuthorityBackend_DpCert)(nil),          // 9: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert
 	(*CertificateAuthorityBackend_RootChain)(nil),       // 10: kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain
 	(*CertificateAuthorityBackend_DpCert_Rotation)(nil), // 11: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation
-	(*Metrics)(nil),             // 12: kuma.mesh.v1alpha1.Metrics
-	(*structpb.Struct)(nil),     // 13: google.protobuf.Struct
-	(*durationpb.Duration)(nil), // 14: google.protobuf.Duration
+	(*structpb.Struct)(nil),                             // 12: google.protobuf.Struct
+	(*durationpb.Duration)(nil),                         // 13: google.protobuf.Duration
 }
 var file_api_mesh_v1alpha1_mesh_proto_depIdxs = []int32{
 	4,  // 0: kuma.mesh.v1alpha1.Mesh.mtls:type_name -> kuma.mesh.v1alpha1.Mesh.Mtls
-	12, // 1: kuma.mesh.v1alpha1.Mesh.metrics:type_name -> kuma.mesh.v1alpha1.Metrics
-	3,  // 2: kuma.mesh.v1alpha1.Mesh.routing:type_name -> kuma.mesh.v1alpha1.Routing
-	5,  // 3: kuma.mesh.v1alpha1.Mesh.constraints:type_name -> kuma.mesh.v1alpha1.Mesh.Constraints
-	9,  // 4: kuma.mesh.v1alpha1.CertificateAuthorityBackend.dpCert:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert
-	13, // 5: kuma.mesh.v1alpha1.CertificateAuthorityBackend.conf:type_name -> google.protobuf.Struct
-	0,  // 6: kuma.mesh.v1alpha1.CertificateAuthorityBackend.mode:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.Mode
-	10, // 7: kuma.mesh.v1alpha1.CertificateAuthorityBackend.rootChain:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain
-	2,  // 8: kuma.mesh.v1alpha1.Mesh.Mtls.backends:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend
-	6,  // 9: kuma.mesh.v1alpha1.Mesh.Constraints.dataplaneProxy:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints
-	7,  // 10: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.requirements:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules
-	7,  // 11: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.restrictions:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules
-	8,  // 12: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules.tags:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules.TagsEntry
-	11, // 13: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.rotation:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation
-	14, // 14: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.requestTimeout:type_name -> google.protobuf.Duration
-	14, // 15: kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain.requestTimeout:type_name -> google.protobuf.Duration
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	3,  // 1: kuma.mesh.v1alpha1.Mesh.routing:type_name -> kuma.mesh.v1alpha1.Routing
+	5,  // 2: kuma.mesh.v1alpha1.Mesh.constraints:type_name -> kuma.mesh.v1alpha1.Mesh.Constraints
+	9,  // 3: kuma.mesh.v1alpha1.CertificateAuthorityBackend.dpCert:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert
+	12, // 4: kuma.mesh.v1alpha1.CertificateAuthorityBackend.conf:type_name -> google.protobuf.Struct
+	0,  // 5: kuma.mesh.v1alpha1.CertificateAuthorityBackend.mode:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.Mode
+	10, // 6: kuma.mesh.v1alpha1.CertificateAuthorityBackend.rootChain:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain
+	2,  // 7: kuma.mesh.v1alpha1.Mesh.Mtls.backends:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend
+	6,  // 8: kuma.mesh.v1alpha1.Mesh.Constraints.dataplaneProxy:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints
+	7,  // 9: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.requirements:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules
+	7,  // 10: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.restrictions:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules
+	8,  // 11: kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules.tags:type_name -> kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules.TagsEntry
+	11, // 12: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.rotation:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation
+	13, // 13: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.requestTimeout:type_name -> google.protobuf.Duration
+	13, // 14: kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain.requestTimeout:type_name -> google.protobuf.Duration
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_api_mesh_v1alpha1_mesh_proto_init() }
@@ -798,7 +781,6 @@ func file_api_mesh_v1alpha1_mesh_proto_init() {
 	if File_api_mesh_v1alpha1_mesh_proto != nil {
 		return
 	}
-	file_api_mesh_v1alpha1_metrics_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

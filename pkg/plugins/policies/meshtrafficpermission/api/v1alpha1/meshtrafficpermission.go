@@ -12,8 +12,6 @@ type MeshTrafficPermission struct {
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
-	// From list makes a match between clients and corresponding configurations
-	From *[]From `json:"from,omitempty"`
 	// Rules defines inbound permissions configuration
 	Rules *[]Rule `json:"rules,omitempty"`
 }
@@ -30,15 +28,6 @@ type RuleConf struct {
 	AllowWithShadowDeny *[]common_api.Match `json:"allowWithShadowDeny,omitempty"`
 	// Allow definees a list of matches for which access will be allowed
 	Allow *[]common_api.Match `json:"allow,omitempty"`
-}
-
-type From struct {
-	// TargetRef is a reference to the resource that represents a group of
-	// clients.
-	TargetRef common_api.TargetRef `json:"targetRef"`
-	// Default is a configuration specific to the group of clients referenced in
-	// 'targetRef'
-	Default Conf `json:"default,omitempty"`
 }
 
 type Action string
