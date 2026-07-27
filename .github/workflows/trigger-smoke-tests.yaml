@@ -74,8 +74,12 @@ jobs:
           # confirm head_branch is this tag, not a same-named branch, and it
           # still points at the built commit, not one it moved to since
           TAG="${RAW}"
-          if ! TAG_REF_JSON="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" 2>/dev/null)"; then
-            echo "'${TAG}' is not an existing tag ref; skipping smoke dispatch."
+          # keep stderr in the run log: a missing tag (404) is the intended
+          # clean skip, but a rate-limit/network/auth failure must not vanish
+          # silently behind the same should_dispatch=false line.
+          if ! TAG_REF_JSON="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" 2>/tmp/gh_tag_ref_err)"; then
+            echo "'${TAG}' is not an existing tag ref (or the lookup failed); skipping smoke dispatch." >&2
+            cat /tmp/gh_tag_ref_err >&2 || true
             echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -105,12 +109,15 @@ jobs:
           GH_TOKEN: ${{ secrets.KONG_MESH_SMOKE_DISPATCH_TOKEN }}
           SMOKE_OWNER: ${{ secrets.NOTIFY_OWNER }}
           SMOKE_REPO: ${{ secrets.KONG_MESH_SMOKE_REPO }}
+          # branch smoke.yaml lives on downstream; overridable via repo var if
+          # the default branch is renamed or moved to a maintenance branch.
+          SMOKE_REF: ${{ vars.KONG_MESH_SMOKE_REF || 'main' }}
           PRODUCT_VERSION: ${{ steps.version.outputs.product_version }}
         run: |
           set -euo pipefail
           gh workflow run smoke.yaml \
             --repo "${SMOKE_OWNER}/${SMOKE_REPO}" \
-            --ref main \
+            --ref "${SMOKE_REF}" \
             --field product_name=kuma \
             --field product_version="${PRODUCT_VERSION}" \
             --field k8s_provider_k3d=true \
