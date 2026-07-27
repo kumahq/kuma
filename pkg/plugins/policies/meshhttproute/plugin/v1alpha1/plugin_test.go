@@ -2573,7 +2573,7 @@ func meshContextWithResources(
 		meshBuilder = builders.Mesh()
 	}
 
-	mesh := meshBuilder.WithBuiltinMTLSBackend("ca-1").WithEgressRoutingEnabled().WithEnabledMTLSBackend("ca-1").Build()
+	mesh := meshBuilder.WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").Build()
 	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", core_model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 

@@ -23,11 +23,11 @@ func Test() {
 		Expect(NewClusterSetup().
 			// MeshExternalService traffic is only ever routed through ZoneEgress
 			// (see docs/madr/decisions/062-meshexternalservice-and-zoneegress.md),
-			// so the mesh needs mTLS + egress routing enabled for the
+			// so the mesh needs mTLS plus an available ZoneEgress for the
 			// MeshTCPRoute-vs-MeshExternalService precedence case below to have
 			// a real backend to route to.
 			Install(Combine(
-				YamlK8s(samples.MeshMTLSBuilder().WithName(meshName).WithEgressRoutingEnabled().KubeYaml()),
+				YamlK8s(samples.MeshMTLSBuilder().WithName(meshName).KubeYaml()),
 				WaitMeshKubernetesReady(meshName),
 			)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).

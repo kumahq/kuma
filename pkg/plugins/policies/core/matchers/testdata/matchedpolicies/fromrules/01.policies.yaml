@@ -6,17 +6,17 @@ spec:
     kind: Dataplane
     name: dp-1
     sectionName: v1
-  from:
-    - targetRef:
-        kind: MeshService
-        name: backend
-      default:
-        action: Allow
-    - targetRef:
-        kind: MeshService
-        name: orders
-      default:
-        action: AllowWithShadowDeny
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Exact
+              value: spiffe://mesh-1/backend
+    - default:
+        allowWithShadowDeny:
+          - spiffeID:
+              type: Exact
+              value: spiffe://mesh-1/orders
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
@@ -24,8 +24,9 @@ name: mtp-2
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Deny
+  rules:
+    - default:
+        deny:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1

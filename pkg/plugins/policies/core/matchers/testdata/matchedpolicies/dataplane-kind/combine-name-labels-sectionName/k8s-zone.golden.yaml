@@ -12,11 +12,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-1.ns-k8s
   spec:
-    from:
+    rules:
     - default:
-        action: Deny
-      targetRef:
-        kind: Mesh
+        deny:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Dataplane
       labels:
@@ -35,11 +36,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-2.ns-k8s
   spec:
-    from:
+    rules:
     - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
+        allow:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Dataplane
       labels:
@@ -59,11 +61,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-2.ns-k8s
   spec:
-    from:
+    rules:
     - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
+        allow:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Dataplane
       name: dp-1
@@ -82,11 +85,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-2.ns-k8s
   spec:
-    from:
+    rules:
     - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
+        allow:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Dataplane
       name: dp-1

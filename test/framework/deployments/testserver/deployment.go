@@ -12,7 +12,6 @@ type DeploymentOpts struct {
 	Name                string
 	Namespace           string
 	Mesh                string
-	ReachableServices   []string
 	ReachableBackends   string
 	WithStatefulSet     bool
 	ServiceAccount      string
@@ -65,12 +64,6 @@ func WithTLS(key, crt string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.tlsKey = key
 		opts.tlsCrt = crt
-	}
-}
-
-func WithReachableServices(services ...string) DeploymentOptsFn {
-	return func(opts *DeploymentOpts) {
-		opts.ReachableServices = services
 	}
 }
 

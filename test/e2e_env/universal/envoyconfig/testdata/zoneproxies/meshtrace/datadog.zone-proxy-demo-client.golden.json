@@ -684,15 +684,6 @@
                     "envoy.transport_socket_match": {
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
-                    },
-                    "io.kuma.labels": {
-                      "kuma.io/display-name": "zone-proxy-demo-client",
-                      "kuma.io/env": "universal",
-                      "kuma.io/mesh": "envoyconfig-zoneproxies",
-                      "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
-                      "kuma.io/workload": "zone-proxy-demo-client",
-                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -734,15 +725,6 @@
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
                       "version": "v1"
-                    },
-                    "io.kuma.labels": {
-                      "kuma.io/display-name": "zone-proxy-test-server-no-reusable-ports",
-                      "kuma.io/env": "universal",
-                      "kuma.io/mesh": "envoyconfig-zoneproxies",
-                      "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
-                      "kuma.io/workload": "zone-proxy-test-server-no-reusable-ports",
-                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -784,15 +766,6 @@
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
                       "version": "v1"
-                    },
-                    "io.kuma.labels": {
-                      "kuma.io/display-name": "zone-proxy-test-server",
-                      "kuma.io/env": "universal",
-                      "kuma.io/mesh": "envoyconfig-zoneproxies",
-                      "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
-                      "kuma.io/workload": "zone-proxy-test-server",
-                      "kuma.io/zone": "kuma-3"
                     }
                   }
                 }
@@ -888,7 +861,9 @@
         ],
         "metadata": {
           "filterMetadata": {
-            "io.kuma.tags": {}
+            "io.kuma.tags": {
+              "kuma.io/unified-name": "kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80"
+            }
           }
         },
         "name": "kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80",
@@ -920,7 +895,9 @@
         ],
         "metadata": {
           "filterMetadata": {
-            "io.kuma.tags": {}
+            "io.kuma.tags": {
+              "kuma.io/unified-name": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-demo-client_3000"
+            }
           }
         },
         "name": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-demo-client_3000",
@@ -1042,7 +1019,9 @@
         ],
         "metadata": {
           "filterMetadata": {
-            "io.kuma.tags": {}
+            "io.kuma.tags": {
+              "kuma.io/unified-name": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server-no-reusable-ports_80"
+            }
           }
         },
         "name": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server-no-reusable-ports_80",
@@ -1164,7 +1143,9 @@
         ],
         "metadata": {
           "filterMetadata": {
-            "io.kuma.tags": {}
+            "io.kuma.tags": {
+              "kuma.io/unified-name": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80"
+            }
           }
         },
         "name": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80",

@@ -30,11 +30,12 @@ spec:
     kind: Dataplane
     labels:
       app: foo
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://default
 ---
 type: Dataplane
 name: foo-dp-1

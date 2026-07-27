@@ -168,27 +168,6 @@ spec:
 	)
 }
 
-func MTLSMeshKubernetesWithEgressRouting(name string) InstallFunc {
-	mesh := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  routing:
-    zoneEgress: true
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-`, name)
-	return Combine(
-		YamlK8s(mesh),
-		WaitMeshKubernetesReady(name),
-	)
-}
-
 func WaitMeshKubernetesReady(name string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryContextE(
@@ -248,11 +227,12 @@ metadata:
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow`, name, Config.KumaNamespace)
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[1]s"`, name, Config.KumaNamespace)
 	return YamlK8s(mtp)
 }
 
@@ -322,11 +302,12 @@ mesh: %[1]s
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow`, name)
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[1]s"`, name)
 	return YamlUniversal(mtp)
 }
 
@@ -709,7 +690,6 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 				dpp.TransparentProxy = &TransparentProxyConfig{
 					RedirectPortInbound:  redirectPortInbound,
 					RedirectPortOutbound: redirectPortOutbound,
-					ReachableServices:    opts.reachableServices,
 					ReachableBackends:    opts.reachableBackends,
 				}
 			case opts.bindOutbounds:

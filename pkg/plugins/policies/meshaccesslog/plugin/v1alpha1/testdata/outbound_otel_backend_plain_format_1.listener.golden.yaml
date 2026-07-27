@@ -27,7 +27,8 @@ filterChains:
       statPrefix: kri_msvc_default_zone-1_other-ns_foo-meshservice-tcp_37778
 metadata:
   filterMetadata:
-    io.kuma.tags: {}
+    io.kuma.tags:
+      kuma.io/unified-name: kri_msvc_default_zone-1_other-ns_foo-meshservice-tcp_37778
 name: kri_msvc_default_zone-1_other-ns_foo-meshservice-tcp_37778
 statPrefix: kri_msvc_default_zone-1_other-ns_foo-meshservice-tcp_37778
 trafficDirection: OUTBOUND
