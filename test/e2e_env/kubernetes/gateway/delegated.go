@@ -29,7 +29,6 @@ func Delegated() {
 		CpNamespace:                 Config.KumaNamespace,
 		ObservabilityDeploymentName: "observability-delegated-meshtrace-ms",
 		IPV6:                        Config.IPV6,
-		UseEgress:                   true,
 	}
 	AfterEachFailure(func() {
 		DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.NamespaceOutsideMesh)
@@ -49,9 +48,6 @@ spec:
 			}
 			BeforeAll(func() {
 				mesh := samples.MeshMTLSBuilder().WithName(config.Mesh)
-				if config.UseEgress {
-					mesh.WithEgressRoutingEnabled()
-				}
 				err := NewClusterSetup().
 					Install(Yaml(mesh)).
 					Install(MeshTrafficPermissionAllowAllKubernetes(config.Mesh)).

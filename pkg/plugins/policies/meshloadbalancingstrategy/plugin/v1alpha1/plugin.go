@@ -129,9 +129,10 @@ func (p plugin) configureDPP(
 	}
 
 	clusterModifier := func(cluster *envoy_cluster.Cluster, conf api.Conf) error {
+		egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
 		return NewModifier(cluster).
 			Configure(clusterConfigurer(conf)).
-			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound))).
+			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, generator_metadata.OriginOutbound))).
 			Modify()
 	}
 
@@ -148,8 +149,9 @@ func (p plugin) configureDPP(
 				return err
 			}
 		}
+		egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
 		for _, cla := range endpoints[serviceName] {
-			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound)).Modify(); err != nil {
+			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, generator_metadata.OriginOutbound)).Modify(); err != nil {
 				return err
 			}
 		}

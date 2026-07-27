@@ -8,8 +8,6 @@ items:
       type: builtin
     enabledBackend: builtin-1
   name: mesh1
-  routing:
-    zoneEgress: true
   type: Mesh
 - creationTime: "0001-01-01T00:00:00Z"
   kri: kri_m____mesh2_
