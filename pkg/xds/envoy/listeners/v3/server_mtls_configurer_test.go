@@ -90,12 +90,12 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                             prefix: spiffe://default/
                           sanType: URI
                       validationContextSdsSecretConfig:
-                        name: mesh_ca:secret:default
+                        name: system_mtls_ca_default
                         sdsConfig:
                           ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert:secret:default
+                    - name: system_mtls_identity_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
@@ -152,12 +152,12 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                             prefix: spiffe://default/
                           sanType: URI
                       validationContextSdsSecretConfig:
-                        name: mesh_ca:secret:default
+                        name: system_mtls_ca_default
                         sdsConfig:
                           ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert:secret:default
+                    - name: system_mtls_identity_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3

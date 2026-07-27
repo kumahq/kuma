@@ -87,7 +87,7 @@ func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh co
 
 func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa core_xds.CaRequest, matchers []*envoy_tls.SubjectAltNameMatcher, useMeshTrust bool) *envoy_tls.CommonTlsContext {
 	meshCaSecret := NewSecretConfigSource(
-		core_system_names.AsSystemName("mtls_ca_"+core_system_names.JoinSectionParts(targetMeshCa.MeshName()...)),
+		core_system_names.AsSystemName("mtls_ca_" + core_system_names.JoinSectionParts(targetMeshCa.MeshName()...)),
 	)
 	if useMeshTrust {
 		// spiffe validator has trust domain validation
@@ -95,7 +95,7 @@ func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa c
 		meshCaSecret = NewSecretConfigSource(system_names.SystemResourceNameCABundle)
 	}
 	identitySecret := NewSecretConfigSource(
-		core_system_names.AsSystemName("mtls_identity_"+core_system_names.JoinSectionParts(targetMeshCa.MeshName()...)),
+		core_system_names.AsSystemName("mtls_identity_" + ownMesh.MeshName()),
 	)
 
 	return &envoy_tls.CommonTlsContext{

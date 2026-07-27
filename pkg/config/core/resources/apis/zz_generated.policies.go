@@ -4,13 +4,13 @@
 package apis
 
 var DefaultEnabled = []string{
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
+	"hostnamegenerators",
+	"meshexternalservices",
+	"meshidentities",
+	"meshmultizoneservices",
+	"meshopentelemetrybackends",
+	"meshservices",
+	"meshtrusts",
+	"meshzoneaddresses",
+	"workloads",
 }

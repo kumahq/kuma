@@ -13,11 +13,11 @@ import (
 )
 
 type ServerSideMTLSConfigurer struct {
-	Mesh                  *core_mesh.MeshResource
-	SecretsTracker        core_xds.SecretsTracker
-	TlsVersion            *common_tls.Version
-	TlsCiphers            []common_tls.TlsCipher
-	UseMeshTrust          bool
+	Mesh           *core_mesh.MeshResource
+	SecretsTracker core_xds.SecretsTracker
+	TlsVersion     *common_tls.Version
+	TlsCiphers     []common_tls.TlsCipher
+	UseMeshTrust   bool
 }
 
 var _ FilterChainConfigurer = &ServerSideMTLSConfigurer{}

@@ -60,11 +60,11 @@ func ServerSideMTLS(
 	useMeshTrust bool,
 ) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
-		Mesh:                  mesh,
-		SecretsTracker:        secrets,
-		TlsVersion:            tlsVersion,
-		TlsCiphers:            tlsCiphers,
-		UseMeshTrust:          useMeshTrust,
+		Mesh:           mesh,
+		SecretsTracker: secrets,
+		TlsVersion:     tlsVersion,
+		TlsCiphers:     tlsCiphers,
+		UseMeshTrust:   useMeshTrust,
 	})
 }
 

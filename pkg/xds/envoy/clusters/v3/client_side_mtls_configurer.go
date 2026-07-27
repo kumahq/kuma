@@ -16,15 +16,15 @@ import (
 )
 
 type ClientSideMTLSConfigurer struct {
-	SecretsTracker        core_xds.SecretsTracker
-	UpstreamMesh          *core_mesh.MeshResource
-	UpstreamService       string
-	LocalMesh             *core_mesh.MeshResource
-	Tags                  []tags.Tags
-	SNI                   string
-	UpstreamTLSReady      bool
-	VerifyIdentities      []string
-	UseMeshTrust          bool
+	SecretsTracker   core_xds.SecretsTracker
+	UpstreamMesh     *core_mesh.MeshResource
+	UpstreamService  string
+	LocalMesh        *core_mesh.MeshResource
+	Tags             []tags.Tags
+	SNI              string
+	UpstreamTLSReady bool
+	VerifyIdentities []string
+	UseMeshTrust     bool
 }
 
 var _ ClusterConfigurer = &ClientSideMTLSConfigurer{}

@@ -23,13 +23,13 @@ func ClientSideMTLS(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UpstreamMesh:          mesh,
-			UpstreamService:       upstreamService,
-			LocalMesh:             mesh,
-			Tags:                  tags,
-			UpstreamTLSReady:      upstreamTLSReady,
-			UseMeshTrust:          useMeshTrust,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  upstreamService,
+			LocalMesh:        mesh,
+			Tags:             tags,
+			UpstreamTLSReady: upstreamTLSReady,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }
@@ -44,14 +44,14 @@ func ClientSideMTLSCustomSNI(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UpstreamMesh:          mesh,
-			UpstreamService:       upstreamService,
-			LocalMesh:             mesh,
-			Tags:                  nil,
-			UpstreamTLSReady:      upstreamTLSReady,
-			SNI:                   sni,
-			UseMeshTrust:          useMeshTrust,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  upstreamService,
+			LocalMesh:        mesh,
+			Tags:             nil,
+			UpstreamTLSReady: upstreamTLSReady,
+			SNI:              sni,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }
@@ -66,15 +66,15 @@ func ClientSideMultiIdentitiesMTLS(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UpstreamMesh:          mesh,
-			UpstreamService:       "*",
-			LocalMesh:             mesh,
-			SNI:                   sni,
-			Tags:                  nil,
-			UpstreamTLSReady:      upstreamTLSReady,
-			VerifyIdentities:      identities,
-			UseMeshTrust:          useMeshTrust,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  "*",
+			LocalMesh:        mesh,
+			SNI:              sni,
+			Tags:             nil,
+			UpstreamTLSReady: upstreamTLSReady,
+			VerifyIdentities: identities,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }
@@ -89,12 +89,12 @@ func CrossMeshClientSideMTLS(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UpstreamMesh:          upstreamMesh,
-			UpstreamService:       upstreamService,
-			LocalMesh:             localMesh,
-			Tags:                  tags,
-			UpstreamTLSReady:      upstreamTLSReady,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     upstreamMesh,
+			UpstreamService:  upstreamService,
+			LocalMesh:        localMesh,
+			Tags:             tags,
+			UpstreamTLSReady: upstreamTLSReady,
 		})
 	})
 }
