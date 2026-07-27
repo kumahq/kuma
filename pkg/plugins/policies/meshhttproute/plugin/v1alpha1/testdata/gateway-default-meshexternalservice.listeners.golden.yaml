@@ -38,12 +38,7 @@ resources:
           statPrefix: default_example___extsvc_9090
     metadata:
       filterMetadata:
-<<<<<<< HEAD:pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/gateway-default-meshexternalservice.listeners.golden.yaml
-        io.kuma.tags: {}
-    name: outbound:10.20.20.1:9090
-=======
         io.kuma.tags:
-          kuma.io/unified-name: kri_mzsvc_default___multi-backend_80
-    name: outbound:10.0.0.2:80
->>>>>>> 4c54d6dd2a (feat(xds): unified-name for empty listener tags (#17563)):pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/default-meshmultizoneservice-mixed-zones.listeners.golden.yaml
+          kuma.io/unified-name: kri_extsvc_default___example_
+    name: outbound:10.20.20.1:9090
     trafficDirection: OUTBOUND

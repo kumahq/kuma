@@ -4,12 +4,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
-	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 )
 
 var _ = Describe("OutboundListenerTags", func() {
