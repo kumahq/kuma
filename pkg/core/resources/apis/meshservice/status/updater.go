@@ -303,11 +303,9 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 	for _, dpp := range dpps {
 		tagIdentities := dpp.Spec.TagSet()[mesh_proto.ServiceTag]
 		if len(tagIdentities) == 0 {
-			// TagSet() is empty once Experimental.InboundTagsDisabled strips
-			// inbound tags. Fall back to the same workload label the mTLS
-			// identity path and MeshService generation already use, so this
-			// dataplane still gets a verifiable identity instead of silently
-			// falling out of Spec.Identities.
+			// No kuma.io/service tag once Experimental.InboundTagsDisabled
+			// strips inbound tags. Fall back to the workload label, same as
+			// the mTLS identity path and MeshService generation.
 			if workload := dpp.GetMeta().GetLabels()[metadata.KumaWorkload]; workload != "" {
 				serviceTagIdentities[workload] = struct{}{}
 			}
