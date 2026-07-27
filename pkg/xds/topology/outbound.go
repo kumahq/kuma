@@ -357,7 +357,7 @@ func fillDataplaneOutbounds(
 				Tags:     inboundTags,
 				Labels:   dataplane.GetMeta().GetLabels(),
 				Weight:   endpointWeight,
-				Locality: GetLocality(getZone(inboundTags)),
+				Locality: GetLocality(getZone(inboundTags, dataplane.GetMeta().GetLabels())),
 			})
 		}
 	}
@@ -392,7 +392,7 @@ func fillLocalMeshServices(
 						Tags:     inboundTags,
 						Labels:   dpp.GetMeta().GetLabels(),
 						Weight:   1,
-						Locality: GetLocality(getZone(inboundTags)),
+						Locality: GetLocality(getZone(inboundTags, dpp.GetMeta().GetLabels())),
 					})
 				}
 			}
@@ -505,7 +505,7 @@ func fillIngressOutbounds(
 			serviceTags := maps.Clone(service.GetTags())
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()
-			locality := GetLocality(getZone(serviceTags))
+			locality := GetLocality(getZone(serviceTags, nil))
 
 			if _, ok := meshServiceDestinations[serviceName]; ok {
 				continue
@@ -764,8 +764,15 @@ func GetLocality(otherZone *string) *core_xds.Locality {
 	}
 }
 
-func getZone(tags map[string]string) *string {
+// getZone returns the kuma.io/zone inbound tag, falling back to the
+// dataplane's own zone label -- set unconditionally by the K8s pod
+// converter, unlike inbound tags, which are empty under
+// Experimental.InboundTagsDisabled.
+func getZone(tags map[string]string, labels map[string]string) *string {
 	if zone, ok := tags[mesh_proto.ZoneTag]; ok {
+		return &zone
+	}
+	if zone, ok := labels[mesh_proto.ZoneTag]; ok {
 		return &zone
 	}
 	return nil
