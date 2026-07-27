@@ -93,7 +93,7 @@ var _ = Describe("Inspect WS", func() {
 					Build(),
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMesh()).
-					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddRule(v1alpha1.Allow).
 					Build(),
 			},
 			contentType: restful.MIME_JSON,
@@ -120,7 +120,7 @@ var _ = Describe("Inspect WS", func() {
 				builders.MeshTrafficPermission().
 					WithMesh("mesh-1").
 					WithTargetRef(builders.TargetRefDataplaneName("backend-1")).
-					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddRule(v1alpha1.Allow).
 					Build(),
 			},
 			contentType: restful.MIME_JSON,

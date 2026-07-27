@@ -10,8 +10,9 @@ spec:
       version: v1
       env: dev
       team: mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
