@@ -149,14 +149,14 @@ func selectsLabels(tr TargetRef) bool {
 // IncludesGateways reports whether a policy attached with this targetRef could
 // apply to a Gateway-type dataplane. Kind: Mesh (and the legacy MeshSubset) has
 // no way to exclude gateways, so it always includes them; Kind: Dataplane only
-// includes gateways when it explicitly selects them via the computed
-// kuma.io/proxy-type label; MeshHTTPRoute is always gateway-routing.
+// excludes gateways when it explicitly constrains kuma.io/proxy-type to
+// sidecar; MeshHTTPRoute is always gateway-routing.
 func IncludesGateways(ref TargetRef) bool {
 	switch ref.Kind {
 	case Mesh, meshSubset, MeshHTTPRoute:
 		return true
 	case Dataplane:
-		return pointer.Deref(ref.Labels)[mesh_proto.ProxyTypeLabel] == string(mesh_proto.GatewayLabel)
+		return pointer.Deref(ref.Labels)[mesh_proto.ProxyTypeLabel] != string(mesh_proto.SidecarLabel)
 	default:
 		return false
 	}

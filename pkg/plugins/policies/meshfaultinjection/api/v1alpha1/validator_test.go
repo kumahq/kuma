@@ -224,6 +224,8 @@ mesh: mesh-1
 name: fi1
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
   sectionName: test
 to:
   - targetRef:

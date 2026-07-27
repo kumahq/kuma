@@ -27,6 +27,8 @@ var _ = Describe("MeshRateLimit", func() {
 			Entry("full example", `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
   - default:
       local:
@@ -49,6 +51,8 @@ rules:
 			Entry("full example, only http", `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
   - default:
       local:
@@ -65,6 +69,8 @@ rules:
 			Entry("full example, only tcp", `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
   - default:
       local:
@@ -76,6 +82,8 @@ rules:
 			Entry("minimal example", `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
   - default:
       local:
@@ -90,6 +98,8 @@ rules:
 			Entry("disable rate limit", `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
   - default:
       local:
@@ -100,6 +110,8 @@ rules:
 			Entry("rules example with sni match", `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
   - matches:
       - sni:
@@ -137,6 +149,8 @@ rules:
 				inputYaml: `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
 - default:
     local:
@@ -172,6 +186,8 @@ violations:
 				inputYaml: `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
 - default: {}`,
 				expected: `
@@ -183,6 +199,8 @@ violations:
 				inputYaml: `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
   sectionName: test
 to:
 - targetRef:
@@ -199,6 +217,8 @@ violations:
 				inputYaml: `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
 - default:
     local: {}`,
@@ -211,6 +231,8 @@ violations:
 				inputYaml: `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
 - default:
     local:
@@ -224,6 +246,8 @@ violations:
 				inputYaml: `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
 - default:
     local:
@@ -287,6 +311,8 @@ violations:
 				inputYaml: `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
   - matches:
       - spiffeID:
@@ -307,6 +333,8 @@ violations:
 				inputYaml: `
 targetRef:
   kind: Dataplane
+  labels:
+    kuma.io/proxy-type: sidecar
 rules:
   - matches:
       - spiffeID:

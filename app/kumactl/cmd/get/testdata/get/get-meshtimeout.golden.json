@@ -14,7 +14,10 @@
   "kri": "kri_mt_default_my-zone_kong-mesh-system_timeout-2_",
   "spec": {
     "targetRef": {
-      "kind": "Mesh"
+      "kind": "Dataplane",
+      "labels": {
+        "kuma.io/proxy-type": "gateway"
+      }
     },
     "to": [
       {
