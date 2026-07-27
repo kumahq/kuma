@@ -15,6 +15,8 @@ import (
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -143,6 +145,50 @@ var _ = Describe("Context", func() {
 				},
 			}),
 		)
+
+		It("should remove status from MeshTrust when syncing from zone to global", func() {
+			// given
+			resource := &meshtrust_api.MeshTrustResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "mt-1",
+				},
+				Spec: &meshtrust_api.MeshTrust{
+					TrustDomain: "example.com",
+				},
+				Status: &meshtrust_api.MeshTrustStatus{
+					Origin: &meshtrust_api.Origin{
+						KRI: pointer.To("kri_dot_kri_dot_default_dot__dot__dot__dot__dot_mesh-identity-1"),
+					},
+				},
+			}
+
+			// when
+			out, err := mapper(kds.Features{}, resource)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out.GetStatus()).To(Equal(&meshtrust_api.MeshTrustStatus{}))
+		})
+
+		It("should keep status of other status-bearing resources when syncing from zone to global", func() {
+			// given
+			resource := &meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "ms-1",
+				},
+				Spec: &meshservice_api.MeshService{},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
+				},
+			}
+
+			// when
+			out, err := mapper(kds.Features{}, resource)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out.GetStatus()).To(Equal(resource.Status))
+		})
 	})
 	Describe("GlobalProvidedFilter", func() {
 		var rm manager.ResourceManager
