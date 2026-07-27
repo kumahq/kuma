@@ -303,6 +303,7 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.7",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
+								Tags: map[string]string{mesh_proto.ServiceTag: "redis"},
 								Port: 6379,
 							},
 						},
@@ -318,10 +319,11 @@ var _ = Describe("TrafficRoute", func() {
 			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, nil, externalServices.Items, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
 
 			// then
-			Expect(targets).To(HaveKeyWithValue("", []core_xds.Endpoint{
+			Expect(targets).To(HaveKeyWithValue("redis", []core_xds.Endpoint{
 				{
 					Target: "192.168.0.7",
 					Port:   6379,
+					Tags:   map[string]string{mesh_proto.ServiceTag: "redis"},
 					Labels: map[string]string{mesh_proto.ZoneTag: "eu"},
 					Locality: &core_xds.Locality{
 						Zone: "eu",
