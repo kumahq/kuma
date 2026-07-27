@@ -1,5 +1,5 @@
 resources:
-- name: kri_msvc_default___backend_test-port
+- name: outbound:127.0.0.1:10001
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -11,11 +11,10 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: kri_msvc_default___backend_80
-          statPrefix: kri_msvc_default___backend_test-port
+          cluster: default_backend___msvc_80
+          statPrefix: default_backend___msvc_80
     metadata:
       filterMetadata:
         io.kuma.tags: {}
-    name: kri_msvc_default___backend_test-port
-    statPrefix: kri_msvc_default___backend_test-port
+    name: outbound:127.0.0.1:10001
     trafficDirection: OUTBOUND
