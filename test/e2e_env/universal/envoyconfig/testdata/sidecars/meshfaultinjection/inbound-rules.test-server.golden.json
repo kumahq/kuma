@@ -594,7 +594,9 @@
         ],
         "metadata": {
           "filterMetadata": {
-            "io.kuma.tags": {}
+            "io.kuma.tags": {
+              "kuma.io/unified-name": "kri_msvc_envoyconfig_kuma-3__demo-client_3000"
+            }
           }
         },
         "name": "kri_msvc_envoyconfig_kuma-3__demo-client_3000",
@@ -655,7 +657,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "\u0026instance=1\u0026\u0026kuma.io/protocol=http\u0026\u0026kuma.io/service=test-server\u0026\u0026kuma.io/zone=kuma-3\u0026\u0026team=server-owners\u0026\u0026version=v1\u0026"
+                          "value": "&instance=1&&kuma.io/protocol=http&&kuma.io/service=test-server&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
                         }
                       }
                     ],
@@ -690,7 +692,9 @@
         ],
         "metadata": {
           "filterMetadata": {
-            "io.kuma.tags": {}
+            "io.kuma.tags": {
+              "kuma.io/unified-name": "kri_msvc_envoyconfig_kuma-3__test-server_80"
+            }
           }
         },
         "name": "kri_msvc_envoyconfig_kuma-3__test-server_80",
@@ -722,19 +726,43 @@
                       "name": "envoy.filters.http.rbac",
                       "typedConfig": {
                         "@type": "type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC",
-                        "rules": {
-                          "policies": {
-                            "MeshTrafficPermission": {
-                              "permissions": [
-                                {
-                                  "any": true
+                        "matcher": {
+                          "matcherList": {
+                            "matchers": [
+                              {
+                                "onMatch": {
+                                  "action": {
+                                    "name": "envoy.filters.rbac.action",
+                                    "typedConfig": {
+                                      "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+                                      "name": "kri_mtp_envoyconfig_kuma-3__allow-all-envoyconfig_"
+                                    }
+                                  }
+                                },
+                                "predicate": {
+                                  "singlePredicate": {
+                                    "input": {
+                                      "name": "envoy.matching.inputs.uri_san",
+                                      "typedConfig": {
+                                        "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
+                                      }
+                                    },
+                                    "valueMatch": {
+                                      "prefix": "spiffe://envoyconfig"
+                                    }
+                                  }
                                 }
-                              ],
-                              "principals": [
-                                {
-                                  "any": true
-                                }
-                              ]
+                              }
+                            ]
+                          },
+                          "onNoMatch": {
+                            "action": {
+                              "name": "envoy.filters.rbac.action",
+                              "typedConfig": {
+                                "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+                                "action": "DENY",
+                                "name": "default"
+                              }
                             }
                           }
                         }

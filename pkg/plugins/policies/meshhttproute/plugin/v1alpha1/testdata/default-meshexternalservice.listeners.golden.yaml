@@ -33,11 +33,12 @@ resources:
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
                   autoHostRewrite: true
-                  cluster: default_example___extsvc_9090
+                  cluster: kri_extsvc_default___example_
                   timeout: 0s
           statPrefix: default_example___extsvc_9090
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/unified-name: kri_extsvc_default___example_
     name: outbound:10.20.20.1:9090
     trafficDirection: OUTBOUND

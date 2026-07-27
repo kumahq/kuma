@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
@@ -102,47 +101,21 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 	if !tpEnabled && !bindOutbounds {
 		return asOutbounds(dataplane, meshContext.ResolveResourceIdentifier)
 	}
-	reachableServices := map[string]bool{}
 	var reachableBackends map[kri.Identifier]core_resources.Port
 	var onlySelectedBackends bool
 	if dataplane.Spec.GetNetworking().GetTransparentProxying() != nil {
-		for _, reachableService := range dataplane.Spec.GetNetworking().GetTransparentProxying().GetReachableServices() {
-			reachableServices[reachableService] = true
-		}
 		reachableBackends, onlySelectedBackends = meshContext.BaseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
 	}
 
-	// Update the outbound of the dataplane with the generatedVips
-	generatedVips := map[string]bool{}
-	for _, ob := range meshContext.VIPOutbounds {
-		generatedVips[ob.GetAddress()] = true
-	}
 	var newOutbounds []*xds_types.Outbound
-	var legacyOutbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
-		if outbound.LegacyOutbound != nil {
-			service := outbound.LegacyOutbound.GetService()
-			if len(reachableServices) != 0 && !reachableServices[service] {
+		if onlySelectedBackends {
+			// check if there is an entry with specific port or without port
+			_, selected := reachableBackends[outbound.Resource]
+			_, selectedBySectionName := reachableBackends[kri.NoSectionName(outbound.Resource)]
+			if !selected && !selectedBySectionName {
+				// ignore VIP outbound if reachableBackends is defined and not specified
 				continue
-			}
-		} else {
-			// we need to verify if the user has already reachableServices defined, and to don't send additional clusters and ruin the performance
-			// of the dataplane
-			if len(reachableServices) != 0 && !onlySelectedBackends {
-				continue
-			}
-
-			if onlySelectedBackends {
-				// check if there is an entry with specific port or without port
-				_, selected := reachableBackends[outbound.Resource]
-				_, selectedBySectionName := reachableBackends[kri.NoSectionName(outbound.Resource)]
-				if !selected && !selectedBySectionName {
-					// ignore VIP outbound if reachableServices is defined and not specified
-					// Reachable services takes precedence over reachable services graph.
-					continue
-				}
-				// we don't support MeshTrafficPermission for MeshExternalService at the moment
-				// TODO: https://github.com/kumahq/kuma/issues/11077
 			}
 		}
 		if dataplane.UsesInboundInterface(net.ParseIP(outbound.GetAddress()), outbound.GetPort()) {
@@ -150,13 +123,11 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 			// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
 			continue
 		}
-		if outbound.LegacyOutbound != nil {
-			legacyOutbounds = append(legacyOutbounds, outbound.LegacyOutbound)
-		}
 		newOutbounds = append(newOutbounds, outbound)
 	}
-	// we still set legacy outbounds for the dataplane to not break old policies that rely on this field
-	dataplane.Spec.Networking.Outbound = legacyOutbounds
+	// VIP outbounds never carry a legacy outbound, so the dataplane's legacy
+	// outbound list is always cleared here.
+	dataplane.Spec.Networking.Outbound = nil
 	return newOutbounds
 }
 

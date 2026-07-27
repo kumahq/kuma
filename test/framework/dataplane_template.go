@@ -2,7 +2,6 @@ package framework
 
 import (
 	"bytes"
-	"strings"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -55,7 +54,6 @@ type OutboundConfig struct {
 type TransparentProxyConfig struct {
 	RedirectPortInbound  string
 	RedirectPortOutbound string
-	ReachableServices    []string
 	// ReachableBackends is the raw YAML body rendered under
 	// networking.transparentProxying.reachableBackends (e.g. a `refs:` list).
 	ReachableBackends string
@@ -83,9 +81,7 @@ type ZoneEgressTemplateData struct {
 }
 
 var (
-	dataplaneTemplate = template.Must(template.New("dataplane").Funcs(template.FuncMap{
-		"joinStrings": strings.Join,
-	}).Parse(`
+	dataplaneTemplate = template.Must(template.New("dataplane").Parse(`
 type: Dataplane
 mesh: {{ .Mesh }}
 name: {{ "{{ name }}" }}
@@ -147,9 +143,6 @@ networking:
   transparentProxying:
     redirectPortInbound: {{ .TransparentProxy.RedirectPortInbound }}
     redirectPortOutbound: {{ .TransparentProxy.RedirectPortOutbound }}
-{{- if .TransparentProxy.ReachableServices }}
-    reachableServices: [{{ joinStrings .TransparentProxy.ReachableServices "," }}]
-{{- end }}
 {{- if .TransparentProxy.ReachableBackends }}
     reachableBackends:
 {{ .TransparentProxy.ReachableBackends }}

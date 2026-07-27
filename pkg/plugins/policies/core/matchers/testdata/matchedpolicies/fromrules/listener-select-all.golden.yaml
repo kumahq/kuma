@@ -47,7 +47,4 @@ InboundRules:
         name: mtp-all
         type: MeshTrafficPermission
       RuleIndex: 0
-Rules:
-  1.1.1.1:8080: []
-  1.1.1.1:10001: []
-  1.1.1.1:10002: []
+Rules: {}

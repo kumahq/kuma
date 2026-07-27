@@ -430,13 +430,14 @@ name: mtp-1
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: foo
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: foo
+              value: spiffe://mesh-1
 `,
-			err: `resource[0]: failed to parse resource: spec.from[0].default.action: in body should be one of [Allow Deny AllowWithShadowDeny]`,
+			err: `resource[0]: failed to parse resource: spec.rules[0].default.allow[0].spiffeID.type: in body should be one of [Exact Prefix]`,
 		}),
 	)
 
