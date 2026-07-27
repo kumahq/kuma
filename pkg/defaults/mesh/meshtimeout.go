@@ -20,9 +20,9 @@ var defaultMeshTimeoutResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TargetRef{
-				Kind: common_api.Mesh,
-				ProxyTypes: &[]common_api.TargetRefProxyType{
-					common_api.Sidecar,
+				Kind: common_api.Dataplane,
+				Labels: &map[string]string{
+					mesh_proto.ProxyTypeLabel: string(mesh_proto.SidecarLabel),
 				},
 			},
 
@@ -58,9 +58,9 @@ var defaultMeshTimeoutToResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TargetRef{
-				Kind: common_api.Mesh,
-				ProxyTypes: &[]common_api.TargetRefProxyType{
-					common_api.Sidecar,
+				Kind: common_api.Dataplane,
+				Labels: &map[string]string{
+					mesh_proto.ProxyTypeLabel: string(mesh_proto.SidecarLabel),
 				},
 			},
 			To: &[]v1alpha1.To{
@@ -94,9 +94,9 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TargetRef{
-				Kind: common_api.Mesh,
-				ProxyTypes: &[]common_api.TargetRefProxyType{
-					common_api.Gateway,
+				Kind: common_api.Dataplane,
+				Labels: &map[string]string{
+					mesh_proto.ProxyTypeLabel: string(mesh_proto.GatewayLabel),
 				},
 			},
 			Rules: &[]v1alpha1.Rule{
@@ -124,9 +124,9 @@ var defaulMeshGatewaysTimeoutToResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TargetRef{
-				Kind: common_api.Mesh,
-				ProxyTypes: &[]common_api.TargetRefProxyType{
-					common_api.Gateway,
+				Kind: common_api.Dataplane,
+				Labels: &map[string]string{
+					mesh_proto.ProxyTypeLabel: string(mesh_proto.GatewayLabel),
 				},
 			},
 			To: &[]v1alpha1.To{

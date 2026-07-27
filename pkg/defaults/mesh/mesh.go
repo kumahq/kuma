@@ -10,6 +10,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
@@ -64,6 +66,9 @@ func EnsureDefaultMeshResources(
 	}
 	if err := migrateCombinedMeshTimeoutDefaults(ctx, resManager, meshName, k8sStore, systemNamespace, logger); err != nil {
 		return errors.Wrap(err, "could not migrate legacy combined default MeshTimeout resources")
+	}
+	if err := migrateMeshTimeoutTargetRefProxyTypes(ctx, resManager, meshName, k8sStore, systemNamespace, logger); err != nil {
+		return errors.Wrap(err, "could not migrate default MeshTimeout targetRef from proxyTypes to dataplane labels")
 	}
 	if slices.Contains(skippedPolicies, "*") {
 		logger.Info("skipping all default policy creation")
@@ -150,6 +155,61 @@ func migrateCombinedMeshTimeoutDefaults(
 			return errors.Wrapf(err, "could not migrate default MeshTimeout %q", key.Name)
 		}
 		logger.Info("migrated legacy combined default MeshTimeout, outbound defaults now live in a separate resource", "name", key.Name)
+	}
+	return nil
+}
+
+// migrateMeshTimeoutTargetRefProxyTypes rewrites default MeshTimeout resources
+// persisted by CP versions that selected sidecars/gateways via
+// TargetRef{Kind: Mesh, ProxyTypes: [...]} to the current
+// TargetRef{Kind: Dataplane, Labels: {kuma.io/proxy-type: ...}} shape.
+// Without this, ensureDefaultResource's label-healing Get() unmarshals the
+// legacy stored spec onto the new default's pre-populated struct (JSON
+// unmarshal reuses existing pointers instead of replacing them), so a field
+// absent from the legacy JSON (labels) would survive alongside a field
+// restored from it (kind: Mesh), producing an invalid combination.
+func migrateMeshTimeoutTargetRefProxyTypes(
+	ctx context.Context,
+	resManager manager.ResourceManager,
+	meshName string,
+	k8sStore bool,
+	systemNamespace string,
+	logger logr.Logger,
+) error {
+	proxyTypeByPrefix := map[string]mesh_proto.ProxyTypeLabelValues{
+		"mesh-timeout-all":             mesh_proto.SidecarLabel,
+		"mesh-timeout-to-all":          mesh_proto.SidecarLabel,
+		"mesh-gateways-timeout-all":    mesh_proto.GatewayLabel,
+		"mesh-gateways-timeout-to-all": mesh_proto.GatewayLabel,
+	}
+
+	for prefix, proxyType := range proxyTypeByPrefix {
+		resourceName := fmt.Sprintf("%s-%s", prefix, meshName)
+		if k8sStore {
+			resourceName = fmt.Sprintf("%s.%s", resourceName, systemNamespace)
+		}
+		key := model.ResourceKey{Mesh: meshName, Name: resourceName}
+
+		existing := v1alpha1.NewMeshTimeoutResource()
+		if err := resManager.Get(ctx, existing, store.GetBy(key), store.GetConsistent()); err != nil {
+			if store.IsNotFound(err) {
+				continue
+			}
+			return errors.Wrapf(err, "could not retrieve default MeshTimeout %q", key.Name)
+		}
+		if existing.Spec.TargetRef == nil || existing.Spec.TargetRef.Kind != common_api.Mesh {
+			continue // already migrated, or an operator-modified resource
+		}
+		existing.Spec.TargetRef = &common_api.TargetRef{
+			Kind: common_api.Dataplane,
+			Labels: &map[string]string{
+				mesh_proto.ProxyTypeLabel: string(proxyType),
+			},
+		}
+		if err := resManager.Update(ctx, existing); err != nil {
+			return errors.Wrapf(err, "could not migrate default MeshTimeout %q", key.Name)
+		}
+		logger.Info("migrated legacy default MeshTimeout targetRef from proxyTypes to dataplane labels", "name", key.Name)
 	}
 	return nil
 }
