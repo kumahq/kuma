@@ -5725,7 +5725,7 @@ components:
                       items:
                         properties:
                           kind:
-                            description: "Type of the backend: MeshService or MeshExternalService\n\n\t+required"
+                            description: "Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService\n\n\t+required"
                             type: string
                           labels:
                             additionalProperties:
@@ -5745,20 +5745,6 @@ components:
                         type: object
                       type: array
                   type: object
-                reachableServices:
-                  description: >-
-                    List of reachable services (represented by the value of
-
-                    `kuma.io/service`) via transparent proxying. Setting an
-                    explicit list
-
-                    can dramatically improve the performance of the mesh. If not
-                    specified,
-
-                    all services in the mesh are reachable.
-                  items:
-                    type: string
-                  type: array
                 redirectPortInbound:
                   description: >-
                     Port on which all inbound traffic is being transparently
@@ -15365,7 +15351,7 @@ components:
                           items:
                             properties:
                               kind:
-                                description: "Type of the backend: MeshService or MeshExternalService\n\n\t+required"
+                                description: "Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService\n\n\t+required"
                                 type: string
                               labels:
                                 additionalProperties:
@@ -15385,20 +15371,6 @@ components:
                             type: object
                           type: array
                       type: object
-                    reachableServices:
-                      description: >-
-                        List of reachable services (represented by the value of
-
-                        `kuma.io/service`) via transparent proxying. Setting an
-                        explicit list
-
-                        can dramatically improve the performance of the mesh. If
-                        not specified,
-
-                        all services in the mesh are reachable.
-                      items:
-                        type: string
-                      type: array
                     redirectPortInbound:
                       description: >-
                         Port on which all inbound traffic is being transparently

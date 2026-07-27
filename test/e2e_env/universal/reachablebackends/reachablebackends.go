@@ -1,4 +1,4 @@
-package reachableservices
+package reachablebackends
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
-func ReachableServices() {
+func ReachableBackends() {
 	meshName := "reachable-svc"
 
 	// Under the Exclusive meshServices mode services are reached via
@@ -39,7 +39,7 @@ func ReachableServices() {
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should be able to connect to reachable services", func() {
+	It("should be able to connect to reachable backends", func() {
 		Eventually(func(g Gomega) {
 			// when
 			_, err := client.CollectEchoResponse(
@@ -50,7 +50,7 @@ func ReachableServices() {
 		}, "30s", "500ms").MustPassRepeatedly(10).Should(Succeed())
 	})
 
-	It("should not be able to non reachable services", func() {
+	It("should not be able to non reachable backends", func() {
 		Consistently(func(g Gomega) {
 			// when
 			response, err := client.CollectFailure(

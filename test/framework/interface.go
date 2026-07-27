@@ -117,7 +117,6 @@ type appDeploymentOptions struct {
 	omitDataplane         bool
 	proxyOnly             bool
 	serviceProbe          bool
-	reachableServices     []string
 	reachableBackends     string
 	appendDataplaneConfig string
 	boundToContainerIp    bool
@@ -583,12 +582,6 @@ func WithBindOutbounds() AppDeploymentOption {
 func WithConcurrency(concurrency int) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.concurrency = concurrency
-	})
-}
-
-func WithReachableServices(services ...string) AppDeploymentOption {
-	return AppOptionFunc(func(o *appDeploymentOptions) {
-		o.reachableServices = services
 	})
 }
 
