@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v2/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/util/maps"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_time "github.com/kumahq/kuma/v2/pkg/util/time"
@@ -300,7 +301,18 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 	serviceTagIdentities := map[string]struct{}{}
 	spiffeIDs := map[string]struct{}{}
 	for _, dpp := range dpps {
-		for service := range dpp.Spec.TagSet()[mesh_proto.ServiceTag] {
+		tagIdentities := dpp.Spec.TagSet()[mesh_proto.ServiceTag]
+		if len(tagIdentities) == 0 {
+			// TagSet() is empty once Experimental.InboundTagsDisabled strips
+			// inbound tags. Fall back to the same workload label the mTLS
+			// identity path and MeshService generation already use, so this
+			// dataplane still gets a verifiable identity instead of silently
+			// falling out of Spec.Identities.
+			if workload := dpp.GetMeta().GetLabels()[metadata.KumaWorkload]; workload != "" {
+				serviceTagIdentities[workload] = struct{}{}
+			}
+		}
+		for service := range tagIdentities {
 			serviceTagIdentities[service] = struct{}{}
 		}
 		for _, identity := range meshidentity_api.AllMatched(dpp.Meta.GetLabels(), meshIdentities) {
