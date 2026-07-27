@@ -73,7 +73,11 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 				return printers.GenericPrint(format, policies, printers.Table{
 					Headers: []string{"Kind", "Origins"},
 					RowForItem: func(i int, container any) ([]string, error) {
-						items := container.(api_common.PoliciesList).Policies
+						list, ok := container.(api_common.PoliciesList)
+						if !ok {
+							return nil, errors.Errorf("unexpected container type %T, expected %T", container, api_common.PoliciesList{})
+						}
+						items := list.Policies
 						if i >= len(items) {
 							return nil, nil
 						}

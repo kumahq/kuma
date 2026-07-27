@@ -1,0 +1,48 @@
+{
+  "policies": [
+    {
+      "kind": "MeshTrafficPermission",
+      "conf": {
+        "action": "Allow"
+      },
+      "origins": [
+        {
+          "kri": "kri_mtp_default_default__edge-gateway_"
+        }
+      ]
+    },
+    {
+      "kind": "MeshHTTPRoute",
+      "conf": {
+        "rules": [
+          {
+            "matches": [
+              {
+                "path": {
+                  "type": "PathPrefix",
+                  "value": "/"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "origins": [
+        {
+          "kri": "kri_mhttproute_default_default__edge-gateway_to-backend"
+        }
+      ]
+    },
+    {
+      "kind": "MeshTimeout",
+      "conf": {
+        "connectionTimeout": "5s"
+      },
+      "origins": [
+        {
+          "kri": "kri_mt_default_default__edge-gateway_"
+        }
+      ]
+    }
+  ]
+}
