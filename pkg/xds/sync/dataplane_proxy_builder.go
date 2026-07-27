@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
@@ -108,15 +107,9 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 		reachableBackends, onlySelectedBackends = meshContext.BaseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
 	}
 
-	// Update the outbound of the dataplane with the generatedVips
-	generatedVips := map[string]bool{}
-	for _, ob := range meshContext.VIPOutbounds {
-		generatedVips[ob.GetAddress()] = true
-	}
 	var newOutbounds []*xds_types.Outbound
-	var legacyOutbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
-		if outbound.LegacyOutbound == nil && onlySelectedBackends {
+		if onlySelectedBackends {
 			// check if there is an entry with specific port or without port
 			_, selected := reachableBackends[outbound.Resource]
 			_, selectedBySectionName := reachableBackends[kri.NoSectionName(outbound.Resource)]
@@ -130,13 +123,11 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 			// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
 			continue
 		}
-		if outbound.LegacyOutbound != nil {
-			legacyOutbounds = append(legacyOutbounds, outbound.LegacyOutbound)
-		}
 		newOutbounds = append(newOutbounds, outbound)
 	}
-	// we still set legacy outbounds for the dataplane to not break old policies that rely on this field
-	dataplane.Spec.Networking.Outbound = legacyOutbounds
+	// VIP outbounds never carry a legacy outbound, so the dataplane's legacy
+	// outbound list is always cleared here.
+	dataplane.Spec.Networking.Outbound = nil
 	return newOutbounds
 }
 
