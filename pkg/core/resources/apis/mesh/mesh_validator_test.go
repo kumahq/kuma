@@ -70,9 +70,7 @@ var _ = Describe("Mesh", func() {
                 restrictions:
                 - tags:
                     k8s.kuma.io/namespace: ns-1
-                    kuma.io/zone: west
-            routing:
-              zoneEgress: true`,
+                    kuma.io/zone: west`,
 				expected: "",
 			}),
 		)
@@ -192,46 +190,6 @@ var _ = Describe("Mesh", func() {
                 violations:
                 - field: mtls.enabledBackend
                   message: has to be set to one of the backends in the mesh`,
-			}),
-			Entry("zoneEgress enabled but mtls not defined", testCase{
-				mesh: `
-                routing:
-                  zoneEgress: true`,
-				expected: `
-                violations:
-                - field: mtls
-                  message: has to be set when zoneEgress enabled`,
-			}),
-			Entry("zoneEgress enabled but multiple ca backends of the same name", testCase{
-				mesh: `
-                mtls:
-                  enabledBackend: backend-1
-                  backends:
-                  - name: backend-1
-                    type: builtin
-                  - name: backend-1
-                    type: builtin
-                routing:
-                  zoneEgress: true`,
-				expected: `
-                violations:
-                - field: mtls.backends
-                  message: cannot have more than 1 backends
-                - field: mtls.backends[1].name
-                  message: '"backend-1" name is already used for another backend'`,
-			}),
-			Entry("zoneEgress and mTLS enabled but no enabledBackend provided", testCase{
-				mesh: `
-                mtls:
-                  backends:
-                  - name: backend-1
-                    type: builtin
-                routing:
-                  zoneEgress: true`,
-				expected: `
-                violations:
-                - field: mtls
-                  message: has to be set when zoneEgress enabled`,
 			}),
 		)
 	})

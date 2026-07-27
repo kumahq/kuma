@@ -34,8 +34,6 @@ mtls:
   backends:
   - name: ca-1
     type: builtin
-routing:
-  zoneEgress: true
 `, meshName)
 
 	disableDefaultPassthrough := fmt.Sprintf(`
