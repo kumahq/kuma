@@ -1,8 +1,8 @@
 resources:
-- name: backend
+- name: kri_msvc_default___backend_tcp-port
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: backend
+    clusterName: kri_msvc_default___backend_tcp-port
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -23,13 +23,13 @@ resources:
           address:
             socketAddress:
               address: 192.168.0.5
-              portValue: 8005
+              portValue: 8004
         loadBalancingWeight: 1
         metadata:
           filterMetadata:
             envoy.lb:
-              kuma.io/protocol: http
+              kuma.io/protocol: tcp
               region: us
             envoy.transport_socket_match:
-              kuma.io/protocol: http
+              kuma.io/protocol: tcp
               region: us
