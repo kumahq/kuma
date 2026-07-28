@@ -85,7 +85,6 @@ spec:
       port: 80
 `, meshName, externalServiceDockerName))).
 			Install(zoneproxy.Install(
-				zoneproxy.WithName("zone-proxy"),
 				zoneproxy.WithMesh(meshName),
 				zoneproxy.WithEgressPort(11102),
 				zoneproxy.WithWorkload(egressDP),
