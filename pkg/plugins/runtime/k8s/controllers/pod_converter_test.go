@@ -41,16 +41,16 @@ func Parse[T any](values []string) ([]T, error) {
 
 var _ = Describe("PodToDataplane(..)", func() {
 	type testCase struct {
-		pod                 string
-		servicesForPod      string
-		otherReplicaSets    string
-		otherJobs           string
-		node                string
-		dataplane           string
-		existingDataplane   string
-		nodeLabelsToCopy    []string
-		workloadLabels      []string
-		expectedErr         string
+		pod               string
+		servicesForPod    string
+		otherReplicaSets  string
+		otherJobs         string
+		node              string
+		dataplane         string
+		existingDataplane string
+		nodeLabelsToCopy  []string
+		workloadLabels    []string
+		expectedErr       string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -252,10 +252,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
 		}),
 		Entry("27. Should copy node label to the dataplane labels even when inbound tags are disabled", testCase{
-			pod:                 "26.pod.yaml",
-			node:                "26.node.yaml",
-			dataplane:           "node-labels-inbound-tags-disabled.dataplane.yaml",
-			nodeLabelsToCopy:    []string{"topology.kubernetes.io/region"},
+			pod:              "26.pod.yaml",
+			node:             "26.node.yaml",
+			dataplane:        "node-labels-inbound-tags-disabled.dataplane.yaml",
+			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
 		}),
 		Entry("28. Pod with reachable backend refs", testCase{
 			pod:            "28.pod.yaml",
@@ -284,14 +284,14 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:         "update-dataplane.dataplane.yaml",
 		}),
 		Entry("Multiple services selecting a single port deduplicated when inbound tags disabled", testCase{
-			pod:                 "duplicated-inbounds.pod.yaml",
-			servicesForPod:      "duplicated-inbounds.services-for-pod.yaml",
-			dataplane:           "duplicated-inbounds.dataplane.yaml",
+			pod:            "duplicated-inbounds.pod.yaml",
+			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
+			dataplane:      "duplicated-inbounds.dataplane.yaml",
 		}),
 		Entry("Multiple services selecting a single port deduplicated when inbound tags disabled and MeshServices mode is non-Exclusive", testCase{
-			pod:                 "duplicated-inbounds.pod.yaml",
-			servicesForPod:      "duplicated-inbounds.services-for-pod.yaml",
-			dataplane:           "duplicated-inbounds.dataplane.yaml",
+			pod:            "duplicated-inbounds.pod.yaml",
+			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
+			dataplane:      "duplicated-inbounds.dataplane.yaml",
 		}),
 		Entry("Multiple services selecting a single port keeps all inbounds when inbound tags enabled", testCase{
 			pod:            "overlapping-inbounds.pod.yaml",
@@ -316,13 +316,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:      "33.dataplane.yaml",
 		}),
 		Entry("34. Pod with skip inbound tag generation enabled", testCase{
-			pod:                 "34.pod.yaml",
-			servicesForPod:      "34.services-for-pod.yaml",
-			dataplane:           "34.dataplane.yaml",
+			pod:            "34.pod.yaml",
+			servicesForPod: "34.services-for-pod.yaml",
+			dataplane:      "34.dataplane.yaml",
 		}),
 		Entry("35. Pod without service with skip inbound tag generation enabled", testCase{
-			pod:                 "35.pod.yaml",
-			dataplane:           "35.dataplane.yaml",
+			pod:       "35.pod.yaml",
+			dataplane: "35.dataplane.yaml",
 		}),
 		Entry("36. Zone-proxy-only Pod with ZoneIngress listener", testCase{
 			pod:            "36.pod.yaml",
@@ -566,18 +566,15 @@ var _ = Describe("PodToDataplane(..)", func() {
 	)
 })
 
-var _ = Describe("InboundTagsForService(..)", func() {
+var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 	type testCase struct {
-		isGateway      bool
-		zone           string
 		podLabels      map[string]string
 		svcAnnotations map[string]string
 		appProtocol    *string
-		nodeLabels     map[string]string
-		expected       map[string]string
+		expected       string
 	}
 
-	DescribeTable("should combine Pod's labels with Service's FQDN and port",
+	DescribeTable("should create a tag-free inbound and preserve the service protocol",
 		func(given testCase) {
 			// given
 			pod := &kube_core.Pod{
@@ -589,6 +586,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 					NodeName: "test-node",
 				},
 			}
+
 			// and
 			svc := &kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
@@ -613,79 +611,39 @@ var _ = Describe("InboundTagsForService(..)", func() {
 					},
 				},
 			}
-			nodeLabels := given.nodeLabels
+
+			// when
+			inbounds, err := (&InboundConverter{}).InboundInterfacesFor(context.Background(), pod, []*kube_core.Service{svc})
 
 			// expect
-			Expect(InboundTagsForService(given.zone, pod, svc, &svc.Spec.Ports[0], nodeLabels)).To(Equal(given.expected))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(inbounds).To(HaveLen(1))
+			Expect(inbounds[0].Port).To(Equal(uint32(8080)))
+			Expect(inbounds[0].Tags).To(Equal(map[string]string{}))
+			Expect(inbounds[0].State).To(Equal(mesh_proto.Dataplane_Networking_Inbound_Ready))
+			Expect(inbounds[0].Health).To(Equal(&mesh_proto.Dataplane_Networking_Inbound_Health{Ready: true}))
+			Expect(inbounds[0].Protocol).To(Equal(given.expected))
 		},
 		Entry("Pod without labels", testCase{
-			isGateway: false,
 			podLabels: nil,
-			expected: map[string]string{
-				"kuma.io/service":          "example_demo_svc_80",
-				"kuma.io/protocol":         "tcp", // we want Kuma's default behavior to be explicit to a user
-				"k8s.kuma.io/service-name": "example",
-				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "demo",
-			},
+			expected:  "tcp",
 		}),
 		Entry("Pod with labels", testCase{
-			isGateway: false,
 			podLabels: map[string]string{
 				"app":     "example",
 				"version": "0.1",
 			},
-			expected: map[string]string{
-				"app":                      "example",
-				"version":                  "0.1",
-				"kuma.io/service":          "example_demo_svc_80",
-				"kuma.io/protocol":         "tcp", // we want Kuma's default behavior to be explicit to a user
-				"k8s.kuma.io/service-name": "example",
-				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "demo",
-			},
-		}),
-		Entry("Pod with node's topology labels", testCase{
-			isGateway: false,
-			podLabels: map[string]string{
-				"app":     "example",
-				"version": "0.1",
-			},
-			nodeLabels: map[string]string{
-				kube_core.LabelTopologyRegion: "east",
-				kube_core.LabelTopologyZone:   "east-2a",
-			},
-			expected: map[string]string{
-				"app":                         "example",
-				"version":                     "0.1",
-				"kuma.io/service":             "example_demo_svc_80",
-				"kuma.io/protocol":            "tcp", // we want Kuma's default behavior to be explicit to a user
-				"k8s.kuma.io/service-name":    "example",
-				"k8s.kuma.io/service-port":    "80",
-				"k8s.kuma.io/namespace":       "demo",
-				kube_core.LabelTopologyRegion: "east",
-				kube_core.LabelTopologyZone:   "east-2a",
-			},
+			expected: "tcp",
 		}),
 		Entry("Pod with `service` label", testCase{
-			isGateway: false,
 			podLabels: map[string]string{
 				"kuma.io/service": "something",
 				"app":             "example",
 				"version":         "0.1",
 			},
-			expected: map[string]string{
-				"app":                      "example",
-				"version":                  "0.1",
-				"kuma.io/service":          "example_demo_svc_80",
-				"kuma.io/protocol":         "tcp", // we want Kuma's default behavior to be explicit to a user
-				"k8s.kuma.io/service-name": "example",
-				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "demo",
-			},
+			expected: "tcp",
 		}),
 		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and an unknown value", testCase{
-			isGateway: false,
 			podLabels: map[string]string{
 				"app":     "example",
 				"version": "0.1",
@@ -693,18 +651,9 @@ var _ = Describe("InboundTagsForService(..)", func() {
 			svcAnnotations: map[string]string{
 				"80.service.kuma.io/protocol": "not-yet-supported-protocol",
 			},
-			expected: map[string]string{
-				"app":                      "example",
-				"version":                  "0.1",
-				"kuma.io/service":          "example_demo_svc_80",
-				"kuma.io/protocol":         "not-yet-supported-protocol", // we want Kuma's behavior to be straightforward to a user (just copy annotation value "as is")
-				"k8s.kuma.io/service-name": "example",
-				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "demo",
-			},
+			expected: "not-yet-supported-protocol",
 		}),
 		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and a known value", testCase{
-			isGateway: false,
 			podLabels: map[string]string{
 				"app":     "example",
 				"version": "0.1",
@@ -712,65 +661,22 @@ var _ = Describe("InboundTagsForService(..)", func() {
 			svcAnnotations: map[string]string{
 				"80.service.kuma.io/protocol": "http",
 			},
-			expected: map[string]string{
-				"app":                      "example",
-				"version":                  "0.1",
-				"kuma.io/service":          "example_demo_svc_80",
-				"kuma.io/protocol":         "http",
-				"k8s.kuma.io/service-name": "example",
-				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "demo",
-			},
+			expected: "http",
 		}),
 		Entry("Service with appProtocol and a known value", testCase{
-			isGateway: false,
 			podLabels: map[string]string{
 				"app":     "example",
 				"version": "0.1",
 			},
 			appProtocol: pointer.To("http"),
-			expected: map[string]string{
-				"app":                      "example",
-				"version":                  "0.1",
-				"kuma.io/service":          "example_demo_svc_80",
-				"kuma.io/protocol":         "http",
-				"k8s.kuma.io/service-name": "example",
-				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "demo",
-			},
-		}),
-		Entry("Inject a zone tag if Zone is set", testCase{
-			isGateway: false,
-			zone:      "zone-1",
-			podLabels: map[string]string{
-				"app":     "example",
-				"version": "0.1",
-			},
-			expected: map[string]string{
-				"app":                      "example",
-				"version":                  "0.1",
-				mesh_proto.ServiceTag:      "example_demo_svc_80",
-				mesh_proto.ZoneTag:         "zone-1",
-				mesh_proto.ProtocolTag:     "tcp",
-				"k8s.kuma.io/service-name": "example",
-				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "demo",
-			},
+			expected:    "http",
 		}),
 		Entry("Pod with empty labels", testCase{
-			isGateway: true,
 			podLabels: map[string]string{
 				"app":     "example",
 				"version": "",
 			},
-			expected: map[string]string{
-				"app":                      "example",
-				"kuma.io/service":          "example_demo_svc_80",
-				"kuma.io/protocol":         "tcp",
-				"k8s.kuma.io/service-name": "example",
-				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "demo",
-			},
+			expected: "tcp",
 		}),
 	)
 })
