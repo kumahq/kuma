@@ -51,7 +51,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		// Zone egress filter chains are always named with unified/system
 		// names now (see egress.Generator.Generate), so the MeshExternalService
 		// destination names matched against them here must agree unconditionally.
-		return p.configureEgress(rs, proxy, true)
+		return p.configureEgress(rs, proxy)
 	}
 
 	if proxy.Dataplane == nil || proxy.Dataplane.Spec.IsBuiltinGateway() {
@@ -220,7 +220,7 @@ func (p plugin) allowRules() core_rules.Rules {
 	}
 }
 
-func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, unifiedNaming bool) error {
+func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	listeners := policies_xds.GatherListeners(rs)
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
 		meshName := resource.Mesh.GetMeta().GetName()
@@ -239,7 +239,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy,
 		mesNames := []string{}
 		for _, mes := range resource.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType).GetItems() {
 			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
-			mesNames = append(mesNames, destinationname.MustResolve(unifiedNaming, meshExtSvc, meshExtSvc.Spec.Match))
+			mesNames = append(mesNames, destinationname.MustResolve(true, meshExtSvc, meshExtSvc.Spec.Match))
 		}
 
 		for _, mesName := range mesNames {

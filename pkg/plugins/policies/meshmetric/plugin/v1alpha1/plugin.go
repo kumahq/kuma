@@ -14,7 +14,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
@@ -355,13 +354,11 @@ func createDynamicConfig(
 			extraLabels[WorkloadAttributeKey] = workloadName
 		}
 	}
-	if !unified_naming.Enabled(proxy.Metadata, mesh) {
-		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane))
-		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
-		if extraLabels[WorkloadAttributeKey] == "" {
-			if service := proxy.Dataplane.IdentifyingName(inboundTagsDisabled); service != mesh_proto.ServiceUnknown {
-				extraLabels["service"] = service
-			}
+	maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane))
+	extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
+	if extraLabels[WorkloadAttributeKey] == "" {
+		if service := proxy.Dataplane.IdentifyingName(inboundTagsDisabled); service != mesh_proto.ServiceUnknown {
+			extraLabels["service"] = service
 		}
 	}
 

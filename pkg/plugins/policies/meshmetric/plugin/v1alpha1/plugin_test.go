@@ -582,7 +582,7 @@ var _ = Describe("MeshMetric", func() {
 			Expect(body).ToNot(ContainSubstring(`"service":`))
 		})
 
-		It("zone-egress-only in unified-naming mode: does not emit dataplane label", func() {
+		It("zone-egress-only in unified-naming mode: emits dataplane label", func() {
 			ctx := *xds_builders.Context().WithMeshBuilder(
 				samples.MeshDefaultBuilder(),
 			).Build()
@@ -619,9 +619,7 @@ var _ = Describe("MeshMetric", func() {
 			listeners, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
 			Expect(err).ToNot(HaveOccurred())
 			body := string(listeners)
-			// Per-DPP identification is intentionally not auto-added to keep metric cardinality low;
-			// users can opt in via observability labels if needed.
-			Expect(body).ToNot(ContainSubstring(`"dataplane":"zone-egress-1"`))
+			Expect(body).To(ContainSubstring(`"dataplane":"zone-egress-1"`))
 			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"zone-egress"`))
 			Expect(body).ToNot(ContainSubstring(`"kuma.workload"`))
 		})
