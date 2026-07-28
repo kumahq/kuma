@@ -177,9 +177,18 @@ func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Con
 			Configure(listenerConfigurer(rctx)).
 			Modify()
 	case *envoy_cluster.Cluster:
+		conf := rctx.Conf()
+		// Clusters of the zone proxy egress listener are STATIC and their endpoints
+		// are the real external addresses: their Locality carries an empty Zone
+		// Locality awareness matches nothing there, so it would demote or drop
+		// every endpoint and leave the cluster with an empty load assignment.
+		isEgress := r.Origin == generator_metadata.OriginEgress
+		if isEgress {
+			conf.LocalityAwareness = nil
+		}
 		return NewModifier(envoyResource).
-			Configure(clusterConfigurer(rctx.Conf())).
-			Configure(If(envoyResource.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound))).
+			Configure(clusterConfigurer(conf)).
+			Configure(If(!isEgress && envoyResource.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound))).
 			Modify()
 	case *envoy_endpoint.ClusterLoadAssignment:
 		return NewModifier(envoyResource).

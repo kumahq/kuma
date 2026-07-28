@@ -3,10 +3,6 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     lbPolicy: LEAST_REQUEST
-    leastRequestLbConfig:
-      activeRequestBias:
-        defaultValue: 1.3
-      choiceCount: 4
     loadAssignment:
       clusterName: kri_extsvc_default___example_9000
       endpoints:
@@ -18,5 +14,23 @@ resources:
                 portValue: 9000
         locality:
           subZone: priority-0
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.0.2
+                portValue: 9000
+        locality:
+          subZone: priority-1
+        priority: 1
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.0.3
+                portValue: 9000
+        locality:
+          subZone: priority-2
+        priority: 2
     name: kri_extsvc_default___example_9000
     type: STATIC

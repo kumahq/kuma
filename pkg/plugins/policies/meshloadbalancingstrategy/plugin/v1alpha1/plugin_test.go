@@ -3,6 +3,7 @@ package v1alpha1_test
 
 import (
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -1578,6 +1579,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 
 	type zoneProxyTestCase struct {
 		conf            api.Conf
+		endpoints       []core_xds.Endpoint
 		expectedCluster string
 	}
 
@@ -1590,6 +1592,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 
 	DescribeTable("Apply to mesh-scoped zone proxy Dataplanes",
 		func(given zoneProxyTestCase) {
+			endpoints := given.endpoints
+			if len(endpoints) == 0 {
+				endpoints = []core_xds.Endpoint{externalServiceEndpoint("192.168.0.1", 9000, 0)}
+			}
+
 			resources := core_xds.NewResourceSet()
 			resources.Add(&core_xds.Resource{
 				Name:   mesKRI.String(),
@@ -1599,7 +1606,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Configure(clusters.ProvidedCustomEndpointCluster(
 						false,
 						true,
-						externalServiceEndpoint("192.168.0.1", 9000),
+						endpoints...,
 					)).MustBuild(),
 				ResourceOrigin: mesKRI,
 			})
@@ -1663,8 +1670,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			conf:            api.Conf{LoadBalancer: &api.LoadBalancer{Type: api.RandomType}},
 			expectedCluster: "zone-proxy-random.clusters.golden.yaml",
 		}),
-		// The egress endpoints are the real external addresses and carry no zone,
-		// so locality awareness must leave them alone rather than drop them.
 		Entry("locality awareness is ignored", zoneProxyTestCase{
 			conf: api.Conf{
 				LoadBalancer: &api.LoadBalancer{Type: api.RandomType},
@@ -1678,11 +1683,30 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			},
 			expectedCluster: "zone-proxy-locality-awareness.clusters.golden.yaml",
 		}),
+		Entry("endpoints with different priorities", zoneProxyTestCase{
+			conf: api.Conf{
+				LoadBalancer: &api.LoadBalancer{Type: api.LeastRequestType},
+				LocalityAwareness: &api.LocalityAwareness{
+					LocalZone: &api.LocalZone{
+						AffinityTags: &[]api.AffinityTag{{Key: "k8s.io/node", Weight: pointer.To[uint32](9000)}},
+					},
+					CrossZone: &api.CrossZone{
+						Failover: &[]api.Failover{{
+							To: api.ToZone{Type: api.Only, Zones: &[]string{"zone-2"}},
+						}},
+						FailoverThreshold: &api.FailoverThreshold{Percentage: intstr.FromInt32(70)},
+					},
+				},
+			},
+			endpoints: []core_xds.Endpoint{
+				externalServiceEndpoint("192.168.0.1", 9000, 0),
+				externalServiceEndpoint("192.168.0.2", 9000, 1),
+				externalServiceEndpoint("192.168.0.3", 9000, 2),
+			},
+			expectedCluster: "zone-proxy-endpoint-priorities.clusters.golden.yaml",
+		}),
 	)
 
-	// Same ResourceOrigin as the egress cluster above, but the endpoints are the
-	// zone egress instances (fillExternalServicesOutboundsThroughEgress) and do
-	// carry a zone, so the egress-only exclusion must not reach this far.
 	It("keeps locality awareness for a MeshExternalService on a sidecar", func() {
 		resources := core_xds.NewResourceSet()
 		resources.Add(&core_xds.Resource{
@@ -1737,9 +1761,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 // externalServiceEndpoint mirrors topology.createMeshExternalServiceEndpoint:
 // a Locality with an empty Zone and the priority in the SubZone. The empty Zone
 // is what makes locality awareness misfire on the egress.
-func externalServiceEndpoint(address string, port uint32) core_xds.Endpoint {
+func externalServiceEndpoint(address string, port uint32, priority uint32) core_xds.Endpoint {
 	ep := *xds_builders.Endpoint().WithTarget(address).WithPort(port).Build()
-	ep.Locality = &core_xds.Locality{Priority: 0, SubZone: "priority-0"}
+	ep.Locality = &core_xds.Locality{Priority: priority, SubZone: "priority-" + strconv.Itoa(int(priority))}
 	return ep
 }
 

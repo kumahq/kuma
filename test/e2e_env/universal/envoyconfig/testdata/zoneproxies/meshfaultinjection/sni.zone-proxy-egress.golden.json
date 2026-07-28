@@ -104,8 +104,7 @@
               ],
               "locality": {
                 "subZone": "priority-0"
-              },
-              "priority": 1
+              }
             }
           ]
         },
