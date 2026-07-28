@@ -16,14 +16,6 @@ spec:
         ready: true
       port: 49151
       protocol: tcp
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        kuma.io/instance: example
-        kuma.io/protocol: tcp
-        kuma.io/service: example_demo_svc
-        kuma.io/zone: zone-1
-        version: "0.1"
     transparentProxying:
       ipFamilyMode: IPv4
       redirectPortInbound: 15006

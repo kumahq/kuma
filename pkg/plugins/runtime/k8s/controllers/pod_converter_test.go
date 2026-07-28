@@ -239,7 +239,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "08.services-for-pod.yaml",
 			dataplane:      "25.dataplane.yaml",
 		}),
-		Entry("26. Should copy node label to the inbound tags", testCase{
+		Entry("26. Should copy node label to the dataplane labels", testCase{
 			pod:              "26.pod.yaml",
 			node:             "26.node.yaml",
 			dataplane:        "26.dataplane.yaml",
@@ -249,12 +249,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:              "27.pod.yaml",
 			node:             "27.node.yaml",
 			dataplane:        "27.dataplane.yaml",
-			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
-		}),
-		Entry("27. Should copy node label to the dataplane labels even when inbound tags are disabled", testCase{
-			pod:              "26.pod.yaml",
-			node:             "26.node.yaml",
-			dataplane:        "node-labels-inbound-tags-disabled.dataplane.yaml",
 			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
 		}),
 		Entry("28. Pod with reachable backend refs", testCase{
@@ -283,17 +277,17 @@ var _ = Describe("PodToDataplane(..)", func() {
 			existingDataplane: "update-dataplane.existing-dataplane.yaml",
 			dataplane:         "update-dataplane.dataplane.yaml",
 		}),
-		Entry("Multiple services selecting a single port deduplicated when inbound tags disabled", testCase{
+		Entry("Multiple services selecting a single port deduplicates overlapping inbounds", testCase{
 			pod:            "duplicated-inbounds.pod.yaml",
 			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
 			dataplane:      "duplicated-inbounds.dataplane.yaml",
 		}),
-		Entry("Multiple services selecting a single port deduplicated when inbound tags disabled and MeshServices mode is non-Exclusive", testCase{
+		Entry("Multiple services selecting a single port deduplicates overlapping inbounds when MeshServices mode is non-Exclusive", testCase{
 			pod:            "duplicated-inbounds.pod.yaml",
 			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
 			dataplane:      "duplicated-inbounds.dataplane.yaml",
 		}),
-		Entry("Multiple services selecting a single port keeps all inbounds when inbound tags enabled", testCase{
+		Entry("Multiple services selecting a single port collapses tag-free inbounds to one listener", testCase{
 			pod:            "overlapping-inbounds.pod.yaml",
 			servicesForPod: "overlapping-inbounds.services-for-pod.yaml",
 			dataplane:      "overlapping-inbounds.dataplane.yaml",
@@ -315,12 +309,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "33.services-for-pod.yaml",
 			dataplane:      "33.dataplane.yaml",
 		}),
-		Entry("34. Pod with skip inbound tag generation enabled", testCase{
+		Entry("34. Pod with service generates tag-free inbounds", testCase{
 			pod:            "34.pod.yaml",
 			servicesForPod: "34.services-for-pod.yaml",
 			dataplane:      "34.dataplane.yaml",
 		}),
-		Entry("35. Pod without service with skip inbound tag generation enabled", testCase{
+		Entry("35. Pod without service keeps the fallback tag-free inbound", testCase{
 			pod:       "35.pod.yaml",
 			dataplane: "35.dataplane.yaml",
 		}),
