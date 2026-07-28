@@ -673,6 +673,93 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 			expected: "tcp",
 		}),
 	)
+
+	It("should prefer a matching inbound over an ignored duplicate on the same port", func() {
+		pod := &kube_core.Pod{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Labels: map[string]string{
+					"app":                        "example",
+					"rollouts-pod-template-hash": "active-hash",
+				},
+			},
+			Spec: kube_core.PodSpec{
+				Containers: []kube_core.Container{{
+					Name: "app",
+					Ports: []kube_core.ContainerPort{{
+						Name:          "grpc",
+						ContainerPort: 9000,
+					}},
+				}},
+			},
+			Status: kube_core.PodStatus{
+				ContainerStatuses: []kube_core.ContainerStatus{{
+					Name:  "app",
+					Ready: true,
+				}},
+			},
+		}
+
+		services := []*kube_core.Service{
+			{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "example-preview",
+				},
+				Spec: kube_core.ServiceSpec{
+					Selector: map[string]string{
+						"app":                        "example",
+						"rollouts-pod-template-hash": "preview-hash",
+					},
+					Ports: []kube_core.ServicePort{{
+						Port: 9000,
+						TargetPort: kube_intstr.IntOrString{
+							Type:   kube_intstr.Int,
+							IntVal: 9000,
+						},
+					}},
+				},
+			},
+			{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "example",
+				},
+				Spec: kube_core.ServiceSpec{
+					Selector: map[string]string{
+						"app":                        "example",
+						"rollouts-pod-template-hash": "active-hash",
+					},
+					Ports: []kube_core.ServicePort{{
+						Port: 9000,
+						TargetPort: kube_intstr.IntOrString{
+							Type:   kube_intstr.Int,
+							IntVal: 9000,
+						},
+					}},
+				},
+			},
+		}
+
+		inbounds, err := (&InboundConverter{}).InboundInterfacesFor(context.Background(), pod, services)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(inbounds).To(HaveLen(1))
+		Expect(inbounds[0].State).To(Equal(mesh_proto.Dataplane_Networking_Inbound_Ready))
+		Expect(inbounds[0].Health).To(Equal(&mesh_proto.Dataplane_Networking_Inbound_Health{Ready: true}))
+	})
+})
+
+var _ = Describe("PodConverter.GatewayByServiceFor(..)", func() {
+	It("should return an empty delegated gateway tag set", func() {
+		gateway, err := (&PodConverter{}).GatewayByServiceFor(context.Background(), &kube_core.Pod{}, nil)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(gateway).To(Equal(&mesh_proto.Dataplane_Networking_Gateway{
+			Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
+			Tags: map[string]string{},
+		}))
+	})
 })
 
 var _ = Describe("ProtocolTagFor(..)", func() {

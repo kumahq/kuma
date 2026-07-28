@@ -176,12 +176,31 @@ func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networki
 		return fmt.Sprintf("%s:%d", iface.Address, iface.Port)
 	}
 
+	inboundRank := func(iface *mesh_proto.Dataplane_Networking_Inbound) int {
+		switch iface.State {
+		case mesh_proto.Dataplane_Networking_Inbound_Ready:
+			return 3
+		case mesh_proto.Dataplane_Networking_Inbound_NotReady:
+			return 2
+		case mesh_proto.Dataplane_Networking_Inbound_Ignored:
+			return 1
+		default:
+			return 0
+		}
+	}
+
 	var deduplicatedInbounds []*mesh_proto.Dataplane_Networking_Inbound
 	inboundsPerAddressPort := map[string]*mesh_proto.Dataplane_Networking_Inbound{}
+	inboundPosition := map[string]int{}
 	for _, iface := range ifaces {
-		if inboundsPerAddressPort[inboundKey(iface)] == nil {
-			inboundsPerAddressPort[inboundKey(iface)] = iface
+		key := inboundKey(iface)
+		if existing := inboundsPerAddressPort[key]; existing == nil {
+			inboundsPerAddressPort[key] = iface
+			inboundPosition[key] = len(deduplicatedInbounds)
 			deduplicatedInbounds = append(deduplicatedInbounds, iface)
+		} else if inboundRank(iface) > inboundRank(existing) {
+			inboundsPerAddressPort[key] = iface
+			deduplicatedInbounds[inboundPosition[key]] = iface
 		}
 	}
 

@@ -373,13 +373,9 @@ func (p *PodConverter) dataplaneFor(
 }
 
 func (p *PodConverter) GatewayByServiceFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
-	interfaces, err := p.InboundConverter.LegacyInboundInterfacesFor(ctx, pod, services)
-	if err != nil {
-		return nil, err
-	}
 	return &mesh_proto.Dataplane_Networking_Gateway{
 		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-		Tags: interfaces[0].Tags,
+		Tags: map[string]string{},
 	}, nil
 }
 
