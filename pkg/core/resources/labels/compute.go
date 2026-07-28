@@ -234,17 +234,8 @@ func ComputePolicyRole(p core_model.Policy, ns Namespace) (mesh_proto.PolicyRole
 		hasTo = true
 	}
 
-	hasFrom := false
-	if pwfl, ok := p.(core_model.PolicyWithFromList); ok && len(pwfl.GetFromList()) > 0 {
-		hasFrom = true
-	}
-
-	if hasFrom && hasTo {
-		return "", errors.New("it's not allowed to mix 'to' and 'from' arrays in the same policy")
-	}
-
-	if hasFrom || (!hasTo && !hasFrom) {
-		// if there is 'from' or neither (single item)
+	if !hasTo {
+		// single-item and rules-based inbound policies remain workload-owner scoped
 		return mesh_proto.WorkloadOwnerPolicyRole, nil
 	}
 
