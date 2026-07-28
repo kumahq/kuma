@@ -382,8 +382,10 @@ func (s *UniversalApp) CreateDP(
 		// Try to extract straight from the cached tarball; extraction doubles as the
 		// integrity check. On a miss or a corrupt entry, download, extract that, and
 		// atomically (re)populate the cache via a unique mktemp temp + mv so a fresh
-		// good copy overwrites any bad one. Cache writes are best-effort (|| true) so
-		// a read-only mount never fails the install.
+		// good copy overwrites any bad one. The container writes as root, so chmod
+		// the entry world-readable: actions/cache runs as the (non-root) runner user
+		// and can only save the dir when it can read the files. Cache writes are
+		// best-effort (|| true) so a read-only mount never fails the install.
 		cacheFile := fmt.Sprintf("%s/kuma-%s-linux-%s.tar.gz", dpBinaryCacheMountPath, dpVersion, Config.Arch)
 
 		// Run the install synchronously so a failed download fails the test fast
@@ -396,6 +398,7 @@ if ! { [ -f '%[1]s' ] && tar xzf '%[1]s' --directory /tmp/kuma/ 2>/dev/null; }; 
   tmp=$(mktemp '%[1]s.XXXXXX') && cp /tmp/kuma/kuma.tar.gz "$tmp" && mv "$tmp" '%[1]s' || true
   tar xzf /tmp/kuma/kuma.tar.gz --directory /tmp/kuma/
 fi
+chmod 0644 '%[1]s' 2>/dev/null || true
 cp %[3]s/kuma-dp /usr/bin/kuma-dp
 cp %[3]s/envoy /usr/bin/envoy
 `, cacheFile, url, newPathOut)
