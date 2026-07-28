@@ -114,6 +114,9 @@ networking:
     serviceProbe:
       tcp: {}
 {{- end }}
+{{- if .Protocol }}
+    protocol: {{ .Protocol }}
+{{- end }}
     tags:
       kuma.io/service: {{ .ServiceName }}
 {{- if .Protocol }}

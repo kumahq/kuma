@@ -410,21 +410,25 @@ func MeshMetric() {
 					testserver.WithName("test-server-0"),
 					testserver.WithMesh(mainMesh),
 					testserver.WithNamespace(namespace),
+					testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server-0"}),
 				),
 				testserver.Install(
 					testserver.WithName("test-server-1"),
 					testserver.WithMesh(mainMesh),
 					testserver.WithNamespace(namespace),
+					testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server-1"}),
 				),
 				testserver.Install(
 					testserver.WithName("test-server-2"),
 					testserver.WithMesh(secondaryMesh),
 					testserver.WithNamespace(namespace),
+					testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server-2"}),
 				),
 				testserver.Install(
 					testserver.WithName("test-server-3"),
 					testserver.WithMesh(secondaryMesh),
 					testserver.WithNamespace(namespace),
+					testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server-3"}),
 				),
 			)).
 			Setup(kubernetes.Cluster)
@@ -467,8 +471,7 @@ func MeshMetric() {
 			// metric from envoy and the sidecar
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
 			g.Expect(stdout).To(ContainSubstring("kuma_dp_dns_request_duration_seconds"))
-			// check if workload attribute was added (plain workload name from ServiceAccount)
-			g.Expect(stdout).To(ContainSubstring("kuma_workload=\"default\""))
+			g.Expect(stdout).To(ContainSubstring("kuma_workload=\"test-server-0\""))
 		}).Should(Succeed())
 	})
 
@@ -562,7 +565,7 @@ func MeshMetric() {
 			g.Expect(json.Unmarshal([]byte(assignment), &madsResponse)).To(Succeed())
 			// all DPPs from both meshes in single MADS response
 			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf(
-				"test-server-0_meshmetric_svc_80", "test-server-1_meshmetric_svc_80", "test-server-2_meshmetric_svc_80", "test-server-3_meshmetric_svc_80",
+				"test-server-0", "test-server-1", "test-server-2", "test-server-3",
 			))
 		}).Should(Succeed())
 
@@ -575,7 +578,7 @@ func MeshMetric() {
 			g.Expect(json.Unmarshal([]byte(assignment), &madsResponse)).To(Succeed())
 			// all DPPs from both meshes in single MADS response
 			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf(
-				"test-server-0_meshmetric_svc_80", "test-server-1_meshmetric_svc_80", "test-server-2_meshmetric_svc_80", "test-server-3_meshmetric_svc_80",
+				"test-server-0", "test-server-1", "test-server-2", "test-server-3",
 			))
 		}).Should(Succeed())
 	})
@@ -594,7 +597,7 @@ func MeshMetric() {
 			g.Expect(json.Unmarshal([]byte(assignment), &madsResponse)).To(Succeed())
 			// all DPPs from primaryMesh for primary Prometheus backend
 			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf(
-				"test-server-0_meshmetric_svc_80", "test-server-1_meshmetric_svc_80",
+				"test-server-0", "test-server-1",
 			))
 		}).Should(Succeed())
 
@@ -607,7 +610,7 @@ func MeshMetric() {
 			g.Expect(json.Unmarshal([]byte(assignment), &madsResponse)).To(Succeed())
 			// all DPPs from secondaryMesh for secondary Prometheus backend
 			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf(
-				"test-server-2_meshmetric_svc_80", "test-server-3_meshmetric_svc_80",
+				"test-server-2", "test-server-3",
 			))
 		}).Should(Succeed())
 	})
@@ -625,7 +628,7 @@ func MeshMetric() {
 			madsResponse := MonitoringAssignmentResponse{}
 			g.Expect(json.Unmarshal([]byte(assignment), &madsResponse)).To(Succeed())
 			// two DPPs configured by Mesh targetRef
-			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf("test-server-0_meshmetric_svc_80"))
+			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf("test-server-0"))
 		}).Should(Succeed())
 
 		// and
@@ -636,7 +639,7 @@ func MeshMetric() {
 			madsResponse := MonitoringAssignmentResponse{}
 			g.Expect(json.Unmarshal([]byte(assignment), &madsResponse)).To(Succeed())
 			// single DPP overridden by MeshService targetRef
-			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf("test-server-1_meshmetric_svc_80"))
+			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf("test-server-1"))
 		}).Should(Succeed())
 	})
 

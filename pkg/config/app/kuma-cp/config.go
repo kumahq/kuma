@@ -288,6 +288,7 @@ var DefaultConfig = func() Config {
 				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
 				DelayFullResync:    false,
 			},
+			InboundTagsDisabled: true,
 		},
 		InterCp:       intercp.DefaultInterCpConfig(),
 		EventBus:      eventbus.Default(),
