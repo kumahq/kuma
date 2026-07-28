@@ -167,12 +167,14 @@ spec:
 		Install(YamlUniversal(meshExternalService)).
 		Install(YamlUniversal(meshIdentityYAML)).
 		Install(zoneproxy.Install(
+			zoneproxy.WithName("zone-proxy"),
 			zoneproxy.WithMesh(zoneProxyMeshName),
 			zoneproxy.WithIngressPort(11001),
 			zoneproxy.WithWorkload(zoneProxyIngressDP),
 			zoneproxy.WithDpEnvs(dppEnvs),
 		)).
 		Install(zoneproxy.Install(
+			zoneproxy.WithName("zone-proxy"),
 			zoneproxy.WithMesh(zoneProxyMeshName),
 			zoneproxy.WithEgressPort(11002),
 			zoneproxy.WithWorkload(zoneProxyEgressDP),

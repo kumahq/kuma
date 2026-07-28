@@ -96,6 +96,7 @@ spec:
 				),
 				TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName)),
 				zoneproxy.Install(
+					zoneproxy.WithName("zone-proxy"),
 					zoneproxy.WithMesh(meshName),
 					zoneproxy.WithIngressPort(ingressPort),
 					zoneproxy.WithWorkload(ingressWorkload),

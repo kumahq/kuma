@@ -158,6 +158,7 @@ func ZoneProxy() {
 			Install(YamlUniversal(zoneProxyMeshIdentity(meshName))).
 			Install(YamlUniversal(zoneProxyMeshTrafficPermission(meshName, zoneName))).
 			Install(zoneproxy.Install(
+				zoneproxy.WithName("zone-proxy"),
 				zoneproxy.WithMesh(meshName),
 				zoneproxy.WithEgressPort(11102),
 				zoneproxy.WithWorkload(egressWorkload),
