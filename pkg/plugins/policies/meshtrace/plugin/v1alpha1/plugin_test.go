@@ -1126,8 +1126,8 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 		// DPP without a workload label, it returns "unknown" and the fallback to
 		// Dataplane.Name fires. Reuses the zone-egress-only-zipkin golden.
 		Entry("zone-egress-only zipkin without workload label", testCase{
-			dp:           zoneEgressOnlyDataplane(),
-			resources:    []core_xds.Resource{zoneEgressListenerResource()},
+			dp:        zoneEgressOnlyDataplane(),
+			resources: []core_xds.Resource{zoneEgressListenerResource()},
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{{
 					Subset: []subsetutils.Tag{},

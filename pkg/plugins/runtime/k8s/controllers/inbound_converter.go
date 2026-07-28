@@ -137,13 +137,13 @@ func (ic *InboundConverter) inboundForServiceless(pod *kube_core.Pod) *mesh_prot
 // from. Delegated gateway identity relies on this.
 // TODO: We should revisit this when we rework identity. More in https://github.com/kumahq/kuma/issues/3339
 func (ic *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	return ic.inboundInterfacesFor(ctx, pod, services)
+	return ic.inboundInterfacesFor(pod, services)
 }
 
 // InboundInterfacesFor deduplicates inbounds by address and port.
 // Since inbounds carry no tags we can safely deduplicate them.
 func (ic *InboundConverter) InboundInterfacesFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	inbounds, err := ic.inboundInterfacesFor(ctx, pod, services)
+	inbounds, err := ic.inboundInterfacesFor(pod, services)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func (ic *InboundConverter) InboundInterfacesFor(ctx context.Context, pod *kube_
 	return deduplicateInboundsByAddressAndPort(inbounds), nil
 }
 
-func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+func (ic *InboundConverter) inboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for _, svc := range services {
 		// Services of ExternalName type should not have any selectors.

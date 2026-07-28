@@ -57,9 +57,7 @@ var _ = Describe("MeshService generator", func() {
 	var metrics core_metrics.Metrics
 
 	gracePeriodInterval := 500 * time.Millisecond
-	backendDataplane := func() *builders.DataplaneBuilder {
-		return samples.DataplaneBackendBuilder()
-	}
+	backendDataplane := samples.DataplaneBackendBuilder
 	createDataplaneWithLabels := func(builder *builders.DataplaneBuilder, labels map[string]string) error {
 		return resManager.Create(
 			context.Background(),
