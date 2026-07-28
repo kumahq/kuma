@@ -843,7 +843,7 @@ spec:
 		}),
 	)
 
-	It("falls back to legacy sidecar injection when native sidecars are unavailable", func() {
+	It("falls back to init-container sidecar injection when native sidecars are unavailable", func() {
 		var cfg conf.Injector
 		Expect(config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
 		cfg.CaCertFile = caCertPath

@@ -330,7 +330,7 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 			sidecarContainersEnabled = true
 		} else {
 			log.Info(
-				"Kubernetes server does not support native sidecar containers; falling back to legacy injection",
+				"Kubernetes server does not support native sidecar containers; using init-container injection instead",
 				"version", k8sVersion.GitVersion,
 			)
 		}

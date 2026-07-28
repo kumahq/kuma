@@ -54,7 +54,7 @@ func getExternalServicesClusters(
 	sniUsed := map[string]struct{}{}
 
 	for _, ref := range destinations.BackendRefs {
-		endpoints := resources.EndpointMap[ref.LegacyServiceName]
+		endpoints := resources.EndpointMap[ref.EndpointMapKey]
 		if _, ok := sniUsed[ref.SNI]; ok || len(endpoints) == 0 || !endpoints[0].IsExternalService() {
 			continue
 		}
@@ -65,7 +65,7 @@ func getExternalServicesClusters(
 
 		cluster := xds.NewClusterBuilder().
 			WithName(clusterName).
-			WithService(ref.LegacyServiceName).
+			WithService(ref.EndpointMapKey).
 			WithSNI(ref.SNI).
 			WithExternalService(true).
 			Build()
