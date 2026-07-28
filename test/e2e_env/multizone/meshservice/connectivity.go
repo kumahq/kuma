@@ -8,13 +8,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+	"golang.org/x/sync/errgroup"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
@@ -22,19 +25,37 @@ func Connectivity() {
 	namespace := "msconnectivity"
 	clientNamespace := "msconnectivity-client"
 	meshName := "msconnectivity"
+	identityName := "msconnectivity-identity"
 	autoGenerateUniversalClusterName := "autogenerate-universal"
 
-	env := multizone.NewMeshEnv(meshName)
-
 	var autoGenerateUniversalCluster *UniversalCluster
+
+	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
+	// mesh scoped, so the ingress the environment installs does not carry this
+	// mesh and every zone of the mesh needs its own.
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	var testServerPodNames []string
 	BeforeAll(func() {
 		autoGenerateUniversalCluster = NewUniversalCluster(NewTestingT(), autoGenerateUniversalClusterName, Silent)
+		zones := append(multizone.Zones(), autoGenerateUniversalCluster)
 
-		Expect(env.
-			WithGlobal(
-				YamlUniversal(fmt.Sprintf(`
+		trustDomains := make([]string, 0, len(zones))
+		for _, zone := range zones {
+			trustDomains = append(trustDomains, MeshIdentityTrustDomain(meshName, zone))
+		}
+
+		Expect(NewClusterSetup().
+			Install(Yaml(builders.Mesh().WithName(meshName))).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, trustDomains...)).
+			Install(YamlUniversal(fmt.Sprintf(`
 type: HostnameGenerator
 name: kube-mesh-specific-msconnectivity
 spec:
@@ -45,8 +66,8 @@ spec:
         kuma.io/env: kubernetes
         kuma.io/mesh: %s
         k8s.kuma.io/is-headless-service: "false"
-`, meshName)),
-				YamlUniversal(`
+`, meshName))).
+			Install(YamlUniversal(`
 type: HostnameGenerator
 name: kube-not-my-mesh-specific-msconnectivity
 spec:
@@ -57,8 +78,8 @@ spec:
         kuma.io/env: kubernetes
         kuma.io/mesh: non-existent-mesh
         k8s.kuma.io/is-headless-service: "false"
-`),
-				YamlUniversal(fmt.Sprintf(`
+`)).
+			Install(YamlUniversal(fmt.Sprintf(`
 type: HostnameGenerator
 name: uni-mesh-specific-msconnectivity
 spec:
@@ -68,8 +89,8 @@ spec:
       matchLabels:
         kuma.io/env: universal
         kuma.io/mesh: "%s"
-`, meshName)),
-				YamlUniversal(`
+`, meshName))).
+			Install(YamlUniversal(`
 type: HostnameGenerator
 name: uni-not-my-mesh-specific-msconnectivity
 spec:
@@ -79,10 +100,15 @@ spec:
       matchLabels:
         kuma.io/env: universal
         kuma.io/mesh: non-existent-mesh
-`),
-			).
-			WithZoneSetup(multizone.KubeZone1, Namespace(clientNamespace)).
-			WithZone(multizone.KubeZone1,
+`)).
+			Setup(multizone.Global)).To(Succeed())
+		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
+
+		group := errgroup.Group{}
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(Namespace(clientNamespace)).
+			Install(Parallel(
 				testserver.Install(
 					testserver.WithName("demo-client"),
 					testserver.WithNamespace(clientNamespace),
@@ -101,15 +127,24 @@ spec:
 					testserver.WithEchoArgs("echo", "--instance", "kube-statefulset-test-server-1"),
 				),
 				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
-			).
-			WithZone(multizone.KubeZone2,
+				zoneIngress(),
+			)).
+			SetupInGroup(multizone.KubeZone1, &group)
+
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(Parallel(
 				testserver.Install(
 					testserver.WithNamespace(namespace),
 					testserver.WithMesh(meshName),
 					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
 				),
-			).
-			WithZone(multizone.UniZone1,
+				zoneIngress(),
+			)).
+			SetupInGroup(multizone.KubeZone2, &group)
+
+		NewClusterSetup().
+			Install(Parallel(
 				DemoClientUniversal("uni-demo-client", meshName,
 					WithTransparentProxy(true),
 					WithWorkload("uni-demo-client"),
@@ -118,26 +153,46 @@ spec:
 					WithArgs([]string{"echo", "--instance", "uni-test-server-1"}),
 					WithWorkload("test-server"),
 				),
-			).
-			WithZone(multizone.UniZone2,
+				zoneIngress(),
+			)).
+			SetupInGroup(multizone.UniZone1, &group)
+
+		NewClusterSetup().
+			Install(Parallel(
 				TestServerUniversal("test-server", meshName,
 					WithArgs([]string{"echo", "--instance", "uni-test-server"}),
 					WithWorkload("test-server"),
 				),
-			).
-			WithZoneSetup(autoGenerateUniversalCluster, Kuma(
+				zoneIngress(),
+			)).
+			SetupInGroup(multizone.UniZone2, &group)
+
+		NewClusterSetup().
+			Install(Kuma(
 				core.Zone,
 				WithGlobalAddress(multizone.Global.GetKuma().GetKDSServerAddress()),
 				WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
 				WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
 			)).
-			WithZone(autoGenerateUniversalCluster,
+			// The zone joins the multizone deployment only now, so it gets the
+			// mesh after its control plane is up and before its proxies start.
+			Install(func(cluster Cluster) error {
+				return WaitForMesh(meshName, []Cluster{cluster})
+			}).
+			Install(Parallel(
 				TestServerUniversal("test-server", meshName,
 					WithArgs([]string{"echo", "--instance", "auto-uni-test-server"}),
 					WithWorkload("test-server"),
 				),
-			).
-			Setup()).To(Succeed())
+				zoneIngress(),
+			)).
+			SetupInGroup(autoGenerateUniversalCluster, &group)
+
+		Expect(group.Wait()).To(Succeed())
+
+		// Every zone mints its own CA from the MeshIdentity, so each one has to
+		// be told about the others before cross-zone mTLS can be established.
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 
 		Expect(multizone.KubeZone1.WaitApp("statefulset-test-server", namespace, 1)).To(Succeed())
 		for _, pod := range k8s.ListPodsContext(multizone.KubeZone1.GetTesting(), context.Background(),
@@ -152,12 +207,21 @@ spec:
 	})
 
 	AfterEachFailure(func() {
-		env.Debug()
+		DebugUniversal(multizone.Global, meshName)
+		DebugUniversal(multizone.UniZone1, meshName)
+		DebugUniversal(multizone.UniZone2, meshName)
+		DebugUniversal(autoGenerateUniversalCluster, meshName)
+		DebugKube(multizone.KubeZone1, meshName, namespace)
+		DebugKube(multizone.KubeZone2, meshName, namespace)
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cleanup()).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(clientNamespace)).To(Succeed())
+		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(multizone.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 		Expect(autoGenerateUniversalCluster.DismissCluster()).To(Succeed())
 	})
 
