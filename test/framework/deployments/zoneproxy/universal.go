@@ -81,7 +81,36 @@ func (d *universalDeployment) deployProxy(uniCluster *framework.UniversalCluster
 		return errors.Wrapf(err, "failed to generate DP token for %q", name)
 	}
 
-	return uniCluster.CreateDataplaneProxy(app, name, ip, dpYAML, token, d.opts.DpEnvs)
+	if err := uniCluster.CreateDataplaneProxy(app, name, ip, dpYAML, token, d.opts.DpEnvs); err != nil {
+		return err
+	}
+
+	if listenerType == "ZoneIngress" {
+		return d.createMeshZoneAddress(uniCluster, name, ip, port)
+	}
+	return nil
+}
+
+// createMeshZoneAddress publishes the address other zones dial to reach this
+// ingress. On Kubernetes the meshzoneaddress controller derives it from the
+// zone proxy Service; on Universal there is no Service, so the deployment
+// creates the resource itself.
+func (d *universalDeployment) createMeshZoneAddress(uniCluster *framework.UniversalCluster, name, ip string, port int) error {
+	mza := fmt.Sprintf(`
+type: MeshZoneAddress
+name: %s
+mesh: %s
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: %s
+spec:
+  address: %s
+  port: %d
+`, name, d.opts.Mesh, uniCluster.ZoneName(), ip, port)
+
+	return framework.NewClusterSetup().
+		Install(framework.YamlUniversal(mza)).
+		Setup(uniCluster)
 }
 
 func (d *universalDeployment) ingressName() string {

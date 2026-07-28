@@ -1,8 +1,11 @@
 package zoneproxy
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -248,6 +251,7 @@ func (d *k8sDeployment) Deploy(cluster framework.Cluster) error {
 			framework.WaitNumPods(d.opts.Namespace, 1, name),
 			framework.WaitPodsAvailable(d.opts.Namespace, name),
 			framework.WaitService(d.opts.Namespace, name),
+			d.waitMeshZoneAddress(),
 		)
 	}
 	if d.opts.EgressPort > 0 {
@@ -261,6 +265,29 @@ func (d *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		)
 	}
 	return framework.Combine(funcs...)(cluster)
+}
+
+// waitMeshZoneAddress blocks until the meshzoneaddress controller has published
+// the ingress address. Waiting on the pods is not enough: the controller only
+// creates the resource once the Service has a ready endpoint, and drops it again
+// whenever the endpoints go away. Without this gate other zones can still be
+// routing to the legacy ZoneIngress when the assertions start.
+func (d *k8sDeployment) waitMeshZoneAddress() framework.InstallFunc {
+	name := d.ingressName()
+	return func(cluster framework.Cluster) error {
+		_, err := retry.DoWithRetryContextE(
+			cluster.GetTesting(), context.Background(),
+			"wait for MeshZoneAddress "+name,
+			framework.DefaultRetries, framework.DefaultTimeout,
+			func() (string, error) {
+				return k8s.RunKubectlAndGetOutputContextE(
+					cluster.GetTesting(), context.Background(),
+					cluster.GetKubectlOptions(d.opts.Namespace),
+					"get", "meshzoneaddress", name,
+				)
+			})
+		return err
+	}
 }
 
 func (d *k8sDeployment) Delete(_ framework.Cluster) error {
