@@ -119,10 +119,7 @@ func buildExternalServiceFilterChain(
 	esName := cluster.Name()
 	filterChainName := esName
 	routeConfigName := esName
-	if endpoints[0].IsMeshExternalService() {
-		filterChainName = esName
-		routeConfigName = esName
-	} else {
+	if !endpoints[0].IsMeshExternalService() {
 		filterChainName = envoy_names.GetEgressFilterChainName(esName, meshName)
 		routeConfigName = envoy_names.GetOutboundRouteName(esName)
 	}
