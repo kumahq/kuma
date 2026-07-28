@@ -14,6 +14,7 @@ resources:
                 portValue: 9000
         locality:
           subZone: priority-0
+        priority: 1
     name: kri_extsvc_default___example_9000
     ringHashLbConfig:
       hashFunction: MURMUR_HASH_2

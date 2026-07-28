@@ -5,14 +5,7 @@ resources:
     lbPolicy: RANDOM
     loadAssignment:
       clusterName: kri_extsvc_default___example_9000
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.0.1
-                portValue: 9000
-        locality:
-          subZone: priority-0
+      policy:
+        overprovisioningFactor: 200
     name: kri_extsvc_default___example_9000
     type: STATIC
