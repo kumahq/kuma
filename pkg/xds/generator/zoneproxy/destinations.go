@@ -29,12 +29,12 @@ type MeshDestinations struct {
 type BackendRefDestination struct {
 	resolve.ResolvedBackendRef
 
-	Mesh              string
-	SNI               string
-	LegacyServiceName string
+	Mesh           string
+	SNI            string
+	EndpointMapKey string
 }
 
-// BuildMeshDestinations builds destinations for legacy zone proxies using the hash-based SNI format.
+// BuildMeshDestinations builds destinations for zone proxies using the hash-based SNI format.
 func BuildMeshDestinations(
 	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
 	systemNamespace string,
@@ -64,9 +64,9 @@ func BuildRealResourceDestinations(destinations []core_resources.Destination, sy
 		for _, port := range dest.GetPorts() {
 			id := kri.WithSectionName(origin, port.GetName())
 			result = append(result, BackendRefDestination{
-				Mesh:              mesh,
-				SNI:               sniFor(id, port),
-				LegacyServiceName: destinationname.ResolveLegacyFromDestination(dest, port),
+				Mesh:           mesh,
+				SNI:            sniFor(id, port),
+				EndpointMapKey: destinationname.ResolveLegacyFromDestination(dest, port),
 				ResolvedBackendRef: resolve.ResolvedBackendRef{
 					Ref: &resolve.RealResourceBackendRef{
 						Resource: id,
