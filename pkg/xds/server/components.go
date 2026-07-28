@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/pkg/errors"
 
-<<<<<<< HEAD
 	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
@@ -11,26 +10,12 @@ import (
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
+	"github.com/kumahq/kuma/v2/pkg/core/xds/issuer"
 	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
 	"github.com/kumahq/kuma/v2/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
 	v3 "github.com/kumahq/kuma/v2/pkg/xds/server/v3"
-=======
-	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
-	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
-	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
-	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
-	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
-	"github.com/kumahq/kuma/v3/pkg/xds/cache/cla"
-	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
-	v3 "github.com/kumahq/kuma/v3/pkg/xds/server/v3"
->>>>>>> 2321564700 (fix(xds): throttle dataplane cert issuance on CA failure (#17448))
 )
 
 var (

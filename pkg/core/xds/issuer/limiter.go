@@ -10,10 +10,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sethvargo/go-retry"
 
-	"github.com/kumahq/kuma/v3/pkg/core"
-	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/metrics"
 )
 
 // DefaultCircuitBreakerMinProxies is the default number of distinct proxies that

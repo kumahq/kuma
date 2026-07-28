@@ -3,7 +3,7 @@ package issuer_test
 import (
 	"testing"
 
-	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v2/pkg/test"
 )
 
 func TestIssuer(t *testing.T) {

@@ -9,28 +9,16 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/sethvargo/go-retry"
 
-<<<<<<< HEAD
 	"github.com/kumahq/kuma/v2/pkg/core"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/core/xds/issuer"
 	"github.com/kumahq/kuma/v2/pkg/events"
 	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-=======
-	"github.com/kumahq/kuma/v3/pkg/core"
-	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
-	"github.com/kumahq/kuma/v3/pkg/events"
-	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
-	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
->>>>>>> 2321564700 (fix(xds): throttle dataplane cert issuance on CA failure (#17448))
 )
 
 var _ = Describe("MeshIdentity providers", func() {

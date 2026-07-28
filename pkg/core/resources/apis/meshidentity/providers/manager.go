@@ -6,23 +6,14 @@ import (
 
 	"github.com/go-logr/logr"
 
-<<<<<<< HEAD
 	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/core/xds/issuer"
 	"github.com/kumahq/kuma/v2/pkg/events"
-=======
-	"github.com/kumahq/kuma/v3/pkg/core"
-	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
-	"github.com/kumahq/kuma/v3/pkg/events"
->>>>>>> 2321564700 (fix(xds): throttle dataplane cert issuance on CA failure (#17448))
 )
 
 type IdentityProviderManager struct {

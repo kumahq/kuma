@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-<<<<<<< HEAD
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
@@ -20,31 +19,13 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/secrets/cipher"
 	secrets_manager "github.com/kumahq/kuma/v2/pkg/core/secrets/manager"
 	secrets_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/v2/pkg/core/xds/issuer"
 	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 	ca_builtin "github.com/kumahq/kuma/v2/pkg/plugins/ca/builtin"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/model"
 	. "github.com/kumahq/kuma/v2/pkg/xds/secrets"
-=======
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core"
-	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
-	secrets_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
-	secrets_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
-	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
-	ca_builtin "github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin"
-	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
-	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
-	"github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	. "github.com/kumahq/kuma/v3/pkg/xds/secrets"
->>>>>>> 2321564700 (fix(xds): throttle dataplane cert issuance on CA failure (#17448))
 )
 
 var _ = Describe("Secrets", Ordered, func() {

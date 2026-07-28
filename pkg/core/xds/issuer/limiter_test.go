@@ -8,12 +8,12 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/sethvargo/go-retry"
 
-	"github.com/kumahq/kuma/v3/pkg/core"
-	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
-	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
-	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/xds/issuer"
+	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
 )
 
 var _ = Describe("Limiter", func() {
