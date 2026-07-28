@@ -13,9 +13,7 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -122,31 +120,6 @@ var _ = Describe("MeshTrace", func() {
 			},
 		}
 	}
-	// Unified naming listeners use contextual names matching what real proxy generators produce.
-	inboundUnifiedName := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(17777))
-	outboundUnifiedName := backendMeshServiceIdentifier.String()
-	inboundAndOutboundUnifiedNaming := func() []core_xds.Resource {
-		return []core_xds.Resource{
-			{
-				Name:   "inbound",
-				Origin: metadata.OriginInbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3, inboundUnifiedName).
-					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager(inboundUnifiedName, false, nil, true)),
-					)).MustBuild(),
-			}, {
-				Name:   "outbound",
-				Origin: metadata.OriginOutbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3, outboundUnifiedName).
-					Configure(OutboundListener("127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager(outboundUnifiedName, false, nil, true)),
-					)).MustBuild(),
-				ResourceOrigin: backendMeshServiceIdentifier,
-			},
-		}
-	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			resources := core_xds.NewResourceSet()
@@ -237,53 +210,6 @@ var _ = Describe("MeshTrace", func() {
 				},
 			},
 			goldenFile: "inbound-outbound-zipkin-real-meshservice",
-		}),
-		Entry("inbound/outbound for zipkin, real MeshService and unified naming", testCase{
-			resources: inboundAndOutboundUnifiedNaming(),
-			features: xds_types.Features{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
-			outbounds: xds_types.Outbounds{
-				{
-					Address:  "127.0.0.1",
-					Port:     27777,
-					Resource: backendMeshServiceIdentifier,
-				},
-			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Origin: []core_model.ResourceMeta{
-							&test_model.ResourceMeta{
-								Mesh: "default",
-								Name: "mt-1",
-							},
-						},
-						Conf: api.Conf{
-							Tags: &[]api.Tag{
-								{Name: "app", Literal: pointer.To("backend")},
-								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
-								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
-							},
-							Sampling: &api.Sampling{
-								Overall: pointer.To(intstr.FromInt(10)),
-								Client:  pointer.To(intstr.FromInt(20)),
-								Random:  pointer.To(intstr.FromInt(50)),
-							},
-							Backends: &[]api.Backend{{
-								Zipkin: &api.ZipkinBackend{
-									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: true,
-									ApiVersion:        "httpProto",
-									TraceId128Bit:     true,
-								},
-							}},
-						},
-					},
-				},
-			},
-			goldenFile: "inbound-outbound-zipkin-real-meshservice-unified-naming",
 		}),
 		Entry("inbound/outbound for zipkin", testCase{
 			resources: inboundAndOutbound(),

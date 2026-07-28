@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"encoding/json"
-	"fmt"
 	"maps"
 	"net/url"
 	"strings"
@@ -32,7 +31,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/dynconf"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	generator_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -125,8 +123,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	prometheusBackends := filterPrometheusBackends(conf.Backends)
 	openTelemetryBackends := filterOpenTelemetryBackends(conf.Backends)
 
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
-	err := configurePrometheus(rs, proxy, prometheusBackends, unifiedNaming)
+	err := configurePrometheus(rs, proxy, prometheusBackends)
 	if err != nil {
 		return err
 	}
@@ -138,7 +135,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	// skips them so we filter here to avoid duplicating Envoy resources for
 	// backendRef backends that go through the unified pipe.
 	envoyBackends := filterOtelBackendsForEnvoy(proxy, openTelemetryBackends)
-	if err := configureOpenTelemetry(rs, proxy, envoyBackends, unifiedNaming, ctx.Mesh.Resources); err != nil {
+	if err := configureOpenTelemetry(rs, proxy, envoyBackends, ctx.Mesh.Resources); err != nil {
 		return err
 	}
 	inboundTagsDisabled := false
@@ -161,28 +158,21 @@ func removeResourcesConfiguredByMesh(rs *core_xds.ResourceSet, listener *envoy_l
 	}
 }
 
-func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend, unifiedNaming bool) error {
+func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend) error {
 	if len(prometheusBackends) == 0 {
 		return nil
 	}
 
 	for _, backend := range prometheusBackends {
-		getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNaming)
 		backendName := pointer.DerefOr(backend.ClientId, DefaultBackendName)
 		systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_prometheus", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
 		configurer := &plugin_xds.PrometheusConfigurer{
-			Backend: backend,
-			ListenerName: getNameOrDefault(
-				systemName,
-				fmt.Sprintf("%s:%s", PrometheusListenerName, backendName),
-			),
+			Backend:         backend,
+			ListenerName:    systemName,
 			EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
-			ClusterName: getNameOrDefault(
-				systemName,
-				fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
-			),
-			StatPrefix:  getNameOrDefault(systemName, ""),
+			ClusterName:     systemName,
+			StatPrefix:      systemName,
 			StatsPath:   PrometheusDataplaneStatsPath,
 			IPv6Enabled: proxy.Metadata.GetIPv6Enabled(),
 		}
@@ -211,9 +201,9 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 	return nil
 }
 
-func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, unifiedNaming bool, resources xds_context.Resources) error {
+func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, resources xds_context.Resources) error {
 	for _, openTelemetryBackend := range openTelemetryBackends {
-		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend, unifiedNaming, resources)
+		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend, resources)
 		if err != nil {
 			return err
 		}
@@ -221,7 +211,7 @@ func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, ope
 	return nil
 }
 
-func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend, unifiedNaming bool, resources xds_context.Resources) error {
+func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend, resources xds_context.Resources) error {
 	if openTelemetryBackend == nil {
 		return nil
 	}
@@ -237,16 +227,15 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 		return nil
 	}
 
-	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNaming)
 	endpoint := policies_xds.EndpointForDirectOtelExport(resolved, proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP))
 	backendName := resolved.Name
 	systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_otel", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
 	configurer := &plugin_xds.OpenTelemetryConfigurer{
 		Endpoint:     endpoint,
-		ListenerName: getNameOrDefault(systemName, envoy_names.GetOpenTelemetryListenerName(backendName)),
-		ClusterName:  getNameOrDefault(systemName, envoy_names.GetOpenTelemetryListenerName(backendName)),
-		StatPrefix:   getNameOrDefault(systemName, ""),
+		ListenerName: systemName,
+		ClusterName:  systemName,
+		StatPrefix:   systemName,
 		SocketName:   core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, backendName),
 		ApiVersion:   proxy.APIVersion,
 		IPv6Enabled:  proxy.Metadata.GetIPv6Enabled(),
