@@ -9,7 +9,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
+	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
@@ -27,7 +27,6 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 )
 
@@ -75,7 +74,7 @@ func GenerateOutboundListener(
 		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
 		Configure(envoy_listeners.OutboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.TransparentProxying(transparentProxyEnabled)).
-		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
+		Configure(envoy_listeners.TagsMetadata(svc.OutboundListenerTags())).
 		Configure(envoy_listeners.FilterChain(filterChain))
 
 	resource, err := listener.Build()
