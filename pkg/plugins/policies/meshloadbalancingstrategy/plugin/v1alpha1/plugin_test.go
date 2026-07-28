@@ -15,6 +15,8 @@ import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -30,6 +32,7 @@ import (
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/v3/pkg/test/xds/samples"
@@ -1573,7 +1576,130 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Build(),
 		}),
 	)
+
+	type zoneProxyTestCase struct {
+		conf            api.Conf
+		expectedCluster string
+	}
+
+	mesKRI := kri.Identifier{
+		ResourceType: meshexternalservice_api.MeshExternalServiceType,
+		Mesh:         "default",
+		Name:         "example",
+		SectionName:  "9000",
+	}
+
+	DescribeTable("Apply to mesh-scoped zone proxy Dataplanes",
+		func(given zoneProxyTestCase) {
+			resources := core_xds.NewResourceSet()
+			resources.Add(&core_xds.Resource{
+				Name:   mesKRI.String(),
+				Origin: metadata.OriginEgress,
+				// mirrors ZoneProxyListenerGenerator.genClusterCDS: the egress cluster
+				// for a MeshExternalService carries a static LoadAssignment
+				Resource: clusters.NewClusterBuilder(envoy_common.APIV3, mesKRI.String()).
+					Configure(clusters.ProvidedCustomEndpointCluster(
+						false,
+						true,
+						*xds_builders.Endpoint().WithTarget("192.168.0.1").WithPort(9000).Build(),
+					)).MustBuild(),
+				ResourceOrigin: mesKRI,
+			})
+
+			xdsCtx := *xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				Build()
+
+			proxy := xds_builders.Proxy().
+				With(func(p *core_xds.Proxy) {
+					p.Dataplane = zoneProxyDataplane()
+				}).
+				WithPolicies(xds_builders.MatchedPolicies().WithPolicy(
+					api.MeshLoadBalancingStrategyType,
+					core_rules.ToRules{
+						ResourceRules: outbound.ResourceRules{
+							mesKRI: {Conf: []any{given.conf}},
+						},
+					},
+					core_rules.FromRules{},
+				)).
+				Build()
+
+			p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(p.Apply(resources, xdsCtx, proxy)).To(Succeed())
+
+			resource, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", given.expectedCluster)))
+		},
+		Entry("round robin", zoneProxyTestCase{
+			conf:            api.Conf{LoadBalancer: &api.LoadBalancer{Type: api.RoundRobinType}},
+			expectedCluster: "zone-proxy-round-robin.clusters.golden.yaml",
+		}),
+		Entry("least request", zoneProxyTestCase{
+			conf: api.Conf{LoadBalancer: &api.LoadBalancer{
+				Type: api.LeastRequestType,
+				LeastRequest: &api.LeastRequest{
+					ChoiceCount:       pointer.To[uint32](4),
+					ActiveRequestBias: pointer.To(intstr.FromString("1.3")),
+				},
+			}},
+			expectedCluster: "zone-proxy-least-request.clusters.golden.yaml",
+		}),
+		Entry("ring hash", zoneProxyTestCase{
+			conf: api.Conf{LoadBalancer: &api.LoadBalancer{
+				Type: api.RingHashType,
+				RingHash: &api.RingHash{
+					MinRingSize:  pointer.To[uint32](100),
+					MaxRingSize:  pointer.To[uint32](1000),
+					HashFunction: pointer.To(api.MurmurHash2Type),
+				},
+			}},
+			expectedCluster: "zone-proxy-ring-hash.clusters.golden.yaml",
+		}),
+		Entry("maglev", zoneProxyTestCase{
+			conf:            api.Conf{LoadBalancer: &api.LoadBalancer{Type: api.MaglevType}},
+			expectedCluster: "zone-proxy-maglev.clusters.golden.yaml",
+		}),
+		Entry("random", zoneProxyTestCase{
+			conf:            api.Conf{LoadBalancer: &api.LoadBalancer{Type: api.RandomType}},
+			expectedCluster: "zone-proxy-random.clusters.golden.yaml",
+		}),
+		// MeshExternalService endpoints carry no zone, so locality awareness has
+		// nothing to resolve. It must leave the endpoints alone rather than drop them.
+		Entry("locality awareness is ignored", zoneProxyTestCase{
+			conf: api.Conf{
+				LoadBalancer: &api.LoadBalancer{Type: api.RandomType},
+				LocalityAwareness: &api.LocalityAwareness{
+					CrossZone: &api.CrossZone{
+						Failover: &[]api.Failover{{
+							To: api.ToZone{Type: api.Only, Zones: &[]string{"zone-2"}},
+						}},
+					},
+				},
+			},
+			expectedCluster: "zone-proxy-locality-awareness.clusters.golden.yaml",
+		}),
+	)
 })
+
+func zoneProxyDataplane() *core_mesh.DataplaneResource {
+	return &core_mesh.DataplaneResource{
+		Meta: &test_model.ResourceMeta{Name: "zone-proxy", Mesh: "default"},
+		Spec: &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "10.0.0.1",
+				Listeners: []*mesh_proto.Dataplane_Networking_Listener{{
+					Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+					Address: "10.0.0.1",
+					Port:    10002,
+					Name:    "ze-port",
+					State:   mesh_proto.Dataplane_Networking_Listener_Ready,
+				}},
+			},
+		},
+	}
+}
 
 func createEndpointWith(zone string, ip string, extraTags map[string]string) core_xds.Endpoint {
 	return *xds_builders.Endpoint().

@@ -171,6 +171,12 @@ func (p plugin) configureDPP(
 }
 
 func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Conf], r *core_xds.Resource, proxy *core_xds.Proxy, affinityLabels map[string]string) error {
+	// On a zone proxy egress listener the endpoints belong to a MeshExternalService
+	// and carry no zone, so there is nothing for locality awareness to resolve -
+	// rewriting their localities would drop every endpoint. Only the load balancer
+	// configuration applies, which is what the legacy zone egress did as well.
+	zoneProxyEgress := r.Origin == generator_metadata.OriginEgress
+
 	switch envoyResource := r.Resource.(type) {
 	case *envoy_listener.Listener:
 		return NewModifier(envoyResource).
@@ -179,9 +185,12 @@ func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Con
 	case *envoy_cluster.Cluster:
 		return NewModifier(envoyResource).
 			Configure(clusterConfigurer(rctx.Conf())).
-			Configure(If(envoyResource.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound))).
+			Configure(If(!zoneProxyEgress && envoyResource.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound))).
 			Modify()
 	case *envoy_endpoint.ClusterLoadAssignment:
+		if zoneProxyEgress {
+			return nil
+		}
 		return NewModifier(envoyResource).
 			Configure(claConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound)).
 			Modify()
