@@ -35,7 +35,7 @@ resources:
               name: envoy.tracers.datadog
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
-                collectorCluster: meshtrace:datadog
+                collectorCluster: system_meshtrace_datadog_http---ingest-datadog-eu-8126
                 serviceName: backend_INBOUND
             randomSampling:
               value: 50
@@ -77,7 +77,7 @@ resources:
               name: envoy.tracers.datadog
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
-                collectorCluster: meshtrace:datadog
+                collectorCluster: system_meshtrace_datadog_http---ingest-datadog-eu-8126
                 serviceName: backend_OUTBOUND_other-service
             randomSampling:
               value: 50
