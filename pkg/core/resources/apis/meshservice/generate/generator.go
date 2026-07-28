@@ -104,11 +104,15 @@ type meshServicesResult struct {
 }
 
 func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
-	return g.workloadMeshServiceForDataplane(dataplane)
+	if workloadName := dataplane.GetMeta().GetLabels()[metadata.KumaWorkload]; workloadName != "" {
+		return g.workloadMeshServiceForDataplane(dataplane)
+	}
+	return g.serviceTagMeshServicesForDataplane(dataplane)
 }
 
 // serviceTagMeshServicesForDataplane generates MeshServices grouped by the
-// kuma.io/service inbound tag. Used when inbound tags are enabled.
+// kuma.io/service inbound tag. Used as a compatibility fallback for Universal
+// Dataplanes that have not been labeled with kuma.io/workload yet.
 func (g *Generator) serviceTagMeshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
 	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
 	portsByService := map[string][]meshservice_api.Port{}
@@ -166,9 +170,9 @@ func (g *Generator) serviceTagMeshServicesForDataplane(dataplane *core_mesh.Data
 }
 
 // workloadMeshServiceForDataplane generates a single MeshService per
-// kuma.io/workload label value. Used when inbound tags are disabled: inbounds
-// no longer carry tags, so service identity is derived from the workload the
-// Dataplane belongs to, producing a 1:1 workload-to-MeshService mapping.
+// kuma.io/workload label value. Inbounds no longer carry tags for generated
+// Dataplanes, so service identity is derived from the workload the Dataplane
+// belongs to, producing a 1:1 workload-to-MeshService mapping.
 func (g *Generator) workloadMeshServiceForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
 	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
 
