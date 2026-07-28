@@ -332,14 +332,17 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		switch {
 		case desc.IsDestination:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to build base mesh context")
+			}
 			destinations = append(destinations, rmap[t].GetItems())
 		case desc.IsPolicy:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to build base mesh context")
+			}
 		default:
 			// DO nothing we're not interested in this type
-		}
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to build base mesh context")
 		}
 	}
 	newHash := rmap.Hash()
