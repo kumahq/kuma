@@ -16,13 +16,13 @@ import (
 )
 
 var NameToModule = map[string]*plugins.PluginInitializer{
-	"": {InitFn: hostnamegenerator.InitPlugin, Initialized: false},
-	"": {InitFn: meshexternalservice.InitPlugin, Initialized: false},
-	"": {InitFn: meshidentity.InitPlugin, Initialized: false},
-	"": {InitFn: meshmultizoneservice.InitPlugin, Initialized: false},
-	"": {InitFn: meshopentelemetrybackend.InitPlugin, Initialized: false},
-	"": {InitFn: meshservice.InitPlugin, Initialized: false},
-	"": {InitFn: meshtrust.InitPlugin, Initialized: false},
-	"": {InitFn: meshzoneaddress.InitPlugin, Initialized: false},
-	"": {InitFn: workload.InitPlugin, Initialized: false},
+	"hostnamegenerators":        {InitFn: hostnamegenerator.InitPlugin, Initialized: false},
+	"meshexternalservices":      {InitFn: meshexternalservice.InitPlugin, Initialized: false},
+	"meshidentities":            {InitFn: meshidentity.InitPlugin, Initialized: false},
+	"meshmultizoneservices":     {InitFn: meshmultizoneservice.InitPlugin, Initialized: false},
+	"meshopentelemetrybackends": {InitFn: meshopentelemetrybackend.InitPlugin, Initialized: false},
+	"meshservices":              {InitFn: meshservice.InitPlugin, Initialized: false},
+	"meshtrusts":                {InitFn: meshtrust.InitPlugin, Initialized: false},
+	"meshzoneaddresses":         {InitFn: meshzoneaddress.InitPlugin, Initialized: false},
+	"workloads":                 {InitFn: workload.InitPlugin, Initialized: false},
 }
