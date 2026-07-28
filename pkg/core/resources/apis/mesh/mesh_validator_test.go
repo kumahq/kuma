@@ -30,7 +30,7 @@ var _ = Describe("Mesh", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 			},
-			Entry("multiple ca backends of the same name", testCase{
+			Entry("valid mtls dpCert rotation", testCase{
 				mesh: `
             mtls:
               enabledBackend: builtin-1
