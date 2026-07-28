@@ -117,13 +117,11 @@ type EndpointAccumulator struct {
 type endpointClusterName string
 
 func (acc *EndpointAccumulator) ClusterForEndpoint(endpoint LoggingEndpoint) endpointClusterName {
-	ind, found := acc.endpoints[endpoint]
-	if !found {
-		ind = acc.latest
+	if _, found := acc.endpoints[endpoint]; !found {
 		if acc.endpoints == nil {
 			acc.endpoints = map[LoggingEndpoint]int{}
 		}
-		acc.endpoints[endpoint] = ind
+		acc.endpoints[endpoint] = acc.latest
 		acc.latest += 1
 	}
 

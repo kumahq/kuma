@@ -252,15 +252,15 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 	resolved := resolveOtelBackendInfo(conf, ctx.Mesh.Resources)
 
 	configurer := plugin_xds.Configurer{
-		Conf:                  conf,
-		Service:               serviceName,
-		TrafficDirection:      direction,
-		Destination:           destination,
-		IsGateway:             proxy.Dataplane.Spec.IsBuiltinGateway(),
-		Mesh:                  proxy.Dataplane.GetMeta().GetMesh(),
-		Zone:                  proxy.Zone,
-		WorkloadKRI:           workloadKRI,
-		SkipOpenTelemetry:     shouldSkipUnresolvedOpenTelemetryBackend(conf, resolved),
+		Conf:              conf,
+		Service:           serviceName,
+		TrafficDirection:  direction,
+		Destination:       destination,
+		IsGateway:         proxy.Dataplane.Spec.IsBuiltinGateway(),
+		Mesh:              proxy.Dataplane.GetMeta().GetMesh(),
+		Zone:              proxy.Zone,
+		WorkloadKRI:       workloadKRI,
+		SkipOpenTelemetry: shouldSkipUnresolvedOpenTelemetryBackend(conf, resolved),
 	}
 	if resolved != nil {
 		configurer.ResolvedOtelName = resolved.Name

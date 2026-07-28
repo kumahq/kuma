@@ -540,94 +540,6 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"outbound_tcp_backend_default_format.listener.golden.yaml"},
 		}),
-		Entry("outbound tcpproxy with opentelemetry backend, plain format, unified naming", sidecarTestCase{
-			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
-			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
-				outboundServiceTCPListener("foo-service", 37778),
-				outboundServiceTCPListener("bar-service", 37779),
-			},
-			outbounds: xds_types.Outbounds{
-				{LegacyOutbound: builders.Outbound().
-					WithService("foo-service").
-					WithAddress("127.0.0.1").
-					WithPort(37778).Build()},
-				{LegacyOutbound: builders.Outbound().
-					WithService("bar-service").
-					WithAddress("127.0.0.1").
-					WithPort(37779).Build()},
-			},
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service-tcp",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: otelCollectorBackendRef,
-								},
-							}},
-						},
-					},
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "foo-service",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: otelCollectorBackendRef,
-									Body: &apiextensionsv1.JSON{
-										Raw: []byte("%KUMA_MESH%"),
-									},
-								},
-							}},
-						},
-					},
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "bar-service",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: otherOtelCollectorBackendRef,
-									Body: &apiextensionsv1.JSON{
-										Raw: []byte(`{
-										  "kvlistValue": {
-											"values": [
-											  {"key": "mesh", "value": {"stringValue": "%KUMA_MESH%"}}
-											]
-										  }
-									    }`),
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-			expectedClusters: []string{
-				"outbound_otel_unified_naming.cluster.golden.yaml",
-				"outbound_otel_unified_naming_1.cluster.golden.yaml",
-			},
-			expectedListeners: []string{
-				"outbound_otel_unified_naming.listener.golden.yaml",
-				"outbound_otel_unified_naming_1.listener.golden.yaml",
-				"outbound_otel_unified_naming_2.listener.golden.yaml",
-			},
-			motbBackends: []*motb_api.MeshOpenTelemetryBackendResource{otelCollectorMotb, otherOtelCollectorMotb},
-		}),
 		Entry("outbound tcpproxy with opentelemetry backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{
 				outboundServiceTCPListener("other-service-tcp", 37777),
@@ -963,9 +875,6 @@ var _ = Describe("MeshAccessLog", func() {
 			expectedListeners: []string{"inbound_route_tags_disabled.listener.golden.yaml"},
 		}),
 		Entry("outbound otel backend with workload identity and legacy placeholder key", sidecarTestCase{
-			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{
@@ -1009,9 +918,6 @@ var _ = Describe("MeshAccessLog", func() {
 			motbBackends:      []*motb_api.MeshOpenTelemetryBackendResource{otelCollectorMotb},
 		}),
 		Entry("outbound file backend with workload variables", sidecarTestCase{
-			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{

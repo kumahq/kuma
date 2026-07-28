@@ -30,13 +30,13 @@ type Configurer struct {
 
 	// Opaque string which envoy will assign to tracer collector cluster, on those
 	// which support association of named "service" tags on traces. Consumed by datadog.
-	Service               string
-	TrafficDirection      envoy_core.TrafficDirection
-	Destination           string
-	IsGateway             bool
-	Mesh                  string
-	Zone                  string
-	WorkloadKRI           string
+	Service          string
+	TrafficDirection envoy_core.TrafficDirection
+	Destination      string
+	IsGateway        bool
+	Mesh             string
+	Zone             string
+	WorkloadKRI      string
 	// ResolvedOtelName is the resolved MeshOpenTelemetryBackend name for OTel, used for naming.
 	ResolvedOtelName string
 	// ResolvedOtelUseHTTP is true when the resolved backend uses HTTP protocol.
@@ -327,8 +327,4 @@ func mapHeaderTag(name string, header *api.HeaderTag) *tracingv3.CustomTag {
 			},
 		},
 	}
-}
-
-func GetTracingClusterName(provider string) string {
-	return "meshtrace:" + provider
 }

@@ -37,7 +37,7 @@ resources:
                 '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
                 grpcService:
                   envoyGrpc:
-                    clusterName: meshtrace:opentelemetry
+                    clusterName: system_meshtrace_otel_otel-collector-ipv6
                 serviceName: backend
             spawnUpstreamSpan: false
     name: inbound:127.0.0.1:17777
@@ -79,7 +79,7 @@ resources:
                 '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
                 grpcService:
                   envoyGrpc:
-                    clusterName: meshtrace:opentelemetry
+                    clusterName: system_meshtrace_otel_otel-collector-ipv6
                 serviceName: backend
             spawnUpstreamSpan: false
     name: outbound:127.0.0.1:27777

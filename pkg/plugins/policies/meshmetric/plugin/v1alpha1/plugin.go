@@ -173,8 +173,8 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 			EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
 			ClusterName:     systemName,
 			StatPrefix:      systemName,
-			StatsPath:   PrometheusDataplaneStatsPath,
-			IPv6Enabled: proxy.Metadata.GetIPv6Enabled(),
+			StatsPath:       PrometheusDataplaneStatsPath,
+			IPv6Enabled:     proxy.Metadata.GetIPv6Enabled(),
 		}
 
 		cluster, err := configurer.ConfigureCluster(proxy)
