@@ -2,9 +2,8 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
+	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
@@ -14,7 +13,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 )
 
@@ -39,7 +37,7 @@ func GenerateOutboundListener(
 		tcpProxyStatPrefix = listenerName
 	}
 
-	tags := envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag)
+	tags := svc.OutboundListenerTags()
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...)).
