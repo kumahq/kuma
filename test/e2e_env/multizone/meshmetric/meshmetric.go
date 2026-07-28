@@ -50,11 +50,13 @@ spec:
 		NewClusterSetup().
 			Install(Parallel(
 				zoneproxy.Install(
+					zoneproxy.WithName("zone-proxy"),
 					zoneproxy.WithMesh(mesh),
 					zoneproxy.WithIngressPort(11001),
 					zoneproxy.WithWorkload("zone-proxy-ingress"),
 				),
 				zoneproxy.Install(
+					zoneproxy.WithName("zone-proxy"),
 					zoneproxy.WithMesh(mesh),
 					zoneproxy.WithEgressPort(11002),
 					zoneproxy.WithWorkload("zone-proxy-egress"),

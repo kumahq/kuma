@@ -108,11 +108,13 @@ spec:
 					testserver.WithEchoArgs("echo", "--instance", "kube-external-service"),
 				),
 				zoneproxy.Install(
+					zoneproxy.WithName("zone-proxy"),
 					zoneproxy.WithNamespace(namespace),
 					zoneproxy.WithMesh(meshName),
 					zoneproxy.WithIngressPort(11001),
 				),
 				zoneproxy.Install(
+					zoneproxy.WithName("zone-proxy"),
 					zoneproxy.WithNamespace(namespace),
 					zoneproxy.WithMesh(meshName),
 					zoneproxy.WithEgressPort(11002),
@@ -131,11 +133,13 @@ spec:
 					testserver.WithPodAnnotations(sidecarAnnotations),
 				),
 				zoneproxy.Install(
+					zoneproxy.WithName("zone-proxy"),
 					zoneproxy.WithNamespace(namespace),
 					zoneproxy.WithMesh(meshName),
 					zoneproxy.WithIngressPort(11001),
 				),
 				zoneproxy.Install(
+					zoneproxy.WithName("zone-proxy"),
 					zoneproxy.WithNamespace(namespace),
 					zoneproxy.WithMesh(meshName),
 					zoneproxy.WithEgressPort(11002),
@@ -149,11 +153,13 @@ spec:
 				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}), WithWorkload("test-server"), WithDpEnvs(map[string]string{"KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED": "true"})),
 				TestServerExternalServiceUniversal(fmt.Sprintf("external-service-%s", meshName), 8080, false, WithDockerContainerName("kuma-es-4_external-service-meshproxy")),
 				zoneproxy.Install(
+					zoneproxy.WithName("zone-proxy"),
 					zoneproxy.WithMesh(meshName),
 					zoneproxy.WithIngressPort(11001),
 					zoneproxy.WithWorkload("zone-proxy-ingress"),
 				),
 				zoneproxy.Install(
+					zoneproxy.WithName("zone-proxy"),
 					zoneproxy.WithMesh(meshName),
 					zoneproxy.WithEgressPort(11002),
 					zoneproxy.WithWorkload("zone-proxy-egress"),
