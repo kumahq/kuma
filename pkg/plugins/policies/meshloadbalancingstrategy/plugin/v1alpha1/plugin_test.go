@@ -1570,8 +1570,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			context: *xds_builders.Context().
 				WithMeshBuilder(samples.MeshMTLSBuilder()).
 				With(func(ctx *xds_context.Context) {
-					// this entry models KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED, which is
-					// what makes the proxy resolve its own affinity values from labels
 					ctx.ControlPlane.InboundTagsDisabled = true
 				}).
 				Build(),
@@ -1596,8 +1594,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			resources.Add(&core_xds.Resource{
 				Name:   mesKRI.String(),
 				Origin: metadata.OriginEgress,
-				// mirrors ZoneProxyListenerGenerator.genClusterCDS: the egress cluster
-				// for a MeshExternalService carries a static LoadAssignment
+				// mirrors ZoneProxyListenerGenerator.genClusterCDS
 				Resource: clusters.NewClusterBuilder(envoy_common.APIV3, mesKRI.String()).
 					Configure(clusters.ProvidedCustomEndpointCluster(
 						false,
@@ -1666,9 +1663,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			conf:            api.Conf{LoadBalancer: &api.LoadBalancer{Type: api.RandomType}},
 			expectedCluster: "zone-proxy-random.clusters.golden.yaml",
 		}),
-		// On the egress the endpoints are the real external addresses and carry no
-		// zone, so locality awareness has nothing to resolve. It must leave the
-		// endpoints alone rather than drop them.
+		// The egress endpoints are the real external addresses and carry no zone,
+		// so locality awareness must leave them alone rather than drop them.
 		Entry("locality awareness is ignored", zoneProxyTestCase{
 			conf: api.Conf{
 				LoadBalancer: &api.LoadBalancer{Type: api.RandomType},
@@ -1684,18 +1680,15 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		}),
 	)
 
-	// The sidecar's cluster for a MeshExternalService carries the same
-	// MeshExternalService as ResourceOrigin as the egress one, but its endpoints are
-	// the zone egress instances (fillExternalServicesOutboundsThroughEgress), which
-	// do carry a zone. Locality awareness must still apply there - the exclusion is
-	// only for the egress side, where the endpoints are the real external addresses.
+	// Same ResourceOrigin as the egress cluster above, but the endpoints are the
+	// zone egress instances (fillExternalServicesOutboundsThroughEgress) and do
+	// carry a zone, so the egress-only exclusion must not reach this far.
 	It("keeps locality awareness for a MeshExternalService on a sidecar", func() {
 		resources := core_xds.NewResourceSet()
 		resources.Add(&core_xds.Resource{
 			Name:   mesKRI.String(),
 			Origin: metadata.OriginOutbound,
 			Resource: endpoints.CreateClusterLoadAssignment(mesKRI.String(), []core_xds.Endpoint{
-				// zone egress instances, not the external addresses
 				createEndpointWith("zone-1", "10.0.0.1", map[string]string{}),
 				createEndpointWith("zone-2", "10.0.0.2", map[string]string{}),
 			}),
@@ -1732,20 +1725,18 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		Expect(p.Apply(resources, *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(), proxy)).To(Succeed())
 
 		cla := resources.ListOf(envoy_resource.EndpointType)[0].Resource.(*envoy_endpoint.ClusterLoadAssignment)
-		// both endpoints survive
 		Expect(cla.Endpoints).To(HaveLen(2))
 		zones := []string{cla.Endpoints[0].Locality.Zone, cla.Endpoints[1].Locality.Zone}
 		Expect(zones).To(ConsistOf("zone-1", "zone-2"))
-		// the overprovisioning factor is only written by claConfigurer, so it proves
-		// locality awareness actually ran rather than the endpoints merely surviving
+		// only claConfigurer writes the overprovisioning factor, so this proves
+		// locality awareness ran rather than the endpoints merely surviving
 		Expect(cla.Policy.GetOverprovisioningFactor().GetValue()).To(Equal(uint32(200)))
 	})
 })
 
-// externalServiceEndpoint mirrors topology.createMeshExternalServiceEndpoint: a
-// MeshExternalService endpoint always carries a Locality, but with an empty Zone
-// and the priority encoded in the SubZone. The empty Zone is what makes locality
-// awareness misfire on the egress, so the tests must reproduce it.
+// externalServiceEndpoint mirrors topology.createMeshExternalServiceEndpoint:
+// a Locality with an empty Zone and the priority in the SubZone. The empty Zone
+// is what makes locality awareness misfire on the egress.
 func externalServiceEndpoint(address string, port uint32) core_xds.Endpoint {
 	ep := *xds_builders.Endpoint().WithTarget(address).WithPort(port).Build()
 	ep.Locality = &core_xds.Locality{Priority: 0, SubZone: "priority-0"}
@@ -1780,9 +1771,8 @@ func createEndpointWith(zone string, ip string, extraTags map[string]string) cor
 		Build()
 }
 
-// createEndpointWithLabels models an endpoint built with
-// KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED: the workload labels are folded into
-// the endpoint tags at topology build time (see BuildEdsEndpointMap), so they
+// createEndpointWithLabels models an endpoint built with inbound tags disabled:
+// BuildEdsEndpointMap folds the workload labels into the endpoint tags, so they
 // live under the same envoy.lb key as the system tags.
 func createEndpointWithLabels(ip string, labels map[string]string) core_xds.Endpoint {
 	return *xds_builders.Endpoint().
