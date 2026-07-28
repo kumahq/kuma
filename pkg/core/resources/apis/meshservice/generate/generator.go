@@ -44,7 +44,6 @@ type Generator struct {
 	resManager              manager.ResourceManager
 	meshCache               *mesh_cache.Cache
 	zone                    string
-	inboundTagsDisabled     bool
 	labelPropagationEnabled bool
 	allowSet                map[string]struct{} // nil = allow all non-reserved
 	droppedLabels           *prometheus.CounterVec
@@ -60,7 +59,6 @@ func New(
 	resManager manager.ResourceManager,
 	meshCache *mesh_cache.Cache,
 	zone string,
-	inboundTagsDisabled bool,
 	labelPropagation kuma_cp.MeshServiceLabelPropagation,
 ) (*Generator, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
@@ -94,7 +92,6 @@ func New(
 		resManager:              resManager,
 		meshCache:               meshCache,
 		zone:                    zone,
-		inboundTagsDisabled:     inboundTagsDisabled,
 		labelPropagationEnabled: labelPropagation.Enabled,
 		allowSet:                allowSet,
 		droppedLabels:           droppedLabels,
@@ -107,10 +104,7 @@ type meshServicesResult struct {
 }
 
 func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
-	if g.inboundTagsDisabled {
-		return g.workloadMeshServiceForDataplane(dataplane)
-	}
-	return g.serviceTagMeshServicesForDataplane(dataplane)
+	return g.workloadMeshServiceForDataplane(dataplane)
 }
 
 // serviceTagMeshServicesForDataplane generates MeshServices grouped by the

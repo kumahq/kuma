@@ -86,7 +86,6 @@ var _ = Describe("MeshAccessLog", func() {
 		expectedClusters    []string
 		features            xds_types.Features
 		dataplaneLabels     map[string]string
-		inboundTagsDisabled bool
 		inboundName         string
 		extraInbounds       []*builders.InboundBuilder
 		motbBackends        []*motb_api.MeshOpenTelemetryBackendResource
@@ -120,9 +119,6 @@ var _ = Describe("MeshAccessLog", func() {
 				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 				AddServiceProtocol("other-service-http", core_meta.ProtocolHTTP).
 				AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
-				With(func(ctx *xds_context.Context) {
-					ctx.ControlPlane.InboundTagsDisabled = given.inboundTagsDisabled
-				}).
 				Build()
 
 			inboundBuilder := builders.Inbound().
@@ -927,8 +923,7 @@ var _ = Describe("MeshAccessLog", func() {
 							),
 					)).MustBuild(),
 			}},
-			inboundTagsDisabled: true,
-			inboundName:         "http",
+			inboundName: "http",
 			dataplaneLabels: map[string]string{
 				mesh_proto.ZoneTag:          "zone-1",
 				mesh_proto.KubeNamespaceTag: "kuma-demo",

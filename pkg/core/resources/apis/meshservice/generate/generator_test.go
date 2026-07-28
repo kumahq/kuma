@@ -85,7 +85,6 @@ var _ = Describe("MeshService generator", func() {
 			resManager,
 			meshCache,
 			"zone",
-			false,
 			kuma_cp.MeshServiceLabelPropagation{},
 		)
 
@@ -463,7 +462,7 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
-	Context("with InboundTagsDisabled", func() {
+	Context("with tag-free inbound behavior", func() {
 		BeforeEach(func() {
 			close(stopCh)
 
@@ -493,7 +492,6 @@ var _ = Describe("MeshService generator", func() {
 				resManager,
 				meshCache,
 				"zone",
-				true,
 				kuma_cp.MeshServiceLabelPropagation{},
 			)
 			Expect(err).ToNot(HaveOccurred())
@@ -598,7 +596,7 @@ var _ = Describe("MeshService generator", func() {
 		})
 	})
 
-	Context("with InboundTagsDisabled and LabelPropagation enabled", func() {
+	Context("with tag-free inbound behavior and LabelPropagation enabled", func() {
 		BeforeEach(func() {
 			close(stopCh)
 
@@ -628,7 +626,6 @@ var _ = Describe("MeshService generator", func() {
 				resManager,
 				meshCache,
 				"zone",
-				true,
 				kuma_cp.MeshServiceLabelPropagation{Enabled: true},
 			)
 			Expect(err).ToNot(HaveOccurred())
@@ -699,7 +696,6 @@ var _ = Describe("MeshService generator", func() {
 				resManager,
 				meshCache,
 				"zone",
-				false,
 				kuma_cp.MeshServiceLabelPropagation{Enabled: true},
 			)
 			Expect(err).ToNot(HaveOccurred())
@@ -1016,7 +1012,6 @@ var _ = Describe("MeshService generator", func() {
 					resManager,
 					meshCache,
 					"zone",
-					false,
 					kuma_cp.MeshServiceLabelPropagation{Enabled: true, AllowedLabelKeys: []string{"appci"}},
 				)
 				Expect(err).ToNot(HaveOccurred())

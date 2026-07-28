@@ -141,12 +141,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := configureOpenTelemetry(rs, proxy, envoyBackends, unifiedNaming, ctx.Mesh.Resources); err != nil {
 		return err
 	}
-	inboundTagsDisabled := false
-	if ctx.ControlPlane != nil {
-		inboundTagsDisabled = ctx.ControlPlane.InboundTagsDisabled
-	}
 
-	if err := configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, envoyBackends, inboundTagsDisabled, ctx.Mesh.Resources); err != nil {
+	if err := configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, envoyBackends, ctx.Mesh.Resources); err != nil {
 		return err
 	}
 
@@ -282,10 +278,9 @@ func configureDynamicDPPConfig(
 	conf api.Conf,
 	prometheusBackends []*api.PrometheusBackend,
 	openTelemetryBackends []*api.OpenTelemetryBackend,
-	inboundTagsDisabled bool,
 	resources xds_context.Resources,
 ) error {
-	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, prometheusBackends, openTelemetryBackends, inboundTagsDisabled, resources)
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, prometheusBackends, openTelemetryBackends, resources)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
@@ -311,7 +306,6 @@ func createDynamicConfig(
 	mesh *core_mesh.MeshResource,
 	prometheusBackends []*api.PrometheusBackend,
 	openTelemetryBackends []*api.OpenTelemetryBackend,
-	inboundTagsDisabled bool,
 	resources xds_context.Resources,
 ) dpapi.MeshMetricDpConfig {
 	var applications []dpapi.Application
@@ -370,7 +364,7 @@ func createDynamicConfig(
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane))
 		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
 		if extraLabels[WorkloadAttributeKey] == "" {
-			if service := proxy.Dataplane.IdentifyingName(inboundTagsDisabled); service != mesh_proto.ServiceUnknown {
+			if service := proxy.Dataplane.IdentifyingName(); service != mesh_proto.ServiceUnknown {
 				extraLabels["service"] = service
 			}
 		}

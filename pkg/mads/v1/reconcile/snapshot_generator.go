@@ -19,18 +19,16 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 )
 
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, meshCache *mesh.Cache, inboundTagsDisabled bool) *SnapshotGenerator {
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, meshCache *mesh.Cache) *SnapshotGenerator {
 	return &SnapshotGenerator{
-		resourceManager:     resourceManager,
-		meshCache:           meshCache,
-		inboundTagsDisabled: inboundTagsDisabled,
+		resourceManager: resourceManager,
+		meshCache:       meshCache,
 	}
 }
 
 type SnapshotGenerator struct {
-	resourceManager     core_manager.ReadOnlyResourceManager
-	meshCache           *mesh.Cache
-	inboundTagsDisabled bool
+	resourceManager core_manager.ReadOnlyResourceManager
+	meshCache       *mesh.Cache
 }
 
 func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]envoy_cache.ResourceSnapshot, error) {
@@ -51,7 +49,7 @@ func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]en
 				return nil, err
 			}
 
-			resources, err := meshmetrics_generator.Generate(meshMetricConfToDataplanes, clientId, s.inboundTagsDisabled)
+			resources, err := meshmetrics_generator.Generate(meshMetricConfToDataplanes, clientId)
 			if err != nil {
 				return nil, err
 			}

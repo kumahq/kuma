@@ -50,7 +50,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 		existingDataplane   string
 		nodeLabelsToCopy    []string
 		workloadLabels      []string
-		inboundTagsDisabled bool
 		expectedErr         string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
@@ -110,9 +109,8 @@ var _ = Describe("PodToDataplane(..)", func() {
 						ReplicaSetGetter: replicaSetGetter,
 						JobGetter:        jobGetter,
 					},
-					NodeGetter:          nodeGetter,
-					NodeLabelsToCopy:    given.nodeLabelsToCopy,
-					InboundTagsDisabled: given.inboundTagsDisabled,
+					NodeGetter:       nodeGetter,
+					NodeLabelsToCopy: given.nodeLabelsToCopy,
 				},
 				Zone:              "zone-1",
 				ResourceConverter: k8s.NewSimpleConverter(),
@@ -258,7 +256,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			node:                "26.node.yaml",
 			dataplane:           "node-labels-inbound-tags-disabled.dataplane.yaml",
 			nodeLabelsToCopy:    []string{"topology.kubernetes.io/region"},
-			inboundTagsDisabled: true,
 		}),
 		Entry("28. Pod with reachable backend refs", testCase{
 			pod:            "28.pod.yaml",
@@ -290,13 +287,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:                 "duplicated-inbounds.pod.yaml",
 			servicesForPod:      "duplicated-inbounds.services-for-pod.yaml",
 			dataplane:           "duplicated-inbounds.dataplane.yaml",
-			inboundTagsDisabled: true,
 		}),
 		Entry("Multiple services selecting a single port deduplicated when inbound tags disabled and MeshServices mode is non-Exclusive", testCase{
 			pod:                 "duplicated-inbounds.pod.yaml",
 			servicesForPod:      "duplicated-inbounds.services-for-pod.yaml",
 			dataplane:           "duplicated-inbounds.dataplane.yaml",
-			inboundTagsDisabled: true,
 		}),
 		Entry("Multiple services selecting a single port keeps all inbounds when inbound tags enabled", testCase{
 			pod:            "overlapping-inbounds.pod.yaml",
@@ -324,12 +319,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:                 "34.pod.yaml",
 			servicesForPod:      "34.services-for-pod.yaml",
 			dataplane:           "34.dataplane.yaml",
-			inboundTagsDisabled: true,
 		}),
 		Entry("35. Pod without service with skip inbound tag generation enabled", testCase{
 			pod:                 "35.pod.yaml",
 			dataplane:           "35.dataplane.yaml",
-			inboundTagsDisabled: true,
 		}),
 		Entry("36. Zone-proxy-only Pod with ZoneIngress listener", testCase{
 			pod:            "36.pod.yaml",
