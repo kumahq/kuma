@@ -1602,7 +1602,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Configure(clusters.ProvidedCustomEndpointCluster(
 						false,
 						true,
-						*xds_builders.Endpoint().WithTarget("192.168.0.1").WithPort(9000).Build(),
+						externalServiceEndpoint("192.168.0.1", 9000),
 					)).MustBuild(),
 				ResourceOrigin: mesKRI,
 			})
@@ -1741,6 +1741,16 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		Expect(cla.Policy.GetOverprovisioningFactor().GetValue()).To(Equal(uint32(200)))
 	})
 })
+
+// externalServiceEndpoint mirrors topology.createMeshExternalServiceEndpoint: a
+// MeshExternalService endpoint always carries a Locality, but with an empty Zone
+// and the priority encoded in the SubZone. The empty Zone is what makes locality
+// awareness misfire on the egress, so the tests must reproduce it.
+func externalServiceEndpoint(address string, port uint32) core_xds.Endpoint {
+	ep := *xds_builders.Endpoint().WithTarget(address).WithPort(port).Build()
+	ep.Locality = &core_xds.Locality{Priority: 0, SubZone: "priority-0"}
+	return ep
+}
 
 func zoneProxyDataplane() *core_mesh.DataplaneResource {
 	return &core_mesh.DataplaneResource{
