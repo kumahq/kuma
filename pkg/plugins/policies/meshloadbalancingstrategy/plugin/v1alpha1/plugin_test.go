@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -1665,8 +1666,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			conf:            api.Conf{LoadBalancer: &api.LoadBalancer{Type: api.RandomType}},
 			expectedCluster: "zone-proxy-random.clusters.golden.yaml",
 		}),
-		// MeshExternalService endpoints carry no zone, so locality awareness has
-		// nothing to resolve. It must leave the endpoints alone rather than drop them.
+		// On the egress the endpoints are the real external addresses and carry no
+		// zone, so locality awareness has nothing to resolve. It must leave the
+		// endpoints alone rather than drop them.
 		Entry("locality awareness is ignored", zoneProxyTestCase{
 			conf: api.Conf{
 				LoadBalancer: &api.LoadBalancer{Type: api.RandomType},
@@ -1681,6 +1683,63 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			expectedCluster: "zone-proxy-locality-awareness.clusters.golden.yaml",
 		}),
 	)
+
+	// The sidecar's cluster for a MeshExternalService carries the same
+	// MeshExternalService as ResourceOrigin as the egress one, but its endpoints are
+	// the zone egress instances (fillExternalServicesOutboundsThroughEgress), which
+	// do carry a zone. Locality awareness must still apply there - the exclusion is
+	// only for the egress side, where the endpoints are the real external addresses.
+	It("keeps locality awareness for a MeshExternalService on a sidecar", func() {
+		resources := core_xds.NewResourceSet()
+		resources.Add(&core_xds.Resource{
+			Name:   mesKRI.String(),
+			Origin: metadata.OriginOutbound,
+			Resource: endpoints.CreateClusterLoadAssignment(mesKRI.String(), []core_xds.Endpoint{
+				// zone egress instances, not the external addresses
+				createEndpointWith("zone-1", "10.0.0.1", map[string]string{}),
+				createEndpointWith("zone-2", "10.0.0.2", map[string]string{}),
+			}),
+			ResourceOrigin: mesKRI,
+		})
+
+		proxy := xds_builders.Proxy().
+			WithZone("zone-1").
+			With(func(p *core_xds.Proxy) {
+				p.Dataplane = builders.Dataplane().
+					AddInboundOfTagsMap(map[string]string{mesh_proto.ServiceTag: "backend"}).
+					Build()
+			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(
+				api.MeshLoadBalancingStrategyType,
+				core_rules.ToRules{
+					ResourceRules: outbound.ResourceRules{
+						mesKRI: {Conf: []any{api.Conf{
+							LocalityAwareness: &api.LocalityAwareness{
+								CrossZone: &api.CrossZone{
+									Failover: &[]api.Failover{{
+										To: api.ToZone{Type: api.Only, Zones: &[]string{"zone-2"}},
+									}},
+								},
+							},
+						}}},
+					},
+				},
+				core_rules.FromRules{},
+			)).
+			Build()
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resources, *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(), proxy)).To(Succeed())
+
+		cla := resources.ListOf(envoy_resource.EndpointType)[0].Resource.(*envoy_endpoint.ClusterLoadAssignment)
+		// both endpoints survive
+		Expect(cla.Endpoints).To(HaveLen(2))
+		zones := []string{cla.Endpoints[0].Locality.Zone, cla.Endpoints[1].Locality.Zone}
+		Expect(zones).To(ConsistOf("zone-1", "zone-2"))
+		// the overprovisioning factor is only written by claConfigurer, so it proves
+		// locality awareness actually ran rather than the endpoints merely surviving
+		Expect(cla.Policy.GetOverprovisioningFactor().GetValue()).To(Equal(uint32(200)))
+	})
 })
 
 func zoneProxyDataplane() *core_mesh.DataplaneResource {

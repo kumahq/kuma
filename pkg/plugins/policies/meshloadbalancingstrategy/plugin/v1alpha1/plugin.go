@@ -171,11 +171,16 @@ func (p plugin) configureDPP(
 }
 
 func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Conf], r *core_xds.Resource, proxy *core_xds.Proxy, affinityLabels map[string]string) error {
-	// On a zone proxy egress listener the endpoints belong to a MeshExternalService
-	// and carry no zone, so there is nothing for locality awareness to resolve -
-	// rewriting their localities would drop every endpoint. Only the load balancer
-	// configuration applies, which is what the legacy zone egress did as well.
-	zoneProxyEgress := r.Origin == generator_metadata.OriginEgress
+	// A MeshExternalService destination is consumed in two different shapes, both
+	// carrying the MeshExternalService as ResourceOrigin. On a sidecar the endpoints
+	// are the zone egress instances (see fillExternalServicesOutboundsThroughEgress),
+	// which are mesh endpoints with a zone, so locality awareness legitimately picks
+	// between them. On the zone proxy egress listener the endpoints are the real
+	// external addresses, which carry no zone: locality awareness matches none of
+	// them and drops every endpoint from the load assignment. Only the latter is
+	// excluded, which is also what the legacy zone egress did.
+	egressSideExternalService := r.Origin == generator_metadata.OriginEgress &&
+		r.ResourceOrigin.ResourceType == meshexternalservice_api.MeshExternalServiceType
 
 	switch envoyResource := r.Resource.(type) {
 	case *envoy_listener.Listener:
@@ -185,10 +190,10 @@ func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Con
 	case *envoy_cluster.Cluster:
 		return NewModifier(envoyResource).
 			Configure(clusterConfigurer(rctx.Conf())).
-			Configure(If(!zoneProxyEgress && envoyResource.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound))).
+			Configure(If(!egressSideExternalService && envoyResource.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound))).
 			Modify()
 	case *envoy_endpoint.ClusterLoadAssignment:
-		if zoneProxyEgress {
+		if egressSideExternalService {
 			return nil
 		}
 		return NewModifier(envoyResource).
