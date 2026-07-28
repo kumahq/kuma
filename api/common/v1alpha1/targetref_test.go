@@ -2,6 +2,8 @@ package v1alpha1
 
 import (
 	"testing"
+
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 )
 
 func TestIncludesGateways(t *testing.T) {
@@ -27,6 +29,17 @@ func TestIncludesGateways(t *testing.T) {
 			ref: TargetRef{
 				Kind:   Dataplane,
 				Labels: &map[string]string{"kuma.io/service": "backend"},
+			},
+			expected: false,
+		},
+		"dataplane with a gateway proxy-type label still excludes gateways": {
+			// Kind: Dataplane never distinguished gateways even when
+			// proxyTypes existed (the field was never valid on it), and
+			// this label doesn't resurrect that: a targetRef can no longer
+			// scope a policy's rules[]/to[] to gateways-only at all.
+			ref: TargetRef{
+				Kind:   Dataplane,
+				Labels: &map[string]string{mesh_proto.ProxyTypeLabel: string(mesh_proto.GatewayLabel)},
 			},
 			expected: false,
 		},
