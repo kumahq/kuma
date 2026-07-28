@@ -44,16 +44,17 @@ filterChains:
         virtualHosts:
         - domains:
           - '*'
-          name: default_other-meshexternalservice-http___extsvc_47777
+          name: kri_extsvc_default___other-meshexternalservice-http_
           routes:
           - match: {}
             route:
               cluster: default_other-meshexternalservice-http___extsvc_47777
               timeout: 0s
-      statPrefix: default_other-meshexternalservice-http___extsvc_47777
+      statPrefix: kri_extsvc_default___other-meshexternalservice-http_
 metadata:
   filterMetadata:
     io.kuma.tags:
       kuma.io/unified-name: kri_extsvc_default___other-meshexternalservice-http_
-name: outbound:127.0.0.1:47777
+name: kri_extsvc_default___other-meshexternalservice-http_
+statPrefix: kri_extsvc_default___other-meshexternalservice-http_
 trafficDirection: OUTBOUND
