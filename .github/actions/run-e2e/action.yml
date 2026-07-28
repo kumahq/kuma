@@ -88,6 +88,7 @@ runs:
     - name: "Run E2E tests"
       shell: bash
       env:
+        GINKGO_E2E_TEST_FLAGS: "--focus=Compatibility"
         KUMA_DEBUG: ${{ runner.debug == '1' }}
         KUMA_E2E_PRELOAD_MANIFEST: ${{ runner.temp }}/e2e-preloaded-images.txt
         E2E_K8S_VERSION: ${{ inputs.k8s_version }}

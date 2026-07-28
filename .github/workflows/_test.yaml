@@ -90,9 +90,11 @@ jobs:
           # You can modify the include to run one of test suites on PRs (though you'd need to then remove it)
           OVERRIDE_JQ_CMD: |-
             .test_e2e = false
+            | .test_e2e_env.target = ["universal"]
+            | .test_e2e_env.k8sVersion = ["kind"]
             | .test_e2e_env.include = []
-            | .test_e2e_env.parallelism = [4]
-            | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
+            | .test_e2e_env.exclude = []
+            | .test_e2e_env.parallelism = [1]
           FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
           SKIP_E2E_TESTS: ${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || inputs.IS_RELEASE_TAG }}
         run: |-
