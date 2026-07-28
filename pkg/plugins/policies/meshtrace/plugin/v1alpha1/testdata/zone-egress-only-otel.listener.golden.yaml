@@ -41,7 +41,7 @@ resources:
                 '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
                 grpcService:
                   envoyGrpc:
-                    clusterName: meshtrace:opentelemetry
+                    clusterName: system_meshtrace_otel_otel-collector
                 serviceName: zone-egress-1
             spawnUpstreamSpan: false
       name: mes-http

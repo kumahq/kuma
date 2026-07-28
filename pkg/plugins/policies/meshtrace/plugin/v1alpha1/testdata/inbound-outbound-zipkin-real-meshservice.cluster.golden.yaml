@@ -1,12 +1,11 @@
 resources:
-- name: meshtrace:zipkin
+- name: system_meshtrace_zipkin_http---jaeger-collector-mesh-observability-9411-api-v2-spans
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: meshtrace_zipkin
     connectTimeout: 5s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
-      clusterName: meshtrace:zipkin
+      clusterName: system_meshtrace_zipkin_http---jaeger-collector-mesh-observability-9411-api-v2-spans
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -14,5 +13,5 @@ resources:
               socketAddress:
                 address: jaeger-collector.mesh-observability
                 portValue: 9411
-    name: meshtrace:zipkin
+    name: system_meshtrace_zipkin_http---jaeger-collector-mesh-observability-9411-api-v2-spans
     type: STRICT_DNS
