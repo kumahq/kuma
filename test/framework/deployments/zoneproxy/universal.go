@@ -19,12 +19,12 @@ func (d *universalDeployment) Name() string {
 func (d *universalDeployment) Deploy(cluster framework.Cluster) error {
 	uniCluster := cluster.(*framework.UniversalCluster)
 
-	if d.opts.IngressPort > 0 {
+	if d.opts.Ingress {
 		if err := d.deployProxy(uniCluster, "ZoneIngress", d.ingressName(), int(d.opts.IngressPort)); err != nil {
 			return err
 		}
 	}
-	if d.opts.EgressPort > 0 {
+	if d.opts.Egress {
 		if err := d.deployProxy(uniCluster, "ZoneEgress", d.egressName(), int(d.opts.EgressPort)); err != nil {
 			return err
 		}
@@ -114,11 +114,11 @@ spec:
 }
 
 func (d *universalDeployment) ingressName() string {
-	return fmt.Sprintf("%s-ingress", d.opts.Name)
+	return ingressName(d.opts.Name)
 }
 
 func (d *universalDeployment) egressName() string {
-	return fmt.Sprintf("%s-egress", d.opts.Name)
+	return egressName(d.opts.Name)
 }
 
 func (d *universalDeployment) Delete(_ framework.Cluster) error {

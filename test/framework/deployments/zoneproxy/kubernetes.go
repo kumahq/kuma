@@ -2,7 +2,6 @@ package zoneproxy
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
@@ -26,11 +25,11 @@ func (d *k8sDeployment) Name() string {
 }
 
 func (d *k8sDeployment) ingressName() string {
-	return fmt.Sprintf("%s-ingress", d.opts.Name)
+	return ingressName(d.opts.Name)
 }
 
 func (d *k8sDeployment) egressName() string {
-	return fmt.Sprintf("%s-egress", d.opts.Name)
+	return egressName(d.opts.Name)
 }
 
 // workloadServiceAccount returns a ServiceAccount whose name kuma uses as the
@@ -243,7 +242,7 @@ func (d *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	if d.opts.Workload != "" {
 		funcs = append(funcs, framework.YamlK8sObject(d.workloadServiceAccount()))
 	}
-	if d.opts.IngressPort > 0 {
+	if d.opts.Ingress {
 		name := d.ingressName()
 		funcs = append(funcs,
 			framework.YamlK8sObject(d.ingressDeployment()),
@@ -254,7 +253,7 @@ func (d *k8sDeployment) Deploy(cluster framework.Cluster) error {
 			d.waitMeshZoneAddress(),
 		)
 	}
-	if d.opts.EgressPort > 0 {
+	if d.opts.Egress {
 		name := d.egressName()
 		funcs = append(funcs,
 			framework.YamlK8sObject(d.egressDeployment()),

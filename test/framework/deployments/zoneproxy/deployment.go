@@ -1,16 +1,45 @@
 package zoneproxy
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v3/test/framework"
 )
+
+const (
+	DefaultIngressPort uint32 = 11001
+	DefaultEgressPort  uint32 = 11002
+)
+
+func ProxyName(mesh string) string {
+	return fmt.Sprintf("%s-zone-proxy", mesh)
+}
+
+func IngressName(mesh string) string {
+	return ingressName(ProxyName(mesh))
+}
+
+func EgressName(mesh string) string {
+	return egressName(ProxyName(mesh))
+}
+
+func ingressName(name string) string {
+	return fmt.Sprintf("%s-ingress", name)
+}
+
+func egressName(name string) string {
+	return fmt.Sprintf("%s-egress", name)
+}
 
 type DeploymentOpts struct {
 	Name        string
 	Namespace   string
 	Mesh        string
 	Workload    string
+	Ingress     bool
+	Egress      bool
 	IngressPort uint32
 	EgressPort  uint32
 	// DpEnvs are extra kuma-dp environment variables applied to the proxy.
@@ -20,14 +49,17 @@ type DeploymentOpts struct {
 
 func DefaultDeploymentOpts() DeploymentOpts {
 	return DeploymentOpts{
-		Name:      "zone-proxy",
-		Namespace: framework.TestNamespace,
-		Mesh:      "default",
+		Namespace:   framework.TestNamespace,
+		Mesh:        "default",
+		IngressPort: DefaultIngressPort,
+		EgressPort:  DefaultEgressPort,
 	}
 }
 
 type DeploymentOptsFn = func(*DeploymentOpts)
 
+// WithName overrides the deployment name, which otherwise defaults to
+// ProxyName(mesh).
 func WithName(name string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.Name = name
@@ -52,14 +84,32 @@ func WithWorkload(workload string) DeploymentOptsFn {
 	}
 }
 
+// WithIngress deploys an ingress on DefaultIngressPort.
+func WithIngress() DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.Ingress = true
+	}
+}
+
+// WithIngressPort deploys an ingress on the given port.
 func WithIngressPort(port uint32) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
+		opts.Ingress = true
 		opts.IngressPort = port
 	}
 }
 
+// WithEgress deploys an egress on DefaultEgressPort.
+func WithEgress() DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.Egress = true
+	}
+}
+
+// WithEgressPort deploys an egress on the given port.
 func WithEgressPort(port uint32) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
+		opts.Egress = true
 		opts.EgressPort = port
 	}
 }
@@ -72,12 +122,20 @@ func WithDpEnvs(envs map[string]string) DeploymentOptsFn {
 	}
 }
 
-// Install deploys zone-proxy-ingress and/or zone-proxy-egress based on which
-// ports are set. Set IngressPort to deploy ingress, EgressPort to deploy egress.
+// Install deploys the zone proxies of a mesh. Both an ingress and an egress are
+// deployed unless the caller asks for one of them, so a mesh gets its proxies
+// with Install(WithMesh(mesh)).
 func Install(fn ...DeploymentOptsFn) framework.InstallFunc {
 	opts := DefaultDeploymentOpts()
 	for _, f := range fn {
 		f(&opts)
+	}
+	if !opts.Ingress && !opts.Egress {
+		opts.Ingress = true
+		opts.Egress = true
+	}
+	if opts.Name == "" {
+		opts.Name = ProxyName(opts.Mesh)
 	}
 	return func(cluster framework.Cluster) error {
 		switch cluster.(type) {
