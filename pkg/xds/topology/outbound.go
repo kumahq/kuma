@@ -383,7 +383,7 @@ func fillDataplaneOutbounds(
 				Tags:     inboundTags,
 				Labels:   dataplane.GetMeta().GetLabels(),
 				Weight:   endpointWeight,
-				Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
+				Locality: GetLocality(localZone, getZone(inboundTags, dataplane.GetMeta().GetLabels()), mesh.LocalityAwareLbEnabled()),
 			})
 		}
 	}
@@ -420,7 +420,7 @@ func fillLocalMeshServices(
 						Tags:     inboundTags,
 						Labels:   dpp.GetMeta().GetLabels(),
 						Weight:   1,
-						Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
+						Locality: GetLocality(localZone, getZone(inboundTags, dpp.GetMeta().GetLabels()), mesh.LocalityAwareLbEnabled()),
 					})
 				}
 			}
@@ -526,7 +526,7 @@ func fillLocalCrossMeshOutbounds(
 				Port:     listener.GetPort(),
 				Tags:     mesh_proto.Merge(dpTags, gateway.Spec.GetTags(), listener.GetTags()),
 				Weight:   endpointWeight,
-				Locality: GetLocality(localZone, getZone(dpTags), mesh.LocalityAwareLbEnabled()),
+				Locality: GetLocality(localZone, getZone(dpTags, dataplane.GetMeta().GetLabels()), mesh.LocalityAwareLbEnabled()),
 			})
 		}
 	}
@@ -614,7 +614,7 @@ func fillIngressOutbounds(
 			serviceTags := maps.Clone(service.GetTags())
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()
-			locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
+			locality := GetLocality(localZone, getZone(serviceTags, nil), mesh.LocalityAwareLbEnabled())
 
 			if _, ok := meshServiceDestinations[serviceName]; ok {
 				continue
@@ -851,7 +851,7 @@ func fillExternalServicesOutboundsThroughEgress(
 			// deep copy map to not modify tags in ExternalService.
 			serviceTags := maps.Clone(externalService.Spec.GetTags())
 			serviceName := serviceTags[mesh_proto.ServiceTag]
-			locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
+			locality := GetLocality(localZone, getZone(serviceTags, nil), mesh.LocalityAwareLbEnabled())
 
 			for _, ze := range egressAddresses {
 				endpoint := core_xds.Endpoint{
@@ -873,7 +873,7 @@ func fillExternalServicesOutboundsThroughEgress(
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
 		serviceName := destinationname.MustResolve(false, mes, mes.Spec.Match)
-		locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
+		locality := GetLocality(localZone, getZone(serviceTags, nil), mesh.LocalityAwareLbEnabled())
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
 			Protocol:      mes.Spec.Match.Protocol,
@@ -954,7 +954,7 @@ func NewExternalServiceEndpoint(
 		Tags:            tags,
 		Weight:          1,
 		ExternalService: es,
-		Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
+		Locality:        GetLocality(zone, getZone(tags, nil), mesh.LocalityAwareLbEnabled()),
 	}, nil
 }
 
@@ -999,8 +999,15 @@ func GetLocality(localZone string, otherZone *string, localityAwareness bool) *c
 	}
 }
 
-func getZone(tags map[string]string) *string {
+// getZone returns the kuma.io/zone inbound tag, falling back to the
+// dataplane's own zone label -- set unconditionally by the K8s pod
+// converter, unlike inbound tags, which are empty under
+// Experimental.InboundTagsDisabled.
+func getZone(tags map[string]string, labels map[string]string) *string {
 	if zone, ok := tags[mesh_proto.ZoneTag]; ok {
+		return &zone
+	}
+	if zone, ok := labels[mesh_proto.ZoneTag]; ok {
 		return &zone
 	}
 	return nil

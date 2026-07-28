@@ -288,6 +288,50 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}))
 		})
+
+		It("should fall back to the dataplane zone label when the inbound has no zone tag", func() {
+			// given a dataplane with no kuma.io/zone inbound tag (e.g. InboundTagsDisabled),
+			// but the zone label the K8s pod converter always sets
+			redisNoZoneTag := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh:   "demo",
+					Name:   "redis-no-zone-tag",
+					Labels: map[string]string{mesh_proto.ZoneTag: "eu"},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.7",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags: map[string]string{mesh_proto.ServiceTag: "redis"},
+								Port: 6379,
+							},
+						},
+					},
+				},
+			}
+			dataplanes := &core_mesh.DataplaneResourceList{
+				Items: []*core_mesh.DataplaneResource{redisNoZoneTag},
+			}
+			externalServices := &core_mesh.ExternalServiceResourceList{}
+
+			// when
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, nil, externalServices.Items, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
+
+			// then
+			Expect(targets).To(HaveKeyWithValue("redis", []core_xds.Endpoint{
+				{
+					Target: "192.168.0.7",
+					Port:   6379,
+					Tags:   map[string]string{mesh_proto.ServiceTag: "redis"},
+					Labels: map[string]string{mesh_proto.ZoneTag: "eu"},
+					Locality: &core_xds.Locality{
+						Zone: "eu",
+					},
+					Weight: 1,
+				},
+			}))
+		})
 	})
 
 	Describe("BuildEndpointMap()", func() {
