@@ -42,17 +42,14 @@ type PolicyWithRules interface {
 }
 
 func BuildRules(policies core_model.ResourceList) ([]*Rule, error) {
-	entries, err := getEntries(policies)
-	if err != nil {
-		return []*Rule{}, err
-	}
+	entries := getEntries(policies)
 	return buildRules(entries)
 }
 
-func getEntries(resources core_model.ResourceList) ([]common.WithPolicyAttributes[RuleEntry], error) {
+func getEntries(resources core_model.ResourceList) []common.WithPolicyAttributes[RuleEntry] {
 	policies, ok := common.Cast[PolicyWithRules](resources.GetItems())
 	if !ok {
-		return nil, nil
+		return nil
 	}
 
 	entries := []common.WithPolicyAttributes[RuleEntry]{}
@@ -68,7 +65,7 @@ func getEntries(resources core_model.ResourceList) ([]common.WithPolicyAttribute
 		}
 	}
 
-	return entries, nil
+	return entries
 }
 
 func buildRules[T interface {

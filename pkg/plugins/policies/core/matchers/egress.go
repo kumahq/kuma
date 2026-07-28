@@ -54,18 +54,11 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 		return core_xds.TypedMatchingPolicies{Type: rType}, nil
 	}
 
-	var fr core_rules.FromRules
-	var tr core_rules.ToRules
-
-	switch {
-	case isTo:
-		fr, err = processToRules(tags, policies)
-		if err != nil {
-			return core_xds.TypedMatchingPolicies{}, err
-		}
-		tr, err = processToResourceRules(policies, resources)
+	fr, err := processToRules(tags, policies)
+	if err != nil {
+		return core_xds.TypedMatchingPolicies{}, err
 	}
-
+	tr, err := processToResourceRules(policies, resources)
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
 	}
