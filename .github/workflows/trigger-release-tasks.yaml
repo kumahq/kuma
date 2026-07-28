@@ -1,9 +1,12 @@
-name: "trigger-smoke-tests"
+name: "trigger-release-tasks"
 
-# Auto-triggers the downstream enterprise smoke-test workflow for a single
-# version when that version's release-tag build (build-test-distribute)
-# completes. Per-branch/event-driven, not a batch fan-out over all versions.
-# workflow_dispatch re-runs one version by hand.
+# When a version's release-tag build (build-test-distribute) completes, fan out
+# the per-version post-build release tasks in parallel:
+#   - smoke: the downstream enterprise smoke-test workflow (cross-repo dispatch)
+#   - verify: this repo's own release workflow with check=true (same-repo)
+# Per-branch/event-driven, not a batch fan-out over all versions. A single guard
+# job decides "is this a real release tag?" once; both tasks read its outputs.
+# workflow_dispatch re-runs one version by hand (toggle either task off).
 on:
   workflow_run:
     workflows: ["build-test-distribute"]
@@ -11,9 +14,19 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Product version to smoke-test, e.g. 2.14.1 or v2.14.1"
+        description: "Product version to release-task, e.g. 2.14.1 or v2.14.1"
         required: true
         type: string
+      run_smoke:
+        description: "Dispatch the downstream smoke tests"
+        required: false
+        type: boolean
+        default: true
+      run_verify:
+        description: "Dispatch artifact verification (release check=true)"
+        required: false
+        type: boolean
+        default: true
 
 permissions: {}
 
@@ -22,7 +35,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dispatch-smoke:
+  guard:
     # workflow_run has no reliable tag-level filter at the trigger layer (GitHub
     # only supports `branches`/`branches-ignore`, and those are documented as
     # branch-only - unreliable/silently-broken for tag-triggered runs). So this
@@ -42,6 +55,9 @@ jobs:
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       contents: read # to confirm the ref is really a tag, via the git refs API
+    outputs:
+      should_dispatch: ${{ steps.version.outputs.should_dispatch }}
+      product_version: ${{ steps.version.outputs.product_version }}
     steps:
       - name: "Resolve version"
         id: version
@@ -59,7 +75,7 @@ jobs:
           if [[ "${RAW}" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
             PRODUCT_VERSION="${BASH_REMATCH[1]}"
           else
-            echo "'${RAW}' is not a recognized release version/tag; skipping smoke dispatch."
+            echo "'${RAW}' is not a recognized release version/tag; skipping release-task dispatch."
             echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -78,7 +94,7 @@ jobs:
           # clean skip, but a rate-limit/network/auth failure must not vanish
           # silently behind the same should_dispatch=false line.
           if ! TAG_REF_JSON="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" 2>/tmp/gh_tag_ref_err)"; then
-            echo "'${TAG}' is not an existing tag ref (or the lookup failed); skipping smoke dispatch." >&2
+            echo "'${TAG}' is not an existing tag ref (or the lookup failed); skipping release-task dispatch." >&2
             cat /tmp/gh_tag_ref_err >&2 || true
             echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -90,7 +106,7 @@ jobs:
             OBJ_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${OBJ_SHA}" --jq '.object.sha')"
           fi
           if [[ "${OBJ_SHA}" != "${HEAD_SHA}" ]]; then
-            echo "'${TAG}' does not currently point at built commit ${HEAD_SHA}; skipping smoke dispatch."
+            echo "'${TAG}' does not currently point at built commit ${HEAD_SHA}; skipping release-task dispatch."
             echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -98,8 +114,18 @@ jobs:
           echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
           echo "product_version=${PRODUCT_VERSION}" >> "$GITHUB_OUTPUT"
 
+  smoke:
+    needs: guard
+    # workflow_run carries no dispatch inputs, so run_smoke is empty there and
+    # must not gate the auto path; only the manual path honours the toggle.
+    if: >-
+      needs.guard.outputs.should_dispatch == 'true' &&
+      (github.event_name != 'workflow_dispatch' || inputs.run_smoke)
+    timeout-minutes: 5
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    permissions: {}
+    steps:
       - name: "Trigger downstream smoke test"
-        if: steps.version.outputs.should_dispatch == 'true'
         env:
           # smoke.yaml only triggers on pull_request/push/schedule/workflow_dispatch
           # (no repository_dispatch), so this must be a workflow_dispatch run, not
@@ -112,13 +138,18 @@ jobs:
           # branch smoke.yaml lives on downstream; overridable via repo var if
           # the default branch is renamed or moved to a maintenance branch.
           SMOKE_REF: ${{ vars.KONG_MESH_SMOKE_REF || 'main' }}
-          PRODUCT_VERSION: ${{ steps.version.outputs.product_version }}
+          PRODUCT_VERSION: ${{ needs.guard.outputs.product_version }}
         run: |
           set -euo pipefail
+          # product_name is the built edition, which is the repo we run in.
+          case "${GITHUB_REPOSITORY}" in
+            */kong-mesh) PRODUCT_NAME=kong-mesh ;;
+            *)           PRODUCT_NAME=kuma ;;
+          esac
           gh workflow run smoke.yaml \
             --repo "${SMOKE_OWNER}/${SMOKE_REPO}" \
             --ref "${SMOKE_REF}" \
-            --field product_name=kuma \
+            --field product_name="${PRODUCT_NAME}" \
             --field product_version="${PRODUCT_VERSION}" \
             --field k8s_provider_k3d=true \
             --field k8s_provider_gke=true \
@@ -126,3 +157,35 @@ jobs:
             --field uni_provider_gcp=true \
             --field uni_provider_aws=true \
             --field run_tf_provider_tests=false
+
+  verify:
+    needs: guard
+    # see smoke job: run_verify only gates the manual path.
+    if: >-
+      needs.guard.outputs.should_dispatch == 'true' &&
+      (github.event_name != 'workflow_dispatch' || inputs.run_verify)
+    timeout-minutes: 5
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    permissions:
+      # same-repo dispatch needs no cross-org token, unlike smoke; the default
+      # GITHUB_TOKEN only gains workflow_dispatch rights with actions:write.
+      actions: write
+    steps:
+      - name: "Trigger artifact verification"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRODUCT_VERSION: ${{ needs.guard.outputs.product_version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          # same display name ("release") both sides, but a different filename in
+          # the enterprise fork; dispatch by filename to stay unambiguous.
+          case "${GITHUB_REPOSITORY}" in
+            */kong-mesh) RELEASE_WORKFLOW=kuma-release.yaml ;;
+            *)           RELEASE_WORKFLOW=release.yaml ;;
+          esac
+          gh workflow run "${RELEASE_WORKFLOW}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --ref "${DEFAULT_BRANCH}" \
+            --field release="${PRODUCT_VERSION}" \
+            --field check=true
