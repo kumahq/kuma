@@ -32,9 +32,8 @@ var _ = Describe("Full sync tests", func() {
 		zones := make(map[string]store.ResourceStore)
 		wg := sync.WaitGroup{}
 		done := make(chan struct{})
-		closeOnce := sync.Once{}
 		DeferCleanup(func() {
-			closeOnce.Do(func() { close(done) })
+			close(done)
 			wg.Wait()
 		})
 
