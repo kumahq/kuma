@@ -381,6 +381,33 @@ to:
                 tags:
                   version: v1
 `),
+		ErrorCases("missing port in requestMirror backendRef",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.port`,
+				Message: "must be defined with kind MeshMultiZoneService",
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshMultiZoneService
+                name: test-server
+`),
 		ErrorCases("invalid hostnames",
 			[]validators.Violation{
 				{
