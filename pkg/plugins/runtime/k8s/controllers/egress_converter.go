@@ -19,7 +19,7 @@ func (p *PodConverter) EgressFor(
 	if len(services) != 1 {
 		return errors.Errorf("egress should be matched by exactly one service. Matched %d services", len(services))
 	}
-	ifaces, err := p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)
+	ifaces, err := p.InboundConverter.InboundInterfacesFor(ctx, pod, services)
 	if err != nil {
 		return errors.Wrap(err, "could not generate inbound interfaces")
 	}

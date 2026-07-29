@@ -24,7 +24,7 @@ var _ = Describe("GetLocalityGroups()", func() {
 				},
 			}
 
-			// given: no inbound tags (simulates KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED)
+			// given: no inbound tags (tag-free mode)
 			var inboundTags mesh_proto.MultiValueTagSet
 
 			// given: pod labels carry the affinity key

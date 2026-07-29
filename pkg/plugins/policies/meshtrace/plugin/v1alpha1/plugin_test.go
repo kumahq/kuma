@@ -814,12 +814,11 @@ func mixedInboundAndZoneEgressResources() []core_xds.Resource {
 
 var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 	type testCase struct {
-		dp                  *builders.DataplaneBuilder
-		resources           []core_xds.Resource
-		singleItemRules     core_rules.SingleItemRules
-		inboundTagsDisabled bool
-		goldenFile          string
-		otelBackends        []*motb_api.MeshOpenTelemetryBackendResource
+		dp              *builders.DataplaneBuilder
+		resources       []core_xds.Resource
+		singleItemRules core_rules.SingleItemRules
+		goldenFile      string
+		otelBackends    []*motb_api.MeshOpenTelemetryBackendResource
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -837,11 +836,6 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 			}
 			ctxBuilder := xds_samples.SampleContextWith(meshResources).
 				WithMeshBuilder(samples.MeshDefaultBuilder())
-			if given.inboundTagsDisabled {
-				ctxBuilder = ctxBuilder.With(func(c *xds_context.Context) {
-					c.ControlPlane.InboundTagsDisabled = true
-				})
-			}
 			xdsCtx := *ctxBuilder.Build()
 
 			proxy := xds_builders.Proxy().
@@ -1056,14 +1050,12 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 			},
 			goldenFile: "zone-egress-only-missing-listener",
 		}),
-		// IdentifyingName(true) walks the workload label first. For a
-		// zone-proxy-only DPP without a workload label, it returns "unknown"
-		// and the fallback to Dataplane.Name fires the same way as the default
-		// path. Reuses the zone-egress-only-zipkin golden to pin that equivalence.
-		Entry("zone-egress-only zipkin with inboundTagsDisabled", testCase{
-			dp:                  zoneEgressOnlyDataplane(),
-			resources:           []core_xds.Resource{zoneEgressListenerResource()},
-			inboundTagsDisabled: true,
+		// IdentifyingName walks the workload label first. For a zone-proxy-only
+		// DPP without a workload label, it returns "unknown" and the fallback to
+		// Dataplane.Name fires. Reuses the zone-egress-only-zipkin golden.
+		Entry("zone-egress-only zipkin without workload label", testCase{
+			dp:        zoneEgressOnlyDataplane(),
+			resources: []core_xds.Resource{zoneEgressListenerResource()},
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{{
 					Subset: []subsetutils.Tag{},

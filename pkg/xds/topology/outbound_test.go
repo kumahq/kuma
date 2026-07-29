@@ -186,7 +186,7 @@ var _ = Describe("TrafficRoute", func() {
 			}
 
 			// when
-			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil, false)
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
 
 			Expect(targets).To(HaveLen(4))
 			// and
@@ -260,7 +260,7 @@ var _ = Describe("TrafficRoute", func() {
 			}))
 		})
 
-		It("should merge dataplane labels into endpoint tags when inboundTagsDisabled=true", func() {
+		It("should merge dataplane labels into endpoint tags", func() {
 			// given - dataplane with minimal inbound tags (just service) but labels
 			dp := &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
@@ -283,8 +283,8 @@ var _ = Describe("TrafficRoute", func() {
 			}
 			dataplanes := []*core_mesh.DataplaneResource{dp}
 
-			// when - inboundTagsDisabled=true
-			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil, true)
+			// when
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
 
 			// then - labels should be merged into endpoint tags
 			Expect(targets).To(HaveLen(1))
@@ -305,7 +305,7 @@ var _ = Describe("TrafficRoute", func() {
 			}))
 		})
 
-		It("should preserve inbound tags over labels on key conflict when inboundTagsDisabled=true", func() {
+		It("should preserve inbound tags over labels on key conflict", func() {
 			// given - dataplane with inbound tag that conflicts with label
 			dp := &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
@@ -328,8 +328,8 @@ var _ = Describe("TrafficRoute", func() {
 			}
 			dataplanes := []*core_mesh.DataplaneResource{dp}
 
-			// when - inboundTagsDisabled=true
-			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil, true)
+			// when
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
 
 			// then - inbound tag (inbound-zone) wins over label (label-zone)
 			Expect(targets).To(HaveLen(1))
@@ -348,7 +348,7 @@ var _ = Describe("TrafficRoute", func() {
 			}))
 		})
 
-		It("should fold the full set of kuma.io labels into endpoint tags when inboundTagsDisabled=true", func() {
+		It("should fold the full set of kuma.io labels into endpoint tags", func() {
 			// given - the labels a real Dataplane carries, not a synthetic subset
 			dp := &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
@@ -380,8 +380,8 @@ var _ = Describe("TrafficRoute", func() {
 			}
 			dataplanes := []*core_mesh.DataplaneResource{dp}
 
-			// when - inboundTagsDisabled=true
-			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil, true)
+			// when
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
 
 			// then - every label lands under the endpoint tags, so it reaches envoy.lb
 			Expect(targets).To(HaveLen(1))
@@ -429,7 +429,7 @@ var _ = Describe("TrafficRoute", func() {
 						egressAddresses = append(egressAddresses, core_xds.ZoneEgressInstance{Address: n.GetAddress(), Port: n.GetPort()})
 					}
 				}
-				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, nil, given.zoneEgresses, dataSourceLoader, given.mesh.MTLSEnabled(), egressAddresses, false)
+				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, nil, given.zoneEgresses, dataSourceLoader, given.mesh.MTLSEnabled(), egressAddresses)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},

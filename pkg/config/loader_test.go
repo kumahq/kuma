@@ -1122,7 +1122,6 @@ meshService:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
-				"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED":                                                  "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
