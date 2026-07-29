@@ -11,12 +11,4 @@ metadata:
 spec:
   networking:
     address: 192.168.0.1
-    gateway:
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        kuma.io/instance: example
-        kuma.io/protocol: tcp
-        kuma.io/service: example_demo_svc
-        kuma.io/zone: zone-1
-        version: "0.1"
+    gateway: {}

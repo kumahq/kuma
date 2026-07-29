@@ -34,8 +34,6 @@ items:
   spec:
     targetRef:
       kind: Mesh
-      proxyTypes:
-      - Gateway
     to:
     - default:
         http:

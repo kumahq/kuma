@@ -12,8 +12,6 @@ name: meshtimeout-1
 spec:
   targetRef:
     kind: Mesh
-    proxyTypes:
-    - Gateway
   to:
   - default:
       http:

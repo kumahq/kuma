@@ -37,7 +37,6 @@ func NewDefaultBootstrapGenerator(
 	enableReloadableTokens bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
-	inboundTagsDisabled bool,
 	envoyAdminUnixSocket bool,
 ) (BootstrapGenerator, error) {
 	dpServerCert, err := parseCertFromFile(dpServerCertFile)
@@ -58,7 +57,6 @@ func NewDefaultBootstrapGenerator(
 		dpServerCert:            dpServerCert,
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
-		inboundTagsDisabled:     inboundTagsDisabled,
 		envoyAdminUnixSocket:    envoyAdminUnixSocket,
 	}, nil
 }
@@ -72,7 +70,6 @@ type bootstrapGenerator struct {
 	dpServerCert            *x509.Certificate
 	hdsEnabled              bool
 	defaultAdminPort        uint32
-	inboundTagsDisabled     bool
 	envoyAdminUnixSocket    bool
 }
 
@@ -172,7 +169,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 
 		kumaDpBootstrap.NetworkingConfig.Address = dataplane.Spec.GetNetworking().GetAddress()
-		params.Service = dataplane.IdentifyingName(b.inboundTagsDisabled)
+		params.Service = dataplane.IdentifyingName()
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 
 		err = b.resManager.Get(ctx, meshResource, core_store.GetByKey(dataplane.Meta.GetMesh(), core_model.NoMesh))

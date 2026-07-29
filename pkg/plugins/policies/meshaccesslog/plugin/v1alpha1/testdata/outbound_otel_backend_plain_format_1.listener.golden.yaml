@@ -16,7 +16,7 @@ filterChains:
             stringValue: default
           grpcService:
             envoyGrpc:
-              clusterName: meshaccesslog:opentelemetry:0
+              clusterName: system_meshaccesslog_otel-collector-4317
           logName: MeshAccessLog
           resourceAttributes:
             values:

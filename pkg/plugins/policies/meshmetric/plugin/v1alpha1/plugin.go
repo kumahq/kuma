@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"encoding/json"
-	"fmt"
 	"maps"
 	"net/url"
 	"strings"
@@ -32,7 +31,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/dynconf"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	generator_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -125,8 +123,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	prometheusBackends := filterPrometheusBackends(conf.Backends)
 	openTelemetryBackends := filterOpenTelemetryBackends(conf.Backends)
 
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
-	err := configurePrometheus(rs, proxy, prometheusBackends, unifiedNaming)
+	err := configurePrometheus(rs, proxy, prometheusBackends)
 	if err != nil {
 		return err
 	}
@@ -138,15 +135,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	// skips them so we filter here to avoid duplicating Envoy resources for
 	// backendRef backends that go through the unified pipe.
 	envoyBackends := filterOtelBackendsForEnvoy(proxy, openTelemetryBackends)
-	if err := configureOpenTelemetry(rs, proxy, envoyBackends, unifiedNaming, ctx.Mesh.Resources); err != nil {
+	if err := configureOpenTelemetry(rs, proxy, envoyBackends, ctx.Mesh.Resources); err != nil {
 		return err
 	}
-	inboundTagsDisabled := false
-	if ctx.ControlPlane != nil {
-		inboundTagsDisabled = ctx.ControlPlane.InboundTagsDisabled
-	}
 
-	if err := configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, envoyBackends, inboundTagsDisabled, ctx.Mesh.Resources); err != nil {
+	if err := configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, envoyBackends, ctx.Mesh.Resources); err != nil {
 		return err
 	}
 
@@ -161,30 +154,23 @@ func removeResourcesConfiguredByMesh(rs *core_xds.ResourceSet, listener *envoy_l
 	}
 }
 
-func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend, unifiedNaming bool) error {
+func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend) error {
 	if len(prometheusBackends) == 0 {
 		return nil
 	}
 
 	for _, backend := range prometheusBackends {
-		getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNaming)
 		backendName := pointer.DerefOr(backend.ClientId, DefaultBackendName)
 		systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_prometheus", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
 		configurer := &plugin_xds.PrometheusConfigurer{
-			Backend: backend,
-			ListenerName: getNameOrDefault(
-				systemName,
-				fmt.Sprintf("%s:%s", PrometheusListenerName, backendName),
-			),
+			Backend:         backend,
+			ListenerName:    systemName,
 			EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
-			ClusterName: getNameOrDefault(
-				systemName,
-				fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
-			),
-			StatPrefix:  getNameOrDefault(systemName, ""),
-			StatsPath:   PrometheusDataplaneStatsPath,
-			IPv6Enabled: proxy.Metadata.GetIPv6Enabled(),
+			ClusterName:     systemName,
+			StatPrefix:      systemName,
+			StatsPath:       PrometheusDataplaneStatsPath,
+			IPv6Enabled:     proxy.Metadata.GetIPv6Enabled(),
 		}
 
 		cluster, err := configurer.ConfigureCluster(proxy)
@@ -211,9 +197,9 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 	return nil
 }
 
-func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, unifiedNaming bool, resources xds_context.Resources) error {
+func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackends []*api.OpenTelemetryBackend, resources xds_context.Resources) error {
 	for _, openTelemetryBackend := range openTelemetryBackends {
-		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend, unifiedNaming, resources)
+		err := configureOpenTelemetryBackend(rs, proxy, openTelemetryBackend, resources)
 		if err != nil {
 			return err
 		}
@@ -221,7 +207,7 @@ func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, ope
 	return nil
 }
 
-func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend, unifiedNaming bool, resources xds_context.Resources) error {
+func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, openTelemetryBackend *api.OpenTelemetryBackend, resources xds_context.Resources) error {
 	if openTelemetryBackend == nil {
 		return nil
 	}
@@ -237,16 +223,15 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 		return nil
 	}
 
-	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNaming)
 	endpoint := policies_xds.EndpointForDirectOtelExport(resolved, proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP))
 	backendName := resolved.Name
 	systemName := core_system_names.AsSystemName(core_system_names.JoinSections("meshmetric_otel", core_system_names.JoinSectionParts(core_system_names.CleanName(backendName))))
 
 	configurer := &plugin_xds.OpenTelemetryConfigurer{
 		Endpoint:     endpoint,
-		ListenerName: getNameOrDefault(systemName, envoy_names.GetOpenTelemetryListenerName(backendName)),
-		ClusterName:  getNameOrDefault(systemName, envoy_names.GetOpenTelemetryListenerName(backendName)),
-		StatPrefix:   getNameOrDefault(systemName, ""),
+		ListenerName: systemName,
+		ClusterName:  systemName,
+		StatPrefix:   systemName,
 		SocketName:   core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, backendName),
 		ApiVersion:   proxy.APIVersion,
 		IPv6Enabled:  proxy.Metadata.GetIPv6Enabled(),
@@ -282,10 +267,9 @@ func configureDynamicDPPConfig(
 	conf api.Conf,
 	prometheusBackends []*api.PrometheusBackend,
 	openTelemetryBackends []*api.OpenTelemetryBackend,
-	inboundTagsDisabled bool,
 	resources xds_context.Resources,
 ) error {
-	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, prometheusBackends, openTelemetryBackends, inboundTagsDisabled, resources)
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, prometheusBackends, openTelemetryBackends, resources)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
@@ -311,7 +295,6 @@ func createDynamicConfig(
 	mesh *core_mesh.MeshResource,
 	prometheusBackends []*api.PrometheusBackend,
 	openTelemetryBackends []*api.OpenTelemetryBackend,
-	inboundTagsDisabled bool,
 	resources xds_context.Resources,
 ) dpapi.MeshMetricDpConfig {
 	var applications []dpapi.Application
@@ -370,7 +353,7 @@ func createDynamicConfig(
 		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane))
 		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
 		if extraLabels[WorkloadAttributeKey] == "" {
-			if service := proxy.Dataplane.IdentifyingName(inboundTagsDisabled); service != mesh_proto.ServiceUnknown {
+			if service := proxy.Dataplane.IdentifyingName(); service != mesh_proto.ServiceUnknown {
 				extraLabels["service"] = service
 			}
 		}

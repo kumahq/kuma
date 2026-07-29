@@ -19,12 +19,3 @@ spec:
         ready: true
       port: 3306
       protocol: tcp
-      tags:
-        component: database
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: mysql
-        k8s.kuma.io/service-port: "3306"
-        kuma.io/protocol: tcp
-        kuma.io/service: mysql_demo_svc_3306
-        kuma.io/zone: zone-1
-        version: "5.7"

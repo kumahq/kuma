@@ -155,12 +155,9 @@ func DppSelectedByPolicy(
 	}
 	switch ref.Kind {
 	case common_api.Mesh:
-		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
-			inbounds := allInboundListeners(dpp)
-			inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
-			return inbounds, dpp.Spec.IsDelegatedGateway(), nil
-		}
-		return []core_rules.InboundListener{}, false, nil
+		inbounds := allInboundListeners(dpp)
+		inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
+		return inbounds, dpp.Spec.IsDelegatedGateway(), nil
 	case common_api.Dataplane:
 		if allDataplanesSelected(ref) || isSelectedByResourceIdentifier(dpp, ref, meta) || isSelectedByLabels(dpp, ref) {
 			inboundInterfaces := dpp.Spec.GetNetworking().InboundsSelectedBySectionName(pointer.Deref(ref.SectionName))
@@ -261,17 +258,6 @@ func resolveMeshHTTPRouteRef(refMeta core_model.ResourceMeta, refName string, mh
 		}
 	}
 	return nil
-}
-
-func resolveDataplaneProxyType(dpp *core_mesh.DataplaneResource) common_api.TargetRefProxyType {
-	if dpp.Spec.GetNetworking().GetGateway() != nil {
-		return common_api.Gateway
-	}
-	return common_api.Sidecar
-}
-
-func isSupportedProxyType(supportedTypes []common_api.TargetRefProxyType, dppType common_api.TargetRefProxyType) bool {
-	return len(supportedTypes) == 0 || slices.Contains(supportedTypes, dppType)
 }
 
 // allInboundListeners returns every inbound of the dataplane as an InboundListener

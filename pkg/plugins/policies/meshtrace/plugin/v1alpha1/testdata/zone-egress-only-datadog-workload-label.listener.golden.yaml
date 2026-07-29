@@ -42,7 +42,7 @@ resources:
               name: envoy.tracers.datadog
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
-                collectorCluster: meshtrace:datadog
+                collectorCluster: system_meshtrace_datadog_http---datadog-collector-mesh-observability-8126
                 serviceName: kuma-default-egress
             spawnUpstreamSpan: false
       name: mes-http

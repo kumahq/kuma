@@ -79,7 +79,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		endpoints,
 		rs,
 		ctx.Mesh,
-		ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled,
 	)
 }
 
@@ -91,22 +90,13 @@ func (p plugin) configureDPP(
 	endpoints policies_xds.EndpointMap,
 	rs *core_xds.ResourceSet,
 	meshCtx xds_context.MeshContext,
-	inboundTagsDisabled bool,
 ) error {
 	if proxy.Dataplane.Spec.IsBuiltinGateway() {
 		return nil
 	}
 	serviceConfs := map[string]api.Conf{}
 
-	// Labels only take part in affinity resolution when inbound tags are
-	// disabled: that is the only case where the endpoint side folds them into
-	// envoy.lb metadata (see topology.endpointIdentity). Keeping both sides
-	// gated on the same flag stops the local proxy from resolving an affinity
-	// value that no endpoint can ever match.
-	var affinityLabels map[string]string
-	if inboundTagsDisabled {
-		affinityLabels = proxy.Dataplane.GetMeta().GetLabels()
-	}
+	affinityLabels := proxy.Dataplane.GetMeta().GetLabels()
 
 	for _, outbound := range proxy.Outbounds.Filter(xds_types.NonBackendRefFilter) {
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)

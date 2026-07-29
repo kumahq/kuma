@@ -1,5 +1,5 @@
 resources:
-- name: outbound:10.20.20.1:9090
+- name: kri_extsvc_default___example_
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -26,7 +26,7 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: default_example___extsvc_9090
+              name: kri_extsvc_default___example_
               routes:
               - match:
                   prefix: /
@@ -35,10 +35,11 @@ resources:
                   autoHostRewrite: true
                   cluster: kri_extsvc_default___example_
                   timeout: 0s
-          statPrefix: default_example___extsvc_9090
+          statPrefix: kri_extsvc_default___example_
     metadata:
       filterMetadata:
         io.kuma.tags:
           kuma.io/unified-name: kri_extsvc_default___example_
-    name: outbound:10.20.20.1:9090
+    name: kri_extsvc_default___example_
+    statPrefix: kri_extsvc_default___example_
     trafficDirection: OUTBOUND
