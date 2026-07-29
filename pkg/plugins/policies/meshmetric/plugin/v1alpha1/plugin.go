@@ -14,6 +14,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
@@ -142,7 +143,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		inboundTagsDisabled = ctx.ControlPlane.InboundTagsDisabled
 	}
 
-	if err := configureDynamicDPPConfig(rs, proxy, conf, prometheusBackends, envoyBackends, inboundTagsDisabled, ctx.Mesh.Resources); err != nil {
+	if err := configureDynamicDPPConfig(rs, proxy, ctx.Mesh, conf, prometheusBackends, envoyBackends, inboundTagsDisabled, ctx.Mesh.Resources); err != nil {
 		return err
 	}
 
@@ -266,13 +267,14 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 func configureDynamicDPPConfig(
 	rs *core_xds.ResourceSet,
 	proxy *core_xds.Proxy,
+	meshCtx xds_context.MeshContext,
 	conf api.Conf,
 	prometheusBackends []*api.PrometheusBackend,
 	openTelemetryBackends []*api.OpenTelemetryBackend,
 	inboundTagsDisabled bool,
 	resources xds_context.Resources,
 ) error {
-	dpConfig := createDynamicConfig(conf, proxy, prometheusBackends, openTelemetryBackends, inboundTagsDisabled, resources)
+	dpConfig := createDynamicConfig(conf, proxy, meshCtx.Resource, prometheusBackends, openTelemetryBackends, inboundTagsDisabled, resources)
 	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
@@ -295,6 +297,7 @@ func EnvoyMetricsFilter(sidecar *api.Sidecar) url.Values {
 func createDynamicConfig(
 	conf api.Conf,
 	proxy *core_xds.Proxy,
+	mesh *core_mesh.MeshResource,
 	prometheusBackends []*api.PrometheusBackend,
 	openTelemetryBackends []*api.OpenTelemetryBackend,
 	inboundTagsDisabled bool,
@@ -352,11 +355,13 @@ func createDynamicConfig(
 			extraLabels[WorkloadAttributeKey] = workloadName
 		}
 	}
-	maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane))
-	extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
-	if extraLabels[WorkloadAttributeKey] == "" {
-		if service := proxy.Dataplane.IdentifyingName(inboundTagsDisabled); service != mesh_proto.ServiceUnknown {
-			extraLabels["service"] = service
+	if !unified_naming.Enabled(proxy.Metadata, mesh) {
+		maps.Copy(extraLabels, mads.DataplaneLabels(proxy.Dataplane))
+		extraLabels["dataplane"] = proxy.Dataplane.GetMeta().GetName()
+		if extraLabels[WorkloadAttributeKey] == "" {
+			if service := proxy.Dataplane.IdentifyingName(inboundTagsDisabled); service != mesh_proto.ServiceUnknown {
+				extraLabels["service"] = service
+			}
 		}
 	}
 
