@@ -48,7 +48,7 @@ var _ = Describe("InboundIdentifyingName", func() {
 			dp.Spec.Networking.Inbound[0].Name = given.portName
 			Expect(dp.InboundIdentifyingName(dp.Spec.Networking.Inbound[0])).To(Equal(given.expected))
 		},
-		Entry("returns service tag when inbound has explicit service tag and port name", testCase{
+		Entry("returns dataplane KRI with sectionName when port named", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",
 				Mesh: "default",
@@ -59,27 +59,14 @@ var _ = Describe("InboundIdentifyingName", func() {
 			},
 			serviceTag: "backend",
 			portName:   "http",
-			expected:   "backend",
+			expected:   "kri_dp_default_zone-1_kuma-demo_backend-abc_http",
 		}),
-		Entry("returns dataplane KRI with sectionName when tag-free inbound is port named", testCase{
+		Entry("falls back to workload label when port name empty", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",
 				Mesh: "default",
 				Labels: map[string]string{
-					mesh_proto.ZoneTag:          "zone-1",
-					mesh_proto.KubeNamespaceTag: "kuma-demo",
-					k8s_metadata.KumaWorkload:   "backend",
-				},
-			},
-			portName: "http",
-			expected: "kri_dp_default_zone-1_kuma-demo_backend-abc_http",
-		}),
-		Entry("falls back to service tag before workload label when port name empty", testCase{
-			meta: test_model.ResourceMeta{
-				Name: "backend-abc",
-				Mesh: "default",
-				Labels: map[string]string{
-					k8s_metadata.KumaWorkload: "shared-workload",
+					k8s_metadata.KumaWorkload: "backend",
 				},
 			},
 			serviceTag: "backend",

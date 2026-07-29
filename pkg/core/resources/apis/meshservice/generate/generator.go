@@ -104,28 +104,15 @@ type meshServicesResult struct {
 }
 
 func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
-	if hasInboundServiceTag(dataplane) {
-		return g.serviceTagMeshServicesForDataplane(dataplane)
-	}
 	if workloadName := dataplane.GetMeta().GetLabels()[metadata.KumaWorkload]; workloadName != "" {
 		return g.workloadMeshServiceForDataplane(dataplane)
 	}
 	return g.serviceTagMeshServicesForDataplane(dataplane)
 }
 
-func hasInboundServiceTag(dataplane *core_mesh.DataplaneResource) bool {
-	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
-		if inbound.GetTags()[mesh_proto.ServiceTag] != "" {
-			return true
-		}
-	}
-	return false
-}
-
 // serviceTagMeshServicesForDataplane generates MeshServices grouped by the
-// kuma.io/service inbound tag. Used for compatibility with Universal
-// Dataplanes that still rely on explicit inbound service tags, including
-// mixed-label dataplanes.
+// kuma.io/service inbound tag. Used as a compatibility fallback for Universal
+// Dataplanes that have not been labeled with kuma.io/workload yet.
 func (g *Generator) serviceTagMeshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
 	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
 	portsByService := map[string][]meshservice_api.Port{}
