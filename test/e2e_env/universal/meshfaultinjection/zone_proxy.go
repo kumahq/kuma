@@ -103,7 +103,6 @@ func zoneProxySNI(meshName, zoneName, resourceName string) string {
 func ZoneProxy() {
 	const meshName = "mfi-zone-proxy"
 	const demoClient = "demo-client"
-	const egressWorkload = "zone-proxy-egress"
 	const externalServiceApp = "mfi-zone-proxy-ext"
 	const targetedMES = "mfi-target"
 	const untargetedMES = "mfi-other"
@@ -159,8 +158,7 @@ func ZoneProxy() {
 			Install(YamlUniversal(zoneProxyMeshTrafficPermission(meshName, zoneName))).
 			Install(zoneproxy.Install(
 				zoneproxy.WithMesh(meshName),
-				zoneproxy.WithEgressPort(11102),
-				zoneproxy.WithWorkload(egressWorkload),
+				zoneproxy.WithEgress(),
 				zoneproxy.WithDpEnvs(dppEnvs),
 			)).
 			Install(TestServerExternalServiceUniversal(

@@ -15,6 +15,7 @@ import (
 	. "github.com/kumahq/kuma/v3/test/framework"
 	framework_client "github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
@@ -24,6 +25,16 @@ import (
 func MeshTimeout() {
 	const mesh = "multizone-meshtimeout"
 	const k8sZoneNamespace = "multizone-meshtimeout-ns"
+
+	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
+	// mesh scoped, so every zone of the mesh needs its own.
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(mesh),
+			zoneproxy.WithNamespace(k8sZoneNamespace),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
 		// Global
@@ -69,16 +80,20 @@ spec:
 					testserver.WithNamespace(k8sZoneNamespace),
 					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(k8sZoneNamespace),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(k8sZoneNamespace),
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())

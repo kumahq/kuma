@@ -116,8 +116,6 @@ func ZoneProxyMeshTimeout() {
 	ns := "meshtimeout-zoneproxy"
 	extNs := "meshtimeout-zoneproxy-ext"
 	mesh := "meshtimeout-zoneproxy"
-	workload := "zone-egress"
-	const egressPort = uint32(11102)
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
@@ -133,11 +131,9 @@ func ZoneProxyMeshTimeout() {
 					testserver.WithEchoArgs("echo", "--instance", "external-server"),
 				),
 				zoneproxy.Install(
-					zoneproxy.WithName("zp-meshtimeout"),
 					zoneproxy.WithNamespace(ns),
 					zoneproxy.WithMesh(mesh),
-					zoneproxy.WithWorkload(workload),
-					zoneproxy.WithEgressPort(egressPort),
+					zoneproxy.WithEgress(),
 				),
 			)).
 			Install(YamlK8s(meshTimeoutZoneProxyMeshIdentity(mesh))).

@@ -2,7 +2,6 @@ package zonedisable
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -11,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 )
 
 func ZoneDisable() {
@@ -20,6 +20,15 @@ func ZoneDisable() {
 	const clusterName2 = "kuma-disable2"
 	const clusterName3 = "kuma-disable3"
 	var global, zone1, zone2 Cluster
+
+	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
+	// mesh scoped, so every zone of the mesh needs its own.
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(nonDefaultMesh),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeEach(func() {
 		// Global
@@ -77,9 +86,15 @@ spec:
 					WithGlobalAddress(globalCP.GetKDSServerAddress()),
 					WithHDS(false),
 				)).
+				// The zone joins the multizone deployment only now, so it gets
+				// the mesh after its control plane is up and before the proxies
+				// that need it start.
+				Install(func(cluster Cluster) error {
+					return WaitForMesh(nonDefaultMesh, []Cluster{cluster})
+				}).
 				Install(TestServerUniversal("test-server", nonDefaultMesh, WithArgs([]string{"echo", "--instance", "universal1"}))).
 				Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, WithTransparentProxy(true))).
-				Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
+				Install(zoneIngress()).
 				Setup(zone1)
 			Expect(err).ToNot(HaveOccurred())
 		}()
@@ -94,9 +109,12 @@ spec:
 					WithGlobalAddress(globalCP.GetKDSServerAddress()),
 					WithHDS(false),
 				)).
+				Install(func(cluster Cluster) error {
+					return WaitForMesh(nonDefaultMesh, []Cluster{cluster})
+				}).
 				Install(TestServerUniversal("test-server", nonDefaultMesh, WithArgs([]string{"echo", "--instance", "universal2"}))).
 				Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, WithTransparentProxy(true))).
-				Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
+				Install(zoneIngress()).
 				Setup(zone2)
 			Expect(err).ToNot(HaveOccurred())
 		}()
@@ -116,6 +134,18 @@ spec:
 		Expect(global.DismissCluster()).To(Succeed())
 	})
 
+	// meshZoneAddresses returns the addresses of the ingresses zone
+	// 'kuma-disable2' knows about. Zone proxies are mesh-scoped Dataplanes now,
+	// so a MeshZoneAddress, not a ZoneIngress, carries the address of a zone
+	// across the mesh.
+	meshZoneAddresses := func(g Gomega) string {
+		out, err := zone1.GetKumactlOptions().RunKumactlAndGetOutput(
+			"get", "meshzoneaddresses", "--mesh", nonDefaultMesh, "-o", "json",
+		)
+		g.Expect(err).ToNot(HaveOccurred())
+		return out
+	}
+
 	It("should access only local service if zone is disabled", func() {
 		// given zone 'kuma-disable3' enabled
 		// then we should receive responses from both test-server instances
@@ -129,6 +159,11 @@ spec:
 			),
 		)
 
+		// and zone 'kuma-disable2' knows the ingress of zone 'kuma-disable3'
+		Eventually(func(g Gomega) {
+			g.Expect(meshZoneAddresses(g)).To(ContainSubstring(clusterName3))
+		}, "30s", "1s").Should(Succeed())
+
 		// when disable zone 'kuma-disable3'
 		Expect(YamlUniversal(`
 name: kuma-disable3
@@ -136,14 +171,10 @@ type: Zone
 enabled: false
 `)(global)).To(Succeed())
 
-		// then 'kuma-disable3.ingress' is deleted from zone 'kuma-disable2'
-		Eventually(func() bool {
-			output, err := zone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses")
-			if err != nil {
-				return false
-			}
-			return !strings.Contains(output, "kuma-disable3.ingress")
-		}, "30s", "10ms").Should(BeTrue())
+		// then the ingress of 'kuma-disable3' is deleted from zone 'kuma-disable2'
+		Eventually(func(g Gomega) {
+			g.Expect(meshZoneAddresses(g)).ToNot(ContainSubstring(clusterName3))
+		}, "30s", "1s").Should(Succeed())
 
 		// and then responses only from the local service instance
 		Eventually(func() (map[string]int, error) {

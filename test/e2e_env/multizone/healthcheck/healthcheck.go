@@ -10,6 +10,7 @@ import (
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
@@ -44,6 +45,12 @@ func ApplicationOnUniversalClientOnK8s() {
 				TestServerUniversal("test-server-3", meshName,
 					WithArgs([]string{"echo", "--instance", "dp-universal-3"}),
 					WithProtocol("tcp")),
+				// Zone proxies are mesh scoped, so the mesh needs its own
+				// ingress in the zone the client reaches across zones.
+				zoneproxy.Install(
+					zoneproxy.WithMesh(meshName),
+					zoneproxy.WithIngress(),
+				),
 			)).
 			SetupInGroup(multizone.UniZone2, &group)
 

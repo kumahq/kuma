@@ -9,12 +9,23 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func InboundPassthrough() {
 	const namespace = "inbound-passthrough"
 	const mesh = "inbound-passthrough"
+
+	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
+	// mesh scoped, so every zone of the mesh needs its own.
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(mesh),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
 		localhostAddress := "127.0.0.1"
@@ -67,6 +78,7 @@ func InboundPassthrough() {
 					BoundToContainerIp(),
 					WithServiceName("uni-test-server-containerip"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 
@@ -94,6 +106,7 @@ func InboundPassthrough() {
 					testserver.WithName("k8s-test-server-pod"),
 					testserver.WithEchoArgs("echo", "--instance", "k8s-bound-pod", "--ip", "$(POD_IP)"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 

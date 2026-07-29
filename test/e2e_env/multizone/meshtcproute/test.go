@@ -10,11 +10,21 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Test() {
 	meshName := "meshtcproute"
+
+	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
+	// mesh scoped, so every zone of the mesh needs its own.
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
 		// Global
@@ -38,6 +48,7 @@ func Test() {
 					WithArgs([]string{"echo", "--instance", "zone1"}),
 					WithServiceVersion("v1"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 
@@ -54,6 +65,7 @@ func Test() {
 					WithServiceName("alias-test-server"),
 					WithServiceVersion("v2"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone2, &group)
 

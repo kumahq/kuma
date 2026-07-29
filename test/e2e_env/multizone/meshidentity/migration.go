@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
@@ -31,6 +32,16 @@ import (
 func Migration() {
 	namespace := "meshidentity-migration"
 	meshName := "meshidentity-migration"
+
+	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
+	// mesh scoped, so every zone of the mesh needs its own.
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
@@ -60,6 +71,7 @@ func Migration() {
 					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-zone-1"),
 				),
 				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 
@@ -72,6 +84,7 @@ func Migration() {
 					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-zone-2"),
 				),
 				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 

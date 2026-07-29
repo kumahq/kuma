@@ -11,6 +11,7 @@ import (
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
@@ -18,6 +19,17 @@ func ReachableBackends() {
 	meshName := "reachable-backends"
 	namespace := "reachable-backends"
 	namespaceOutside := "reachable-backends-non-mesh"
+
+	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
+	// mesh scoped, so every zone of the mesh needs its own.
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
+
 	reachableBackends := fmt.Sprintf(`
       refs:
       - kind: MeshService
@@ -182,6 +194,7 @@ spec:
 					testserver.WithName("not-accessible-es"),
 					testserver.WithNamespace(namespaceOutside),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 
@@ -201,6 +214,7 @@ spec:
 					testserver.WithMesh(meshName),
 					testserver.WithEchoArgs("echo", "--instance", "other-zone-not-accessible"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())

@@ -15,12 +15,22 @@ import (
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/api"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Sync() {
 	namespace := "sync"
 	meshName := "sync"
+
+	// zoneProxies deploys the ingress and egress of the mesh in a zone. Zone
+	// proxies are mesh scoped, so every zone of the mesh needs its own.
+	zoneProxies := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+		)
+	}
 
 	BeforeAll(func() {
 		Expect(
@@ -49,11 +59,17 @@ spec:
 		group := errgroup.Group{}
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+				zoneProxies(),
+			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 
 		NewClusterSetup().
-			Install(TestServerUniversal("test-server", meshName)).
+			Install(Parallel(
+				TestServerUniversal("test-server", meshName),
+				zoneProxies(),
+			)).
 			SetupInGroup(multizone.UniZone1, &group)
 		Expect(group.Wait()).To(Succeed())
 	})
@@ -101,28 +117,17 @@ spec:
 	})
 
 	Context("from Remote to Global", func() {
-		It("should sync Zone Ingress", func() {
+		It("should sync zone proxy Dataplanes", func() {
+			// Zone proxies are mesh-scoped Dataplanes carrying a ZoneIngress or
+			// ZoneEgress listener, so they reach Global over the same KDS path
+			// as any other Dataplane of the mesh.
 			Eventually(func(g Gomega) {
-				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses", "")
+				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "--mesh", meshName)
 				g.Expect(err).ToNot(HaveOccurred())
-				// Some tests create their own ZoneIngresses that may or may not
-				// be run simultaneously
-				g.Expect(strings.Count(out, "Online")).To(BeNumerically(">=", 4))
-			}, "30s", "1s").Should(Succeed())
-
-			// should be able to retrieve Zone Ingress from Universal zone by KRI
-			Eventually(func(g Gomega) {
-				out := mesh.NewZoneIngressResource()
-				statusCode := api.FetchResourceByKri(g, multizone.Global, out, kri.MustFromString("kri_zi__kuma-5__ingress_"))
-				g.Expect(statusCode).To(Equal(http.StatusOK))
-			}).Should(Succeed())
-		})
-
-		It("should sync Zone Egresses", func() {
-			Eventually(func(g Gomega) {
-				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneegresses")
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(strings.Count(out, "Online")).To(Equal(4))
+				for _, zone := range []string{multizone.KubeZone1.ZoneName(), multizone.UniZone1.ZoneName()} {
+					g.Expect(out).To(ContainSubstring(zoneproxy.IngressName(meshName)), "no ingress of zone %s", zone)
+					g.Expect(out).To(ContainSubstring(zoneproxy.EgressName(meshName)), "no egress of zone %s", zone)
+				}
 			}, "30s", "1s").Should(Succeed())
 		})
 
@@ -130,7 +135,9 @@ spec:
 			Eventually(func(g Gomega) {
 				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplanes", "--mesh", meshName)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(strings.Count(out, "Online")).To(Equal(2))
+				// demo-client and test-server, plus an ingress and an egress in
+				// each of the two zones the mesh spans
+				g.Expect(strings.Count(out, "Online")).To(Equal(6))
 			}, "30s", "1s").Should(Succeed())
 
 			// should be able to retrieve Dataplane from Universal zone by KRI

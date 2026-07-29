@@ -11,6 +11,7 @@ import (
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
@@ -47,6 +48,16 @@ func MeshTrafficPermission() {
 	const meshName = "mtp-test"
 	const namespace = "mtp-test"
 
+	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
+	// mesh scoped, so every zone of the mesh needs its own.
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
+
 	BeforeAll(func() {
 		// Global
 		err := NewClusterSetup().
@@ -65,13 +76,17 @@ func MeshTrafficPermission() {
 					WithLabels(map[string]string{"kuma.io/service": "test-server"}),
 				),
 				TestServerExternalServiceUniversal("external-service", 80, false, WithDockerContainerName("kuma-es-4_external-service-mtp-test")),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 
 		// Kubernetes Zone 1
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+				zoneIngress(),
+			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 		Expect(group.Wait()).To(Succeed())
 
