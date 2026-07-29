@@ -28,11 +28,15 @@ var _ = Describe("InboundIdentifyingName", func() {
 	newDP := func(meta test_model.ResourceMeta, serviceTag string) *DataplaneResource {
 		dp := NewDataplaneResource()
 		dp.Meta = &meta
+		tags := map[string]string{}
+		if serviceTag != "" {
+			tags[mesh_proto.ServiceTag] = serviceTag
+		}
 		dp.Spec.Networking = &mesh_proto.Dataplane_Networking{
 			Address: "127.0.0.1",
 			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 				Port: 8080,
-				Tags: map[string]string{mesh_proto.ServiceTag: serviceTag},
+				Tags: tags,
 			}},
 		}
 		return dp
@@ -41,9 +45,10 @@ var _ = Describe("InboundIdentifyingName", func() {
 	DescribeTable("should return correct inbound identifying name",
 		func(given testCase) {
 			dp := newDP(given.meta, given.serviceTag)
-			Expect(dp.InboundIdentifyingName(given.portName)).To(Equal(given.expected))
+			dp.Spec.Networking.Inbound[0].Name = given.portName
+			Expect(dp.InboundIdentifyingName(dp.Spec.Networking.Inbound[0])).To(Equal(given.expected))
 		},
-		Entry("returns dataplane KRI with sectionName when port named", testCase{
+		Entry("returns service tag when inbound has explicit service tag and port name", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",
 				Mesh: "default",
@@ -54,14 +59,27 @@ var _ = Describe("InboundIdentifyingName", func() {
 			},
 			serviceTag: "backend",
 			portName:   "http",
-			expected:   "kri_dp_default_zone-1_kuma-demo_backend-abc_http",
+			expected:   "backend",
 		}),
-		Entry("falls back to workload label when port name empty", testCase{
+		Entry("returns dataplane KRI with sectionName when tag-free inbound is port named", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",
 				Mesh: "default",
 				Labels: map[string]string{
-					k8s_metadata.KumaWorkload: "backend",
+					mesh_proto.ZoneTag:          "zone-1",
+					mesh_proto.KubeNamespaceTag: "kuma-demo",
+					k8s_metadata.KumaWorkload:   "backend",
+				},
+			},
+			portName: "http",
+			expected: "kri_dp_default_zone-1_kuma-demo_backend-abc_http",
+		}),
+		Entry("falls back to service tag before workload label when port name empty", testCase{
+			meta: test_model.ResourceMeta{
+				Name: "backend-abc",
+				Mesh: "default",
+				Labels: map[string]string{
+					k8s_metadata.KumaWorkload: "shared-workload",
 				},
 			},
 			serviceTag: "backend",

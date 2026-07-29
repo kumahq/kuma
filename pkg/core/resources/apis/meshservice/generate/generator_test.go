@@ -575,6 +575,54 @@ var _ = Describe("MeshService generator", func() {
 			}, "2s", "100ms").Should(Succeed())
 		})
 
+		It("should generate MeshServices from legacy service tags when kuma.io/workload label is present", func() {
+			createDataplane("dp-1", "shared-workload", nil,
+				builders.Inbound().
+					WithPort(80).
+					WithServicePort(8080).
+					WithName("http").
+					WithTags(map[string]string{mesh_proto.ServiceTag: "payments"}),
+				builders.Inbound().
+					WithPort(90).
+					WithServicePort(9090).
+					WithName("admin").
+					WithTags(map[string]string{mesh_proto.ServiceTag: "admin"}),
+			)
+
+			Eventually(func(g Gomega) {
+				payments := meshservice_api.NewMeshServiceResource()
+				g.Expect(resManager.Get(context.Background(), payments, store.GetByKey("payments", model.DefaultMesh))).To(Succeed())
+				g.Expect(payments.Spec.Selector).To(Equal(meshservice_api.Selector{
+					DataplaneTags: &map[string]string{mesh_proto.ServiceTag: "payments"},
+				}))
+				g.Expect(payments.Spec.Ports).To(Equal([]meshservice_api.Port{
+					{
+						Name:        pointer.To("http"),
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt32(80)),
+						AppProtocol: core_meta.ProtocolTCP,
+					},
+				}))
+
+				admin := meshservice_api.NewMeshServiceResource()
+				g.Expect(resManager.Get(context.Background(), admin, store.GetByKey("admin", model.DefaultMesh))).To(Succeed())
+				g.Expect(admin.Spec.Selector).To(Equal(meshservice_api.Selector{
+					DataplaneTags: &map[string]string{mesh_proto.ServiceTag: "admin"},
+				}))
+				g.Expect(admin.Spec.Ports).To(Equal([]meshservice_api.Port{
+					{
+						Name:        pointer.To("admin"),
+						Port:        90,
+						TargetPort:  pointer.To(intstr.FromInt32(90)),
+						AppProtocol: core_meta.ProtocolTCP,
+					},
+				}))
+
+				shared := meshservice_api.NewMeshServiceResource()
+				g.Expect(resManager.Get(context.Background(), shared, store.GetByKey("shared-workload", model.DefaultMesh))).ToNot(Succeed())
+			}, "2s", "100ms").Should(Succeed())
+		})
+
 		It("should not generate MeshService for invalid kuma.io/workload label", func() {
 			createDataplane("dp-1", "Invalid_Workload", nil,
 				builders.Inbound().WithPort(80).WithServicePort(8080).WithName("http"),

@@ -104,10 +104,22 @@ type meshServicesResult struct {
 }
 
 func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
+	if hasInboundServiceTag(dataplane) {
+		return g.serviceTagMeshServicesForDataplane(dataplane)
+	}
 	if workloadName := dataplane.GetMeta().GetLabels()[metadata.KumaWorkload]; workloadName != "" {
 		return g.workloadMeshServiceForDataplane(dataplane)
 	}
 	return g.serviceTagMeshServicesForDataplane(dataplane)
+}
+
+func hasInboundServiceTag(dataplane *core_mesh.DataplaneResource) bool {
+	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
+		if inbound.GetTags()[mesh_proto.ServiceTag] != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // serviceTagMeshServicesForDataplane generates MeshServices grouped by the

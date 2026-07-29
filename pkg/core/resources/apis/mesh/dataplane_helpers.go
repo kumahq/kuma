@@ -156,10 +156,14 @@ func (d *DataplaneResource) hash(includeVersion bool) []byte {
 	return hasher.Sum(nil)
 }
 
-// InboundIdentifyingName returns a dataplane KRI with portName as section name,
-// falling back to IdentifyingName.
-func (d *DataplaneResource) InboundIdentifyingName(portName string) string {
-	if portName != "" {
+// InboundIdentifyingName returns the explicit inbound service tag when present,
+// otherwise a dataplane KRI with the inbound name as section name, falling back
+// to IdentifyingName.
+func (d *DataplaneResource) InboundIdentifyingName(inbound *mesh_proto.Dataplane_Networking_Inbound) string {
+	if service := inbound.GetTags()[mesh_proto.ServiceTag]; service != "" {
+		return service
+	}
+	if portName := inbound.GetName(); portName != "" {
 		id := kri.WithSectionName(kri.FromResourceMeta(d.GetMeta(), DataplaneType), portName)
 		if !id.IsEmpty() {
 			return id.String()
@@ -168,15 +172,17 @@ func (d *DataplaneResource) InboundIdentifyingName(portName string) string {
 	return d.IdentifyingName()
 }
 
-// IdentifyingName returns the workload label when set, falling back to the
-// identifying service name from the dataplane spec.
+// IdentifyingName returns the identifying service name from explicit dataplane
+// tags when present, falling back to the workload label.
 func (d *DataplaneResource) IdentifyingName() string {
+	services := d.Spec.TagSet().Values(mesh_proto.ServiceTag)
+	for _, service := range services {
+		if service != "" {
+			return service
+		}
+	}
 	if workload := d.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 		return workload
-	}
-	services := d.Spec.TagSet().Values(mesh_proto.ServiceTag)
-	if len(services) > 0 {
-		return services[0]
 	}
 	return mesh_proto.ServiceUnknown
 }
