@@ -19,7 +19,7 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            maxDirectResponseBodySizeBytes: 426
+            maxDirectResponseBodySizeBytes: 348
             virtualHosts:
             - domains:
               - '*'
@@ -31,12 +31,12 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: 0e84b169bd3a8f5cb7b08cfa0ee96d0b903216709cef5f419be14495ee345f8d
+                      exact: aeedbf131db9662bf32333791327d1785ab6fc75075dcfacb678ab3eba91efa0
                   path: /meshmetric
                 name: system_dynamicconfig_meshmetric_not_modified
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"OpenTelemetry","name":"otel-collector","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.sock","refreshInterval":"10s"}}],"extraLabels":{"dataplane":"dp-1","kuma.proxy_role":"sidecar","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","zone":"zone-1"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"OpenTelemetry","name":"otel-collector","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.sock","refreshInterval":"10s"}}],"extraLabels":{"kuma.proxy_role":"sidecar","kuma.workload":"backend","mesh":"default","zone":"zone-1"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
@@ -44,7 +44,7 @@ resources:
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: 0e84b169bd3a8f5cb7b08cfa0ee96d0b903216709cef5f419be14495ee345f8d
+                    value: aeedbf131db9662bf32333791327d1785ab6fc75075dcfacb678ab3eba91efa0
           statPrefix: system_dynamicconfig
     name: system_dynamicconfig
     statPrefix: system_dynamicconfig

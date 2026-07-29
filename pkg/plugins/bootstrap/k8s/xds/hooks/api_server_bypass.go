@@ -5,7 +5,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s/xds/hooks/metadata"
@@ -13,11 +12,8 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	transparent_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	xds_hooks "github.com/kumahq/kuma/v3/pkg/xds/hooks"
 )
-
-const apiServerBypassHookResourcesName = "plugins:bootstrap:k8s:hooks:apiServerBypass" // #nosec G101 -- no idea why gosec things this is a secret
 
 type ApiServerBypass struct {
 	Address string
@@ -33,24 +29,17 @@ func NewApiServerBypass(address string, port uint32) ApiServerBypass {
 	}
 }
 
-func (h ApiServerBypass) Modify(resources *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+func (h ApiServerBypass) Modify(resources *core_xds.ResourceSet, _ xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.Dataplane == nil {
 		return nil
 	}
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
-	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
-	outboundPassThroughClusterName := nameOrDefault(naming.ContextualTransparentProxyName("outbound", 4), transparent_metadata.TransparentOutboundNameIPv4)
+	outboundPassThroughClusterName := naming.ContextualTransparentProxyName("outbound", 4)
 	if _, ok := resources.Resources(envoy_resource.ClusterType)[outboundPassThroughClusterName]; ok {
 		// default outbound passthrough is in effect for this proxy, so it can already reach the API Server
 		return nil
 	}
 
-	getNameOrDefault := system_names.GetNameOrDefault(unifiedNaming)
-
-	name := getNameOrDefault(
-		system_names.MustBeSystemName("kube_api_server_bypass"),
-		apiServerBypassHookResourcesName,
-	)
+	name := system_names.MustBeSystemName("kube_api_server_bypass")
 
 	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, h.Address, h.Port, core_xds.SocketAddressProtocolTCP).
 		WithOverwriteName(name).

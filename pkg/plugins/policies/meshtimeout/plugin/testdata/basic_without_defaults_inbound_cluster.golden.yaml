@@ -1,5 +1,5 @@
 connectTimeout: 5s
-name: localhost:8080
+name: self_inbound_dp_80
 typedExtensionProtocolOptions:
   envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions

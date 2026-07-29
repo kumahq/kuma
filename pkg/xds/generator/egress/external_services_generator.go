@@ -2,7 +2,6 @@ package egress
 
 import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -117,10 +116,13 @@ func buildExternalServiceFilterChain(
 ) *envoy_listeners.FilterChainBuilder {
 	meshName := resources.Mesh.GetMeta().GetName()
 	endpoints := resources.EndpointMap[cluster.Service()]
-	getName := naming.GetNameOrFallbackFunc(endpoints[0].IsMeshExternalService)
 	esName := cluster.Name()
-	filterChainName := getName(esName, envoy_names.GetEgressFilterChainName(esName, meshName))
-	routeConfigName := getName(esName, envoy_names.GetOutboundRouteName(esName))
+	filterChainName := esName
+	routeConfigName := esName
+	if !endpoints[0].IsMeshExternalService() {
+		filterChainName = envoy_names.GetEgressFilterChainName(esName, meshName)
+		routeConfigName = envoy_names.GetOutboundRouteName(esName)
+	}
 	virtualHostName := esName
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, filterChainName).
