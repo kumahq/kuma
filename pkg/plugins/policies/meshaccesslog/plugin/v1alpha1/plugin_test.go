@@ -15,10 +15,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
@@ -1260,7 +1258,7 @@ func outboundRealServiceTCPListener(serviceResourceKRI kri.Identifier, port int3
 				Resource: destinationKRI(serviceResourceKRI, port),
 			},
 			Protocol:            core_meta.ProtocolTCP,
-			KumaServiceTagValue: legacyServiceName(serviceResourceKRI, port),
+			KumaServiceTagValue: xds.LegacyServiceName(serviceResourceKRI, port),
 		},
 		[]envoy_common.Split{
 			xds.NewSplitBuilder().WithClusterName(destinationName(serviceResourceKRI, port)).Build(),
@@ -1282,7 +1280,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 				Resource: destinationKRI(serviceResourceKRI, port),
 			},
 			Protocol:            core_meta.ProtocolHTTP,
-			KumaServiceTagValue: legacyServiceName(serviceResourceKRI, port),
+			KumaServiceTagValue: xds.LegacyServiceName(serviceResourceKRI, port),
 		},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
@@ -1302,14 +1300,6 @@ func destinationKRI(id kri.Identifier, port int32) kri.Identifier {
 // resource naming.
 func destinationName(id kri.Identifier, port int32) string {
 	return destinationKRI(id, port).String()
-}
-
-// legacyServiceName is the value the destination keeps carrying in the
-// `kuma.io/service` tag, which stays legacy-formatted even under unified naming.
-func legacyServiceName(id kri.Identifier, port int32) string {
-	desc, err := registry.Global().DescriptorFor(id.ResourceType)
-	Expect(err).ToNot(HaveOccurred())
-	return destinationname.ResolveLegacyFromKRI(id, desc.ShortName, port)
 }
 
 func routeKRI(name string) kri.Identifier {
