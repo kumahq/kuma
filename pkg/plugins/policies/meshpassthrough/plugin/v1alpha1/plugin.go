@@ -5,7 +5,6 @@ import (
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -17,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshpassthrough/plugin/xds"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -58,7 +56,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 }
 
 func applyToOutboundPassthrough(
-	ctx xds_context.Context,
+	_ xds_context.Context,
 	rs *core_xds.ResourceSet,
 	rules core_rules.SingleItemRules,
 	listeners policies_xds.Listeners,
@@ -74,11 +72,10 @@ func applyToOutboundPassthrough(
 	if pointer.Deref(conf.PassthroughMode) == "" {
 		conf.PassthroughMode = pointer.To[api.PassthroughMode]("Matched")
 	}
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
 
 	if conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == "None" {
 		// remove clusters because they were added in TransparentProxyGenerator
-		removeDefaultPassthroughCluster(rs, unifiedNaming)
+		removeDefaultPassthroughCluster(rs)
 		return nil
 	}
 	if conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == "All" {
@@ -87,7 +84,7 @@ func applyToOutboundPassthrough(
 	}
 
 	if conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == "Matched" || conf.PassthroughMode == nil {
-		removeDefaultPassthroughCluster(rs, unifiedNaming)
+		removeDefaultPassthroughCluster(rs)
 		if len(pointer.Deref(conf.AppendMatch)) > 0 {
 			configurer := xds.Configurer{
 				APIVersion:        proxy.APIVersion,
@@ -104,14 +101,13 @@ func applyToOutboundPassthrough(
 	return nil
 }
 
-func removeDefaultPassthroughCluster(rs *core_xds.ResourceSet, unifiedNaming bool) {
-	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
+func removeDefaultPassthroughCluster(rs *core_xds.ResourceSet) {
 	rs.Remove(
 		envoy_resource.ClusterType,
-		nameOrDefault(naming.ContextualTransparentProxyName("outbound", 4), metadata.TransparentOutboundNameIPv4),
+		naming.ContextualTransparentProxyName("outbound", 4),
 	)
 	rs.Remove(
 		envoy_resource.ClusterType,
-		nameOrDefault(naming.ContextualTransparentProxyName("outbound", 6), metadata.TransparentOutboundNameIPv6),
+		naming.ContextualTransparentProxyName("outbound", 6),
 	)
 }

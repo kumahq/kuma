@@ -568,8 +568,8 @@ var _ = Describe("RBAC", func() {
 			meshRes := builders.Mesh().WithName("mesh-1").WithBuiltinMTLSBackend("builtin-1").WithEnabledMTLSBackend("builtin-1").Build()
 			// ctx.Mesh.Resource is deliberately left nil here: zone-egress proxies
 			// aren't scoped to a single mesh, so this is what production actually
-			// passes. A non-nil ctx.Mesh would make unified_naming.Enabled() return
-			// true even on the old buggy code, masking the regression this test
+			// passes. A non-nil ctx.Mesh would make an old mesh-scoped naming check
+			// succeed even on the buggy code, masking the regression this test
 			// exists to catch.
 			ctx := &xds_context.Context{}
 
@@ -607,9 +607,9 @@ var _ = Describe("RBAC", func() {
 
 			// then the RBAC filter must have attached to the unified-named filter chain:
 			// ctx.Mesh.Resource is always nil for zone-egress proxies, so a naive
-			// unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource) call would always
-			// report unified naming as disabled and this filter chain (named per the
-			// unified scheme) would never match, silently skipping RBAC entirely.
+			// mesh-scoped naming check would always report naming as disabled and
+			// this filter chain (named per the unified scheme) would never match,
+			// silently skipping RBAC entirely.
 			var egressListener *envoy_listener.Listener
 			for _, r := range rs.List() {
 				if r.Name == "egress-listener" {

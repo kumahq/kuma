@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
@@ -28,6 +29,9 @@ import (
 )
 
 var _ = Describe("MeshPassthrough", func() {
+	outboundPassthroughIPv4Name := naming.ContextualTransparentProxyName("outbound", 4)
+	outboundPassthroughIPv6Name := naming.ContextualTransparentProxyName("outbound", 6)
+
 	type testCase struct {
 		resources       []*core_xds.Resource
 		singleItemRules core_rules.SingleItemRules
@@ -78,24 +82,24 @@ var _ = Describe("MeshPassthrough", func() {
 		Entry("basic listener", testCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:   "outbound:passthrough:ipv4",
+					Name:   outboundPassthroughIPv4Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
 				{
-					Name:   "outbound:passthrough:ipv6",
+					Name:   outboundPassthroughIPv6Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv6Name).
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv6Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
@@ -182,24 +186,24 @@ var _ = Describe("MeshPassthrough", func() {
 		Entry("only ipv4 rules", testCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:   "outbound:passthrough:ipv4",
+					Name:   outboundPassthroughIPv4Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
 				{
-					Name:   "outbound:passthrough:ipv6",
+					Name:   outboundPassthroughIPv6Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv6Name).
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv6Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
@@ -227,24 +231,24 @@ var _ = Describe("MeshPassthrough", func() {
 		Entry("simple policy", testCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:   "outbound:passthrough:ipv4",
+					Name:   outboundPassthroughIPv4Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
 				{
-					Name:   "outbound:passthrough:ipv6",
+					Name:   outboundPassthroughIPv6Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv6Name).
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv6Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
@@ -278,24 +282,24 @@ var _ = Describe("MeshPassthrough", func() {
 		Entry("cidr and http policy", testCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:   "outbound:passthrough:ipv4",
+					Name:   outboundPassthroughIPv4Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
 				{
-					Name:   "outbound:passthrough:ipv6",
+					Name:   outboundPassthroughIPv6Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv6Name).
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv6Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
@@ -334,24 +338,24 @@ var _ = Describe("MeshPassthrough", func() {
 		Entry("http domain aggregated policy", testCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:   "outbound:passthrough:ipv4",
+					Name:   outboundPassthroughIPv4Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
 				{
-					Name:   "outbound:passthrough:ipv6",
+					Name:   outboundPassthroughIPv6Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv6Name).
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv6Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
@@ -395,24 +399,24 @@ var _ = Describe("MeshPassthrough", func() {
 		Entry("http domains", testCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:   "outbound:passthrough:ipv4",
+					Name:   outboundPassthroughIPv4Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
 				{
-					Name:   "outbound:passthrough:ipv6",
+					Name:   outboundPassthroughIPv6Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv6Name).
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv6Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
@@ -445,24 +449,24 @@ var _ = Describe("MeshPassthrough", func() {
 		Entry("the same protocol but different type match", testCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:   "outbound:passthrough:ipv4",
+					Name:   outboundPassthroughIPv4Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
 				{
-					Name:   "outbound:passthrough:ipv6",
+					Name:   outboundPassthroughIPv6Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv6Name).
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv6Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
@@ -495,24 +499,24 @@ var _ = Describe("MeshPassthrough", func() {
 		Entry("mysql protocol", testCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:   "outbound:passthrough:ipv4",
+					Name:   outboundPassthroughIPv4Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
 				{
-					Name:   "outbound:passthrough:ipv6",
+					Name:   outboundPassthroughIPv6Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv6Name).
 						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv6Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
@@ -546,20 +550,20 @@ var _ = Describe("MeshPassthrough", func() {
 		Entry("disabled on policy but enabled on mesh", testCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:   "outbound:passthrough:ipv4",
+					Name:   outboundPassthroughIPv4Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
 				{
-					Name:     "outbound:passthrough:ipv4",
+					Name:     outboundPassthroughIPv4Name,
 					Origin:   metadata.OriginTransparent,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").MustBuild(),
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).MustBuild(),
 				},
 			},
 			singleItemRules: core_rules.SingleItemRules{
@@ -578,20 +582,20 @@ var _ = Describe("MeshPassthrough", func() {
 		Entry("enabled on policy and on mesh", testCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:   "outbound:passthrough:ipv4",
+					Name:   outboundPassthroughIPv4Name,
 					Origin: metadata.OriginTransparent,
-					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
 						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
-								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
 							}...)),
 						)).MustBuild(),
 				},
 				{
-					Name:     "outbound:passthrough:ipv4",
+					Name:     outboundPassthroughIPv4Name,
 					Origin:   metadata.OriginTransparent,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").MustBuild(),
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).MustBuild(),
 				},
 			},
 			singleItemRules: core_rules.SingleItemRules{

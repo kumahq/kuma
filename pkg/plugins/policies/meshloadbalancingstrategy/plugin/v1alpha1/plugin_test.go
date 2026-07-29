@@ -3,9 +3,11 @@ package v1alpha1_test
 
 import (
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -15,8 +17,11 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -32,6 +37,7 @@ import (
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/v3/pkg/test/xds/samples"
@@ -1802,7 +1808,284 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		Expect(paymentsHashPolicies).To(HaveLen(1))
 		Expect(paymentsHashPolicies[0].GetQueryParameter().GetName()).To(Equal("payment"))
 	})
+
+	type zoneProxyTestCase struct {
+		conf            api.Conf
+		endpoints       []core_xds.Endpoint
+		expectedCluster string
+	}
+
+	mesKRI := kri.Identifier{
+		ResourceType: meshexternalservice_api.MeshExternalServiceType,
+		Mesh:         "default",
+		Name:         "example",
+		SectionName:  strconv.Itoa(mesPort),
+	}
+
+	DescribeTable("Apply to mesh-scoped zone proxy Dataplanes",
+		func(given zoneProxyTestCase) {
+			endpoints := given.endpoints
+			if len(endpoints) == 0 {
+				endpoints = []core_xds.Endpoint{externalServiceEndpoint("192.168.0.1", 0)}
+			}
+
+			resources := core_xds.NewResourceSet()
+			resources.Add(&core_xds.Resource{
+				Name:   mesKRI.String(),
+				Origin: metadata.OriginEgress,
+				// mirrors ZoneProxyListenerGenerator.genClusterCDS
+				Resource: clusters.NewClusterBuilder(envoy_common.APIV3, mesKRI.String()).
+					Configure(clusters.ProvidedCustomEndpointCluster(
+						false,
+						true,
+						endpoints...,
+					)).MustBuild(),
+				ResourceOrigin: mesKRI,
+			})
+
+			xdsCtx := *xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				Build()
+
+			proxy := xds_builders.Proxy().
+				With(func(p *core_xds.Proxy) {
+					p.Dataplane = zoneProxyDataplane()
+				}).
+				WithPolicies(xds_builders.MatchedPolicies().WithPolicy(
+					api.MeshLoadBalancingStrategyType,
+					core_rules.ToRules{
+						ResourceRules: outbound.ResourceRules{
+							mesKRI: {Conf: []any{given.conf}},
+						},
+					},
+					core_rules.FromRules{},
+				)).
+				Build()
+
+			p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(p.Apply(resources, xdsCtx, proxy)).To(Succeed())
+
+			resource, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", given.expectedCluster)))
+		},
+		Entry("round robin", zoneProxyTestCase{
+			conf:            api.Conf{LoadBalancer: &api.LoadBalancer{Type: api.RoundRobinType}},
+			expectedCluster: "zone-proxy-round-robin.clusters.golden.yaml",
+		}),
+		Entry("least request", zoneProxyTestCase{
+			conf: api.Conf{LoadBalancer: &api.LoadBalancer{
+				Type: api.LeastRequestType,
+				LeastRequest: &api.LeastRequest{
+					ChoiceCount:       pointer.To[uint32](4),
+					ActiveRequestBias: pointer.To(intstr.FromString("1.3")),
+				},
+			}},
+			expectedCluster: "zone-proxy-least-request.clusters.golden.yaml",
+		}),
+		Entry("ring hash", zoneProxyTestCase{
+			conf: api.Conf{LoadBalancer: &api.LoadBalancer{
+				Type: api.RingHashType,
+				RingHash: &api.RingHash{
+					MinRingSize:  pointer.To[uint32](100),
+					MaxRingSize:  pointer.To[uint32](1000),
+					HashFunction: pointer.To(api.MurmurHash2Type),
+				},
+			}},
+			expectedCluster: "zone-proxy-ring-hash.clusters.golden.yaml",
+		}),
+		Entry("maglev", zoneProxyTestCase{
+			conf:            api.Conf{LoadBalancer: &api.LoadBalancer{Type: api.MaglevType}},
+			expectedCluster: "zone-proxy-maglev.clusters.golden.yaml",
+		}),
+		Entry("random", zoneProxyTestCase{
+			conf:            api.Conf{LoadBalancer: &api.LoadBalancer{Type: api.RandomType}},
+			expectedCluster: "zone-proxy-random.clusters.golden.yaml",
+		}),
+		Entry("locality awareness is ignored", zoneProxyTestCase{
+			conf: api.Conf{
+				LoadBalancer: &api.LoadBalancer{Type: api.RandomType},
+				LocalityAwareness: &api.LocalityAwareness{
+					CrossZone: &api.CrossZone{
+						Failover: &[]api.Failover{{
+							To: api.ToZone{Type: api.Only, Zones: &[]string{"zone-2"}},
+						}},
+					},
+				},
+			},
+			expectedCluster: "zone-proxy-locality-awareness.clusters.golden.yaml",
+		}),
+		Entry("endpoints with different priorities", zoneProxyTestCase{
+			conf: api.Conf{
+				LoadBalancer: &api.LoadBalancer{Type: api.LeastRequestType},
+				LocalityAwareness: &api.LocalityAwareness{
+					LocalZone: &api.LocalZone{
+						AffinityTags: &[]api.AffinityTag{{Key: "k8s.io/node", Weight: pointer.To[uint32](9000)}},
+					},
+					CrossZone: &api.CrossZone{
+						Failover: &[]api.Failover{{
+							To: api.ToZone{Type: api.Only, Zones: &[]string{"zone-2"}},
+						}},
+						FailoverThreshold: &api.FailoverThreshold{Percentage: intstr.FromInt32(70)},
+					},
+				},
+			},
+			endpoints: []core_xds.Endpoint{
+				externalServiceEndpoint("192.168.0.1", 0),
+				externalServiceEndpoint("192.168.0.2", 1),
+				externalServiceEndpoint("192.168.0.3", 2),
+			},
+			expectedCluster: "zone-proxy-endpoint-priorities.clusters.golden.yaml",
+		}),
+	)
+
+	It("configures hash policies on the zone proxy egress routes", func() {
+		resources := core_xds.NewResourceSet()
+		resources.Add(zoneProxyEgressListener(mesKRI))
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			Build()
+
+		proxy := xds_builders.Proxy().
+			With(func(p *core_xds.Proxy) {
+				p.Dataplane = zoneProxyDataplane()
+			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(
+				api.MeshLoadBalancingStrategyType,
+				core_rules.ToRules{
+					ResourceRules: outbound.ResourceRules{
+						mesKRI: {Conf: []any{api.Conf{
+							LoadBalancer: &api.LoadBalancer{Type: api.RingHashType},
+							HashPolicies: &[]api.HashPolicy{{
+								Type:   api.HeaderType,
+								Header: &api.Header{Name: "x-hash"},
+							}},
+						}}},
+					},
+				},
+				core_rules.FromRules{},
+			)).
+			Build()
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resources, xdsCtx, proxy)).To(Succeed())
+
+		actual, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "zone-proxy-hash-policies.listener.golden.yaml")))
+	})
+
+	It("keeps locality awareness for a MeshExternalService on a sidecar", func() {
+		resources := core_xds.NewResourceSet()
+		resources.Add(&core_xds.Resource{
+			Name:   mesKRI.String(),
+			Origin: metadata.OriginOutbound,
+			Resource: endpoints.CreateClusterLoadAssignment(mesKRI.String(), []core_xds.Endpoint{
+				createEndpointWith("zone-1", "10.0.0.1", map[string]string{}),
+				createEndpointWith("zone-2", "10.0.0.2", map[string]string{}),
+			}),
+			ResourceOrigin: mesKRI,
+		})
+
+		proxy := xds_builders.Proxy().
+			WithZone("zone-1").
+			With(func(p *core_xds.Proxy) {
+				p.Dataplane = builders.Dataplane().
+					AddInboundOfTagsMap(map[string]string{mesh_proto.ServiceTag: "backend"}).
+					Build()
+			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(
+				api.MeshLoadBalancingStrategyType,
+				core_rules.ToRules{
+					ResourceRules: outbound.ResourceRules{
+						mesKRI: {Conf: []any{api.Conf{
+							LocalityAwareness: &api.LocalityAwareness{
+								CrossZone: &api.CrossZone{
+									Failover: &[]api.Failover{{
+										To: api.ToZone{Type: api.Only, Zones: &[]string{"zone-2"}},
+									}},
+								},
+							},
+						}}},
+					},
+				},
+				core_rules.FromRules{},
+			)).
+			Build()
+
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(p.Apply(resources, *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(), proxy)).To(Succeed())
+
+		cla := resources.ListOf(envoy_resource.EndpointType)[0].Resource.(*envoy_endpoint.ClusterLoadAssignment)
+		Expect(cla.Endpoints).To(HaveLen(2))
+		zones := []string{cla.Endpoints[0].Locality.Zone, cla.Endpoints[1].Locality.Zone}
+		Expect(zones).To(ConsistOf("zone-1", "zone-2"))
+		// only claConfigurer writes the overprovisioning factor, so this proves
+		// locality awareness ran rather than the endpoints merely surviving
+		Expect(cla.Policy.GetOverprovisioningFactor().GetValue()).To(Equal(uint32(200)))
+	})
 })
+
+// mesPort is the port of the MeshExternalService the zone proxy tests target.
+const mesPort = 9000
+
+// externalServiceEndpoint mirrors topology.createMeshExternalServiceEndpoint:
+// a Locality with an empty Zone and the priority in the SubZone. The empty Zone
+// is what makes locality awareness misfire on the egress.
+func externalServiceEndpoint(address string, priority uint32) core_xds.Endpoint {
+	ep := *xds_builders.Endpoint().WithTarget(address).WithPort(mesPort).Build()
+	ep.Locality = &core_xds.Locality{Priority: priority, SubZone: "priority-" + strconv.Itoa(int(priority))}
+	return ep
+}
+
+// zoneProxyEgressListener mirrors ZoneProxyListenerGenerator.generateEgressListener:
+// one filter chain per MeshExternalService named after its KRI, and no
+// ResourceOrigin on the listener itself, since it is shared by all destinations.
+func zoneProxyEgressListener(id kri.Identifier) *core_xds.Resource {
+	name := naming.ContextualZoneEgressListenerName("ze-port")
+	listener, err := NewListenerBuilder(envoy_common.APIV3, name).
+		Configure(InboundListener("10.0.0.1", 10002, core_xds.SocketAddressProtocolTCP, false)).
+		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, id.String()).
+			Configure(HttpConnectionManager(id.String(), false, nil, false)).
+			Configure(AddFilterChainConfigurer(&meshhttproute_xds.HttpOutboundRouteConfigurer{
+				RouteConfigName: id.String(),
+				VirtualHostName: id.String(),
+				Routes: []meshhttproute_xds.OutboundRoute{{
+					Match: meshhttproute_api.Match{
+						Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/"},
+					},
+					Split: []envoy_common.Split{
+						xds.NewSplitBuilder().WithClusterName(id.String()).WithExternalService(true).WithWeight(1).Build(),
+					},
+				}},
+			})),
+		)).Build()
+	Expect(err).ToNot(HaveOccurred())
+	return &core_xds.Resource{
+		Name:     name,
+		Origin:   metadata.OriginEgress,
+		Resource: listener,
+	}
+}
+
+func zoneProxyDataplane() *core_mesh.DataplaneResource {
+	return &core_mesh.DataplaneResource{
+		Meta: &test_model.ResourceMeta{Name: "zone-proxy", Mesh: "default"},
+		Spec: &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "10.0.0.1",
+				Listeners: []*mesh_proto.Dataplane_Networking_Listener{{
+					Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+					Address: "10.0.0.1",
+					Port:    10002,
+					Name:    "ze-port",
+					State:   mesh_proto.Dataplane_Networking_Listener_Ready,
+				}},
+			},
+		},
+	}
+}
 
 func createEndpointWith(zone string, ip string, extraTags map[string]string) core_xds.Endpoint {
 	return *xds_builders.Endpoint().
