@@ -48,13 +48,19 @@ func NewUniversalControlPlane(
 		cpNetworking: networking,
 		setupKumactl: setupKumactl,
 	}
-	token, err := ucp.retrieveAdminToken()
-	if err != nil {
-		return nil, err
-	}
+	// Honor setupKumactl the same way the Kubernetes control plane does
+	// (see k8s_controlplane.go): when kumactl configuration is disabled we
+	// must not run `kumactl config control-planes add`, since its connectivity
+	// check can't reach a CP that requires custom auth (e.g. konnect-authn).
+	if setupKumactl {
+		token, err := ucp.retrieveAdminToken()
+		if err != nil {
+			return nil, err
+		}
 
-	if err := kumactl.KumactlConfigControlPlanesAdd(clusterName, ucp.GetAPIServerAddress(), token, apiHeaders); err != nil {
-		return nil, err
+		if err := kumactl.KumactlConfigControlPlanesAdd(clusterName, ucp.GetAPIServerAddress(), token, apiHeaders); err != nil {
+			return nil, err
+		}
 	}
 	return ucp, nil
 }
