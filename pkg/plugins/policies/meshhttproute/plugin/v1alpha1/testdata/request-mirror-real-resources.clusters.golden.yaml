@@ -1,4 +1,42 @@
 resources:
+- name: kri_extsvc_default___payments-mes-mirror_9090
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: kri_extsvc_default___payments-mes-mirror_9090
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  prefix: spiffe://default/
+                sanType: URI
+            validationContextSdsSecretConfig:
+              name: system_mtls_ca_default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: system_mtls_identity_default
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: a4e00178bd7b60937.payments-mes-mirror.9090.default.mes
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: kri_msvc_default___backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster

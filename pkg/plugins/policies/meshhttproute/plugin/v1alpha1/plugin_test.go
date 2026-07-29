@@ -2639,6 +2639,26 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			}
 
+			mirrorMESvc := meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "payments-mes-mirror", Mesh: "default"},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Port:     9090,
+						Protocol: core_meta.ProtocolHTTP,
+					},
+					Endpoints: &[]meshexternalservice_api.Endpoint{{
+						Address: "payments.example.com",
+						Port:    10000,
+					}},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{
+					VIP: meshexternalservice_api.VIP{
+						IP: "10.20.20.1",
+					},
+				},
+			}
+
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
 				Items: []*meshservice_api.MeshServiceResource{&meshSvc, &mirrorSvc},
@@ -2646,12 +2666,15 @@ var _ = Describe("MeshHTTPRoute", func() {
 			resources.MeshLocalResources[meshmultizoneservice_api.MeshMultiZoneServiceType] = &meshmultizoneservice_api.MeshMultiZoneServiceResourceList{
 				Items: []*meshmultizoneservice_api.MeshMultiZoneServiceResource{&mirrorMZSvc},
 			}
+			resources.MeshLocalResources[meshexternalservice_api.MeshExternalServiceType] = &meshexternalservice_api.MeshExternalServiceResourceList{
+				Items: []*meshexternalservice_api.MeshExternalServiceResource{&mirrorMESvc},
+			}
 
 			dpBuilder := builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
 				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")
-			mc := meshContextWithResources(builders.Mesh(), dpBuilder.Build(), &meshSvc, &mirrorSvc, &mirrorMZSvc)
+			mc := meshContextWithResources(builders.Mesh(), dpBuilder.Build(), &meshSvc, &mirrorSvc, &mirrorMZSvc, &mirrorMESvc)
 
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("default_backend___msvc_80", xds_builders.Endpoint().
@@ -2668,7 +2691,17 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.7").
 					WithPort(8086).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "payments-mirror", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP)))
+					WithTags(mesh_proto.ServiceTag, "payments-mirror", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
+				AddEndpoint("default_payments-mes-mirror___extsvc_9090", xds_builders.Endpoint().
+					WithTarget("payments.example.com").
+					WithPort(10000).
+					WithWeight(1).
+					With(func(e *core_xds.Endpoint) {
+						e.ExternalService = &core_xds.ExternalService{
+							Protocol:      core_meta.ProtocolHTTP,
+							OwnerResource: kri.From(&mirrorMESvc),
+						}
+					}))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithResources(resources).
@@ -2741,6 +2774,36 @@ var _ = Describe("MeshHTTPRoute", func() {
 																	Name: pointer.To("payments-mz-mirror"),
 																},
 																Port: pointer.To(uint32(80)),
+															},
+														},
+													}},
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: common_api.TargetRef{
+															Kind: common_api.MeshService,
+															Name: pointer.To("backend"),
+														},
+														Weight: pointer.To(uint(100)),
+														Port:   pointer.To(uint32(80)),
+													}},
+												},
+											},
+											{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/mes",
+													},
+												}},
+												Default: api.RuleConf{
+													Filters: &[]api.Filter{{
+														Type: api.RequestMirrorType,
+														RequestMirror: &api.RequestMirror{
+															BackendRef: common_api.BackendRef{
+																TargetRef: common_api.TargetRef{
+																	Kind: common_api.MeshExternalService,
+																	Name: pointer.To("payments-mes-mirror"),
+																},
+																Port: pointer.To(uint32(9090)),
 															},
 														},
 													}},

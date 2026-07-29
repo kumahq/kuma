@@ -57,6 +57,22 @@ resources:
                   - cluster: kri_mzsvc_default___payments-mz-mirror_80
                   timeout: 0s
               - match:
+                  path: /mes
+                name: kri_mhttpr_default___test-origin_rule_0
+                route:
+                  cluster: kri_msvc_default___backend_80
+                  requestMirrorPolicies:
+                  - cluster: kri_extsvc_default___payments-mes-mirror_9090
+                  timeout: 0s
+              - match:
+                  prefix: /mes/
+                name: kri_mhttpr_default___test-origin_rule_0
+                route:
+                  cluster: kri_msvc_default___backend_80
+                  requestMirrorPolicies:
+                  - cluster: kri_extsvc_default___payments-mes-mirror_9090
+                  timeout: 0s
+              - match:
                   path: /ms
                 name: kri_mhttpr_default___test-origin_rule_0
                 route:
