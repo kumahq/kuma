@@ -19,11 +19,10 @@ import (
 
 var _ = Describe("InboundIdentifyingName", func() {
 	type testCase struct {
-		meta                test_model.ResourceMeta
-		serviceTag          string
-		inboundTagsDisabled bool
-		portName            string
-		expected            string
+		meta       test_model.ResourceMeta
+		serviceTag string
+		portName   string
+		expected   string
 	}
 
 	newDP := func(meta test_model.ResourceMeta, serviceTag string) *DataplaneResource {
@@ -42,9 +41,9 @@ var _ = Describe("InboundIdentifyingName", func() {
 	DescribeTable("should return correct inbound identifying name",
 		func(given testCase) {
 			dp := newDP(given.meta, given.serviceTag)
-			Expect(dp.InboundIdentifyingName(given.inboundTagsDisabled, given.portName)).To(Equal(given.expected))
+			Expect(dp.InboundIdentifyingName(given.portName)).To(Equal(given.expected))
 		},
-		Entry("returns dataplane KRI with sectionName when tags disabled and port named", testCase{
+		Entry("returns dataplane KRI with sectionName when port named", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",
 				Mesh: "default",
@@ -53,12 +52,11 @@ var _ = Describe("InboundIdentifyingName", func() {
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
 				},
 			},
-			serviceTag:          "backend",
-			inboundTagsDisabled: true,
-			portName:            "http",
-			expected:            "kri_dp_default_zone-1_kuma-demo_backend-abc_http",
+			serviceTag: "backend",
+			portName:   "http",
+			expected:   "kri_dp_default_zone-1_kuma-demo_backend-abc_http",
 		}),
-		Entry("falls back to workload label when tags disabled and port empty", testCase{
+		Entry("falls back to workload label when port name empty", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",
 				Mesh: "default",
@@ -66,12 +64,11 @@ var _ = Describe("InboundIdentifyingName", func() {
 					k8s_metadata.KumaWorkload: "backend",
 				},
 			},
-			serviceTag:          "backend",
-			inboundTagsDisabled: true,
-			portName:            "",
-			expected:            "backend",
+			serviceTag: "backend",
+			portName:   "",
+			expected:   "backend",
 		}),
-		Entry("falls back to service tag when tags not disabled", testCase{
+		Entry("falls back to service tag when no portName and no workload label", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",
 				Mesh: "default",
@@ -80,10 +77,9 @@ var _ = Describe("InboundIdentifyingName", func() {
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
 				},
 			},
-			serviceTag:          "backend",
-			inboundTagsDisabled: false,
-			portName:            "http",
-			expected:            "backend",
+			serviceTag: "backend",
+			portName:   "",
+			expected:   "backend",
 		}),
 	)
 })

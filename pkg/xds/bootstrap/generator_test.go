@@ -101,7 +101,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			err := resManager.Create(context.Background(), given.dataplane(), store.CreateByKey("name.namespace", "mesh"))
 			Expect(err).ToNot(HaveOccurred())
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -428,7 +428,7 @@ var _ = Describe("bootstrapGenerator", func() {
 
 			cfg := bootstrap_config.DefaultBootstrapServerConfig()
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901, false, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when

@@ -93,14 +93,13 @@ func BuildDataplaneZoneIngressEndpointMap(
 	meshServices []*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
-	inboundTagsDisabled bool,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	meshServicesByKri := make(map[kri.Identifier]*meshservice_api.MeshServiceResource, len(meshServices))
 	for _, ms := range meshServices {
 		meshServicesByKri[kri.From(ms)] = ms
 	}
-	fillLocalMeshServices(outbound, meshServices, dataplanes, inboundTagsDisabled)
+	fillLocalMeshServices(outbound, meshServices, dataplanes)
 	fillMeshMultiZoneServices(outbound, meshServicesByKri, meshMultiZoneServices)
 	return outbound
 }
@@ -117,11 +116,10 @@ func BuildIngressEndpointMap(
 	egressAddresses []core_xds.ZoneEgressInstance,
 	loader datasource.Loader,
 	mtlsEnabled bool,
-	inboundTagsDisabled bool,
 ) core_xds.EndpointMap {
 	// Build EDS endpoint map just like for regular DPP, but without list of Ingress.
 	// This way we only keep local endpoints.
-	outbound := BuildEdsEndpointMap(ctx, mesh, localZone, meshServices, meshMultiZoneServices, meshExternalServices, dataplanes, nil, nil, zoneEgresses, loader, mtlsEnabled, egressAddresses, inboundTagsDisabled)
+	outbound := BuildEdsEndpointMap(ctx, mesh, localZone, meshServices, meshMultiZoneServices, meshExternalServices, dataplanes, nil, nil, zoneEgresses, loader, mtlsEnabled, egressAddresses)
 	return outbound
 }
 
@@ -139,7 +137,6 @@ func BuildEdsEndpointMap(
 	loader datasource.Loader,
 	mtlsEnabled bool,
 	egressAddresses []core_xds.ZoneEgressInstance,
-	inboundTagsDisabled bool,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
@@ -148,7 +145,7 @@ func BuildEdsEndpointMap(
 		meshServicesByKri[kri.From(ms)] = ms
 	}
 
-	fillLocalMeshServices(outbound, meshServices, dataplanes, inboundTagsDisabled)
+	fillLocalMeshServices(outbound, meshServices, dataplanes)
 	// we want to prefer endpoints build by MeshService
 	// this way we can for example stop cross-zone traffic by default using kuma.io/service
 	meshServiceDestinations := map[core_xds.ServiceName]struct{}{}
@@ -162,7 +159,7 @@ func BuildEdsEndpointMap(
 		endpointWeight = ingressInstances
 	}
 
-	fillDataplaneOutbounds(outbound, dataplanes, endpointWeight, meshServiceDestinations, inboundTagsDisabled)
+	fillDataplaneOutbounds(outbound, dataplanes, endpointWeight, meshServiceDestinations)
 
 	fillRemoteMeshServices(outbound, meshServices, zoneIngresses, meshZoneAddresses, localZone, mtlsEnabled)
 
@@ -336,14 +333,13 @@ func fillDataplaneOutbounds(
 	dataplanes []*core_mesh.DataplaneResource,
 	endpointWeight uint32,
 	meshServiceDestinations map[core_xds.ServiceName]struct{},
-	inboundTagsDisabled bool,
 ) {
 	for _, dataplane := range dataplanes {
 		dpSpec := dataplane.Spec
 		dpNetworking := dpSpec.GetNetworking()
 
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
-			inboundTags := endpointIdentity(inbound.GetTags(), dataplane, inboundTagsDisabled)
+			inboundTags := endpointIdentity(inbound.GetTags(), dataplane)
 			serviceName := inboundTags[mesh_proto.ServiceTag]
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
@@ -367,14 +363,10 @@ func fillDataplaneOutbounds(
 }
 
 // endpointIdentity returns the tags that make up an endpoint's load-balancing
-// identity. When inbound tags are disabled the Dataplane inbound carries only
-// system tags (e.g. kuma.io/zone, kuma.io/protocol), so the workload/resource
-// labels are merged in to preserve label-based identity (affinity, matching).
-// Inbound tags always win over labels on key conflicts.
-func endpointIdentity(inboundTags map[string]string, dataplane *core_mesh.DataplaneResource, inboundTagsDisabled bool) map[string]string {
-	if !inboundTagsDisabled {
-		return maps.Clone(inboundTags)
-	}
+// identity. Dataplane workload/resource labels are merged in to preserve
+// label-based identity (affinity, matching). Inbound tags always win over
+// labels on key conflicts.
+func endpointIdentity(inboundTags map[string]string, dataplane *core_mesh.DataplaneResource) map[string]string {
 	tags := maps.Clone(inboundTags)
 	if tags == nil {
 		tags = map[string]string{}
@@ -391,7 +383,6 @@ func fillLocalMeshServices(
 	outbound core_xds.EndpointMap,
 	meshServices []*meshservice_api.MeshServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
-	inboundTagsDisabled bool,
 ) {
 	dppsForMs := meshservice.MatchDataplanesWithMeshServices(dataplanes, meshServices, true)
 	for meshSvc, dpps := range dppsForMs {
@@ -407,7 +398,7 @@ func fillLocalMeshServices(
 						continue
 					}
 
-					inboundTags := endpointIdentity(inbound.GetTags(), dpp, inboundTagsDisabled)
+					inboundTags := endpointIdentity(inbound.GetTags(), dpp)
 					serviceName := destinationname.MustResolve(false, meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
