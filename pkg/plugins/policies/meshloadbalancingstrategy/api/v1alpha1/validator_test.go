@@ -372,6 +372,29 @@ to:
 	DescribeValidCases(
 		api.NewMeshLoadBalancingStrategyResource,
 		Entry(
+			"MeshExternalService on a zone proxy",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: mes-lb
+targetRef:
+  kind: Dataplane
+  labels:
+    kuma.io/listener-zoneegress: enabled
+to:
+  - targetRef:
+      kind: MeshExternalService
+      labels:
+        kuma.io/display-name: httpbin
+    default:
+      loadBalancer:
+        type: RingHash
+        ringHash:
+          minRingSize: 100
+          maxRingSize: 1000
+          hashFunction: MurmurHash2
+`),
+		Entry(
 			"MeshHTTPRoute with only hashPolicies",
 			`
 type: MeshLoadBalancingStrategy

@@ -78,9 +78,48 @@
                 }
               ],
               "locality": {
-                "subZone": "priority-0"
+                "subZone": "priority-1"
               },
               "priority": 1
+            },
+            {
+              "lbEndpoints": [
+                {
+                  "endpoint": {
+                    "address": {
+                      "socketAddress": {
+                        "address": "IP_REDACTED",
+                        "portValue": 81
+                      }
+                    }
+                  },
+                  "loadBalancingWeight": 1,
+                  "metadata": {
+                    "filterMetadata": {
+                      "envoy.lb": {
+                        "kuma.io/access": "external",
+                        "kuma.io/display-name": "mes-zone-proxy",
+                        "kuma.io/env": "universal",
+                        "kuma.io/mesh": "envoyconfig-zoneproxies",
+                        "kuma.io/origin": "zone",
+                        "kuma.io/zone": "kuma-3"
+                      },
+                      "envoy.transport_socket_match": {
+                        "kuma.io/access": "external",
+                        "kuma.io/display-name": "mes-zone-proxy",
+                        "kuma.io/env": "universal",
+                        "kuma.io/mesh": "envoyconfig-zoneproxies",
+                        "kuma.io/origin": "zone",
+                        "kuma.io/zone": "kuma-3"
+                      }
+                    }
+                  }
+                }
+              ],
+              "locality": {
+                "subZone": "priority-2"
+              },
+              "priority": 2
             }
           ]
         },
