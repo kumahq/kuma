@@ -320,3 +320,80 @@ var _ = Describe("SyncResourceStoreDelta errors", func() {
 resource already exists: type="GlobalSecret" name="zone-token-signing-public-key-1" mesh=""`))
 	})
 })
+
+// conflictingStore fails the first 'conflicts' updates the way a store does when
+// another writer changed the resource in between.
+type conflictingStore struct {
+	store.ResourceStore
+	conflicts int
+	updates   int
+}
+
+func (c *conflictingStore) Update(ctx context.Context, r model.Resource, fs ...store.UpdateOptionsFunc) error {
+	c.updates++
+	if c.updates <= c.conflicts {
+		return store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())
+	}
+	return c.ResourceStore.Update(ctx, r, fs...)
+}
+
+var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
+	var resourceStore *conflictingStore
+	var syncer sync_store.ResourceSyncer
+	var key model.ResourceKey
+
+	// meshBuilder(1) with a different spec, so syncing it against the stored copy
+	// produces an update rather than a create.
+	changedMesh := func() *mesh.MeshResource {
+		m := meshBuilder(1)
+		m.Spec.Mtls.EnabledBackend = "ca-changed"
+		m.Spec.Mtls.Backends[0].Name = "ca-changed"
+		return m
+	}
+
+	syncChangedMesh := func() (error, error) {
+		upstream := &mesh.MeshResourceList{}
+		Expect(upstream.AddItem(changedMesh())).To(Succeed())
+		return syncer.Sync(context.Background(), client_v2.UpstreamResponse{
+			Type:           upstream.GetItemType(),
+			AddedResources: upstream,
+		})
+	}
+
+	BeforeEach(func() {
+		resourceStore = &conflictingStore{ResourceStore: memory.NewStore()}
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		syncer, err = sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
+		Expect(err).ToNot(HaveOccurred())
+
+		res := meshBuilder(1)
+		key = model.MetaToResourceKey(res.GetMeta())
+		Expect(resourceStore.Create(context.Background(), res, store.CreateBy(key))).To(Succeed())
+	})
+
+	It("should retry the update and apply the change after losing a conflict", func() {
+		resourceStore.conflicts = 1
+
+		err, nackError := syncChangedMesh()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(nackError).ToNot(HaveOccurred())
+
+		actual := mesh.NewMeshResource()
+		Expect(resourceStore.Get(context.Background(), actual, store.GetBy(key))).To(Succeed())
+		Expect(actual.Spec.Mtls.EnabledBackend).To(Equal("ca-changed"))
+		Expect(resourceStore.updates).To(Equal(2))
+	})
+
+	It("should give up and return the error when conflicts do not stop", func() {
+		resourceStore.conflicts = 100
+
+		err, nackError := syncChangedMesh()
+		Expect(store.IsConflict(err)).To(BeTrue())
+		Expect(nackError).ToNot(HaveOccurred())
+
+		actual := mesh.NewMeshResource()
+		Expect(resourceStore.Get(context.Background(), actual, store.GetBy(key))).To(Succeed())
+		Expect(actual.Spec.Mtls.EnabledBackend).To(Equal("ca-1"))
+	})
+})
