@@ -123,8 +123,9 @@ func hasInboundServiceTag(dataplane *core_mesh.DataplaneResource) bool {
 }
 
 // serviceTagMeshServicesForDataplane generates MeshServices grouped by the
-// kuma.io/service inbound tag. Used as a compatibility fallback for Universal
-// Dataplanes that have not been labeled with kuma.io/workload yet.
+// kuma.io/service inbound tag. Used for compatibility with Universal
+// Dataplanes that still rely on explicit inbound service tags, including
+// mixed-label dataplanes.
 func (g *Generator) serviceTagMeshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
 	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
 	portsByService := map[string][]meshservice_api.Port{}
