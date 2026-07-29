@@ -28,9 +28,21 @@ import (
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	resources_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	util_time "github.com/kumahq/kuma/v3/pkg/util/time"
 )
 
 var globalSyncLog = core.Log.WithName("kds-global-sync")
+
+const (
+	// updateConflictAttempts bounds how many times a single resource update is
+	// retried after losing an optimistic concurrency race. Exhausting it falls
+	// through to the caller, which tears the stream down and forces a resync.
+	updateConflictAttempts = 3
+	// updateConflictBackoff is the upper bound of the jittered pause before a
+	// retry. On Kubernetes the store reads through an informer cache, so the
+	// re-read needs a moment to observe the write that won.
+	updateConflictBackoff = 100 * time.Millisecond
+)
 
 // ResourceSyncer allows to synchronize resources in Store
 type ResourceSyncer interface {
@@ -94,11 +106,12 @@ func PrefilterBy(predicate func(r core_model.Resource) bool) SyncOptionFunc {
 }
 
 type syncResourceStore struct {
-	log           logr.Logger
-	resourceStore store.ResourceStore
-	transactions  store.Transactions
-	metric        prometheus.Histogram
-	extensions    context.Context
+	log             logr.Logger
+	resourceStore   store.ResourceStore
+	transactions    store.Transactions
+	metric          prometheus.Histogram
+	conflictRetries prometheus.Counter
+	extensions      context.Context
 }
 
 func NewResourceSyncer(
@@ -115,12 +128,20 @@ func NewResourceSyncer(
 	if err := metrics.Register(metric); err != nil {
 		return nil, err
 	}
+	conflictRetries := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "kds_resources_sync_conflict_retries",
+		Help: "Number of times syncing a resource from the upstream was retried after losing a write conflict",
+	})
+	if err := metrics.Register(conflictRetries); err != nil {
+		return nil, err
+	}
 	return &syncResourceStore{
-		log:           log,
-		resourceStore: resourceStore,
-		transactions:  transactions,
-		metric:        metric,
-		extensions:    extensions,
+		log:             log,
+		resourceStore:   resourceStore,
+		transactions:    transactions,
+		metric:          metric,
+		conflictRetries: conflictRetries,
+		extensions:      extensions,
 	}, nil
 }
 
@@ -290,17 +311,72 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 
 		for _, upd := range onUpdate {
 			log.V(1).Info("updating a resource", "name", upd.r.GetMeta().GetName(), "mesh", upd.r.GetMeta().GetMesh())
-			now := time.Now()
-			// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
-			// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
-			// from upstream store, because we update downstream only when resource have changed in upstream
-			if err := s.resourceStore.Update(ctx, upd.r, append(upd.opts, store.ModifiedAt(now))...); err != nil {
+			if err := s.updateWithConflictRetry(ctx, upd, opts, log); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
 	return err, nackError
+}
+
+// updateWithConflictRetry writes an upstream change downstream, reapplying it on
+// top of a freshly read copy when the write loses an optimistic concurrency race.
+//
+// Zone-local components write to the same resources we sync: the VIP allocator
+// owns Status.VIPs and the hostname generators own Status.Addresses. Stores
+// version the whole resource rather than its halves, so any of those writes
+// invalidates the version read at List time, and on Kubernetes the store reads
+// through an informer cache, which can hand back an already stale version.
+//
+// Retries are bounded. When they run out the error goes back to the caller,
+// which tears the stream down and forces a full resync. Skipping the resource
+// would be worse: delta xDS marks it delivered when the response is sent, so the
+// upstream would consider this zone current while it silently drifts.
+func (s *syncResourceStore) updateWithConflictRetry(ctx context.Context, upd OnUpdate, opts *SyncOption, log logr.Logger) error {
+	var err error
+	for attempt := 1; attempt <= updateConflictAttempts; attempt++ {
+		// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
+		// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
+		// from upstream store, because we update downstream only when resource have changed in upstream
+		err = s.resourceStore.Update(ctx, upd.r, append(upd.opts, store.ModifiedAt(time.Now()))...)
+		if err == nil || !store.IsConflict(err) {
+			return err
+		}
+		s.conflictRetries.Inc()
+		log.Info("resource was modified in another place while syncing, retrying with a fresh copy",
+			"name", upd.r.GetMeta().GetName(), "mesh", upd.r.GetMeta().GetMesh(), "attempt", attempt)
+		if attempt == updateConflictAttempts {
+			break
+		}
+		// Let a cached store observe the write that beat us, otherwise the
+		// re-read returns the same dead version and the next attempt is wasted.
+		util_time.SleepUpTo(updateConflictBackoff)
+		if refreshErr := s.refreshForUpdate(ctx, upd, opts); refreshErr != nil {
+			return refreshErr
+		}
+	}
+	return err
+}
+
+// refreshForUpdate re-reads the downstream copy and rebases the pending upstream
+// change onto it, so the retry carries the current version. Status is restored
+// from the fresh copy for the same reason Sync preserves it in the first place:
+// on the Zone it belongs to local components, not to the upstream.
+func (s *syncResourceStore) refreshForUpdate(ctx context.Context, upd OnUpdate, opts *SyncOption) error {
+	fresh, err := registry.Global().NewObject(upd.r.Descriptor().Name)
+	if err != nil {
+		return err
+	}
+	rk := core_model.MetaToResourceKey(upd.r.GetMeta())
+	if err := s.resourceStore.Get(ctx, fresh, store.GetByKey(rk.Name, rk.Mesh)); err != nil {
+		return err
+	}
+	upd.r.SetMeta(fresh.GetMeta())
+	if upd.r.Descriptor().HasStatus && opts.IgnoreStatusChange {
+		return upd.r.SetStatus(fresh.GetStatus())
+	}
+	return nil
 }
 
 func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bool) (core_model.ResourceList, error) {
