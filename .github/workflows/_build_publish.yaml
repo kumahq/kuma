@@ -56,6 +56,16 @@ jobs:
         if: ${{ github.ref_type == 'tag' }}
         with:
           fetch-depth: 0
+      - name: Cache Go build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: ${{ github.ref_type == 'tag' }}
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-build-${{ runner.os }}-
       - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
         if: ${{ github.ref_type == 'tag' }}
       - name: Assert built binary reports tag version
