@@ -19,12 +19,3 @@ spec:
         ready: true
       port: 5432
       protocol: tcp
-      tags:
-        app: postgres
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: postgres
-        k8s.kuma.io/service-port: "5432"
-        kuma.io/protocol: tcp
-        kuma.io/service: postgres_demo_svc_5432
-        kuma.io/zone: zone-1
-        tier: database

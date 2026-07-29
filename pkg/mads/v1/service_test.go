@@ -80,7 +80,7 @@ var _ = Describe("MADS http service", func() {
 		meshCache, err := mesh.NewCache(cacheExpiration, meshContextBuilder, newMetrics)
 		Expect(err).ToNot(HaveOccurred())
 
-		svc := service.NewService(cfg, resManager, logr.Discard(), meshCache, false)
+		svc := service.NewService(cfg, resManager, logr.Discard(), meshCache)
 		ctx, cancel := context.WithCancel(context.Background())
 		svc.Start(ctx)
 
