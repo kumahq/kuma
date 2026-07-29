@@ -376,67 +376,6 @@ var _ = Describe("MeshMetric", func() {
 				).
 				Build(),
 		}),
-		Entry("otel_and_prometheus_unified_naming", testCase{
-			context: *xds_builders.Context().WithMeshBuilder(
-				samples.MeshDefaultBuilder(),
-			).
-				WithMeshLocalResources([]core_model.Resource{otelBackendResource("otel-collector", "otel-collector.observability.svc")}).
-				Build(),
-			proxy: xds_builders.Proxy().
-				WithID(*core_xds.BuildProxyId("default", "backend")).
-				WithDataplane(
-					samples.DataplaneBackendBuilder().
-						WithLabels(workloadLabels()),
-				).
-				WithMetadata(&core_xds.DataplaneMetadata{
-					WorkDir: "/tmp",
-					Features: map[string]bool{
-						xds_types.FeatureUnifiedResourceNaming: true,
-					},
-				}).
-				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Origin: []core_model.ResourceMeta{
-									&test_model.ResourceMeta{
-										Mesh: "default",
-										Name: "meshmetric1",
-									},
-								},
-								Conf: api.Conf{
-									Sidecar: &api.Sidecar{
-										IncludeUnused: pointer.To(false),
-									},
-									Applications: &[]api.Application{
-										{
-											Path: "/metrics",
-											Port: 8080,
-										},
-									},
-									Backends: &[]api.Backend{
-										{
-											Type: api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{
-												Path: "/metrics",
-												Port: 5670,
-											},
-										},
-										{
-											Type: api.OpenTelemetryBackendType,
-											OpenTelemetry: &api.OpenTelemetryBackend{
-												BackendRef: otelBackendRef("otel-collector"),
-											},
-										},
-									},
-								},
-							},
-						},
-					}),
-				).
-				Build(),
-		}),
 		Entry("multiple_otel", testCase{
 			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithMeshLocalResources([]core_model.Resource{

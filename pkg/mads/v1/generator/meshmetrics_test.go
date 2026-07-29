@@ -54,7 +54,7 @@ var _ = Describe("Generate()", func() {
 		}
 
 		// when
-		resources, err := Generate(meshMetricToDataplane, DefaultKumaClientId, false)
+		resources, err := Generate(meshMetricToDataplane, DefaultKumaClientId)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -81,7 +81,7 @@ var _ = Describe("Generate()", func() {
 		}
 
 		// when
-		resources, err := Generate(meshMetricToDataplane, DefaultKumaClientId, false)
+		resources, err := Generate(meshMetricToDataplane, DefaultKumaClientId)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -99,7 +99,7 @@ var _ = Describe("Generate()", func() {
 		}
 
 		// when
-		resources, err := Generate(meshMetricToDataplane, DefaultKumaClientId, false)
+		resources, err := Generate(meshMetricToDataplane, DefaultKumaClientId)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

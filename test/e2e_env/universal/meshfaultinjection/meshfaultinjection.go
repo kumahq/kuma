@@ -170,17 +170,17 @@ spec:
 		}),
 		Entry("421 when requests from any client are blocked", testCase{
 			client:               "demo-client",
-			address:              "test-service-block-all-sources.svc.mesh.local",
+			address:              "test-server-block-all-sources.svc.mesh.local",
 			expectedResponseCode: 421,
 		}),
 		Entry("421 when requests from the demo-client-blocked", testCase{
 			client:               "demo-client-timeout",
-			address:              "test-service-block-all-sources.svc.mesh.local",
+			address:              "test-server-block-all-sources.svc.mesh.local",
 			expectedResponseCode: 421,
 		}),
 		Entry("421 when requests from the demo-client-blocked", testCase{
 			client:               "demo-client-blocked",
-			address:              "test-service-block-all-sources.svc.mesh.local",
+			address:              "test-server-block-all-sources.svc.mesh.local",
 			expectedResponseCode: 421,
 		}),
 	)

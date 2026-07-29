@@ -86,7 +86,6 @@ func GenerateClusters(
 						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
 							proxy.SecretsTracker,
-							true,
 							meshCtx.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							true,
@@ -112,7 +111,7 @@ func GenerateClusters(
 						if otherMesh.GetMeta().GetName() == upstreamMeshName {
 							edsClusterBuilder.Configure(
 								envoy_clusters.CrossMeshClientSideMTLS(
-									proxy.SecretsTracker, true, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
+									proxy.SecretsTracker, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
 								),
 							)
 							break
@@ -189,7 +188,6 @@ func GenerateClusters(
 						} else {
 							edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 								proxy.SecretsTracker,
-								true,
 								meshCtx.Resource,
 								tlsReady,
 								sni,
@@ -198,7 +196,7 @@ func GenerateClusters(
 							))
 						}
 					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, true, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
+						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
 					}
 				}
 			}

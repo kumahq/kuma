@@ -47,12 +47,12 @@ resources:
                     prefix: spiffe://mesh-1/
                   sanType: URI
               validationContextSdsSecretConfig:
-                name: mesh_ca:secret:mesh-1
+                name: system_mtls_ca_mesh-1
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: identity_cert:secret:mesh-1
+            - name: system_mtls_identity_mesh-1
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
@@ -99,12 +99,12 @@ resources:
                     prefix: spiffe://mesh-1/
                   sanType: URI
               validationContextSdsSecretConfig:
-                name: mesh_ca:secret:mesh-1
+                name: system_mtls_ca_mesh-1
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: identity_cert:secret:mesh-1
+            - name: system_mtls_identity_mesh-1
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
@@ -147,12 +147,12 @@ resources:
                     prefix: spiffe://mesh-1/
                   sanType: URI
               validationContextSdsSecretConfig:
-                name: mesh_ca:secret:mesh-1
+                name: system_mtls_ca_mesh-1
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: identity_cert:secret:mesh-1
+            - name: system_mtls_identity_mesh-1
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3

@@ -21,7 +21,6 @@ import (
 func CreateDownstreamTlsContext(
 	downstreamMesh core_xds.CaRequest,
 	mesh core_xds.IdentityCertRequest,
-	unifiedResourceNaming bool,
 	useMeshTrust bool,
 ) (*envoy_tls.DownstreamTlsContext, error) {
 	var validationSANMatchers []*envoy_tls.SubjectAltNameMatcher
@@ -30,7 +29,7 @@ func CreateDownstreamTlsContext(
 		validationSANMatchers = append(validationSANMatchers, MeshSpiffeIDPrefixMatcher(meshName))
 	}
 
-	commonTlsContext := createCommonTlsContext(mesh, downstreamMesh, validationSANMatchers, unifiedResourceNaming, useMeshTrust)
+	commonTlsContext := createCommonTlsContext(mesh, downstreamMesh, validationSANMatchers, useMeshTrust)
 	return &envoy_tls.DownstreamTlsContext{
 		CommonTlsContext:         commonTlsContext,
 		RequireClientCertificate: util_proto.Bool(true),
@@ -44,7 +43,7 @@ func CreateDownstreamTlsContext(
 // There is no way to correlate incoming request to "web" or "web-api" with outgoing request to "backend" to expose only one URI SAN.
 //
 // Pass "*" for upstreamService to validate that upstream service is a service that is part of the mesh (but not specific one)
-func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh core_xds.CaRequest, upstreamService string, sni string, verifyIdentities []string, unifiedResourceNaming bool, useMeshTrust bool) (*envoy_tls.UpstreamTlsContext, error) {
+func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh core_xds.CaRequest, upstreamService string, sni string, verifyIdentities []string, useMeshTrust bool) (*envoy_tls.UpstreamTlsContext, error) {
 	var validationSANMatchers []*envoy_tls.SubjectAltNameMatcher
 	meshNames := upstreamMesh.MeshName()
 	for _, meshName := range meshNames {
@@ -78,7 +77,7 @@ func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh co
 			validationSANMatchers = append(validationSANMatchers, matcher)
 		}
 	}
-	commonTlsContext := createCommonTlsContext(mesh, upstreamMesh, validationSANMatchers, unifiedResourceNaming, useMeshTrust)
+	commonTlsContext := createCommonTlsContext(mesh, upstreamMesh, validationSANMatchers, useMeshTrust)
 	commonTlsContext.AlpnProtocols = xds_tls.KumaALPNProtocols
 	return &envoy_tls.UpstreamTlsContext{
 		CommonTlsContext: commonTlsContext,
@@ -86,13 +85,9 @@ func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh co
 	}, nil
 }
 
-func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa core_xds.CaRequest, matchers []*envoy_tls.SubjectAltNameMatcher, unifiedResourceNaming bool, useMeshTrust bool) *envoy_tls.CommonTlsContext {
-	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedResourceNaming)
+func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa core_xds.CaRequest, matchers []*envoy_tls.SubjectAltNameMatcher, useMeshTrust bool) *envoy_tls.CommonTlsContext {
 	meshCaSecret := NewSecretConfigSource(
-		getNameOrDefault(
-			core_system_names.AsSystemName("mtls_ca_"+core_system_names.JoinSectionParts(targetMeshCa.MeshName()...)),
-			targetMeshCa.Name(),
-		),
+		core_system_names.AsSystemName("mtls_ca_" + core_system_names.JoinSectionParts(targetMeshCa.MeshName()...)),
 	)
 	if useMeshTrust {
 		// spiffe validator has trust domain validation
@@ -100,10 +95,7 @@ func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa c
 		meshCaSecret = NewSecretConfigSource(system_names.SystemResourceNameCABundle)
 	}
 	identitySecret := NewSecretConfigSource(
-		getNameOrDefault(
-			core_system_names.AsSystemName("mtls_identity_"+core_system_names.JoinSectionParts(targetMeshCa.MeshName()...)),
-			ownMesh.Name(),
-		),
+		core_system_names.AsSystemName("mtls_identity_" + ownMesh.MeshName()),
 	)
 
 	return &envoy_tls.CommonTlsContext{

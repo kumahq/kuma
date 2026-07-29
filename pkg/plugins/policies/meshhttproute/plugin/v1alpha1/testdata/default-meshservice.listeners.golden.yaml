@@ -1,5 +1,5 @@
 resources:
-- name: outbound:10.0.0.1:80
+- name: kri_msvc_default___backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -26,7 +26,7 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: default_backend___msvc_80
+              name: kri_msvc_default___backend_80
               routes:
               - match:
                   prefix: /
@@ -34,10 +34,11 @@ resources:
                 route:
                   cluster: kri_msvc_default___backend_80
                   timeout: 0s
-          statPrefix: default_backend___msvc_80
+          statPrefix: kri_msvc_default___backend_80
     metadata:
       filterMetadata:
         io.kuma.tags:
           kuma.io/unified-name: kri_msvc_default___backend_80
-    name: outbound:10.0.0.1:80
+    name: kri_msvc_default___backend_80
+    statPrefix: kri_msvc_default___backend_80
     trafficDirection: OUTBOUND

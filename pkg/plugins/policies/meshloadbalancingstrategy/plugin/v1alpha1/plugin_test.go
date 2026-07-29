@@ -1565,11 +1565,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Build(),
 			context: *xds_builders.Context().
 				WithMeshBuilder(samples.MeshMTLSBuilder()).
-				With(func(ctx *xds_context.Context) {
-					// this entry models KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED, which is
-					// what makes the proxy resolve its own affinity values from labels
-					ctx.ControlPlane.InboundTagsDisabled = true
-				}).
 				Build(),
 		}),
 	)
@@ -1585,10 +1580,10 @@ func createEndpointWith(zone string, ip string, extraTags map[string]string) cor
 		Build()
 }
 
-// createEndpointWithLabels models an endpoint built with
-// KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED: the workload labels are folded into
-// the endpoint tags at topology build time (see BuildEdsEndpointMap), so they
-// live under the same envoy.lb key as the system tags.
+// createEndpointWithLabels models an endpoint whose workload labels are
+// folded into the endpoint tags at topology build time (see
+// BuildEdsEndpointMap), so they live under the same envoy.lb key as the
+// system tags.
 func createEndpointWithLabels(ip string, labels map[string]string) core_xds.Endpoint {
 	return *xds_builders.Endpoint().
 		WithTarget(ip).
@@ -1673,7 +1668,6 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 		},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
-		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener

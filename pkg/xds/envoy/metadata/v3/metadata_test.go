@@ -64,8 +64,7 @@ var _ = Describe("Metadata()", func() {
 
 var _ = Describe("EndpointMetadata() label fallback", func() {
 	It("should encode resource labels under envoy.lb when inbound tags are absent", func() {
-		// given: nil tags simulate KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED, so the
-		// endpoint's load-balancing identity comes from resource labels instead.
+		// given: nil tags; the endpoint's load-balancing identity comes from resource labels.
 		labels := map[string]string{
 			"app":     "frontend",
 			"version": "v3",

@@ -122,31 +122,6 @@ var _ = Describe("MeshTrace", func() {
 			},
 		}
 	}
-	// Unified naming listeners use contextual names matching what real proxy generators produce.
-	inboundUnifiedName := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(17777))
-	outboundUnifiedName := backendMeshServiceIdentifier.String()
-	inboundAndOutboundUnifiedNaming := func() []core_xds.Resource {
-		return []core_xds.Resource{
-			{
-				Name:   "inbound",
-				Origin: metadata.OriginInbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3, inboundUnifiedName).
-					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager(inboundUnifiedName, false, nil, true)),
-					)).MustBuild(),
-			}, {
-				Name:   "outbound",
-				Origin: metadata.OriginOutbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3, outboundUnifiedName).
-					Configure(OutboundListener("127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager(outboundUnifiedName, false, nil, true)),
-					)).MustBuild(),
-				ResourceOrigin: backendMeshServiceIdentifier,
-			},
-		}
-	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			resources := core_xds.NewResourceSet()
@@ -237,53 +212,6 @@ var _ = Describe("MeshTrace", func() {
 				},
 			},
 			goldenFile: "inbound-outbound-zipkin-real-meshservice",
-		}),
-		Entry("inbound/outbound for zipkin, real MeshService and unified naming", testCase{
-			resources: inboundAndOutboundUnifiedNaming(),
-			features: xds_types.Features{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
-			outbounds: xds_types.Outbounds{
-				{
-					Address:  "127.0.0.1",
-					Port:     27777,
-					Resource: backendMeshServiceIdentifier,
-				},
-			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Origin: []core_model.ResourceMeta{
-							&test_model.ResourceMeta{
-								Mesh: "default",
-								Name: "mt-1",
-							},
-						},
-						Conf: api.Conf{
-							Tags: &[]api.Tag{
-								{Name: "app", Literal: pointer.To("backend")},
-								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
-								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
-							},
-							Sampling: &api.Sampling{
-								Overall: pointer.To(intstr.FromInt(10)),
-								Client:  pointer.To(intstr.FromInt(20)),
-								Random:  pointer.To(intstr.FromInt(50)),
-							},
-							Backends: &[]api.Backend{{
-								Zipkin: &api.ZipkinBackend{
-									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: true,
-									ApiVersion:        "httpProto",
-									TraceId128Bit:     true,
-								},
-							}},
-						},
-					},
-				},
-			},
-			goldenFile: "inbound-outbound-zipkin-real-meshservice-unified-naming",
 		}),
 		Entry("inbound/outbound for zipkin", testCase{
 			resources: inboundAndOutbound(),
@@ -886,12 +814,11 @@ func mixedInboundAndZoneEgressResources() []core_xds.Resource {
 
 var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 	type testCase struct {
-		dp                  *builders.DataplaneBuilder
-		resources           []core_xds.Resource
-		singleItemRules     core_rules.SingleItemRules
-		inboundTagsDisabled bool
-		goldenFile          string
-		otelBackends        []*motb_api.MeshOpenTelemetryBackendResource
+		dp              *builders.DataplaneBuilder
+		resources       []core_xds.Resource
+		singleItemRules core_rules.SingleItemRules
+		goldenFile      string
+		otelBackends    []*motb_api.MeshOpenTelemetryBackendResource
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -909,11 +836,6 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 			}
 			ctxBuilder := xds_samples.SampleContextWith(meshResources).
 				WithMeshBuilder(samples.MeshDefaultBuilder())
-			if given.inboundTagsDisabled {
-				ctxBuilder = ctxBuilder.With(func(c *xds_context.Context) {
-					c.ControlPlane.InboundTagsDisabled = true
-				})
-			}
 			xdsCtx := *ctxBuilder.Build()
 
 			proxy := xds_builders.Proxy().
@@ -1128,14 +1050,12 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 			},
 			goldenFile: "zone-egress-only-missing-listener",
 		}),
-		// IdentifyingName(true) walks the workload label first. For a
-		// zone-proxy-only DPP without a workload label, it returns "unknown"
-		// and the fallback to Dataplane.Name fires the same way as the default
-		// path. Reuses the zone-egress-only-zipkin golden to pin that equivalence.
-		Entry("zone-egress-only zipkin with inboundTagsDisabled", testCase{
-			dp:                  zoneEgressOnlyDataplane(),
-			resources:           []core_xds.Resource{zoneEgressListenerResource()},
-			inboundTagsDisabled: true,
+		// IdentifyingName walks the workload label first. For a zone-proxy-only
+		// DPP without a workload label, it returns "unknown" and the fallback to
+		// Dataplane.Name fires. Reuses the zone-egress-only-zipkin golden.
+		Entry("zone-egress-only zipkin without workload label", testCase{
+			dp:        zoneEgressOnlyDataplane(),
+			resources: []core_xds.Resource{zoneEgressListenerResource()},
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{{
 					Subset: []subsetutils.Tag{},
