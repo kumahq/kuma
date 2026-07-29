@@ -152,11 +152,10 @@ func addMeshServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) er
 		return nil
 	}
 	reconciler := &k8s_controllers.MeshServiceReconciler{
-		Client:              mgr.GetClient(),
-		Log:                 core.Log.WithName("controllers").WithName("MeshService"),
-		Scheme:              mgr.GetScheme(),
-		EventRecorder:       mgr.GetEventRecorder("k8s.kuma.io/mesh-service-generator"),
-		InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
+		Client:        mgr.GetClient(),
+		Log:           core.Log.WithName("controllers").WithName("MeshService"),
+		Scheme:        mgr.GetScheme(),
+		EventRecorder: mgr.GetEventRecorder("k8s.kuma.io/mesh-service-generator"),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
@@ -211,9 +210,8 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 					ReplicaSetGetter: mgr.GetClient(),
 					JobGetter:        mgr.GetClient(),
 				},
-				NodeGetter:          mgr.GetClient(),
-				NodeLabelsToCopy:    rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
-				InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
+				NodeGetter:       mgr.GetClient(),
+				NodeLabelsToCopy: rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
 			},
 			Zone:              rt.Config().Multizone.Zone.Name,
 			SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
@@ -330,7 +328,7 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 			sidecarContainersEnabled = true
 		} else {
 			log.Info(
-				"Kubernetes server does not support native sidecar containers; falling back to legacy injection",
+				"Kubernetes server does not support native sidecar containers; using init-container injection instead",
 				"version", k8sVersion.GitVersion,
 			)
 		}

@@ -126,8 +126,7 @@ spec:
 				Yaml(
 					builders.Mesh().
 						WithName(meshName).
-						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
-						WithEgressRoutingEnabled(),
+						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
 				),
 			).
 			Install(YamlUniversal(disableDefaultPassthrough)).
@@ -151,21 +150,18 @@ spec:
 					testserver.WithName("client-server"),
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
-					testserver.WithReachableServices("dummy-service"),
 					testserver.WithReachableBackends(reachableBackends),
 				),
 				testserver.Install(
 					testserver.WithName("client-server-namespace"),
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
-					testserver.WithReachableServices("dummy-service"),
 					testserver.WithReachableBackends(reachableBackendsNamespaceLabel),
 				),
 				testserver.Install(
 					testserver.WithName("client-server-no-access"),
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
-					testserver.WithReachableServices("dummy-service"),
 					testserver.WithReachableBackends("{}"),
 				),
 				testserver.Install(

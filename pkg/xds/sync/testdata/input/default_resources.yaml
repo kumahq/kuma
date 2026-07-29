@@ -5,8 +5,6 @@ mtls:
   backends:
     - name: builtin
       type: builtin
-routing:
-  zoneEgress: true
 ---
 type: Dataplane
 mesh: default
@@ -92,3 +90,16 @@ zone: zone-1
 networking:
   address: 1.1.1.2
   port: 10002
+---
+type: MeshTrafficPermission
+name: allow-all
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://default"

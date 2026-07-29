@@ -10,11 +10,11 @@ import (
 
 // identityTags returns the tag set used to derive a dataplane's mTLS
 // identity (SPIFFE/kuma SAN URIs). Dataplane.TagSet() is empty when
-// Experimental.InboundTagsDisabled strips inbound tags, which would
-// otherwise produce a certificate with no SAN and no Subject, rejected
-// outright by Envoy. In that case, fall back to the kuma.io/workload
-// label, the same identity signal MeshService generation and the
-// MeshIdentity Universal default already rely on when tags are disabled.
+// inbounds carry no tags (tag-free mode), which would otherwise produce
+// a certificate with no SAN and no Subject, rejected outright by Envoy.
+// In that case, fall back to the kuma.io/workload label, the same
+// identity signal MeshService generation and the MeshIdentity Universal
+// default already rely on.
 func identityTags(dataplane *core_mesh.DataplaneResource) (mesh_proto.MultiValueTagSet, error) {
 	tags := dataplane.Spec.TagSet()
 	if len(tags.Values(mesh_proto.ServiceTag)) > 0 {

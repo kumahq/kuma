@@ -58,13 +58,17 @@ var _ = Describe("Rest Resource", func() {
     "targetRef": {
       "kind": "Mesh"
     },
-    "from": [
+    "rules": [
       {
-        "targetRef": {
-          "kind": "Mesh"
-        },
         "default": {
-          "action": "Allow"
+          "allow": [
+            {
+              "spiffeID": {
+                "type": "Prefix",
+                "value": "spiffe://default"
+              }
+            }
+          ]
         }
       }
     ]

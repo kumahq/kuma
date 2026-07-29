@@ -12,8 +12,5 @@
         "type": "builtin"
       }
     ]
-  },
-  "routing": {
-    "zoneEgress": true
   }
 }

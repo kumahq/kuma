@@ -153,7 +153,7 @@ func BuildEdsEndpointMap(
 		meshServiceDestinations[name] = struct{}{}
 	}
 
-	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.ZoneEgressEnabled(), meshServiceDestinations)
+	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.MTLSEnabled() && len(zoneEgresses) > 0, meshServiceDestinations)
 	endpointWeight := uint32(1)
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
@@ -339,7 +339,7 @@ func fillDataplaneOutbounds(
 		dpNetworking := dpSpec.GetNetworking()
 
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
-			inboundTags := maps.Clone(inbound.GetTags())
+			inboundTags := endpointIdentity(inbound.GetTags(), dataplane)
 			serviceName := inboundTags[mesh_proto.ServiceTag]
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
@@ -355,12 +355,28 @@ func fillDataplaneOutbounds(
 				Target:   inboundAddress,
 				Port:     inboundPort,
 				Tags:     inboundTags,
-				Labels:   dataplane.GetMeta().GetLabels(),
 				Weight:   endpointWeight,
 				Locality: GetLocality(getZone(inboundTags)),
 			})
 		}
 	}
+}
+
+// endpointIdentity returns the tags that make up an endpoint's load-balancing
+// identity. Dataplane workload/resource labels are merged in to preserve
+// label-based identity (affinity, matching). Inbound tags always win over
+// labels on key conflicts.
+func endpointIdentity(inboundTags map[string]string, dataplane *core_mesh.DataplaneResource) map[string]string {
+	tags := maps.Clone(inboundTags)
+	if tags == nil {
+		tags = map[string]string{}
+	}
+	for k, v := range dataplane.GetMeta().GetLabels() {
+		if _, exists := tags[k]; !exists {
+			tags[k] = v
+		}
+	}
+	return tags
 }
 
 func fillLocalMeshServices(
@@ -382,7 +398,7 @@ func fillLocalMeshServices(
 						continue
 					}
 
-					inboundTags := maps.Clone(inbound.GetTags())
+					inboundTags := endpointIdentity(inbound.GetTags(), dpp)
 					serviceName := destinationname.MustResolve(false, meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
@@ -390,7 +406,6 @@ func fillLocalMeshServices(
 						Target:   inboundInterface.DataplaneAdvertisedIP,
 						Port:     inboundInterface.DataplanePort,
 						Tags:     inboundTags,
-						Labels:   dpp.GetMeta().GetLabels(),
 						Weight:   1,
 						Locality: GetLocality(getZone(inboundTags)),
 					})
@@ -416,7 +431,7 @@ func BuildCrossMeshEndpointMap(
 		localZone,
 		mesh,
 		otherMesh,
-		mesh.ZoneEgressEnabled(),
+		mesh.MTLSEnabled() && len(zoneEgresses) > 0,
 		map[core_xds.ServiceName]struct{}{},
 	)
 

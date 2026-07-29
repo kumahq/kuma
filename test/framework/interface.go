@@ -117,7 +117,6 @@ type appDeploymentOptions struct {
 	omitDataplane         bool
 	proxyOnly             bool
 	serviceProbe          bool
-	reachableServices     []string
 	reachableBackends     string
 	appendDataplaneConfig string
 	boundToContainerIp    bool
@@ -127,6 +126,7 @@ type appDeploymentOptions struct {
 	bindOutbounds         bool
 	labels                map[string]string
 	workload              string
+	omitWorkloadLabel     bool
 	spireAgent            bool
 	spireAgentToken       string
 	spireServerAddress    string
@@ -586,12 +586,6 @@ func WithConcurrency(concurrency int) AppDeploymentOption {
 	})
 }
 
-func WithReachableServices(services ...string) AppDeploymentOption {
-	return AppOptionFunc(func(o *appDeploymentOptions) {
-		o.reachableServices = services
-	})
-}
-
 // WithReachableBackends sets networking.transparentProxying.reachableBackends
 // on the Dataplane. The config is the YAML body under reachableBackends (e.g. a
 // `refs:` list of MeshService references). Only applies with transparent proxy.
@@ -629,6 +623,12 @@ func WithLabels(labels map[string]string) AppDeploymentOption {
 func WithWorkload(workload string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.workload = workload
+	})
+}
+
+func WithoutWorkloadLabel() AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.omitWorkloadLabel = true
 	})
 }
 

@@ -1,8 +1,8 @@
 resources:
-- name: tcp-backend
+- name: kri_msvc_default___tcp-backend_tcp-port
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: tcp-backend
+    clusterName: kri_msvc_default___tcp-backend_tcp-port
     endpoints:
     - lbEndpoints:
       - endpoint:

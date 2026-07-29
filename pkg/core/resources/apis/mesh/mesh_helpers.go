@@ -17,13 +17,6 @@ func (m *MeshResource) MTLSEnabled() bool {
 	return m != nil && m.Spec.GetMtls().GetEnabledBackend() != ""
 }
 
-// ZoneEgress works only when mTLS is enabled.
-// Configuration of mTLS is validated on Mesh configuration
-// change and when zoneEgress is enabled.
-func (m *MeshResource) ZoneEgressEnabled() bool {
-	return m != nil && m.Spec.GetRouting().GetZoneEgress()
-}
-
 func (m *MeshResource) GetEnabledCertificateAuthorityBackend() *mesh_proto.CertificateAuthorityBackend {
 	return m.GetCertificateAuthorityBackend(m.Spec.GetMtls().GetEnabledBackend())
 }

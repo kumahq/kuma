@@ -82,8 +82,8 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		field := path.Field("inbound").Index(i)
 		result := validateInbound(inbound, networking.Address)
 		err.AddErrorAt(field, result)
-		// Require service tag only if inbound has any tags (old setup).
-		// With InboundTagsDisabled inbounds have no tags (new setup).
+		// Require service tag only if inbound has any tags.
+		// Inbounds have no tags in tag-free mode.
 		if len(inbound.Tags) > 0 {
 			if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
 				err.AddViolationAt(field.Field("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
@@ -345,8 +345,8 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 		return result
 	}
 	result.Add(ValidateTags(validators.RootedAt("tags"), gateway.Tags, ValidateTagsOpts{
-		// Require service tag only if gateway has any tags (old setup).
-		// With InboundTagsDisabled gateways have no tags (new setup).
+		// Require service tag only if gateway has any tags.
+		// Gateways have no tags in tag-free mode.
 		RequireService:      len(gateway.Tags) > 0,
 		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
 	}),

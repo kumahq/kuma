@@ -188,7 +188,7 @@ func GetServices(
 
 		cluster := plugins_xds.NewClusterBuilder().
 			WithName(clusterName).
-			WithService(br.LegacyServiceName).
+			WithService(br.EndpointMapKey).
 			WithSNI(br.SNI).
 			WithMesh(br.Mesh).
 			Build()

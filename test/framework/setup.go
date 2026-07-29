@@ -168,27 +168,6 @@ spec:
 	)
 }
 
-func MTLSMeshKubernetesWithEgressRouting(name string) InstallFunc {
-	mesh := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  routing:
-    zoneEgress: true
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-`, name)
-	return Combine(
-		YamlK8s(mesh),
-		WaitMeshKubernetesReady(name),
-	)
-}
-
 func WaitMeshKubernetesReady(name string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryContextE(
@@ -248,11 +227,12 @@ metadata:
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow`, name, Config.KumaNamespace)
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[1]s"`, name, Config.KumaNamespace)
 	return YamlK8s(mtp)
 }
 
@@ -322,11 +302,12 @@ mesh: %[1]s
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow`, name)
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[1]s"`, name)
 	return YamlUniversal(mtp)
 }
 
@@ -675,7 +656,6 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := opts.appYaml
 
-		// Determine service name
 		serviceName := getValueOrDefault(opts.serviceName, name)
 		transparent := opts.transparent != nil && *opts.transparent // default false
 		var err error
@@ -687,13 +667,14 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		if opts.appLabel != "" {
 			labels["app"] = opts.appLabel
 		}
+		if opts.workload == "" && !opts.omitWorkloadLabel {
+			opts.workload = serviceName
+		}
 		if opts.workload != "" {
 			labels[metadata.KumaWorkload] = opts.workload
 		}
 
-		// Build dataplane YAML if not provided
 		if appYaml == "" {
-			// Initialize template data with common fields
 			dpp := DataplaneTemplateData{
 				Mesh:           mesh,
 				ServiceName:    serviceName,
@@ -702,14 +683,12 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 				Labels:         labels,
 			}
 
-			// Configure based on mode
 			switch {
 			case transparent:
 				dpp.InboundPort = "3000"
 				dpp.TransparentProxy = &TransparentProxyConfig{
 					RedirectPortInbound:  redirectPortInbound,
 					RedirectPortOutbound: redirectPortOutbound,
-					ReachableServices:    opts.reachableServices,
 					ReachableBackends:    opts.reachableBackends,
 				}
 			case opts.bindOutbounds:
@@ -812,10 +791,8 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		var opts appDeploymentOptions
 		opts.apply(opt...)
 
-		// Determine service name and defaults
 		serviceName := getValueOrDefault(opts.serviceName, "test-server")
 
-		// Build labels map, merging opts.labels with appLabel
 		labels := opts.labels
 		if labels == nil {
 			labels = make(map[string]string)
@@ -823,11 +800,13 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		if opts.appLabel != "" {
 			labels["app"] = opts.appLabel
 		}
+		if opts.workload == "" && !opts.omitWorkloadLabel {
+			opts.workload = serviceName
+		}
 		if opts.workload != "" {
 			labels[metadata.KumaWorkload] = opts.workload
 		}
 
-		// Initialize dataplane template data
 		dpp := DataplaneTemplateData{
 			Mesh:               mesh,
 			ServiceName:        serviceName,

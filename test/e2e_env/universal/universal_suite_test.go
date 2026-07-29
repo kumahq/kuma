@@ -31,7 +31,7 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/observability"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/projectedsatoken"
-	"github.com/kumahq/kuma/v3/test/e2e_env/universal/reachableservices"
+	"github.com/kumahq/kuma/v3/test/e2e_env/universal/reachablebackends"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/resilience"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/strictinbounds"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/timeout"
@@ -77,7 +77,7 @@ var (
 	_ = Describe("MeshProxyPatch", Label("job-3"), meshproxypatch.MeshProxyPatch, Ordered)
 	_ = Describe("MeshProxyPatch on Zone Proxy", Label("job-3"), meshproxypatch.ZoneProxy, Ordered)
 	_ = Describe("Mtls", Label("job-1"), mtls.Policy, Ordered)
-	_ = Describe("Reachable Services", Label("job-3"), reachableservices.ReachableServices, Ordered)
+	_ = Describe("Reachable Backends", Label("job-3"), reachablebackends.ReachableBackends, Ordered)
 	_ = Describe("Apis", Label("job-3"), api.Api, Ordered)
 	_ = Describe("Transparent Proxy", Label("job-3"), transparentproxy.TransparentProxy, Ordered)
 	_ = Describe("Mesh Traffic Permission", Label("job-2"), meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)

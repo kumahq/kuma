@@ -1,26 +1,26 @@
 resources:
-- name: backend-bb38a94289f18fb9
+- name: kri_msvc_default___backend-eu_kafka-port
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: backend-bb38a94289f18fb9
+    name: kri_msvc_default___backend-eu_kafka-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: backend-c72efb5be46fae6b
+- name: kri_msvc_default___backend-us_kafka-port
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: backend-c72efb5be46fae6b
+    name: kri_msvc_default___backend-us_kafka-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

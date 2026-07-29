@@ -49,9 +49,6 @@ var _ = Describe("TrafficRoute", func() {
 			Mtls: &mesh_proto.Mesh_Mtls{
 				EnabledBackend: "ca-1",
 			},
-			Routing: &mesh_proto.Routing{
-				ZoneEgress: true,
-			},
 		},
 	}
 	defaultMeshWithoutMTLS := &core_mesh.MeshResource{
@@ -253,6 +250,152 @@ var _ = Describe("TrafficRoute", func() {
 						Zone: "eu",
 					},
 					Weight: 1,
+				},
+			}))
+		})
+
+		It("should merge dataplane labels into endpoint tags", func() {
+			// given - dataplane with minimal inbound tags (just service) but labels
+			dp := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh:   "default",
+					Name:   "backend-1",
+					Labels: map[string]string{"app": "backend", "version": "v2", "env": "prod"},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags:        map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.ZoneTag: "zone-1"},
+								Port:        8080,
+								ServicePort: 18080,
+							},
+						},
+					},
+				},
+			}
+			dataplanes := []*core_mesh.DataplaneResource{dp}
+
+			// when
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
+
+			// then - labels should be merged into endpoint tags
+			Expect(targets).To(HaveLen(1))
+			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
+				{
+					Target: "192.168.0.1",
+					Port:   8080,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "backend",
+						mesh_proto.ZoneTag:    "zone-1",
+						"app":                 "backend",
+						"version":             "v2",
+						"env":                 "prod",
+					},
+					Locality: &core_xds.Locality{Zone: "zone-1"},
+					Weight:   1,
+				},
+			}))
+		})
+
+		It("should preserve inbound tags over labels on key conflict", func() {
+			// given - dataplane with inbound tag that conflicts with label
+			dp := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh:   "default",
+					Name:   "backend-1",
+					Labels: map[string]string{"app": "backend", mesh_proto.ZoneTag: "label-zone"},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags:        map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.ZoneTag: "inbound-zone"},
+								Port:        8080,
+								ServicePort: 18080,
+							},
+						},
+					},
+				},
+			}
+			dataplanes := []*core_mesh.DataplaneResource{dp}
+
+			// when
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
+
+			// then - inbound tag (inbound-zone) wins over label (label-zone)
+			Expect(targets).To(HaveLen(1))
+			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
+				{
+					Target: "192.168.0.1",
+					Port:   8080,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "backend",
+						mesh_proto.ZoneTag:    "inbound-zone", // inbound tag wins
+						"app":                 "backend",      // label merged
+					},
+					Locality: &core_xds.Locality{Zone: "inbound-zone"},
+					Weight:   1,
+				},
+			}))
+		})
+
+		It("should fold the full set of kuma.io labels into endpoint tags", func() {
+			// given - the labels a real Dataplane carries, not a synthetic subset
+			dp := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh: "default",
+					Name: "backend-1",
+					Labels: map[string]string{
+						"kuma.io/display-name":     "backend",
+						"kuma.io/mesh":             "default",
+						"kuma.io/origin":           "zone",
+						"kuma.io/proxy-type":       "sidecar",
+						"kuma.io/workload":         "backend",
+						"kuma.io/zone":             "zone-1",
+						"k8s.kuma.io/namespace":    "kuma-demo",
+						"k8s.kuma.io/service-name": "backend",
+					},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Tags:        map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.ZoneTag: "zone-1"},
+								Port:        8080,
+								ServicePort: 18080,
+							},
+						},
+					},
+				},
+			}
+			dataplanes := []*core_mesh.DataplaneResource{dp}
+
+			// when
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
+
+			// then - every label lands under the endpoint tags, so it reaches envoy.lb
+			Expect(targets).To(HaveLen(1))
+			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
+				{
+					Target: "192.168.0.1",
+					Port:   8080,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag:      "backend",
+						mesh_proto.ZoneTag:         "zone-1",
+						"kuma.io/display-name":     "backend",
+						"kuma.io/mesh":             "default",
+						"kuma.io/origin":           "zone",
+						"kuma.io/proxy-type":       "sidecar",
+						"kuma.io/workload":         "backend",
+						"k8s.kuma.io/namespace":    "kuma-demo",
+						"k8s.kuma.io/service-name": "backend",
+					},
+					Locality: &core_xds.Locality{Zone: "zone-1"},
+					Weight:   1,
 				},
 			}))
 		})

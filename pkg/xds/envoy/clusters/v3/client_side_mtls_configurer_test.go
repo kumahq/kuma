@@ -22,7 +22,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 		tags          []tags.Tags
 		mesh          *core_mesh.MeshResource
 		goldenFile    string
-		unifiedNaming bool
 		useMeshTrust  bool
 	}
 
@@ -32,7 +31,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			tracker := envoy.NewSecretsTracker(given.mesh.GetMeta().GetName(), nil)
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, given.clusterName).
 				Configure(clusters.EdsCluster()).
-				Configure(clusters.ClientSideMTLS(tracker, given.unifiedNaming, given.mesh, given.clientService, true, given.tags, given.useMeshTrust)).
+				Configure(clusters.ClientSideMTLS(tracker, given.mesh, given.clientService, true, given.tags, given.useMeshTrust)).
 				Configure(clusters.Timeout(DefaultTimeout(), core_meta.ProtocolTCP)).
 				Build()
 
@@ -68,7 +67,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 		Entry("cluster with mTLS and unified naming", testCase{
 			clusterName:   "testCluster",
 			clientService: "backend",
-			unifiedNaming: true,
 			mesh: &core_mesh.MeshResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "default",

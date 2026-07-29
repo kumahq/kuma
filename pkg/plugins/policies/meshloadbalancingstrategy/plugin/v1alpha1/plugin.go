@@ -96,6 +96,8 @@ func (p plugin) configureDPP(
 	}
 	serviceConfs := map[string]api.Conf{}
 
+	affinityLabels := proxy.Dataplane.GetMeta().GetLabels()
+
 	for _, outbound := range proxy.Outbounds.Filter(xds_types.NonBackendRefFilter) {
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
 		serviceName := outbound.LegacyOutbound.GetService()
@@ -117,9 +119,10 @@ func (p plugin) configureDPP(
 	}
 
 	clusterModifier := func(cluster *envoy_cluster.Cluster, conf api.Conf) error {
+		egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
 		return NewModifier(cluster).
 			Configure(clusterConfigurer(conf)).
-			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound))).
+			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, generator_metadata.OriginOutbound))).
 			Modify()
 	}
 
@@ -136,8 +139,9 @@ func (p plugin) configureDPP(
 				return err
 			}
 		}
+		egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
 		for _, cla := range endpoints[serviceName] {
-			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound)).Modify(); err != nil {
+			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, generator_metadata.OriginOutbound)).Modify(); err != nil {
 				return err
 			}
 		}
@@ -148,7 +152,7 @@ func (p plugin) configureDPP(
 		svcCtx := rctx.
 			WithID(kri.NoSectionName(r.ResourceOrigin)).
 			WithID(r.ResourceOrigin)
-		if err := p.applyToRealResource(svcCtx, r, proxy); err != nil {
+		if err := p.applyToRealResource(svcCtx, r, proxy, affinityLabels); err != nil {
 			return err
 		}
 	}
@@ -156,7 +160,7 @@ func (p plugin) configureDPP(
 	return nil
 }
 
-func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Conf], r *core_xds.Resource, proxy *core_xds.Proxy) error {
+func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Conf], r *core_xds.Resource, proxy *core_xds.Proxy, affinityLabels map[string]string) error {
 	switch envoyResource := r.Resource.(type) {
 	case *envoy_listener.Listener:
 		return NewModifier(envoyResource).
@@ -165,11 +169,11 @@ func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Con
 	case *envoy_cluster.Cluster:
 		return NewModifier(envoyResource).
 			Configure(clusterConfigurer(rctx.Conf())).
-			Configure(If(envoyResource.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, false, generator_metadata.OriginOutbound))).
+			Configure(If(envoyResource.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound))).
 			Modify()
 	case *envoy_endpoint.ClusterLoadAssignment:
 		return NewModifier(envoyResource).
-			Configure(claConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, false, generator_metadata.OriginOutbound)).
+			Configure(claConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound)).
 			Modify()
 	}
 	return nil

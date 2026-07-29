@@ -104,7 +104,7 @@ var _ = Describe("snapshotGenerator", func() {
 				}
 
 				// given
-				snapshotter := NewSnapshotGenerator(resourceManager, cache, false)
+				snapshotter := NewSnapshotGenerator(resourceManager, cache)
 				// when
 				snapshotPerClient, err := snapshotter.GenerateSnapshot(context.Background())
 				// then

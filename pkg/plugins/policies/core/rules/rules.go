@@ -63,7 +63,8 @@ func (i InboundListener) String() string {
 }
 
 type FromRules struct {
-	// Rules is a map of InboundListener to a list of rules built by using 'spec.from' field.
+	// Rules is the legacy subset-based inbound view used by a small set of egress
+	// and backward-compatible plugin paths.
 	//
 	// Deprecated: use InboundRules instead
 	Rules map[InboundListener]Rules
@@ -188,30 +189,9 @@ func ComputeConf[T any](rs Rules, element subsetutils.Element) *T {
 func BuildFromRules(
 	matchedPoliciesByInbound map[InboundListener]core_model.ResourceList,
 ) (FromRules, error) {
-	rulesByInbound := map[InboundListener]Rules{}
 	rulesByInboundNew := map[InboundListener][]*inbound.Rule{}
 
 	for inb, policies := range matchedPoliciesByInbound {
-		fromList := []PolicyItemWithMeta{}
-		supportsFromList := true
-		for _, p := range policies.GetItems() {
-			policyWithFrom, ok := p.GetSpec().(core_model.PolicyWithFromList)
-			if !ok {
-				// Policy type doesn't support the legacy 'from' list (e.g. it only has 'rules').
-				// InboundRules are still built below independently of 'from' support.
-				supportsFromList = false
-				break
-			}
-			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta(), policyWithFrom.GetTargetRef())...)
-		}
-		if supportsFromList {
-			rules, err := BuildRules(fromList, true)
-			if err != nil {
-				return FromRules{}, err
-			}
-			rulesByInbound[inb] = rules
-		}
-
 		rulesNew, err := inbound.BuildRules(policies)
 		if err != nil {
 			return FromRules{}, err
@@ -219,7 +199,7 @@ func BuildFromRules(
 		rulesByInboundNew[inb] = rulesNew
 	}
 	return FromRules{
-		Rules:        rulesByInbound,
+		Rules:        map[InboundListener]Rules{},
 		InboundRules: rulesByInboundNew,
 	}, nil
 }

@@ -277,12 +277,12 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		AffectsPolicyMatching: true,
 		IsTargetRefBased: {{.IsPolicy}},
 		HasToTargetRef: {{.HasTo}},
-		HasFromTargetRef: {{.HasFrom}},
+		HasFromTargetRef: false,
         HasRulesTargetRef: {{.HasRules}},
 		HasStatus: {{.HasStatus}},
 		AllowedOnSystemNamespaceOnly: {{.AllowedOnSystemNamespaceOnly}},
 		ShortName: "{{.ShortName}}",
-		IsFromAsRules: {{.IsFromAsRules}},
+		IsFromAsRules: false,
 		Order: {{.Order}},
 	}
 `))
