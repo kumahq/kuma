@@ -411,7 +411,7 @@ func (p plugin) configureGateway(
 				}
 			}
 
-			if err := p.configureRDS(listener, gatewayRoutes, conf); err != nil {
+			if err := p.configureRDS(listener, gatewayRoutes, serviceName, conf); err != nil {
 				return err
 			}
 		}
@@ -612,9 +612,10 @@ func (p plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
 func (p plugin) configureRDS(
 	l *envoy_listener.Listener,
 	routes map[string]*envoy_route.RouteConfiguration,
+	serviceName string,
 	conf *api.Conf,
 ) error {
-	if conf == nil || conf.LoadBalancer == nil {
+	if conf == nil || conf.HashPolicies == nil {
 		return nil
 	}
 
@@ -644,13 +645,42 @@ func (p plugin) configureRDS(
 			continue
 		}
 		err := NewModifier(route).
-			Configure(bldrs_route.AllRoutes(routeConfigurer(rules_outbound.AsResourceContext(*conf)))).
+			Configure(routesToService(serviceName, routeConfigurer(rules_outbound.AsResourceContext(*conf)))).
 			Modify()
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func routesToService(serviceName string, configurer Configurer[envoy_route.Route]) Configurer[envoy_route.RouteConfiguration] {
+	return func(routeConfig *envoy_route.RouteConfiguration) error {
+		for _, virtualHost := range routeConfig.GetVirtualHosts() {
+			for _, route := range virtualHost.GetRoutes() {
+				if !routeTargetsService(route, serviceName) {
+					continue
+				}
+				if err := NewModifier(route).Configure(configurer).Modify(); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+}
+
+func routeTargetsService(route *envoy_route.Route, serviceName string) bool {
+	clusterNames := clusterNamesFromRouteAction(route.GetRoute())
+	if len(clusterNames) == 0 {
+		return false
+	}
+	for _, clusterName := range clusterNames {
+		if tags.ServiceFromClusterName(clusterName) != serviceName {
+			return false
+		}
+	}
+	return true
 }
 
 func shouldUseLocalityWeightedLb(config api.Conf) bool {

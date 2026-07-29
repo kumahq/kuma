@@ -1683,6 +1683,125 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		Expect(routeAction.HashPolicy[0].GetQueryParameter().GetName()).To(Equal("queryparam"))
 		Expect(routeAction.HashPolicy[0].GetTerminal()).To(BeTrue())
 	})
+
+	It("applies gateway hash policies only to routes for the targeted service", func() {
+		gatewayListener := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
+			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+				Configure(HttpConnectionManager("192.168.0.1:8080", false, nil, true)).
+				Configure(HttpDynamicRoute("gateway-route")),
+			)).
+			MustBuild()
+		backendCluster := clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
+			Configure(clusters.EdsCluster()).
+			MustBuild()
+		paymentsCluster := clusters.NewClusterBuilder(envoy_common.APIV3, "payments").
+			Configure(clusters.EdsCluster()).
+			MustBuild()
+		backendRoute := &envoy_route.Route{
+			Match: &envoy_route.RouteMatch{
+				PathSpecifier: &envoy_route.RouteMatch_Prefix{Prefix: "/backend"},
+			},
+			Action: &envoy_route.Route_Route{
+				Route: &envoy_route.RouteAction{
+					ClusterSpecifier: &envoy_route.RouteAction_Cluster{Cluster: "backend"},
+				},
+			},
+		}
+		paymentsRoute := &envoy_route.Route{
+			Match: &envoy_route.RouteMatch{
+				PathSpecifier: &envoy_route.RouteMatch_Prefix{Prefix: "/payments"},
+			},
+			Action: &envoy_route.Route_Route{
+				Route: &envoy_route.RouteAction{
+					ClusterSpecifier: &envoy_route.RouteAction_Cluster{Cluster: "payments"},
+				},
+			},
+		}
+		gatewayRoute := &envoy_route.RouteConfiguration{
+			Name: "gateway-route",
+			VirtualHosts: []*envoy_route.VirtualHost{{
+				Name:    "*",
+				Domains: []string{"*"},
+				Routes:  []*envoy_route.Route{backendRoute, paymentsRoute},
+			}},
+		}
+
+		resources := core_xds.NewResourceSet()
+		resources.Add(&core_xds.Resource{
+			Name:     "gateway-listener",
+			Origin:   gateway_metadata.OriginGateway,
+			Resource: gatewayListener,
+		})
+		resources.Add(&core_xds.Resource{
+			Name:     "backend",
+			Origin:   gateway_metadata.OriginGateway,
+			Resource: backendCluster,
+		})
+		resources.Add(&core_xds.Resource{
+			Name:     "payments",
+			Origin:   gateway_metadata.OriginGateway,
+			Resource: paymentsCluster,
+		})
+		resources.Add(&core_xds.Resource{
+			Name:     "gateway-route",
+			Origin:   gateway_metadata.OriginGateway,
+			Resource: gatewayRoute,
+		})
+
+		proxy := &core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+			Dataplane: builders.Dataplane().
+				WithName("sample-gateway").
+				WithAddress("192.168.0.1").
+				WithDelegatedGateway("sample-gateway").
+				Build(),
+			Policies: *xds_builders.MatchedPolicies().
+				WithGatewayPolicy(api.MeshLoadBalancingStrategyType, core_rules.GatewayRules{
+					ToRules: core_rules.GatewayToRules{
+						ByListener: map[core_rules.InboundListener]core_rules.ToRules{
+							{Address: "192.168.0.1", Port: 8080}: {
+								Rules: core_rules.Rules{
+									{
+										Subset: subsetutils.MeshService("backend"),
+										Conf: api.Conf{
+											HashPolicies: &[]api.HashPolicy{{
+												Type: api.HeaderType,
+												Header: &api.Header{
+													Name: "x-backend",
+												},
+											}},
+										},
+									},
+									{
+										Subset: subsetutils.MeshService("payments"),
+										Conf: api.Conf{
+											HashPolicies: &[]api.HashPolicy{{
+												Type: api.QueryParameterType,
+												QueryParameter: &api.QueryParameter{
+													Name: "payment",
+												},
+											}},
+										},
+									},
+								},
+							},
+						},
+					},
+				}).
+				Build(),
+		}
+
+		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(resources, *xds_builders.Context().WithMeshBuilder(samples.MeshMTLSBuilder()).Build(), proxy)).To(Succeed())
+
+		backendHashPolicies := backendRoute.GetRoute().HashPolicy
+		Expect(backendHashPolicies).To(HaveLen(1))
+		Expect(backendHashPolicies[0].GetHeader().GetHeaderName()).To(Equal("x-backend"))
+
+		paymentsHashPolicies := paymentsRoute.GetRoute().HashPolicy
+		Expect(paymentsHashPolicies).To(HaveLen(1))
+		Expect(paymentsHashPolicies[0].GetQueryParameter().GetName()).To(Equal("payment"))
+	})
 })
 
 func createEndpointWith(zone string, ip string, extraTags map[string]string) core_xds.Endpoint {
