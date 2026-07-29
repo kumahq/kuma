@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
@@ -15,6 +16,7 @@ import (
 
 func ZoneDisable() {
 	const nonDefaultMesh = "non-default"
+	const identityName = "zone-disable-identity"
 
 	const clusterName1 = "kuma-disable1"
 	const clusterName2 = "kuma-disable2"
@@ -35,8 +37,8 @@ func ZoneDisable() {
 		global = NewUniversalCluster(NewTestingT(), clusterName1, Silent)
 		err := NewClusterSetup().
 			Install(Kuma(core.Global)).
-			Install(MTLSMeshUniversal(nonDefaultMesh)).
-			Install(MeshTrafficPermissionAllowAllUniversal(nonDefaultMesh)).
+			Install(Yaml(builders.Mesh().WithName(nonDefaultMesh))).
+			Install(MeshIdentityBundled(nonDefaultMesh, identityName)).
 			Install(YamlUniversal(fmt.Sprintf(`
 type: MeshMultiZoneService
 name: test-server
@@ -120,6 +122,17 @@ spec:
 		}()
 
 		wg.Wait()
+
+		// The zones exist only now, so the identity-based MeshTrafficPermission
+		// can finally name their trust domains.
+		Expect(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(nonDefaultMesh,
+			MeshIdentityTrustDomain(nonDefaultMesh, zone1),
+			MeshIdentityTrustDomain(nonDefaultMesh, zone2),
+		)(global)).To(Succeed())
+
+		// Every zone mints its own CA from the MeshIdentity, so each one has to
+		// be told about the others before cross-zone mTLS can be established.
+		Expect(DistributeMeshTrusts(global, nonDefaultMesh, identityName, zone1, zone2)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

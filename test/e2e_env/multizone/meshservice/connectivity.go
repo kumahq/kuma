@@ -221,6 +221,9 @@ spec:
 		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(multizone.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
+		// The mesh cannot be deleted while dataplanes are still attached to it,
+		// and this zone is dismissed only after the mesh is gone.
+		Expect(autoGenerateUniversalCluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 		Expect(autoGenerateUniversalCluster.DismissCluster()).To(Succeed())
 	})

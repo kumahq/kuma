@@ -8,6 +8,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	meshtls_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	framework_client "github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
@@ -19,6 +20,7 @@ import (
 func MeshTLS() {
 	const meshName = "multizone-meshtls"
 	const k8sZoneNamespace = "multizone-meshtls"
+	const identityName = "multizone-meshtls-identity"
 
 	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
 	// mesh scoped, so every zone of the mesh needs its own.
@@ -30,11 +32,20 @@ func MeshTLS() {
 		)
 	}
 
+	var zones []Cluster
+
 	BeforeAll(func() {
+		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2}
+		trustDomains := make([]string, 0, len(zones))
+		for _, zone := range zones {
+			trustDomains = append(trustDomains, MeshIdentityTrustDomain(meshName, zone))
+		}
+
 		// Global
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(Yaml(builders.Mesh().WithName(meshName))).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, trustDomains...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
@@ -65,6 +76,10 @@ func MeshTLS() {
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		// Every zone mints its own CA from the MeshIdentity, so each one has to
+		// be told about the others before cross-zone mTLS can be established.
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

@@ -13,6 +13,7 @@ import (
 	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
 	"github.com/kumahq/kuma/v3/pkg/kds/hash"
 	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
@@ -39,12 +40,14 @@ spec:
           maxStreamDuration: 0s`, meshName)))).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		err := multizone.UniZone1.Install(TestServerUniversal("test-server", meshName,
-			WithArgs([]string{"echo", "--instance", "echo"}),
-			WithDpEnvs(map[string]string{
-				"KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED": "true",
-			}),
-		))
+		err := NewClusterSetup().
+			Install(Parallel(
+				TestServerUniversal("test-server", meshName,
+					WithArgs([]string{"echo", "--instance", "echo"}),
+				),
+				zoneproxy.Install(zoneproxy.WithMesh(meshName)),
+			)).
+			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 		// remove default
 		Eventually(func() error {
@@ -80,8 +83,10 @@ spec:
 	}
 
 	testServerDPPName := hash.HashedName(meshName, "test-server", "kuma-4")
-	ingressName := hash.HashedName("", "ingress", "kuma-4")
-	egressName := hash.HashedName("", "egress", "kuma-4")
+	ingressName := zoneproxy.IngressName(meshName)
+	egressName := zoneproxy.EgressName(meshName)
+	ingressDPPName := hash.HashedName(meshName, ingressName, "kuma-4")
+	egressDPPName := hash.HashedName(meshName, egressName, "kuma-4")
 
 	Context("Dataplane", func() {
 		DescribeTable("should execute envoy inspection",
@@ -128,64 +133,64 @@ spec:
 				reinstallMTLSMesh: true,
 				expectedOut:       `system_envoy_admin::`,
 			}),
-			Entry("of config dump for a zoneingress using Global CP", testCase{
+			Entry("of config dump for a zone ingress using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"zoneingress", ingressName, "--type", "config-dump"},
-				expectedOut: `"dataplane.proxyType": "ingress"`,
+				args:        []string{"dataplane", ingressDPPName, "--type", "config-dump", "--mesh", meshName},
+				expectedOut: `"dataplane.proxyType": "dataplane"`,
 			}),
-			Entry("of stats for a zoneingress using Global CP", testCase{
+			Entry("of stats for a zone ingress using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"zoneingress", ingressName, "--type", "stats"},
+				args:        []string{"dataplane", ingressDPPName, "--type", "stats", "--mesh", meshName},
 				expectedOut: `server.live: 1`,
 			}),
-			Entry("of clusters for a zoneingress using Global CP", testCase{
+			Entry("of clusters for a zone ingress using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"zoneingress", ingressName, "--type", "clusters"},
+				args:        []string{"dataplane", ingressDPPName, "--type", "clusters", "--mesh", meshName},
 				expectedOut: `system_envoy_admin::`,
 			}),
-			Entry("of config dump for a zoneingress using Zone CP", testCase{
+			Entry("of config dump for a zone ingress using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
-				args:        []string{"zoneingress", "ingress", "--type", "config-dump"},
-				expectedOut: `"dataplane.proxyType": "ingress"`,
+				args:        []string{"dataplane", ingressName, "--type", "config-dump", "--mesh", meshName},
+				expectedOut: `"dataplane.proxyType": "dataplane"`,
 			}),
-			Entry("of stats for a zoneingress using Global CP", testCase{
+			Entry("of stats for a zone ingress using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
-				args:        []string{"zoneingress", "ingress", "--type", "stats"},
+				args:        []string{"dataplane", ingressName, "--type", "stats", "--mesh", meshName},
 				expectedOut: `server.live: 1`,
 			}),
-			Entry("of clusters for a zoneingress using Global CP", testCase{
+			Entry("of clusters for a zone ingress using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
-				args:        []string{"zoneingress", "ingress", "--type", "clusters"},
+				args:        []string{"dataplane", ingressName, "--type", "clusters", "--mesh", meshName},
 				expectedOut: `system_envoy_admin::`,
 			}),
-			Entry("of config dump for a zoneegress using Global CP", testCase{
+			Entry("of config dump for a zone egress using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"zoneegress", egressName, "--type", "config-dump"},
-				expectedOut: `"dataplane.proxyType": "egress"`,
+				args:        []string{"dataplane", egressDPPName, "--type", "config-dump", "--mesh", meshName},
+				expectedOut: `"dataplane.proxyType": "dataplane"`,
 			}),
-			Entry("of stats for a zoneegress using Global CP", testCase{
+			Entry("of stats for a zone egress using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"zoneegress", egressName, "--type", "stats"},
+				args:        []string{"dataplane", egressDPPName, "--type", "stats", "--mesh", meshName},
 				expectedOut: `server.live: 1`,
 			}),
-			Entry("of clusters for a zoneegress using Global CP", testCase{
+			Entry("of clusters for a zone egress using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"zoneegress", egressName, "--type", "clusters"},
+				args:        []string{"dataplane", egressDPPName, "--type", "clusters", "--mesh", meshName},
 				expectedOut: `system_envoy_admin::`,
 			}),
-			Entry("of config dump for a zoneegress using Zone CP", testCase{
+			Entry("of config dump for a zone egress using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
-				args:        []string{"zoneegress", "egress", "--type", "config-dump"},
-				expectedOut: `"dataplane.proxyType": "egress"`,
+				args:        []string{"dataplane", egressName, "--type", "config-dump", "--mesh", meshName},
+				expectedOut: `"dataplane.proxyType": "dataplane"`,
 			}),
-			Entry("of stats for a zoneegress using Global CP", testCase{
+			Entry("of stats for a zone egress using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
-				args:        []string{"zoneegress", "egress", "--type", "stats"},
+				args:        []string{"dataplane", egressName, "--type", "stats", "--mesh", meshName},
 				expectedOut: `server.live: 1`,
 			}),
-			Entry("of clusters for a zoneegress using Global CP", testCase{
+			Entry("of clusters for a zone egress using Zone CP", testCase{
 				cluster:     UniZone1Cluster,
-				args:        []string{"zoneegress", "egress", "--type", "clusters"},
+				args:        []string{"dataplane", egressName, "--type", "clusters", "--mesh", meshName},
 				expectedOut: `system_envoy_admin::`,
 			}),
 		)
@@ -204,9 +209,14 @@ spec:
 				result := api_types.InspectDataplanesForPolicyResponse{}
 				g.Expect(json.Unmarshal(body, &result)).To(Succeed())
 
-				g.Expect(result.Items).To(HaveLen(1))
-				g.Expect(result.Total).To(Equal(1))
-				g.Expect(result.Items[0].Name).To(HavePrefix(testServerDPPName))
+				// The policy targets the whole Mesh, and zone proxies are
+				// mesh-scoped Dataplanes, so they match it as well.
+				names := []string{}
+				for _, item := range result.Items {
+					names = append(names, item.Name)
+				}
+				g.Expect(names).To(ConsistOf(testServerDPPName, ingressDPPName, egressDPPName))
+				g.Expect(result.Total).To(Equal(3))
 			}, "30s", "1s").Should(Succeed())
 		})
 

@@ -9,7 +9,6 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
@@ -18,15 +17,19 @@ import (
 
 func Test() {
 	_ = Describe("No Zone Egress", func() {
-		test("meshhttproute", samples.MeshMTLSBuilder(), false)
+		test("meshhttproute", builders.Mesh(), false)
 	}, Ordered)
 
 	_ = Describe("Zone Egress", func() {
-		test("meshhttproute-ze", samples.MeshMTLSBuilder(), true)
+		test("meshhttproute-ze", builders.Mesh(), true)
 	}, FlakeAttempts(3), Ordered)
 }
 
 func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
+	identityName := meshName + "-identity"
+
+	var zones []Cluster
+
 	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
 	// mesh scoped, so every zone of the mesh needs its own.
 	zoneIngress := func() InstallFunc {
@@ -37,10 +40,17 @@ func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
 	}
 
 	BeforeAll(func() {
+		zones = []Cluster{multizone.UniZone1, multizone.UniZone2}
+		trustDomains := make([]string, 0, len(zones))
+		for _, zone := range zones {
+			trustDomains = append(trustDomains, MeshIdentityTrustDomain(meshName, zone))
+		}
+
 		// Global
 		err := NewClusterSetup().
 			Install(ResourceUniversal(meshBuilder.WithName(meshName).Build())).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, trustDomains...)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -86,6 +96,10 @@ func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
 			)).
 			SetupInGroup(multizone.UniZone2, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		// Every zone mints its own CA from the MeshIdentity, so each one has to
+		// be told about the others before cross-zone mTLS can be established.
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

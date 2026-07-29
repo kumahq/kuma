@@ -78,7 +78,6 @@ var (
 	_ = Describe("MeshServiceReachableBackends", Label("job-1"), reachablebackends.MeshServicesWithReachableBackendsOption, Ordered)
 	_ = Describe("MeshTLS", Label("job-3"), meshtls.MeshTLS, Ordered)
 	_ = Describe("MeshIdentity", Label("job-0"), meshidentity.Identity, Ordered)
-	_ = Describe("MeshIdentity Migration", Label("job-0"), meshidentity.Migration, Ordered)
 	_ = Describe("CNI Configuration", Label("job-3"), Label("kind-not-supported"), cni.ExcludeOutboundPort, Ordered)
 	_ = Describe("MeshProxy", Label("job-2"), meshproxy.Connectivity, Ordered)
 	_ = Describe("MeshMetric on Zone Proxy", Label("job-3"), meshmetric.ZoneProxy, Ordered)

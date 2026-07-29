@@ -27,6 +27,7 @@ import (
 func ProducerPolicyFlow() {
 	const mesh = "producer-policy-flow"
 	const k8sZoneNamespace = "producer-policy-flow-ns"
+	const identityName = "producer-policy-flow-identity"
 
 	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
 	// mesh scoped, so every zone of the mesh needs its own.
@@ -38,18 +39,26 @@ func ProducerPolicyFlow() {
 		)
 	}
 
+	var zones []Cluster
+
 	BeforeAll(func() {
+		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2}
+		trustDomains := make([]string, 0, len(zones))
+		for _, zone := range zones {
+			trustDomains = append(trustDomains, MeshIdentityTrustDomain(mesh, zone))
+		}
+
 		// Global
 		Expect(NewClusterSetup().
 			Install(
 				Yaml(
 					builders.Mesh().
 						WithName(mesh).
-						WithoutInitialPolicies().
-						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
+						WithoutInitialPolicies(),
 				),
 			).
-			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
+			Install(MeshIdentityBundled(mesh, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(mesh, trustDomains...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
@@ -80,6 +89,10 @@ func ProducerPolicyFlow() {
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		// Every zone mints its own CA from the MeshIdentity, so each one has to
+		// be told about the others before cross-zone mTLS can be established.
+		Expect(DistributeMeshTrusts(multizone.Global, mesh, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

@@ -136,8 +136,11 @@ func zoneMeshTrust(global Cluster, mesh string, identityName string, zone Cluste
 }
 
 func installMeshTrust(target Cluster, mesh string, sourceZone string, trust *meshtrust_api.MeshTrust) error {
+	// The name carries the mesh: on Kubernetes every mesh puts its MeshTrusts
+	// in the same namespace, so a mesh-agnostic name makes suites running in
+	// parallel overwrite each other's trust and break cross-zone mTLS.
 	builder := builders.MeshTrust().
-		WithName("trust-of-zone-" + sourceZone).
+		WithName(fmt.Sprintf("%s-trust-of-zone-%s", mesh, sourceZone)).
 		WithMesh(mesh).
 		WithLabels(map[string]string{
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),

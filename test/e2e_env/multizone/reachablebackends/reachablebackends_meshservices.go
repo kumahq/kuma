@@ -17,6 +17,7 @@ import (
 func MeshServicesWithReachableBackendsOption() {
 	meshName := "mesh-service-reachable-backends"
 	namespace := "mesh-service-reachable-backends"
+	identityName := "mesh-service-reachable-backends-identity"
 
 	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
 	// mesh scoped, so every zone of the mesh needs its own.
@@ -41,11 +42,6 @@ func MeshServicesWithReachableBackendsOption() {
 	mesh := fmt.Sprintf(`
 type: Mesh
 name: "%s"
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
 `, meshName)
 
 	disableDefaultPassthrough := fmt.Sprintf(`
@@ -59,12 +55,21 @@ spec:
     passthroughMode: None
 `, meshName)
 
+	var zones []Cluster
+
 	BeforeAll(func() {
+		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2}
+		trustDomains := make([]string, 0, len(zones))
+		for _, zone := range zones {
+			trustDomains = append(trustDomains, MeshIdentityTrustDomain(meshName, zone))
+		}
+
 		// Global
 		err := NewClusterSetup().
 			Install(YamlUniversal(mesh)).
 			Install(YamlUniversal(disableDefaultPassthrough)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, trustDomains...)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -123,6 +128,10 @@ spec:
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		// Every zone mints its own CA from the MeshIdentity, so each one has to
+		// be told about the others before cross-zone mTLS can be established.
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

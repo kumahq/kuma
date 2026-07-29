@@ -8,6 +8,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	policies_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
@@ -31,22 +32,10 @@ spec:
 `, mesh, ip))
 }
 
-func mtlsAndEgressMeshUniversal(name string) InstallFunc {
-	mesh := fmt.Sprintf(`
-type: Mesh
-name: %s
-mtls:
-  enabledBackend: ca-1
-  backends:
-    - name: ca-1
-      type: builtin
-`, name)
-	return YamlUniversal(mesh)
-}
-
 func MeshTrafficPermission() {
 	const meshName = "mtp-test"
 	const namespace = "mtp-test"
+	const identityName = "mtp-test-identity"
 
 	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
 	// mesh scoped, so every zone of the mesh needs its own.
@@ -59,9 +48,11 @@ func MeshTrafficPermission() {
 	}
 
 	BeforeAll(func() {
-		// Global
+		// Global. No MeshTrafficPermission is installed: the mesh has to start
+		// out default-deny for the first assertion of the test.
 		err := NewClusterSetup().
-			Install(mtlsAndEgressMeshUniversal(meshName)).
+			Install(Yaml(builders.Mesh().WithName(meshName))).
+			Install(MeshIdentityBundled(meshName, identityName)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -89,6 +80,11 @@ func MeshTrafficPermission() {
 			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		// Every zone mints its own CA from the MeshIdentity, so each one has to
+		// be told about the others before cross-zone mTLS can be established.
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName,
+			multizone.KubeZone1, multizone.UniZone1)).To(Succeed())
 
 		esIp := multizone.UniZone1.GetApp("external-service").GetIP()
 		Expect(multizone.Global.Install(externalService(meshName, esIp))).To(Succeed())
