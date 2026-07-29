@@ -1380,7 +1380,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithMeshBuilder(samples.MeshMTLSBuilder()).
 				Build(),
 		}),
-		Entry("locality_aware_inbound_tags_disabled", testCase{
+		Entry("locality_aware_tag_free_endpoints", testCase{
 			resources: []core_xds.Resource{
 				{
 					Name:   "backend",
