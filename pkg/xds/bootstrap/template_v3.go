@@ -45,15 +45,20 @@ var (
 )
 
 func genConfig(parameters configParameters, enableReloadableTokens bool, meshResource *core_mesh.MeshResource) (*envoy_bootstrap_v3.Bootstrap, error) {
-	getNameOrDefault := system_names.GetNameOrDefault(
-		unified_naming.Enabled(&core_xds.DataplaneMetadata{Features: parameters.Features}, meshResource),
-	)
+	unifiedNamingEnabled := unified_naming.Enabled(&core_xds.DataplaneMetadata{Features: parameters.Features}, meshResource)
+
+	adsName := adsClusterName
+	accessLogSinkName := accessLogSinkClusterName
+	if unifiedNamingEnabled {
+		adsName = systemAdsClusterName
+		accessLogSinkName = systemAccessLogSinkClusterName
+	}
 
 	staticClusters, err := buildStaticClusters(
 		parameters,
 		enableReloadableTokens,
-		getNameOrDefault(systemAdsClusterName, adsClusterName),
-		getNameOrDefault(systemAccessLogSinkClusterName, accessLogSinkClusterName),
+		adsName,
+		accessLogSinkName,
 	)
 	if err != nil {
 		return nil, err
@@ -157,7 +162,7 @@ func genConfig(parameters configParameters, enableReloadableTokens bool, meshRes
 				TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 				SetNodeOnFirstMessageOnly: true,
 				GrpcServices: []*envoy_core_v3.GrpcService{
-					buildGrpcService(parameters, enableReloadableTokens, getNameOrDefault(systemAdsClusterName, adsClusterName)),
+					buildGrpcService(parameters, enableReloadableTokens, adsName),
 				},
 			},
 		},
@@ -185,7 +190,7 @@ func genConfig(parameters configParameters, enableReloadableTokens bool, meshRes
 		},
 	}
 	for _, r := range res.StaticResources.Clusters {
-		if r.Name == getNameOrDefault(systemAdsClusterName, adsClusterName) {
+		if r.Name == adsName {
 			transport := &envoy_tls.UpstreamTlsContext{
 				Sni: parameters.XdsHost,
 				CommonTlsContext: &envoy_tls.CommonTlsContext{
@@ -217,7 +222,7 @@ func genConfig(parameters configParameters, enableReloadableTokens bool, meshRes
 			TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 			SetNodeOnFirstMessageOnly: true,
 			GrpcServices: []*envoy_core_v3.GrpcService{
-				buildGrpcService(parameters, enableReloadableTokens, getNameOrDefault(systemAdsClusterName, adsClusterName)),
+				buildGrpcService(parameters, enableReloadableTokens, adsName),
 			},
 		}
 	}

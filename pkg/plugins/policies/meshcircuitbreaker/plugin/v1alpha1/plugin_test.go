@@ -312,7 +312,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					}},
 				},
 			},
-			expectedCluster: []string{"inbound_cluster_connection_limits.golden.yaml"},
+			expectedCluster: []string{"inbound_cluster_connection_limits_unified_naming.golden.yaml"},
 		}),
 		Entry("basic inbound cluster with outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{

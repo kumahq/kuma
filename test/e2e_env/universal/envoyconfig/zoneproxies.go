@@ -130,6 +130,10 @@ spec:
   endpoints:
     - address: 127.0.0.1
       port: 80
+      priority: 1
+    - address: 127.0.0.1
+      port: 81
+      priority: 2
 `, zoneProxyMeshName)
 
 	meshIdentityYAML := fmt.Sprintf(`

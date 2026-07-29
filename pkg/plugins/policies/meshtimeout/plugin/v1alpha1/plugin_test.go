@@ -278,7 +278,7 @@ var _ = Describe("MeshTimeout", func() {
 					}},
 				},
 			},
-			expectedClusters:  []string{"basic_inbound_cluster.golden.yaml"},
+			expectedClusters:  []string{"basic_inbound_cluster_unified_naming.golden.yaml"},
 			expectedListeners: []string{"basic_inbound_listener.golden.yaml"},
 		}),
 		Entry("basic inbound route without defaults", sidecarTestCase{
