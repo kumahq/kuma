@@ -405,7 +405,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -648,7 +649,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
