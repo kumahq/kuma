@@ -60,10 +60,8 @@ func GenerateClusters(
 					continue
 				}
 				if proxy.WorkloadIdentity != nil {
-					kriID := service.BackendRef().Resource()
-					if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
-						continue
-					}
+					// Zone proxies key the SNI by port name, a backendRef may use the number.
+					kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
 					sni := core_sni.FromKRI(kriID)
 					// we only want to route when are mesh-scoped zone egresses
 					if len(meshCtx.ZoneEgresses) == 0 {
@@ -86,7 +84,6 @@ func GenerateClusters(
 						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
 							proxy.SecretsTracker,
-							true,
 							meshCtx.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							true,
@@ -112,7 +109,7 @@ func GenerateClusters(
 						if otherMesh.GetMeta().GetName() == upstreamMeshName {
 							edsClusterBuilder.Configure(
 								envoy_clusters.CrossMeshClientSideMTLS(
-									proxy.SecretsTracker, true, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
+									proxy.SecretsTracker, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
 								),
 							)
 							break
@@ -160,10 +157,9 @@ func GenerateClusters(
 						kriSNI := useKRISni && proxy.WorkloadIdentity != nil
 						var sni string
 						if kriSNI {
-							if errs := core_sni.ValidateKRI(realResourceRef.Resource); len(errs) > 0 {
-								continue
-							}
-							sni = core_sni.FromKRI(realResourceRef.Resource)
+							// Zone proxies key the SNI by port name, a backendRef may use the number.
+							sniID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
+							sni = core_sni.FromKRI(sniID)
 						} else {
 							sni = SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 						}
@@ -189,7 +185,6 @@ func GenerateClusters(
 						} else {
 							edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 								proxy.SecretsTracker,
-								true,
 								meshCtx.Resource,
 								tlsReady,
 								sni,
@@ -198,7 +193,7 @@ func GenerateClusters(
 							))
 						}
 					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, true, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
+						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
 					}
 				}
 			}

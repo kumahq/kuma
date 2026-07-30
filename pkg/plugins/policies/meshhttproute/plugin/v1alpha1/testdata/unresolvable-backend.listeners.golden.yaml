@@ -29,6 +29,18 @@ resources:
               name: kri_msvc_default___backend_80
               routes:
               - match:
+                  path: /v2
+                name: kri_mhttpr_default___test-origin_rule_0
+                route:
+                  cluster: kri_msvc_default___backend_80
+                  timeout: 0s
+              - match:
+                  prefix: /v2/
+                name: kri_mhttpr_default___test-origin_rule_0
+                route:
+                  cluster: kri_msvc_default___backend_80
+                  timeout: 0s
+              - match:
                   path: /v1
                 name: kri_mhttpr_default___test-origin_rule_0
                 route:

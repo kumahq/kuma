@@ -27,10 +27,7 @@ func (p *PodConverter) IngressFor(
 	if len(services) != 1 {
 		return errors.Errorf("ingress should be matched by exactly one service. Matched %d services", len(services))
 	}
-	ifaces, err := p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)
-	if err != nil {
-		return errors.Wrap(err, "could not generate inbound interfaces")
-	}
+	ifaces := p.InboundConverter.InboundInterfacesFor(pod, services)
 	if len(ifaces) != 1 {
 		return errors.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
 	}

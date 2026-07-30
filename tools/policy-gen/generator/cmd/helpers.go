@@ -32,17 +32,16 @@ func newHelpers(rootArgs *args) *cobra.Command {
 				return nil
 			}
 
-			// GetPolicyItem is only generated for policies without from/to/rules lists;
+			// GetPolicyItem is only generated for policies without to/rules lists;
 			// those policies implement PolicyItem directly on the root spec struct
-			generateGetPolicyItem := !pconfig.HasFrom && !pconfig.HasTo && !pconfig.HasRules
-			needsCoreModel := pconfig.HasFrom || pconfig.HasTo || generateGetPolicyItem
+			generateGetPolicyItem := !pconfig.HasTo && !pconfig.HasRules
+			needsCoreModel := pconfig.HasTo || generateGetPolicyItem
 
 			outPath := filepath.Join(filepath.Dir(policyPath), "zz_generated.helpers.go")
 			return commontemplate.GoTemplate(helpersTemplate, map[string]any{
 				"name":                  pconfig.Name,
 				"version":               pconfig.Package,
 				"generateTo":            pconfig.HasTo,
-				"generateFrom":          pconfig.HasFrom,
 				"generateRules":         pconfig.HasRules,
 				"ruleHasMatches":        pconfig.RuleHasMatches,
 				"skipGetDefault":        pconfig.SkipGetDefault,
@@ -72,28 +71,6 @@ import (
 func (x *{{.name}}) GetTargetRef() common_api.TargetRef {
 	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
 }
-
-{{ if .generateFrom }}
-
-func (x *From) GetTargetRef() common_api.TargetRef {
-	return x.TargetRef
-}
-{{ if not .skipGetDefault }}
-
-func (x *From) GetDefault() interface{} {
-	return x.Default
-}
-{{- end }}
-
-func (x *{{.name}}) GetFromList() []core_model.PolicyItem {
-	var result []core_model.PolicyItem
-	for _, itm := range pointer.Deref(x.From) {
-		item := itm
-		result = append(result, &item)
-	}
-	return result
-}
-{{- end }}
 {{ if .generateTo }}
 
 func (x *To) GetTargetRef() common_api.TargetRef {

@@ -2,6 +2,7 @@ package rules_test
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -10,6 +11,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
@@ -20,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/resources/file"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
 	"github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
@@ -466,23 +469,37 @@ var _ = Describe("Rules", func() {
 			return list
 		}
 
-		DescribeTable("should build a rule-based view for the policy with a from list",
-			func(inputFile string) {
-				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (any, error) {
-					// given
-					listener := core_rules.InboundListener{
-						Address: "127.0.0.1",
-						Port:    80,
-					}
-					policiesByInbound := map[core_rules.InboundListener]core_model.ResourceList{
-						listener: samePolicyTypesToList(policies),
-					}
-					// when
-					return core_rules.BuildFromRules(policiesByInbound)
-				})
-			},
-			test.EntriesForFolder("rules/from"),
-		)
+		It("should build inbound rules without legacy subset rules", func() {
+			input, err := os.ReadFile("../matchers/testdata/matchedpolicies/fromrules/01.policies.yaml")
+			Expect(err).ToNot(HaveOccurred())
+
+			var policies []core_model.Resource
+			for _, policyBytes := range util_yaml.SplitYAML(string(input)) {
+				policy, err := rest.YAML.UnmarshalCore([]byte(policyBytes))
+				Expect(err).ToNot(HaveOccurred())
+				policies = append(policies, policy)
+			}
+
+			listener := core_rules.InboundListener{
+				Address: "1.1.1.1",
+				Port:    8080,
+			}
+
+			actual, err := core_rules.BuildFromRules(map[core_rules.InboundListener]core_model.ResourceList{
+				listener: samePolicyTypesToList(policies),
+			})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual.Rules).To(BeEmpty())
+			Expect(actual.InboundRules).To(HaveLen(1))
+			Expect(actual.InboundRules).To(HaveKey(listener))
+			Expect(actual.InboundRules[listener]).To(HaveLen(3))
+
+			bytes, err := yaml.Marshal(actual.InboundRules[listener])
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(bytes)).To(ContainSubstring("spiffe://mesh-1/backend"))
+			Expect(string(bytes)).To(ContainSubstring("spiffe://mesh-1/orders"))
+			Expect(string(bytes)).To(ContainSubstring("spiffe://mesh-1"))
+		})
 
 		DescribeTable("should build a rule-based view for the policy with a to list",
 			func(inputFile string) {

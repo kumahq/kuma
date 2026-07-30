@@ -229,7 +229,8 @@ type ResourceTypeDescriptor struct {
 	IsTargetRefBased bool
 	// HasToTargetRef indicates that the policy can be applied to outbound traffic
 	HasToTargetRef bool
-	// HasFromTargetRef indicates that the policy can be applied to inbound traffic
+	// HasFromTargetRef is retained for REST compatibility with older clients and
+	// is no longer set by policy generators.
 	HasFromTargetRef bool
 	// HasRulesTargetRef indicates that the policy can be applied to inbound traffic
 	HasRulesTargetRef bool
@@ -257,8 +258,8 @@ type ResourceTypeDescriptor struct {
 	AllowedOnSystemNamespaceOnly bool
 	// ShortName a name that is used in kubectl or in the envoy configuration
 	ShortName string
-	// IsFromAsRules if true, the entries in the spec.from field should be interpreted as rules.
-	// It's true for policies that allow only kind 'Mesh' in the spec.from.targetRef.
+	// IsFromAsRules is retained for REST compatibility with older clients and is
+	// no longer set by policy generators.
 	IsFromAsRules bool
 	// Order defines the execution order of the associated plugin relative to others. It's used only when IsPluginOriginated is true.
 	// Lower values run first. Used by PolicyPlugins() to return a sorted list.
@@ -301,7 +302,7 @@ func (d ResourceTypeDescriptor) HasInsights() bool {
 }
 
 func (d ResourceTypeDescriptor) SupportsInbound() bool {
-	return d.HasFromTargetRef || d.HasRulesTargetRef
+	return d.HasRulesTargetRef
 }
 
 func (d ResourceTypeDescriptor) NewInsight() Resource {
@@ -689,11 +690,6 @@ type Policy interface {
 type PolicyWithToList interface {
 	Policy
 	GetToList() []PolicyItem
-}
-
-type PolicyWithFromList interface {
-	Policy
-	GetFromList() []PolicyItem
 }
 
 type PolicyWithSingleItem interface {

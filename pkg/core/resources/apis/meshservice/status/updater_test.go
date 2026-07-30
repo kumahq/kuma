@@ -152,7 +152,7 @@ var _ = Describe("Updater", func() {
 		}, "10s", "100ms").Should(Succeed())
 	})
 
-	It("should fall back to the workload label for identity when inbound tags are disabled", func() {
+	It("should fall back to the workload label for identity when inbound tags are absent", func() {
 		// when
 		Expect(builders.MeshService().
 			WithName("backend").

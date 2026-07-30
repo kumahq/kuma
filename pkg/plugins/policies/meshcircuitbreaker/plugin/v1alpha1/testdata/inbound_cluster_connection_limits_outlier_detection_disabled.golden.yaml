@@ -6,4 +6,4 @@ circuitBreakers:
     maxRequests: 4444
     maxRetries: 5555
     trackRemaining: true
-name: localhost:8080
+name: self_inbound_dp_80

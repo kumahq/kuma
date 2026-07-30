@@ -118,7 +118,7 @@ spec:
 				g.Expect(parseLogs(logs)).To(ContainElement(
 					And(
 						HaveField("Start", WithTransform(parseTimestamp, BeTemporally("~", time.Now(), time.Hour))),
-						HaveField("Source", fmt.Sprintf("%s-gateway-admin_%s_svc_8444", config.Mesh, config.Namespace)),
+						HaveField("Source", "gateway"),
 						HaveField("Destination", "test-server"),
 					),
 				))

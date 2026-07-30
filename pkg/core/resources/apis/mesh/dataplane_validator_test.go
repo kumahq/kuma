@@ -1477,7 +1477,7 @@ var _ = Describe("Dataplane", func() {
 	)
 
 	Describe("service tag requirement based on inbound tags presence", func() {
-		It("should allow dataplane with empty inbound tags (InboundTagsDisabled)", func() {
+		It("should allow dataplane with empty inbound tags (tag-free mode)", func() {
 			// setup
 			dataplane := core_mesh.NewDataplaneResource()
 
@@ -1520,7 +1520,7 @@ var _ = Describe("Dataplane", func() {
                   message: tag has to exist`))
 		})
 
-		It("should allow dataplane with empty gateway tags (InboundTagsDisabled)", func() {
+		It("should allow dataplane with empty gateway tags (tag-free mode)", func() {
 			dataplane := core_mesh.NewDataplaneResource()
 
 			// when

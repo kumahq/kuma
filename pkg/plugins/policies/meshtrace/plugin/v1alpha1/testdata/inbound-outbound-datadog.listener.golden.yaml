@@ -22,7 +22,7 @@ resources:
               prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
-          statPrefix: "127_0_0_1_17777"
+          statPrefix: self_inbound_dp_17777
           tracing:
             customTags:
             - literal:
@@ -35,12 +35,12 @@ resources:
               name: envoy.tracers.datadog
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
-                collectorCluster: meshtrace:datadog
+                collectorCluster: system_meshtrace_datadog_http---ingest-datadog-eu-8126
                 serviceName: backend_INBOUND
             randomSampling:
               value: 50
             spawnUpstreamSpan: false
-    name: inbound:127.0.0.1:17777
+    name: self_inbound_dp_17777
     trafficDirection: INBOUND
 - name: outbound
   resource:
@@ -64,7 +64,7 @@ resources:
               prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
-          statPrefix: "127_0_0_1_27777"
+          statPrefix: kri_msvc_default_zone-1_backend-ns_backend_80
           tracing:
             customTags:
             - literal:
@@ -77,10 +77,10 @@ resources:
               name: envoy.tracers.datadog
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
-                collectorCluster: meshtrace:datadog
-                serviceName: backend_OUTBOUND_other-service
+                collectorCluster: system_meshtrace_datadog_http---ingest-datadog-eu-8126
+                serviceName: backend_OUTBOUND_default_backend_backend-ns_zone-1_msvc_80
             randomSampling:
               value: 50
             spawnUpstreamSpan: false
-    name: outbound:127.0.0.1:27777
+    name: kri_msvc_default_zone-1_backend-ns_backend_80
     trafficDirection: OUTBOUND

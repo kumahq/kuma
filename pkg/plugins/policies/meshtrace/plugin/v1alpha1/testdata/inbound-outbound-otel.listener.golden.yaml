@@ -22,7 +22,7 @@ resources:
               prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
-          statPrefix: "127_0_0_1_17777"
+          statPrefix: self_inbound_dp_17777
           tracing:
             clientSampling:
               value: 20
@@ -51,12 +51,12 @@ resources:
                 '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
                 grpcService:
                   envoyGrpc:
-                    clusterName: meshtrace:opentelemetry
+                    clusterName: system_meshtrace_otel_otel-collector
                 serviceName: backend
             randomSampling:
               value: 50
             spawnUpstreamSpan: false
-    name: inbound:127.0.0.1:17777
+    name: self_inbound_dp_17777
     trafficDirection: INBOUND
 - name: outbound
   resource:
@@ -80,7 +80,7 @@ resources:
               prefixLen: 32
             - addressPrefix: ::1
               prefixLen: 128
-          statPrefix: "127_0_0_1_27777"
+          statPrefix: kri_msvc_default_zone-1_backend-ns_backend_80
           tracing:
             clientSampling:
               value: 20
@@ -109,10 +109,10 @@ resources:
                 '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
                 grpcService:
                   envoyGrpc:
-                    clusterName: meshtrace:opentelemetry
+                    clusterName: system_meshtrace_otel_otel-collector
                 serviceName: backend
             randomSampling:
               value: 50
             spawnUpstreamSpan: false
-    name: outbound:127.0.0.1:27777
+    name: kri_msvc_default_zone-1_backend-ns_backend_80
     trafficDirection: OUTBOUND

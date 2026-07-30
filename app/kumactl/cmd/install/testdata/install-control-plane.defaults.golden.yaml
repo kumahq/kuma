@@ -291,16 +291,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -381,16 +371,6 @@ spec:
                                         ref refers to a real MeshService object
                                       format: int32
                                       type: integer
-                                    proxyTypes:
-                                      description: |-
-                                        ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                                        all data plane types are targeted by the policy.
-                                      items:
-                                        enum:
-                                        - Sidecar
-                                        - Gateway
-                                        type: string
-                                      type: array
                                     sectionName:
                                       description: |-
                                         SectionName is used to target specific section of resource.
@@ -510,16 +490,6 @@ spec:
                                                 object
                                               format: int32
                                               type: integer
-                                            proxyTypes:
-                                              description: |-
-                                                ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                                                all data plane types are targeted by the policy.
-                                              items:
-                                                enum:
-                                                - Sidecar
-                                                - Gateway
-                                                type: string
-                                              type: array
                                             sectionName:
                                               description: |-
                                                 SectionName is used to target specific section of resource.
@@ -839,16 +809,6 @@ spec:
                             Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                             will be targeted.
                           type: string
-                        proxyTypes:
-                          description: |-
-                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                            all data plane types are targeted by the policy.
-                          items:
-                            enum:
-                            - Sidecar
-                            - Gateway
-                            type: string
-                          type: array
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -1305,16 +1265,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -1667,16 +1617,6 @@ spec:
                             Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                             will be targeted.
                           type: string
-                        proxyTypes:
-                          description: |-
-                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                            all data plane types are targeted by the policy.
-                          items:
-                            enum:
-                            - Sidecar
-                            - Gateway
-                            type: string
-                          type: array
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -1981,16 +1921,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -2618,16 +2548,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -3166,16 +3086,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -3462,16 +3372,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -3650,16 +3550,6 @@ spec:
                             Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                             will be targeted.
                           type: string
-                        proxyTypes:
-                          description: |-
-                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                            all data plane types are targeted by the policy.
-                          items:
-                            enum:
-                            - Sidecar
-                            - Gateway
-                            type: string
-                          type: array
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -3850,16 +3740,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -4237,16 +4117,6 @@ spec:
                             Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                             will be targeted.
                           type: string
-                        proxyTypes:
-                          description: |-
-                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                            all data plane types are targeted by the policy.
-                          items:
-                            enum:
-                            - Sidecar
-                            - Gateway
-                            type: string
-                          type: array
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -4601,16 +4471,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -4686,16 +4546,6 @@ spec:
                                         ref refers to a real MeshService object
                                       format: int32
                                       type: integer
-                                    proxyTypes:
-                                      description: |-
-                                        ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                                        all data plane types are targeted by the policy.
-                                      items:
-                                        enum:
-                                        - Sidecar
-                                        - Gateway
-                                        type: string
-                                      type: array
                                     sectionName:
                                       description: |-
                                         SectionName is used to target specific section of resource.
@@ -4760,16 +4610,6 @@ spec:
                             Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                             will be targeted.
                           type: string
-                        proxyTypes:
-                          description: |-
-                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                            all data plane types are targeted by the policy.
-                          items:
-                            enum:
-                            - Sidecar
-                            - Gateway
-                            type: string
-                          type: array
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -4994,16 +4834,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -5114,16 +4944,6 @@ spec:
                             Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                             will be targeted.
                           type: string
-                        proxyTypes:
-                          description: |-
-                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                            all data plane types are targeted by the policy.
-                          items:
-                            enum:
-                            - Sidecar
-                            - Gateway
-                            type: string
-                          type: array
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -5299,16 +5119,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -5603,16 +5413,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -5922,16 +5722,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -6983,16 +6773,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -7226,16 +7006,6 @@ spec:
                             Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                             will be targeted.
                           type: string
-                        proxyTypes:
-                          description: |-
-                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                            all data plane types are targeted by the policy.
-                          items:
-                            enum:
-                            - Sidecar
-                            - Gateway
-                            type: string
-                          type: array
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -7654,16 +7424,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -7971,16 +7731,6 @@ spec:
                             Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                             will be targeted.
                           type: string
-                        proxyTypes:
-                          description: |-
-                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                            all data plane types are targeted by the policy.
-                          items:
-                            enum:
-                            - Sidecar
-                            - Gateway
-                            type: string
-                          type: array
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -8633,16 +8383,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -8781,16 +8521,6 @@ spec:
                             Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                             will be targeted.
                           type: string
-                        proxyTypes:
-                          description: |-
-                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                            all data plane types are targeted by the policy.
-                          items:
-                            enum:
-                            - Sidecar
-                            - Gateway
-                            type: string
-                          type: array
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -8909,16 +8639,6 @@ spec:
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
                     type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    type: array
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -9176,16 +8896,6 @@ spec:
                             Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                             will be targeted.
                           type: string
-                        proxyTypes:
-                          description: |-
-                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                            all data plane types are targeted by the policy.
-                          items:
-                            enum:
-                            - Sidecar
-                            - Gateway
-                            type: string
-                          type: array
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.

@@ -300,7 +300,7 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(secrets.Info(mesh_proto.DataplaneProxyType, core_model.MetaToResourceKey(newDataplane().Meta))).To(BeNil())
 		})
 
-		Context("when inbound tags are disabled", func() {
+		Context("when inbound tags are absent", func() {
 			newTaglessDataplane := func(labels map[string]string) *core_mesh.DataplaneResource {
 				dp := newDataplane()
 				dp.Spec.Networking.Inbound[0].Tags = map[string]string{}

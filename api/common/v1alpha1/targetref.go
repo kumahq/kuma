@@ -3,10 +3,12 @@ package v1alpha1
 
 import (
 	"fmt"
-	"slices"
+	"maps"
 	"sort"
+	"strconv"
 	"strings"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -54,14 +56,6 @@ var order = map[TargetRefKind]int{
 	meshServiceSubset:    8,
 	MeshHTTPRoute:        9,
 }
-
-// +kubebuilder:validation:Enum=Sidecar;Gateway
-type TargetRefProxyType string
-
-var (
-	Sidecar TargetRefProxyType = "Sidecar"
-	Gateway TargetRefProxyType = "Gateway"
-)
 
 func (k TargetRefKind) Compare(o TargetRefKind) int {
 	return order[k] - order[o]
@@ -116,9 +110,6 @@ type TargetRef struct {
 	Tags *map[string]string `json:"tags,omitempty"`
 	// Mesh is reserved for future use to identify cross mesh resources.
 	Mesh *string `json:"mesh,omitempty"`
-	// ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-	// all data plane types are targeted by the policy.
-	ProxyTypes *[]TargetRefProxyType `json:"proxyTypes,omitempty"`
 	// Namespace specifies the namespace of target resource. If empty only resources in policy namespace
 	// will be targeted.
 	Namespace *string `json:"namespace,omitempty"`
@@ -157,13 +148,20 @@ func selectsLabels(tr TargetRef) bool {
 	return tr.Labels != nil
 }
 
+// IncludesGateways reports whether a policy attached with this targetRef could
+// apply to a Gateway-type dataplane (a delegated gateway is an ordinary
+// Dataplane from the CP's perspective, not a distinct kind). Kind: Mesh (and
+// the legacy MeshSubset) has no way to exclude gateways, so it always includes
+// them; Kind: Dataplane never distinguishes gateways from any other dataplane,
+// same as before proxyTypes existed (it was never a valid field on Kind:
+// Dataplane); MeshHTTPRoute is always gateway-routing.
 func IncludesGateways(ref TargetRef) bool {
-	isMeshKind := ref.Kind == Mesh || ref.Kind == meshSubset
-	isGatewayInProxyTypes := len(pointer.Deref(ref.ProxyTypes)) == 0 || slices.Contains(pointer.Deref(ref.ProxyTypes), Gateway)
-	isGatewayCompatible := isMeshKind && isGatewayInProxyTypes
-	isMeshHTTPRoute := ref.Kind == MeshHTTPRoute
-
-	return isGatewayCompatible || isMeshHTTPRoute
+	switch ref.Kind {
+	case Mesh, meshSubset, MeshHTTPRoute:
+		return true
+	default:
+		return false
+	}
 }
 
 // +kubebuilder:validation:Enum=MeshOpenTelemetryBackend
@@ -198,8 +196,8 @@ type BackendRef struct {
 
 func (b BackendRef) ReferencesRealObject() bool {
 	switch b.Kind {
-	case MeshService:
-		return pointer.Deref(b.SectionName) != "" || b.Port != nil
+	case MeshService, MeshExternalService, MeshMultiZoneService:
+		return true
 	case meshServiceSubset:
 		return false
 	// empty targetRef should not be treated as real object
@@ -216,8 +214,42 @@ type MatchesHash string
 
 type BackendRefHash string
 
+func (b BackendRef) RealResourceSelector(defaultNamespace string) (map[string]string, string, bool) {
+	if !b.ReferencesRealObject() {
+		return nil, "", false
+	}
+
+	labels, sectionName, ok := realResourceSelector(b.TargetRef, defaultNamespace)
+	if !ok {
+		return nil, "", false
+	}
+
+	if port := pointer.Deref(b.Port); port > 0 && sectionName == "" {
+		sectionName = fmt.Sprintf("%d", port)
+	}
+
+	return labels, sectionName, true
+}
+
 // Hash returns a hash of the BackendRef
 func (in BackendRef) Hash() BackendRefHash {
+	if in.ReferencesRealObject() {
+		labels, sectionName, _ := in.RealResourceSelector("")
+		keys := util_maps.SortedKeys(labels)
+		orderedLabels := make([]string, 0, len(labels))
+		for _, k := range keys {
+			orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, labels[k]))
+		}
+
+		return BackendRefHash(fmt.Sprintf(
+			"%s/%s/%d/%s",
+			in.Kind,
+			strings.Join(orderedLabels, "/"),
+			pointer.DerefOr(in.Port, 0),
+			sectionName,
+		))
+	}
+
 	keys := util_maps.SortedKeys(pointer.Deref(in.Tags))
 	orderedTags := make([]string, 0, len(keys))
 	for _, k := range keys {
@@ -235,4 +267,87 @@ func (in BackendRef) Hash() BackendRefHash {
 		name = pointer.To(fmt.Sprintf("%s_svc_%d", pointer.Deref(in.Name), *in.Port))
 	}
 	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, pointer.Deref(name), strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), pointer.Deref(in.Mesh)))
+}
+
+func realResourceSelector(ref TargetRef, defaultNamespace string) (map[string]string, string, bool) {
+	if len(pointer.Deref(ref.Labels)) > 0 {
+		return cloneStringMap(pointer.Deref(ref.Labels)), pointer.Deref(ref.SectionName), true
+	}
+
+	name := pointer.Deref(ref.Name)
+	if name == "" {
+		return nil, "", false
+	}
+
+	switch ref.Kind {
+	case MeshService:
+		if ref.Namespace == nil && pointer.Deref(ref.SectionName) == "" {
+			if serviceName, namespace, port, ok := parseMeshServiceName(name); ok {
+				labels := map[string]string{
+					mesh_proto.DisplayName:      serviceName,
+					mesh_proto.KubeNamespaceTag: namespace,
+				}
+				sectionName := ""
+				if port > 0 {
+					sectionName = fmt.Sprintf("%d", port)
+				}
+				return labels, sectionName, true
+			}
+		}
+
+		namespace := pointer.Deref(ref.Namespace)
+		if namespace == "" {
+			namespace = defaultNamespace
+		}
+
+		labels := map[string]string{
+			mesh_proto.DisplayName: name,
+		}
+		if namespace != "" {
+			labels[mesh_proto.KubeNamespaceTag] = namespace
+		}
+		return labels, pointer.Deref(ref.SectionName), true
+	case MeshExternalService, MeshMultiZoneService:
+		namespace := pointer.Deref(ref.Namespace)
+		if namespace == "" {
+			namespace = defaultNamespace
+		}
+
+		labels := map[string]string{
+			mesh_proto.DisplayName: name,
+		}
+		if namespace != "" {
+			labels[mesh_proto.KubeNamespaceTag] = namespace
+		}
+		return labels, pointer.Deref(ref.SectionName), true
+	default:
+		return nil, "", false
+	}
+}
+
+func parseMeshServiceName(name string) (string, string, int32, bool) {
+	segments := strings.Split(name, "_")
+
+	var port int32
+	switch len(segments) {
+	case 4:
+		p, err := strconv.ParseInt(segments[3], 10, 32)
+		if err != nil {
+			return "", "", 0, false
+		}
+		port = int32(p)
+	default:
+		return "", "", 0, false
+	}
+	if segments[2] != "svc" {
+		return "", "", 0, false
+	}
+
+	return segments[0], segments[1], port, true
+}
+
+func cloneStringMap(in map[string]string) map[string]string {
+	out := make(map[string]string, len(in))
+	maps.Copy(out, in)
+	return out
 }

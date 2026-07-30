@@ -3,7 +3,7 @@
     "self_inbound_dp_80": {
       "name": "self_inbound_dp_80",
       "type": "STATIC",
-      "connectTimeout": "10s",
+      "connectTimeout": "5s",
       "loadAssignment": {
         "clusterName": "self_inbound_dp_80",
         "endpoints": [

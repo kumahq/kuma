@@ -155,6 +155,9 @@ func parseService(host string) (string, string, int32, error) {
 	default:
 		return "", "", 0, errors.Errorf("service tag in unexpected format")
 	}
+	if segments[2] != "svc" {
+		return "", "", 0, errors.Errorf("service tag in unexpected format")
+	}
 
 	name, namespace := segments[0], segments[1]
 	return name, namespace, port, nil
