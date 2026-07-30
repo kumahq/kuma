@@ -86,8 +86,9 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 	for _, port := range servicePorts {
 		// The MeshService section name is the Service port name, falling back to
 		// the stringified port value for unnamed ports (see meshservice_controller).
-		// It must match how the MeshService is generated, otherwise the `to`
-		// target resolves by name only and never matches a named port.
+		// It must match how the MeshService is generated: a mismatched sectionName
+		// won't resolve to the intended port, so this `to` entry won't apply to
+		// traffic for that port.
 		sectionName := port.Name
 		if sectionName == "" {
 			sectionName = fmt.Sprintf("%d", port.Port)
