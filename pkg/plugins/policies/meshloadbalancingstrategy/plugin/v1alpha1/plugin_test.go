@@ -19,10 +19,8 @@ import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
@@ -1318,7 +1316,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(kri.WithSectionName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), uint32(27777)).String()).Build(),
 						},
 					},
 					{
@@ -1327,7 +1325,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(kri.WithSectionName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), uint32(27777)).String()).Build(),
 						},
 					},
 					{
@@ -1336,7 +1334,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-3"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(kri.WithSectionName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), uint32(27777)).String()).Build(),
 						},
 					},
 				}),
@@ -2180,20 +2178,13 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 				Port:     uint32(port),
 				Resource: serviceResourceKRI,
 			},
-			Protocol:            core_meta.ProtocolHTTP,
-			KumaServiceTagValue: serviceName(serviceResourceKRI, port),
+			Protocol: core_meta.ProtocolHTTP,
 		},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
-}
-
-func serviceName(id kri.Identifier, port int32) string {
-	desc, err := registry.Global().DescriptorFor(id.ResourceType)
-	Expect(err).ToNot(HaveOccurred())
-	return destinationname.ResolveLegacyFromKRI(id, desc.ShortName, port)
 }
 
 func contextWithEgressEnabled() xds_context.Context {

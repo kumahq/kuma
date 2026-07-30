@@ -63,7 +63,7 @@ func GenerateClusters(
 					// The destination advertises its SNI from the resolved port
 					// name, so normalize a numeric backend-ref section (named port
 					// targeted by number) to the port name before deriving the KRI SNI.
-					kriID := kri.WithSectionName(service.BackendRef().Resource(), port.GetName())
+					kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
 					if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
 						continue
 					}

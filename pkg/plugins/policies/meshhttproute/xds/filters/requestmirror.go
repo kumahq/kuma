@@ -7,28 +7,28 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 type RequestMirrorConfigurer struct {
-	requestMirror           api.RequestMirror
-	backendRefToClusterName map[common_api.BackendRefHash]string
+	requestMirror api.RequestMirror
+	split         envoy_common.Split
 }
 
-func NewRequestMirror(requestMirror api.RequestMirror, backendRefToClusterName map[common_api.BackendRefHash]string) *RequestMirrorConfigurer {
+func NewRequestMirror(requestMirror api.RequestMirror, split envoy_common.Split) *RequestMirrorConfigurer {
 	return &RequestMirrorConfigurer{
-		requestMirror:           requestMirror,
-		backendRefToClusterName: backendRefToClusterName,
+		requestMirror: requestMirror,
+		split:         split,
 	}
 }
 
 func (f *RequestMirrorConfigurer) Configure(envoyRoute *envoy_route.Route) error {
 	return UpdateRouteAction(envoyRoute, func(action *envoy_route.RouteAction) error {
-		clusterName, found := f.backendRefToClusterName[f.requestMirror.BackendRef.Hash()]
-		if !found {
-			// no cluster was created for the mirror backendRef, because it points
-			// to a destination that doesn't exist or doesn't speak HTTP, so there
-			// is nothing to mirror to
+		// no split means no cluster was created for the mirror backendRef, because
+		// it points to a destination that doesn't exist or doesn't speak HTTP, so
+		// there is nothing to mirror to
+		if f.split == nil {
 			return nil
 		}
 
@@ -46,7 +46,7 @@ func (f *RequestMirrorConfigurer) Configure(envoyRoute *envoy_route.Route) error
 
 		action.RequestMirrorPolicies = append(action.RequestMirrorPolicies, &envoy_route.RouteAction_RequestMirrorPolicy{
 			RuntimeFraction: runtimeFraction,
-			Cluster:         clusterName,
+			Cluster:         f.split.ClusterName(),
 		})
 		return nil
 	})

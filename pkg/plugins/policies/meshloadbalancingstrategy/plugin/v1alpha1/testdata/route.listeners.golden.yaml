@@ -36,7 +36,7 @@ resources:
                   path: /route-1
                 name: kri_mhttpr_default_zone-1_ns-1_route-1_
                 route:
-                  cluster: default_ms-1_ns-1_zone-1_msvc_27777
+                  cluster: kri_msvc_default_zone-1_ns-1_ms-1_27777
                   hashPolicy:
                   - header:
                       headerName: x-per-meshservice-header
@@ -45,7 +45,7 @@ resources:
                   prefix: /route-1/
                 name: kri_mhttpr_default_zone-1_ns-1_route-1_
                 route:
-                  cluster: default_ms-1_ns-1_zone-1_msvc_27777
+                  cluster: kri_msvc_default_zone-1_ns-1_ms-1_27777
                   hashPolicy:
                   - header:
                       headerName: x-per-meshservice-header
@@ -54,7 +54,7 @@ resources:
                   path: /route-2
                 name: kri_mhttpr_default_zone-1_ns-1_route-2_
                 route:
-                  cluster: default_ms-1_ns-1_zone-1_msvc_27777
+                  cluster: kri_msvc_default_zone-1_ns-1_ms-1_27777
                   hashPolicy:
                   - header:
                       headerName: x-per-meshservice-header
@@ -63,7 +63,7 @@ resources:
                   prefix: /route-2/
                 name: kri_mhttpr_default_zone-1_ns-1_route-2_
                 route:
-                  cluster: default_ms-1_ns-1_zone-1_msvc_27777
+                  cluster: kri_msvc_default_zone-1_ns-1_ms-1_27777
                   hashPolicy:
                   - header:
                       headerName: x-per-meshservice-header
@@ -72,7 +72,7 @@ resources:
                   path: /route-3
                 name: kri_mhttpr_default_zone-1_ns-1_route-3_
                 route:
-                  cluster: default_ms-1_ns-1_zone-1_msvc_27777
+                  cluster: kri_msvc_default_zone-1_ns-1_ms-1_27777
                   hashPolicy:
                   - header:
                       headerName: x-per-meshhttproute-route-3
@@ -81,7 +81,7 @@ resources:
                   prefix: /route-3/
                 name: kri_mhttpr_default_zone-1_ns-1_route-3_
                 route:
-                  cluster: default_ms-1_ns-1_zone-1_msvc_27777
+                  cluster: kri_msvc_default_zone-1_ns-1_ms-1_27777
                   hashPolicy:
                   - header:
                       headerName: x-per-meshhttproute-route-3

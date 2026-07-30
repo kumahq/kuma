@@ -36,4 +36,4 @@ healthChecks:
   reuseConnection: true
   timeout: 2s
   unhealthyThreshold: 3
-name: echo-http-_0_
+name: kri_msvc_default___echo-http_80-_0_
