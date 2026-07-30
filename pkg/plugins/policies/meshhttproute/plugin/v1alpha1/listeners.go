@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
 
@@ -104,30 +105,13 @@ func generateFromService(
 		if len(split) == 0 {
 			continue
 		}
-		for _, filter := range route.Filters {
-			if filter.Type == api.RequestMirrorType {
-				// we need to create a split for the mirror backend
-				if ref, ok := resolve.BackendRef(route.Origin, filter.RequestMirror.BackendRef, meshCtx.ResolveResourceIdentifier); ok {
-					_ = meshroute_xds.MakeHTTPSplit(
-						clusterCache,
-						servicesAcc,
-						[]resolve.ResolvedBackendRef{ref},
-						meshCtx,
-					)
-					if ref.ReferencesRealResource() {
-						if clusterName, found := clusterCache[common_api.BackendRefHash(ref.Resource().String())]; found {
-							clusterCache[filter.RequestMirror.BackendRef.Hash()] = clusterName
-						}
-					}
-				}
-			}
-		}
+		backendRefToClusterName := backendRefToClusterNameForRoute(clusterCache, servicesAcc, route, meshCtx)
 		routes = append(routes, xds.OutboundRoute{
 			Name:                    route.Name,
 			Match:                   route.Match,
 			Filters:                 route.Filters,
 			Split:                   split,
-			BackendRefToClusterName: clusterCache,
+			BackendRefToClusterName: backendRefToClusterName,
 		})
 	}
 
@@ -175,6 +159,47 @@ func generateListeners(
 	}
 
 	return resources, nil
+}
+
+func backendRefToClusterNameForRoute(
+	clusterCache map[common_api.BackendRefHash]string,
+	servicesAcc envoy_common.ServicesAccumulator,
+	route api.Route,
+	meshCtx xds_context.MeshContext,
+) map[common_api.BackendRefHash]string {
+	backendRefToClusterName := maps.Clone(clusterCache)
+
+	for _, filter := range route.Filters {
+		if filter.Type != api.RequestMirrorType || filter.RequestMirror == nil {
+			continue
+		}
+
+		// We need to create a split for the mirror backend.
+		ref, ok := resolve.BackendRef(route.Origin, filter.RequestMirror.BackendRef, meshCtx.ResolveResourceIdentifier)
+		if !ok {
+			continue
+		}
+		_ = meshroute_xds.MakeHTTPSplit(
+			clusterCache,
+			servicesAcc,
+			[]resolve.ResolvedBackendRef{ref},
+			meshCtx,
+		)
+		maps.Copy(backendRefToClusterName, clusterCache)
+
+		if clusterName, found := clusterCache[resolvedBackendRefHash(ref)]; found {
+			backendRefToClusterName[filter.RequestMirror.BackendRef.Hash()] = clusterName
+		}
+	}
+
+	return backendRefToClusterName
+}
+
+func resolvedBackendRefHash(ref resolve.ResolvedBackendRef) common_api.BackendRefHash {
+	if ref.ReferencesRealResource() {
+		return common_api.BackendRefHash(ref.Resource().String())
+	}
+	return common_api.BackendRef(*ref.LegacyBackendRef()).Hash()
 }
 
 func ComputeHTTPRouteConf(
