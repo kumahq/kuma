@@ -35,5 +35,6 @@ healthChecks:
   noTrafficInterval: 16s
   reuseConnection: true
   timeout: 2s
+  unhealthyInterval: 5s
   unhealthyThreshold: 3
 name: echo-http-_0_

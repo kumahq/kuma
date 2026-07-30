@@ -155,6 +155,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Interval:                     test.ParseDuration("10s"),
+							UnhealthyInterval:            test.ParseDuration("5s"),
 							Timeout:                      test.ParseDuration("2s"),
 							UnhealthyThreshold:           pointer.To[int32](3),
 							HealthyThreshold:             pointer.To[int32](1),
