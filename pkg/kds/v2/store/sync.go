@@ -104,12 +104,11 @@ func PrefilterBy(predicate func(r core_model.Resource) bool) SyncOptionFunc {
 }
 
 type syncResourceStore struct {
-	log             logr.Logger
-	resourceStore   store.ResourceStore
-	transactions    store.Transactions
-	metric          prometheus.Histogram
-	conflictRetries prometheus.Counter
-	extensions      context.Context
+	log           logr.Logger
+	resourceStore store.ResourceStore
+	transactions  store.Transactions
+	metric        prometheus.Histogram
+	extensions    context.Context
 }
 
 func NewResourceSyncer(
@@ -126,20 +125,12 @@ func NewResourceSyncer(
 	if err := metrics.Register(metric); err != nil {
 		return nil, err
 	}
-	conflictRetries := prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "kds_resources_sync_conflict_retries",
-		Help: "Number of times syncing a resource from the upstream was retried after losing a write conflict",
-	})
-	if err := metrics.Register(conflictRetries); err != nil {
-		return nil, err
-	}
 	return &syncResourceStore{
-		log:             log,
-		resourceStore:   resourceStore,
-		transactions:    transactions,
-		metric:          metric,
-		conflictRetries: conflictRetries,
-		extensions:      extensions,
+		log:           log,
+		resourceStore: resourceStore,
+		transactions:  transactions,
+		metric:        metric,
+		extensions:    extensions,
 	}, nil
 }
 
@@ -346,7 +337,6 @@ func (s *syncResourceStore) retryConflictedUpdates(ctx context.Context, pending 
 	backoff := retry.WithMaxRetries(updateConflictRetries, retry.WithFullJitter(retry.NewConstant(updateConflictBackoff)))
 	err := retry.Do(ctx, backoff, func(ctx context.Context) error {
 		for _, upd := range pending {
-			s.conflictRetries.Inc()
 			log.Info("resource was modified in another place while syncing, retrying with a fresh copy",
 				"name", upd.r.GetMeta().GetName(), "mesh", upd.r.GetMeta().GetMesh())
 			if err := s.refreshForUpdate(ctx, upd, opts); err != nil {
