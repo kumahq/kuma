@@ -3,7 +3,6 @@ package filters
 import (
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -27,8 +26,10 @@ func (f *RequestMirrorConfigurer) Configure(envoyRoute *envoy_route.Route) error
 	return UpdateRouteAction(envoyRoute, func(action *envoy_route.RouteAction) error {
 		clusterName, found := f.backendRefToClusterName[f.requestMirror.BackendRef.Hash()]
 		if !found {
-			// this should never happen because we create clusters for all backendRefs
-			return errors.Errorf("could not find cluster for backendRef %s", f.requestMirror.BackendRef.Hash())
+			// no cluster was created for the mirror backendRef, because it points
+			// to a destination that doesn't exist or doesn't speak HTTP, so there
+			// is nothing to mirror to
+			return nil
 		}
 
 		var runtimeFraction *envoy_config_core.RuntimeFractionalPercent
