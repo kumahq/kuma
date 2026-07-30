@@ -29,8 +29,6 @@ func ProducerPolicyFlow() {
 	const k8sZoneNamespace = "producer-policy-flow-ns"
 	const identityName = "producer-policy-flow-identity"
 
-	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
-	// mesh scoped, so every zone of the mesh needs its own.
 	zoneIngress := func() InstallFunc {
 		return zoneproxy.Install(
 			zoneproxy.WithMesh(mesh),
@@ -90,8 +88,6 @@ func ProducerPolicyFlow() {
 			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
 
-		// Every zone mints its own CA from the MeshIdentity, so each one has to
-		// be told about the others before cross-zone mTLS can be established.
 		Expect(DistributeMeshTrusts(multizone.Global, mesh, identityName, zones...)).To(Succeed())
 	})
 

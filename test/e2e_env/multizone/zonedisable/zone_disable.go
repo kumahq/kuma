@@ -23,8 +23,6 @@ func ZoneDisable() {
 	const clusterName3 = "kuma-disable3"
 	var global, zone1, zone2 Cluster
 
-	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
-	// mesh scoped, so every zone of the mesh needs its own.
 	zoneIngress := func() InstallFunc {
 		return zoneproxy.Install(
 			zoneproxy.WithMesh(nonDefaultMesh),
@@ -130,8 +128,6 @@ spec:
 			MeshIdentityTrustDomain(nonDefaultMesh, zone2),
 		)(global)).To(Succeed())
 
-		// Every zone mints its own CA from the MeshIdentity, so each one has to
-		// be told about the others before cross-zone mTLS can be established.
 		Expect(DistributeMeshTrusts(global, nonDefaultMesh, identityName, zone1, zone2)).To(Succeed())
 	})
 

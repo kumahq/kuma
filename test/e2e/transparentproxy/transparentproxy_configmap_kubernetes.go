@@ -41,8 +41,6 @@ func TransparentProxyConfigMap() {
 		Expect(NewClusterSetup().
 			Install(MeshKubernetes(meshName)).
 			Install(MeshIdentityBundledKubernetes(meshName, "identity-"+meshName)).
-			// A standalone zone CP has no Global to name it, so it resolves
-			// {{ .Zone }} to "default".
 			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName,
 				fmt.Sprintf("%s.default.mesh.local", meshName))).
 			Install(NamespaceWithSidecarInjection(namespace)).

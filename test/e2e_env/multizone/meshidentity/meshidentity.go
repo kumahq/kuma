@@ -25,8 +25,6 @@ func Identity() {
 	namespace := "meshidentity"
 	meshName := "meshidentity"
 
-	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
-	// mesh scoped, so every zone of the mesh needs its own.
 	zoneIngress := func() InstallFunc {
 		return zoneproxy.Install(
 			zoneproxy.WithMesh(meshName),

@@ -51,9 +51,6 @@ func Connectivity() {
 	ingressApp := zoneproxy.IngressName(meshName)
 	egressApp := zoneproxy.EgressName(meshName)
 
-	// zoneProxies deploys the ingress and egress of the mesh in a zone. Zone
-	// proxies are mesh scoped, so the ones the environment installs do not
-	// carry this mesh and every zone of the mesh needs its own.
 	zoneProxies := func(opts ...zoneproxy.DeploymentOptsFn) InstallFunc {
 		return zoneproxy.Install(append([]zoneproxy.DeploymentOptsFn{zoneproxy.WithMesh(meshName)}, opts...)...)
 	}
@@ -174,8 +171,6 @@ spec:
 `, Config.KumaNamespace, meshName, externalNamespace))).
 			Setup(multizone.KubeZone1)).To(Succeed())
 
-		// Every zone mints its own CA from the MeshIdentity, so each one has to
-		// be told about the others before cross-zone mTLS can be established.
 		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 

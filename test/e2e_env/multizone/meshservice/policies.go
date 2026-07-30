@@ -111,8 +111,6 @@ spec:
 			)).Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Every zone mints its own CA from the MeshIdentity, so each one has to
-		// be told about the others before cross-zone mTLS can be established.
 		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 
 		// remove default retry policy

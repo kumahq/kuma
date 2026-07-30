@@ -84,8 +84,6 @@ func ZoneIngress() {
 			SetupInGroup(multizone.UniZone2, &group)
 		Expect(group.Wait()).To(Succeed())
 
-		// Every zone mints its own CA from the MeshIdentity, so each one has to
-		// be told about the others before cross-zone mTLS can be established.
 		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 

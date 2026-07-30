@@ -53,11 +53,6 @@ func ZoneWithHelmChartAndUniversalGlobal() {
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithGlobalAddress(global.GetKDSServerAddress()),
-				// Zone proxies are mesh scoped, so the ingress comes from the
-				// chart's 'meshes' list rather than the legacy top-level
-				// 'ingress' section. Helm replaces lists instead of merging
-				// them, so the mesh name has to be repeated here or the chart
-				// fails on a nameless entry.
 				WithHelmOpt("meshes[0].name", "default"),
 				WithHelmOpt("meshes[0].ingress.enabled", "true"),
 				// The chart defaults the ingress Service to LoadBalancer, which

@@ -21,8 +21,6 @@ func ReachableBackends() {
 	namespaceOutside := "reachable-backends-non-mesh"
 	identityName := "reachable-backends-identity"
 
-	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
-	// mesh scoped, so every zone of the mesh needs its own.
 	zoneIngress := func() InstallFunc {
 		return zoneproxy.Install(
 			zoneproxy.WithMesh(meshName),
@@ -31,9 +29,6 @@ func ReachableBackends() {
 		)
 	}
 
-	// zoneProxies also deploys the egress. A MeshIdentity proxy reaches a
-	// MeshExternalService only through a mesh-scoped egress, so the zone the
-	// clients live in needs one.
 	zoneProxies := func() InstallFunc {
 		return zoneproxy.Install(
 			zoneproxy.WithMesh(meshName),
@@ -233,8 +228,6 @@ spec:
 			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
 
-		// Every zone mints its own CA from the MeshIdentity, so each one has to
-		// be told about the others before cross-zone mTLS can be established.
 		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 

@@ -90,10 +90,6 @@ func UpgradingZoneWithHelmChart() {
 					WithHelmReleaseName(releaseName),
 					WithHelmChartVersion(version),
 					WithGlobalAddress(globalCP.GetKDSServerAddress()),
-					// Zone proxies are mesh scoped in every version this test
-					// upgrades from, so the ingress comes from the chart's
-					// 'meshes' list. Helm replaces lists instead of merging
-					// them, hence the repeated mesh name.
 					WithHelmOpt("meshes[0].name", "default"),
 					WithHelmOpt("meshes[0].ingress.enabled", "true"),
 					// The chart defaults the ingress Service to LoadBalancer,
@@ -231,10 +227,6 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(policiesGlobal).To(And(Equal(policiesUniversalZone), Equal(policiesK8sZone), Equal(5)))
 
-				// Dpps don't get copied to other zones, so each zone only sees
-				// its own: the test server plus the mesh zone ingress on the
-				// Kubernetes zone, and the mesh zone ingress on the Universal
-				// one. Global collects all three.
 				dppsK8sZone, err := NumberOfResources(zoneK8s, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(dppsK8sZone).To(Equal(2))

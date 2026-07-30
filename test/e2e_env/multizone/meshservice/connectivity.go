@@ -30,9 +30,6 @@ func Connectivity() {
 
 	var autoGenerateUniversalCluster *UniversalCluster
 
-	// zoneIngress deploys the ingress of the mesh in a zone. Zone proxies are
-	// mesh scoped, so the ingress the environment installs does not carry this
-	// mesh and every zone of the mesh needs its own.
 	zoneIngress := func() InstallFunc {
 		return zoneproxy.Install(
 			zoneproxy.WithMesh(meshName),
@@ -190,8 +187,6 @@ spec:
 
 		Expect(group.Wait()).To(Succeed())
 
-		// Every zone mints its own CA from the MeshIdentity, so each one has to
-		// be told about the others before cross-zone mTLS can be established.
 		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 
 		Expect(multizone.KubeZone1.WaitApp("statefulset-test-server", namespace, 1)).To(Succeed())
