@@ -170,6 +170,40 @@ var _ = Describe("DestinationIndex", func() {
 			Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(ms), "8080")))
 		})
 
+		It("should resolve user-defined outbound legacy MeshService name forms through derived labels", func() {
+			ms := builders.MeshService().
+				WithName("backend-svc-hash654").
+				WithLabels(map[string]string{
+					mesh_proto.DisplayName:      "backend-svc",
+					mesh_proto.KubeNamespaceTag: "other-ns",
+					mesh_proto.ZoneTag:          "zone-1",
+				}).
+				AddIntPort(8080, 8080, metadata.ProtocolHTTP).
+				Build()
+
+			dp := builders.Dataplane().
+				WithName("dp-1").
+				WithLabels(map[string]string{
+					mesh_proto.KubeNamespaceTag: "default",
+					mesh_proto.ZoneTag:          "zone-1",
+				}).
+				WithAddress("127.0.0.1").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+				AddOutbound(
+					builders.Outbound().
+						WithPort(10001).
+						WithMeshService("backend-svc_other-ns_svc_8080", 8080),
+				).
+				Build()
+
+			index := xds_context.NewDestinationIndex([]core_model.Resource{ms})
+			outbounds, matched := index.GetReachableBackends(dp)
+
+			Expect(matched).To(BeTrue())
+			Expect(outbounds).To(HaveLen(1))
+			Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(ms), "8080")))
+		})
+
 		It("should not resolve when namespace does not match", func() {
 			ms := builders.MeshService().
 				WithName("backend-svc-hash789").

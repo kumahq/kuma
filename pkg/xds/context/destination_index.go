@@ -49,11 +49,16 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 	networking := dataplane.Spec.GetNetworking()
 
 	processRef := func(kind string, name string, namespace string, port *uint32, labels map[string]string) {
+		var targetNamespace *string
+		if namespace != "" {
+			targetNamespace = &namespace
+		}
+
 		selectorLabels, sectionName, ok := common_api.BackendRef{
 			TargetRef: common_api.TargetRef{
 				Kind:      common_api.TargetRefKind(kind),
 				Name:      &name,
-				Namespace: &namespace,
+				Namespace: targetNamespace,
 				Labels:    &labels,
 			},
 			Port: port,
