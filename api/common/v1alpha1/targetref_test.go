@@ -224,6 +224,34 @@ func TestBackendRefRealResourceSelectorKeepsExplicitSectionNameOverPort(t *testi
 	}
 }
 
+func TestBackendRefRealResourceSelectorTreatsPlainUnderscoreMeshServiceNamesAsNames(t *testing.T) {
+	t.Parallel()
+
+	ref := BackendRef{
+		TargetRef: TargetRef{
+			Kind:      MeshService,
+			Name:      pointer.To("web_app_prod"),
+			Namespace: pointer.To("team-a"),
+		},
+	}
+
+	labels, sectionName, ok := ref.RealResourceSelector("default")
+	if !ok {
+		t.Fatal("RealResourceSelector() returned ok=false")
+	}
+	if sectionName != "" {
+		t.Fatalf("RealResourceSelector() sectionName = %q, want empty", sectionName)
+	}
+
+	expectedLabels := map[string]string{
+		mesh_proto.DisplayName:      "web_app_prod",
+		mesh_proto.KubeNamespaceTag: "team-a",
+	}
+	if !reflect.DeepEqual(labels, expectedLabels) {
+		t.Fatalf("RealResourceSelector() labels = %v, want %v", labels, expectedLabels)
+	}
+}
+
 func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
 	t.Parallel()
 

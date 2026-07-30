@@ -50,7 +50,7 @@ func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelR
 func shouldFallbackToLegacyMeshService(br common_api.BackendRef) bool {
 	return br.Kind == common_api.MeshService &&
 		br.Name != nil && *br.Name != "" &&
-		br.Labels == nil &&
+		len(pointer.Deref(br.Labels)) == 0 &&
 		br.Namespace == nil &&
 		br.SectionName == nil &&
 		br.Port == nil

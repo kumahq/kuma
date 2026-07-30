@@ -340,6 +340,9 @@ func parseMeshServiceName(name string) (string, string, int32, bool) {
 	default:
 		return "", "", 0, false
 	}
+	if segments[2] != "svc" {
+		return "", "", 0, false
+	}
 
 	return segments[0], segments[1], port, true
 }

@@ -95,6 +95,31 @@ var _ = Describe("Resolve BackendRef", func() {
 		Expect(resolved.Resource()).To(Equal(expected))
 	})
 
+	It("should treat plain underscore MeshService names as literal real-resource names", func() {
+		origin := kri.Identifier{Mesh: "mesh-1", Namespace: "default"}
+		expected := kri.Identifier{ResourceType: core_model.ResourceType(common_api.MeshService), Mesh: "mesh-1", Name: "web_app_prod"}
+
+		var capturedLabels map[string]string
+		resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind:      common_api.MeshService,
+				Name:      pointer.To("web_app_prod"),
+				Namespace: pointer.To("team-a"),
+			},
+		}, func(_ core_model.ResourceType, gotLabels map[string]string) kri.Identifier {
+			capturedLabels = gotLabels
+			return expected
+		})
+
+		Expect(ok).To(BeTrue())
+		Expect(capturedLabels).To(Equal(map[string]string{
+			mesh_proto.DisplayName:      "web_app_prod",
+			mesh_proto.KubeNamespaceTag: "team-a",
+		}))
+		Expect(resolved.ReferencesRealResource()).To(BeTrue())
+		Expect(resolved.Resource()).To(Equal(expected))
+	})
+
 	It("should fall back to a legacy MeshService backendRef when a plain name does not resolve to a real resource", func() {
 		origin := kri.Identifier{Mesh: "mesh-1", Namespace: "kuma-demo"}
 
@@ -119,6 +144,31 @@ var _ = Describe("Resolve BackendRef", func() {
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
 				Name: pointer.To("payments"),
+			},
+		}))
+	})
+
+	It("should fall back to a legacy MeshService backendRef when empty labels do not resolve to a real resource", func() {
+		origin := kri.Identifier{Mesh: "mesh-1", Namespace: "kuma-demo"}
+
+		labels := map[string]string{}
+		resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind:   common_api.MeshService,
+				Name:   pointer.To("payments"),
+				Labels: pointer.To(labels),
+			},
+		}, func(_ core_model.ResourceType, _ map[string]string) kri.Identifier {
+			return kri.Identifier{}
+		})
+
+		Expect(ok).To(BeTrue())
+		Expect(resolved.ReferencesRealResource()).To(BeFalse())
+		Expect(resolved.LegacyBackendRef()).To(Equal(&resolve.LegacyBackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind:   common_api.MeshService,
+				Name:   pointer.To("payments"),
+				Labels: pointer.To(labels),
 			},
 		}))
 	})
