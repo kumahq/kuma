@@ -3,6 +3,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"maps"
 	"sort"
 	"strconv"
 	"strings"
@@ -347,8 +348,6 @@ func parseMeshServiceName(name string) (string, string, int32, bool) {
 
 func cloneStringMap(in map[string]string) map[string]string {
 	out := make(map[string]string, len(in))
-	for k, v := range in {
-		out[k] = v
-	}
+	maps.Copy(out, in)
 	return out
 }

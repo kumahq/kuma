@@ -1,6 +1,7 @@
 package context
 
 import (
+	"maps"
 	"time"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
@@ -203,9 +204,7 @@ func destinationIndexLabels(meta core_model.ResourceMeta) map[string]string {
 	}
 
 	labels := map[string]string{}
-	for k, v := range meta.GetLabels() {
-		labels[k] = v
-	}
+	maps.Copy(labels, meta.GetLabels())
 	if labels[mesh_proto.DisplayName] == "" {
 		labels[mesh_proto.DisplayName] = core_model.GetDisplayName(meta)
 	}
