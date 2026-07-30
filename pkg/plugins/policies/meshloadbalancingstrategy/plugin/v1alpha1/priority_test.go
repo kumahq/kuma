@@ -11,7 +11,7 @@ import (
 )
 
 var _ = Describe("GetLocalityGroups()", func() {
-	Describe("label fallback when inbound tags are disabled", func() {
+	Describe("label fallback when inbound tags are absent", func() {
 		It("should build local lb groups from pod labels when inbound tags are absent", func() {
 			// given: configuration with a single affinity tag
 			conf := &api.Conf{

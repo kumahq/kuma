@@ -28,11 +28,15 @@ var _ = Describe("InboundIdentifyingName", func() {
 	newDP := func(meta test_model.ResourceMeta, serviceTag string) *DataplaneResource {
 		dp := NewDataplaneResource()
 		dp.Meta = &meta
+		tags := map[string]string{}
+		if serviceTag != "" {
+			tags[mesh_proto.ServiceTag] = serviceTag
+		}
 		dp.Spec.Networking = &mesh_proto.Dataplane_Networking{
 			Address: "127.0.0.1",
 			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 				Port: 8080,
-				Tags: map[string]string{mesh_proto.ServiceTag: serviceTag},
+				Tags: tags,
 			}},
 		}
 		return dp
@@ -41,7 +45,8 @@ var _ = Describe("InboundIdentifyingName", func() {
 	DescribeTable("should return correct inbound identifying name",
 		func(given testCase) {
 			dp := newDP(given.meta, given.serviceTag)
-			Expect(dp.InboundIdentifyingName(given.portName)).To(Equal(given.expected))
+			dp.Spec.Networking.Inbound[0].Name = given.portName
+			Expect(dp.InboundIdentifyingName(dp.Spec.Networking.Inbound[0])).To(Equal(given.expected))
 		},
 		Entry("returns dataplane KRI with sectionName when port named", testCase{
 			meta: test_model.ResourceMeta{

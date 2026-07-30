@@ -156,10 +156,10 @@ func (d *DataplaneResource) hash(includeVersion bool) []byte {
 	return hasher.Sum(nil)
 }
 
-// InboundIdentifyingName returns a dataplane KRI with portName as section name,
-// falling back to IdentifyingName.
-func (d *DataplaneResource) InboundIdentifyingName(portName string) string {
-	if portName != "" {
+// InboundIdentifyingName returns a dataplane KRI with the inbound name as
+// section name, falling back to IdentifyingName.
+func (d *DataplaneResource) InboundIdentifyingName(inbound *mesh_proto.Dataplane_Networking_Inbound) string {
+	if portName := inbound.GetName(); portName != "" {
 		id := kri.WithSectionName(kri.FromResourceMeta(d.GetMeta(), DataplaneType), portName)
 		if !id.IsEmpty() {
 			return id.String()
