@@ -178,7 +178,7 @@ func DppSelectedByPolicy(
 		}
 		return []core_rules.InboundListener{}, false, nil
 	case common_api.MeshHTTPRoute:
-		mhrs := resolveMeshHTTPRouteRef(ref, referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
+		mhrs := resolveMeshHTTPRouteRef(meta, ref, referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
 		if len(mhrs) == 0 {
 			return nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with labels %v", pointer.Deref(ref.Labels))
 		}
@@ -267,7 +267,7 @@ func dppSelectedByZone(policyMeta core_model.ResourceMeta, dpp *core_mesh.Datapl
 	}
 }
 
-func resolveMeshHTTPRouteRef(ref common_api.TargetRef, mhrs core_model.ResourceList) []*meshhttproute_api.MeshHTTPRouteResource {
+func resolveMeshHTTPRouteRef(policyMeta core_model.ResourceMeta, ref common_api.TargetRef, mhrs core_model.ResourceList) []*meshhttproute_api.MeshHTTPRouteResource {
 	if len(pointer.Deref(ref.Labels)) == 0 {
 		return nil
 	}
@@ -276,11 +276,34 @@ func resolveMeshHTTPRouteRef(ref common_api.TargetRef, mhrs core_model.ResourceL
 	var matches []*meshhttproute_api.MeshHTTPRouteResource
 	for _, item := range mhrs.GetItems() {
 		routeLabels := subsetutils.NewSubset(item.GetMeta().GetLabels())
-		if refLabels.IsSubset(routeLabels) {
-			matches = append(matches, item.(*meshhttproute_api.MeshHTTPRouteResource))
+		if !refLabels.IsSubset(routeLabels) {
+			continue
 		}
+		// A label subset can match routes that share the same labels
+		// (e.g. kuma.io/display-name) across namespaces. Namespaced
+		// policies must only expand routes from their own namespace,
+		// otherwise route-derived config leaks across namespaces.
+		if !policySelectsResourceByNamespace(policyMeta, item.GetMeta()) {
+			continue
+		}
+		matches = append(matches, item.(*meshhttproute_api.MeshHTTPRouteResource))
 	}
 	return matches
+}
+
+// policySelectsResourceByNamespace reports whether a policy may reference a
+// resource living in the given namespace. Consumer and workload-owner policies
+// are namespaced, so they can only reference resources from their own
+// namespace; producer/system policies are namespace-agnostic. Mirrors the
+// equivalent check applied when building To rules.
+func policySelectsResourceByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) bool {
+	switch core_model.PolicyRole(policyMeta) {
+	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
+		ns, ok := policyMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
+		return ok && ns == resourceMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
+	default:
+		return true
+	}
 }
 
 // allInboundListeners returns every inbound of the dataplane as an InboundListener
