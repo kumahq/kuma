@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -317,15 +316,13 @@ func configureInboundPassthroughListener(
 		proxy.WorkloadIdentity,
 		caBackend,
 	)
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
-	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
 	address := metadata.TransparentAllIPv4
-	inboundName := nameOrDefault(naming.ContextualTransparentProxyName("inbound", 4), metadata.TransparentInboundNameIPv4)
+	inboundName := naming.ContextualTransparentProxyName("inbound", 4)
 	if ipv6 {
-		inboundName = nameOrDefault(naming.ContextualTransparentProxyName("inbound", 6), metadata.TransparentInboundNameIPv6)
+		inboundName = naming.ContextualTransparentProxyName("inbound", 6)
 		address = metadata.TransparentAllIPv6
 	}
-	statPrefix := nameOrDefault(inboundName, "")
+	statPrefix := inboundName
 	switch tlsMode {
 	case api.ModeStrict:
 		return generator.CreateInboundPassthroughListener(

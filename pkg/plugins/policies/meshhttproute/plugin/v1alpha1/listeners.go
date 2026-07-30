@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
 
@@ -177,6 +178,47 @@ func generateListeners(
 	return resources, nil
 }
 
+func backendRefToClusterNameForRoute(
+	clusterCache map[common_api.BackendRefHash]string,
+	servicesAcc envoy_common.ServicesAccumulator,
+	route api.Route,
+	meshCtx xds_context.MeshContext,
+) map[common_api.BackendRefHash]string {
+	backendRefToClusterName := maps.Clone(clusterCache)
+
+	for _, filter := range route.Filters {
+		if filter.Type != api.RequestMirrorType || filter.RequestMirror == nil {
+			continue
+		}
+
+		// We need to create a split for the mirror backend.
+		ref, ok := resolve.BackendRef(route.Origin, filter.RequestMirror.BackendRef, meshCtx.ResolveResourceIdentifier)
+		if !ok {
+			continue
+		}
+		_ = meshroute_xds.MakeHTTPSplit(
+			clusterCache,
+			servicesAcc,
+			[]resolve.ResolvedBackendRef{ref},
+			meshCtx,
+		)
+		maps.Copy(backendRefToClusterName, clusterCache)
+
+		if clusterName, found := clusterCache[resolvedBackendRefHash(ref)]; found {
+			backendRefToClusterName[filter.RequestMirror.BackendRef.Hash()] = clusterName
+		}
+	}
+
+	return backendRefToClusterName
+}
+
+func resolvedBackendRefHash(ref resolve.ResolvedBackendRef) common_api.BackendRefHash {
+	if ref.ReferencesRealResource() {
+		return common_api.BackendRefHash(ref.Resource().String())
+	}
+	return common_api.BackendRef(*ref.LegacyBackendRef()).Hash()
+}
+
 func ComputeHTTPRouteConf(
 	toRules rules.ToRules,
 	svc meshroute_xds.DestinationService,
@@ -258,6 +300,7 @@ func prepareRoutes(
 				routes,
 				api.Route{
 					Name:              routeName,
+          Origin:            originID,
 					Match:             match,
 					Filters:           filters,
 					BackendRefs:       refs,
@@ -283,8 +326,9 @@ func prepareRoutes(
 
 	if noCatchAll {
 		routes = append(routes, api.Route{
-			Match: catchAllMatch,
-			Name:  string(api.HashMatches([]api.Match{catchAllMatch})),
+			Match:  catchAllMatch,
+			Name:   string(api.HashMatches([]api.Match{catchAllMatch})),
+			Origin: svc.Outbound.Resource,
 		})
 	}
 

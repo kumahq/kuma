@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -45,20 +46,23 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 	}
 
 	_, isTo := p.GetSpec().(core_model.PolicyWithToList)
+	_, hasInboundRules := p.GetSpec().(inbound.PolicyWithRules)
 
-	if !isTo {
-		// Policies that only support "rules" (e.g. MeshTrafficPermission) have no
-		// representation on ZoneEgress: there's no "from"/"to" list to build egress
-		// rules from. Treat this as a legitimate no-op instead of failing the whole
-		// egress proxy build.
+	if !isTo && !hasInboundRules {
 		return core_xds.TypedMatchingPolicies{Type: rType}, nil
 	}
 
-	fr, err := processToRules(tags, policies)
+	tr, err := processToResourceRules(policies, resources)
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
 	}
-	tr, err := processToResourceRules(policies, resources)
+	var fr core_rules.FromRules
+	switch {
+	case isTo:
+		fr, err = processToRules(tags, policies)
+	case hasInboundRules:
+		fr, err = processInboundRules(tags, policies)
+	}
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
 	}
@@ -156,6 +160,34 @@ func processToRules(tags map[string]string, policies core_model.ResourceList) (c
 
 	return core_rules.FromRules{
 		Rules: map[core_rules.InboundListener]core_rules.Rules{{}: rules},
+	}, nil
+}
+
+func processInboundRules(tags map[string]string, policies core_model.ResourceList) (core_rules.FromRules, error) {
+	matchedPolicies, err := registry.Global().NewList(policies.GetItemType())
+	if err != nil {
+		return core_rules.FromRules{}, err
+	}
+
+	for _, policy := range policies.GetItems() {
+		spec := policy.GetSpec().(core_model.Policy)
+		if !serviceSelectedByTargetRef(spec.GetTargetRef(), tags) {
+			continue
+		}
+		if err := matchedPolicies.AddItem(policy); err != nil {
+			return core_rules.FromRules{}, err
+		}
+	}
+
+	matchedPolicies = SortByTargetRef(matchedPolicies)
+
+	rules, err := inbound.BuildRules(matchedPolicies)
+	if err != nil {
+		return core_rules.FromRules{}, err
+	}
+
+	return core_rules.FromRules{
+		InboundRules: map[core_rules.InboundListener][]*inbound.Rule{{}: rules},
 	}, nil
 }
 

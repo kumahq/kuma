@@ -123,7 +123,6 @@ message Routing {
   reserved 2;
   reserved "zoneEgress";
 
-  // If true, blocks traffic to MeshExternalServices.
-  // Default: false
-  bool defaultForbidMeshExternalServiceAccess = 3;
+  reserved 3;
+  reserved "defaultForbidMeshExternalServiceAccess";
 }

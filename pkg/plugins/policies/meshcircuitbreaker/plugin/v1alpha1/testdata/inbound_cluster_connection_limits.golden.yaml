@@ -1,9 +1,0 @@
-circuitBreakers:
-  thresholds:
-  - maxConnectionPools: 1111
-    maxConnections: 2222
-    maxPendingRequests: 3333
-    maxRequests: 4444
-    maxRetries: 5555
-    trackRemaining: true
-name: localhost:8080
