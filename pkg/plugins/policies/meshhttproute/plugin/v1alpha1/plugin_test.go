@@ -2661,7 +2661,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 		}()),
 		Entry("request-mirror-real-resources", func() outboundsTestCase {
 			meshSvc := meshservice_api.MeshServiceResource{
-				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+				Meta: &test_model.ResourceMeta{
+					Name: "backend", Mesh: "default",
+					Labels: map[string]string{
+						"app": "backend",
+					},
+				},
 				Spec: &meshservice_api.MeshService{
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
@@ -2711,7 +2716,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			}
 			mirrorMZSvc := meshmultizoneservice_api.MeshMultiZoneServiceResource{
-				Meta: &test_model.ResourceMeta{Name: "payments-mz-mirror", Mesh: "default"},
+				Meta: &test_model.ResourceMeta{
+					Name: "payments-mz-mirror", Mesh: "default",
+					Labels: map[string]string{
+						"app": "payments-mz-mirror",
+					},
+				},
 				Spec: &meshmultizoneservice_api.MeshMultiZoneService{
 					Selector: meshmultizoneservice_api.Selector{
 						MeshService: common_api.LabelSelector{
@@ -2739,7 +2749,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			mirrorMESvc := meshexternalservice_api.MeshExternalServiceResource{
-				Meta: &test_model.ResourceMeta{Name: "payments-mes-mirror", Mesh: "default"},
+				Meta: &test_model.ResourceMeta{
+					Name: "payments-mes-mirror", Mesh: "default",
+					Labels: map[string]string{
+						"app": "payments-mes-mirror",
+					},
+				},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
 						Type:     meshexternalservice_api.HostnameGeneratorType,
@@ -2839,8 +2854,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 															Percentage: pointer.To(intstr.FromString("99.9")),
 															BackendRef: common_api.BackendRef{
 																TargetRef: common_api.TargetRef{
-																	Kind: common_api.MeshService,
-																	Name: pointer.To("payments-mirror"),
+																	Kind:   common_api.MeshService,
+																	Labels: &map[string]string{"app": "payments-mirror"},
 																},
 																Port: pointer.To(uint32(80)),
 															},
@@ -2848,8 +2863,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 													}},
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
-															Kind: common_api.MeshService,
-															Name: pointer.To("backend"),
+															Kind:   common_api.MeshService,
+															Labels: &map[string]string{"app": "backend"},
 														},
 														Weight: pointer.To(uint(100)),
 														Port:   pointer.To(uint32(80)),
@@ -2869,8 +2884,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 														RequestMirror: &api.RequestMirror{
 															BackendRef: common_api.BackendRef{
 																TargetRef: common_api.TargetRef{
-																	Kind: common_api.MeshMultiZoneService,
-																	Name: pointer.To("payments-mz-mirror"),
+																	Kind:   common_api.MeshMultiZoneService,
+																	Labels: &map[string]string{"app": "payments-mz-mirror"},
 																},
 																Port: pointer.To(uint32(80)),
 															},
@@ -2878,8 +2893,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 													}},
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
-															Kind: common_api.MeshService,
-															Name: pointer.To("backend"),
+															Kind:   common_api.MeshService,
+															Labels: &map[string]string{"app": "backend"},
 														},
 														Weight: pointer.To(uint(100)),
 														Port:   pointer.To(uint32(80)),
@@ -2899,8 +2914,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 														RequestMirror: &api.RequestMirror{
 															BackendRef: common_api.BackendRef{
 																TargetRef: common_api.TargetRef{
-																	Kind: common_api.MeshExternalService,
-																	Name: pointer.To("payments-mes-mirror"),
+																	Kind:   common_api.MeshExternalService,
+																	Labels: &map[string]string{"app": "payments-mes-mirror"},
 																},
 																Port: pointer.To(uint32(9090)),
 															},
@@ -2908,8 +2923,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 													}},
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
-															Kind: common_api.MeshService,
-															Name: pointer.To("backend"),
+															Kind:   common_api.MeshService,
+															Labels: &map[string]string{"app": "backend"},
 														},
 														Weight: pointer.To(uint(100)),
 														Port:   pointer.To(uint32(80)),
@@ -2931,8 +2946,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 														RequestMirror: &api.RequestMirror{
 															BackendRef: common_api.BackendRef{
 																TargetRef: common_api.TargetRef{
-																	Kind: common_api.MeshService,
-																	Name: pointer.To("not-existing-mirror"),
+																	Kind:   common_api.MeshService,
+																	Labels: &map[string]string{"app": "not-existing-mirror"},
 																},
 																Port: pointer.To(uint32(80)),
 															},
@@ -2940,8 +2955,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 													}},
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
-															Kind: common_api.MeshService,
-															Name: pointer.To("backend"),
+															Kind:   common_api.MeshService,
+															Labels: &map[string]string{"app": "backend"},
 														},
 														Weight: pointer.To(uint(100)),
 														Port:   pointer.To(uint32(80)),
