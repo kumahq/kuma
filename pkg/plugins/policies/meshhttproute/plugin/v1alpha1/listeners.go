@@ -107,11 +107,19 @@ func generateFromService(
 		for _, filter := range route.Filters {
 			if filter.Type == api.RequestMirrorType {
 				// we need to create a split for the mirror backend
-				_ = meshroute_xds.MakeHTTPSplit(
-					clusterCache, servicesAcc,
-					[]resolve.ResolvedBackendRef{*resolve.NewResolvedBackendRef(pointer.To(resolve.LegacyBackendRef(filter.RequestMirror.BackendRef)))},
-					meshCtx,
-				)
+				if ref, ok := resolve.BackendRef(route.Origin, filter.RequestMirror.BackendRef, meshCtx.ResolveResourceIdentifier); ok {
+					_ = meshroute_xds.MakeHTTPSplit(
+						clusterCache,
+						servicesAcc,
+						[]resolve.ResolvedBackendRef{ref},
+						meshCtx,
+					)
+					if ref.ReferencesRealResource() {
+						if clusterName, found := clusterCache[common_api.BackendRefHash(ref.Resource().String())]; found {
+							clusterCache[filter.RequestMirror.BackendRef.Hash()] = clusterName
+						}
+					}
+				}
 			}
 		}
 		routes = append(routes, xds.OutboundRoute{
@@ -239,6 +247,7 @@ func prepareRoutes(
 				routes,
 				api.Route{
 					Name:        routeName,
+					Origin:      originID,
 					Match:       match,
 					Filters:     filters,
 					BackendRefs: refs,
@@ -263,8 +272,9 @@ func prepareRoutes(
 
 	if noCatchAll {
 		routes = append(routes, api.Route{
-			Match: catchAllMatch,
-			Name:  string(api.HashMatches([]api.Match{catchAllMatch})),
+			Match:  catchAllMatch,
+			Name:   string(api.HashMatches([]api.Match{catchAllMatch})),
+			Origin: svc.Outbound.Resource,
 		})
 	}
 

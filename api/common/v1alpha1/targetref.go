@@ -4,8 +4,10 @@ package v1alpha1
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -193,8 +195,8 @@ type BackendRef struct {
 
 func (b BackendRef) ReferencesRealObject() bool {
 	switch b.Kind {
-	case MeshService:
-		return pointer.Deref(b.SectionName) != "" || b.Port != nil
+	case MeshService, MeshExternalService, MeshMultiZoneService:
+		return true
 	case meshServiceSubset:
 		return false
 	// empty targetRef should not be treated as real object
@@ -211,8 +213,42 @@ type MatchesHash string
 
 type BackendRefHash string
 
+func (b BackendRef) RealResourceSelector(defaultNamespace string) (map[string]string, string, bool) {
+	if !b.ReferencesRealObject() {
+		return nil, "", false
+	}
+
+	labels, sectionName, ok := realResourceSelector(b.TargetRef, defaultNamespace)
+	if !ok {
+		return nil, "", false
+	}
+
+	if port := pointer.Deref(b.Port); port > 0 {
+		sectionName = fmt.Sprintf("%d", port)
+	}
+
+	return labels, sectionName, true
+}
+
 // Hash returns a hash of the BackendRef
 func (in BackendRef) Hash() BackendRefHash {
+	if in.ReferencesRealObject() {
+		labels, sectionName, _ := in.RealResourceSelector("")
+		keys := util_maps.SortedKeys(labels)
+		orderedLabels := make([]string, 0, len(labels))
+		for _, k := range keys {
+			orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, labels[k]))
+		}
+
+		return BackendRefHash(fmt.Sprintf(
+			"%s/%s/%d/%s",
+			in.Kind,
+			strings.Join(orderedLabels, "/"),
+			pointer.DerefOr(in.Port, 0),
+			sectionName,
+		))
+	}
+
 	keys := util_maps.SortedKeys(pointer.Deref(in.Tags))
 	orderedTags := make([]string, 0, len(keys))
 	for _, k := range keys {
@@ -230,4 +266,83 @@ func (in BackendRef) Hash() BackendRefHash {
 		name = pointer.To(fmt.Sprintf("%s_svc_%d", pointer.Deref(in.Name), *in.Port))
 	}
 	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, pointer.Deref(name), strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), pointer.Deref(in.Mesh)))
+}
+
+func realResourceSelector(ref TargetRef, defaultNamespace string) (map[string]string, string, bool) {
+	if len(pointer.Deref(ref.Labels)) > 0 {
+		return cloneStringMap(pointer.Deref(ref.Labels)), pointer.Deref(ref.SectionName), true
+	}
+
+	name := pointer.Deref(ref.Name)
+	if name == "" {
+		return nil, "", false
+	}
+
+	switch ref.Kind {
+	case MeshService:
+		if pointer.Deref(ref.SectionName) == "" {
+			if serviceName, namespace, port, ok := parseMeshServiceName(name); ok {
+				labels := map[string]string{
+					mesh_proto.DisplayName:      serviceName,
+					mesh_proto.KubeNamespaceTag: namespace,
+				}
+				sectionName := ""
+				if port > 0 {
+					sectionName = fmt.Sprintf("%d", port)
+				}
+				return labels, sectionName, true
+			}
+		}
+
+		namespace := pointer.Deref(ref.Namespace)
+		if namespace == "" {
+			namespace = defaultNamespace
+		}
+
+		labels := map[string]string{
+			mesh_proto.DisplayName: name,
+		}
+		if namespace != "" {
+			labels[mesh_proto.KubeNamespaceTag] = namespace
+		}
+		return labels, pointer.Deref(ref.SectionName), true
+	case MeshExternalService, MeshMultiZoneService:
+		labels := map[string]string{
+			mesh_proto.DisplayName: name,
+		}
+		if namespace := pointer.Deref(ref.Namespace); namespace != "" {
+			labels[mesh_proto.KubeNamespaceTag] = namespace
+		}
+		return labels, pointer.Deref(ref.SectionName), true
+	default:
+		return nil, "", false
+	}
+}
+
+func parseMeshServiceName(name string) (string, string, int32, bool) {
+	segments := strings.Split(name, "_")
+
+	var port int32
+	switch len(segments) {
+	case 4:
+		p, err := strconv.ParseInt(segments[3], 10, 32)
+		if err != nil {
+			return "", "", 0, false
+		}
+		port = int32(p)
+	case 3:
+		port = 0
+	default:
+		return "", "", 0, false
+	}
+
+	return segments[0], segments[1], port, true
+}
+
+func cloneStringMap(in map[string]string) map[string]string {
+	out := make(map[string]string, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }

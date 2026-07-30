@@ -1,8 +1,6 @@
 package resolve
 
 import (
-	"fmt"
-
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -28,25 +26,20 @@ func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelR
 		return ResolvedBackendRef{Ref: pointer.To(LegacyBackendRef(br))}, true
 	}
 
-	rr := &RealResourceBackendRef{
-		Resource: TargetRefToKRI(origin, br.TargetRef),
-		Origin:   origin,
-		Weight:   pointer.DerefOr(br.Weight, 1),
-	}
-
-	if labels := pointer.Deref(br.Labels); len(labels) > 0 {
-		rr.Resource = resolver(core_model.ResourceType(br.Kind), labels)
-	}
-
-	if rr.Resource.IsEmpty() {
+	labels, sectionName, ok := br.RealResourceSelector(origin.Namespace)
+	if !ok {
 		return ResolvedBackendRef{}, false
 	}
 
-	if sectionName := pointer.Deref(br.SectionName); sectionName != "" {
-		rr.Resource.SectionName = sectionName
-	} else if port := pointer.Deref(br.Port); port > 0 {
-		rr.Resource.SectionName = fmt.Sprintf("%d", port)
+	rr := &RealResourceBackendRef{
+		Resource: resolver(core_model.ResourceType(br.Kind), labels),
+		Origin:   origin,
+		Weight:   pointer.DerefOr(br.Weight, 1),
 	}
+	if rr.Resource.IsEmpty() {
+		return ResolvedBackendRef{}, false
+	}
+	rr.Resource.SectionName = sectionName
 
 	return ResolvedBackendRef{Ref: rr}, true
 }

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func TestIncludesGateways(t *testing.T) {
@@ -58,4 +59,116 @@ func TestIncludesGateways(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBackendRefReferencesRealObject(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		ref      BackendRef
+		expected bool
+	}{
+		"mesh service by name is real": {
+			ref: BackendRef{
+				TargetRef: TargetRef{
+					Kind: MeshService,
+					Name: pointer.To("backend"),
+				},
+			},
+			expected: true,
+		},
+		"mesh external service is real": {
+			ref: BackendRef{
+				TargetRef: TargetRef{
+					Kind: MeshExternalService,
+					Name: pointer.To("payments"),
+				},
+			},
+			expected: true,
+		},
+		"mesh multizone service is real": {
+			ref: BackendRef{
+				TargetRef: TargetRef{
+					Kind: MeshMultiZoneService,
+					Name: pointer.To("global-backend"),
+				},
+			},
+			expected: true,
+		},
+		"legacy mesh service subset is not real": {
+			ref: BackendRef{
+				TargetRef: TargetRef{
+					Kind: LegacyMeshServiceSubsetKind(),
+					Name: pointer.To("backend"),
+				},
+			},
+			expected: false,
+		},
+		"empty ref is not real": {
+			ref:      BackendRef{},
+			expected: false,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := tt.ref.ReferencesRealObject(); got != tt.expected {
+				t.Fatalf("ReferencesRealObject() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
+	t.Parallel()
+
+	t.Run("real backend refs ignore name and mesh when labels match", func(t *testing.T) {
+		t.Parallel()
+
+		a := BackendRef{
+			TargetRef: TargetRef{
+				Kind:   MeshService,
+				Name:   pointer.To("backend-a"),
+				Mesh:   pointer.To("mesh-a"),
+				Labels: &map[string]string{mesh_proto.DisplayName: "backend", mesh_proto.KubeNamespaceTag: "kuma-demo"},
+			},
+			Port: pointer.To(uint32(8080)),
+		}
+		b := BackendRef{
+			TargetRef: TargetRef{
+				Kind:   MeshService,
+				Name:   pointer.To("backend-b"),
+				Mesh:   pointer.To("mesh-b"),
+				Labels: &map[string]string{mesh_proto.KubeNamespaceTag: "kuma-demo", mesh_proto.DisplayName: "backend"},
+			},
+			Port: pointer.To(uint32(8080)),
+		}
+
+		if a.Hash() != b.Hash() {
+			t.Fatalf("Hash() should be based on real-resource labels, got %q and %q", a.Hash(), b.Hash())
+		}
+	})
+
+	t.Run("legacy mesh service name forms keep derived port distinctions", func(t *testing.T) {
+		t.Parallel()
+
+		base := BackendRef{
+			TargetRef: TargetRef{
+				Kind: MeshService,
+				Name: pointer.To("backend_kuma-demo_svc_8080"),
+			},
+		}
+		otherPort := BackendRef{
+			TargetRef: TargetRef{
+				Kind: MeshService,
+				Name: pointer.To("backend_kuma-demo_svc_9090"),
+			},
+		}
+
+		if base.Hash() == otherPort.Hash() {
+			t.Fatalf("Hash() should distinguish derived ports, got %q", base.Hash())
+		}
+	})
 }

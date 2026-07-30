@@ -9,7 +9,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
@@ -50,24 +49,23 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 	networking := dataplane.Spec.GetNetworking()
 
 	processRef := func(kind string, name string, namespace string, port *uint32, labels map[string]string) {
-		ids := di.resolveResourceIdentifiersForLabels(core_model.ResourceType(kind), labels)
-		if len(ids) == 0 {
-			ids = []kri.Identifier{
-				resolve.TargetRefToKRI(
-					kri.From(dataplane),
-					common_api.TargetRef{
-						Kind:      common_api.TargetRefKind(kind),
-						Name:      &name,
-						Namespace: &namespace,
-						Labels:    &labels,
-					},
-				),
-			}
+		selectorLabels, sectionName, ok := common_api.BackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind:      common_api.TargetRefKind(kind),
+				Name:      &name,
+				Namespace: &namespace,
+				Labels:    &labels,
+			},
+			Port: port,
+		}.RealResourceSelector(dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag])
+		if !ok {
+			return
 		}
 
+		ids := di.resolveResourceIdentifiersForLabels(core_model.ResourceType(kind), selectorLabels)
 		for _, id := range ids {
-			if port != nil {
-				id = kri.WithSectionName(id, *port)
+			if sectionName != "" {
+				id = kri.WithSectionName(id, sectionName)
 			}
 
 			var dest core.Destination
