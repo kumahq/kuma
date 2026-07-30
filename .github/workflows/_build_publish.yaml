@@ -68,6 +68,9 @@ jobs:
             go-build-${{ runner.os }}-
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
         if: ${{ github.ref_type == 'tag' }}
+        with:
+          # protoc-gen-go-grpc@1.1.0 fails to resolve on mise 2026.7.17+ (jdx/mise#11469); pin until this branch moves past that version.
+          version: 2026.7.16
       - name: Assert built binary reports tag version
         if: ${{ github.ref_type == 'tag' }}
         run: |
@@ -86,6 +89,9 @@ jobs:
         with:
           fetch-depth: 0
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+        with:
+          # protoc-gen-go-grpc@1.1.0 fails to resolve on mise 2026.7.17+ (jdx/mise#11469); pin until this branch moves past that version.
+          version: 2026.7.16
       - run: |
           make build
       - run: |
@@ -140,6 +146,9 @@ jobs:
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+        with:
+          # protoc-gen-go-grpc@1.1.0 fails to resolve on mise 2026.7.17+ (jdx/mise#11469); pin until this branch moves past that version.
+          version: 2026.7.16
       - id: image_meta
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
@@ -249,6 +258,9 @@ jobs:
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+        with:
+          # protoc-gen-go-grpc@1.1.0 fails to resolve on mise 2026.7.17+ (jdx/mise#11469); pin until this branch moves past that version.
+          version: 2026.7.16
       - name: package-helm-chart
         id: package-helm
         env:
