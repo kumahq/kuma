@@ -45,10 +45,8 @@ import (
 )
 
 type K8sNetworkingState struct {
-	ZoneEgress  portforward.Tunnel `json:"zoneEgress"`
-	ZoneIngress portforward.Tunnel `json:"zoneIngress"`
-	KumaCp      portforward.Tunnel `json:"kumaCp"`
-	MADS        portforward.Tunnel `json:"mads"`
+	KumaCp portforward.Tunnel `json:"kumaCp"`
+	MADS   portforward.Tunnel `json:"mads"`
 }
 
 type K8sCluster struct {
@@ -254,14 +252,6 @@ func (c *K8sCluster) ClosePortForwards(specs ...portforward.Spec) {
 			}
 		}
 	}
-}
-
-func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	return c.GetEnvoyAdminTunnel(Config.ZoneEgressApp, Config.KumaNamespace)
-}
-
-func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
-	return c.GetEnvoyAdminTunnel(Config.ZoneIngressApp, Config.KumaNamespace)
 }
 
 // GetEnvoyAdminTunnel creates or returns an Envoy admin tunnel for any named
@@ -507,20 +497,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 	}
 	if !Config.UseLoadBalancer {
 		argsMap["--use-node-port"] = ""
-	}
-
-	if c.opts.zoneIngress {
-		argsMap["--ingress-enabled"] = ""
-		argsMap["--ingress-use-node-port"] = ""
-		args = append(args, "--set", fmt.Sprintf("%singress.resources.limits.cpu=null", Config.HelmSubChartPrefix))
-	}
-
-	if c.opts.zoneEgress {
-		argsMap["--egress-enabled"] = ""
-		args = append(args, "--set", fmt.Sprintf("%segress.resources.limits.cpu=null", Config.HelmSubChartPrefix))
-		if Config.Debug {
-			args = append(args, "--set", fmt.Sprintf("%segress.logLevel=debug", Config.HelmSubChartPrefix))
-		}
 	}
 
 	if c.opts.cni {
@@ -780,12 +756,6 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 		appsToInstall = append(appsToInstall, appInstallation{Config.CNIApp, namespace, 1, nil})
 	}
-	if c.opts.zoneIngress {
-		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneIngressApp, Config.KumaNamespace, 1, nil})
-	}
-	if c.opts.zoneEgress {
-		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneEgressApp, Config.KumaNamespace, 1, nil})
-	}
 
 	for i := range appsToInstall {
 		idx := i
@@ -802,32 +772,6 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	}
 	if err != nil {
 		return err
-	}
-
-	if c.opts.zoneEgressEnvoyAdminTunnel {
-		if !c.opts.zoneEgress {
-			return errors.New("cannot create tunnel to zone egress's envoy admin without egress")
-		}
-
-		if _, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-			AppName:   Config.ZoneEgressApp,
-			Namespace: Config.KumaNamespace,
-		}); err != nil {
-			return err
-		}
-	}
-
-	if c.opts.zoneIngressEnvoyAdminTunnel {
-		if !c.opts.zoneIngress {
-			return errors.New("cannot create tunnel to zone ingress' envoy admin without ingress")
-		}
-
-		if _, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-			AppName:   Config.ZoneIngressApp,
-			Namespace: Config.KumaNamespace,
-		}); err != nil {
-			return err
-		}
 	}
 
 	if !c.opts.skipDefaultMesh {
