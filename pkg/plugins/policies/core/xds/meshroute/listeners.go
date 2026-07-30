@@ -5,6 +5,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
@@ -264,6 +265,10 @@ func handleRealResources(
 
 	if _, ok := protocols[port.GetProtocol()]; !ok {
 		return nil
+	}
+
+	if common_api.TargetRefKind(ref.Resource.ResourceType) == common_api.MeshService && ref.Resource.SectionName == "" {
+		ref.Resource = kri.WithSectionName(ref.Resource, port.GetName())
 	}
 
 	service := destinationname.MustResolve(false, dest, port)

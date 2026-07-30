@@ -37,11 +37,23 @@ func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelR
 		Weight:   pointer.DerefOr(br.Weight, 1),
 	}
 	if rr.Resource.IsEmpty() {
+		if shouldFallbackToLegacyMeshService(br) {
+			return ResolvedBackendRef{Ref: pointer.To(LegacyBackendRef(br))}, true
+		}
 		return ResolvedBackendRef{}, false
 	}
 	rr.Resource.SectionName = sectionName
 
 	return ResolvedBackendRef{Ref: rr}, true
+}
+
+func shouldFallbackToLegacyMeshService(br common_api.BackendRef) bool {
+	return br.Kind == common_api.MeshService &&
+		br.Name != nil && *br.Name != "" &&
+		br.Labels == nil &&
+		br.Namespace == nil &&
+		br.SectionName == nil &&
+		br.Port == nil
 }
 
 type IsResolvedBackendRef interface {

@@ -32,7 +32,7 @@ func NewDestinationIndex(resources ...[]core_model.Resource) *DestinationIndex {
 		for _, item := range destinations {
 			ri := kri.From(item)
 			destinationByIdentifier[ri] = item.(core.Destination)
-			buildLabelValueToServiceNames(ri, destinationsByLabelByValue, item.GetMeta().GetLabels())
+			buildLabelValueToServiceNames(ri, destinationsByLabelByValue, destinationIndexLabels(item.GetMeta()))
 		}
 	}
 
@@ -190,4 +190,20 @@ func buildLabelValueToServiceNames(ri kri.Identifier, resourceNamesByLabels labe
 			}
 		}
 	}
+}
+
+func destinationIndexLabels(meta core_model.ResourceMeta) map[string]string {
+	if meta == nil {
+		return nil
+	}
+
+	labels := map[string]string{}
+	for k, v := range meta.GetLabels() {
+		labels[k] = v
+	}
+	if labels[mesh_proto.DisplayName] == "" {
+		labels[mesh_proto.DisplayName] = core_model.GetDisplayName(meta)
+	}
+
+	return labels
 }

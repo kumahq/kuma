@@ -58,6 +58,38 @@ var _ = Describe("DestinationIndex", func() {
 			Expect(outbounds).To(HaveKey(expectedKRI))
 		})
 
+		It("should resolve MeshService name refs using display name derived from resource metadata", func() {
+			ms := builders.MeshService().
+				WithName("backend-svc").
+				AddIntPort(9000, 9000, metadata.ProtocolHTTP).
+				Build()
+
+			dp := builders.Dataplane().
+				WithName("dp-1").
+				WithAddress("127.0.0.1").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+				WithTransparentProxying(15001, 15006, "").
+				Build()
+
+			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
+				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
+					{
+						Kind: "MeshService",
+						Name: "backend-svc",
+					},
+				},
+			}
+
+			index := xds_context.NewDestinationIndex([]core_model.Resource{ms})
+			outbounds, matched := index.GetReachableBackends(dp)
+
+			Expect(matched).To(BeTrue())
+			Expect(outbounds).To(HaveLen(1))
+
+			expectedKRI := kri.WithSectionName(kri.From(ms), "9000")
+			Expect(outbounds).To(HaveKey(expectedKRI))
+		})
+
 		It("should fallback to dataplane namespace when namespace not specified", func() {
 			ms := builders.MeshService().
 				WithName("backend-svc-hash456").

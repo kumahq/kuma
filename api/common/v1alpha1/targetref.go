@@ -223,7 +223,7 @@ func (b BackendRef) RealResourceSelector(defaultNamespace string) (map[string]st
 		return nil, "", false
 	}
 
-	if port := pointer.Deref(b.Port); port > 0 {
+	if port := pointer.Deref(b.Port); port > 0 && sectionName == "" {
 		sectionName = fmt.Sprintf("%d", port)
 	}
 

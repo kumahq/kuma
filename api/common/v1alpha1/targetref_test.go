@@ -203,6 +203,27 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T
 	}
 }
 
+func TestBackendRefRealResourceSelectorKeepsExplicitSectionNameOverPort(t *testing.T) {
+	t.Parallel()
+
+	ref := BackendRef{
+		TargetRef: TargetRef{
+			Kind:        MeshService,
+			Name:        pointer.To("backend"),
+			SectionName: pointer.To("http"),
+		},
+		Port: pointer.To(uint32(80)),
+	}
+
+	_, sectionName, ok := ref.RealResourceSelector("kuma-demo")
+	if !ok {
+		t.Fatal("RealResourceSelector() returned ok=false")
+	}
+	if sectionName != "http" {
+		t.Fatalf("RealResourceSelector() sectionName = %q, want http", sectionName)
+	}
+}
+
 func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
 	t.Parallel()
 

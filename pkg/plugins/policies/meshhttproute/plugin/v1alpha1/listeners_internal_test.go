@@ -48,7 +48,7 @@ func TestBackendRefToClusterNameForRouteUsesResolvedRequestMirrorBackendRefs(t *
 
 	backendRefToClusterName := backendRefToClusterNameForRoute(clusterCache, servicesAcc, route, meshCtx)
 
-	if got, want := backendRefToClusterName[mirrorBackendRef.Hash()], kri.From(payments).String(); got != want {
+	if got, want := backendRefToClusterName[mirrorBackendRef.Hash()], kri.WithSectionName(kri.From(payments), "8080").String(); got != want {
 		t.Fatalf("request-mirror backendRef hash %q resolved to cluster %q, want %q", mirrorBackendRef.Hash(), got, want)
 	}
 }
@@ -95,10 +95,10 @@ func TestBackendRefToClusterNameForRouteScopesRequestMirrorBackendRefAliasesByOr
 	teamBBackendRefToClusterName := backendRefToClusterNameForRoute(clusterCache, servicesAcc, requestMirrorRoute("team-b", mirrorBackendRef), meshCtx)
 
 	hash := mirrorBackendRef.Hash()
-	if got, want := teamABackendRefToClusterName[hash], kri.From(paymentsTeamA).String(); got != want {
+	if got, want := teamABackendRefToClusterName[hash], kri.WithSectionName(kri.From(paymentsTeamA), "8080").String(); got != want {
 		t.Fatalf("team-a request-mirror backendRef hash %q resolved to cluster %q, want %q", hash, got, want)
 	}
-	if got, want := teamBBackendRefToClusterName[hash], kri.From(paymentsTeamB).String(); got != want {
+	if got, want := teamBBackendRefToClusterName[hash], kri.WithSectionName(kri.From(paymentsTeamB), "8080").String(); got != want {
 		t.Fatalf("team-b request-mirror backendRef hash %q resolved to cluster %q, want %q", hash, got, want)
 	}
 }

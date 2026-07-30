@@ -95,6 +95,53 @@ var _ = Describe("Resolve BackendRef", func() {
 		Expect(resolved.Resource()).To(Equal(expected))
 	})
 
+	It("should fall back to a legacy MeshService backendRef when a plain name does not resolve to a real resource", func() {
+		origin := kri.Identifier{Mesh: "mesh-1", Namespace: "kuma-demo"}
+
+		var capturedLabels map[string]string
+		resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind: common_api.MeshService,
+				Name: pointer.To("payments"),
+			},
+		}, func(_ core_model.ResourceType, gotLabels map[string]string) kri.Identifier {
+			capturedLabels = gotLabels
+			return kri.Identifier{}
+		})
+
+		Expect(ok).To(BeTrue())
+		Expect(capturedLabels).To(Equal(map[string]string{
+			mesh_proto.DisplayName:      "payments",
+			mesh_proto.KubeNamespaceTag: "kuma-demo",
+		}))
+		Expect(resolved.ReferencesRealResource()).To(BeFalse())
+		Expect(resolved.LegacyBackendRef()).To(Equal(&resolve.LegacyBackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind: common_api.MeshService,
+				Name: pointer.To("payments"),
+			},
+		}))
+	})
+
+	It("should not fall back to legacy for unresolved label-selected MeshService backendRefs", func() {
+		origin := kri.Identifier{Mesh: "mesh-1", Namespace: "kuma-demo"}
+
+		resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind: common_api.MeshService,
+				Labels: pointer.To(map[string]string{
+					mesh_proto.DisplayName:      "payments",
+					mesh_proto.KubeNamespaceTag: "kuma-demo",
+				}),
+			},
+		}, func(_ core_model.ResourceType, _ map[string]string) kri.Identifier {
+			return kri.Identifier{}
+		})
+
+		Expect(ok).To(BeFalse())
+		Expect(resolved.Ref).To(BeNil())
+	})
+
 	It("should derive compatibility labels and port from legacy MeshService name forms", func() {
 		origin := kri.Identifier{Mesh: "mesh-1", Namespace: "ignored"}
 		expected := kri.Identifier{ResourceType: core_model.ResourceType(common_api.MeshService), Mesh: "mesh-1", Name: "backend"}
