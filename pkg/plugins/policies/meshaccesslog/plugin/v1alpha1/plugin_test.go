@@ -773,7 +773,7 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"inbound_route_duplicate_port.listener.golden.yaml"},
 		}),
-		Entry("inbound route with inbound tags disabled", sidecarTestCase{
+		Entry("inbound route in tag-free mode", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
@@ -829,7 +829,7 @@ var _ = Describe("MeshAccessLog", func() {
 					}},
 				},
 			},
-			expectedListeners: []string{"inbound_route_tags_disabled.listener.golden.yaml"},
+			expectedListeners: []string{"inbound_route_tagless.listener.golden.yaml"},
 		}),
 		Entry("outbound otel backend with workload identity and legacy placeholder key", sidecarTestCase{
 			resources: []core_xds.Resource{
