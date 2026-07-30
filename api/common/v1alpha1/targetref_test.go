@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"reflect"
 	"testing"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -116,6 +117,87 @@ func TestBackendRefReferencesRealObject(t *testing.T) {
 
 			if got := tt.ref.ReferencesRealObject(); got != tt.expected {
 				t.Fatalf("ReferencesRealObject() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		ref            BackendRef
+		defaultNs      string
+		expectedLabels map[string]string
+	}{
+		"MeshService": {
+			ref: BackendRef{
+				TargetRef: TargetRef{
+					Kind: MeshService,
+					Name: pointer.To("backend"),
+				},
+			},
+			defaultNs: "team-a",
+			expectedLabels: map[string]string{
+				mesh_proto.DisplayName:      "backend",
+				mesh_proto.KubeNamespaceTag: "team-a",
+			},
+		},
+		"MeshExternalService": {
+			ref: BackendRef{
+				TargetRef: TargetRef{
+					Kind: MeshExternalService,
+					Name: pointer.To("payments"),
+				},
+			},
+			defaultNs: "team-a",
+			expectedLabels: map[string]string{
+				mesh_proto.DisplayName:      "payments",
+				mesh_proto.KubeNamespaceTag: "team-a",
+			},
+		},
+		"MeshMultiZoneService": {
+			ref: BackendRef{
+				TargetRef: TargetRef{
+					Kind: MeshMultiZoneService,
+					Name: pointer.To("global-backend"),
+				},
+			},
+			defaultNs: "team-a",
+			expectedLabels: map[string]string{
+				mesh_proto.DisplayName:      "global-backend",
+				mesh_proto.KubeNamespaceTag: "team-a",
+			},
+		},
+		"explicit namespace wins": {
+			ref: BackendRef{
+				TargetRef: TargetRef{
+					Kind:      MeshExternalService,
+					Name:      pointer.To("payments"),
+					Namespace: pointer.To("team-b"),
+				},
+			},
+			defaultNs: "team-a",
+			expectedLabels: map[string]string{
+				mesh_proto.DisplayName:      "payments",
+				mesh_proto.KubeNamespaceTag: "team-b",
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			labels, sectionName, ok := tt.ref.RealResourceSelector(tt.defaultNs)
+			if !ok {
+				t.Fatal("RealResourceSelector() returned ok=false")
+			}
+			if sectionName != "" {
+				t.Fatalf("RealResourceSelector() sectionName = %q, want empty", sectionName)
+			}
+			if !reflect.DeepEqual(labels, tt.expectedLabels) {
+				t.Fatalf("RealResourceSelector() labels = %v, want %v", labels, tt.expectedLabels)
 			}
 		})
 	}

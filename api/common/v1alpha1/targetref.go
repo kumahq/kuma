@@ -307,10 +307,15 @@ func realResourceSelector(ref TargetRef, defaultNamespace string) (map[string]st
 		}
 		return labels, pointer.Deref(ref.SectionName), true
 	case MeshExternalService, MeshMultiZoneService:
+		namespace := pointer.Deref(ref.Namespace)
+		if namespace == "" {
+			namespace = defaultNamespace
+		}
+
 		labels := map[string]string{
 			mesh_proto.DisplayName: name,
 		}
-		if namespace := pointer.Deref(ref.Namespace); namespace != "" {
+		if namespace != "" {
 			labels[mesh_proto.KubeNamespaceTag] = namespace
 		}
 		return labels, pointer.Deref(ref.SectionName), true
