@@ -939,102 +939,36 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 	return nil
 }
 
-// StartZoneIngress scales the replicas of a zone ingress to 1 and wait for it to complete.
-func (c *K8sCluster) StartZoneIngress() error {
-	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=1", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
+// ScaleApp scales a Deployment and waits for the cluster to settle on the
+// requested number of pods. Scaling to 0 waits for the pods to be gone.
+func (c *K8sCluster) ScaleApp(namespace, app string, replicas int) error {
+	if err := k8s.RunKubectlContextE(
+		c.GetTesting(), context.Background(),
+		c.GetKubectlOptions(namespace),
+		"scale", fmt.Sprintf("--replicas=%d", replicas), fmt.Sprintf("deployment/%s", app),
+	); err != nil {
 		return err
 	}
-	if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
+	if replicas == 0 {
+		_, err := retry.DoWithRetryContextE(c.t, context.Background(),
+			fmt.Sprintf("wait for %s to be down", app),
+			c.defaultRetries,
+			c.defaultTimeout,
+			func() (string, error) {
+				pods := c.getPods(namespace, app)
+				if len(pods) == 0 {
+					return "Done", nil
+				}
+				names := []string{}
+				for _, p := range pods {
+					names = append(names, p.Name)
+				}
+				return "", fmt.Errorf("some pods are still present count: '%s'", strings.Join(names, ","))
+			},
+		)
 		return err
 	}
-
-	if _, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-		AppName:   Config.ZoneIngressApp,
-		Namespace: Config.KumaNamespace,
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// StopZoneIngress scales the replicas of a zone ingress to 0 and wait for it to complete. Useful for testing behavior when traffic goes through ingress but there is no instance.
-func (c *K8sCluster) StopZoneIngress() error {
-	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
-		return err
-	}
-
-	c.ClosePortForwards(portforward.Spec{
-		AppName:   Config.ZoneIngressApp,
-		Namespace: Config.KumaNamespace,
-	})
-
-	_, err := retry.DoWithRetryContextE(c.t, context.Background(),
-		"wait for zone ingress to be down",
-		c.defaultRetries,
-		c.defaultTimeout,
-		func() (string, error) {
-			pods := c.getPods(Config.KumaNamespace, Config.ZoneIngressApp)
-			if len(pods) == 0 {
-				return "Done", nil
-			}
-			var names []string
-			for _, p := range pods {
-				names = append(names, p.Name)
-			}
-			return "", fmt.Errorf("some pods are still present count: '%s'", strings.Join(names, ","))
-		},
-	)
-	return err
-}
-
-// StartZoneEngress scales the replicas of a zone engress to 1 and wait for it to complete.
-func (c *K8sCluster) StartZoneEgress() error {
-	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=1", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
-		return err
-	}
-	if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
-		return err
-	}
-
-	if _, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-		AppName:   Config.ZoneEgressApp,
-		Namespace: Config.KumaNamespace,
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// StopZoneEgress scales the replicas of a zone egress to 0 and wait for it to complete. Useful for testing behavior when traffic goes through egress but there is no instance.
-func (c *K8sCluster) StopZoneEgress() error {
-	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
-		return err
-	}
-
-	c.ClosePortForwards(portforward.Spec{
-		AppName:   Config.ZoneEgressApp,
-		Namespace: Config.KumaNamespace,
-	})
-
-	_, err := retry.DoWithRetryContextE(c.t, context.Background(),
-		"wait for zone egress to be down",
-		c.defaultRetries,
-		c.defaultTimeout,
-		func() (string, error) {
-			pods := c.getPods(Config.KumaNamespace, Config.ZoneEgressApp)
-			if len(pods) == 0 {
-				return "Done", nil
-			}
-			names := []string{}
-			for _, p := range pods {
-				names = append(names, p.Name)
-			}
-			return "", fmt.Errorf("some pods are still present count: '%s'", strings.Join(names, ","))
-		},
-	)
-	return err
+	return c.WaitApp(app, namespace, replicas)
 }
 
 // StopControlPlane scales the replicas of a control plane to 0 and wait for it to complete. Useful for testing restarts in combination with RestartControlPlane.
