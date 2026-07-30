@@ -60,7 +60,10 @@ func GenerateClusters(
 					continue
 				}
 				if proxy.WorkloadIdentity != nil {
-					kriID := service.BackendRef().Resource()
+					// The destination advertises its SNI from the resolved port
+					// name, so normalize a numeric backend-ref section (named port
+					// targeted by number) to the port name before deriving the KRI SNI.
+					kriID := kri.WithSectionName(service.BackendRef().Resource(), port.GetName())
 					if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
 						continue
 					}
@@ -159,10 +162,15 @@ func GenerateClusters(
 						kriSNI := useKRISni && proxy.WorkloadIdentity != nil
 						var sni string
 						if kriSNI {
-							if errs := core_sni.ValidateKRI(realResourceRef.Resource); len(errs) > 0 {
+							// The destination advertises its SNI from the resolved
+							// port name, so normalize a numeric backend-ref section
+							// (named port targeted by number) to the port name
+							// before deriving the KRI SNI.
+							kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
+							if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
 								continue
 							}
-							sni = core_sni.FromKRI(realResourceRef.Resource)
+							sni = core_sni.FromKRI(kriID)
 						} else {
 							sni = SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 						}

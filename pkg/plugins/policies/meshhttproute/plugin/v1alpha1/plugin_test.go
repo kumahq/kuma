@@ -412,6 +412,78 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("default-meshservice-named-port-by-number", func() outboundsTestCase {
+			// A MeshService with a *named* port (name: http, port: 80) targeted by
+			// number (port: 80). The destination advertises its SNI from the port
+			// name, so the KRI-based cluster SNI must resolve to
+			// sni.msvc.<mesh>.<zone>.<name>.http, not ...80.
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("default_backend__remote-zone_msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend", Mesh: "default",
+					Labels: map[string]string{
+						mesh_proto.ZoneTag: "remote-zone",
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Name:        pointer.To("http"),
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{{
+						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+						Value: "backend",
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
+			}
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshBuilder(builders.Mesh().WithBuiltinMTLSBackend("builtin").WithEnabledMTLSBackend("builtin")).
+					WithEndpointMap(outboundTargets).
+					WithResources(resources).
+					With(func(ctx *xds_context.Context) {
+						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"remote-zone": true}
+					}).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(builders.Dataplane().
+						WithName("web-01").
+						WithAddress("192.168.0.2").
+						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
+					).
+					WithOutbounds(xds_types.Outbounds{{
+						// Target the named port by its numeric value.
+						Resource: kri.WithSectionName(kri.From(&meshSvc), "80"),
+						Address:  "10.0.0.1",
+						Port:     80,
+					}}).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithWorkloadIdentity(&core_xds.WorkloadIdentity{
+						IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+							return bldrs_tls.SdsSecretConfigSource(
+								"identity_cert:secret:default",
+								bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+							)
+						},
+					}).
+					Build(),
+			}
+		}()),
 		Entry("default-meshexternalservice-mesh-scoped-zone", func() outboundsTestCase {
 			// MeshExternalService in a remote zone that exposes a mesh-scoped zone proxy.
 			// The cluster SNI must use the KRI-derived format (sni.extsvc.<mesh>.<zone>.<name>.<port>).
