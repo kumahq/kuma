@@ -39,7 +39,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes
+        labels:
+          kuma.io/display-name: mes
       default:
         http:
           numRetries: 5

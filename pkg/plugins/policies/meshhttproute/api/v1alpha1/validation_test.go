@@ -67,7 +67,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: backend
+    labels:
+      kuma.io/display-name: backend
 `),
 		ErrorCases("incorrect path match value",
 			[]validators.Violation{{
@@ -88,7 +89,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -114,7 +116,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - queryParams:
@@ -150,7 +153,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - default:
         filters:
@@ -184,7 +188,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - default:
         filters:
@@ -224,7 +229,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -259,7 +265,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - headers:
@@ -283,7 +290,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -309,7 +317,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -336,7 +345,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: backend
+    labels:
+      kuma.io/display-name: backend
   hostnames:
     - backend.com
   rules:
@@ -366,7 +376,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -472,7 +483,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -548,7 +560,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: backend
+    labels:
+      kuma.io/display-name: backend
   rules:
     - matches:
       - path:
@@ -579,7 +592,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:

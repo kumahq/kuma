@@ -82,15 +82,14 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 	}
 
 	for _, port := range ports {
-		serviceName := k8s_util.ServiceTag(
-			kube_client.ObjectKeyFromObject(parent),
-			pointer.To(port),
-		)
-
 		tos = append(tos, v1alpha1.To{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
-				Name: pointer.To(serviceName),
+				Labels: &map[string]string{
+					mesh_proto.DisplayName:      parent.GetName(),
+					mesh_proto.KubeNamespaceTag: parent.GetNamespace(),
+				},
+				SectionName: pointer.To(fmt.Sprintf("%d", port)),
 			},
 			Rules: rules,
 		})

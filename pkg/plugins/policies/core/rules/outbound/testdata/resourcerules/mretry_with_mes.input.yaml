@@ -8,7 +8,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: external
+        labels:
+          kuma.io/display-name: external
       default:
         http:
           numRetries: 10
@@ -36,6 +37,8 @@ spec:
 type: MeshExternalService
 name: external
 mesh: mesh-1
+labels:
+  kuma.io/display-name: external
 spec:
   match:
     type: HostnameGenerator

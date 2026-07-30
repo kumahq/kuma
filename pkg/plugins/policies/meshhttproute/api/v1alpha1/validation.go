@@ -255,6 +255,7 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 						common_api.MeshService,
 						common_api.LegacyMeshServiceSubsetKind(),
 					},
+					IsBackendRef: true,
 				}),
 			)
 		}
@@ -339,6 +340,7 @@ func validateBackendRefs(
 					common_api.MeshMultiZoneService,
 				},
 				AllowedInvalidNames: []string{metadata.UnresolvedBackendServiceTag},
+				IsBackendRef:        true,
 			}),
 		)
 		errs.AddErrorAt(

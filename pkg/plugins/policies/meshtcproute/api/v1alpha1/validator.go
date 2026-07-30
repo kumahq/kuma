@@ -103,6 +103,7 @@ func validateBackendRefs(backendRefs []common_api.BackendRef) validators.Validat
 						common_api.MeshExternalService,
 						common_api.MeshMultiZoneService,
 					},
+					IsBackendRef: true,
 				},
 			),
 		)

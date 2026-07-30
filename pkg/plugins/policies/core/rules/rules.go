@@ -293,18 +293,24 @@ func BuildGatewayRules(
 	}, nil
 }
 
-func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model.PolicyWithToList, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
-	var mhr *meshhttproute_api.MeshHTTPRouteResource
+func buildToListWithRoutes(_ core_model.ResourceMeta, policyWithTo core_model.PolicyWithToList, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
+	var mhrs []*meshhttproute_api.MeshHTTPRouteResource
 	switch policyWithTo.GetTargetRef().Kind {
 	case common_api.MeshHTTPRoute:
+		routeLabels := pointer.Deref(policyWithTo.GetTargetRef().Labels)
+		if len(routeLabels) == 0 {
+			return nil, errors.New("can't resolve MeshHTTPRoute policy")
+		}
+		targetSubset := subsetutils.NewSubset(routeLabels)
 		for _, route := range httpRoutes {
-			if core_model.IsReferenced(meta, pointer.Deref(policyWithTo.GetTargetRef().Name), route.GetMeta()) {
-				if r, ok := route.(*meshhttproute_api.MeshHTTPRouteResource); ok {
-					mhr = r
-				}
+			if !targetSubset.IsSubset(subsetutils.NewSubset(route.GetMeta().GetLabels())) {
+				continue
+			}
+			if r, ok := route.(*meshhttproute_api.MeshHTTPRouteResource); ok {
+				mhrs = append(mhrs, r)
 			}
 		}
-		if mhr == nil {
+		if len(mhrs) == 0 {
 			return nil, errors.New("can't resolve MeshHTTPRoute policy")
 		}
 	default:
@@ -312,32 +318,34 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 	}
 
 	rv := []core_model.PolicyItem{}
-	for _, mhrRules := range pointer.Deref(mhr.Spec.To) {
-		for _, mhrRule := range mhrRules.Rules {
-			matchesHash := meshhttproute_api.HashMatches(mhrRule.Matches)
-			for _, to := range policyWithTo.GetToList() {
-				var targetRef common_api.TargetRef
-				switch mhrRules.TargetRef.Kind {
-				case common_api.Mesh, common_api.LegacyMeshSubsetKind():
-					targetRef = common_api.TargetRef{
-						Kind: common_api.LegacyMeshSubsetKind(),
-						Tags: &map[string]string{
-							RuleMatchesHashTag: string(matchesHash),
-						},
+	for _, mhr := range mhrs {
+		for _, mhrRules := range pointer.Deref(mhr.Spec.To) {
+			for _, mhrRule := range mhrRules.Rules {
+				matchesHash := meshhttproute_api.HashMatches(mhrRule.Matches)
+				for _, to := range policyWithTo.GetToList() {
+					var targetRef common_api.TargetRef
+					switch mhrRules.TargetRef.Kind {
+					case common_api.Mesh, common_api.LegacyMeshSubsetKind():
+						targetRef = common_api.TargetRef{
+							Kind: common_api.LegacyMeshSubsetKind(),
+							Tags: &map[string]string{
+								RuleMatchesHashTag: string(matchesHash),
+							},
+						}
+					default:
+						targetRef = common_api.TargetRef{
+							Kind: common_api.LegacyMeshServiceSubsetKind(),
+							Name: mhrRules.TargetRef.Name,
+							Tags: &map[string]string{
+								RuleMatchesHashTag: string(matchesHash),
+							},
+						}
 					}
-				default:
-					targetRef = common_api.TargetRef{
-						Kind: common_api.LegacyMeshServiceSubsetKind(),
-						Name: mhrRules.TargetRef.Name,
-						Tags: &map[string]string{
-							RuleMatchesHashTag: string(matchesHash),
-						},
-					}
+					rv = append(rv, &artificialPolicyItem{
+						targetRef: targetRef,
+						conf:      to.GetDefault(),
+					})
 				}
-				rv = append(rv, &artificialPolicyItem{
-					targetRef: targetRef,
-					conf:      to.GetDefault(),
-				})
 			}
 		}
 	}
