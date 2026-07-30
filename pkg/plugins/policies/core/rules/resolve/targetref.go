@@ -34,9 +34,25 @@ func (q query) findPort(ports []core.Port) core.Port {
 	return nil
 }
 
-func TargetRef(targetRef common_api.TargetRef, _ core_model.ResourceMeta, reader kri.ResourceReader) []*ResourceSection {
+func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, reader kri.ResourceReader) []*ResourceSection {
 	if !targetRef.Kind.IsRealResource() {
 		return nil
+	}
+
+	rtype := core_model.ResourceType(targetRef.Kind)
+
+	// Mesh is a real resource but, unlike MeshService and friends, it carries no
+	// labels and is selected as the singleton the policy belongs to. Resolve it
+	// by identity so that 'to: {kind: Mesh}' keeps producing the mesh-wide
+	// ResourceRule that every destination merges in via ResourceRules.Compute.
+	if targetRef.Kind == common_api.Mesh {
+		if tMeta == nil {
+			return []*ResourceSection{}
+		}
+		if mesh := reader.Get(kri.Identifier{ResourceType: rtype, Name: tMeta.GetMesh()}); mesh != nil {
+			return []*ResourceSection{{Resource: mesh}}
+		}
+		return []*ResourceSection{}
 	}
 
 	// targetRef to query
@@ -46,7 +62,6 @@ func TargetRef(targetRef common_api.TargetRef, _ core_model.ResourceMeta, reader
 	}
 
 	// resolve query without taking port/sectionName into account
-	rtype := core_model.ResourceType(targetRef.Kind)
 	var resources []core_model.Resource
 	if q.byLabels != nil {
 		list := reader.ListOrEmpty(rtype).GetItems()

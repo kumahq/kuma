@@ -340,9 +340,18 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 							},
 						}
 					default:
+						// The legacy subset keys on kuma.io/service, so the
+						// route target must resolve to a service name. A label
+						// selector that doesn't carry kuma.io/display-name has
+						// no legacy equivalent; fail loudly rather than emitting
+						// an empty selector that silently matches nothing.
+						service := serviceTagValue(mhrRules.TargetRef)
+						if service == "" {
+							return nil, errors.Errorf("can't resolve %s targetRef to a service: kuma.io/display-name label is required", mhrRules.TargetRef.Kind)
+						}
 						targetRef = common_api.TargetRef{
 							Kind: common_api.LegacyMeshServiceSubsetKind(),
-							Name: pointer.To(serviceTagValue(mhrRules.TargetRef)),
+							Name: pointer.To(service),
 							Tags: &map[string]string{
 								RuleMatchesHashTag: string(matchesHash),
 							},

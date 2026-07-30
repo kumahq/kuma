@@ -459,7 +459,8 @@ func ValidateTargetRef(
 	case common_api.MeshMultiZoneService:
 		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
+		// sectionName selects a MeshMultiZoneService port and stays allowed,
+		// mirroring MeshService and the pre-refactor behavior.
 		if opts.IsBackendRef {
 			err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
 			if len(pointer.Deref(ref.Labels)) == 0 && pointer.Deref(ref.Name) == "" {

@@ -1380,4 +1380,30 @@ var _ = Describe("buildToListWithRoutes", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(expandedServices(items)).To(ConsistOf("backend-a", "backend-b"))
 	})
+
+	It("fails when a route target selects a service by labels without kuma.io/display-name", func() {
+		routeWithoutDisplayName := &v1alpha1.MeshHTTPRouteResource{
+			Meta: &test_model.ResourceMeta{
+				Mesh: "mesh-1",
+				Name: "route-1.ns-a",
+				Labels: map[string]string{
+					mesh_proto.DisplayName:      "route-1",
+					mesh_proto.KubeNamespaceTag: "ns-a",
+				},
+			},
+			Spec: &v1alpha1.MeshHTTPRoute{
+				To: &[]v1alpha1.To{{
+					TargetRef: common_api.TargetRef{
+						Kind:   common_api.MeshService,
+						Labels: pointer.To(map[string]string{"env": "dev"}),
+					},
+					Rules: []v1alpha1.Rule{{}},
+				}},
+			},
+		}
+		meta := &test_model.ResourceMeta{Mesh: "mesh-1", Name: "timeout-1"}
+
+		_, err := core_rules.BuildToListWithRoutesForTesting(meta, policyTargetingRoute, []core_model.Resource{routeWithoutDisplayName})
+		Expect(err).To(MatchError(ContainSubstring("kuma.io/display-name label is required")))
+	})
 })

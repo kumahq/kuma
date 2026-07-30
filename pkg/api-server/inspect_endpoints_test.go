@@ -50,7 +50,8 @@ var _ = Describe("Inspect WS", func() {
 			rm := manager.NewResourceManager(resourceStore)
 			for _, resource := range given.resources {
 				err := rm.Create(context.Background(), resource,
-					store.CreateBy(core_model.MetaToResourceKey(resource.GetMeta())))
+					store.CreateBy(core_model.MetaToResourceKey(resource.GetMeta())),
+					store.CreateWithLabels(resource.GetMeta().GetLabels()))
 				Expect(err).ToNot(HaveOccurred())
 			}
 
@@ -116,10 +117,11 @@ var _ = Describe("Inspect WS", func() {
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_meshtrafficpermission.json")),
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
-				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").Build(),
+				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").
+					WithLabels(map[string]string{"app": "backend"}).Build(),
 				builders.MeshTrafficPermission().
 					WithMesh("mesh-1").
-					WithTargetRef(builders.TargetRefDataplaneName("backend-1")).
+					WithTargetRef(builders.TargetRefDataplaneLabels("app", "backend")).
 					AddRule(v1alpha1.Allow).
 					Build(),
 			},
