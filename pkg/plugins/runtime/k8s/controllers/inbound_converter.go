@@ -134,8 +134,8 @@ func (ic *InboundConverter) inboundForServiceless(pod *kube_core.Pod) *mesh_prot
 
 // InboundInterfacesFor deduplicates inbounds by address and port.
 // Since inbounds carry no tags we can safely deduplicate them.
-func (ic *InboundConverter) InboundInterfacesFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	return deduplicateInboundsByAddressAndPort(ic.inboundInterfacesFor(pod, services)), nil
+func (ic *InboundConverter) InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service) []*mesh_proto.Dataplane_Networking_Inbound {
+	return deduplicateInboundsByAddressAndPort(ic.inboundInterfacesFor(pod, services))
 }
 
 func (ic *InboundConverter) inboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service) []*mesh_proto.Dataplane_Networking_Inbound {

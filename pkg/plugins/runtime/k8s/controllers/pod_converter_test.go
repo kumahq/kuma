@@ -607,10 +607,9 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 			}
 
 			// when
-			inbounds, err := (&InboundConverter{}).InboundInterfacesFor(context.Background(), pod, []*kube_core.Service{svc})
+			inbounds := (&InboundConverter{}).InboundInterfacesFor(pod, []*kube_core.Service{svc})
 
 			// expect
-			Expect(err).ToNot(HaveOccurred())
 			Expect(inbounds).To(HaveLen(1))
 			Expect(inbounds[0].Port).To(Equal(uint32(8080)))
 			Expect(inbounds[0].Tags).To(Equal(map[string]string{}))
@@ -741,9 +740,8 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 			},
 		}
 
-		inbounds, err := (&InboundConverter{}).InboundInterfacesFor(context.Background(), pod, services)
+		inbounds := (&InboundConverter{}).InboundInterfacesFor(pod, services)
 
-		Expect(err).ToNot(HaveOccurred())
 		Expect(inbounds).To(HaveLen(1))
 		Expect(inbounds[0].State).To(Equal(mesh_proto.Dataplane_Networking_Inbound_Ready))
 		Expect(inbounds[0].Health).To(Equal(&mesh_proto.Dataplane_Networking_Inbound_Health{Ready: true}))

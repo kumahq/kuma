@@ -307,11 +307,7 @@ func (p *PodConverter) dataplaneFor(
 		// (has zone proxy services but no regular services) to avoid the
 		// serviceless inbound fallback in InboundInterfacesFor.
 		if len(regularServices) > 0 || len(zoneProxyServices) == 0 {
-			ifaces, err := p.InboundConverter.InboundInterfacesFor(ctx, pod, regularServices)
-			if err != nil {
-				return nil, err
-			}
-			dataplane.Networking.Inbound = ifaces
+			dataplane.Networking.Inbound = p.InboundConverter.InboundInterfacesFor(pod, regularServices)
 		}
 
 		// portSvc tracks which service already claimed each address:port to produce
