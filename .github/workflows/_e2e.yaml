@@ -37,6 +37,9 @@ jobs:
         with:
           fetch-depth: 0
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+        with:
+          # Keep in sync with the other pipeline workflows' mise pin (jdx/mise#11469).
+          version: 2026.7.16
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "clang-format,golangci-lint,skaffold,protoc-gen-go-grpc,kube-linter"
