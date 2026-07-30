@@ -103,72 +103,6 @@ type meshServicesResult struct {
 	labelContributions map[string]map[string]string // serviceTag → per-DP contribution
 }
 
-func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
-	if workloadName := dataplane.GetMeta().GetLabels()[metadata.KumaWorkload]; workloadName != "" {
-		return g.workloadMeshServiceForDataplane(dataplane)
-	}
-	return g.serviceTagMeshServicesForDataplane(dataplane)
-}
-
-// serviceTagMeshServicesForDataplane generates MeshServices grouped by the
-// kuma.io/service inbound tag. Used as a compatibility fallback for Universal
-// Dataplanes that have not been labeled with kuma.io/workload yet.
-func (g *Generator) serviceTagMeshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
-	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
-	portsByService := map[string][]meshservice_api.Port{}
-	inboundsByService := map[string][]*mesh_proto.Dataplane_Networking_Inbound{}
-	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
-		serviceTagValue := inbound.GetTags()[mesh_proto.ServiceTag]
-		allErrs := apimachineryvalidation.NameIsDNS1035Label(serviceTagValue, false)
-		if len(allErrs) != 0 {
-			log.Info("couldn't generate MeshService from kuma.io/service, contains invalid characters", "value", serviceTagValue, "error", allErrs)
-			continue
-		}
-
-		port := meshservice_api.Port{
-			Name:        &inbound.Name,
-			Port:        int32(inbound.Port),
-			TargetPort:  pointer.To(intstr.FromInt32(int32(inbound.Port))),
-			AppProtocol: core_meta.ProtocolTCP,
-		}
-
-		if name := pointer.Deref(port.Name); name == "" {
-			port.Name = pointer.To(fmt.Sprintf("%d", port.Port))
-		}
-
-		if proto := inbound.GetProtocolFallback(); proto != "" {
-			if p := core_meta.ParseProtocol(proto); p != core_meta.ProtocolUnknown {
-				port.AppProtocol = p
-			}
-		}
-
-		portsByService[serviceTagValue] = append(portsByService[serviceTagValue], port)
-		inboundsByService[serviceTagValue] = append(inboundsByService[serviceTagValue], inbound)
-	}
-
-	services := map[string]*meshservice_api.MeshService{}
-	for serviceTag, ports := range portsByService {
-		ms := meshservice_api.MeshService{
-			Selector: meshservice_api.Selector{
-				DataplaneTags: &map[string]string{
-					mesh_proto.ServiceTag: serviceTag,
-				},
-			},
-			Ports: ports,
-		}
-		services[serviceTag] = &ms
-	}
-
-	contributions := map[string]map[string]string{}
-	if g.labelPropagationEnabled {
-		for tag, ins := range inboundsByService {
-			contributions[tag] = dpContribution(dataplane, ins, g.allowSet, g.droppedLabels, g.logger, tag)
-		}
-	}
-
-	return meshServicesResult{services: services, labelContributions: contributions}
-}
-
 // workloadMeshServiceForDataplane generates a single MeshService per
 // kuma.io/workload label value. Inbounds no longer carry tags for generated
 // Dataplanes, so service identity is derived from the workload the Dataplane
@@ -285,7 +219,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 	log := g.logger.WithValues("mesh", mesh)
 	meshservicesByName := map[string][]dataplaneAndMeshService{}
 	for _, dataplane := range core_mesh.SortDataplanes(dataplanes) {
-		result := g.meshServicesForDataplane(dataplane)
+		result := g.workloadMeshServiceForDataplane(dataplane)
 		for name, ms := range result.services {
 			meshservicesByName[name] = append(meshservicesByName[name], dataplaneAndMeshService{
 				dataplane:         dataplane,
