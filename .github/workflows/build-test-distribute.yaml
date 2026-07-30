@@ -83,7 +83,7 @@ jobs:
               . as $jobs
               | [
                   {label: "test / test_unit", pattern: "^test / test_unit$"},
-                  {label: "test / e2e ...", pattern: "^test / e2e"},
+                  {label: "test / e2e ...", pattern: "^test / (test_)?e2e"},
                   {label: "build_publish / digest-images", pattern: "^build_publish / digest-images$"},
                   {label: "build_publish / build-binaries", pattern: "^build_publish / build-binaries$"},
                   {label: "build_publish / build-images ...", pattern: "^build_publish / build-images"},
