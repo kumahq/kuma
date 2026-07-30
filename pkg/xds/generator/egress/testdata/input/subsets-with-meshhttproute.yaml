@@ -24,7 +24,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: service-in-zone-2
+        labels:
+          kuma.io/display-name: service-in-zone-2
       rules:
         - matches:
             - path:

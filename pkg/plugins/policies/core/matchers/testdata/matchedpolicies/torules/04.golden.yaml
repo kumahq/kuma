@@ -30,4 +30,4 @@ Rules:
   Subset:
   - Key: kuma.io/service
     Not: false
-    Value: ""
+    Value: backend

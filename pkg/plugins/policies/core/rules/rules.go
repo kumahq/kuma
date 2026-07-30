@@ -335,7 +335,7 @@ func buildToListWithRoutes(_ core_model.ResourceMeta, policyWithTo core_model.Po
 					default:
 						targetRef = common_api.TargetRef{
 							Kind: common_api.LegacyMeshServiceSubsetKind(),
-							Name: mhrRules.TargetRef.Name,
+							Name: pointer.To(serviceTagValue(mhrRules.TargetRef)),
 							Tags: &map[string]string{
 								RuleMatchesHashTag: string(matchesHash),
 							},
@@ -604,9 +604,9 @@ func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {
 		}
 		return ss, nil
 	case common_api.MeshService:
-		return subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: pointer.Deref(tr.Name)}}, nil
+		return subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: serviceTagValue(tr)}}, nil
 	case common_api.LegacyMeshServiceSubsetKind():
-		ss := subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: pointer.Deref(tr.Name)}}
+		ss := subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: serviceTagValue(tr)}}
 		for k, v := range pointer.Deref(tr.Tags) {
 			ss = append(ss, subsetutils.Tag{Key: k, Value: v})
 		}
@@ -614,4 +614,14 @@ func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {
 	default:
 		return nil, errors.Errorf("can't represent %s as tags", tr.Kind)
 	}
+}
+
+// serviceTagValue returns the kuma.io/service value identifying a legacy
+// MeshService targetRef. Under the labels-only contract the service name lives
+// in the kuma.io/display-name label, so fall back to it when name is unset.
+func serviceTagValue(tr common_api.TargetRef) string {
+	if name := pointer.Deref(tr.Name); name != "" {
+		return name
+	}
+	return pointer.Deref(tr.Labels)[mesh_proto.DisplayName]
 }

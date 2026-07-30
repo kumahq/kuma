@@ -20,7 +20,7 @@ Rules:
   Subset:
   - Key: kuma.io/service
     Not: false
-    Value: ""
+    Value: test-server
 - Conf:
     http:
       requestTimeout: 1s
