@@ -280,7 +280,7 @@ func realResourceSelector(ref TargetRef, defaultNamespace string) (map[string]st
 
 	switch ref.Kind {
 	case MeshService:
-		if pointer.Deref(ref.SectionName) == "" {
+		if ref.Namespace == nil && pointer.Deref(ref.SectionName) == "" {
 			if serviceName, namespace, port, ok := parseMeshServiceName(name); ok {
 				labels := map[string]string{
 					mesh_proto.DisplayName:      serviceName,
@@ -335,8 +335,6 @@ func parseMeshServiceName(name string) (string, string, int32, bool) {
 			return "", "", 0, false
 		}
 		port = int32(p)
-	case 3:
-		port = 0
 	default:
 		return "", "", 0, false
 	}

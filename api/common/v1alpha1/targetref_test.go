@@ -183,6 +183,33 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T
 				mesh_proto.KubeNamespaceTag: "team-b",
 			},
 		},
+		"MeshService explicit namespace wins over legacy-looking name": {
+			ref: BackendRef{
+				TargetRef: TargetRef{
+					Kind:      MeshService,
+					Name:      pointer.To("backend_prod_svc"),
+					Namespace: pointer.To("explicit-ns"),
+				},
+			},
+			defaultNs: "team-a",
+			expectedLabels: map[string]string{
+				mesh_proto.DisplayName:      "backend_prod_svc",
+				mesh_proto.KubeNamespaceTag: "explicit-ns",
+			},
+		},
+		"MeshService unported svc-suffixed name is literal": {
+			ref: BackendRef{
+				TargetRef: TargetRef{
+					Kind: MeshService,
+					Name: pointer.To("foo_bar_svc"),
+				},
+			},
+			defaultNs: "team-a",
+			expectedLabels: map[string]string{
+				mesh_proto.DisplayName:      "foo_bar_svc",
+				mesh_proto.KubeNamespaceTag: "team-a",
+			},
+		},
 	}
 
 	for name, tt := range tests {

@@ -120,6 +120,55 @@ var _ = Describe("Resolve BackendRef", func() {
 		Expect(resolved.Resource()).To(Equal(expected))
 	})
 
+	It("should keep explicit namespace for legacy-looking MeshService names", func() {
+		origin := kri.Identifier{Mesh: "mesh-1", Namespace: "default"}
+		expected := kri.Identifier{ResourceType: core_model.ResourceType(common_api.MeshService), Mesh: "mesh-1", Name: "backend_prod_svc"}
+
+		var capturedLabels map[string]string
+		resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind:      common_api.MeshService,
+				Name:      pointer.To("backend_prod_svc"),
+				Namespace: pointer.To("explicit-ns"),
+			},
+		}, func(_ core_model.ResourceType, gotLabels map[string]string) kri.Identifier {
+			capturedLabels = gotLabels
+			return expected
+		})
+
+		Expect(ok).To(BeTrue())
+		Expect(capturedLabels).To(Equal(map[string]string{
+			mesh_proto.DisplayName:      "backend_prod_svc",
+			mesh_proto.KubeNamespaceTag: "explicit-ns",
+		}))
+		Expect(resolved.ReferencesRealResource()).To(BeTrue())
+		Expect(resolved.Resource()).To(Equal(expected))
+	})
+
+	It("should treat unported svc-suffixed MeshService names as literal real-resource names", func() {
+		origin := kri.Identifier{Mesh: "mesh-1", Namespace: "team-a"}
+		expected := kri.Identifier{ResourceType: core_model.ResourceType(common_api.MeshService), Mesh: "mesh-1", Name: "foo_bar_svc"}
+
+		var capturedLabels map[string]string
+		resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind: common_api.MeshService,
+				Name: pointer.To("foo_bar_svc"),
+			},
+		}, func(_ core_model.ResourceType, gotLabels map[string]string) kri.Identifier {
+			capturedLabels = gotLabels
+			return expected
+		})
+
+		Expect(ok).To(BeTrue())
+		Expect(capturedLabels).To(Equal(map[string]string{
+			mesh_proto.DisplayName:      "foo_bar_svc",
+			mesh_proto.KubeNamespaceTag: "team-a",
+		}))
+		Expect(resolved.ReferencesRealResource()).To(BeTrue())
+		Expect(resolved.Resource()).To(Equal(expected))
+	})
+
 	It("should fall back to a legacy MeshService backendRef when a plain name does not resolve to a real resource", func() {
 		origin := kri.Identifier{Mesh: "mesh-1", Namespace: "kuma-demo"}
 
