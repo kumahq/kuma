@@ -209,17 +209,6 @@ func (p plugin) denyRules() core_rules.Rules {
 	}
 }
 
-func (p plugin) allowRules() core_rules.Rules {
-	return core_rules.Rules{
-		&core_rules.Rule{ //nolint:staticcheck // SA1019 Zone egress uses old Rule format
-			Subset: subsetutils.MeshSubset(),
-			Conf: api.Conf{
-				Action: &api.Allow,
-			},
-		},
-	}
-}
-
 func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	listeners := policies_xds.GatherListeners(rs)
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
@@ -236,31 +225,23 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			continue
 		}
 
-		mesNames := []string{}
+		mesNames := map[string]string{}
 		for _, mes := range resource.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType).GetItems() {
 			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
-			mesNames = append(mesNames, destinationname.MustResolve(true, meshExtSvc, meshExtSvc.Spec.Match))
+			mesNames[destinationname.MustResolve(true, meshExtSvc, meshExtSvc.Spec.Match)] = destinationname.MustResolve(false, meshExtSvc, meshExtSvc.Spec.Match)
 		}
 
-		for _, mesName := range mesNames {
-			rules := core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{}: p.allowRules(),
-				},
-			}
+		for filterChainName, serviceName := range mesNames {
+			mtp := resource.Dynamic[core_xds.ServiceName(serviceName)][api.MeshTrafficPermissionType]
 
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for MeshExternalService
-			for _, rule := range rules.Rules {
-				configurer := &v3.LegacyRBACConfigurer{
-					StatsName: listeners.Egress.Name,
-					Rules:     rule,
-					Mesh:      meshName,
-				}
-				for _, filterChain := range listeners.Egress.FilterChains {
-					if filterChain.Name == mesName {
-						if err := configurer.Configure(filterChain); err != nil {
-							return err
-						}
+			configurer := &v3.RBACConfigurer{
+				StatsName:    listeners.Egress.Name,
+				InboundRules: mtp.FromRules.InboundRules[core_rules.InboundListener{}],
+			}
+			for _, filterChain := range listeners.Egress.FilterChains {
+				if filterChain.Name == filterChainName {
+					if err := configurer.Configure(filterChain); err != nil {
+						return err
 					}
 				}
 			}

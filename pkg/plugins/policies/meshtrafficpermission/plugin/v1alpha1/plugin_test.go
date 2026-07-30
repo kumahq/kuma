@@ -544,11 +544,12 @@ var _ = Describe("RBAC", func() {
 	})
 
 	Context("for ZoneEgress proxy", func() {
-		It("should attach allow RBAC when unified naming is enabled", func() {
+		It("should attach MeshTrafficPermission RBAC when unified naming is enabled", func() {
 			// given a MeshExternalService whose egress filter chain is named using the
 			// unified (KRI) scheme, not the legacy one
 			mes := builders.MeshExternalService().WithMesh("mesh-1").WithName("es-1").Build()
 			filterChainName := destinationname.MustResolve(true, mes, mes.Spec.Match)
+			serviceName := destinationname.MustResolve(false, mes, mes.Spec.Match)
 
 			rs := core_xds.NewResourceSet()
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
@@ -598,6 +599,37 @@ var _ = Describe("RBAC", func() {
 									Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
 								},
 							},
+							Dynamic: core_xds.ExternalServiceDynamicPolicies{
+								core_xds.ServiceName(serviceName): {
+									policies_api.MeshTrafficPermissionType: {
+										Type: policies_api.MeshTrafficPermissionType,
+										FromRules: core_rules.FromRules{
+											InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+												{}: {
+													{
+														Conf: policies_api.RuleConf{
+															Allow: &[]common_api.Match{
+																{
+																	SpiffeID: &common_api.SpiffeIDMatch{
+																		Type:  common_api.ExactMatchType,
+																		Value: "spiffe://mesh-1/frontend",
+																	},
+																},
+															},
+														},
+														Origin: common.Origin{
+															Resource: &test_model.ResourceMeta{
+																Mesh: "mesh-1",
+																Name: "mtp-1",
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -635,9 +667,86 @@ var _ = Describe("RBAC", func() {
 				Expect(filter.GetTypedConfig().UnmarshalTo(actualRBAC)).To(Succeed())
 			}
 			Expect(actualRBAC).ToNot(BeNil())
-			Expect(actualRBAC.GetRules()).ToNot(BeNil())
-			Expect(actualRBAC.GetRules().GetAction()).To(Equal(rbac_config.RBAC_ALLOW))
-			Expect(actualRBAC.GetRules().GetPolicies()).To(HaveKey("MeshTrafficPermission"))
+			Expect(actualRBAC.GetRules()).To(BeNil())
+			Expect(actualRBAC.GetMatcher()).ToNot(BeNil())
+			Expect(actualRBAC.GetMatcher().GetMatcherList().GetMatchers()).To(HaveLen(1))
+		})
+
+		It("should default deny MeshExternalService traffic when no MeshTrafficPermission matches", func() {
+			mes := builders.MeshExternalService().WithMesh("mesh-1").WithName("es-1").Build()
+			filterChainName := destinationname.MustResolve(true, mes, mes.Spec.Match)
+
+			rs := core_xds.NewResourceSet()
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
+				WithOverwriteName("egress-listener").
+				Configure(
+					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, filterChainName).Configure(
+						listeners.MatchTransportProtocol("tls"),
+						listeners.TCPProxy(filterChainName),
+					)),
+				).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			rs.Add(&core_xds.Resource{
+				Name:     listener.GetName(),
+				Origin:   metadata.OriginEgress,
+				Resource: listener,
+			})
+
+			meshRes := builders.Mesh().WithName("mesh-1").WithBuiltinMTLSBackend("builtin-1").WithEnabledMTLSBackend("builtin-1").Build()
+			ctx := &xds_context.Context{}
+			proxy := &core_xds.Proxy{
+				APIVersion: envoy.APIV3,
+				Metadata: &core_xds.DataplaneMetadata{
+					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
+				},
+				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
+					ZoneEgressResource: &core_mesh.ZoneEgressResource{
+						Meta: &test_model.ResourceMeta{Name: "ze1", Mesh: "mesh-1"},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{
+								Address: "192.168.0.1",
+								Port:    10002,
+							},
+						},
+					},
+					MeshResourcesList: []*core_xds.MeshResources{
+						{
+							Mesh: meshRes,
+							Resources: map[core_model.ResourceType]core_model.ResourceList{
+								meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
+									Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
+								},
+							},
+							Dynamic: core_xds.ExternalServiceDynamicPolicies{},
+						},
+					},
+				},
+			}
+
+			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
+			Expect(p.Apply(rs, *ctx, proxy)).To(Succeed())
+
+			var actualRBAC *network_rbac.RBAC
+			egressListener := rs.ListOf(envoy_resource.ListenerType)[0].Resource.(*envoy_listener.Listener)
+			for _, fc := range egressListener.GetFilterChains() {
+				if fc.GetName() != filterChainName {
+					continue
+				}
+				for _, filter := range fc.GetFilters() {
+					if filter.GetName() != "envoy.filters.network.rbac" {
+						continue
+					}
+					actualRBAC = &network_rbac.RBAC{}
+					Expect(filter.GetTypedConfig().UnmarshalTo(actualRBAC)).To(Succeed())
+				}
+			}
+			Expect(actualRBAC).ToNot(BeNil())
+			Expect(actualRBAC.GetMatcher()).ToNot(BeNil())
+			Expect(actualRBAC.GetMatcher().GetMatcherList().GetMatchers()).To(BeEmpty())
+			action := &rbac_config.Action{}
+			Expect(actualRBAC.GetMatcher().GetOnNoMatch().GetAction().GetTypedConfig().UnmarshalTo(action)).To(Succeed())
+			Expect(action.GetAction()).To(Equal(rbac_config.RBAC_DENY))
 		})
 	})
 })
