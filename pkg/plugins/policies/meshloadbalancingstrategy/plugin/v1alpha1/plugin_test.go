@@ -1313,7 +1313,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(xds.LegacyServiceName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(kri.WithSectionName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), uint32(27777)).String()).Build(),
 						},
 					},
 					{
@@ -1322,7 +1322,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(xds.LegacyServiceName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(kri.WithSectionName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), uint32(27777)).String()).Build(),
 						},
 					},
 					{
@@ -1331,7 +1331,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-3"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(xds.LegacyServiceName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(kri.WithSectionName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), uint32(27777)).String()).Build(),
 						},
 					},
 				}),
