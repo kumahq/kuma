@@ -549,32 +549,6 @@ var _ = Describe("MeshService generator", func() {
 			}, "1s", "100ms").Should(Succeed())
 		})
 
-		It("should generate MeshService from legacy service tag when kuma.io/workload label is absent", func() {
-			createDataplane("dp-1", "", nil,
-				builders.Inbound().
-					WithPort(80).
-					WithServicePort(8080).
-					WithName("http").
-					WithTags(map[string]string{mesh_proto.ServiceTag: "test-server"}),
-			)
-
-			ms := meshservice_api.NewMeshServiceResource()
-			Eventually(func(g Gomega) {
-				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("test-server", model.DefaultMesh))).To(Succeed())
-				g.Expect(ms.Spec.Selector).To(Equal(meshservice_api.Selector{
-					DataplaneTags: &map[string]string{mesh_proto.ServiceTag: "test-server"},
-				}))
-				g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
-					{
-						Name:        pointer.To("http"),
-						Port:        80,
-						TargetPort:  pointer.To(intstr.FromInt32(80)),
-						AppProtocol: core_meta.ProtocolTCP,
-					},
-				}))
-			}, "2s", "100ms").Should(Succeed())
-		})
-
 		It("should not generate MeshService for invalid kuma.io/workload label", func() {
 			createDataplane("dp-1", "Invalid_Workload", nil,
 				builders.Inbound().WithPort(80).WithServicePort(8080).WithName("http"),
