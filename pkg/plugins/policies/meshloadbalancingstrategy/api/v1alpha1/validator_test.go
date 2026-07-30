@@ -51,7 +51,8 @@ to:
         version: v1
   - targetRef:
       kind: MeshService
-      name: real-mesh-service
+      labels:
+        kuma.io/display-name: real-mesh-service
       sectionName: http
     default:
       localityAwareness:
@@ -72,7 +73,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: svc-2
+      labels:
+        kuma.io/display-name: svc-2
     default:
       loadBalancer:
         type: LeastRequest
@@ -93,8 +95,9 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
-      name: svc-1
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-1
     default:
       localityAwareness:
         crossZone:
@@ -125,7 +128,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: svc-1
+      labels:
+        kuma.io/display-name: svc-1
     default:
       localityAwareness:
         localZone:
@@ -150,7 +154,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: svc-1
+      labels:
+        kuma.io/display-name: svc-1
     default:
       localityAwareness:
         localZone:
@@ -173,8 +178,9 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
-      name: svc-1
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-1
     default:
       localityAwareness:
         crossZone:
@@ -195,8 +201,9 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
-      name: svc-1
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-1
     default:
       localityAwareness:
         crossZone:
@@ -243,8 +250,9 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
-      name: svc-1
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-1
     default:
       localityAwareness:
         crossZone:
@@ -306,7 +314,8 @@ targetRef:
 to: 
   - targetRef:
       kind: MeshService
-      name: svc-2
+      labels:
+        kuma.io/display-name: svc-2
     default:
       hashPolicies:
         - type: Header
@@ -332,7 +341,8 @@ targetRef:
 to: 
   - targetRef:
       kind: MeshHTTPRoute
-      name: route-1
+      labels:
+        kuma.io/display-name: route-1
     default:
       loadBalancer:
         type: RoundRobin
@@ -358,7 +368,8 @@ targetRef:
 to: 
   - targetRef:
       kind: MeshHTTPRoute
-      name: route-1
+      labels:
+        kuma.io/display-name: route-1
     default:
       localityAwareness:
         disabled: true
@@ -405,7 +416,8 @@ targetRef:
 to: 
   - targetRef:
       kind: MeshHTTPRoute
-      name: route-1
+      labels:
+        kuma.io/display-name: route-1
     default:
       hashPolicies:
         - type: Header
@@ -428,7 +440,8 @@ targetRef:
 to: 
   - targetRef:
       kind: MeshService
-      name: svc-2
+      labels:
+        kuma.io/display-name: svc-2
     default:
       localityAwareness:
         disabled: true
@@ -452,7 +465,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: svc-2
+      labels:
+        kuma.io/display-name: svc-2
     default:
       localityAwareness:
         disabled: true
@@ -471,8 +485,9 @@ targetRef:
   kind: Mesh
 to: 
   - targetRef:
-      kind: MeshService
-      name: svc-2
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-2
     default:
       localityAwareness:
         localZone:

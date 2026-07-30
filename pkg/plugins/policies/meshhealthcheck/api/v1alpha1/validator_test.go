@@ -31,7 +31,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s
@@ -74,7 +75,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshMultiZoneService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       tcp: # it will pick the protocol as described in 'protocol selection' section
@@ -86,7 +88,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: external
+      labels:
+        kuma.io/display-name: external
     default:
       interval: 10s
       tcp: # it will pick the protocol as described in 'protocol selection' section
@@ -98,7 +101,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: external
+      labels:
+        kuma.io/display-name: external
     default:
       interval: 10s
       tcp:
@@ -145,7 +149,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default: {}
 `,
 				expected: `
@@ -160,7 +165,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s
@@ -182,7 +188,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: -10s
       timeout: -2s
@@ -213,7 +220,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s
@@ -237,7 +245,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s
@@ -258,7 +267,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s

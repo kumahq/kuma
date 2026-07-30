@@ -30,7 +30,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits:
         maxConnections: 2
@@ -93,7 +94,8 @@ to:
           healthyPanicThreshold: 80
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits:
         maxConnections: 22
@@ -159,7 +161,8 @@ to:
             threshold: 85
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits:
         maxConnections: 22
@@ -194,7 +197,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits: { }`),
 			Entry("with MeshMultiZoneService", `
@@ -203,7 +207,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshMultiZoneService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits: { }`),
 			Entry("with MeshExternalService", `
@@ -212,7 +217,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: external
+      labels:
+        kuma.io/display-name: external
     default:
       connectionLimits: { }`),
 			Entry("top level Dataplane to MeshExternalService", `
@@ -221,7 +227,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: external
+      labels:
+        kuma.io/display-name: external
     default:
       connectionLimits: { }`),
 			Entry("inbound rules and outbound to together", `
@@ -233,7 +240,8 @@ rules:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits: { }`),
 		)
@@ -307,7 +315,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend`,
+      labels:
+        kuma.io/display-name: web-backend`,
 				expected: `
 violations:
   - field: spec.to[0].default
@@ -320,7 +329,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits:
         maxConnections: 0
@@ -348,7 +358,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         interval: 0s
@@ -400,7 +411,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         maxEjectionPercent: 101
@@ -424,7 +436,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         detectors:
@@ -445,7 +458,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         maxEjectionPercent: 100`,
@@ -461,7 +475,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         maxEjectionPercent: 100
@@ -478,7 +493,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         detectors:

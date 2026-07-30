@@ -34,7 +34,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       backends:
         - type: File
@@ -82,7 +83,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshMultiZoneService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       backends:
         - type: File
@@ -589,7 +591,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       backends:
         - type: File
