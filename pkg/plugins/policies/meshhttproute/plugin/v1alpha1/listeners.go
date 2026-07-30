@@ -300,7 +300,7 @@ func prepareRoutes(
 				routes,
 				api.Route{
 					Name:              routeName,
-          Origin:            originID,
+					Origin:            originID,
 					Match:             match,
 					Filters:           filters,
 					BackendRefs:       refs,
