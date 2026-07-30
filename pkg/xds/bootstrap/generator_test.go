@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
-	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	. "github.com/kumahq/kuma/v3/pkg/xds/bootstrap"
@@ -418,7 +417,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		}),
 	)
 
-	It("should use the workload label as cluster identity when inbound tags are empty", func() {
+	It("should use unknown service as cluster identity when inbound tags are empty", func() {
 		// given
 		dp := defaultDataplane()
 		dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
@@ -426,9 +425,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			context.Background(),
 			dp,
 			store.CreateByKey("name.namespace", "mesh"),
-			store.CreateWithLabels(map[string]string{
-				k8s_metadata.KumaWorkload: "backend-workload",
-			}),
 		)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -459,7 +455,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		Expect(err).ToNot(HaveOccurred())
 		envoyBootstrap, ok := bootstrapConfig.(*envoy_bootstrap_v3.Bootstrap)
 		Expect(ok).To(BeTrue())
-		Expect(envoyBootstrap.GetNode().GetCluster()).To(Equal("backend-workload"))
+		Expect(envoyBootstrap.GetNode().GetCluster()).To(Equal(mesh_proto.ServiceUnknown))
 	})
 
 	type errTestCase struct {
