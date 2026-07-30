@@ -6,7 +6,6 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/xds/filters"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
@@ -16,11 +15,11 @@ import (
 )
 
 type RoutesConfigurer struct {
-	Name                    string
-	Match                   api.Match
-	Filters                 []api.Filter
-	Split                   []envoy_common.Split
-	BackendRefToClusterName map[common_api.BackendRefHash]string
+	Name         string
+	Match        api.Match
+	Filters      []api.Filter
+	MirrorSplits map[int]envoy_common.Split
+	Split        []envoy_common.Split
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
@@ -39,7 +38,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 		// We pass the information about whether this match was created from
 		// a prefix match along to the filters because it's no longer
 		// possible to know for sure with just an envoy_route.Route
-		for _, filter := range c.Filters {
+		for i, filter := range c.Filters {
 			switch filter.Type {
 			case api.RequestHeaderModifierType:
 				rb.Configure(filters.NewRequestHeaderModifier(*filter.RequestHeaderModifier))
@@ -50,7 +49,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 			case api.URLRewriteType:
 				rb.Configure(filters.NewURLRewrite(*filter.URLRewrite, match.prefixMatch))
 			case api.RequestMirrorType:
-				rb.Configure(filters.NewRequestMirror(*filter.RequestMirror, c.BackendRefToClusterName))
+				rb.Configure(filters.NewRequestMirror(*filter.RequestMirror, c.MirrorSplits[i]))
 			}
 		}
 
