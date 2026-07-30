@@ -209,6 +209,17 @@ func (p plugin) denyRules() core_rules.Rules {
 	}
 }
 
+func (p plugin) allowRules() core_rules.Rules {
+	return core_rules.Rules{
+		&core_rules.Rule{ //nolint:staticcheck // SA1019 Zone egress uses old Rule format
+			Subset: subsetutils.MeshSubset(),
+			Conf: api.Conf{
+				Action: &api.Allow,
+			},
+		},
+	}
+}
+
 func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	listeners := policies_xds.GatherListeners(rs)
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
@@ -232,17 +243,32 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 		}
 
 		for filterChainName, serviceName := range mesNames {
-			mtp := resource.Dynamic[core_xds.ServiceName(serviceName)][api.MeshTrafficPermissionType]
+			mtp := resource.Dynamic[serviceName][api.MeshTrafficPermissionType]
+			inboundRules := mtp.FromRules.InboundRules[core_rules.InboundListener{}]
 
-			configurer := &v3.RBACConfigurer{
-				StatsName:    listeners.Egress.Name,
-				InboundRules: mtp.FromRules.InboundRules[core_rules.InboundListener{}],
-			}
 			for _, filterChain := range listeners.Egress.FilterChains {
-				if filterChain.Name == filterChainName {
-					if err := configurer.Configure(filterChain); err != nil {
+				if filterChain.Name != filterChainName {
+					continue
+				}
+
+				if len(inboundRules) == 0 {
+					legacyConfigurer := &v3.LegacyRBACConfigurer{
+						StatsName: listeners.Egress.Name,
+						Rules:     p.allowRules(),
+						Mesh:      meshName,
+					}
+					if err := legacyConfigurer.Configure(filterChain); err != nil {
 						return err
 					}
+					continue
+				}
+
+				configurer := &v3.RBACConfigurer{
+					StatsName:    listeners.Egress.Name,
+					InboundRules: inboundRules,
+				}
+				if err := configurer.Configure(filterChain); err != nil {
+					return err
 				}
 			}
 		}

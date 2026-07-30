@@ -600,7 +600,7 @@ var _ = Describe("RBAC", func() {
 								},
 							},
 							Dynamic: core_xds.ExternalServiceDynamicPolicies{
-								core_xds.ServiceName(serviceName): {
+								serviceName: {
 									policies_api.MeshTrafficPermissionType: {
 										Type: policies_api.MeshTrafficPermissionType,
 										FromRules: core_rules.FromRules{
@@ -672,7 +672,7 @@ var _ = Describe("RBAC", func() {
 			Expect(actualRBAC.GetMatcher().GetMatcherList().GetMatchers()).To(HaveLen(1))
 		})
 
-		It("should default deny MeshExternalService traffic when no MeshTrafficPermission matches", func() {
+		It("should keep MeshExternalService traffic allowed when no MeshTrafficPermission matches", func() {
 			mes := builders.MeshExternalService().WithMesh("mesh-1").WithName("es-1").Build()
 			filterChainName := destinationname.MustResolve(true, mes, mes.Spec.Match)
 
@@ -742,11 +742,10 @@ var _ = Describe("RBAC", func() {
 				}
 			}
 			Expect(actualRBAC).ToNot(BeNil())
-			Expect(actualRBAC.GetMatcher()).ToNot(BeNil())
-			Expect(actualRBAC.GetMatcher().GetMatcherList().GetMatchers()).To(BeEmpty())
-			action := &rbac_config.Action{}
-			Expect(actualRBAC.GetMatcher().GetOnNoMatch().GetAction().GetTypedConfig().UnmarshalTo(action)).To(Succeed())
-			Expect(action.GetAction()).To(Equal(rbac_config.RBAC_DENY))
+			Expect(actualRBAC.GetMatcher()).To(BeNil())
+			Expect(actualRBAC.GetRules()).ToNot(BeNil())
+			Expect(actualRBAC.GetRules().GetAction()).To(Equal(rbac_config.RBAC_ALLOW))
+			Expect(actualRBAC.GetRules().GetPolicies()).To(HaveKey("MeshTrafficPermission"))
 		})
 	})
 })
