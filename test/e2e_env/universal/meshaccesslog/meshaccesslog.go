@@ -139,7 +139,8 @@ spec:
  to:
    - targetRef:
        kind: MeshService
-       name: test-server
+       labels:
+         kuma.io/display-name: test-server
      default:
        backends:
        - type: Tcp
@@ -172,7 +173,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
         sectionName: main-port
       default:
         backends:
@@ -207,7 +209,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         backends:
           - type: Tcp
@@ -239,7 +242,8 @@ spec:
  to:
    - targetRef:
        kind: MeshService
-       name: test-server
+       labels:
+         kuma.io/display-name: test-server
      rules:
        - matches:
            - path:
@@ -260,7 +264,8 @@ spec:
  to:
    - targetRef:
        kind: MeshService
-       name: test-server
+       labels:
+         kuma.io/display-name: test-server
      rules:
        - matches:
            - path:
@@ -281,7 +286,8 @@ spec:
  to:
    - targetRef:
        kind: MeshHTTPRoute
-       name: to-test-server-route-1
+       labels:
+         kuma.io/display-name: to-test-server-route-1
      default:
        backends:
          - type: Tcp
@@ -345,7 +351,8 @@ spec:
  to:
    - targetRef:
        kind: MeshService
-       name: test-server
+       labels:
+         kuma.io/display-name: test-server
      default:
        backends:
        - type: Tcp
@@ -466,7 +473,8 @@ spec:
  to:
    - targetRef:
        kind: MeshExternalService
-       name: ext-service
+       labels:
+         kuma.io/display-name: ext-service
      default:
        backends:
        - type: Tcp

@@ -415,7 +415,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: plain-external-service
+        labels:
+          kuma.io/display-name: plain-external-service
       rules:
         - matches:
             - path:

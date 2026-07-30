@@ -121,11 +121,13 @@ mesh: %s
 spec:
   targetRef:
     kind: MeshService
-    name: test-client_multizone-meshtimeout-ns_svc_80
+    labels:
+      kuma.io/display-name: test-client
   to:
     - targetRef:
         kind: MeshService
-        name: test-server_multizone-meshtimeout-ns_svc_80
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -145,7 +147,8 @@ mesh: %s
 spec:
   targetRef:
     kind: MeshHTTPRoute
-    name: route-1
+    labels:
+      kuma.io/display-name: route-1
   to:
     - targetRef:
         kind: Mesh

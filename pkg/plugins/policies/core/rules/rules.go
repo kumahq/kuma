@@ -293,7 +293,7 @@ func BuildGatewayRules(
 	}, nil
 }
 
-func buildToListWithRoutes(_ core_model.ResourceMeta, policyWithTo core_model.PolicyWithToList, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
+func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model.PolicyWithToList, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
 	var mhrs []*meshhttproute_api.MeshHTTPRouteResource
 	switch policyWithTo.GetTargetRef().Kind {
 	case common_api.MeshHTTPRoute:
@@ -304,6 +304,13 @@ func buildToListWithRoutes(_ core_model.ResourceMeta, policyWithTo core_model.Po
 		targetSubset := subsetutils.NewSubset(routeLabels)
 		for _, route := range httpRoutes {
 			if !targetSubset.IsSubset(subsetutils.NewSubset(route.GetMeta().GetLabels())) {
+				continue
+			}
+			// A label subset can match routes that share the same labels
+			// (e.g. kuma.io/display-name) across namespaces. Namespaced
+			// policies must only expand routes from their own namespace,
+			// otherwise route-derived config leaks across namespaces.
+			if !policySelectsByNamespace(meta, route.GetMeta()) {
 				continue
 			}
 			if r, ok := route.(*meshhttproute_api.MeshHTTPRouteResource); ok {
@@ -613,6 +620,21 @@ func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {
 		return ss, nil
 	default:
 		return nil, errors.Errorf("can't represent %s as tags", tr.Kind)
+	}
+}
+
+// policySelectsByNamespace reports whether a policy may reference a resource
+// living in the given namespace. Consumer and workload-owner policies are
+// namespaced, so they can only reference resources from their own namespace;
+// producer/system policies are namespace-agnostic. This mirrors the dataplane
+// namespace scoping applied during matching.
+func policySelectsByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) bool {
+	switch core_model.PolicyRole(policyMeta) {
+	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
+		ns, ok := policyMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
+		return ok && ns == resourceMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
+	default:
+		return true
 	}
 }
 
