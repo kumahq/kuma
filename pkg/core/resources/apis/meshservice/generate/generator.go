@@ -100,7 +100,7 @@ func New(
 
 type meshServicesResult struct {
 	services           map[string]*meshservice_api.MeshService
-	labelContributions map[string]map[string]string // serviceTag → per-DP contribution
+	labelContributions map[string]map[string]string // workload name → per-DP contribution
 }
 
 // workloadMeshServiceForDataplane generates a single MeshService per
