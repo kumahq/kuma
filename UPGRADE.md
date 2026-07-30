@@ -102,6 +102,21 @@ Remove any `routing.zoneEgress` entries from stored `Mesh` resources and
 manifests before upgrading. After the upgrade, that field no longer exists in
 the schema and is ignored during deserialization.
 
+### `routing.defaultForbidMeshExternalServiceAccess` removed from the `Mesh` schema
+
+The `routing.defaultForbidMeshExternalServiceAccess` boolean has been removed
+from the `Mesh` resource spec. Zone egress no longer reads a mesh-level toggle
+to block `MeshExternalService` traffic by default.
+
+**Action required**
+
+Remove any `routing.defaultForbidMeshExternalServiceAccess` entries from stored
+`Mesh` resources and manifests before upgrading. After the upgrade, that field
+no longer exists in the schema and is ignored during deserialization. Use
+`MeshTrafficPermission` to express explicit access control for
+`MeshExternalService` traffic instead of relying on the removed mesh-wide
+default-deny toggle.
+
 ### MeshService mode no longer disables zone proxy listeners, inspect endpoints, or MeshIdentity initialization
 
 The control plane now generates mesh-scoped zone proxy listeners and serves

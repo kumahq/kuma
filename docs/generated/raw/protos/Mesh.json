@@ -143,12 +143,6 @@
             "description": "mTLS settings of a Mesh."
         },
         "kuma.mesh.v1alpha1.Routing": {
-            "properties": {
-                "defaultForbidMeshExternalServiceAccess": {
-                    "type": "boolean",
-                    "description": "If true, blocks traffic to MeshExternalServices. Default: false"
-                }
-            },
             "additionalProperties": true,
             "type": "object",
             "title": "Routing",

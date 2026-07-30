@@ -236,36 +236,39 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			continue
 		}
 
-		mesNames := []string{}
+		mesNames := map[string]string{}
 		for _, mes := range resource.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType).GetItems() {
 			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
-			mesNames = append(mesNames, destinationname.MustResolve(true, meshExtSvc, meshExtSvc.Spec.Match))
+			mesNames[destinationname.MustResolve(true, meshExtSvc, meshExtSvc.Spec.Match)] = destinationname.MustResolve(false, meshExtSvc, meshExtSvc.Spec.Match)
 		}
 
-		for _, mesName := range mesNames {
-			rule := p.allowRules()
-			if resource.Mesh.Spec.GetRouting() != nil && resource.Mesh.Spec.GetRouting().DefaultForbidMeshExternalServiceAccess {
-				rule = p.denyRules()
-			}
-			rules := core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{}: rule,
-				},
-			}
+		for filterChainName, serviceName := range mesNames {
+			mtp := resource.Dynamic[serviceName][api.MeshTrafficPermissionType]
+			inboundRules := mtp.FromRules.InboundRules[core_rules.InboundListener{}]
 
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for MeshExternalService
-			for _, rule := range rules.Rules {
-				configurer := &v3.LegacyRBACConfigurer{
-					StatsName: listeners.Egress.Name,
-					Rules:     rule,
-					Mesh:      meshName,
+			for _, filterChain := range listeners.Egress.FilterChains {
+				if filterChain.Name != filterChainName {
+					continue
 				}
-				for _, filterChain := range listeners.Egress.FilterChains {
-					if filterChain.Name == mesName {
-						if err := configurer.Configure(filterChain); err != nil {
-							return err
-						}
+
+				if len(inboundRules) == 0 {
+					legacyConfigurer := &v3.LegacyRBACConfigurer{
+						StatsName: listeners.Egress.Name,
+						Rules:     p.allowRules(),
+						Mesh:      meshName,
 					}
+					if err := legacyConfigurer.Configure(filterChain); err != nil {
+						return err
+					}
+					continue
+				}
+
+				configurer := &v3.RBACConfigurer{
+					StatsName:    listeners.Egress.Name,
+					InboundRules: inboundRules,
+				}
+				if err := configurer.Configure(filterChain); err != nil {
+					return err
 				}
 			}
 		}
