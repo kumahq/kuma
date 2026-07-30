@@ -1,5 +1,5 @@
 connectTimeout: 10s
-name: backend
+name: kri_extsvc_default_zone-1_backend-ns_backend_10001
 typedExtensionProtocolOptions:
   envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
