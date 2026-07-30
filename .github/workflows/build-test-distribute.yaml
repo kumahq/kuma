@@ -80,7 +80,7 @@ jobs:
               . as $jobs
               | [
                   {label: "test / test_unit", pattern: "^test / test_unit$"},
-                  {label: "test / e2e ...", pattern: "^test / e2e"},
+                  {label: "test / e2e ...", pattern: "^test / (test_)?e2e"},
                   {label: "build_publish / digest-images", pattern: "^build_publish / digest-images$"},
                   {label: "build_publish / build-binaries", pattern: "^build_publish / build-binaries$"},
                   {label: "build_publish / build-images ...", pattern: "^build_publish / build-images"},
@@ -131,6 +131,9 @@ jobs:
         with:
           fetch-depth: 0
       - uses: jdx/mise-action@13abe502c30c1559a5c37dff303831bab82c9402 # v2.2.3
+        with:
+          # protoc-gen-go-grpc@1.1.0 fails to resolve on mise 2026.7.17+ (jdx/mise#11469); pin until this branch moves past that version.
+          version: 2026.7.16
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"

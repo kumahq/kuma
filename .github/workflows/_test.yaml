@@ -27,6 +27,9 @@ jobs:
         with:
           fetch-depth: 0
       - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
+        with:
+          # protoc-gen-go-grpc@1.1.0 fails to resolve on mise 2026.7.17+ (jdx/mise#11469); pin until this branch moves past that version.
+          version: 2026.7.16
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
