@@ -47,9 +47,6 @@ func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_cont
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	if proxy.ZoneEgressProxy != nil {
-		return applyToEgress(rs, proxy)
-	}
 	if proxy.Dataplane == nil {
 		return nil
 	}
@@ -191,17 +188,6 @@ func effectiveZoneProxyFilterChainConf(
 	}
 
 	return mergeRateLimitConfs(confs...)
-}
-
-func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	listeners := xds.GatherListeners(rs)
-	if listeners.Egress == nil {
-		log.V(1).Info("skip applying MeshRateLimit, Egress has no listener",
-			"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
-		)
-		return nil
-	}
-	return nil
 }
 
 func hasCatchAllInboundRule(rules []*rules_inbound.Rule) bool {

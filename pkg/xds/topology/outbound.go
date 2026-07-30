@@ -28,37 +28,6 @@ import (
 
 var outboundLog = core.Log.WithName("xds").WithName("outbound")
 
-// BuildEgressEndpointMap creates a map of endpoints that match given selectors
-// and are not local for the provided zone (external services and services
-// behind remote zone ingress only)
-func BuildEgressEndpointMap(
-	ctx context.Context,
-	mesh *core_mesh.MeshResource,
-	localZone string,
-	zoneIngresses []*core_mesh.ZoneIngressResource,
-	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
-	loader datasource.Loader,
-) core_xds.EndpointMap {
-	outbound := core_xds.EndpointMap{}
-
-	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil, false, map[core_xds.ServiceName]struct{}{})
-
-	fillMeshExternalServicesOutbounds(ctx, outbound, meshExternalServices, mesh, loader)
-
-	for serviceName, endpoints := range outbound {
-		var newEndpoints []core_xds.Endpoint
-
-		for _, endpoint := range endpoints {
-			endpoint.Tags["mesh"] = mesh.GetMeta().GetName()
-			newEndpoints = append(newEndpoints, endpoint)
-		}
-
-		outbound[serviceName] = newEndpoints
-	}
-
-	return outbound
-}
-
 // BuildDataplaneEgressEndpointMap builds endpoints only for MeshExternalServices reachable from the dataplane.
 // Used for embedded egress listeners in a Dataplane resource.
 // Always uses unified (KRI) naming as this is new infrastructure that only supports Exclusive MeshServices mode.
@@ -101,25 +70,6 @@ func BuildDataplaneZoneIngressEndpointMap(
 	}
 	fillLocalMeshServices(outbound, meshServices, dataplanes)
 	fillMeshMultiZoneServices(outbound, meshServicesByKri, meshMultiZoneServices)
-	return outbound
-}
-
-func BuildIngressEndpointMap(
-	ctx context.Context,
-	mesh *core_mesh.MeshResource,
-	localZone string,
-	meshServices []*meshservice_api.MeshServiceResource,
-	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
-	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
-	dataplanes []*core_mesh.DataplaneResource,
-	zoneEgresses []*core_mesh.ZoneEgressResource,
-	egressAddresses []core_xds.ZoneEgressInstance,
-	loader datasource.Loader,
-	mtlsEnabled bool,
-) core_xds.EndpointMap {
-	// Build EDS endpoint map just like for regular DPP, but without list of Ingress.
-	// This way we only keep local endpoints.
-	outbound := BuildEdsEndpointMap(ctx, mesh, localZone, meshServices, meshMultiZoneServices, meshExternalServices, dataplanes, nil, nil, zoneEgresses, loader, mtlsEnabled, egressAddresses)
 	return outbound
 }
 

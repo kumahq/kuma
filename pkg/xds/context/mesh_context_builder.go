@@ -206,20 +206,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		mtlsEnabled(mesh, resources.MeshIdentities()),
 		zoneEgressList,
 	)
-	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(
-		ctx,
-		mesh,
-		m.zone,
-		meshServices,
-		meshMultiZoneServices,
-		meshExternalServices,
-		dataplanes,
-		zoneEgresses,
-		zoneEgressList,
-		loader,
-		mtlsEnabled(mesh, resources.MeshIdentities()),
-	)
-
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
 	for _, otherMesh := range resources.OtherMeshes(meshName).Items {
 		crossMeshEndpointMap[otherMesh.GetMeta().GetName()] = xds_topology.BuildCrossMeshEndpointMap(
@@ -259,7 +245,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		BaseMeshContext:                 baseMeshContext,
 		DataplanesByName:                dataplanesByName,
 		EndpointMap:                     endpointMap,
-		IngressEndpointMap:              ingressEndpointMap,
 		CrossMeshEndpoints:              crossMeshEndpointMap,
 		VIPDomains:                      domains,
 		VIPOutbounds:                    outbounds,
