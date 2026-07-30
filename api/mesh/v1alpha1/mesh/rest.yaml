@@ -143,12 +143,7 @@ components:
           type: string
         routing:
           description: Routing settings of the mesh
-          properties:
-            defaultForbidMeshExternalServiceAccess:
-              description: |-
-                If true, blocks traffic to MeshExternalServices.
-                Default: false
-              type: boolean
+          properties: {}
           type: object
         skipCreatingInitialPolicies:
           description: |-

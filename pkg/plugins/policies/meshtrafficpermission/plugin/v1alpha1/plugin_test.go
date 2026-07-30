@@ -4,6 +4,8 @@ import (
 	"path"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
+	network_rbac "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/rbac/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -542,7 +544,7 @@ var _ = Describe("RBAC", func() {
 	})
 
 	Context("for ZoneEgress proxy", func() {
-		It("should attach RBAC filter chain when unified naming is enabled", func() {
+		It("should attach allow RBAC when unified naming is enabled", func() {
 			// given a MeshExternalService whose egress filter chain is named using the
 			// unified (KRI) scheme, not the legacy one
 			mes := builders.MeshExternalService().WithMesh("mesh-1").WithName("es-1").Build()
@@ -624,13 +626,18 @@ var _ = Describe("RBAC", func() {
 				}
 			}
 			Expect(matched).ToNot(BeNil())
-			hasRBAC := false
+			var actualRBAC *network_rbac.RBAC
 			for _, filter := range matched.GetFilters() {
-				if filter.GetName() == "envoy.filters.network.rbac" {
-					hasRBAC = true
+				if filter.GetName() != "envoy.filters.network.rbac" {
+					continue
 				}
+				actualRBAC = &network_rbac.RBAC{}
+				Expect(filter.GetTypedConfig().UnmarshalTo(actualRBAC)).To(Succeed())
 			}
-			Expect(hasRBAC).To(BeTrue())
+			Expect(actualRBAC).ToNot(BeNil())
+			Expect(actualRBAC.GetRules()).ToNot(BeNil())
+			Expect(actualRBAC.GetRules().GetAction()).To(Equal(rbac_config.RBAC_ALLOW))
+			Expect(actualRBAC.GetRules().GetPolicies()).To(HaveKey("MeshTrafficPermission"))
 		})
 	})
 })

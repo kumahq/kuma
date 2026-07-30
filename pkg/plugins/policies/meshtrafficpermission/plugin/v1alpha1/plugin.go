@@ -243,13 +243,9 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 		}
 
 		for _, mesName := range mesNames {
-			rule := p.allowRules()
-			if resource.Mesh.Spec.GetRouting() != nil && resource.Mesh.Spec.GetRouting().DefaultForbidMeshExternalServiceAccess {
-				rule = p.denyRules()
-			}
 			rules := core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{}: rule,
+					{}: p.allowRules(),
 				},
 			}
 

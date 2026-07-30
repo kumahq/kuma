@@ -237,12 +237,9 @@ func (x *CertificateAuthorityBackend) GetRootChain() *CertificateAuthorityBacken
 
 // Routing defines configuration for the routing in the mesh
 type Routing struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// If true, blocks traffic to MeshExternalServices.
-	// Default: false
-	DefaultForbidMeshExternalServiceAccess bool `protobuf:"varint,3,opt,name=defaultForbidMeshExternalServiceAccess,proto3" json:"defaultForbidMeshExternalServiceAccess,omitempty"`
-	unknownFields                          protoimpl.UnknownFields
-	sizeCache                              protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Routing) Reset() {
@@ -273,13 +270,6 @@ func (x *Routing) ProtoReflect() protoreflect.Message {
 // Deprecated: Use Routing.ProtoReflect.Descriptor instead.
 func (*Routing) Descriptor() ([]byte, []int) {
 	return file_api_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *Routing) GetDefaultForbidMeshExternalServiceAccess() bool {
-	if x != nil {
-		return x.DefaultForbidMeshExternalServiceAccess
-	}
-	return false
 }
 
 // mTLS settings of a Mesh.
@@ -531,10 +521,9 @@ const file_api_mesh_v1alpha1_mesh_proto_rawDesc = "" +
 	"\n" +
 	"\x06STRICT\x10\x00\x12\x0e\n" +
 	"\n" +
-	"PERMISSIVE\x10\x01\"\x95\x01\n" +
-	"\aRouting\x12V\n" +
-	"&defaultForbidMeshExternalServiceAccess\x18\x03 \x01(\bR&defaultForbidMeshExternalServiceAccessJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\x1alocalityAwareLoadBalancingR\n" +
-	"zoneEgressB-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
+	"PERMISSIVE\x10\x01\"k\n" +
+	"\aRoutingJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04R\x1alocalityAwareLoadBalancingR\n" +
+	"zoneEgressR&defaultForbidMeshExternalServiceAccessB-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_mesh_proto_rawDescOnce sync.Once

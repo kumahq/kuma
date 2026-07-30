@@ -109,7 +109,7 @@ spec:
 		})
 	})
 
-	Context("http non-TLS with rbac switch", func() {
+	Context("http non-TLS with MeshExternalService hostname", func() {
 		meshExternalService := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
@@ -135,36 +135,12 @@ spec:
 			Config.KumaNamespace,
 		)
 
-		disableMeshPassthrough := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshPassthrough
-metadata:
-  name: disable-default-passthrough
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  targetRef:
-    kind: Mesh
-  default:
-    passthroughMode: None
-`, Config.KumaNamespace, meshName)
-
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithName("external-service-rbac"),
 			))
 			Expect(err).ToNot(HaveOccurred())
-		})
-
-		E2EAfterAll(func() {
-			Expect(kubernetes.Cluster.Install(DeleteYamlK8s(disableMeshPassthrough))).To(Succeed())
-			Expect(kubernetes.Cluster.Install(YamlK8s(
-				samples.MeshMTLSBuilder().
-					WithName(meshName).
-					KubeYaml()),
-			)).To(Succeed())
 		})
 
 		It("should route to external-service", func() {
@@ -186,25 +162,6 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stat).To(stats.BeGreaterThanZero())
 			}, "30s", "1s").Should(Succeed())
-
-			// when disable all traffic
-			Expect(kubernetes.Cluster.Install(YamlK8s(
-				samples.MeshMTLSBuilder().
-					WithName(meshName).
-					WithMeshExternalServiceTrafficForbidden().
-					KubeYaml()),
-			)).To(Succeed())
-			Expect(kubernetes.Cluster.Install(YamlK8s(disableMeshPassthrough))).To(Succeed())
-
-			// then traffic doesn't work
-			Eventually(func(g Gomega) {
-				response, err := client.CollectFailure(
-					kubernetes.Cluster, "demo-client", "mesh-external-service-rbac.extsvc.mesh.local",
-					client.FromKubernetesPod(clientNamespace, "demo-client"),
-				)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.ResponseCode).To(Equal(403))
-			}, "60s", "1s").Should(Succeed())
 		})
 	})
 
