@@ -5,6 +5,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
@@ -158,9 +159,17 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 			continue
 		}
 
-		// skip outbounds when no port matches SectionName
-		if port, ok = svc.FindPortByName(outbound.Resource.SectionName); !ok {
-			continue
+		if outbound.Resource.SectionName == "" {
+			ports := svc.GetPorts()
+			if len(ports) != 1 {
+				continue
+			}
+			port = ports[0]
+		} else {
+			// skip outbounds when no port matches SectionName
+			if port, ok = svc.FindPortByName(outbound.Resource.SectionName); !ok {
+				continue
+			}
 		}
 
 		// determine protocol, default to TCP if unspecified
@@ -191,6 +200,14 @@ func DestinationPortFromRef(
 
 	if dest = meshCtx.GetServiceByKRI(ref.Resource); dest == nil {
 		return nil, nil, false
+	}
+
+	if ref.Resource.SectionName == "" {
+		ports := dest.GetPorts()
+		if len(ports) != 1 {
+			return nil, nil, false
+		}
+		return dest, ports[0], true
 	}
 
 	if port, ok = dest.FindPortByName(ref.Resource.SectionName); !ok {
@@ -248,6 +265,10 @@ func handleRealResources(
 
 	if _, ok := protocols[port.GetProtocol()]; !ok {
 		return nil
+	}
+
+	if common_api.TargetRefKind(ref.Resource.ResourceType) == common_api.MeshService && ref.Resource.SectionName == "" {
+		ref.Resource = kri.WithSectionName(ref.Resource, port.GetName())
 	}
 
 	service := destinationname.MustResolve(false, dest, port)

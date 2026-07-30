@@ -31,12 +31,11 @@ var _ = Describe("IngressTrafficRoute", func() {
 	})
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
-			mesh                *core_mesh.MeshResource
-			dataplanes          []*core_mesh.DataplaneResource
-			meshServices        []*v1alpha1.MeshServiceResource
-			zoneEgress          []*core_mesh.ZoneEgressResource
-			inboundTagsDisabled bool
-			expected            core_xds.EndpointMap
+			mesh         *core_mesh.MeshResource
+			dataplanes   []*core_mesh.DataplaneResource
+			meshServices []*v1alpha1.MeshServiceResource
+			zoneEgress   []*core_mesh.ZoneEgressResource
+			expected     core_xds.EndpointMap
 		}
 		DescribeTable("should generate ingress outbounds matching given selectors",
 			func(given testCase) {
@@ -58,7 +57,6 @@ var _ = Describe("IngressTrafficRoute", func() {
 					egressAddresses,
 					dataSourceLoader,
 					given.mesh.MTLSEnabled(),
-					given.inboundTagsDisabled,
 				)
 
 				// then
@@ -95,9 +93,8 @@ var _ = Describe("IngressTrafficRoute", func() {
 					},
 				},
 			}),
-			Entry("inbound tags disabled folds labels into endpoint tags", testCase{
-				mesh:                samples.MeshDefault(),
-				inboundTagsDisabled: true,
+			Entry("labels are folded into endpoint tags", testCase{
+				mesh: samples.MeshDefault(),
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{

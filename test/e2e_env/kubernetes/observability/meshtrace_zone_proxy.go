@@ -113,8 +113,8 @@ spec:
 //
 // The Zipkin tracer fills localEndpoint.serviceName from Envoy bootstrap's
 // Node.Cluster, i.e. the dataplane's IdentifyingName() -- the workload label
-// under InboundTagsDisabled -- so zone-egress spans land under the
-// workload's own service name in Jaeger, not the mesh name or "unknown".
+// -- so zone-egress spans land under the workload's own service name in
+// Jaeger, not the mesh name or "unknown".
 func ZoneProxyPluginTest() {
 	ns := "meshtrace-zoneproxy"
 	extNs := "meshtrace-zoneproxy-ext"

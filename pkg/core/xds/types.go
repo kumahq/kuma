@@ -106,8 +106,7 @@ type Endpoint struct {
 	UnixDomainPath string
 	Port           uint32
 	// Tags is the endpoint's load-balancing identity. It is derived from the
-	// Dataplane inbound tags; when KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED is set
-	// the workload/resource labels are merged in here at topology build time
+	// Dataplane inbound tags merged with workload/resource labels
 	// (see BuildEdsEndpointMap), so a single well-known key carries the identity.
 	Tags            map[string]string
 	Weight          uint32

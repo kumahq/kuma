@@ -36,7 +36,6 @@ import (
 	xds_samples "github.com/kumahq/kuma/v3/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -53,7 +52,6 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		toRules         core_rules.ToRules
 		fromRules       core_rules.FromRules
 		withoutPolicy   bool
-		unifiedNaming   bool
 		expectedCluster []string
 	}
 
@@ -139,11 +137,6 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						},
 					}},
 				})
-			if given.unifiedNaming {
-				proxy = proxy.WithMetadata(&core_xds.DataplaneMetadata{
-					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-				})
-			}
 			if !given.withoutPolicy {
 				proxy = proxy.WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, given.fromRules),
@@ -301,34 +294,6 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				{
 					Name:     "inbound",
 					Origin:   metadata.OriginInbound,
-					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
-				},
-			},
-			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
-						{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								ConnectionLimits: genConnectionLimits(),
-							},
-						},
-					},
-				},
-				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
-						Conf: api.Conf{ConnectionLimits: genConnectionLimits()},
-					}},
-				},
-			},
-			expectedCluster: []string{"inbound_cluster_connection_limits.golden.yaml"},
-		}),
-		Entry("basic inbound cluster with connection limits (unified naming)", sidecarTestCase{
-			unifiedNaming: true,
-			resources: []*core_xds.Resource{
-				{
-					Name:     "inbound",
-					Origin:   metadata.OriginInbound,
 					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), builders.FirstInboundPort)),
 				},
 			},
@@ -356,7 +321,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				{
 					Name:     "inbound",
 					Origin:   metadata.OriginInbound,
-					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), builders.FirstInboundPort)),
 				},
 			},
 			fromRules: core_rules.FromRules{
@@ -381,7 +346,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				{
 					Name:     "inbound",
 					Origin:   metadata.OriginInbound,
-					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), builders.FirstInboundPort)),
 				},
 			},
 			fromRules: core_rules.FromRules{
@@ -410,7 +375,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				{
 					Name:     "inbound",
 					Origin:   metadata.OriginInbound,
-					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), builders.FirstInboundPort)),
 				},
 			},
 			fromRules: core_rules.FromRules{
@@ -441,7 +406,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				{
 					Name:     "inbound",
 					Origin:   metadata.OriginInbound,
-					Resource: test_xds.ClusterWithName(envoy_names.GetInboundClusterName(builders.FirstInboundServicePort, builders.FirstInboundPort)),
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), builders.FirstInboundPort)),
 				},
 			},
 			fromRules: core_rules.FromRules{

@@ -32,13 +32,13 @@ resources:
                   path: /v1
                 name: kri_mhttpr_default___test-origin_rule_0
                 route:
-                  cluster: backend
+                  cluster: kri_msvc_default___backend_test-port
                   timeout: 0s
               - match:
                   prefix: /v1/
                 name: kri_mhttpr_default___test-origin_rule_0
                 route:
-                  cluster: backend
+                  cluster: kri_msvc_default___backend_test-port
                   timeout: 0s
               - match:
                   path: /v2

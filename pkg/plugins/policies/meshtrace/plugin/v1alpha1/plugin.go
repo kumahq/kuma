@@ -224,7 +224,7 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 }
 
 func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, direction envoy_core.TrafficDirection) error {
-	serviceName := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
+	serviceName := proxy.Dataplane.IdentifyingName()
 	// IdentifyingName falls back to "unknown" on a zone-proxy-only Dataplane (no service tag).
 	// Prefer the workload label (stable across pod restarts on K8s) and fall back to the
 	// Dataplane name (= pod name on K8s) so span service names remain meaningful.

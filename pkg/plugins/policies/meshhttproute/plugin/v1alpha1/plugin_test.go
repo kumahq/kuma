@@ -413,9 +413,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 		}()),
 		Entry("httproute-meshservice-mesh-scoped-zone-port-by-number", func() outboundsTestCase {
-			// A backendRef addressing a named port by number must still produce the SNI
-			// built from the port name, otherwise it doesn't match any filter chain on
-			// the mesh-scoped zone proxy of the remote zone.
+			// A backendRef addressing a named port by number must still produce the
+			// port-name SNI, otherwise it matches no filter chain on the zone proxy.
 			meshSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "backend", Mesh: "default",

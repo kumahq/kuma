@@ -2,4 +2,4 @@ resources:
 - name: inbound
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    name: localhost:8080
+    name: self_inbound_dp_80

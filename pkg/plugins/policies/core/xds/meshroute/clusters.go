@@ -60,6 +60,7 @@ func GenerateClusters(
 					continue
 				}
 				if proxy.WorkloadIdentity != nil {
+					// Zone proxies key the SNI by port name, a backendRef may use the number.
 					kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
 					sni := core_sni.FromKRI(kriID)
 					// we only want to route when are mesh-scoped zone egresses
@@ -156,6 +157,7 @@ func GenerateClusters(
 						kriSNI := useKRISni && proxy.WorkloadIdentity != nil
 						var sni string
 						if kriSNI {
+							// Zone proxies key the SNI by port name, a backendRef may use the number.
 							sniID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
 							sni = core_sni.FromKRI(sniID)
 						} else {

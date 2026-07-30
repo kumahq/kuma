@@ -62,6 +62,33 @@ var _ = Describe("Resolve TargetRef", func() {
 		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__kuma-demo_backend_"))
 	})
 
+	It("should treat plain underscore MeshService targetRef names as literal names", func() {
+		policyMeta := &test_model.ResourceMeta{
+			Name: "policy-1",
+			Mesh: "mesh-1",
+		}
+		targetRef := common_api.TargetRef{
+			Kind:      common_api.MeshService,
+			Name:      pointer.To("web_app_prod"),
+			Namespace: pointer.To("team-a"),
+		}
+		addResource(builders.MeshService().
+			WithName("web_app_prod").
+			WithMesh("mesh-1").
+			WithLabels(map[string]string{
+				"k8s.kuma.io/namespace": "team-a",
+				"kuma.io/display-name":  "web_app_prod",
+			}).
+			AddIntPortWithName(8080, 8081, core_meta.ProtocolTCP, "tcp-port").
+			Build(),
+		)
+
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
+
+		Expect(resolved).To(HaveLen(1))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__team-a_web_app_prod_"))
+	})
+
 	It("should not resolve MeshService targetRef when there is no MeshService", func() {
 		// given 'policy-1' with targetRef (somewhere in its spec) to 'backend'
 		policyMeta := &test_model.ResourceMeta{

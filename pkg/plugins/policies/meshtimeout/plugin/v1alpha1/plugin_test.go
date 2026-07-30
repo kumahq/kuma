@@ -2,7 +2,6 @@
 package v1alpha1_test
 
 import (
-	"fmt"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -68,7 +67,6 @@ var _ = Describe("MeshTimeout", func() {
 		resources         []core_xds.Resource
 		toRules           core_rules.ToRules
 		fromRules         core_rules.FromRules
-		unifiedNaming     bool
 		expectedListeners []string
 		expectedClusters  []string
 	}
@@ -118,11 +116,6 @@ var _ = Describe("MeshTimeout", func() {
 			WithPolicies(
 				xds_builders.MatchedPolicies().WithPolicy(api.MeshTimeoutType, given.toRules, given.fromRules),
 			)
-		if given.unifiedNaming {
-			proxyBuilder = proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{
-				Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-			})
-		}
 		proxy := proxyBuilder.Build()
 
 		// when
@@ -228,62 +221,6 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "inbound",
 					Origin:   metadata.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
-				},
-			},
-			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{
-						Address: "127.0.0.1",
-						Port:    80,
-					}: []*core_rules.Rule{
-						{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								ConnectionTimeout: test.ParseDuration("10s"),
-								IdleTimeout:       test.ParseDuration("1h"),
-								Http: &api.Http{
-									RequestTimeout:        test.ParseDuration("5s"),
-									StreamIdleTimeout:     test.ParseDuration("1s"),
-									MaxStreamDuration:     test.ParseDuration("10m"),
-									MaxConnectionDuration: test.ParseDuration("10m"),
-								},
-							},
-						},
-					},
-				},
-				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-					{
-						Address: "127.0.0.1",
-						Port:    80,
-					}: {{
-						Conf: api.Conf{
-							ConnectionTimeout: test.ParseDuration("10s"),
-							IdleTimeout:       test.ParseDuration("1h"),
-							Http: &api.Http{
-								RequestTimeout:        test.ParseDuration("5s"),
-								StreamIdleTimeout:     test.ParseDuration("1s"),
-								MaxStreamDuration:     test.ParseDuration("10m"),
-								MaxConnectionDuration: test.ParseDuration("10m"),
-							},
-						},
-					}},
-				},
-			},
-			expectedClusters:  []string{"basic_inbound_cluster.golden.yaml"},
-			expectedListeners: []string{"basic_inbound_listener.golden.yaml"},
-		}),
-		Entry("basic inbound route (unified naming)", sidecarTestCase{
-			unifiedNaming: true,
-			resources: []core_xds.Resource{
-				{
-					Name:     "inbound",
-					Origin:   metadata.OriginInbound,
-					Resource: httpInboundListenerWith(),
-				},
-				{
-					Name:     "inbound",
-					Origin:   metadata.OriginInbound,
 					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))),
 				},
 			},
@@ -339,7 +276,7 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "inbound",
 					Origin:   metadata.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))),
 				},
 			},
 			fromRules: core_rules.FromRules{
@@ -395,7 +332,7 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "inbound",
 					Origin:   metadata.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))),
 				},
 				{
 					Name:     "outbound",
@@ -437,7 +374,7 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "inbound",
 					Origin:   metadata.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))),
 				},
 				{
 					Name:     "outbound",
@@ -502,7 +439,7 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "inbound",
 					Origin:   metadata.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))),
 				},
 				{
 					Name:     "outbound",
@@ -695,7 +632,7 @@ var _ = Describe("MeshTimeout", func() {
 			{
 				Name:     "inbound",
 				Origin:   metadata.OriginInbound,
-				Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+				Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))),
 			},
 		} {
 			r := res
@@ -781,7 +718,7 @@ var _ = Describe("MeshTimeout", func() {
 			{
 				Name:     "inbound",
 				Origin:   metadata.OriginInbound,
-				Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+				Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))),
 			},
 		} {
 			r := res
@@ -855,7 +792,7 @@ var _ = Describe("MeshTimeout", func() {
 			{
 				Name:     "inbound",
 				Origin:   metadata.OriginInbound,
-				Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+				Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))),
 			},
 		} {
 			r := res
