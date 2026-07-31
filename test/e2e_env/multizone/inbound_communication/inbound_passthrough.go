@@ -5,16 +5,29 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func InboundPassthrough() {
 	const namespace = "inbound-passthrough"
 	const mesh = "inbound-passthrough"
+	const identityName = "inbound-passthrough-identity"
+
+	var zones []Cluster
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(mesh),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
 		localhostAddress := "127.0.0.1"
@@ -23,10 +36,12 @@ func InboundPassthrough() {
 			localhostAddress = "::1"
 			wildcardAddress = "::"
 		}
+		zones = []Cluster{multizone.KubeZone1, multizone.UniZone1}
 		// Global
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(mesh)).
-			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
+			Install(Yaml(builders.Mesh().WithName(mesh))).
+			Install(MeshIdentityBundled(mesh, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(mesh, MeshIdentityTrustDomains(mesh, zones...)...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
@@ -67,6 +82,7 @@ func InboundPassthrough() {
 					BoundToContainerIp(),
 					WithServiceName("uni-test-server-containerip"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 
@@ -94,10 +110,13 @@ func InboundPassthrough() {
 					testserver.WithName("k8s-test-server-pod"),
 					testserver.WithEchoArgs("echo", "--instance", "k8s-bound-pod", "--ip", "$(POD_IP)"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 
 		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, mesh, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

@@ -12,7 +12,8 @@ spec:
         idleTimeout: 9s
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         connectionTimeout: 11s
         http:
@@ -25,6 +26,8 @@ spec:
 type: MeshService
 name: backend
 mesh: mesh-1
+labels:
+  kuma.io/display-name: backend
 spec:
   selector:
     dataplaneTags:

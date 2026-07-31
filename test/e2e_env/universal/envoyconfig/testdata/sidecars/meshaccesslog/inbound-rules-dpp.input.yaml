@@ -6,7 +6,8 @@ labels:
 spec:
   targetRef:
     kind: Dataplane
-    name: test-server
+    labels:
+      kuma.io/workload: test-server
   rules:
     - default:
         backends:

@@ -30,7 +30,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         interval: 10s
         timeout: 2s
@@ -53,7 +54,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         outlierDetection:
           healthyPanicThreshold: 0
@@ -127,7 +129,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         interval: 10s
         timeout: 2s
@@ -150,7 +153,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         outlierDetection:
           healthyPanicThreshold: 0
@@ -232,7 +236,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: %s
+        labels:
+          kuma.io/display-name: %s
       default:
         interval: 10s
         timeout: 2s
@@ -255,7 +260,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: %s
+        labels:
+          kuma.io/display-name: %s
       default:
         outlierDetection:
           healthyPanicThreshold: 0
@@ -343,7 +349,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: %s
+        labels:
+          kuma.io/display-name: %s
       default:
         interval: 10s
         timeout: 2s
@@ -366,7 +373,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: %s
+        labels:
+          kuma.io/display-name: %s
       default:
         outlierDetection:
           healthyPanicThreshold: 0
@@ -442,7 +450,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         interval: 5s
         timeout: 1s
@@ -462,7 +471,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         outlierDetection:
           healthyPanicThreshold: 0

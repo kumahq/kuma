@@ -16,7 +16,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         connectionLimits:
           maxConnections: 77

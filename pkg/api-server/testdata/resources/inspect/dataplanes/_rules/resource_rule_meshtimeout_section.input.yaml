@@ -22,7 +22,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend-4
+        labels:
+          kuma.io/display-name: backend-4
         sectionName: super-port
       default:
         idleTimeout: 7s
@@ -35,6 +36,7 @@ name: backend-4
 mesh: mesh-1
 labels:
   env: prod
+  kuma.io/display-name: backend-4
 spec:
   selector:
     dataplaneTags:

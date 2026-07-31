@@ -134,8 +134,9 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
-        namespace: %s
+        labels:
+          kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: %s
       default:
         connectionLimits:
           maxConnectionPools: 1
@@ -198,8 +199,9 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
-        namespace: %s
+        labels:
+          kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: %s
       default:
         connectionLimits:
           maxConnectionPools: 1

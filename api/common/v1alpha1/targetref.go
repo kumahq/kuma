@@ -125,12 +125,6 @@ func (t TargetRef) CompareDataplaneKind(other TargetRef) int {
 	if t.Kind != Dataplane || other.Kind != Dataplane {
 		return 0
 	}
-	if selectsNameAndNamespace(t) && selectsLabels(other) {
-		return 1
-	}
-	if selectsLabels(t) && selectsNameAndNamespace(other) {
-		return -1
-	}
 	if pointer.Deref(t.SectionName) != "" && pointer.Deref(other.SectionName) == "" {
 		return 1
 	}
@@ -138,14 +132,6 @@ func (t TargetRef) CompareDataplaneKind(other TargetRef) int {
 		return -1
 	}
 	return 0
-}
-
-func selectsNameAndNamespace(tr TargetRef) bool {
-	return pointer.Deref(tr.Name) != ""
-}
-
-func selectsLabels(tr TargetRef) bool {
-	return tr.Labels != nil
 }
 
 // IncludesGateways reports whether a policy attached with this targetRef could

@@ -12,10 +12,11 @@ import (
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
@@ -25,15 +26,21 @@ import (
 func MeshServiceTargeting() {
 	meshName := "real-resource-mesh"
 	namespace := "real-resource-ns"
+	identityName := "real-resource-identity"
 	addressSuffix := "realreasource"
+
 	addressToMeshService := func(service string) string {
 		return fmt.Sprintf("%s.%s.%s.%s", service, namespace, Kuma1, addressSuffix)
 	}
 
+	var zones []Cluster
+
 	BeforeAll(func() {
+		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2}
 		Expect(NewClusterSetup().
-			Install(ResourceUniversal(samples.MeshMTLSBuilder().WithName(meshName).Build())).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(ResourceUniversal(builders.Mesh().WithName(meshName).Build())).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
@@ -82,13 +89,24 @@ spec:
 
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+				),
+				// Zone proxies are mesh scoped, so the mesh needs its own
+				// ingress in the zone the client reaches across zones.
+				zoneproxy.Install(
+					zoneproxy.WithMesh(meshName),
+					zoneproxy.WithNamespace(namespace),
+					zoneproxy.WithIngress(),
+				),
 			)).Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
+
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 
 		// remove default retry policy
 		Expect(DeleteMeshResources(multizone.Global, meshName, meshretry_api.MeshRetryResourceTypeDescriptor)).To(Succeed())
@@ -146,7 +164,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
         sectionName: main
       rules:
         - matches:
@@ -189,7 +208,9 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: kumaioservice-targeted-test-server_%s_svc_80
+        labels:
+          kuma.io/display-name: kumaioservice-targeted-test-server
+          k8s.kuma.io/namespace: %s
       rules:
         - matches:
             - path:
@@ -244,7 +265,8 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: test-server
+      labels:
+        kuma.io/display-name: test-server
       sectionName: main
     rules:
     - default:

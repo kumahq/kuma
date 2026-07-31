@@ -20,25 +20,38 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/api"
 	framework_client "github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func ProducerPolicyFlow() {
 	const mesh = "producer-policy-flow"
 	const k8sZoneNamespace = "producer-policy-flow-ns"
+	const identityName = "producer-policy-flow-identity"
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(mesh),
+			zoneproxy.WithNamespace(k8sZoneNamespace),
+			zoneproxy.WithIngress(),
+		)
+	}
+
+	var zones []Cluster
 
 	BeforeAll(func() {
+		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2}
 		// Global
 		Expect(NewClusterSetup().
 			Install(
 				Yaml(
 					builders.Mesh().
 						WithName(mesh).
-						WithoutInitialPolicies().
-						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
+						WithoutInitialPolicies(),
 				),
 			).
-			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
+			Install(MeshIdentityBundled(mesh, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(mesh, MeshIdentityTrustDomains(mesh, zones...)...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
@@ -46,23 +59,31 @@ func ProducerPolicyFlow() {
 		// Kube Zone 1
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
-			Install(testserver.Install(
-				testserver.WithName("test-client"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(k8sZoneNamespace),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("test-client"),
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(k8sZoneNamespace),
+				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(k8sZoneNamespace),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(k8sZoneNamespace),
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, mesh, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -102,7 +123,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         http:
           requestTimeout: 2s
@@ -149,8 +171,9 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
-        namespace: random-ns-name
+        labels:
+          kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: random-ns-name
       default:
         http:
           requestTimeout: 2s
@@ -187,7 +210,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -225,7 +249,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: add-response-delay-header
+        labels:
+          kuma.io/display-name: add-response-delay-header
       default:
         http:
           requestTimeout: 2s
@@ -266,7 +291,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -291,7 +317,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: to-test-server
+        labels:
+          kuma.io/display-name: to-test-server
       default:
         http:
           numRetries: 5

@@ -40,7 +40,6 @@ mesh: default
 spec:
   targetRef:
     kind: Dataplane
-    name: dp-1
   default:
     backends:
       - type: Zipkin

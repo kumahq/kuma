@@ -8,6 +8,14 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Real-resource policy selection now uses `labels` only
+
+Policies that select real resources through `spec.targetRef` or `spec.to[].targetRef` now resolve those targets by `labels` only. This applies to `Dataplane`, `MeshService`, `MeshExternalService`, `MeshMultiZoneService`, and `MeshHTTPRoute`.
+
+**Action required**
+
+Migrate any policy that still selects those resources by `name` and/or `namespace` to use `labels` instead before upgrading. `sectionName` remains supported for `Dataplane` inbound selection and `MeshService` port selection.
+
 ### `from` removed from `MeshTLS`
 
 The deprecated `from` field has been removed from the `MeshTLS` policy. Use the `rules` field instead.
@@ -140,6 +148,33 @@ behavior will now receive listener configuration in every MeshService mode.
 Also update any automation that expected the `MeshServicesDisabled`
 `MeshIdentity` status reason or treated inspect `_layout` as unavailable
 outside `Exclusive` mode.
+
+### Standalone `ZoneIngress`/`ZoneEgress` proxies no longer receive Envoy config
+
+The control plane no longer generates xDS configuration for data plane proxies
+started as standalone zone proxies, i.e. `kuma-dp run --proxy-type=ingress|egress`
+on Universal and the `ingress.enabled` / `egress.enabled` Helm deployments on
+Kubernetes. Cross-zone traffic is now served by mesh-scoped zone proxies, which
+are regular `Dataplane` resources.
+
+Such a proxy still connects, registers its `ZoneIngress`/`ZoneEgress` resource,
+and reports an insight, but it receives no listeners, clusters, or endpoints.
+Envoy keeps whatever configuration it already had until it restarts, at which
+point it starts with an empty configuration and drops all cross-zone traffic.
+The control plane logs
+`xDS generation for legacy ZoneIngress/ZoneEgress dataplanes is no longer supported`
+once per connected legacy proxy.
+
+**Action required**
+
+Migrate to mesh-scoped zone proxies **before** upgrading the zone control plane.
+On Kubernetes set `ingress.enabled=false` / `egress.enabled=false` and deploy the
+mesh-scoped zone proxies through `meshes[].ingress.enabled` /
+`meshes[].egress.enabled` instead. On Universal, replace
+`kuma-dp run --proxy-type=ingress|egress` with a regular `Dataplane` that
+declares `networking.listeners` of type `ZoneIngress`/`ZoneEgress`. Upgrading the
+control plane first blackholes cross-zone traffic as soon as the legacy zone
+proxy Pods restart.
 
 ### ServiceInsight, MeshInsight, and inspect `_rules` no longer report kuma.io/service based data
 
