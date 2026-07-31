@@ -9,7 +9,6 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/pkg/errors"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,9 +17,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/origin"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -35,17 +32,15 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 	gateway_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	generator_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
-var _ core_plugins.EgressPolicyPlugin = &plugin{}
+var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -59,15 +54,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshLoadBalancingStrategyType, dataplane, resources, opts...)
 }
 
-func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.EgressMatchedPolicies(api.MeshLoadBalancingStrategyType, tags, resources, opts...)
-}
-
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	if proxy.ZoneEgressProxy != nil {
-		return p.configureEgress(rs, proxy)
-	}
-
 	policies, ok := proxy.Policies.Dynamic[api.MeshLoadBalancingStrategyType]
 	if !ok {
 		return nil
@@ -552,89 +539,6 @@ func clusterNamesFromRouteAction(routeAction *envoy_route.RouteAction) []string 
 		}
 	}
 	return clusterNames
-}
-
-func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	indexed := rs.IndexByOrigin()
-	endpoints := policies_xds.GatherEgressEndpoints(rs)
-	listeners := policies_xds.GatherListeners(rs)
-	if listeners.Egress == nil {
-		return nil
-	}
-	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
-		for serviceName, dynamic := range meshResources.Dynamic {
-			meshName := meshResources.Mesh.GetMeta().GetName()
-			policies, ok := dynamic[api.MeshLoadBalancingStrategyType]
-			if !ok {
-				continue
-			}
-
-			rule := p.computeFrom(policies.FromRules)
-			if rule == nil {
-				continue
-			}
-			conf := rule.Conf.(api.Conf)
-
-			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
-			for _, cla := range endpoints[clusterName] {
-				if err := NewModifier(cla).Configure(claConfigurer(conf, mesh_proto.MultiValueTagSet{}, nil, proxy.Zone, true, generator_metadata.OriginEgress)).Modify(); err != nil {
-					return err
-				}
-			}
-		}
-
-		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
-		for _, mes := range meshExternalServices.GetItems() {
-			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
-			destinationName := destinationname.MustResolve(false, meshExtSvc, meshExtSvc.Spec.Match)
-			policies, ok := meshResources.Dynamic[destinationName]
-			if !ok {
-				continue
-			}
-			mlbs, ok := policies[api.MeshLoadBalancingStrategyType]
-			if !ok {
-				continue
-			}
-			for mesID, typedResources := range indexed {
-				conf := mlbs.ToRules.ResourceRules.Compute(mesID, meshResources)
-				if conf == nil {
-					continue
-				}
-
-				for typ, resources := range typedResources {
-					if typ == envoy_resource.ClusterType {
-						for _, cluster := range resources {
-							if err := NewModifier(cluster.Resource.(*envoy_cluster.Cluster)).Configure(clusterConfigurer(conf.Conf[0].(api.Conf))).Modify(); err != nil {
-								return err
-							}
-						}
-					}
-				}
-
-				for _, fc := range listeners.Egress.FilterChains {
-					if fc.Name == destinationName {
-						if err := NewModifier(fc).Configure(filterChainConfigurer(rules_outbound.AsResourceContext(conf.Conf[0].(api.Conf)))).Modify(); err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-// Zone egress is a single point for multiple clients. At this moment we don't support different
-// configurations based on the client. That's why we are computing rules for MeshSubset
-//
-//nolint:staticcheck // SA1019 Zone egress uses old Rule format, per function comment
-func (p plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
-	rules := util_maps.AllValues(fr.Rules)
-	if len(rules) == 0 {
-		return nil
-	}
-	return rules[0].Compute(subsetutils.MeshElement())
 }
 
 func (p plugin) configureRDS(
