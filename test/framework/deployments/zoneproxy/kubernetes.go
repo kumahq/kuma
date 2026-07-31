@@ -1,16 +1,14 @@
 package zoneproxy
 
 import (
-	"context"
-
-	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/test/framework"
 )
 
@@ -272,20 +270,14 @@ func (d *k8sDeployment) Deploy(cluster framework.Cluster) error {
 // whenever the endpoints go away. Without this gate other zones can still be
 // routing to the legacy ZoneIngress when the assertions start.
 func (d *k8sDeployment) waitMeshZoneAddress() framework.InstallFunc {
-	name := d.ingressName()
+	// kumactl reports a Kubernetes resource under "{name}.{namespace}".
+	name := d.ingressName() + "." + d.opts.Namespace
 	return func(cluster framework.Cluster) error {
-		_, err := retry.DoWithRetryContextE(
-			cluster.GetTesting(), context.Background(),
-			"wait for MeshZoneAddress "+name,
-			framework.DefaultRetries, framework.DefaultTimeout,
-			func() (string, error) {
-				return k8s.RunKubectlAndGetOutputContextE(
-					cluster.GetTesting(), context.Background(),
-					cluster.GetKubectlOptions(d.opts.Namespace),
-					"get", "meshzoneaddress", name,
-				)
-			})
-		return err
+		return framework.WaitForResource(
+			meshzoneaddress_api.MeshZoneAddressResourceTypeDescriptor,
+			core_model.ResourceKey{Mesh: d.opts.Mesh, Name: name},
+			cluster,
+		)
 	}
 }
 

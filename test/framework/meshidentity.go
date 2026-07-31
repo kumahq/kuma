@@ -104,6 +104,13 @@ func MeshIdentityTrustDomains(mesh string, zones ...Cluster) []string {
 // the other zones - without this step cross-zone mTLS fails on an unknown
 // issuer.
 func DistributeMeshTrusts(global Cluster, mesh string, identityName string, zones ...Cluster) error {
+	// There is nothing to distribute below two zones, and returning nil would
+	// report success for a setup step that did nothing - the suite would then
+	// fail much later on an unknown issuer.
+	if len(zones) < 2 {
+		return errors.Errorf("DistributeMeshTrusts needs at least two zones, got %d", len(zones))
+	}
+
 	trusts := map[string]*meshtrust_api.MeshTrust{}
 	for _, zone := range zones {
 		if err := waitForMeshIdentity(mesh, identityName, zone); err != nil {

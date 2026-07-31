@@ -1,8 +1,10 @@
 package zoneproxy
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v3/test/framework"
@@ -85,10 +87,39 @@ func (d *universalDeployment) deployProxy(uniCluster *framework.UniversalCluster
 		return err
 	}
 
+	// CreateDataplaneProxy only starts the process. Wait for the proxy to
+	// register before returning, so a proxy that never comes up fails here
+	// rather than as a connection error in an unrelated assertion later. The
+	// Kubernetes deployment gets the same gate from WaitPodsAvailable.
+	if err := d.waitDataplaneOnline(uniCluster, name); err != nil {
+		return err
+	}
+
 	if listenerType == "ZoneIngress" {
 		return d.createMeshZoneAddress(uniCluster, name, ip, port)
 	}
 	return nil
+}
+
+func (d *universalDeployment) waitDataplaneOnline(uniCluster *framework.UniversalCluster, name string) error {
+	_, err := retry.DoWithRetryContextE(
+		uniCluster.GetTesting(), context.Background(),
+		"wait for zone proxy "+name+" to come online",
+		framework.DefaultRetries, framework.DefaultTimeout,
+		func() (string, error) {
+			online, found, err := framework.IsDataplaneOnline(uniCluster, d.opts.Mesh, name)
+			if err != nil {
+				return "", err
+			}
+			if !found {
+				return "", errors.Errorf("zone proxy %q not registered yet", name)
+			}
+			if !online {
+				return "", errors.Errorf("zone proxy %q not online yet", name)
+			}
+			return "", nil
+		})
+	return err
 }
 
 // createMeshZoneAddress publishes the address other zones dial to reach this
