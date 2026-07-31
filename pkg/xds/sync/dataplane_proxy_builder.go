@@ -2,10 +2,7 @@ package sync
 
 import (
 	"context"
-	"fmt"
 	"net"
-	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -164,11 +161,12 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 	var outbounds xds_types.Outbounds
 	for _, o := range dataplane.Spec.Networking.Outbound {
 		if o.BackendRef != nil {
-			labels, sectionName := normalizeBackendRefTarget(
+			port := o.BackendRef.Port
+			labels, sectionName := xds_context.NormalizeBackendRefTarget(
 				o.BackendRef.Kind,
 				o.BackendRef.Name,
 				"",
-				o.BackendRef.Port,
+				&port,
 				o.BackendRef.Labels,
 				dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
 			)
@@ -199,54 +197,4 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 		}
 	}
 	return outbounds
-}
-
-func normalizeBackendRefTarget(kind, name, namespace string, port uint32, labels map[string]string, defaultNamespace string) (map[string]string, string) {
-	sectionName := ""
-	if port > 0 {
-		sectionName = fmt.Sprintf("%d", port)
-	}
-	if len(labels) > 0 {
-		return labels, sectionName
-	}
-	if name == "" {
-		return nil, sectionName
-	}
-
-	if common_api.TargetRefKind(kind) == common_api.MeshService && namespace == "" {
-		if service, parsedNamespace, parsedPort, ok := parseLegacyMeshServiceTag(name); ok {
-			name = service
-			namespace = parsedNamespace
-			if sectionName == "" && parsedPort > 0 {
-				sectionName = fmt.Sprintf("%d", parsedPort)
-			}
-		}
-	}
-
-	normalized := map[string]string{
-		mesh_proto.DisplayName: name,
-	}
-	switch common_api.TargetRefKind(kind) {
-	case common_api.MeshService, common_api.MeshExternalService, common_api.MeshMultiZoneService:
-		if namespace == "" {
-			namespace = defaultNamespace
-		}
-		if namespace != "" {
-			normalized[mesh_proto.KubeNamespaceTag] = namespace
-		}
-	}
-	return normalized, sectionName
-}
-
-func parseLegacyMeshServiceTag(name string) (string, string, int32, bool) {
-	segments := strings.Split(name, "_")
-	if len(segments) != 4 || segments[2] != "svc" {
-		return "", "", 0, false
-	}
-
-	port, err := strconv.ParseInt(segments[3], 10, 32)
-	if err != nil {
-		return "", "", 0, false
-	}
-	return segments[0], segments[1], int32(port), true
 }
