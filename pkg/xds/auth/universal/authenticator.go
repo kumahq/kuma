@@ -37,12 +37,12 @@ func NewAuthenticator(
 // universalAuthenticator defines authentication for Dataplane Tokens
 // All fields in token are optional, so we only validate data that is available in token. This way you can pick your level of security.
 // Generate token for mesh+name for maximum security.
-// Generate token for mesh+tags(ex. kuma.io/service) so you can reuse the token for many instances of the same service.
+// Generate token for mesh+tags (matched against Dataplane labels, e.g. kuma.io/workload) so you can reuse the token for many dataplanes.
 // Generate token for mesh if you trust the scope of the mesh.
 //
-// If you generate token bound to tags all tags values have to match the dataplane, so for example if you have a Dataplane
-// with inbounds: 1) kuma.io/service:web 2) kuma.io/service:web-api, you need token for both values kuma.io/service=web,web-api
-// Dataplane also needs to have all tags defined in the token
+// If you generate token bound to tags, the Dataplane needs to have all the tags defined
+// in the token, and each of its label values must be one of the values allowed for that
+// tag in the token.
 type universalAuthenticator struct {
 	dataplaneValidator builtin_issuer.Validator
 	zoneValidator      zone.Validator
@@ -78,7 +78,7 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 	if dpIdentity.Mesh != "" && dataplane.Meta.GetMesh() != dpIdentity.Mesh {
 		return errors.Errorf("proxy mesh from requestor: %s is different than in token: %s", dataplane.Meta.GetMesh(), dpIdentity.Mesh)
 	}
-	if err := validateTags(dpIdentity.Tags, dataplane.Spec.TagSet()); err != nil {
+	if err := validateTags(dpIdentity.Tags, dataplane.Meta.GetLabels()); err != nil {
 		return err
 	}
 	if err := u.validateWorkload(ctx, dpIdentity.Workload, dataplane); err != nil {
@@ -130,16 +130,14 @@ func (u *universalAuthenticator) authZoneEntity(
 	return nil
 }
 
-func validateTags(tokenTags mesh_proto.MultiValueTagSet, dpTags mesh_proto.MultiValueTagSet) error {
+func validateTags(tokenTags mesh_proto.MultiValueTagSet, dpLabels map[string]string) error {
 	for tagName, allowedValues := range tokenTags {
-		dpValues, exist := dpTags[tagName]
+		dpValue, exist := dpLabels[tagName]
 		if !exist {
 			return errors.Errorf("dataplane has no tag %q required by the token", tagName)
 		}
-		for value := range dpValues {
-			if !allowedValues[value] {
-				return errors.Errorf("dataplane contains tag %q with value %q which is not allowed with this token. Allowed values in token are %q", tagName, value, tokenTags.Values(tagName))
-			}
+		if !allowedValues[dpValue] {
+			return errors.Errorf("dataplane contains tag %q with value %q which is not allowed with this token. Allowed values in token are %q", tagName, dpValue, tokenTags.Values(tagName))
 		}
 	}
 	return nil

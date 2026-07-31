@@ -58,7 +58,9 @@ var _ = Describe("Updater", func() {
 	It("should add identity to status of service", func() {
 		// when
 		Expect(samples.MeshServiceBackendBuilder().Create(resManager)).To(Succeed())
-		Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
+		Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().Build(), store.CreateByKey("dp-1", model.DefaultMesh), store.CreateWithLabels(map[string]string{
+			metadata.KumaWorkload: "backend",
+		}))).To(Succeed())
 		Expect(samples.DataplaneWebBuilder().Create(resManager)).To(Succeed()) // identity of web should not be added
 
 		// then
@@ -90,6 +92,7 @@ var _ = Describe("Updater", func() {
 			metadata.KumaServiceAccount: "default",
 			mesh_proto.KubeNamespaceTag: "my-ns",
 			"app":                       "test",
+			metadata.KumaWorkload:       "backend",
 		}))).To(Succeed())
 
 		// then
@@ -128,6 +131,7 @@ var _ = Describe("Updater", func() {
 			metadata.KumaServiceAccount: "default",
 			mesh_proto.KubeNamespaceTag: "my-ns",
 			"app":                       "test",
+			metadata.KumaWorkload:       "backend",
 		}))).To(Succeed())
 
 		// then
@@ -152,7 +156,7 @@ var _ = Describe("Updater", func() {
 		}, "10s", "100ms").Should(Succeed())
 	})
 
-	It("should fall back to the workload label for identity when inbound tags are absent", func() {
+	It("should derive identity from the workload label when inbound tags are absent", func() {
 		// when
 		Expect(builders.MeshService().
 			WithName("backend").
