@@ -84,6 +84,17 @@ func MeshIdentityTrustDomain(mesh string, zone Cluster) string {
 	return fmt.Sprintf("%s.%s.mesh.local", mesh, zone.ZoneName())
 }
 
+// MeshIdentityTrustDomains returns the trust domains of every given zone, in
+// the order they were passed. Feed it straight into
+// MeshTrafficPermissionAllowAll*WorkloadIdentity to allow all of them.
+func MeshIdentityTrustDomains(mesh string, zones ...Cluster) []string {
+	trustDomains := make([]string, 0, len(zones))
+	for _, zone := range zones {
+		trustDomains = append(trustDomains, MeshIdentityTrustDomain(mesh, zone))
+	}
+	return trustDomains
+}
+
 // DistributeMeshTrusts copies the MeshTrust each zone generated from the named
 // MeshIdentity into every other zone, so proxies accept peer certificates
 // issued by a different zone's CA.
@@ -158,8 +169,10 @@ func zoneMeshTrust(global Cluster, mesh string, identityName string, zone Cluste
 				return "", err
 			}
 			spec := res.GetSpec().(*meshtrust_api.MeshTrust)
-			if len(spec.CABundles) == 0 {
-				return "", errors.Errorf("MeshTrust %s has no CA bundles yet", name)
+			// installMeshTrust copies the PEM of the first bundle, so a bundle
+			// in any other format would leave it nil.
+			if len(spec.CABundles) == 0 || spec.CABundles[0].PEM == nil {
+				return "", errors.Errorf("MeshTrust %s has no PEM CA bundle yet", name)
 			}
 			trust = spec
 			return "", nil

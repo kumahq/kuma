@@ -31,15 +31,10 @@ func MeshMzService() {
 
 	BeforeAll(func() {
 		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2, multizone.UniZone1}
-		trustDomains := make([]string, 0, len(zones))
-		for _, zone := range zones {
-			trustDomains = append(trustDomains, MeshIdentityTrustDomain(meshName, zone))
-		}
-
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().WithName(meshName))).
 			Install(MeshIdentityBundled(meshName, identityName)).
-			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, trustDomains...)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Install(YamlUniversal(`
 type: MeshMultiZoneService
 name: test-server

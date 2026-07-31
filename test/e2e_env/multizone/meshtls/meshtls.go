@@ -34,16 +34,11 @@ func MeshTLS() {
 
 	BeforeAll(func() {
 		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2}
-		trustDomains := make([]string, 0, len(zones))
-		for _, zone := range zones {
-			trustDomains = append(trustDomains, MeshIdentityTrustDomain(meshName, zone))
-		}
-
 		// Global
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().WithName(meshName))).
 			Install(MeshIdentityBundled(meshName, identityName)).
-			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, trustDomains...)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 

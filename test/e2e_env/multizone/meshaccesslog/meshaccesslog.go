@@ -38,16 +38,11 @@ func ZoneIngress() {
 		testServer2SNI = fmt.Sprintf("sni.msvc.%s.%s.%s.80", meshName, zone1Name, testServer2)
 
 		zones := []Cluster{multizone.UniZone1, multizone.UniZone2}
-		trustDomains := make([]string, 0, len(zones))
-		for _, zone := range zones {
-			trustDomains = append(trustDomains, MeshIdentityTrustDomain(meshName, zone))
-		}
-
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().
 				WithName(meshName))).
 			Install(MeshIdentityBundled(meshName, identityName)).
-			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, trustDomains...)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 

@@ -37,16 +37,11 @@ func InboundPassthrough() {
 			wildcardAddress = "::"
 		}
 		zones = []Cluster{multizone.KubeZone1, multizone.UniZone1}
-		trustDomains := make([]string, 0, len(zones))
-		for _, zone := range zones {
-			trustDomains = append(trustDomains, MeshIdentityTrustDomain(mesh, zone))
-		}
-
 		// Global
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().WithName(mesh))).
 			Install(MeshIdentityBundled(mesh, identityName)).
-			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(mesh, trustDomains...)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(mesh, MeshIdentityTrustDomains(mesh, zones...)...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 

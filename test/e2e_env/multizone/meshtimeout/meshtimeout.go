@@ -39,16 +39,11 @@ func MeshTimeout() {
 
 	BeforeAll(func() {
 		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2}
-		trustDomains := make([]string, 0, len(zones))
-		for _, zone := range zones {
-			trustDomains = append(trustDomains, MeshIdentityTrustDomain(mesh, zone))
-		}
-
 		// Global
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().WithName(mesh))).
 			Install(MeshIdentityBundled(mesh, identityName)).
-			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(mesh, trustDomains...)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(mesh, MeshIdentityTrustDomains(mesh, zones...)...)).
 			Install(YamlUniversal(fmt.Sprintf(`
 type: MeshMultiZoneService
 name: test-server

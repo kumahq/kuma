@@ -57,17 +57,12 @@ spec:
 
 	BeforeAll(func() {
 		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2}
-		trustDomains := make([]string, 0, len(zones))
-		for _, zone := range zones {
-			trustDomains = append(trustDomains, MeshIdentityTrustDomain(meshName, zone))
-		}
-
 		// Global
 		err := NewClusterSetup().
 			Install(YamlUniversal(mesh)).
 			Install(YamlUniversal(disableDefaultPassthrough)).
 			Install(MeshIdentityBundled(meshName, identityName)).
-			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, trustDomains...)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())

@@ -39,16 +39,11 @@ func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
 
 	BeforeAll(func() {
 		zones = []Cluster{multizone.UniZone1, multizone.UniZone2}
-		trustDomains := make([]string, 0, len(zones))
-		for _, zone := range zones {
-			trustDomains = append(trustDomains, MeshIdentityTrustDomain(meshName, zone))
-		}
-
 		// Global
 		err := NewClusterSetup().
 			Install(ResourceUniversal(meshBuilder.WithName(meshName).Build())).
 			Install(MeshIdentityBundled(meshName, identityName)).
-			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, trustDomains...)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())

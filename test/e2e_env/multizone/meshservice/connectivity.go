@@ -43,15 +43,10 @@ func Connectivity() {
 		autoGenerateUniversalCluster = NewUniversalCluster(NewTestingT(), autoGenerateUniversalClusterName, Silent)
 		zones := append(multizone.Zones(), autoGenerateUniversalCluster)
 
-		trustDomains := make([]string, 0, len(zones))
-		for _, zone := range zones {
-			trustDomains = append(trustDomains, MeshIdentityTrustDomain(meshName, zone))
-		}
-
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().WithName(meshName))).
 			Install(MeshIdentityBundled(meshName, identityName)).
-			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, trustDomains...)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Install(YamlUniversal(fmt.Sprintf(`
 type: HostnameGenerator
 name: kube-mesh-specific-msconnectivity
