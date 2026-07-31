@@ -43,10 +43,12 @@ var _ = Describe("Resolve BackendRef", func() {
 			mesh_proto.KubeNamespaceTag: "kuma-demo",
 		}, core_model.ResourceType(common_api.MeshService)),
 		Entry("MeshExternalService", common_api.MeshExternalService, map[string]string{
-			mesh_proto.DisplayName: "payments",
+			mesh_proto.DisplayName:      "payments",
+			mesh_proto.KubeNamespaceTag: "kuma-demo",
 		}, core_model.ResourceType(common_api.MeshExternalService)),
 		Entry("MeshMultiZoneService", common_api.MeshMultiZoneService, map[string]string{
-			mesh_proto.DisplayName: "global-backend",
+			mesh_proto.DisplayName:      "global-backend",
+			mesh_proto.KubeNamespaceTag: "kuma-demo",
 		}, core_model.ResourceType(common_api.MeshMultiZoneService)),
 	)
 

@@ -123,11 +123,12 @@ func TestBackendRefReferencesRealObject(t *testing.T) {
 	}
 }
 
-func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T) {
+func TestBackendRefRealResourceSelectorDefaultsNamespaceForLabels(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		ref            BackendRef
+		defaultNS      string
 		expectedLabels map[string]string
 	}{
 		"MeshService": {
@@ -140,6 +141,7 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T
 					}),
 				},
 			},
+			defaultNS: "ignored",
 			expectedLabels: map[string]string{
 				mesh_proto.DisplayName:      "backend",
 				mesh_proto.KubeNamespaceTag: "team-a",
@@ -155,6 +157,7 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T
 					}),
 				},
 			},
+			defaultNS: "ignored",
 			expectedLabels: map[string]string{
 				mesh_proto.DisplayName:      "payments",
 				mesh_proto.KubeNamespaceTag: "team-a",
@@ -170,8 +173,24 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T
 					}),
 				},
 			},
+			defaultNS: "ignored",
 			expectedLabels: map[string]string{
 				mesh_proto.DisplayName:      "global-backend",
+				mesh_proto.KubeNamespaceTag: "team-a",
+			},
+		},
+		"MeshService injects default namespace when only display-name is set": {
+			ref: BackendRef{
+				TargetRef: TargetRef{
+					Kind: MeshService,
+					Labels: pointer.To(map[string]string{
+						mesh_proto.DisplayName: "backend",
+					}),
+				},
+			},
+			defaultNS: "team-a",
+			expectedLabels: map[string]string{
+				mesh_proto.DisplayName:      "backend",
 				mesh_proto.KubeNamespaceTag: "team-a",
 			},
 		},
@@ -185,6 +204,7 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T
 					}),
 				},
 			},
+			defaultNS: "ignored",
 			expectedLabels: map[string]string{
 				mesh_proto.DisplayName:      "foo_bar_svc",
 				mesh_proto.KubeNamespaceTag: "explicit-ns",
@@ -196,7 +216,7 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			labels, sectionName, ok := tt.ref.RealResourceSelector("ignored")
+			labels, sectionName, ok := tt.ref.RealResourceSelector(tt.defaultNS)
 			if !ok {
 				t.Fatal("RealResourceSelector() returned ok=false")
 			}

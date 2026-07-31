@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -191,12 +192,12 @@ type MatchesHash string
 
 type BackendRefHash string
 
-func (b BackendRef) RealResourceSelector(_ string) (map[string]string, string, bool) {
+func (b BackendRef) RealResourceSelector(defaultNamespace string) (map[string]string, string, bool) {
 	if !b.ReferencesRealObject() {
 		return nil, "", false
 	}
 
-	labels, sectionName, ok := realResourceSelector(b.TargetRef)
+	labels, sectionName, ok := realResourceSelector(b.TargetRef, defaultNamespace)
 	if !ok {
 		return nil, "", false
 	}
@@ -241,9 +242,18 @@ func (in BackendRef) Hash() BackendRefHash {
 	))
 }
 
-func realResourceSelector(ref TargetRef) (map[string]string, string, bool) {
+func realResourceSelector(ref TargetRef, defaultNamespace string) (map[string]string, string, bool) {
 	if len(pointer.Deref(ref.Labels)) > 0 {
-		return cloneStringMap(pointer.Deref(ref.Labels)), pointer.Deref(ref.SectionName), true
+		labels := cloneStringMap(pointer.Deref(ref.Labels))
+		switch ref.Kind {
+		case MeshService, MeshExternalService, MeshMultiZoneService:
+			if defaultNamespace != "" &&
+				labels[mesh_proto.DisplayName] != "" &&
+				labels[mesh_proto.KubeNamespaceTag] == "" {
+				labels[mesh_proto.KubeNamespaceTag] = defaultNamespace
+			}
+		}
+		return labels, pointer.Deref(ref.SectionName), true
 	}
 	return nil, "", false
 }

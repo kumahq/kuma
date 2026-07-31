@@ -2870,7 +2870,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 															BackendRef: common_api.BackendRef{
 																TargetRef: common_api.TargetRef{
 																	Kind: common_api.LegacyMeshServiceSubsetKind(),
-																	Name: pointer.To("payments"),
+																	Labels: pointer.To(map[string]string{
+																		mesh_proto.DisplayName: "payments",
+																	}),
 																	Tags: &map[string]string{
 																		"version": "v1",
 																		"region":  "us",
@@ -2888,7 +2890,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 															BackendRef: common_api.BackendRef{
 																TargetRef: common_api.TargetRef{
 																	Kind: common_api.MeshService,
-																	Name: pointer.To("payments"),
+																	Labels: pointer.To(map[string]string{
+																		mesh_proto.DisplayName: "payments",
+																	}),
 																},
 															},
 														},
