@@ -388,7 +388,7 @@ func GlobalSyncCallback(
 
 			// In-spec zone tags feed downstream logic too (ZoneIngress
 			// AvailableServices -> cross-zone endpoint locality, Dataplane
-			// inbound/gateway tags -> global service inventory), so pin them
+			// gateway tags -> global service inventory), so pin them
 			// alongside the top-level Spec.Zone.
 			clientID := upstream.ControlPlaneId
 			switch upstream.Type {
@@ -411,9 +411,6 @@ func GlobalSyncCallback(
 				for _, dp := range upstream.AddedResources.(*core_mesh.DataplaneResourceList).Items {
 					var rejected []string
 					networking := dp.Spec.GetNetworking()
-					for _, inbound := range networking.GetInbound() {
-						rejected = pinZoneTag(inbound.GetTags(), clientID, rejected)
-					}
 					rejected = pinZoneTag(networking.GetGateway().GetTags(), clientID, rejected)
 					recordZoneRewrite(rewrites, upstream.Type, dp.GetMeta(), clientID, rejected)
 				}

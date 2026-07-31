@@ -181,6 +181,31 @@ func (d *DataplaneResource) IdentifyingName() string {
 	return mesh_proto.ServiceUnknown
 }
 
+// DisplayTags returns the dataplane's resource labels merged with its
+// gateway tags (if any), formatted for CLI/API display (the TAGS column
+// and the `?tag=` filter).
+func (d *DataplaneResource) DisplayTags() mesh_proto.MultiValueTagSet {
+	return DisplayTags(d.Spec, d.GetMeta().GetLabels())
+}
+
+// DisplayTags merges labels with a dataplane's gateway tags (if any) for
+// CLI/API display. Split from the DataplaneResource method so overview
+// endpoints, which carry the Dataplane spec and its labels separately, can
+// call it too.
+func DisplayTags(dataplane *mesh_proto.Dataplane, labels map[string]string) mesh_proto.MultiValueTagSet {
+	tags := mesh_proto.MultiValueTagSet{}
+	for key, value := range labels {
+		tags[key] = map[string]bool{value: true}
+	}
+	for key, value := range dataplane.GetNetworking().GetGateway().GetTags() {
+		if _, ok := tags[key]; !ok {
+			tags[key] = map[string]bool{}
+		}
+		tags[key][value] = true
+	}
+	return tags
+}
+
 // SortDataplanes sorts dataplanes by creation time, then by name.
 // Used by generators to ensure consistent processing order.
 func SortDataplanes(dps []*DataplaneResource) []*DataplaneResource {

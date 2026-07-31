@@ -376,7 +376,9 @@ var _ = Describe("MeshService generator", func() {
 		ms := meshservice_api.NewMeshServiceResource()
 		ms.Spec = &meshservice_api.MeshService{
 			Selector: meshservice_api.Selector{
-				DataplaneTags: &map[string]string{mesh_proto.ServiceTag: "remote-backend"},
+				DataplaneLabels: &common_api.LabelSelector{
+					MatchLabels: &map[string]string{mesh_proto.ServiceTag: "remote-backend"},
+				},
 			},
 			Ports: []meshservice_api.Port{{
 				Name:        pointer.To("80"),

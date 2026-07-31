@@ -4,6 +4,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/kds/hash"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 )
 
@@ -12,8 +13,8 @@ func MeshServiceBackendBuilder() *builders.MeshServiceBuilder {
 		WithLabels(map[string]string{
 			mesh_proto.DisplayName: "backend",
 		}).
-		WithDataplaneTagsSelector(map[string]string{
-			mesh_proto.ServiceTag: "backend",
+		WithDataplaneLabelsSelector(map[string]string{
+			metadata.KumaWorkload: "backend",
 		}).
 		WithKumaVIP("240.0.0.1").
 		AddIntPort(int32(builders.FirstInboundPort), int32(builders.FirstInboundPort), "http")
@@ -26,8 +27,8 @@ func MeshServiceBackend() *v1alpha1.MeshServiceResource {
 func MeshServiceWebBuilder() *builders.MeshServiceBuilder {
 	return builders.MeshService().
 		WithName("web").
-		WithDataplaneTagsSelector(map[string]string{
-			mesh_proto.ServiceTag: "web",
+		WithDataplaneLabelsSelector(map[string]string{
+			metadata.KumaWorkload: "web",
 		}).
 		WithKumaVIP("240.0.0.2").
 		AddIntPort(int32(builders.FirstInboundPort), int32(builders.FirstInboundPort), "http")

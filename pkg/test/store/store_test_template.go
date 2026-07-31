@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -122,8 +123,10 @@ func ExecuteStoreTests(
 				created := meshservice_api.MeshServiceResource{
 					Spec: &meshservice_api.MeshService{
 						Selector: meshservice_api.Selector{
-							DataplaneTags: &map[string]string{
-								"a": "b",
+							DataplaneLabels: &common_api.LabelSelector{
+								MatchLabels: &map[string]string{
+									"a": "b",
+								},
 							},
 						},
 						Ports: []meshservice_api.Port{
@@ -268,8 +271,10 @@ func ExecuteStoreTests(
 				updated := meshservice_api.MeshServiceResource{
 					Spec: &meshservice_api.MeshService{
 						Selector: meshservice_api.Selector{
-							DataplaneTags: &map[string]string{
-								"a": "b",
+							DataplaneLabels: &common_api.LabelSelector{
+								MatchLabels: &map[string]string{
+									"a": "b",
+								},
 							},
 						},
 						Ports: []meshservice_api.Port{

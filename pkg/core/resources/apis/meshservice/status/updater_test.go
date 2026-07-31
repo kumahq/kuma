@@ -438,24 +438,27 @@ var _ = Describe("Updater", func() {
 		}),
 		Entry("should count healthy DPPs and use MeshService.ports[].targetPort to select DP inbound", dpProxiesTestCase{
 			meshService: samples.MeshServiceBackendBuilder().
-				WithDataplaneTagsSelectorKV("app", "backend").
+				WithDataplaneLabelsSelectorKV("app", "backend").
 				AddIntPort(int32(builders.FirstInboundServicePort+1), int32(builders.FirstInboundPort+1), core_meta.ProtocolHTTP),
 			dpps: []*builders.DataplaneBuilder{
 				builders.Dataplane().
 					WithName("dp-all-inbounds-healthy").
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy", "app": "backend"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api", "app": "backend"}),
+					WithLabels(map[string]string{"app": "backend"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api"}),
 				builders.Dataplane().
 					WithName("dp-one-inbounds-healthy").
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy", "app": "backend"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api", "app": "backend"}).
+					WithLabels(map[string]string{"app": "backend"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api"}).
 					With(func(resource *core_mesh.DataplaneResource) {
 						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 					}),
 				builders.Dataplane().
 					WithName("dp-no-inbounds-healthy").
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy", "app": "backend"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api", "app": "backend"}).
+					WithLabels(map[string]string{"app": "backend"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api"}).
 					With(func(resource *core_mesh.DataplaneResource) {
 						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 						resource.Spec.Networking.Inbound[1].State = mesh_proto.Dataplane_Networking_Inbound_NotReady

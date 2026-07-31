@@ -11,15 +11,3 @@ import (
 func AdditionalInbounds(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	return nil, nil
 }
-
-func AdditionalServices(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) ([]string, error) {
-	var services []string
-	inbounds, err := AdditionalInbounds(dataplane, mesh)
-	if err != nil {
-		return nil, err
-	}
-	for _, inbound := range inbounds {
-		services = append(services, inbound.Tags[mesh_proto.ServiceTag])
-	}
-	return services, nil
-}

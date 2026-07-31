@@ -742,7 +742,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "redis-0"},
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "redis-0", Labels: map[string]string{mesh_proto.ServiceTag: "redis_svc_6379"}},
 						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
@@ -757,7 +757,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Labels: map[string]string{"app": "kong"}},
 						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.2",
@@ -780,13 +780,13 @@ var _ = Describe("TrafficRoute", func() {
 				meshServices: []*meshservice_api.MeshServiceResource{
 					builders.MeshService().
 						WithName("kong.kong-system").
-						WithDataplaneTagsSelectorKV("app", "kong").
+						WithDataplaneLabelsSelectorKV("app", "kong").
 						AddIntPort(8080, 80, "http").
 						AddIntPort(8081, 8001, "http").
 						Build(),
 					builders.MeshService().
 						WithName("redis").
-						WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "redis_svc_6379").
+						WithDataplaneLabelsSelectorKV(mesh_proto.ServiceTag, "redis_svc_6379").
 						AddIntPort(6379, 6379, "tcp").
 						Build(),
 					builders.MeshService().
