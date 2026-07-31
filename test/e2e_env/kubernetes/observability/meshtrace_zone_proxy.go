@@ -121,8 +121,7 @@ func ZoneProxyPluginTest() {
 	obsNs := "obs-meshtrace-zoneproxy"
 	obsDeployment := "obs-trace-zoneproxy-deployment"
 	mesh := "meshtrace-zoneproxy"
-	workload := "zone-egress"
-	const egressPort = uint32(11102)
+	workload := zoneproxy.EgressName(mesh)
 
 	var obsClient obs.Observability
 	BeforeAll(func() {
@@ -139,11 +138,10 @@ func ZoneProxyPluginTest() {
 					testserver.WithEchoArgs("echo", "--instance", "external-server"),
 				),
 				zoneproxy.Install(
-					zoneproxy.WithName("zp-meshtrace"),
 					zoneproxy.WithNamespace(ns),
 					zoneproxy.WithMesh(mesh),
+					zoneproxy.WithEgress(),
 					zoneproxy.WithWorkload(workload),
-					zoneproxy.WithEgressPort(egressPort),
 				),
 				obs.Install(obsDeployment, obs.WithNamespace(obsNs)),
 			)).

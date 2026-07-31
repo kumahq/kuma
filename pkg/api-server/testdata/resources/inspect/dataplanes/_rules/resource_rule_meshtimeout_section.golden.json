@@ -34,7 +34,8 @@
      ],
      "resourceMeta": {
       "labels": {
-       "env": "prod"
+       "env": "prod",
+       "kuma.io/display-name": "backend-4"
       },
       "mesh": "mesh-1",
       "name": "backend-4",

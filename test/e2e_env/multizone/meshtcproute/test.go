@@ -8,19 +8,33 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Test() {
 	meshName := "meshtcproute"
+	identityName := "meshtcproute-identity"
+
+	var zones []Cluster
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
+		zones = []Cluster{multizone.UniZone1, multizone.UniZone2}
 		// Global
 		err := NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(Yaml(builders.Mesh().WithName(meshName))).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -38,6 +52,7 @@ func Test() {
 					WithArgs([]string{"echo", "--instance", "zone1"}),
 					WithServiceVersion("v1"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 
@@ -54,10 +69,13 @@ func Test() {
 					WithServiceName("alias-test-server"),
 					WithServiceVersion("v2"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone2, &group)
 
 		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {

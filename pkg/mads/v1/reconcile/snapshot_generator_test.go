@@ -92,7 +92,9 @@ var _ = Describe("snapshotGenerator", func() {
 				}
 				for _, dataplane := range given.dataplanes {
 					// when
-					err := resourceManager.Create(ctx, dataplane, core_store.CreateBy(core_model.MetaToResourceKey(dataplane.GetMeta())))
+					err := resourceManager.Create(ctx, dataplane,
+						core_store.CreateBy(core_model.MetaToResourceKey(dataplane.GetMeta())),
+						core_store.CreateWithLabels(dataplane.GetMeta().GetLabels()))
 					// then
 					Expect(err).ToNot(HaveOccurred())
 				}
@@ -326,6 +328,7 @@ var _ = Describe("snapshotGenerator", func() {
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-01").
 						WithServices("backend-01").
 						WithAddress("192.168.0.1").
+						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-01"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-02").
@@ -341,8 +344,8 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
-								Kind: common_api.Dataplane,
-								Name: pointer.To("backend-01"),
+								Kind:   common_api.Dataplane,
+								Labels: pointer.To(map[string]string{mesh_proto.ServiceTag: "backend-01"}),
 							},
 							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
@@ -398,6 +401,7 @@ var _ = Describe("snapshotGenerator", func() {
 						WithName("backend-02").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-02").
 						WithAddress("192.168.0.2").
+						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-02"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-03").
@@ -439,8 +443,8 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
-								Kind: common_api.Dataplane,
-								Name: pointer.To("backend-02"),
+								Kind:   common_api.Dataplane,
+								Labels: pointer.To(map[string]string{mesh_proto.ServiceTag: "backend-02"}),
 							},
 							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
@@ -518,6 +522,7 @@ var _ = Describe("snapshotGenerator", func() {
 						WithName("backend-02").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-02").
 						WithAddress("192.168.0.2").
+						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-02"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-03").
@@ -559,8 +564,8 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
-								Kind: common_api.Dataplane,
-								Name: pointer.To("backend-02"),
+								Kind:   common_api.Dataplane,
+								Labels: pointer.To(map[string]string{mesh_proto.ServiceTag: "backend-02"}),
 							},
 							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{

@@ -12,27 +12,39 @@ import (
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func Test() {
 	meshName := "meshtcproute"
 	namespace := "meshtcproute"
+	identityName := "meshtcproute-identity"
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			// MeshExternalService traffic is only ever routed through ZoneEgress
 			// (see docs/madr/decisions/062-meshexternalservice-and-zoneegress.md),
-			// so the mesh needs mTLS plus an available ZoneEgress for the
-			// MeshTCPRoute-vs-MeshExternalService precedence case below to have
-			// a real backend to route to.
+			// so the mesh needs a workload identity plus an available ZoneEgress
+			// for the MeshTCPRoute-vs-MeshExternalService precedence case below
+			// to have a real backend to route to.
 			Install(Combine(
-				YamlK8s(samples.MeshMTLSBuilder().WithName(meshName).KubeYaml()),
+				YamlK8s(samples.MeshDefaultBuilder().WithName(meshName).KubeYaml()),
 				WaitMeshKubernetesReady(meshName),
 			)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			Install(MeshIdentityBundledKubernetes(meshName, identityName)).
+			// The standalone zone CP runs under the "default" zone name.
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(
+				meshName,
+				fmt.Sprintf("%s.default.mesh.local", meshName),
+			)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
+				zoneproxy.Install(
+					zoneproxy.WithNamespace(namespace),
+					zoneproxy.WithMesh(meshName),
+					zoneproxy.WithEgress(),
+				),
 				testserver.Install(
 					testserver.WithName("test-client"),
 					testserver.WithMesh(meshName),
@@ -137,8 +149,9 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: test-http-server
-      namespace: %s
+      labels:
+        kuma.io/display-name: test-http-server
+        k8s.kuma.io/namespace: %s
     rules:
     - matches:
       - path:
@@ -165,8 +178,9 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: test-http-server
-      namespace: %s
+      labels:
+        kuma.io/display-name: test-http-server
+        k8s.kuma.io/namespace: %s
     rules:
     - default:
         backendRefs:
@@ -237,8 +251,9 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: test-tcp-server
-      namespace: %s
+      labels:
+        kuma.io/display-name: test-tcp-server
+        k8s.kuma.io/namespace: %s
     rules:
     - matches:
       - path:
@@ -265,8 +280,9 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: test-tcp-server
-      namespace: %s
+      labels:
+        kuma.io/display-name: test-tcp-server
+        k8s.kuma.io/namespace: %s
     rules:
     - default:
         backendRefs:

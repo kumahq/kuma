@@ -5,21 +5,36 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func MeshMzService() {
 	namespace := "mlb-mzms"
 	meshName := "mlb-mzms"
+	identityName := "mlb-mzms-identity"
+
+	var zones []Cluster
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
+		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2, multizone.UniZone1}
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(Yaml(builders.Mesh().WithName(meshName))).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Install(YamlUniversal(`
 type: MeshMultiZoneService
 name: test-server
@@ -43,23 +58,34 @@ spec:
 
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(meshName),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(meshName),
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
+				),
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+				zoneIngress(),
 			)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			SetupInGroup(multizone.KubeZone1, &group)
 
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+				zoneIngress(),
+			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 
 		NewClusterSetup().
-			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
+			Install(Parallel(
+				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"})),
+				zoneIngress(),
+			)).
 			SetupInGroup(multizone.UniZone1, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

@@ -16,8 +16,9 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: svc-2
-        namespace: consumer
+        labels:
+          kuma.io/display-name: svc-2
+          k8s.kuma.io/namespace: consumer
       default:
         http:
           requestTimeout: 15s

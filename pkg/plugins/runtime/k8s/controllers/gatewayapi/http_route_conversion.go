@@ -72,25 +72,35 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 
 	var tos []v1alpha1.To
 
-	var ports []int32
+	var servicePorts []kube_core.ServicePort
 	if parentPort != nil {
-		ports = []int32{*parentPort}
-	} else {
 		for _, port := range parent.Spec.Ports {
-			ports = append(ports, port.Port)
+			if port.Port == *parentPort {
+				servicePorts = append(servicePorts, port)
+			}
 		}
+	} else {
+		servicePorts = parent.Spec.Ports
 	}
 
-	for _, port := range ports {
-		serviceName := k8s_util.ServiceTag(
-			kube_client.ObjectKeyFromObject(parent),
-			pointer.To(port),
-		)
-
+	for _, port := range servicePorts {
+		// The MeshService section name is the Service port name, falling back to
+		// the stringified port value for unnamed ports (see meshservice_controller).
+		// It must match how the MeshService is generated: a mismatched sectionName
+		// won't resolve to the intended port, so this `to` entry won't apply to
+		// traffic for that port.
+		sectionName := port.Name
+		if sectionName == "" {
+			sectionName = fmt.Sprintf("%d", port.Port)
+		}
 		tos = append(tos, v1alpha1.To{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
-				Name: pointer.To(serviceName),
+				Labels: &map[string]string{
+					mesh_proto.DisplayName:      parent.GetName(),
+					mesh_proto.KubeNamespaceTag: parent.GetNamespace(),
+				},
+				SectionName: pointer.To(sectionName),
 			},
 			Rules: rules,
 		})

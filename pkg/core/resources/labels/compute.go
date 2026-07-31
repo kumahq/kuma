@@ -240,13 +240,30 @@ func ComputePolicyRole(p core_model.Policy, ns Namespace) (mesh_proto.PolicyRole
 	}
 
 	hasSameOrOmittedNamespace := func(tr common_api.TargetRef) bool {
-		return pointer.Deref(tr.Namespace) == "" || pointer.Deref(tr.Namespace) == ns.value
+		labelNamespace := pointer.Deref(tr.Labels)[mesh_proto.KubeNamespaceTag]
+		return labelNamespace == "" || labelNamespace == ns.value
+	}
+
+	// selectsSingleResourceByDisplayName reports whether ref identifies a single
+	// resource by display-name (+ optional namespace) rather than an arbitrary
+	// subset of resources via other label selectors.
+	selectsSingleResourceByDisplayName := func(tr common_api.TargetRef) bool {
+		labels := pointer.Deref(tr.Labels)
+		if labels[mesh_proto.DisplayName] == "" {
+			return false
+		}
+		for k := range labels {
+			if k != mesh_proto.DisplayName && k != mesh_proto.KubeNamespaceTag {
+				return false
+			}
+		}
+		return true
 	}
 
 	isProducerItem := func(tr common_api.TargetRef) bool {
 		switch tr.Kind {
 		case common_api.MeshService, common_api.MeshHTTPRoute:
-			return pointer.Deref(tr.Name) != "" && hasSameOrOmittedNamespace(tr)
+			return selectsSingleResourceByDisplayName(tr) && hasSameOrOmittedNamespace(tr)
 		default:
 			return false
 		}

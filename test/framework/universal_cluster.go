@@ -662,22 +662,6 @@ func (c *UniversalCluster) createEnvoyTunnel(name string) {
 	})
 }
 
-func (c *UniversalCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	return c.GetAppEnvoyTunnel(Config.ZoneEgressApp)
-}
-
-func (c *UniversalCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
-	return c.GetAppEnvoyTunnel(Config.ZoneIngressApp)
-}
-
-func (c *UniversalCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
-	return c.GetAppEnvoyTunnelE(Config.ZoneEgressApp)
-}
-
-func (c *UniversalCluster) GetZoneIngressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
-	return c.GetAppEnvoyTunnelE(Config.ZoneIngressApp)
-}
-
 func (c *UniversalCluster) Install(fn InstallFunc) error {
 	return fn(c)
 }

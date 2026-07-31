@@ -30,7 +30,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: 10s
       idleTimeout: 1h
@@ -45,7 +46,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: 10s
       idleTimeout: 1h
@@ -60,7 +62,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       http:
         requestTimeout: 1s`),
@@ -70,7 +73,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       http:
         requestTimeout: 1s
@@ -87,7 +91,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshHTTPRoute
-      name: http-route-1
+      labels:
+        kuma.io/display-name: http-route-1
     default:
       http:
         requestTimeout: 1s`),
@@ -190,7 +195,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend`,
+      labels:
+        kuma.io/display-name: web-backend`,
 				expected: `
 violations:
   - field: spec.to[0].default
@@ -203,7 +209,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       idleTimeout: -1s`,
 				expected: `
@@ -218,7 +225,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: -1s
       http:
@@ -237,7 +245,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       http: {}`,
 				expected: `
@@ -250,7 +259,8 @@ violations:
 to:
   - targetRef:
       kind: MeshHTTPRoute
-      name: http-route-1
+      labels:
+        kuma.io/display-name: http-route-1
       sectionName: some-section
     default:
       http:
@@ -268,7 +278,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: 10s
       idleTimeout: 1h
@@ -307,8 +318,8 @@ to:
       idleTimeout: 1h`,
 				expected: `
 violations:
-  - field: spec.to[0].targetRef.labels
-    message: either labels or name must be specified`,
+  - field: spec.to[0].targetRef.name
+    message: must not be set with kind MeshExternalService`,
 			}),
 			Entry("when rules is defined, to cannot be defined", testCase{
 				inputYaml: `
@@ -320,7 +331,8 @@ rules:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: 10s`,
 				expected: `
