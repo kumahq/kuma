@@ -12,13 +12,13 @@ name: meshtimeout-1
 spec:
   targetRef:
     kind: Mesh
-    proxyTypes:
-    - Gateway
   to:
   - default:
       http:
         requestTimeout: 4s
     targetRef:
       kind: MeshService
-      name: api-play-000_microservice-mesh_svc_8080
+      labels:
+        k8s.kuma.io/namespace: microservice-mesh
+        kuma.io/display-name: api-play-000
 type: MeshTimeout

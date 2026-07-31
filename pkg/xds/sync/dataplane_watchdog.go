@@ -103,6 +103,7 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
 		d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key)
+		d.EnvoyCpCtx.IdentityManager.Cleanup(d.key)
 		d.lastOtelStatus = nil
 		d.otelStatusSynced = false
 		d.OtelStatusCache.Set(d.key, nil)
@@ -254,7 +255,15 @@ func (d *DataplaneWatchdog) syncOtelStatus(backends *core_xds.OtelPipeBackends) 
 func hashMeshIdentity(identity *meshidentity_api.MeshIdentityResource) []byte {
 	hasher := fnv.New128a()
 	if identity != nil {
-		_, _ = hasher.Write(core_model.Hash(identity))
+		_, _ = hasher.Write(identity.XDSHash())
+		// Workload identity delivery is additionally gated by MeshIdentity
+		// initialization, so dataplanes must resync when that readiness flips
+		// even though mesh-wide xDS can stay stable.
+		if identity.Status != nil && identity.Status.IsInitialized() {
+			_, _ = hasher.Write([]byte{1})
+		} else {
+			_, _ = hasher.Write([]byte{0})
+		}
 	}
 	return hasher.Sum(nil)
 }

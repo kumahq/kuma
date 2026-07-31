@@ -21,6 +21,14 @@ metadata:
   name: busybox
 spec:
   containers:
+  - image: busybox
+    name: busybox
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
+  initContainers:
   - args:
     - run
     - --log-level=info
@@ -79,6 +87,13 @@ spec:
           fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - killall
+          - -USR2
+          - kuma-dp
     livenessProbe:
       failureThreshold: 212
       httpGet:
@@ -107,6 +122,7 @@ spec:
         cpu: 150m
         ephemeral-storage: 50M
         memory: 164Mi
+    restartPolicy: Always
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -115,16 +131,14 @@ spec:
       readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
+    startupProbe:
+      httpGet:
+        path: /ready
+        port: 9901
+      successThreshold: 1
     volumeMounts:
     - mountPath: /tmp
       name: kuma-sidecar-tmp
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
-  - image: busybox
-    name: busybox
-    resources: {}
-    volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true

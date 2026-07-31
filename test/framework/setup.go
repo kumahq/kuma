@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_rest "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
+	common_k8s "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/tls"
 	tproxy_consts "github.com/kumahq/kuma/v3/pkg/transparentproxy/consts"
@@ -142,20 +143,10 @@ kind: Mesh
 metadata:
   name: %s
 `, name)
-	return YamlK8s(mesh)
-}
-
-func MeshWithMeshServicesKubernetes(name string, meshServicesEnabled string) InstallFunc {
-	mesh := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  meshServices:
-    mode: %s
-`, name, meshServicesEnabled)
-	return YamlK8s(mesh)
+	return Combine(
+		YamlK8s(mesh),
+		WaitMeshKubernetesReady(name),
+	)
 }
 
 func MTLSMeshKubernetes(name string) InstallFunc {
@@ -171,25 +162,57 @@ spec:
       - name: ca-1
         type: builtin
 `, name)
-	return YamlK8s(mesh)
+	return Combine(
+		YamlK8s(mesh),
+		WaitMeshKubernetesReady(name),
+	)
 }
 
-func MTLSMeshKubernetesWithEgressRouting(name string) InstallFunc {
-	mesh := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  routing:
-    zoneEgress: true
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-`, name)
-	return YamlK8s(mesh)
+func WaitMeshKubernetesReady(name string) InstallFunc {
+	return func(cluster Cluster) error {
+		_, err := retry.DoWithRetryContextE(
+			cluster.GetTesting(),
+			context.Background(),
+			fmt.Sprintf("wait for mesh %q defaults to be generated", name),
+			DefaultRetries,
+			DefaultTimeout,
+			func() (string, error) {
+				out, err := k8s.RunKubectlAndGetOutputContextE(
+					cluster.GetTesting(),
+					context.Background(),
+					cluster.GetKubectlOptions(),
+					"get",
+					"mesh",
+					name,
+					"-o",
+					"json",
+				)
+				if err != nil {
+					return "", err
+				}
+
+				var mesh struct {
+					Metadata struct {
+						Annotations map[string]string `json:"annotations"`
+					} `json:"metadata"`
+				}
+				if err := json.Unmarshal([]byte(out), &mesh); err != nil {
+					return "", err
+				}
+
+				if mesh.Metadata.Annotations[common_k8s.K8sMeshDefaultsGenerated] != "true" {
+					return "", errors.Errorf(
+						"mesh %q defaults annotation %q is not ready yet",
+						name,
+						common_k8s.K8sMeshDefaultsGenerated,
+					)
+				}
+
+				return "", nil
+			},
+		)
+		return err
+	}
 }
 
 func MeshTrafficPermissionAllowAllKubernetes(name string) InstallFunc {
@@ -204,11 +227,12 @@ metadata:
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow`, name, Config.KumaNamespace)
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[1]s"`, name, Config.KumaNamespace)
 	return YamlK8s(mtp)
 }
 
@@ -270,111 +294,6 @@ mtls:
 	return YamlUniversal(mesh)
 }
 
-func TrafficRouteKubernetes(name string) InstallFunc {
-	tr := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: TrafficRoute
-mesh: %[1]s
-metadata:
-  name: route-all-%[1]s
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: '*'
-  conf:
-    loadBalancer:
-      roundRobin: {}
-    destination:
-      kuma.io/service: '*'`, name)
-	return YamlK8s(tr)
-}
-
-func TrafficRouteUniversal(name string) InstallFunc {
-	tr := fmt.Sprintf(`
-type: TrafficRoute
-name: route-all-%[1]s
-mesh: %[1]s
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'
-conf:
-  loadBalancer:
-    roundRobin: {}
-  destination:
-    kuma.io/service: '*'`, name)
-	return YamlUniversal(tr)
-}
-
-func TrafficPermissionUniversal(name string) InstallFunc {
-	tp := fmt.Sprintf(`
-type: TrafficPermission
-name: allow-all-%[1]s
-mesh: %[1]s
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'`, name)
-	return YamlUniversal(tp)
-}
-
-func TimeoutUniversal(name string) InstallFunc {
-	timeout := fmt.Sprintf(`
-type: Timeout
-mesh: %[1]s
-name: timeout-all-%[1]s
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'
-conf:
-  connectTimeout: 5s # all protocols
-  tcp: # tcp, kafka
-    idleTimeout: 1h
-  http: # http, http2, grpc
-    requestTimeout: 15s
-    idleTimeout: 1h
-    streamIdleTimeout: 30m
-    maxStreamDuration: 0s`, name)
-	return YamlUniversal(timeout)
-}
-
-func TimeoutKubernetes(name string) InstallFunc {
-	timeout := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Timeout
-mesh: %[1]s
-metadata:
-  name: timeout-all-%[1]s
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: '*'
-  conf:
-    connectTimeout: 5s # all protocols
-    tcp: # tcp, kafka
-      idleTimeout: 1h 
-    http: # http, http2, grpc
-      requestTimeout: 15s 
-      idleTimeout: 1h
-      streamIdleTimeout: 30m
-      maxStreamDuration: 0s
-`, name)
-	return YamlK8s(timeout)
-}
-
 func MeshTrafficPermissionAllowAllUniversal(name string) InstallFunc {
 	mtp := fmt.Sprintf(`
 type: MeshTrafficPermission
@@ -383,11 +302,12 @@ mesh: %[1]s
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow`, name)
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: "spiffe://%[1]s"`, name)
 	return YamlUniversal(mtp)
 }
 
@@ -736,7 +656,6 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := opts.appYaml
 
-		// Determine service name
 		serviceName := getValueOrDefault(opts.serviceName, name)
 		transparent := opts.transparent != nil && *opts.transparent // default false
 		var err error
@@ -748,13 +667,14 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		if opts.appLabel != "" {
 			labels["app"] = opts.appLabel
 		}
+		if opts.workload == "" && !opts.omitWorkloadLabel {
+			opts.workload = serviceName
+		}
 		if opts.workload != "" {
 			labels[metadata.KumaWorkload] = opts.workload
 		}
 
-		// Build dataplane YAML if not provided
 		if appYaml == "" {
-			// Initialize template data with common fields
 			dpp := DataplaneTemplateData{
 				Mesh:           mesh,
 				ServiceName:    serviceName,
@@ -763,14 +683,12 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 				Labels:         labels,
 			}
 
-			// Configure based on mode
 			switch {
 			case transparent:
 				dpp.InboundPort = "3000"
 				dpp.TransparentProxy = &TransparentProxyConfig{
 					RedirectPortInbound:  redirectPortInbound,
 					RedirectPortOutbound: redirectPortOutbound,
-					ReachableServices:    opts.reachableServices,
 					ReachableBackends:    opts.reachableBackends,
 				}
 			case opts.bindOutbounds:
@@ -873,10 +791,8 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		var opts appDeploymentOptions
 		opts.apply(opt...)
 
-		// Determine service name and defaults
 		serviceName := getValueOrDefault(opts.serviceName, "test-server")
 
-		// Build labels map, merging opts.labels with appLabel
 		labels := opts.labels
 		if labels == nil {
 			labels = make(map[string]string)
@@ -884,11 +800,13 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		if opts.appLabel != "" {
 			labels["app"] = opts.appLabel
 		}
+		if opts.workload == "" && !opts.omitWorkloadLabel {
+			opts.workload = serviceName
+		}
 		if opts.workload != "" {
 			labels[metadata.KumaWorkload] = opts.workload
 		}
 
-		// Initialize dataplane template data
 		dpp := DataplaneTemplateData{
 			Mesh:               mesh,
 			ServiceName:        serviceName,

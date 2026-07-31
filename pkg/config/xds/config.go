@@ -54,20 +54,3 @@ func DefaultXdsServerConfig() *XdsServerConfig {
 		PolicyMatchingCacheSize:               10_000,
 	}
 }
-
-type Proxy struct {
-	// Gateway holds data plane wide configuration for MeshGateway proxies
-	Gateway Gateway `json:"gateway"`
-}
-
-type Gateway struct {
-	GlobalDownstreamMaxConnections uint64 `json:"globalDownstreamMaxConnections" envconfig:"kuma_proxy_gateway_global_downstream_max_connections"`
-}
-
-func DefaultProxyConfig() Proxy {
-	return Proxy{
-		Gateway: Gateway{
-			GlobalDownstreamMaxConnections: 50000,
-		},
-	}
-}

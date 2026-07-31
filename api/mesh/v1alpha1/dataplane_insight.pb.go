@@ -368,7 +368,7 @@ type Version struct {
 	KumaDp *KumaDpVersion `protobuf:"bytes,1,opt,name=kumaDp,proto3" json:"kumaDp,omitempty"`
 	// Version of Envoy
 	Envoy *EnvoyVersion `protobuf:"bytes,2,opt,name=envoy,proto3" json:"envoy,omitempty"`
-	// Versions of other dependencies, i.e. CoreDNS
+	// Versions of other dependencies
 	Dependencies  map[string]string `protobuf:"bytes,3,rep,name=dependencies,proto3" json:"dependencies,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

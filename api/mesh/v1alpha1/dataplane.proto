@@ -4,7 +4,6 @@ package kuma.mesh.v1alpha1;
 
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
-import "api/mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
@@ -266,16 +265,14 @@ message Dataplane {
       reserved 4;
       reserved "redirect_port_inbound_v6";
 
-      // List of reachable services (represented by the value of
-      // `kuma.io/service`) via transparent proxying. Setting an explicit list
-      // can dramatically improve the performance of the mesh. If not specified,
-      // all services in the mesh are reachable.
-      repeated string reachable_services = 5;
+      // `reachable_services` has been removed in favor of `reachable_backends`.
+      reserved 5;
+      reserved "reachable_services";
 
       // The IP family mode to enable for. Can be "IPv4" or "DualStack".
       IpFamilyMode ip_family_mode = 6;
       message ReachableBackendRef {
-        // Type of the backend: MeshService or MeshExternalService
+        // Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService
         //  +required
         string kind = 1;
         // Name of the backend.
@@ -383,12 +380,8 @@ message Dataplane {
   // proxy.
   Networking networking = 1;
 
-  // Configuration for metrics that should be collected and exposed by the
-  // data plane proxy.
-  //
-  // Settings defined here will override their respective defaults
-  // defined at a Mesh level.
-  MetricsBackend metrics = 2;
+  reserved 2;
+  reserved "metrics";
 
   message Probes {
     // Port on which the probe endpoints will be exposed. This cannot overlap

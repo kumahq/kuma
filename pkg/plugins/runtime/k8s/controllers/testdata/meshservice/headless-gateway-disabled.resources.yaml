@@ -135,5 +135,3 @@ kind: Mesh
 metadata:
   name: default
 spec:
-  meshServices:
-    mode: Disabled

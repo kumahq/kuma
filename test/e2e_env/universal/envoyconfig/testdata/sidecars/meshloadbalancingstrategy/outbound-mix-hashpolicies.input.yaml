@@ -7,7 +7,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         hashPolicies:
           - type: Cookie
@@ -27,16 +28,10 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         loadBalancer:
           type: Maglev
           maglev:
             tableSize: 27
-            hashPolicies:
-              - type: Cookie
-                cookie:
-                  name: should-be-overridden
-              - type: Header
-                header:
-                  name: should-be-overridden

@@ -16,9 +16,6 @@ type MeshFaultInjection struct {
 	// defined inplace.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 
-	// From list makes a match between clients and corresponding configurations
-	From *[]From `json:"from,omitempty"`
-
 	// To list makes a match between clients and corresponding configurations
 	To *[]To `json:"to,omitempty"`
 
@@ -31,15 +28,6 @@ type Rule struct {
 	Matches *[]common_api.Match `json:"matches,omitempty"`
 	// Default defines fault configuration
 	Default Conf `json:"default"`
-}
-
-type From struct {
-	// TargetRef is a reference to the resource that represents a group of
-	// destinations.
-	TargetRef common_api.TargetRef `json:"targetRef"`
-	// Default is a configuration specific to the group of destinations referenced in
-	// 'targetRef'
-	Default Conf `json:"default,omitempty"`
 }
 
 type To struct {

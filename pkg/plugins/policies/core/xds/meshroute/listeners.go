@@ -5,6 +5,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
@@ -25,7 +26,6 @@ func MakeTCPSplit(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) []envoy_common.Split {
 	return makeSplits(
 		map[core_meta.Protocol]struct{}{
@@ -40,7 +40,6 @@ func MakeTCPSplit(
 		servicesAcc,
 		refs,
 		meshCtx,
-		unifiedNaming,
 	)
 }
 
@@ -49,7 +48,6 @@ func MakeHTTPSplit(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) []envoy_common.Split {
 	return makeSplits(
 		map[core_meta.Protocol]struct{}{
@@ -61,7 +59,6 @@ func MakeHTTPSplit(
 		servicesAcc,
 		refs,
 		meshCtx,
-		unifiedNaming,
 	)
 }
 
@@ -82,6 +79,19 @@ func (ds *DestinationService) ConditionallyResolveKRIWithFallback(condition bool
 		}
 	}
 	return fallback
+}
+
+// OutboundListenerTags returns the outbound listener's io.kuma.tags: real tags
+// without kuma.io/mesh for a legacy outbound, or the destination KRI under
+// kuma.io/unified-name for a resource-based one.
+func (ds *DestinationService) OutboundListenerTags() map[string]string {
+	if ds.Outbound == nil {
+		return nil
+	}
+	if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
+		return map[string]string{mesh_proto.UnifiedNameTag: id.String()}
+	}
+	return map[string]string(envoy_tags.Tags(ds.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))
 }
 
 func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
@@ -149,9 +159,17 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 			continue
 		}
 
-		// skip outbounds when no port matches SectionName
-		if port, ok = svc.FindPortByName(outbound.Resource.SectionName); !ok {
-			continue
+		if outbound.Resource.SectionName == "" {
+			ports := svc.GetPorts()
+			if len(ports) != 1 {
+				continue
+			}
+			port = ports[0]
+		} else {
+			// skip outbounds when no port matches SectionName
+			if port, ok = svc.FindPortByName(outbound.Resource.SectionName); !ok {
+				continue
+			}
 		}
 
 		// determine protocol, default to TCP if unspecified
@@ -184,6 +202,14 @@ func DestinationPortFromRef(
 		return nil, nil, false
 	}
 
+	if ref.Resource.SectionName == "" {
+		ports := dest.GetPorts()
+		if len(ports) != 1 {
+			return nil, nil, false
+		}
+		return dest, ports[0], true
+	}
+
 	if port, ok = dest.FindPortByName(ref.Resource.SectionName); !ok {
 		return nil, nil, false
 	}
@@ -197,13 +223,12 @@ func makeSplits(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) []envoy_common.Split {
 	var result []envoy_common.Split
 
 	splitFromRef := func(ref resolve.ResolvedBackendRef) envoy_common.Split {
 		if ref.ReferencesRealResource() {
-			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx, unifiedNaming)
+			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx)
 		}
 
 		return handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef(), meshCtx)
@@ -228,7 +253,6 @@ func handleRealResources(
 	servicesAcc envoy_common.ServicesAccumulator,
 	ref *resolve.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) envoy_common.Split {
 	if ref.Weight == 0 {
 		return nil
@@ -243,12 +267,13 @@ func handleRealResources(
 		return nil
 	}
 
+	if common_api.TargetRefKind(ref.Resource.ResourceType) == common_api.MeshService && ref.Resource.SectionName == "" {
+		ref.Resource = kri.WithSectionName(ref.Resource, port.GetName())
+	}
+
 	service := destinationname.MustResolve(false, dest, port)
 
-	clusterName := service
-	if unifiedNaming {
-		clusterName = ref.Resource.String()
-	}
+	clusterName := ref.Resource.String()
 
 	isExternalService := ref.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType
 

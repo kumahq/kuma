@@ -95,42 +95,10 @@ var _ = Describe("kumactl inspect POLICY", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(buf.String()).To(matchers.MatchGoldenEqual("testdata", given.goldenFile))
 		},
-		Entry("inbound policy", testCase{
-			goldenFile:         "inspect-traffic-permission.golden.txt",
-			serverResponseFile: "inspect-traffic-permission.server-response.json",
-			mesh:               "default",
-			cmdArgs:            []string{"inspect", "traffic-permission", "tp1"},
-		}),
-		Entry("outbound policy", testCase{
-			goldenFile:         "inspect-timeout.golden.txt",
-			serverResponseFile: "inspect-timeout.server-response.json",
-			cmdArgs:            []string{"inspect", "timeout", "t1"},
-		}),
-		Entry("service policy", testCase{
-			goldenFile:         "inspect-health-check.golden.txt",
-			serverResponseFile: "inspect-health-check.server-response.json",
-			cmdArgs:            []string{"inspect", "healthcheck", "hc1"},
-		}),
-		Entry("service policy (no kind in response)", testCase{
-			goldenFile:         "inspect-health-check-1.5.golden.txt",
-			serverResponseFile: "inspect-health-check-1.5.server-response.json",
-			cmdArgs:            []string{"inspect", "healthcheck", "hc1"},
-		}),
-		Entry("dataplane policy", testCase{
-			goldenFile:         "inspect-traffic-trace.golden.txt",
-			serverResponseFile: "inspect-traffic-trace.server-response.json",
-			cmdArgs:            []string{"inspect", "traffic-trace", "tt1"},
-		}),
 		Entry("new-api mtp", testCase{
 			goldenFile:         "inspect-mtp-dp.golden.txt",
 			serverResponseFile: "inspect-mtp-dp.server-response.json",
 			cmdArgs:            []string{"inspect", "meshtrafficpermission", "tt1", "--new-api"},
-		}),
-		Entry("other-mesh", testCase{
-			goldenFile:         "inspect-traffic-trace-other-mesh.golden.txt",
-			serverResponseFile: "inspect-traffic-trace-other-mesh.server-response.json",
-			mesh:               "other-mesh",
-			cmdArgs:            []string{"inspect", "traffic-trace", "tt1", "--mesh", "other-mesh"},
 		}),
 	)
 })

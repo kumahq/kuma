@@ -26,7 +26,7 @@ type EventBasedWatchdog struct {
 	Metrics             *Metrics
 	Log                 logr.Logger
 	NewFlushTicker      func() *time.Ticker
-	NewFullResyncTicker func() *time.Ticker
+	NewFullResyncTicker func() (*time.Ticker, context.CancelFunc)
 }
 
 func (e *EventBasedWatchdog) Start(ctx context.Context) {
@@ -43,7 +43,8 @@ func (e *EventBasedWatchdog) Start(ctx context.Context) {
 	})
 	flushTicker := e.NewFlushTicker()
 	defer flushTicker.Stop()
-	fullResyncTicker := e.NewFullResyncTicker()
+	fullResyncTicker, cancelFullResyncTicker := e.NewFullResyncTicker()
+	defer cancelFullResyncTicker()
 	defer fullResyncTicker.Stop()
 
 	// for the first reconcile assign all types

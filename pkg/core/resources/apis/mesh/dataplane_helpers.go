@@ -16,7 +16,6 @@ import (
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
 	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
@@ -60,52 +59,6 @@ func overlap(address1 net.IP, address2 net.IP) bool {
 	}
 	// exact match
 	return address1.Equal(address2)
-}
-
-func (d *DataplaneResource) GetPrometheusConfig(mesh *MeshResource) (*mesh_proto.PrometheusMetricsBackendConfig, error) {
-	if d == nil || mesh == nil || mesh.Meta.GetName() != d.Meta.GetMesh() || !mesh.HasPrometheusMetricsEnabled() {
-		return nil, nil
-	}
-	cfg := mesh_proto.PrometheusMetricsBackendConfig{}
-	strCfg := mesh.GetEnabledMetricsBackend().Conf
-	if err := util_proto.ToTyped(strCfg, &cfg); err != nil {
-		return nil, err
-	}
-
-	if d.Spec.GetMetrics().GetType() == mesh_proto.MetricsPrometheusType {
-		dpCfg := mesh_proto.PrometheusMetricsBackendConfig{}
-		if err := util_proto.ToTyped(d.Spec.Metrics.Conf, &dpCfg); err != nil {
-			return nil, err
-		}
-		d.mergeLists(&cfg, &dpCfg)
-		proto.Merge(&cfg, &dpCfg)
-	}
-	return &cfg, nil
-}
-
-// After proto.Merge called two lists are merged and we cannot be sure
-// of order of the elements and if the element is from the Mesh or from
-// the Dataplane resource.
-func (d *DataplaneResource) mergeLists(
-	meshCfg *mesh_proto.PrometheusMetricsBackendConfig,
-	dpCfg *mesh_proto.PrometheusMetricsBackendConfig,
-) {
-	aggregate := make(map[string]*mesh_proto.PrometheusAggregateMetricsConfig)
-	for _, conf := range meshCfg.Aggregate {
-		aggregate[conf.Name] = conf
-	}
-	// override Mesh aggregate configuration with Dataplane
-	for _, conf := range dpCfg.Aggregate {
-		aggregate[conf.Name] = conf
-	}
-	// contains all the elements for Dataplane configuration
-	var unduplicatedConfig []*mesh_proto.PrometheusAggregateMetricsConfig
-	for _, value := range aggregate {
-		unduplicatedConfig = append(unduplicatedConfig, value)
-	}
-	// we cannot set the same values because they are going to be appended
-	meshCfg.Aggregate = []*mesh_proto.PrometheusAggregateMetricsConfig{}
-	dpCfg.Aggregate = unduplicatedConfig
 }
 
 func (d *DataplaneResource) GetIP() string {
@@ -168,33 +121,58 @@ func (d *DataplaneResource) AdminPort(defaultAdminPort uint32) uint32 {
 	return defaultAdminPort
 }
 
+// Hash returns a content-based hash of the Dataplane for consumers that need to
+// observe metadata-only writes via resourceVersion as well as spec and label
+// changes.
 func (d *DataplaneResource) Hash() []byte {
+	return d.hash(true)
+}
+
+// XDSHash returns the Dataplane hash used to gate mesh-wide xDS regeneration.
+// It intentionally excludes meta.GetVersion() (the Kubernetes resourceVersion)
+// so that writes irrelevant to xDS generation - status, annotations,
+// managedFields - don't invalidate the mesh-wide xDS context. Labels are
+// included because they affect policy matching.
+func (d *DataplaneResource) XDSHash() []byte {
+	return d.hash(false)
+}
+
+func (d *DataplaneResource) hash(includeVersion bool) []byte {
 	hasher := fnv.New128a()
-	_, _ = hasher.Write(core_model.HashMeta(d))
-	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAddress()))
-	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAdvertisedAddress()))
+	_, _ = hasher.Write(core_model.HashMetaIdentity(d))
+	if includeVersion {
+		_, _ = hasher.Write([]byte(d.GetMeta().GetVersion()))
+	}
+	core_model.WriteSortedLabels(hasher, d.GetMeta().GetLabels())
+	specBytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(d.Spec)
+	if err == nil {
+		_, _ = hasher.Write(specBytes)
+	} else {
+		// Deterministic marshaling should never fail for a well-formed Dataplane
+		// spec, but fall back to a value that still changes with the spec
+		// instead of silently treating every Dataplane as identical.
+		_, _ = hasher.Write([]byte(d.Spec.String()))
+	}
 	return hasher.Sum(nil)
 }
 
-// InboundIdentifyingName returns a dataplane KRI with portName as section name
-// when inbound tags are disabled, falling back to IdentifyingName otherwise.
-func (d *DataplaneResource) InboundIdentifyingName(inboundTagsDisabled bool, portName string) string {
-	if inboundTagsDisabled && portName != "" {
+// InboundIdentifyingName returns a dataplane KRI with the inbound name as
+// section name, falling back to IdentifyingName.
+func (d *DataplaneResource) InboundIdentifyingName(inbound *mesh_proto.Dataplane_Networking_Inbound) string {
+	if portName := inbound.GetName(); portName != "" {
 		id := kri.WithSectionName(kri.FromResourceMeta(d.GetMeta(), DataplaneType), portName)
 		if !id.IsEmpty() {
 			return id.String()
 		}
 	}
-	return d.IdentifyingName(inboundTagsDisabled)
+	return d.IdentifyingName()
 }
 
-// IdentifyingName returns the workload label when inbound tags are disabled,
-// falling back to the identifying service name.
-func (d *DataplaneResource) IdentifyingName(inboundTagsDisabled bool) string {
-	if inboundTagsDisabled {
-		if workload := d.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
-			return workload
-		}
+// IdentifyingName returns the workload label when set, falling back to the
+// identifying service name from the dataplane spec.
+func (d *DataplaneResource) IdentifyingName() string {
+	if workload := d.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
+		return workload
 	}
 	services := d.Spec.TagSet().Values(mesh_proto.ServiceTag)
 	if len(services) > 0 {

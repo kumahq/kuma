@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/kds/hash"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -36,7 +35,6 @@ func ProducerPolicyFlow() {
 					builders.Mesh().
 						WithName(mesh).
 						WithoutInitialPolicies().
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
 						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
 				),
 			).
@@ -104,7 +102,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         http:
           requestTimeout: 2s
@@ -151,8 +150,9 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
-        namespace: random-ns-name
+        labels:
+          kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: random-ns-name
       default:
         http:
           requestTimeout: 2s
@@ -189,7 +189,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -227,7 +228,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: add-response-delay-header
+        labels:
+          kuma.io/display-name: add-response-delay-header
       default:
         http:
           requestTimeout: 2s
@@ -268,7 +270,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -293,7 +296,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: to-test-server
+        labels:
+          kuma.io/display-name: to-test-server
       default:
         http:
           numRetries: 5

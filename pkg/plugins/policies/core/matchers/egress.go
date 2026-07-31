@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -44,36 +45,24 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 		return core_xds.TypedMatchingPolicies{}, errors.Errorf("resource type %v doesn't support TargetRef matching", p.Descriptor().Name)
 	}
 
-	_, isFrom := p.GetSpec().(core_model.PolicyWithFromList)
 	_, isTo := p.GetSpec().(core_model.PolicyWithToList)
+	_, hasInboundRules := p.GetSpec().(inbound.PolicyWithRules)
 
-	if !isFrom && !isTo {
-		return core_xds.TypedMatchingPolicies{}, nil
+	if !isTo && !hasInboundRules {
+		return core_xds.TypedMatchingPolicies{Type: rType}, nil
 	}
 
+	tr, err := processToResourceRules(policies, resources)
+	if err != nil {
+		return core_xds.TypedMatchingPolicies{}, err
+	}
 	var fr core_rules.FromRules
-	var tr core_rules.ToRules
-
 	switch {
-	case isFrom && isTo:
-		// we needed a strategy to choose what rules to apply on zone egress when a policy supports both "to" and "from".
-		// Picking "from" rules works for us today, because there is only MeshFaultInjection policy that has both "to"
-		// and "from" and is applied on zone egress. In the future, we might want to move the strategy down to the policy plugins.
-		fr, err = processFromRules(tags, policies)
-		if err != nil {
-			return core_xds.TypedMatchingPolicies{}, err
-		}
-		tr, err = processToResourceRules(policies, resources)
-	case isFrom:
-		fr, err = processFromRules(tags, policies)
 	case isTo:
 		fr, err = processToRules(tags, policies)
-		if err != nil {
-			return core_xds.TypedMatchingPolicies{}, err
-		}
-		tr, err = processToResourceRules(policies, resources)
+	case hasInboundRules:
+		fr, err = processInboundRules(tags, policies)
 	}
-
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
 	}
@@ -83,32 +72,6 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 		FromRules: fr,
 		ToRules:   tr,
 	}, nil
-}
-
-func processFromRules(
-	tags map[string]string,
-	policies core_model.ResourceList,
-) (core_rules.FromRules, error) {
-	matchedPolicies, err := registry.Global().NewList(policies.GetItemType())
-	if err != nil {
-		return core_rules.FromRules{}, err
-	}
-
-	for _, policy := range policies.GetItems() {
-		spec := policy.GetSpec().(core_model.Policy)
-		if !serviceSelectedByTargetRef(spec.GetTargetRef(), tags) {
-			continue
-		}
-		if err := matchedPolicies.AddItem(policy); err != nil {
-			return core_rules.FromRules{}, err
-		}
-	}
-
-	matchedPolicies = SortByTargetRef(matchedPolicies)
-
-	return core_rules.BuildFromRules(map[core_rules.InboundListener]core_model.ResourceList{
-		{}: matchedPolicies, // egress always has only 1 listener, so we can use empty key
-	})
 }
 
 // It's not natural for zone egress to have 'to' policies. It doesn't make sense to target
@@ -200,6 +163,34 @@ func processToRules(tags map[string]string, policies core_model.ResourceList) (c
 	}, nil
 }
 
+func processInboundRules(tags map[string]string, policies core_model.ResourceList) (core_rules.FromRules, error) {
+	matchedPolicies, err := registry.Global().NewList(policies.GetItemType())
+	if err != nil {
+		return core_rules.FromRules{}, err
+	}
+
+	for _, policy := range policies.GetItems() {
+		spec := policy.GetSpec().(core_model.Policy)
+		if !serviceSelectedByTargetRef(spec.GetTargetRef(), tags) {
+			continue
+		}
+		if err := matchedPolicies.AddItem(policy); err != nil {
+			return core_rules.FromRules{}, err
+		}
+	}
+
+	matchedPolicies = SortByTargetRef(matchedPolicies)
+
+	rules, err := inbound.BuildRules(matchedPolicies)
+	if err != nil {
+		return core_rules.FromRules{}, err
+	}
+
+	return core_rules.FromRules{
+		InboundRules: map[core_rules.InboundListener][]*inbound.Rule{{}: rules},
+	}, nil
+}
+
 func processToResourceRules(policies core_model.ResourceList, resources xds_context.Resources) (core_rules.ToRules, error) {
 	resourceRules, err := outbound.BuildRules(policies, resources)
 	if err != nil {
@@ -227,11 +218,11 @@ func serviceSelectedByTargetRef(tr common_api.TargetRef, tags map[string]string)
 	switch tr.Kind {
 	case common_api.Mesh:
 		return true
-	case common_api.MeshSubset:
+	case common_api.LegacyMeshSubsetKind():
 		return mesh_proto.TagSelector(pointer.Deref(tr.Tags)).Matches(tags)
 	case common_api.MeshService:
 		return pointer.Deref(tr.Name) == tags[mesh_proto.ServiceTag]
-	case common_api.MeshServiceSubset:
+	case common_api.LegacyMeshServiceSubsetKind():
 		return pointer.Deref(tr.Name) == tags[mesh_proto.ServiceTag] && mesh_proto.TagSelector(pointer.Deref(tr.Tags)).Matches(tags)
 	}
 	return false

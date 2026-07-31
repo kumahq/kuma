@@ -63,7 +63,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [dataplanes, meshgateways]
+            enum: [dataplanes]
           description: The type of resource (only some resources support rules api)
         - in: path
           name: resourceName

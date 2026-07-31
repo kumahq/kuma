@@ -25,67 +25,6 @@ var _ = Describe("MeshTrafficPermission", func() {
 				// then
 				Expect(verr).ToNot(HaveOccurred())
 			},
-			Entry("allow or deny all possible kinds of clients", `
-targetRef:
-  kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: Allow
-  - targetRef:
-      kind: MeshSubset
-      tags:
-        kuma.io/zone: us-east
-        env: dev
-    default:
-      action: Deny
-  - targetRef:
-      kind: MeshService
-      name: backend
-    default:
-      action: Allow
-  - targetRef:
-      kind: MeshServiceSubset
-      name: backend
-      tags:
-        version: v1
-    default:
-      action: Deny
-`),
-			Entry("allow MeshSubset at top-level targetRef", `
-targetRef:
-  kind: MeshSubset
-  tags:
-    env: prod
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: Deny
-`),
-			Entry("allow MeshService at top-level targetRef", `
-targetRef:
-  kind: MeshService
-  name: backend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: Deny
-`),
-			Entry("allow MeshServiceSubset at top-level targetRef", `
-targetRef:
-  kind: MeshServiceSubset
-  name: backend
-  tags:
-    version: v2
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: Deny
-`),
 			Entry("full rules example", `
 targetRef:
   kind: Mesh
@@ -152,31 +91,85 @@ rules:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty 'from' array", testCase{
+			Entry("rules not defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
-from: []
+  kind: Mesh
 `,
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from' or 'rules' has to be defined`,
+    message: policy must define rules`,
 			}),
 			Entry("empty 'rules' array", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 rules: []
 `,
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from' or 'rules' has to be defined`,
+    message: policy must define rules`,
 			}),
-			Entry("sectionName without from or rules", testCase{
+			Entry("not supported kind at top-level targetRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshSubset
+  tags:
+    env: prod
+rules:
+  - default:
+      allow:
+        - spiffeID:
+            type: Exact
+            value: spiffe://trust.domain/service
+`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshSubset' is not supported
+`,
+			}),
+			Entry("not supported kind (MeshService) at top-level targetRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+rules:
+  - default:
+      allow:
+        - spiffeID:
+            type: Exact
+            value: spiffe://trust.domain/service
+`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshService' is not supported
+`,
+			}),
+			Entry("not supported kind (MeshServiceSubset) at top-level targetRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshServiceSubset
+  name: backend
+  tags:
+    version: v2
+rules:
+  - default:
+      allow:
+        - spiffeID:
+            type: Exact
+            value: spiffe://trust.domain/service
+`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: value 'MeshServiceSubset' is not supported
+`,
+			}),
+			Entry("sectionName without rules", testCase{
 				inputYaml: `
 targetRef:
   kind: Dataplane
@@ -188,39 +181,7 @@ violations:
 - field: spec.targetRef.sectionName
   message: can only be used with inbound policies
 - field: spec
-  message: at least one of 'from' or 'rules' has to be defined`,
-			}),
-			Entry("not supported kinds in 'from' array", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-from: 
-  - targetRef:
-      kind: MeshGatewayRoute
-      name: mgr-1
-    default:
-      action: Allow
-`,
-				expected: `
-violations:
-  - field: spec.from[0].targetRef.kind
-    message: value 'MeshGatewayRoute' is not supported
-`,
-			}),
-			Entry("default is nil", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-`,
-				expected: `
-violations:
-  - field: spec.from[0].default.action
-    message: must be defined 
-`,
+  message: policy must define rules`,
 			}),
 			Entry("rules default is nil", testCase{
 				inputYaml: `
@@ -271,7 +232,7 @@ targetRef:
   kind: Mesh
 rules:
   - default:
-      deny: 
+      deny:
         - spiffeID:
             type: Exact
             value: some-service
@@ -295,5 +256,27 @@ violations:
 `,
 			}),
 		)
+	})
+
+	Describe("Deprecations()", func() {
+		It("does not report any 'from'-related deprecations", func() {
+			mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
+
+			err := core_model.FromYAML([]byte(`
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      allow:
+        - spiffeID:
+            type: Exact
+            value: spiffe://trust.domain/service
+`), &mtp.Spec)
+			Expect(err).ToNot(HaveOccurred())
+
+			deprecations := mtp.Deprecations()
+
+			Expect(deprecations).To(BeEmpty())
+		})
 	})
 })

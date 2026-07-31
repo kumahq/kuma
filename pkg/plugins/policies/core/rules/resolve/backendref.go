@@ -1,11 +1,8 @@
 package resolve
 
 import (
-	"fmt"
-
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -28,27 +25,34 @@ func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelR
 		return ResolvedBackendRef{Ref: pointer.To(LegacyBackendRef(br))}, true
 	}
 
-	rr := &RealResourceBackendRef{
-		Resource: TargetRefToKRI(origin, br.TargetRef),
-		Origin:   origin,
-		Weight:   pointer.DerefOr(br.Weight, 1),
-	}
-
-	if labels := pointer.Deref(br.Labels); len(labels) > 0 {
-		rr.Resource = resolver(core_model.ResourceType(br.Kind), labels)
-	}
-
-	if rr.Resource.IsEmpty() {
+	labels, sectionName, ok := br.RealResourceSelector(origin.Namespace)
+	if !ok {
 		return ResolvedBackendRef{}, false
 	}
 
-	if sectionName := pointer.Deref(br.SectionName); sectionName != "" {
-		rr.Resource.SectionName = sectionName
-	} else if port := pointer.Deref(br.Port); port > 0 {
-		rr.Resource.SectionName = fmt.Sprintf("%d", port)
+	rr := &RealResourceBackendRef{
+		Resource: resolver(core_model.ResourceType(br.Kind), labels),
+		Origin:   origin,
+		Weight:   pointer.DerefOr(br.Weight, 1),
 	}
+	if rr.Resource.IsEmpty() {
+		if shouldFallbackToLegacyMeshService(br) {
+			return ResolvedBackendRef{Ref: pointer.To(LegacyBackendRef(br))}, true
+		}
+		return ResolvedBackendRef{}, false
+	}
+	rr.Resource.SectionName = sectionName
 
 	return ResolvedBackendRef{Ref: rr}, true
+}
+
+func shouldFallbackToLegacyMeshService(br common_api.BackendRef) bool {
+	return br.Kind == common_api.MeshService &&
+		br.Name != nil && *br.Name != "" &&
+		len(pointer.Deref(br.Labels)) == 0 &&
+		br.Namespace == nil &&
+		br.SectionName == nil &&
+		br.Port == nil
 }
 
 type IsResolvedBackendRef interface {
@@ -107,29 +111,3 @@ type RealResourceBackendRef struct {
 }
 
 func (rbr *RealResourceBackendRef) isResolvedBackendRef() {}
-
-func TargetRefToKRI(origin kri.Identifier, ref common_api.TargetRef) kri.Identifier {
-	if origin.IsEmpty() {
-		return kri.Identifier{}
-	}
-
-	if ref.Kind == common_api.Mesh {
-		return kri.Identifier{
-			ResourceType: core_mesh.MeshType,
-			Name:         origin.Mesh,
-		}
-	}
-
-	var ns string
-	if ns = pointer.Deref(ref.Namespace); ns == "" {
-		ns = origin.Namespace
-	}
-
-	return kri.Identifier{
-		ResourceType: core_model.ResourceType(ref.Kind),
-		Name:         pointer.Deref(ref.Name),
-		Mesh:         origin.Mesh,
-		Zone:         origin.Zone,
-		Namespace:    ns,
-	}
-}

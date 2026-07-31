@@ -2,12 +2,14 @@ package v1alpha1
 
 import (
 	"fmt"
+	"hash/fnv"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_vip "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/vip"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/sni"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -38,6 +40,46 @@ func (m *MeshServiceResource) IsLocalMeshService() bool {
 	// MeshServices synced from another zone will have `kuma.io/origin: global`,
 	// since origin always reflects the last place the resource was received from.
 	return origin == string(mesh_proto.ZoneResourceOrigin)
+}
+
+// Hash returns a content-based hash of the MeshService for generic resource
+// consumers that need version-aware change detection.
+func (t *MeshServiceResource) Hash() []byte {
+	return t.hash(true)
+}
+
+// XDSHash returns the MeshService hash used to gate mesh-wide xDS
+// regeneration. It intentionally excludes meta.GetVersion() so that status
+// writes irrelevant to xDS - most notably the DataplaneProxies counters
+// refreshed by the status updater's 5s ticker - don't force mesh-wide xDS
+// recomputation. All other status fields are hashed so newly added xDS-relevant
+// status fields are picked up by default.
+func (t *MeshServiceResource) XDSHash() []byte {
+	return t.hash(false)
+}
+
+func (t *MeshServiceResource) hash(includeVersion bool) []byte {
+	hasher := fnv.New128a()
+	_, _ = hasher.Write(core_model.HashMetaIdentity(t))
+	if includeVersion {
+		_, _ = hasher.Write([]byte(t.GetMeta().GetVersion()))
+	}
+	spec := t.Spec
+	if spec == nil {
+		spec = &MeshService{}
+	}
+	status := t.Status
+	if status == nil {
+		status = &MeshServiceStatus{}
+	}
+	core_model.WriteSortedLabels(hasher, t.GetMeta().GetLabels())
+	core_model.WriteDeterministicJSON(hasher, spec)
+	statusForHash := *status
+	if !includeVersion {
+		statusForHash.DataplaneProxies = DataplaneProxies{}
+	}
+	core_model.WriteDeterministicJSON(hasher, statusForHash)
+	return hasher.Sum(nil)
 }
 
 var _ core_vip.ResourceHoldingVIPs = &MeshServiceResource{}

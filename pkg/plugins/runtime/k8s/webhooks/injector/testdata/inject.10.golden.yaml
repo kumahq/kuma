@@ -20,6 +20,46 @@ metadata:
   name: busybox
 spec:
   containers:
+  - image: busybox
+    name: busybox
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
+  initContainers:
+  - args:
+    - --exclude-inbound-ports=9000
+    - --verbose
+    command:
+    - /usr/bin/kumactl
+    - install
+    - transparent-proxy
+    env:
+    - name: XTABLES_LOCKFILE
+      value: /tmp/xtables.lock
+    image: kuma/kuma-init:latest
+    imagePullPolicy: IfNotPresent
+    name: kuma-init
+    resources:
+      limits:
+        memory: 50M
+      requests:
+        cpu: 20m
+        memory: 20M
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+        - NET_RAW
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsGroup: 0
+      runAsUser: 0
+    volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
   - args:
     - run
     - --log-level=info
@@ -78,6 +118,13 @@ spec:
           fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - killall
+          - -USR2
+          - kuma-dp
     livenessProbe:
       failureThreshold: 212
       httpGet:
@@ -106,6 +153,7 @@ spec:
         cpu: 150m
         ephemeral-storage: 50M
         memory: 164Mi
+    restartPolicy: Always
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -114,52 +162,21 @@ spec:
       readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
+    startupProbe:
+      failureThreshold: 213
+      httpGet:
+        path: /ready
+        port: 9901
+      initialDelaySeconds: 261
+      periodSeconds: 26
+      successThreshold: 1
+      timeoutSeconds: 24
     volumeMounts:
     - mountPath: /tmp
       name: kuma-sidecar-tmp
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
-  - image: busybox
-    name: busybox
-    resources: {}
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
-  initContainers:
-  - args:
-    - --exclude-inbound-ports=9000
-    - --verbose
-    command:
-    - /usr/bin/kumactl
-    - install
-    - transparent-proxy
-    env:
-    - name: XTABLES_LOCKFILE
-      value: /tmp/xtables.lock
-    image: kuma/kuma-init:latest
-    imagePullPolicy: IfNotPresent
-    name: kuma-init
-    resources:
-      limits:
-        memory: 50M
-      requests:
-        cpu: 20m
-        memory: 20M
-    securityContext:
-      capabilities:
-        add:
-        - NET_ADMIN
-        - NET_RAW
-        drop:
-        - ALL
-      readOnlyRootFilesystem: true
-      runAsGroup: 0
-      runAsUser: 0
-    volumeMounts:
-    - mountPath: /tmp
-      name: kuma-init-tmp
   volumes:
   - name: default-token-w7dxf
     secret:

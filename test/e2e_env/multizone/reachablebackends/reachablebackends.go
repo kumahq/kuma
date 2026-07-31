@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
@@ -39,7 +38,7 @@ func ReachableBackends() {
 `, namespace)
 
 	meshPassthrough := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1 
+apiVersion: kuma.io/v1alpha1
 kind: MeshPassthrough
 metadata:
   name: disable-passthrough-reachable
@@ -49,12 +48,22 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Sidecar"]
-    tags:
-      kuma.io/service: client-server_reachable-backends_svc_80
+    kind: Dataplane
+    labels:
+      app: client-server
   default:
     passthroughMode: None`, Config.KumaNamespace, meshName)
+
+	disableDefaultPassthrough := fmt.Sprintf(`
+type: MeshPassthrough
+mesh: %s
+name: disable-default-passthrough
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    passthroughMode: None
+`, meshName)
 
 	meshExternalService := func(serviceName string) string {
 		return fmt.Sprintf(`
@@ -117,12 +126,10 @@ spec:
 				Yaml(
 					builders.Mesh().
 						WithName(meshName).
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).
-						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
-						WithEgressRoutingEnabled().
-						WithoutPassthrough(),
+						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
 				),
 			).
+			Install(YamlUniversal(disableDefaultPassthrough)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(mmzs)).
 			Install(YamlUniversal(mmzsNotAccessible)).
@@ -143,21 +150,18 @@ spec:
 					testserver.WithName("client-server"),
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
-					testserver.WithReachableServices("dummy-service"),
 					testserver.WithReachableBackends(reachableBackends),
 				),
 				testserver.Install(
 					testserver.WithName("client-server-namespace"),
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
-					testserver.WithReachableServices("dummy-service"),
 					testserver.WithReachableBackends(reachableBackendsNamespaceLabel),
 				),
 				testserver.Install(
 					testserver.WithName("client-server-no-access"),
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
-					testserver.WithReachableServices("dummy-service"),
 					testserver.WithReachableBackends("{}"),
 				),
 				testserver.Install(

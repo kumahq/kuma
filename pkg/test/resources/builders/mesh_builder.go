@@ -13,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 type MeshBuilder struct {
@@ -95,40 +94,6 @@ func (m *MeshBuilder) AddBuiltinMTLSBackend(name string) *MeshBuilder {
 		Name: name,
 		Type: "builtin",
 	})
-	return m
-}
-
-func (m *MeshBuilder) WithEgressRoutingEnabled() *MeshBuilder {
-	if m.res.Spec.Routing == nil {
-		m.res.Spec.Routing = &mesh_proto.Routing{}
-	}
-	m.res.Spec.Routing.ZoneEgress = true
-	return m
-}
-
-func (m *MeshBuilder) WithMeshExternalServiceTrafficForbidden() *MeshBuilder {
-	if m.res.Spec.Routing == nil {
-		m.res.Spec.Routing = &mesh_proto.Routing{}
-	}
-	m.res.Spec.Routing.DefaultForbidMeshExternalServiceAccess = true
-	return m
-}
-
-func (m *MeshBuilder) WithoutPassthrough() *MeshBuilder {
-	if m.res.Spec.Networking == nil {
-		m.res.Spec.Networking = &mesh_proto.Networking{}
-	}
-	if m.res.Spec.Networking.Outbound == nil {
-		m.res.Spec.Networking.Outbound = &mesh_proto.Networking_Outbound{}
-	}
-	m.res.Spec.Networking.Outbound.Passthrough = proto.Bool(false)
-	return m
-}
-
-func (m *MeshBuilder) WithMeshServicesEnabled(enabled mesh_proto.Mesh_MeshServices_Mode) *MeshBuilder {
-	m.res.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{
-		Mode: enabled,
-	}
 	return m
 }
 

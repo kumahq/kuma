@@ -7,7 +7,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         http:
           requestTimeout: 1s
@@ -26,7 +27,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         http:
           requestTimeout: 3s
@@ -38,15 +40,16 @@ mesh: mesh-1
 name: ccc
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
       version: v1
       team: mesh
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         http:
           streamIdleTimeout: 5s

@@ -9,9 +9,12 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/grpc"
 )
 
-func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client_v2.Callbacks) {
+// StartDeltaClient starts a KDS sync client per stream. clientIDs[i] is the
+// client-id for clientStreams[i] (the zone name in production, which drives
+// attribution) and must be provided for every stream.
+func StartDeltaClient(clientStreams []*grpc.MockDeltaClientStream, clientIDs []string, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client_v2.Callbacks) {
 	for i := range clientStreams {
-		clientID := fmt.Sprintf("client-%d", i)
+		clientID := clientIDs[i]
 		item := clientStreams[i]
 		kdsStream := kds_client_v2.NewDeltaKDSStream(item, clientID, fmt.Sprintf("cp-%d", i), "", len(resourceTypes))
 		comp := kds_client_v2.NewKDSSyncClient(

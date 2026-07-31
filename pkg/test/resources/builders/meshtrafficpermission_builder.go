@@ -1,6 +1,8 @@
 package builders
 
 import (
+	"fmt"
+
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	mtp_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
@@ -39,13 +41,23 @@ func (m *MeshTrafficPermissionBuilder) WithTargetRef(targetRef common_api.Target
 	return m
 }
 
-func (m *MeshTrafficPermissionBuilder) AddFrom(targetRef common_api.TargetRef, action mtp_proto.Action) *MeshTrafficPermissionBuilder {
-	m.res.Spec.From = pointer.To(append(pointer.Deref(m.res.Spec.From), mtp_proto.From{
-		TargetRef: targetRef,
-		Default: mtp_proto.Conf{
-			Action: &action,
+func (m *MeshTrafficPermissionBuilder) AddRule(action mtp_proto.Action) *MeshTrafficPermissionBuilder {
+	match := common_api.Match{
+		SpiffeID: &common_api.SpiffeIDMatch{
+			Type:  common_api.PrefixMatchType,
+			Value: fmt.Sprintf("spiffe://%s", m.res.Meta.(*test_model.ResourceMeta).Mesh),
 		},
-	}))
+	}
+	var conf mtp_proto.RuleConf
+	switch action {
+	case mtp_proto.Deny:
+		conf.Deny = pointer.To([]common_api.Match{match})
+	case mtp_proto.AllowWithShadowDeny:
+		conf.AllowWithShadowDeny = pointer.To([]common_api.Match{match})
+	default:
+		conf.Allow = pointer.To([]common_api.Match{match})
+	}
+	m.res.Spec.Rules = pointer.To(append(pointer.Deref(m.res.Spec.Rules), mtp_proto.Rule{Default: conf}))
 	return m
 }
 

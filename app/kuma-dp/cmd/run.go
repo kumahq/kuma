@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/certificate"
 	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/configfetcher"
 	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/dnsproxy"
-	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/metrics"
@@ -125,7 +124,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					return errors.Wrap(err, "failed to load transparent proxy configuration from provided input")
 				}
 
-				tpCfg.Redirect.DNS.Port = tproxy_config.Port(cfg.DNS.EnvoyDNSPort)
+				tpCfg.Redirect.DNS.Port = tproxy_config.Port(cfg.DNS.ProxyPort)
 				tpCfg.Redirect.DNS.Enabled = cfg.DNS.Enabled
 			}
 			cfg.DataplaneRuntime.TransparentProxy = tpCfg
@@ -189,7 +188,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for fallback
-			if cfg.DataplaneRuntime.WorkDir == "" || cfg.DataplaneRuntime.SocketDir == "" || cfg.DNS.ConfigDir == "" {
+			if cfg.DataplaneRuntime.WorkDir == "" || cfg.DataplaneRuntime.SocketDir == "" {
 				tmpDir, err = os.MkdirTemp("", "kuma-dp-")
 				if err != nil {
 					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
@@ -212,10 +211,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				if cfg.DataplaneRuntime.SocketDir == "" {
 					//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for fallback
 					cfg.DataplaneRuntime.SocketDir = tmpDir
-				}
-
-				if cfg.DNS.ConfigDir == "" {
-					cfg.DNS.ConfigDir = tmpDir
 				}
 
 				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
@@ -253,10 +248,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			if cfg.DataplaneRuntime.OtelPipeEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureOtelViaKumaDp)
-			}
-
-			if cfg.DNS.ProxyPort != 0 {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureEmbeddedDNS)
 			}
 
 			if cfg.DataplaneRuntime.TransparentProxy != nil {
@@ -354,43 +345,18 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			var dnsConfigReady <-chan struct{}
 			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
-				dnsOpts := &dnsserver.Opts{
-					Config:   *cfg,
-					Stdout:   cmd.OutOrStdout(),
-					Stderr:   cmd.OutOrStderr(),
-					OnFinish: cancelComponents,
+				portStr := strconv.Itoa(int(cfg.DNS.ProxyPort))
+				addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, portStr)
+				runLog.Info("Running with embedded DNS proxy", "port", cfg.DNS.ProxyPort, "addresses", addresses)
+				dnsproxyServer, err := dnsproxy.NewServer(addresses)
+				if err != nil {
+					return err
 				}
-
-				if len(kumaSidecarConfiguration.Networking.CorefileTemplate) > 0 {
-					dnsOpts.ProvidedCorefileTemplate = kumaSidecarConfiguration.Networking.CorefileTemplate
+				if err := confFetcher.AddHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap); err != nil {
+					return err
 				}
-				if dnsOpts.Config.DNS.ProxyPort != 0 {
-					portStr := strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))
-					addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, portStr)
-					runLog.Info("Running with embedded DNS proxy", "port", dnsOpts.Config.DNS.ProxyPort, "addresses", addresses)
-					dnsproxyServer, err := dnsproxy.NewServer(addresses)
-					if err != nil {
-						return err
-					}
-					if err := confFetcher.AddHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap); err != nil {
-						return err
-					}
-					dnsConfigReady = dnsproxyServer.ConfigReady()
-					components = append(components, dnsproxyServer)
-				} else {
-					dnsServer, err := dnsserver.New(dnsOpts)
-					if err != nil {
-						return err
-					}
-
-					version, err := dnsServer.GetVersion()
-					if err != nil {
-						return err
-					}
-
-					rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
-					components = append(components, dnsServer)
-				}
+				dnsConfigReady = dnsproxyServer.ConfigReady()
+				components = append(components, dnsproxyServer)
 			}
 
 			envoyComponent, err := envoy.New(opts)
@@ -415,13 +381,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			readinessAddr := adminAddress
 			if readinessAddr == "" {
-				// When admin is on UDS, the readiness reporter also reverse-
-				// proxies read-only Envoy admin endpoints on this listener
-				// (mutating endpoints are blocked); see readiness.Reporter.
-				// On Kubernetes the listener must accept probes from the
-				// kubelet (podIP), so we bind wildcard. Outside Kubernetes
-				// we default to loopback to avoid exposing admin info on the
-				// host network. POD_NAME is set by the sidecar injector.
+				// The readiness reporter serves only /ready (see
+				// readiness.Reporter); no Envoy admin endpoint is exposed
+				// here. On Kubernetes the listener must accept probes from
+				// the kubelet (podIP), so we bind wildcard. Outside
+				// Kubernetes we default to loopback. POD_NAME is set by the
+				// sidecar injector.
 				_, inKubernetes := os.LookupEnv("POD_NAME")
 				ipv6 := kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address)
 				switch {
@@ -529,14 +494,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Metrics.CertPath, "metrics-cert-path", cfg.DataplaneRuntime.Metrics.CertPath, "A path to the certificate for metrics listener")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Metrics.KeyPath, "metrics-key-path", cfg.DataplaneRuntime.Metrics.KeyPath, "A path to the certificate key for metrics listener")
 	cmd.PersistentFlags().BoolVar(&cfg.DataplaneRuntime.BindOutbounds, "bind-outbounds", cfg.DataplaneRuntime.BindOutbounds, "If true then dataplane bind outbounds to real addresses")
-	cmd.PersistentFlags().BoolVar(&cfg.DNS.Enabled, "dns-enabled", cfg.DNS.Enabled, "If true then builtin DNS functionality is enabled and CoreDNS server is started")
-	cmd.PersistentFlags().Uint32Var(&cfg.DNS.EnvoyDNSPort, "dns-envoy-port", cfg.DNS.EnvoyDNSPort, "A port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one")
-	cmd.PersistentFlags().Uint32Var(&cfg.DNS.CoreDNSPort, "dns-coredns-port", cfg.DNS.CoreDNSPort, "A port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.")
-	cmd.PersistentFlags().StringVar(&cfg.DNS.CoreDNSBinaryPath, "dns-coredns-path", cfg.DNS.CoreDNSBinaryPath, "A path to CoreDNS binary.")
-	cmd.PersistentFlags().StringVar(&cfg.DNS.CoreDNSConfigTemplatePath, "dns-coredns-config-template-path", cfg.DNS.CoreDNSConfigTemplatePath, "A path to a CoreDNS config template.")
-	cmd.PersistentFlags().StringVar(&cfg.DNS.ConfigDir, "dns-server-config-dir", cfg.DNS.ConfigDir, "Directory in which DNS Server config will be generated")
-	cmd.PersistentFlags().Uint32Var(&cfg.DNS.PrometheusPort, "dns-prometheus-port", cfg.DNS.PrometheusPort, "A port for exposing Prometheus stats")
-	cmd.PersistentFlags().BoolVar(&cfg.DNS.CoreDNSLogging, "dns-enable-logging", cfg.DNS.CoreDNSLogging, "If true then CoreDNS logging is enabled")
+	cmd.PersistentFlags().BoolVar(&cfg.DNS.Enabled, "dns-enabled", cfg.DNS.Enabled, "If true then builtin DNS functionality is enabled and the embedded DNS proxy is started")
+	cmd.PersistentFlags().Uint32Var(&cfg.DNS.ProxyPort, "dns-proxy-port", cfg.DNS.ProxyPort, "A port on which the embedded DNS proxy listens. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.")
 
 	// Transparent Proxy
 	cmd.PersistentFlags().BoolVar(&tpEnabled, "transparent-proxy", tpEnabled, "Enable transparent proxy with default configuration")

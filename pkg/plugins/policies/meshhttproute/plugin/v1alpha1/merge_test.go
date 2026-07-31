@@ -64,7 +64,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "route-2",
 					},
 					Spec: &api.MeshHTTPRoute{
-						TargetRef: pointer.To(builders.TargetRefService("web")),
+						TargetRef: pointer.To(builders.TargetRefDataplaneName("web-01")),
 						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{

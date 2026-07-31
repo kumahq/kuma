@@ -14,6 +14,7 @@ import (
 	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -25,8 +26,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
 	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
@@ -189,31 +192,17 @@ var _ = Describe("Context", func() {
 				},
 			}),
 			Entry("should not change non-insight", testCase{
-				resource: &core_mesh.CircuitBreakerResource{
+				resource: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "cb-1",
 					},
-					Spec: &mesh_proto.CircuitBreaker{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"match1": "source",
-								},
-							},
-						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"match2": "dest",
-								},
-							},
-						},
-						Conf: &mesh_proto.CircuitBreaker_Conf{
-							SplitExternalAndLocalErrors: true,
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
 						},
 					},
 				},
-				expect: &core_mesh.CircuitBreakerResource{
+				expect: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: hash.HashedName("", "cb-1", "zone"),
 						Labels: map[string]string{
@@ -222,23 +211,9 @@ var _ = Describe("Context", func() {
 							"kuma.io/zone":         "zone",
 						},
 					},
-					Spec: &mesh_proto.CircuitBreaker{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"match1": "source",
-								},
-							},
-						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"match2": "dest",
-								},
-							},
-						},
-						Conf: &mesh_proto.CircuitBreaker_Conf{
-							SplitExternalAndLocalErrors: true,
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
 						},
 					},
 				},
@@ -443,6 +418,41 @@ var _ = Describe("Context", func() {
 				entries,
 			)
 		})
+
+		It("should not filter out a producer policy solely due to a top-level MeshSubset zone tag mismatch", func() {
+			ctx := stdcontext.Background()
+			// given
+			targetRef := builders.TargetRefMeshSubset(mesh_proto.ZoneTag, "different-zone")
+			resource := &meshtimeout_api.MeshTimeoutResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh: "default",
+					Name: "mt-1",
+					Labels: map[string]string{
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+						mesh_proto.ZoneTag:             "origin-zone",
+						mesh_proto.PolicyRoleLabel:     string(mesh_proto.ProducerPolicyRole),
+						mesh_proto.KubeNamespaceTag:    "kuma-demo",
+					},
+				},
+				Spec: &meshtimeout_api.MeshTimeout{
+					TargetRef: &targetRef,
+					To: &[]meshtimeout_api.To{
+						{
+							TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{
+								mesh_proto.DisplayName:      "backend",
+								mesh_proto.KubeNamespaceTag: "kuma-demo",
+							}, ""),
+						},
+					},
+				},
+			}
+
+			// when
+			ok := predicate(ctx, clusterID, kds.Features{kds.FeatureProducerPolicyFlow: true}, resource)
+
+			// then
+			Expect(ok).To(BeTrue())
+		})
 	})
 	Describe("GlobalResourceMapper", func() {
 		type config struct {
@@ -476,7 +486,7 @@ var _ = Describe("Context", func() {
 		}
 
 		resource := func(given testCase) model.Resource {
-			var r model.Resource = core_mesh.NewCircuitBreakerResource()
+			var r model.Resource = meshexternalservice_api.NewMeshExternalServiceResource()
 			switch given.scope {
 			case model.ScopeGlobal:
 				r = core_system.NewGlobalSecretResource()

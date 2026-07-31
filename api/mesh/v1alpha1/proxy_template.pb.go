@@ -1204,7 +1204,7 @@ var File_api_mesh_v1alpha1_proxy_template_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_proxy_template_proto_rawDesc = "" +
 	"\n" +
-	"&api/mesh/v1alpha1/proxy_template.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a api/mesh/v1alpha1/selector.proto\"\xb7\x14\n" +
+	"&api/mesh/v1alpha1/proxy_template.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a api/mesh/v1alpha1/selector.proto\"\xd7\x13\n" +
 	"\rProxyTemplate\x12:\n" +
 	"\tselectors\x18\x01 \x03(\v2\x1c.kuma.mesh.v1alpha1.SelectorR\tselectors\x12:\n" +
 	"\x04conf\x18\x02 \x01(\v2&.kuma.mesh.v1alpha1.ProxyTemplate.ConfR\x04conf\x1a\xc3\x01\n" +
@@ -1271,9 +1271,7 @@ const file_api_mesh_v1alpha1_proxy_template_proto_rawDesc = "" +
 	"\x06origin\x18\x01 \x01(\tR\x06origin\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x126\n" +
 	"\x16routeConfigurationName\x18\x03 \x01(\tR\x16routeConfigurationNameB\x06\n" +
-	"\x04type:^\xaa\x8c\x89\xa6\x01X\n" +
-	"\x15ProxyTemplateResource\x12\rProxyTemplate\"\x04mesh:\x0f\n" +
-	"\rproxytemplateR\x17model.GlobalToZonesFlagh\x01\"\xbd\x01\n" +
+	"\x04type\"\xbd\x01\n" +
 	"\x13ProxyTemplateSource\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12J\n" +
 	"\aprofile\x18\x02 \x01(\v2..kuma.mesh.v1alpha1.ProxyTemplateProfileSourceH\x00R\aprofile\x12>\n" +

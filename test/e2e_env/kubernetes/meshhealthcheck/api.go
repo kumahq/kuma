@@ -56,7 +56,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         interval: 10s
         timeout: 2s
@@ -64,7 +65,6 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
         http:
           path: /

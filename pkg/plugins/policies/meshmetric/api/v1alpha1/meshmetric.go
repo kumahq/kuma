@@ -134,14 +134,8 @@ type PrometheusTls struct {
 }
 
 type OpenTelemetryBackend struct {
-	// Endpoint for OpenTelemetry collector.
-	//
-	// Deprecated: use BackendRef instead.
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=""
-	Endpoint string `json:"endpoint"`
 	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
-	// defines the collector endpoint. Mutually exclusive with Endpoint.
+	// defines the collector endpoint.
 	BackendRef *common_api.BackendResourceRef `json:"backendRef,omitempty"`
 	// RefreshInterval defines how frequent metrics should be pushed to collector
 	RefreshInterval *k8s.Duration `json:"refreshInterval,omitempty"`

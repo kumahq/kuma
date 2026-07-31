@@ -11,20 +11,11 @@ import (
 )
 
 type KumaDpBootstrap struct {
-	AggregateMetricsConfig []AggregateMetricsConfig
-	NetworkingConfig       NetworkingConfig
+	NetworkingConfig NetworkingConfig
 }
 
 type NetworkingConfig struct {
-	CorefileTemplate []byte
-	Address          string
-}
-
-type AggregateMetricsConfig struct {
-	Name    string
-	Path    string
 	Address string
-	Port    uint32
 }
 
 type configParameters struct {
@@ -89,7 +80,6 @@ type configParameters struct {
 	DNSPort                       uint32
 	ProxyType                     string
 	Features                      xds_types.Features
-	IsGatewayDataplane            bool
 	Resources                     types.ProxyResources
 	SystemCaPath                  string
 	TransparentProxy              *tproxy_config.DataplaneConfig

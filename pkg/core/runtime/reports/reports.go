@@ -19,6 +19,7 @@ import (
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
@@ -96,9 +97,9 @@ func fetchNumOfServices(ctx context.Context, rt core_runtime.Runtime) (int, int,
 		internalServices += len(insight.Spec.Services)
 	}
 
-	externalServicesList := mesh.ExternalServiceResourceList{}
+	externalServicesList := meshexternalservice_api.MeshExternalServiceResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(ctx, &externalServicesList); err != nil {
-		return 0, 0, errors.Wrap(err, "could not fetch external services")
+		return 0, 0, errors.Wrap(err, "could not fetch mesh external services")
 	}
 	return internalServices, len(externalServicesList.Items), nil
 }

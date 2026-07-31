@@ -17,7 +17,7 @@ func LabelPropagation() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")).
+			Install(MTLSMeshUniversal(meshName)).
 			Setup(universal.Cluster)).To(Succeed())
 		Expect(WaitForMesh(meshName, []Cluster{universal.Cluster})).To(Succeed())
 	})
@@ -39,6 +39,7 @@ name: lp-dp-1
 labels:
   color: blue
   kuma.io/owner: ignored
+  kuma.io/workload: lp-svc
 networking:
   address: 192.168.10.10
   inbound:
@@ -74,6 +75,7 @@ mesh: lp-mesh
 name: lp-dp-1
 labels:
   color: blue
+  kuma.io/workload: lp-svc
 networking:
   address: 192.168.10.10
   inbound:
@@ -101,6 +103,8 @@ networking:
 type: Dataplane
 mesh: lp-mesh
 name: lp-dp-1
+labels:
+  kuma.io/workload: lp-svc
 networking:
   address: 192.168.10.10
   inbound:

@@ -82,12 +82,6 @@ func FilterChain(builder *FilterChainBuilder) ListenerBuilderOpt {
 	)
 }
 
-func DNS(vips map[string][]string) ListenerBuilderOpt {
-	return AddListenerConfigurer(&v3.DNSConfigurer{
-		VIPs: vips,
-	})
-}
-
 func ConnectionBufferLimit(bytes uint32) ListenerBuilderOpt {
 	return AddListenerConfigurer(
 		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {

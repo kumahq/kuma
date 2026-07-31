@@ -5,8 +5,6 @@
 # meshservice.MatchesDataplane() against the shipping Exclusive default. The
 # Disabled siblings in this directory only ever select on a single tag.
 type: Mesh
-meshServices:
-  mode: Exclusive
 name: default
 ---
 type: MeshService

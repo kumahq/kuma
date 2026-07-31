@@ -22,8 +22,8 @@ import (
 	rest_types "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	meshtrafficpermission_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_runtime "github.com/kumahq/kuma/v3/pkg/test/runtime"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
@@ -61,12 +61,9 @@ func initializeStore(ctx context.Context, resourceManager core_manager.ResourceM
 		case core_mesh.MeshType:
 			meshResource := res.(*core_mesh.MeshResource)
 			Expect(resourceManager.Create(ctx, meshResource, store.CreateBy(core_model.MetaToResourceKey(meshResource.GetMeta())))).To(Succeed())
-		case core_mesh.ExternalServiceType:
-			externalService := res.(*core_mesh.ExternalServiceResource)
-			Expect(resourceManager.Create(ctx, externalService, store.CreateBy(core_model.MetaToResourceKey(externalService.GetMeta())))).To(Succeed())
-		case core_mesh.MeshGatewayType:
-			meshGateway := res.(*core_mesh.MeshGatewayResource)
-			Expect(resourceManager.Create(ctx, meshGateway, store.CreateBy(core_model.MetaToResourceKey(meshGateway.GetMeta())))).To(Succeed())
+		case meshtrafficpermission_api.MeshTrafficPermissionType:
+			mtp := res.(*meshtrafficpermission_api.MeshTrafficPermissionResource)
+			Expect(resourceManager.Create(ctx, mtp, store.CreateBy(core_model.MetaToResourceKey(mtp.GetMeta())))).To(Succeed())
 		}
 	}
 }
@@ -90,9 +87,6 @@ var _ = Describe("Proxy Builder", func() {
 		server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), false),
-		builder.Config().DNSServer.Domain,
-		builder.Config().DNSServer.ServiceVipPort,
 		builder.CAProvider(),
 	)
 	metrics, err := core_metrics.NewMetrics("cache")
@@ -137,15 +131,6 @@ var _ = Describe("Proxy Builder", func() {
 							Instances: 1,
 							Mesh:      "default",
 						},
-						{
-							Tags: map[string]string{
-								mesh_proto.ServiceTag: "external-service-in-zone-2",
-								mesh_proto.ZoneTag:    "zone-2",
-							},
-							Instances:       1,
-							Mesh:            "default",
-							ExternalService: true,
-						},
 					},
 					Zone: "zone-2",
 					Networking: &mesh_proto.ZoneIngress_Networking{
@@ -164,15 +149,6 @@ var _ = Describe("Proxy Builder", func() {
 							},
 							Instances: 1,
 							Mesh:      "default",
-						},
-						{
-							Tags: map[string]string{
-								mesh_proto.ServiceTag: "external-service-in-zone-2",
-								mesh_proto.ZoneTag:    "zone-2",
-							},
-							Instances:       1,
-							Mesh:            "default",
-							ExternalService: true,
 						},
 					},
 					Zone: "zone-2",
@@ -204,14 +180,6 @@ var _ = Describe("Proxy Builder", func() {
 
 			// then
 			Expect(proxy.ZoneIngressProxy.MeshResourceList).To(HaveLen(1))
-			Expect(proxy.ZoneIngressProxy.MeshResourceList[0].EndpointMap).To(HaveKeyWithValue("cross-mesh-gateway", []core_xds.Endpoint{{
-				Target: "192.168.0.3",
-				Port:   8080,
-				Tags: map[string]string{
-					"kuma.io/service": "cross-mesh-gateway",
-				},
-				Weight: 1,
-			}}))
 			Expect(proxy.ZoneIngressProxy.ZoneIngressResource.Spec).To(PointTo(MatchFields(IgnoreExtras, Fields{
 				"Zone": Equal("zone-1"),
 				"Networking": BeComparableTo(&mesh_proto.ZoneIngress_Networking{

@@ -5,6 +5,6 @@
     "targetRef": {
       "kind": "Mesh"
     },
-    "from": [{"targetRef":{"kind":"Mesh"}}]
+    "rules": [{"default":{"allow":[{"spiffeID":{"type":"Prefix","value":"spiffe://default"}}]}}]
   }
 }

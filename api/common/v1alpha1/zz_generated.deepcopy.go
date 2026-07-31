@@ -260,15 +260,6 @@ func (in *TargetRef) DeepCopyInto(out *TargetRef) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.ProxyTypes != nil {
-		in, out := &in.ProxyTypes, &out.ProxyTypes
-		*out = new([]TargetRefProxyType)
-		if **in != nil {
-			in, out := *in, *out
-			*out = make([]TargetRefProxyType, len(*in))
-			copy(*out, *in)
-		}
-	}
 	if in.Namespace != nil {
 		in, out := &in.Namespace, &out.Namespace
 		*out = new(string)

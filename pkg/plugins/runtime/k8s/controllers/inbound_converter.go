@@ -3,8 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"maps"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -15,7 +13,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 )
 
@@ -43,20 +40,12 @@ func podReady(pod *kube_core.Pod, container *kube_core.Container) bool {
 }
 
 type InboundConverter struct {
-	NameExtractor       NameExtractor
-	NodeGetter          kube_client.Reader
-	NodeLabelsToCopy    []string
-	InboundTagsDisabled bool
+	NameExtractor    NameExtractor
+	NodeGetter       kube_client.Reader
+	NodeLabelsToCopy []string
 }
 
-func (ic *InboundConverter) tagsOrEmpty(tagsFn func() map[string]string) map[string]string {
-	if ic.InboundTagsDisabled {
-		return map[string]string{}
-	}
-	return tagsFn()
-}
-
-func (ic *InboundConverter) inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service, nodeLabels map[string]string) []*mesh_proto.Dataplane_Networking_Inbound {
+func (ic *InboundConverter) inboundForService(pod *kube_core.Pod, service *kube_core.Service) []*mesh_proto.Dataplane_Networking_Inbound {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for idx := range service.Spec.Ports {
 		svcPort := service.Spec.Ports[idx]
@@ -71,9 +60,6 @@ func (ic *InboundConverter) inboundForService(zone string, pod *kube_core.Pod, s
 			continue
 		}
 
-		tags := ic.tagsOrEmpty(func() map[string]string {
-			return InboundTagsForService(zone, pod, service, &svcPort, nodeLabels)
-		})
 		state := mesh_proto.Dataplane_Networking_Inbound_Ready
 		health := mesh_proto.Dataplane_Networking_Inbound_Health{
 			Ready: true,
@@ -92,7 +78,7 @@ func (ic *InboundConverter) inboundForService(zone string, pod *kube_core.Pod, s
 		ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 			Port:     uint32(containerPort),
 			Name:     portName,
-			Tags:     tags,
+			Tags:     map[string]string{},
 			State:    state,
 			Health:   &health, // write health for backwards compatibility with Kuma 2.5 and older
 			Protocol: ProtocolTagFor(service, &svcPort),
@@ -102,7 +88,7 @@ func (ic *InboundConverter) inboundForService(zone string, pod *kube_core.Pod, s
 	return ifaces
 }
 
-func (ic *InboundConverter) inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLabels map[string]string) *mesh_proto.Dataplane_Networking_Inbound {
+func (ic *InboundConverter) inboundForServiceless(pod *kube_core.Pod) *mesh_proto.Dataplane_Networking_Inbound {
 	// The Pod does not have any services associated with it, just get the data from the Pod itself
 
 	// We still need that extra listener with a service because it is required in many places of the code (e.g. mTLS)
@@ -113,9 +99,6 @@ func (ic *InboundConverter) inboundForServiceless(zone string, pod *kube_core.Po
 	// will create lots of code changes to account for this other type of dataplne (we already have GW and Ingress),
 	// including GUI and CLI changes
 
-	tags := ic.tagsOrEmpty(func() map[string]string {
-		return InboundTagsForPod(zone, pod, name, nodeLabels)
-	})
 	state := mesh_proto.Dataplane_Networking_Inbound_Ready
 	health := mesh_proto.Dataplane_Networking_Inbound_Health{
 		Ready: true,
@@ -142,40 +125,20 @@ func (ic *InboundConverter) inboundForServiceless(zone string, pod *kube_core.Po
 
 	return &mesh_proto.Dataplane_Networking_Inbound{
 		Port:     mesh_proto.TCPPortReserved,
-		Tags:     tags,
+		Tags:     map[string]string{},
 		State:    state,
 		Health:   &health, // write health for backwards compatibility with Kuma 2.5 and older
 		Protocol: string(core_meta.ProtocolTCP),
 	}
 }
 
-// Deprecated: LegacyInboundInterfacesFor is used for delegated gateway, Mesh without MeshService exclusive,
-// and MeshService exclusive while inbound tags are still enabled, to not change order of inbounds.
-// For gateway we pick first inbound to take tags from. Delegated gateway identity relies on this.
-// For Dataplanes when MeshService is disabled we base identity and routing on inbound tags
-// TODO: We should revisit this when we rework identity. More in https://github.com/kumahq/kuma/issues/3339
-func (ic *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	return ic.inboundInterfacesFor(ctx, zone, pod, services)
+// InboundInterfacesFor deduplicates inbounds by address and port.
+// Since inbounds carry no tags we can safely deduplicate them.
+func (ic *InboundConverter) InboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service) []*mesh_proto.Dataplane_Networking_Inbound {
+	return deduplicateInboundsByAddressAndPort(ic.inboundInterfacesFor(pod, services))
 }
 
-// InboundInterfacesFor should be used when MeshService mode is Exclusive and inbound tags are disabled.
-// This function deduplicates inbounds by address and port.
-// Since inbounds carry no tags in that model we can safely deduplicate them.
-func (ic *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	inbounds, err := ic.inboundInterfacesFor(ctx, zone, pod, services)
-	if err != nil {
-		return nil, err
-	}
-
-	return deduplicateInboundsByAddressAndPort(inbounds), nil
-}
-
-func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	nodeLabels, err := ic.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
-	if err != nil {
-		return nil, err
-	}
-
+func (ic *InboundConverter) inboundInterfacesFor(pod *kube_core.Pod, services []*kube_core.Service) []*mesh_proto.Dataplane_Networking_Inbound {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for _, svc := range services {
 		// Services of ExternalName type should not have any selectors.
@@ -185,19 +148,14 @@ func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, zone strin
 		// ExternalName service. We do not currently support ExternalName
 		// services, so we can safely skip them from processing.
 		if svc.Spec.Type != kube_core.ServiceTypeExternalName {
-			ifaces = append(ifaces, ic.inboundForService(zone, pod, svc, nodeLabels)...)
+			ifaces = append(ifaces, ic.inboundForService(pod, svc)...)
 		}
 	}
 
 	if len(ifaces) == 0 {
-		name, _, err := ic.NameExtractor.Name(ctx, pod)
-		if err != nil {
-			return nil, err
-		}
-
-		ifaces = append(ifaces, ic.inboundForServiceless(zone, pod, name, nodeLabels))
+		ifaces = append(ifaces, ic.inboundForServiceless(pod))
 	}
-	return ifaces, nil
+	return ifaces
 }
 
 func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networking_Inbound) []*mesh_proto.Dataplane_Networking_Inbound {
@@ -205,12 +163,31 @@ func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networki
 		return fmt.Sprintf("%s:%d", iface.Address, iface.Port)
 	}
 
+	inboundRank := func(iface *mesh_proto.Dataplane_Networking_Inbound) int {
+		switch iface.State {
+		case mesh_proto.Dataplane_Networking_Inbound_Ready:
+			return 3
+		case mesh_proto.Dataplane_Networking_Inbound_NotReady:
+			return 2
+		case mesh_proto.Dataplane_Networking_Inbound_Ignored:
+			return 1
+		default:
+			return 0
+		}
+	}
+
 	var deduplicatedInbounds []*mesh_proto.Dataplane_Networking_Inbound
 	inboundsPerAddressPort := map[string]*mesh_proto.Dataplane_Networking_Inbound{}
+	inboundPosition := map[string]int{}
 	for _, iface := range ifaces {
-		if inboundsPerAddressPort[inboundKey(iface)] == nil {
-			inboundsPerAddressPort[inboundKey(iface)] = iface
+		key := inboundKey(iface)
+		if existing := inboundsPerAddressPort[key]; existing == nil {
+			inboundsPerAddressPort[key] = iface
+			inboundPosition[key] = len(deduplicatedInbounds)
 			deduplicatedInbounds = append(deduplicatedInbounds, iface)
+		} else if inboundRank(iface) > inboundRank(existing) {
+			inboundsPerAddressPort[key] = iface
+			deduplicatedInbounds[inboundPosition[key]] = iface
 		}
 	}
 
@@ -232,45 +209,6 @@ func (ic *InboundConverter) getNodeLabelsToCopy(ctx context.Context, nodeName st
 		}
 	}
 	return nodeLabels, nil
-}
-
-func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, nodeLabels map[string]string) map[string]string {
-	logger := converterLog.WithValues("pod", pod.Name, "namespace", pod.Namespace)
-	tags := map[string]string{}
-	var ignoredLabels []string
-	for key, value := range pod.Labels {
-		if value == "" {
-			continue
-		}
-		if strings.Contains(key, "kuma.io/") {
-			ignoredLabels = append(ignoredLabels, key)
-			continue
-		}
-		tags[key] = value
-	}
-	if len(ignoredLabels) > 0 {
-		logger.V(1).Info("ignoring internal labels when converting labels to tags", "label", strings.Join(ignoredLabels, ","))
-	}
-
-	tags[mesh_proto.KubeNamespaceTag] = pod.Namespace
-	tags[mesh_proto.KubeServiceTag] = svc.Name
-	tags[mesh_proto.KubePortTag] = strconv.Itoa(int(svcPort.Port))
-	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTag(kube_client.ObjectKeyFromObject(svc), &svcPort.Port)
-	if zone != "" {
-		tags[mesh_proto.ZoneTag] = zone
-	}
-	maps.Copy(tags, nodeLabels)
-	// For provided gateway we should ignore the protocol tag
-	protocol := ProtocolTagFor(svc, svcPort)
-	if enabled, _, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation); enabled && protocol != string(core_meta.ProtocolTCP) {
-		logger.Info("ignoring non TCP appProtocol or annotation as provided gateway only supports 'tcp'", "appProtocol", protocol)
-	} else {
-		tags[mesh_proto.ProtocolTag] = protocol
-	}
-	if isHeadlessService(svc) {
-		tags[mesh_proto.InstanceTag] = pod.Name
-	}
-	return tags
 }
 
 // ProtocolTagFor infers service protocol from a `<port>.service.kuma.io/protocol` annotation or `appProtocol`.
@@ -301,26 +239,4 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 	// we still want Dataplane to have a `protocol: <lowercase value>` tag in order to make it clear
 	// to a user that at least `<port>.service.kuma.io/protocol` has an effect
 	return strings.ToLower(protocolValue)
-}
-
-func InboundTagsForPod(zone string, pod *kube_core.Pod, name string, nodeLabels map[string]string) map[string]string {
-	tags := util_k8s.CopyStringMap(pod.Labels)
-	for key, value := range tags {
-		if value == "" {
-			delete(tags, key)
-		}
-	}
-	if tags == nil {
-		tags = make(map[string]string)
-	}
-	tags[mesh_proto.KubeNamespaceTag] = pod.Namespace
-	tags[mesh_proto.ServiceTag] = fmt.Sprintf("%s_%s_svc", name, pod.Namespace)
-	if zone != "" {
-		tags[mesh_proto.ZoneTag] = zone
-	}
-	tags[mesh_proto.ProtocolTag] = string(core_meta.ProtocolTCP)
-	tags[mesh_proto.InstanceTag] = pod.Name
-	maps.Copy(tags, nodeLabels)
-
-	return tags
 }

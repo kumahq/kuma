@@ -25,7 +25,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: backend
+    labels:
+      kuma.io/display-name: backend
 `),
 		ErrorCase("spec.to.targetRef error",
 			validators.Violation{
@@ -36,27 +37,10 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: Mesh
-`),
-		ErrorCase("spec.to.targetRef error",
-			validators.Violation{
-				Field:   "spec.to[0].targetRef.kind",
-				Message: "value 'MeshService' is not supported",
-			}, `
-type: MeshTCPRoute
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-- targetRef:
-    kind: MeshService
-    name: backend
 `),
 		ErrorCase("invalid backendRefs",
 			validators.Violation{
@@ -67,12 +51,12 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
-    name: backend
+    labels:
+      kuma.io/display-name: backend
   rules:
   - default:
       backendRefs:
@@ -89,12 +73,12 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
-    name: backend
+    labels:
+      kuma.io/display-name: backend
   rules:
   - default:
       backendRefs:
@@ -109,12 +93,12 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
-    name: backend
+    labels:
+      kuma.io/display-name: backend
   rules:
   - default:
       backendRefs:
@@ -126,30 +110,12 @@ type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
-  kind: MeshService
-  name: frontend
+  kind: Mesh
 to:
 - targetRef:
     kind: MeshService
-    name: backend
-`),
-		Entry("accepts MeshGateway with listener tags targeted route", `
-type: MeshTCPRoute
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshGateway
-  name: edge
-  tags:
-    port: 6000
-to:
-- targetRef:
-    kind: Mesh
-  rules:
-  - default:
-      backendRefs:
-      - kind: MeshService
-        name: other
+    labels:
+      kuma.io/display-name: backend
 `),
 		Entry("MeshService and MeshMultiZoneService", `
 type: MeshTCPRoute
@@ -160,7 +126,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: backend
+    labels:
+      kuma.io/display-name: backend
     sectionName: "8080"
   rules:
   - default:
@@ -170,8 +137,8 @@ to:
         port: 8080
 - targetRef:
     kind: MeshMultiZoneService
-    name: other
-    sectionName: "8080"
+    labels:
+      kuma.io/display-name: other
   rules:
   - default:
       backendRefs:

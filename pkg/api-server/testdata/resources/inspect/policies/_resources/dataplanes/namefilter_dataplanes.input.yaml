@@ -1,7 +1,5 @@
 #/meshes/default/meshtrafficpermissions/foo/_resources/dataplanes?name=the-dp 200
 type: Mesh
-meshServices:
-  mode: Disabled
 name: default
 ---
 type: MeshTrafficPermission
@@ -10,11 +8,12 @@ mesh: default
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://default
 ---
 type: Dataplane
 name: dp-1

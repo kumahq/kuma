@@ -9,7 +9,7 @@ circuitBreakers:
 commonLbConfig:
   healthyPanicThreshold:
     value: 30.2
-name: second-service
+name: kri_msvc_default___second-service_80
 outlierDetection:
   baseEjectionTime: 8s
   consecutive5xx: 12

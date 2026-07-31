@@ -41,10 +41,6 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) va
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
-				common_api.MeshGateway,
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: false,
@@ -53,10 +49,7 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) va
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
 				common_api.Dataplane,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 			},
 		})
 	}

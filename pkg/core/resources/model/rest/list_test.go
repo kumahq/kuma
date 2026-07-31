@@ -2,7 +2,6 @@ package rest_test
 
 import (
 	"encoding/json"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,7 +15,6 @@ import (
 	policies_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Unmarshal ResourceList", func() {
@@ -27,33 +25,27 @@ var _ = Describe("Unmarshal ResourceList", func() {
 			{
 				"items": [
 				 {
-					"type": "TrafficRoute",
-					"mesh": "default",
+					"type": "Mesh",
 					"name": "one",
-					"conf": {
-					  "destination": {
-						"path": "/example"
-					  }
+					"mtls": {
+					  "enabledBackend": "ca-1"
 					}
 				 },
 				 {
-					"type": "TrafficRoute",
-					"mesh": "demo",
+					"type": "Mesh",
 					"name": "two",
-					"conf": {
-					  "destination": {
-						"path": "/another"
-					  }
+					"mtls": {
+					  "enabledBackend": "ca-2"
 					}
 				 }
 				],
-				"next": "http://localhost:5681/meshes/default/traffic-routes?offset=1"
+				"next": "http://localhost:5681/meshes?offset=1"
 			}`
 
 			// when
 			rsr := &rest.ResourceListReceiver{
 				NewResource: func() core_model.Resource {
-					return mesh.NewTrafficRouteResource()
+					return mesh.NewMeshResource()
 				},
 			}
 			err := json.Unmarshal([]byte(content), rsr)
@@ -66,151 +58,24 @@ var _ = Describe("Unmarshal ResourceList", func() {
 			// then
 			Expect(rs.Items).To(HaveLen(2))
 			Expect(rs.Items[0].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
-				Type: "TrafficRoute",
-				Mesh: "default",
+				Type: "Mesh",
 				Name: "one",
 			}))
-			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
-				Conf: &mesh_proto.TrafficRoute_Conf{
-					Destination: map[string]string{
-						"path": "/example",
-					},
+			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{
+				Mtls: &mesh_proto.Mesh_Mtls{
+					EnabledBackend: "ca-1",
 				},
 			}))
 			Expect(rs.Items[1].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
-				Type: "TrafficRoute",
-				Mesh: "demo",
+				Type: "Mesh",
 				Name: "two",
 			}))
-			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
-				Conf: &mesh_proto.TrafficRoute_Conf{
-					Destination: map[string]string{
-						"path": "/another",
-					},
+			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{
+				Mtls: &mesh_proto.Mesh_Mtls{
+					EnabledBackend: "ca-2",
 				},
 			}))
-			Expect(*rs.Next).To(Equal("http://localhost:5681/meshes/default/traffic-routes?offset=1"))
-		})
-		It("it should be possible to unmarshal JSON response with protobuf field types", func() {
-			// given
-			content := `
-{
-	"items": [
-	 {
-		"type": "CircuitBreaker",
-		"mesh": "default",
-		"name": "one",
-		"sources": [
-			{
-				"match": {
-					"kuma.io/service": "*"
-			  }
-			}
-		],
-		"destinations": [
-			{
-				"match": {
-					"kuma.io/service": "*"
-				}
-			}
-		],
-		"conf": {
-			"interval": "99s",
-			"detectors": {
-				"totalErrors": {
-					"consecutive": 3
-				}
-			}
-		}
-	},
-	{
-		"type": "CircuitBreaker",
-		"mesh": "default",
-		"name": "two",
-		"sources": [
-			{
-				"match": {
-					"kuma.io/service": "*"
-			  }
-			}
-		],
-		"destinations": [
-			{
-				"match": {
-					"kuma.io/service": "*"
-				}
-			}
-		],
-		"conf": {
-			"interval": "11s",
-			"detectors": {
-				"totalErrors": {
-					"consecutive": 10
-				}
-			}
-		}	
-	}
-	],
-	"next": "http://localhost:5681/meshes/default/circuit-breakers?offset=1"
-}`
-
-			// when
-			rsr := &rest.ResourceListReceiver{
-				NewResource: func() core_model.Resource {
-					return mesh.NewCircuitBreakerResource()
-				},
-			}
-			err := json.Unmarshal([]byte(content), rsr)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			rs := rsr.ResourceList
-
-			Expect(rs.Items).To(HaveLen(2))
-			Expect(rs.Items[0].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
-				Type: "CircuitBreaker",
-				Mesh: "default",
-				Name: "one",
-			}))
-			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.CircuitBreaker{
-				Sources: []*mesh_proto.Selector{
-					{Match: map[string]string{"kuma.io/service": "*"}},
-				},
-				Destinations: []*mesh_proto.Selector{
-					{Match: map[string]string{"kuma.io/service": "*"}},
-				},
-				Conf: &mesh_proto.CircuitBreaker_Conf{
-					Interval: util_proto.Duration(99 * time.Second),
-					Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-						TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{
-							Consecutive: util_proto.UInt32(3),
-						},
-					},
-				},
-			}))
-			Expect(rs.Items[1].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
-				Type: "CircuitBreaker",
-				Mesh: "default",
-				Name: "two",
-			}))
-			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.CircuitBreaker{
-				Sources: []*mesh_proto.Selector{
-					{Match: map[string]string{"kuma.io/service": "*"}},
-				},
-				Destinations: []*mesh_proto.Selector{
-					{Match: map[string]string{"kuma.io/service": "*"}},
-				},
-				Conf: &mesh_proto.CircuitBreaker_Conf{
-					Interval: util_proto.Duration(11 * time.Second),
-					Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-						TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{
-							Consecutive: util_proto.UInt32(10),
-						},
-					},
-				},
-			}))
-			Expect(*rs.Next).To(Equal("http://localhost:5681/meshes/default/circuit-breakers?offset=1"))
+			Expect(*rs.Next).To(Equal("http://localhost:5681/meshes?offset=1"))
 		})
 	})
 
@@ -229,45 +94,53 @@ var _ = Describe("Unmarshal ResourceList", func() {
                     "kind": "MeshService",
                     "name": "backend"
                 },
-                "from": [
+                "rules": [
                     {
-                        "targetRef": {
-                            "kind": "Mesh"
-                        },
                         "default": {
-                            "action": "Allow"
+                            "allow": [
+                                {
+                                    "spiffeID": {
+                                        "type": "Exact",
+                                        "value": "spiffe://mesh/sa/allowed"
+                                    }
+                                }
+                            ]
                         }
                     },
                     {
-                        "targetRef": {
-                            "kind": "MeshSubset",
-                            "tags": {
-                                "kuma.io/zone": "us-east"
-                            }
-                        },
                         "default": {
-                            "action": "Deny"
+                            "deny": [
+                                {
+                                    "spiffeID": {
+                                        "type": "Prefix",
+                                        "value": "spiffe://zone-us-east"
+                                    }
+                                }
+                            ]
                         }
                     },
                     {
-                        "targetRef": {
-                            "kind": "MeshService",
-                            "name": "backend"
-                        },
                         "default": {
-                            "action": "AllowWithShadowDeny"
+                            "allowWithShadowDeny": [
+                                {
+                                    "spiffeID": {
+                                        "type": "Exact",
+                                        "value": "spiffe://mesh/sa/backend"
+                                    }
+                                }
+                            ]
                         }
                     },
                     {
-                        "targetRef": {
-                            "kind": "MeshServiceSubset",
-                            "name": "backend",
-                            "tags": {
-                                "version": "v1"
-                            }
-                        },
                         "default": {
-                            "action": "Deny"
+                            "deny": [
+                                {
+                                    "sni": {
+                                        "type": "Exact",
+                                        "value": "backend.svc"
+                                    }
+                                }
+                            ]
                         }
                     }
                 ]
@@ -281,16 +154,17 @@ var _ = Describe("Unmarshal ResourceList", func() {
                 "targetRef": {
                     "kind": "Mesh"
                 },
-                "from": [
+                "rules": [
                     {
-                        "targetRef": {
-                            "kind": "MeshSubset",
-                            "tags": {
-                                "kuma.io/zone": "us-east"
-                            }
-                        },
                         "default": {
-                            "action": "Deny"
+                            "deny": [
+                                {
+                                    "spiffeID": {
+                                        "type": "Prefix",
+                                        "value": "spiffe://zone-us-east"
+                                    }
+                                }
+                            ]
                         }
                     }
                 ]
@@ -322,29 +196,33 @@ var _ = Describe("Unmarshal ResourceList", func() {
 			}))
 			Expect(rs.Items[0].GetSpec()).To(Equal(&policies_api.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "MeshService", Name: pointer.To("backend")},
-				From: &[]policies_api.From{
+				Rules: &[]policies_api.Rule{
 					{
-						TargetRef: common_api.TargetRef{Kind: "Mesh"},
-						Default: policies_api.Conf{
-							Action: pointer.To[policies_api.Action]("Allow"),
+						Default: policies_api.RuleConf{
+							Allow: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh/sa/allowed"}},
+							},
 						},
 					},
 					{
-						TargetRef: common_api.TargetRef{Kind: "MeshSubset", Tags: &map[string]string{"kuma.io/zone": "us-east"}},
-						Default: policies_api.Conf{
-							Action: pointer.To[policies_api.Action]("Deny"),
+						Default: policies_api.RuleConf{
+							Deny: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.PrefixMatchType, Value: "spiffe://zone-us-east"}},
+							},
 						},
 					},
 					{
-						TargetRef: common_api.TargetRef{Kind: "MeshService", Name: pointer.To("backend")},
-						Default: policies_api.Conf{
-							Action: pointer.To[policies_api.Action]("AllowWithShadowDeny"),
+						Default: policies_api.RuleConf{
+							AllowWithShadowDeny: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh/sa/backend"}},
+							},
 						},
 					},
 					{
-						TargetRef: common_api.TargetRef{Kind: "MeshServiceSubset", Name: pointer.To("backend"), Tags: &map[string]string{"version": "v1"}},
-						Default: policies_api.Conf{
-							Action: pointer.To[policies_api.Action]("Deny"),
+						Default: policies_api.RuleConf{
+							Deny: &[]common_api.Match{
+								{SNI: &common_api.SNIMatch{Type: common_api.SNIExactMatchType, Value: "backend.svc"}},
+							},
 						},
 					},
 				},
@@ -356,11 +234,12 @@ var _ = Describe("Unmarshal ResourceList", func() {
 			}))
 			Expect(rs.Items[1].GetSpec()).To(Equal(&policies_api.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: &[]policies_api.From{
+				Rules: &[]policies_api.Rule{
 					{
-						TargetRef: common_api.TargetRef{Kind: "MeshSubset", Tags: &map[string]string{"kuma.io/zone": "us-east"}},
-						Default: policies_api.Conf{
-							Action: pointer.To[policies_api.Action]("Deny"),
+						Default: policies_api.RuleConf{
+							Deny: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.PrefixMatchType, Value: "spiffe://zone-us-east"}},
+							},
 						},
 					},
 				},

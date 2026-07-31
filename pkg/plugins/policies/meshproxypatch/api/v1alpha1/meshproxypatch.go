@@ -90,7 +90,6 @@ type ClusterMatch struct {
 	// direct-access - resources generated for Direct Access functionality.
 	// ingress - resources generated for Zone Ingress.
 	// egress - resources generated for Zone Egress.
-	// gateway - resources generated for MeshGateway.
 	//
 	// The list is not complete, because policy plugins can introduce new resources.
 	// For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -125,7 +124,6 @@ type ListenerMatch struct {
 	// direct-access - resources generated for Direct Access functionality.
 	// ingress - resources generated for Zone Ingress.
 	// egress - resources generated for Zone Egress.
-	// gateway - resources generated for MeshGateway.
 	//
 	// The list is not complete, because policy plugins can introduce new resources.
 	// For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -162,7 +160,6 @@ type NetworkFilterMatch struct {
 	// direct-access - resources generated for Direct Access functionality.
 	// ingress - resources generated for Zone Ingress.
 	// egress - resources generated for Zone Egress.
-	// gateway - resources generated for MeshGateway.
 	//
 	// The list is not complete, because policy plugins can introduce new resources.
 	// For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -202,7 +199,6 @@ type HTTPFilterMatch struct {
 	// direct-access - resources generated for Direct Access functionality.
 	// ingress - resources generated for Zone Ingress.
 	// egress - resources generated for Zone Egress.
-	// gateway - resources generated for MeshGateway.
 	//
 	// The list is not complete, because policy plugins can introduce new resources.
 	// For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -243,7 +239,6 @@ type VirtualHostMatch struct {
 	// direct-access - resources generated for Direct Access functionality.
 	// ingress - resources generated for Zone Ingress.
 	// egress - resources generated for Zone Egress.
-	// gateway - resources generated for MeshGateway.
 	//
 	// The list is not complete, because policy plugins can introduce new resources.
 	// For example MeshTrace plugin can create Cluster with "mesh-trace" origin.

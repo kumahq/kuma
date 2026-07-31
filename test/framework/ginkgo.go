@@ -114,8 +114,21 @@ func E2EDeferCleanup(args ...any) {
 
 func SupportedVersionEntries() []ginkgo.TableEntry {
 	ginkgo.GinkgoHelper()
+	return supportedVersionEntries("")
+}
+
+func SupportedVersionEntriesAtLeast(minVersion string) []ginkgo.TableEntry {
+	ginkgo.GinkgoHelper()
+	return supportedVersionEntries(minVersion)
+}
+
+func supportedVersionEntries(minVersion string) []ginkgo.TableEntry {
+	ginkgo.GinkgoHelper()
 	var res []ginkgo.TableEntry
 	for _, v := range versions.UpgradableVersionsFromBuild(Config.SupportedVersions()) {
+		if minVersion != "" && versions.IsVersionLessThan(v, minVersion) {
+			continue
+		}
 		res = append(res, ginkgo.Entry(nil, v))
 	}
 	return res
@@ -169,18 +182,17 @@ func addReproManifestToReport() {
 
 	if Config != nil {
 		manifest["frameworkConfig"] = map[string]any{
-			"kumaImageRegistry":                 Config.KumaImageRegistry,
-			"kumaImageTag":                      Config.KumaImageTag,
-			"kumaNamespace":                     Config.KumaNamespace,
-			"k8sType":                           Config.K8sType,
-			"ipv6":                              Config.IPV6,
-			"arch":                              Config.Arch,
-			"os":                                Config.OS,
-			"defaultClusterStartupRetries":      Config.DefaultClusterStartupRetries,
-			"defaultClusterStartupTimeout":      Config.DefaultClusterStartupTimeout.String(),
-			"kumaExperimentalSidecarContainers": Config.KumaExperimentalSidecarContainers,
-			"dumpDir":                           Config.DumpDir,
-			"dumpOnSuccess":                     Config.DumpOnSuccess,
+			"kumaImageRegistry":            Config.KumaImageRegistry,
+			"kumaImageTag":                 Config.KumaImageTag,
+			"kumaNamespace":                Config.KumaNamespace,
+			"k8sType":                      Config.K8sType,
+			"ipv6":                         Config.IPV6,
+			"arch":                         Config.Arch,
+			"os":                           Config.OS,
+			"defaultClusterStartupRetries": Config.DefaultClusterStartupRetries,
+			"defaultClusterStartupTimeout": Config.DefaultClusterStartupTimeout.String(),
+			"dumpDir":                      Config.DumpDir,
+			"dumpOnSuccess":                Config.DumpOnSuccess,
 		}
 	}
 
@@ -264,7 +276,6 @@ func isSafeReproEnvValueKey(key string) bool {
 		"KUMA_DEFAULT_TIMEOUT",
 		"KUMA_DP_IMAGE_REPOSITORY",
 		"KUMA_DUMP_DIR",
-		"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS",
 		"KUMA_GLOBAL_IMAGE_REGISTRY",
 		"KUMA_GLOBAL_IMAGE_TAG",
 		"KUMA_INIT_IMAGE_REPOSITORY",

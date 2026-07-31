@@ -27,8 +27,6 @@ import (
 	core_apis "github.com/kumahq/kuma/v3/pkg/core/resources/apis"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies"
-	// Register gateway resources.
-	_ "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/register"
 	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works
 	_ "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
@@ -109,7 +107,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(get.NewGetCmd(root))
 	cmd.AddCommand(inspect.NewInspectCmd(root))
 	cmd.AddCommand(install.NewInstallCmd(root))
-	cmd.AddCommand(uninstall.NewUninstallCmd(root))
+	cmd.AddCommand(uninstall.NewUninstallCmd())
 	cmd.AddCommand(version.NewCmd(root))
 
 	kumactl_cmd.WrapRunnables(cmd, kumactl_errors.FormatErrorWrapper)

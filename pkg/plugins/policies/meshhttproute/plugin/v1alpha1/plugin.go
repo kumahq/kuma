@@ -1,12 +1,9 @@
 package v1alpha1
 
 import (
-	"context"
-
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -15,12 +12,9 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
-	meshroute_gateway "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute/gateway"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	plugin_gateway "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -56,17 +50,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 	// `ToRouteRule` type, where rules have been appended together.
 	policies := proxy.Policies.Dynamic[api.MeshHTTPRouteType]
 
-	// Only fallback if we have TrafficRoutes & No MeshHTTPRoutes
-	if len(xdsCtx.Mesh.Resources.TrafficRoutes().Items) != 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules.ByListenerAndHostname) == 0 {
-		return nil
-	}
-
 	if err := ApplyToOutbounds(proxy, rs, xdsCtx, policies.ToRules); err != nil {
-		return err
-	}
-
-	ctx := context.TODO()
-	if err := ApplyToGateway(ctx, proxy, rs, xdsCtx, policies.GatewayRules); err != nil {
 		return err
 	}
 
@@ -96,71 +80,6 @@ func ApplyToOutbounds(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, xdsCtx xd
 		return errors.Wrap(err, "couldn't generate endpoint resources")
 	}
 	rs.AddSet(endpoints)
-
-	return nil
-}
-
-func ApplyToGateway(
-	ctx context.Context,
-	proxy *core_xds.Proxy,
-	resources *core_xds.ResourceSet,
-	xdsCtx xds_context.Context,
-	rawRules rules.GatewayRules,
-) error {
-	var limits []plugin_gateway.RuntimeResoureLimitListener
-
-	if len(rawRules.ToRules.ByListenerAndHostname) == 0 {
-		return nil
-	}
-
-	var gateways *core_mesh.MeshGatewayResourceList
-	if rawList := xdsCtx.Mesh.Resources.MeshLocalResources[core_mesh.MeshGatewayType]; rawList != nil {
-		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
-	} else {
-		return nil
-	}
-
-	gateway := xds_topology.SelectGateway(gateways.Items, proxy.Dataplane.Spec.Matches)
-	if gateway == nil {
-		return nil
-	}
-
-	listeners := meshroute_gateway.CollectListenerInfos(
-		ctx,
-		xdsCtx.Mesh,
-		gateway,
-		proxy,
-		rawRules,
-		[]mesh_proto.MeshGateway_Listener_Protocol{mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS},
-		sortRulesToHosts,
-	)
-	plugin_gateway.SetGatewayListeners(proxy, listeners)
-
-	for _, listener := range listeners {
-		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, listener)
-		if err != nil {
-			return err
-		}
-		resources.AddSet(cdsResources)
-
-		ldsResources, limit, err := generateGatewayListeners(xdsCtx, listener)
-		if err != nil {
-			return err
-		}
-		resources.AddSet(ldsResources)
-
-		if limit != nil {
-			limits = append(limits, *limit)
-		}
-
-		rdsResources, err := generateGatewayRoutes(xdsCtx, listener)
-		if err != nil {
-			return err
-		}
-		resources.AddSet(rdsResources)
-	}
-
-	resources.Add(plugin_gateway.GenerateRTDS(limits))
 
 	return nil
 }

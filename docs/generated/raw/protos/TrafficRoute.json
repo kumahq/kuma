@@ -27,7 +27,7 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Traffic Route",
-            "description": "TrafficRoute defines routing rules for the traffic in the mesh."
+            "description": "TrafficRoute is retained only for its nested Http.Match, Http.Modify, and LoadBalancer message types, which are reused as generic Envoy route/cluster configuration types by MeshHTTPRoute and other xDS generators. The TrafficRoute resource itself has been removed."
         },
         "kuma.mesh.v1alpha1.Selector": {
             "properties": {

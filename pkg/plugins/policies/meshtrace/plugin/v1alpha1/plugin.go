@@ -15,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -37,7 +36,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
-	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
 var (
@@ -76,48 +74,11 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if err := applyToClusters(ctx, policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
-	if err := applyToGateway(ctx, policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy); err != nil {
-		return err
-	}
 	if err := applyToRealResources(ctx, policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
 	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil {
 		addToOtelPipeBackends(ctx, policies.SingleItemRules, proxy)
-	}
-
-	return nil
-}
-
-func applyToGateway(ctx xds_context.Context, rules core_rules.SingleItemRules, gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, proxy *xds.Proxy) error {
-	var gateways *core_mesh.MeshGatewayResourceList
-	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
-		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
-	} else {
-		return nil
-	}
-
-	dataplane := proxy.Dataplane
-	gateway := xds_topology.SelectGateway(gateways.Items, dataplane.Spec.Matches)
-	if gateway == nil {
-		return nil
-	}
-
-	for _, listener := range gateway.Spec.GetConf().GetListeners() {
-		address := dataplane.Spec.GetNetworking().Address
-		port := listener.GetPort()
-		inboundListener := core_rules.InboundListener{
-			Address: address,
-			Port:    port,
-		}
-		listener, ok := gatewayListeners[inboundListener]
-		if !ok {
-			continue
-		}
-
-		if err := configureListener(ctx, rules, proxy, listener, "", listener.TrafficDirection); err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -263,7 +224,7 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 }
 
 func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, direction envoy_core.TrafficDirection) error {
-	serviceName := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
+	serviceName := proxy.Dataplane.IdentifyingName()
 	// IdentifyingName falls back to "unknown" on a zone-proxy-only Dataplane (no service tag).
 	// Prefer the workload label (stable across pod restarts on K8s) and fall back to the
 	// Dataplane name (= pod name on K8s) so span service names remain meaningful.
@@ -291,22 +252,21 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 	resolved := resolveOtelBackendInfo(conf, ctx.Mesh.Resources)
 
 	configurer := plugin_xds.Configurer{
-		Conf:                  conf,
-		Service:               serviceName,
-		TrafficDirection:      direction,
-		Destination:           destination,
-		IsGateway:             proxy.Dataplane.Spec.IsBuiltinGateway(),
-		UnifiedResourceNaming: unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource),
-		Mesh:                  proxy.Dataplane.GetMeta().GetMesh(),
-		Zone:                  proxy.Zone,
-		WorkloadKRI:           workloadKRI,
-		SkipOpenTelemetry:     shouldSkipUnresolvedOpenTelemetryBackendRef(conf, resolved),
+		Conf:              conf,
+		Service:           serviceName,
+		TrafficDirection:  direction,
+		Destination:       destination,
+		IsGateway:         proxy.Dataplane.Spec.IsBuiltinGateway(),
+		Mesh:              proxy.Dataplane.GetMeta().GetMesh(),
+		Zone:              proxy.Zone,
+		WorkloadKRI:       workloadKRI,
+		SkipOpenTelemetry: shouldSkipUnresolvedOpenTelemetryBackend(conf, resolved),
 	}
 	if resolved != nil {
 		configurer.ResolvedOtelName = resolved.Name
-		// When kuma-dp acts as intermediary for a backendRef backend, Envoy
+		// When kuma-dp acts as intermediary for the resolved backend, Envoy
 		// always speaks gRPC to the pipe cluster. Only fall back to HTTP config
-		// when using direct-to-collector mode (inline endpoint or no feature).
+		// when using direct-to-collector mode (FeatureOtelViaKumaDp not enabled).
 		usePipe := hasOtelBackendRef(conf) && proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp)
 		if !usePipe && resolved.Protocol == motb_api.ProtocolHTTP {
 			configurer.ResolvedOtelUseHTTP = true
@@ -329,22 +289,30 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 }
 
 func hasOtelBackendRef(conf api.Conf) bool {
-	backends := pointer.Deref(conf.Backends)
-	if len(backends) == 0 {
-		return false
-	}
-	otel := backends[0].OpenTelemetry
+	otel := openTelemetryBackend(conf)
 	return otel != nil && otel.BackendRef != nil
 }
 
-func shouldSkipUnresolvedOpenTelemetryBackendRef(
+func hasOpenTelemetryBackend(conf api.Conf) bool {
+	return openTelemetryBackend(conf) != nil
+}
+
+func openTelemetryBackend(conf api.Conf) *api.OpenTelemetryBackend {
+	backends := pointer.Deref(conf.Backends)
+	if len(backends) == 0 {
+		return nil
+	}
+	return backends[0].OpenTelemetry
+}
+
+func shouldSkipUnresolvedOpenTelemetryBackend(
 	conf api.Conf,
 	resolved *policies_xds.ResolvedOtelBackend,
 ) bool {
 	if resolved != nil {
 		return false
 	}
-	return hasOtelBackendRef(conf)
+	return hasOpenTelemetryBackend(conf)
 }
 
 func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
@@ -360,32 +328,21 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 	}
 
 	var endpoint *xds.Endpoint
-	var provider string
 	useHTTP2 := false
-
-	getNameOrDefault := core_system_names.GetNameOrDefault(unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource))
 	name := ""
 	switch {
 	case backend.Zipkin != nil:
 		endpoint = endpointForZipkin(backend.Zipkin)
-		provider = plugin_xds.ZipkinProviderName
-		name = getNameOrDefault(
-			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_zipkin", core_system_names.CleanName(backend.Zipkin.Url))),
-			plugin_xds.GetTracingClusterName(provider),
-		)
+		name = core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_zipkin", core_system_names.CleanName(backend.Zipkin.Url)))
 	case backend.Datadog != nil:
 		endpoint = endpointForDatadog(backend.Datadog)
-		provider = plugin_xds.DatadogProviderName
-		name = getNameOrDefault(
-			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_datadog", core_system_names.CleanName(backend.Datadog.Url))),
-			plugin_xds.GetTracingClusterName(provider),
-		)
+		name = core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_datadog", core_system_names.CleanName(backend.Datadog.Url)))
 	case backend.OpenTelemetry != nil:
 		resolved := policies_xds.ResolveOtelBackend(
 			backend.OpenTelemetry.BackendRef,
-			backend.OpenTelemetry.Endpoint,
-			policies_xds.ParseOtelEndpoint,
-			func(ep string) string { return ep },
+			"",
+			nil,
+			nil,
 			ctx.Mesh.Resources,
 		)
 		if resolved == nil {
@@ -402,11 +359,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 			useHTTP2 = resolved.Protocol != motb_api.ProtocolHTTP
 		}
 
-		provider = plugin_xds.OpenTelemetryProviderName
-		name = getNameOrDefault(
-			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(resolved.Name))),
-			plugin_xds.GetTracingClusterName(provider),
-		)
+		name = core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(resolved.Name)))
 	}
 	builder := clusters.NewClusterBuilder(proxy.APIVersion, name)
 	if backend.OpenTelemetry != nil && useHTTP2 {
@@ -421,7 +374,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 	}
 
 	rs.Add(&xds.Resource{
-		Name:     getNameOrDefault(name, plugin_xds.GetTracingClusterName(provider)),
+		Name:     name,
 		Origin:   metadata.OriginMeshTrace,
 		Resource: res,
 	})
@@ -453,9 +406,9 @@ func resolveOtelBackendInfo(conf api.Conf, resources xds_context.Resources) *pol
 	}
 	return policies_xds.ResolveOtelBackend(
 		backend.OpenTelemetry.BackendRef,
-		backend.OpenTelemetry.Endpoint,
-		policies_xds.ParseOtelEndpoint,
-		func(ep string) string { return ep },
+		"",
+		nil,
+		nil,
 		resources,
 	)
 }

@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"net"
 	"strconv"
-	"time"
 
 	"github.com/asaskevich/govalidator"
 	envoy_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
@@ -13,24 +12,18 @@ import (
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_grpc_credentials_v3 "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoy_metrics_v3 "github.com/envoyproxy/go-control-plane/envoy/config/metrics/v3"
-	envoy_overload_v3 "github.com/envoyproxy/go-control-plane/envoy/config/overload/v3"
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	regex_engines "github.com/envoyproxy/go-control-plane/envoy/extensions/regex_engines/v3"
-	resource_monitors_downstream_connections "github.com/envoyproxy/go-control-plane/envoy/extensions/resource_monitors/downstream_connections/v3"
-	resource_monitors_fixed_heap "github.com/envoyproxy/go-control-plane/envoy/extensions/resource_monitors/fixed_heap/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/config/xds"
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	clusters_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters/v3"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
@@ -44,14 +37,6 @@ func RegisterBootstrapCluster(c string) string {
 	return c
 }
 
-const (
-	downstreamMaxConnMonitor = "envoy.resource_monitors.global_downstream_max_connections"
-	fixedHeapMonitor         = "envoy.resource_monitors.fixed_heap"
-	defaultMaxConnections    = 50000
-	overloadShrinkHeap       = "envoy.overload_actions.shrink_heap"
-	overloadStopAccepting    = "envoy.overload_actions.stop_accepting_requests"
-)
-
 var (
 	adsClusterName                 = RegisterBootstrapCluster(names.GetAdsClusterName())
 	accessLogSinkClusterName       = RegisterBootstrapCluster(names.GetAccessLogSinkClusterName())
@@ -59,18 +44,21 @@ var (
 	systemAccessLogSinkClusterName = RegisterBootstrapCluster(system_names.MustBeSystemName("access_log_sink"))
 )
 
-func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloadableTokens bool, meshResource *core_mesh.MeshResource) (*envoy_bootstrap_v3.Bootstrap, error) {
-	getNameOrDefault := system_names.GetNameOrDefault(meshResource != nil &&
-		parameters.Features != nil &&
-		parameters.Features.HasFeature(xds_types.FeatureUnifiedResourceNaming) &&
-		meshResource.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive,
-	)
+func genConfig(parameters configParameters, enableReloadableTokens bool, meshResource *core_mesh.MeshResource) (*envoy_bootstrap_v3.Bootstrap, error) {
+	unifiedNamingEnabled := unified_naming.Enabled(&core_xds.DataplaneMetadata{Features: parameters.Features}, meshResource)
+
+	adsName := adsClusterName
+	accessLogSinkName := accessLogSinkClusterName
+	if unifiedNamingEnabled {
+		adsName = systemAdsClusterName
+		accessLogSinkName = systemAccessLogSinkClusterName
+	}
 
 	staticClusters, err := buildStaticClusters(
 		parameters,
 		enableReloadableTokens,
-		getNameOrDefault(systemAdsClusterName, adsClusterName),
-		getNameOrDefault(systemAccessLogSinkClusterName, accessLogSinkClusterName),
+		adsName,
+		accessLogSinkName,
 	)
 	if err != nil {
 		return nil, err
@@ -90,22 +78,6 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 			}),
 		},
 	}}
-
-	if parameters.IsGatewayDataplane {
-		runtimeLayers = append(runtimeLayers,
-			&envoy_bootstrap_v3.RuntimeLayer{
-				Name: "gateway.listeners",
-				LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer_{
-					RtdsLayer: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer{
-						Name: "gateway.listeners",
-						RtdsConfig: &envoy_core_v3.ConfigSource{
-							ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
-							ConfigSourceSpecifier: &envoy_core_v3.ConfigSource_Ads{},
-						},
-					},
-				},
-			})
-	}
 
 	// We create matchers
 	var matchNames []*envoy_tls.SubjectAltNameMatcher
@@ -190,7 +162,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 				TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 				SetNodeOnFirstMessageOnly: true,
 				GrpcServices: []*envoy_core_v3.GrpcService{
-					buildGrpcService(parameters, enableReloadableTokens, getNameOrDefault(systemAdsClusterName, adsClusterName)),
+					buildGrpcService(parameters, enableReloadableTokens, adsName),
 				},
 			},
 		},
@@ -218,7 +190,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		},
 	}
 	for _, r := range res.StaticResources.Clusters {
-		if r.Name == getNameOrDefault(systemAdsClusterName, adsClusterName) {
+		if r.Name == adsName {
 			transport := &envoy_tls.UpstreamTlsContext{
 				Sni: parameters.XdsHost,
 				CommonTlsContext: &envoy_tls.CommonTlsContext{
@@ -250,61 +222,8 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 			TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 			SetNodeOnFirstMessageOnly: true,
 			GrpcServices: []*envoy_core_v3.GrpcService{
-				buildGrpcService(parameters, enableReloadableTokens, getNameOrDefault(systemAdsClusterName, adsClusterName)),
+				buildGrpcService(parameters, enableReloadableTokens, adsName),
 			},
-		}
-	}
-
-	if parameters.IsGatewayDataplane {
-		connections := proxyConfig.Gateway.GlobalDownstreamMaxConnections
-		if connections == 0 {
-			connections = defaultMaxConnections
-		}
-
-		// Create Downstream Connections Monitor
-		downstreamConf := &resource_monitors_downstream_connections.DownstreamConnectionsConfig{
-			MaxActiveDownstreamConnections: int64(connections),
-		}
-		downstreamResMonitor, err := createResourceMonitor(downstreamMaxConnMonitor, downstreamConf)
-		if err != nil {
-			return nil, err
-		}
-		res.OverloadManager = &envoy_overload_v3.OverloadManager{
-			RefreshInterval:  util_proto.Duration(250 * time.Millisecond),
-			ResourceMonitors: []*envoy_overload_v3.ResourceMonitor{downstreamResMonitor},
-		}
-		if maxBytes := parameters.Resources.MaxHeapSizeBytes; maxBytes > 0 {
-			fixedHeapConf := &resource_monitors_fixed_heap.FixedHeapConfig{
-				MaxHeapSizeBytes: maxBytes,
-			}
-			fixedHeapResMonitor, err := createResourceMonitor(fixedHeapMonitor, fixedHeapConf)
-			if err != nil {
-				return nil, err
-			}
-
-			res.OverloadManager.ResourceMonitors = append(res.OverloadManager.ResourceMonitors, fixedHeapResMonitor)
-
-			res.OverloadManager.Actions = []*envoy_overload_v3.OverloadAction{{
-				Name: "envoy.overload_actions.shrink_heap",
-				Triggers: []*envoy_overload_v3.Trigger{{
-					Name: fixedHeapMonitor,
-					TriggerOneof: &envoy_overload_v3.Trigger_Threshold{
-						Threshold: &envoy_overload_v3.ThresholdTrigger{
-							Value: 0.95,
-						},
-					},
-				}},
-			}, {
-				Name: "envoy.overload_actions.stop_accepting_requests",
-				Triggers: []*envoy_overload_v3.Trigger{{
-					Name: fixedHeapMonitor,
-					TriggerOneof: &envoy_overload_v3.Trigger_Threshold{
-						Threshold: &envoy_overload_v3.ThresholdTrigger{
-							Value: 0.98,
-						},
-					},
-				}},
-			}}
 		}
 	}
 
@@ -418,19 +337,6 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	}
 
 	return res, nil
-}
-
-func createResourceMonitor(name string, config proto.Message) (*envoy_overload_v3.ResourceMonitor, error) {
-	marshaledConfig, err := util_proto.MarshalAnyDeterministic(config)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not marshal %T", config)
-	}
-	return &envoy_overload_v3.ResourceMonitor{
-		Name: name,
-		ConfigType: &envoy_overload_v3.ResourceMonitor_TypedConfig{
-			TypedConfig: marshaledConfig,
-		},
-	}, nil
 }
 
 func dnsLookupFamilyFromXdsHost(host string, lookupFn func(host string) ([]net.IP, error)) envoy_cluster_v3.Cluster_DnsLookupFamily {

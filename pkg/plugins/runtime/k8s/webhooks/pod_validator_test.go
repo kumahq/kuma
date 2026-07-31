@@ -229,7 +229,7 @@ var _ = Describe("PodValidator", func() {
                 metadata:
                   name: test-pod
                   namespace: default
-                  annotations:
+                  labels:
                     kuma.io/mesh: mesh2
                 spec:
                   containers:
@@ -265,7 +265,7 @@ var _ = Describe("PodValidator", func() {
                 metadata:
                   name: test-pod
                   namespace: default
-                  annotations:
+                  labels:
                     kuma.io/mesh: mesh2
                 spec:
                   containers:
@@ -303,7 +303,7 @@ var _ = Describe("PodValidator", func() {
                 metadata:
                   name: test-pod
                   namespace: default
-                  annotations:
+                  labels:
                     kuma.io/mesh: mesh1
                 spec:
                   containers:

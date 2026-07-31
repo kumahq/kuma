@@ -1,5 +1,5 @@
 resources:
-- name: _kuma:dynamicconfig
+- name: system_dynamicconfig
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -19,11 +19,11 @@ resources:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
           routeConfig:
-            maxDirectResponseBodySizeBytes: 355
+            maxDirectResponseBodySizeBytes: 277
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:dynamicconfig
+              name: system_dynamicconfig
               routes:
               - directResponse:
                   status: 304
@@ -31,22 +31,24 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: 03282959788b7fa4a49421e6e72acfa756ffcf8f69284d1064c7b4117ea156c1
+                      exact: a0c7bf80bf3bccdd32e19fd42c00d15562c2a7851f5ea3d1c3575b65786a20a7
                   path: /meshmetric
+                name: system_dynamicconfig_meshmetric_not_modified
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null}],"sidecar":{"includeUnused":false},"extraLabels":{"dataplane":"dp-1","kuma.proxy_role":"sidecar","kuma.workload":"backend","kuma_io_service":"backend","kuma_io_services":",backend,","mesh":"default","zone":"zone-1"}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null}],"sidecar":{"includeUnused":false},"extraLabels":{"kuma.proxy_role":"sidecar","kuma.workload":"backend","mesh":"default","zone":"zone-1"}}}}'
                   status: 200
                 match:
                   path: /meshmetric
-                name: _kuma:dynamicconfig:/meshmetric
+                name: system_dynamicconfig_meshmetric
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: 03282959788b7fa4a49421e6e72acfa756ffcf8f69284d1064c7b4117ea156c1
-          statPrefix: _kuma_dynamicconfig
-    name: _kuma:dynamicconfig
-- name: _kuma:metrics:prometheus:default-backend
+                    value: a0c7bf80bf3bccdd32e19fd42c00d15562c2a7851f5ea3d1c3575b65786a20a7
+          statPrefix: system_dynamicconfig
+    name: system_dynamicconfig
+    statPrefix: system_dynamicconfig
+- name: system_meshmetric_prometheus_default-backend
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -72,13 +74,14 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:metrics:prometheus:default-backend
+              name: system_meshmetric_prometheus_default-backend
               routes:
               - match:
                   prefix: /metrics
                 route:
-                  cluster: _kuma:metrics:hijacker
+                  cluster: system_meshmetric_prometheus_default-backend
                   prefixRewrite: /meshmetric
-          statPrefix: _kuma_metrics_prometheus_default-backend
-    name: _kuma:metrics:prometheus:default-backend
+          statPrefix: system_meshmetric_prometheus_default-backend
+    name: system_meshmetric_prometheus_default-backend
+    statPrefix: system_meshmetric_prometheus_default-backend
     trafficDirection: INBOUND

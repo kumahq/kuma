@@ -152,6 +152,35 @@ var _ = Describe("Updater", func() {
 		}, "10s", "100ms").Should(Succeed())
 	})
 
+	It("should fall back to the workload label for identity when inbound tags are absent", func() {
+		// when
+		Expect(builders.MeshService().
+			WithName("backend").
+			WithDataplaneLabelsSelector(map[string]string{
+				metadata.KumaWorkload: "backend",
+			}).
+			AddIntPort(int32(builders.FirstInboundPort), int32(builders.FirstInboundPort), "http").
+			Create(resManager)).To(Succeed())
+		taglessDpp := samples.DataplaneBackendBuilder().Build()
+		taglessDpp.Spec.Networking.Inbound[0].Tags = map[string]string{}
+		Expect(resManager.Create(context.TODO(), taglessDpp, store.CreateByKey("dp-1", model.DefaultMesh), store.CreateWithLabels(map[string]string{
+			metadata.KumaWorkload: "backend",
+		}))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			ms := meshservice_api.NewMeshServiceResource()
+			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
+				{
+					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+					Value: "backend",
+				},
+			}))
+		}, "10s", "100ms").Should(Succeed())
+	})
+
 	It("should not override identity to status of service from another zone", func() {
 		// when
 		Expect(samples.MeshServiceBackendBuilder().

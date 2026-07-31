@@ -99,10 +99,14 @@ func (gis *defaultGlobalInsightService) aggregatePolicies(
 	globalInsight *api_types.GlobalInsightBase,
 ) {
 	for _, meshInsight := range meshInsights.GetItems() {
-		policies := meshInsight.GetSpec().(*mesh_proto.MeshInsight).GetPolicies()
+		resources := meshInsight.GetSpec().(*mesh_proto.MeshInsight).GetResources()
 
-		for _, policy := range policies {
-			globalInsight.Policies.Total += int(policy.GetTotal())
+		for resType, stat := range resources {
+			desc, err := registry.Global().DescriptorFor(core_model.ResourceType(resType))
+			if err != nil || !desc.IsPolicy {
+				continue
+			}
+			globalInsight.Policies.Total += int(stat.GetTotal())
 		}
 	}
 }

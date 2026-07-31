@@ -1,7 +1,5 @@
 #/meshes/mesh-1/dataplanes/dp-1/_rules 200
 type: Mesh
-meshServices:
-  mode: Disabled
 name: mesh-1
 ---
 type: Dataplane
@@ -29,10 +27,8 @@ spec:
     kind: Dataplane
     labels:
       app: demo-app
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         idleTimeout: 7s
         connectionTimeout: 7s
         http:
@@ -47,9 +43,7 @@ spec:
     labels:
       app: demo-app
     sectionName: secondary-port
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         http:
           requestTimeout: 2s

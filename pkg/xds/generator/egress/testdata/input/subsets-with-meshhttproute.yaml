@@ -5,8 +5,6 @@ mtls:
   backends:
     - name: ca-1
       type: builtin
-routing:
-  zoneEgress: true
 ---
 type: ZoneEgress
 name: zoneegress-1
@@ -15,27 +13,19 @@ networking:
   address: 192.168.0.1
   port: 10002
 ---
-type: TrafficPermission
-name: allow-all-traffic
-mesh: mesh-1
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'
----
 type: MeshHTTPRoute
 name: route-1
 mesh: mesh-1
 spec:
   targetRef:
-    kind: MeshService
-    name: service-in-zone-1
+    kind: Dataplane
+    labels:
+      kuma.io/service: service-in-zone-1
   to:
     - targetRef:
         kind: MeshService
-        name: service-in-zone-2
+        labels:
+          kuma.io/display-name: service-in-zone-2
       rules:
         - matches:
             - path:

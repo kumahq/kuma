@@ -30,11 +30,6 @@ func (r *MeshRetryResource) validateTop(targetRef *common_api.TargetRef) validat
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshGateway,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
-				common_api.MeshHTTPRoute,
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
@@ -43,9 +38,6 @@ func (r *MeshRetryResource) validateTop(targetRef *common_api.TargetRef) validat
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
 		})
@@ -59,7 +51,7 @@ func validateTo(to []To, topLevelKind common_api.TargetRef) validators.Validatio
 
 		var supportedKinds []common_api.TargetRefKind
 		switch topLevelKind.Kind {
-		case common_api.MeshGateway, common_api.MeshHTTPRoute:
+		case common_api.MeshHTTPRoute:
 			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshExternalService,
@@ -73,7 +65,6 @@ func validateTo(to []To, topLevelKind common_api.TargetRef) validators.Validatio
 				common_api.MeshHTTPRoute,
 			}
 		}
-
 		verr.AddErrorAt(
 			path.Field("targetRef"),
 			mesh.ValidateTargetRef(

@@ -12,7 +12,6 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/xds/dynconf/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/dynconf/system_names"
@@ -21,12 +20,9 @@ import (
 	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
-const ListenerName = "_kuma:dynamicconfig"
-
-func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, unifiedNamingEnabled bool, name string, path string, bytes []byte) error {
+func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, name string, path string, bytes []byte) error {
 	var listener *envoy_listener.Listener
-	getNameOrDefault := core_system_names.GetNameOrDefault(unifiedNamingEnabled)
-	listenerName := getNameOrDefault(system_names.SystemResourceNameDynamicConfigListener, ListenerName)
+	listenerName := system_names.SystemResourceNameDynamicConfigListener
 
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
 		if res.Origin == metadata.OriginDynamicConfig {
@@ -38,7 +34,7 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, unifiedNami
 	if listener == nil {
 		nr, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 			Configure(envoy_listeners.PipeListener(core_xds.MeshMetricsDynamicConfigurationSocketName(proxy.Metadata.WorkDir))).
-			Configure(envoy_listeners.StatPrefix(getNameOrDefault(system_names.SystemResourceNameDynamicConfigListener, ""))).
+			Configure(envoy_listeners.StatPrefix(system_names.SystemResourceNameDynamicConfigListener)).
 			Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 					Configure(
@@ -61,7 +57,7 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, unifiedNami
 		routeConfig := manager.GetRouteConfig()
 		routeConfig.VirtualHosts[0].Routes = append(routeConfig.VirtualHosts[0].Routes,
 			&envoy_route.Route{
-				Name: getNameOrDefault(system_names.SystemResourceNameDynamicConfigRouteNotModified(name), ""),
+				Name: system_names.SystemResourceNameDynamicConfigRouteNotModified(name),
 				Match: &envoy_route.RouteMatch{
 					// Add a route for etag matching
 					PathSpecifier: &envoy_route.RouteMatch_Path{
@@ -87,10 +83,7 @@ func AddConfigRoute(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, unifiedNami
 				},
 			},
 			&envoy_route.Route{
-				Name: getNameOrDefault(
-					system_names.SystemResourceNameDynamicConfigRoute(name),
-					ListenerName+":"+name,
-				),
+				Name: system_names.SystemResourceNameDynamicConfigRoute(name),
 				Match: &envoy_route.RouteMatch{
 					PathSpecifier: &envoy_route.RouteMatch_Path{
 						Path: path,

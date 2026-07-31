@@ -1,5 +1,5 @@
 resources:
-- name: outbound:127.0.0.1:10001
+- name: kri_msvc_default___backend_kafka-port
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -11,20 +11,21 @@ resources:
       - name: envoy.filters.network.kafka_broker
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.kafka_broker.v3.KafkaBroker
-          statPrefix: backend
+          statPrefix: kri_msvc_default___backend_kafka-port
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          statPrefix: backend
+          statPrefix: kri_msvc_default___backend_kafka-port
           weightedClusters:
             clusters:
-            - name: backend-bb38a94289f18fb9
+            - name: kri_msvc_default___backend-eu_kafka-port
               weight: 60
-            - name: backend-c72efb5be46fae6b
+            - name: kri_msvc_default___backend-us_kafka-port
               weight: 40
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/service: backend
-    name: outbound:127.0.0.1:10001
+          kuma.io/unified-name: kri_msvc_default___backend_kafka-port
+    name: kri_msvc_default___backend_kafka-port
+    statPrefix: kri_msvc_default___backend_kafka-port
     trafficDirection: OUTBOUND

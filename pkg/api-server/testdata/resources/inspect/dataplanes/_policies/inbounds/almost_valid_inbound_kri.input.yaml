@@ -1,8 +1,6 @@
 #/meshes/default/dataplanes/dp-1/_inbounds/id_dp_default_test-zone__dp-1_main-port/_policies 400
 type: Mesh
 name: default
-meshServices:
-  mode: Exclusive
 ---
 type: Dataplane
 name: dp-1

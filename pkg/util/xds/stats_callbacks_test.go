@@ -1,6 +1,7 @@
 package xds_test
 
 import (
+	"bytes"
 	"context"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -19,6 +21,16 @@ import (
 	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
 )
+
+// largeAny builds an Any whose serialized size is at least minBytes,
+// used to exercise the receive-window-depletion heuristic without
+// pulling in real xDS resources.
+func largeAny(minBytes int) *anypb.Any {
+	return &anypb.Any{
+		TypeUrl: "type.googleapis.com/kuma.test.Large",
+		Value:   bytes.Repeat([]byte{0xAB}, minBytes),
+	}
+}
 
 var _ = Describe("Stats callbacks", func() {
 	versionExtractor := func(metadata *structpb.Struct) string {
@@ -170,6 +182,71 @@ var _ = Describe("Stats callbacks", func() {
 			histogram := test_metrics.FindMetric(metrics, "delta_xds_responses_sent_bytes", "type_url", resource.RouteType).GetHistogram()
 			Expect(histogram.GetSampleCount()).To(Equal(uint64(1)))
 			Expect(histogram.GetSampleSum()).To(BeNumerically(">", 0))
+		})
+
+		It("should flag delta stream closure within window after large send", func() {
+			// given
+			req := &envoy_discovery.DeltaDiscoveryRequest{TypeUrl: resource.ClusterType}
+			resp := &envoy_discovery.DeltaDiscoveryResponse{
+				TypeUrl: resource.ClusterType,
+				Resources: []*envoy_discovery.Resource{
+					{Name: "big", Resource: largeAny(2 * 1024 * 1024)},
+				},
+			}
+
+			// when
+			adaptedCallbacks.OnStreamDeltaResponse(streamId, req, resp)
+			currentTime = currentTime.Add(2 * time.Second)
+			adaptedCallbacks.OnDeltaStreamClosed(streamId, &corev3.Node{})
+
+			// then
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_stream_likely_window_depletion_total", "type_url", resource.ClusterType).GetCounter().GetValue()).To(Equal(1.0))
+		})
+
+		It("should not flag delta stream closure after small response", func() {
+			// given
+			req := &envoy_discovery.DeltaDiscoveryRequest{TypeUrl: resource.ClusterType}
+			resp := &envoy_discovery.DeltaDiscoveryResponse{
+				TypeUrl: resource.ClusterType,
+				Resources: []*envoy_discovery.Resource{
+					{Name: "small", Resource: largeAny(1024)},
+				},
+			}
+
+			// when
+			adaptedCallbacks.OnStreamDeltaResponse(streamId, req, resp)
+			currentTime = currentTime.Add(time.Second)
+			adaptedCallbacks.OnDeltaStreamClosed(streamId, &corev3.Node{})
+
+			// then
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_stream_likely_window_depletion_total", "type_url", resource.ClusterType)).To(BeNil())
+		})
+
+		It("should not flag delta stream closure long after large response", func() {
+			// given
+			req := &envoy_discovery.DeltaDiscoveryRequest{TypeUrl: resource.ClusterType}
+			resp := &envoy_discovery.DeltaDiscoveryResponse{
+				TypeUrl: resource.ClusterType,
+				Resources: []*envoy_discovery.Resource{
+					{Name: "big", Resource: largeAny(2 * 1024 * 1024)},
+				},
+			}
+
+			// when
+			adaptedCallbacks.OnStreamDeltaResponse(streamId, req, resp)
+			currentTime = currentTime.Add(time.Minute)
+			adaptedCallbacks.OnDeltaStreamClosed(streamId, &corev3.Node{})
+
+			// then
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_stream_likely_window_depletion_total", "type_url", resource.ClusterType)).To(BeNil())
+		})
+
+		It("should not flag delta stream closure when no response was sent", func() {
+			// when
+			adaptedCallbacks.OnDeltaStreamClosed(streamId, &corev3.Node{})
+
+			// then
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_stream_likely_window_depletion_total", "type_url", resource.ClusterType)).To(BeNil())
 		})
 
 		It("should track config delivery", func() {

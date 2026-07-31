@@ -24,10 +24,9 @@ const (
 
 // MeshInsight defines the observed state of a Mesh.
 type MeshInsight struct {
-	state      protoimpl.MessageState             `protogen:"open.v1"`
-	Dataplanes *MeshInsight_DataplaneStat         `protobuf:"bytes,2,opt,name=dataplanes,proto3" json:"dataplanes,omitempty"`
-	Policies   map[string]*MeshInsight_PolicyStat `protobuf:"bytes,3,rep,name=policies,proto3" json:"policies,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	DpVersions *MeshInsight_DpVersions            `protobuf:"bytes,4,opt,name=dpVersions,proto3" json:"dpVersions,omitempty"`
+	state      protoimpl.MessageState     `protogen:"open.v1"`
+	Dataplanes *MeshInsight_DataplaneStat `protobuf:"bytes,2,opt,name=dataplanes,proto3" json:"dataplanes,omitempty"`
+	DpVersions *MeshInsight_DpVersions    `protobuf:"bytes,4,opt,name=dpVersions,proto3" json:"dpVersions,omitempty"`
 	// mTLS statistics
 	MTLS             *MeshInsight_MTLS                    `protobuf:"bytes,5,opt,name=mTLS,proto3" json:"mTLS,omitempty"`
 	Services         *MeshInsight_ServiceStat             `protobuf:"bytes,6,opt,name=services,proto3" json:"services,omitempty"`
@@ -70,13 +69,6 @@ func (*MeshInsight) Descriptor() ([]byte, []int) {
 func (x *MeshInsight) GetDataplanes() *MeshInsight_DataplaneStat {
 	if x != nil {
 		return x.Dataplanes
-	}
-	return nil
-}
-
-func (x *MeshInsight) GetPolicies() map[string]*MeshInsight_PolicyStat {
-	if x != nil {
-		return x.Policies
 	}
 	return nil
 }
@@ -185,52 +177,6 @@ func (x *MeshInsight_DataplaneStat) GetPartiallyDegraded() uint32 {
 	return 0
 }
 
-// PolicyStat defines statistic for all policies in general
-// Deprecated: use resources
-type MeshInsight_PolicyStat struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Total         uint32                 `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MeshInsight_PolicyStat) Reset() {
-	*x = MeshInsight_PolicyStat{}
-	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MeshInsight_PolicyStat) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MeshInsight_PolicyStat) ProtoMessage() {}
-
-func (x *MeshInsight_PolicyStat) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MeshInsight_PolicyStat.ProtoReflect.Descriptor instead.
-func (*MeshInsight_PolicyStat) Descriptor() ([]byte, []int) {
-	return file_api_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP(), []int{0, 1}
-}
-
-func (x *MeshInsight_PolicyStat) GetTotal() uint32 {
-	if x != nil {
-		return x.Total
-	}
-	return 0
-}
-
 // DpVersions defines statistics grouped by dataplane versions
 type MeshInsight_DpVersions struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -244,7 +190,7 @@ type MeshInsight_DpVersions struct {
 
 func (x *MeshInsight_DpVersions) Reset() {
 	*x = MeshInsight_DpVersions{}
-	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[4]
+	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -256,7 +202,7 @@ func (x *MeshInsight_DpVersions) String() string {
 func (*MeshInsight_DpVersions) ProtoMessage() {}
 
 func (x *MeshInsight_DpVersions) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[4]
+	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -269,7 +215,7 @@ func (x *MeshInsight_DpVersions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshInsight_DpVersions.ProtoReflect.Descriptor instead.
 func (*MeshInsight_DpVersions) Descriptor() ([]byte, []int) {
-	return file_api_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP(), []int{0, 3}
+	return file_api_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP(), []int{0, 1}
 }
 
 func (x *MeshInsight_DpVersions) GetKumaDp() map[string]*MeshInsight_DataplaneStat {
@@ -298,7 +244,7 @@ type MeshInsight_MTLS struct {
 
 func (x *MeshInsight_MTLS) Reset() {
 	*x = MeshInsight_MTLS{}
-	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[5]
+	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -310,7 +256,7 @@ func (x *MeshInsight_MTLS) String() string {
 func (*MeshInsight_MTLS) ProtoMessage() {}
 
 func (x *MeshInsight_MTLS) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[5]
+	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -323,7 +269,7 @@ func (x *MeshInsight_MTLS) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshInsight_MTLS.ProtoReflect.Descriptor instead.
 func (*MeshInsight_MTLS) Descriptor() ([]byte, []int) {
-	return file_api_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP(), []int{0, 4}
+	return file_api_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP(), []int{0, 2}
 }
 
 func (x *MeshInsight_MTLS) GetIssuedBackends() map[string]*MeshInsight_DataplaneStat {
@@ -352,7 +298,7 @@ type MeshInsight_ServiceStat struct {
 
 func (x *MeshInsight_ServiceStat) Reset() {
 	*x = MeshInsight_ServiceStat{}
-	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[6]
+	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -364,7 +310,7 @@ func (x *MeshInsight_ServiceStat) String() string {
 func (*MeshInsight_ServiceStat) ProtoMessage() {}
 
 func (x *MeshInsight_ServiceStat) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[6]
+	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -377,7 +323,7 @@ func (x *MeshInsight_ServiceStat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshInsight_ServiceStat.ProtoReflect.Descriptor instead.
 func (*MeshInsight_ServiceStat) Descriptor() ([]byte, []int) {
-	return file_api_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP(), []int{0, 5}
+	return file_api_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP(), []int{0, 3}
 }
 
 func (x *MeshInsight_ServiceStat) GetTotal() uint32 {
@@ -414,7 +360,7 @@ type MeshInsight_DataplanesByType struct {
 
 func (x *MeshInsight_DataplanesByType) Reset() {
 	*x = MeshInsight_DataplanesByType{}
-	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[7]
+	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -426,7 +372,7 @@ func (x *MeshInsight_DataplanesByType) String() string {
 func (*MeshInsight_DataplanesByType) ProtoMessage() {}
 
 func (x *MeshInsight_DataplanesByType) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[7]
+	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -439,7 +385,7 @@ func (x *MeshInsight_DataplanesByType) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshInsight_DataplanesByType.ProtoReflect.Descriptor instead.
 func (*MeshInsight_DataplanesByType) Descriptor() ([]byte, []int) {
-	return file_api_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP(), []int{0, 6}
+	return file_api_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP(), []int{0, 4}
 }
 
 func (x *MeshInsight_DataplanesByType) GetStandard() *MeshInsight_DataplaneStat {
@@ -479,7 +425,7 @@ type MeshInsight_ResourceStat struct {
 
 func (x *MeshInsight_ResourceStat) Reset() {
 	*x = MeshInsight_ResourceStat{}
-	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[8]
+	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -491,7 +437,7 @@ func (x *MeshInsight_ResourceStat) String() string {
 func (*MeshInsight_ResourceStat) ProtoMessage() {}
 
 func (x *MeshInsight_ResourceStat) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[8]
+	mi := &file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -504,7 +450,7 @@ func (x *MeshInsight_ResourceStat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshInsight_ResourceStat.ProtoReflect.Descriptor instead.
 func (*MeshInsight_ResourceStat) Descriptor() ([]byte, []int) {
-	return file_api_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP(), []int{0, 7}
+	return file_api_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP(), []int{0, 5}
 }
 
 func (x *MeshInsight_ResourceStat) GetTotal() uint32 {
@@ -518,12 +464,11 @@ var File_api_mesh_v1alpha1_mesh_insight_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_mesh_insight_proto_rawDesc = "" +
 	"\n" +
-	"$api/mesh/v1alpha1/mesh_insight.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\"\xa7\x12\n" +
+	"$api/mesh/v1alpha1/mesh_insight.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\"\xdf\x10\n" +
 	"\vMeshInsight\x12M\n" +
 	"\n" +
 	"dataplanes\x18\x02 \x01(\v2-.kuma.mesh.v1alpha1.MeshInsight.DataplaneStatR\n" +
-	"dataplanes\x12I\n" +
-	"\bpolicies\x18\x03 \x03(\v2-.kuma.mesh.v1alpha1.MeshInsight.PoliciesEntryR\bpolicies\x12J\n" +
+	"dataplanes\x12J\n" +
 	"\n" +
 	"dpVersions\x18\x04 \x01(\v2*.kuma.mesh.v1alpha1.MeshInsight.DpVersionsR\n" +
 	"dpVersions\x128\n" +
@@ -535,13 +480,7 @@ const file_api_mesh_v1alpha1_mesh_insight_proto_rawDesc = "" +
 	"\x05total\x18\x01 \x01(\rR\x05total\x12\x16\n" +
 	"\x06online\x18\x02 \x01(\rR\x06online\x12\x18\n" +
 	"\aoffline\x18\x03 \x01(\rR\aoffline\x12-\n" +
-	"\x12partially_degraded\x18\x04 \x01(\rR\x11partiallyDegraded\x1a\"\n" +
-	"\n" +
-	"PolicyStat\x12\x14\n" +
-	"\x05total\x18\x01 \x01(\rR\x05total\x1ag\n" +
-	"\rPoliciesEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12@\n" +
-	"\x05value\x18\x02 \x01(\v2*.kuma.mesh.v1alpha1.MeshInsight.PolicyStatR\x05value:\x028\x01\x1a\xfc\x02\n" +
+	"\x12partially_degraded\x18\x04 \x01(\rR\x11partiallyDegraded\x1a\xfc\x02\n" +
 	"\n" +
 	"DpVersions\x12N\n" +
 	"\x06kumaDp\x18\x01 \x03(\v26.kuma.mesh.v1alpha1.MeshInsight.DpVersions.KumaDpEntryR\x06kumaDp\x12K\n" +
@@ -577,7 +516,7 @@ const file_api_mesh_v1alpha1_mesh_insight_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12B\n" +
 	"\x05value\x18\x02 \x01(\v2,.kuma.mesh.v1alpha1.MeshInsight.ResourceStatR\x05value:\x028\x01:a\xaa\x8c\x89\xa6\x01[\n" +
 	"\x13MeshInsightResource\x12\vMeshInsight\x18\x01\"\x04mesh:\x10\n" +
-	"\fmesh-insight\x18\x01R\x1amodel.ProvidedByGlobalFlag\xa8\x01\x01J\x04\b\x01\x10\x02B-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
+	"\fmesh-insight\x18\x01R\x1amodel.ProvidedByGlobalFlag\xa8\x01\x01J\x04\b\x01\x10\x02J\x04\b\x03\x10\x04R\bpoliciesB-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_mesh_insight_proto_rawDescOnce sync.Once
@@ -591,50 +530,46 @@ func file_api_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP() []byte {
 	return file_api_mesh_v1alpha1_mesh_insight_proto_rawDescData
 }
 
-var file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_api_mesh_v1alpha1_mesh_insight_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_api_mesh_v1alpha1_mesh_insight_proto_goTypes = []any{
 	(*MeshInsight)(nil),                  // 0: kuma.mesh.v1alpha1.MeshInsight
 	(*MeshInsight_DataplaneStat)(nil),    // 1: kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
-	(*MeshInsight_PolicyStat)(nil),       // 2: kuma.mesh.v1alpha1.MeshInsight.PolicyStat
-	nil,                                  // 3: kuma.mesh.v1alpha1.MeshInsight.PoliciesEntry
-	(*MeshInsight_DpVersions)(nil),       // 4: kuma.mesh.v1alpha1.MeshInsight.DpVersions
-	(*MeshInsight_MTLS)(nil),             // 5: kuma.mesh.v1alpha1.MeshInsight.MTLS
-	(*MeshInsight_ServiceStat)(nil),      // 6: kuma.mesh.v1alpha1.MeshInsight.ServiceStat
-	(*MeshInsight_DataplanesByType)(nil), // 7: kuma.mesh.v1alpha1.MeshInsight.DataplanesByType
-	(*MeshInsight_ResourceStat)(nil),     // 8: kuma.mesh.v1alpha1.MeshInsight.ResourceStat
-	nil,                                  // 9: kuma.mesh.v1alpha1.MeshInsight.ResourcesEntry
-	nil,                                  // 10: kuma.mesh.v1alpha1.MeshInsight.DpVersions.KumaDpEntry
-	nil,                                  // 11: kuma.mesh.v1alpha1.MeshInsight.DpVersions.EnvoyEntry
-	nil,                                  // 12: kuma.mesh.v1alpha1.MeshInsight.MTLS.IssuedBackendsEntry
-	nil,                                  // 13: kuma.mesh.v1alpha1.MeshInsight.MTLS.SupportedBackendsEntry
+	(*MeshInsight_DpVersions)(nil),       // 2: kuma.mesh.v1alpha1.MeshInsight.DpVersions
+	(*MeshInsight_MTLS)(nil),             // 3: kuma.mesh.v1alpha1.MeshInsight.MTLS
+	(*MeshInsight_ServiceStat)(nil),      // 4: kuma.mesh.v1alpha1.MeshInsight.ServiceStat
+	(*MeshInsight_DataplanesByType)(nil), // 5: kuma.mesh.v1alpha1.MeshInsight.DataplanesByType
+	(*MeshInsight_ResourceStat)(nil),     // 6: kuma.mesh.v1alpha1.MeshInsight.ResourceStat
+	nil,                                  // 7: kuma.mesh.v1alpha1.MeshInsight.ResourcesEntry
+	nil,                                  // 8: kuma.mesh.v1alpha1.MeshInsight.DpVersions.KumaDpEntry
+	nil,                                  // 9: kuma.mesh.v1alpha1.MeshInsight.DpVersions.EnvoyEntry
+	nil,                                  // 10: kuma.mesh.v1alpha1.MeshInsight.MTLS.IssuedBackendsEntry
+	nil,                                  // 11: kuma.mesh.v1alpha1.MeshInsight.MTLS.SupportedBackendsEntry
 }
 var file_api_mesh_v1alpha1_mesh_insight_proto_depIdxs = []int32{
 	1,  // 0: kuma.mesh.v1alpha1.MeshInsight.dataplanes:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
-	3,  // 1: kuma.mesh.v1alpha1.MeshInsight.policies:type_name -> kuma.mesh.v1alpha1.MeshInsight.PoliciesEntry
-	4,  // 2: kuma.mesh.v1alpha1.MeshInsight.dpVersions:type_name -> kuma.mesh.v1alpha1.MeshInsight.DpVersions
-	5,  // 3: kuma.mesh.v1alpha1.MeshInsight.mTLS:type_name -> kuma.mesh.v1alpha1.MeshInsight.MTLS
-	6,  // 4: kuma.mesh.v1alpha1.MeshInsight.services:type_name -> kuma.mesh.v1alpha1.MeshInsight.ServiceStat
-	7,  // 5: kuma.mesh.v1alpha1.MeshInsight.dataplanesByType:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplanesByType
-	9,  // 6: kuma.mesh.v1alpha1.MeshInsight.resources:type_name -> kuma.mesh.v1alpha1.MeshInsight.ResourcesEntry
-	2,  // 7: kuma.mesh.v1alpha1.MeshInsight.PoliciesEntry.value:type_name -> kuma.mesh.v1alpha1.MeshInsight.PolicyStat
-	10, // 8: kuma.mesh.v1alpha1.MeshInsight.DpVersions.kumaDp:type_name -> kuma.mesh.v1alpha1.MeshInsight.DpVersions.KumaDpEntry
-	11, // 9: kuma.mesh.v1alpha1.MeshInsight.DpVersions.envoy:type_name -> kuma.mesh.v1alpha1.MeshInsight.DpVersions.EnvoyEntry
-	12, // 10: kuma.mesh.v1alpha1.MeshInsight.MTLS.issuedBackends:type_name -> kuma.mesh.v1alpha1.MeshInsight.MTLS.IssuedBackendsEntry
-	13, // 11: kuma.mesh.v1alpha1.MeshInsight.MTLS.supportedBackends:type_name -> kuma.mesh.v1alpha1.MeshInsight.MTLS.SupportedBackendsEntry
-	1,  // 12: kuma.mesh.v1alpha1.MeshInsight.DataplanesByType.standard:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
-	1,  // 13: kuma.mesh.v1alpha1.MeshInsight.DataplanesByType.gateway:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
-	1,  // 14: kuma.mesh.v1alpha1.MeshInsight.DataplanesByType.gatewayBuiltin:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
-	1,  // 15: kuma.mesh.v1alpha1.MeshInsight.DataplanesByType.gatewayDelegated:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
-	8,  // 16: kuma.mesh.v1alpha1.MeshInsight.ResourcesEntry.value:type_name -> kuma.mesh.v1alpha1.MeshInsight.ResourceStat
-	1,  // 17: kuma.mesh.v1alpha1.MeshInsight.DpVersions.KumaDpEntry.value:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
-	1,  // 18: kuma.mesh.v1alpha1.MeshInsight.DpVersions.EnvoyEntry.value:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
-	1,  // 19: kuma.mesh.v1alpha1.MeshInsight.MTLS.IssuedBackendsEntry.value:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
-	1,  // 20: kuma.mesh.v1alpha1.MeshInsight.MTLS.SupportedBackendsEntry.value:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
-	21, // [21:21] is the sub-list for method output_type
-	21, // [21:21] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	2,  // 1: kuma.mesh.v1alpha1.MeshInsight.dpVersions:type_name -> kuma.mesh.v1alpha1.MeshInsight.DpVersions
+	3,  // 2: kuma.mesh.v1alpha1.MeshInsight.mTLS:type_name -> kuma.mesh.v1alpha1.MeshInsight.MTLS
+	4,  // 3: kuma.mesh.v1alpha1.MeshInsight.services:type_name -> kuma.mesh.v1alpha1.MeshInsight.ServiceStat
+	5,  // 4: kuma.mesh.v1alpha1.MeshInsight.dataplanesByType:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplanesByType
+	7,  // 5: kuma.mesh.v1alpha1.MeshInsight.resources:type_name -> kuma.mesh.v1alpha1.MeshInsight.ResourcesEntry
+	8,  // 6: kuma.mesh.v1alpha1.MeshInsight.DpVersions.kumaDp:type_name -> kuma.mesh.v1alpha1.MeshInsight.DpVersions.KumaDpEntry
+	9,  // 7: kuma.mesh.v1alpha1.MeshInsight.DpVersions.envoy:type_name -> kuma.mesh.v1alpha1.MeshInsight.DpVersions.EnvoyEntry
+	10, // 8: kuma.mesh.v1alpha1.MeshInsight.MTLS.issuedBackends:type_name -> kuma.mesh.v1alpha1.MeshInsight.MTLS.IssuedBackendsEntry
+	11, // 9: kuma.mesh.v1alpha1.MeshInsight.MTLS.supportedBackends:type_name -> kuma.mesh.v1alpha1.MeshInsight.MTLS.SupportedBackendsEntry
+	1,  // 10: kuma.mesh.v1alpha1.MeshInsight.DataplanesByType.standard:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
+	1,  // 11: kuma.mesh.v1alpha1.MeshInsight.DataplanesByType.gateway:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
+	1,  // 12: kuma.mesh.v1alpha1.MeshInsight.DataplanesByType.gatewayBuiltin:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
+	1,  // 13: kuma.mesh.v1alpha1.MeshInsight.DataplanesByType.gatewayDelegated:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
+	6,  // 14: kuma.mesh.v1alpha1.MeshInsight.ResourcesEntry.value:type_name -> kuma.mesh.v1alpha1.MeshInsight.ResourceStat
+	1,  // 15: kuma.mesh.v1alpha1.MeshInsight.DpVersions.KumaDpEntry.value:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
+	1,  // 16: kuma.mesh.v1alpha1.MeshInsight.DpVersions.EnvoyEntry.value:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
+	1,  // 17: kuma.mesh.v1alpha1.MeshInsight.MTLS.IssuedBackendsEntry.value:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
+	1,  // 18: kuma.mesh.v1alpha1.MeshInsight.MTLS.SupportedBackendsEntry.value:type_name -> kuma.mesh.v1alpha1.MeshInsight.DataplaneStat
+	19, // [19:19] is the sub-list for method output_type
+	19, // [19:19] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_api_mesh_v1alpha1_mesh_insight_proto_init() }
@@ -648,7 +583,7 @@ func file_api_mesh_v1alpha1_mesh_insight_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_mesh_v1alpha1_mesh_insight_proto_rawDesc), len(file_api_mesh_v1alpha1_mesh_insight_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

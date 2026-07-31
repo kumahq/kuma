@@ -15,9 +15,6 @@ func (f Features) HasFeature(feature string) bool {
 // across a named pipe. Sotw DP versions may use structured data across GRPC.
 const FeatureTCPAccessLogViaNamedPipe string = "feature-tcp-accesslog-via-named-pipe"
 
-// FeatureEmbeddedDNS indicates that the DP runs with the embedded DNS instead of the buddy coreDNS
-const FeatureEmbeddedDNS string = "feature-embedded-dns"
-
 const FeatureTransparentProxyInDataplaneMetadata string = "feature-transparent-proxy-in-dataplane-metadata"
 
 // FeatureBindOutbounds indicates that the DP runs with outbound listeners bound to 127.0.0.0/8 range addresses

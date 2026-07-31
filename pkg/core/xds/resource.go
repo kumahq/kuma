@@ -14,7 +14,7 @@ import (
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/origin"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 )
 
 // ResourcePayload is a convenience type alias.

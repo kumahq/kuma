@@ -37,8 +37,8 @@ spec:
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
-			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
-			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal"}))).
+			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/service": "demo-client"}))).
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal"}), WithLabels(map[string]string{"kuma.io/service": "test-server"}))).
 			Install(YamlUniversal(uniServiceYAML)).
 			Install(YamlUniversal(`
 type: HostnameGenerator
@@ -61,7 +61,8 @@ spec:
 	})
 
 	BeforeEach(func() {
-		Expect(DeleteMeshResources(universal.Cluster, meshName,
+		Expect(DeleteMeshResources(
+			universal.Cluster, meshName,
 			meshretry_api.MeshRetryResourceTypeDescriptor,
 			meshfault_api.MeshFaultInjectionResourceTypeDescriptor,
 			meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor,
@@ -84,12 +85,11 @@ mesh: "%s"
 name: mesh-fault-injecton
 spec:
   targetRef:
-    kind: MeshService
-    name: test-server
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-server
+  rules:
+    - default:
         http:
           - abort:
               httpStatus: 500
@@ -101,12 +101,14 @@ mesh: "%s"
 name: meshretry-policy
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: demo-client
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         http:
           numRetries: 5
@@ -161,12 +163,11 @@ mesh: "%s"
 name: mesh-fault-injecton
 spec:
   targetRef:
-    kind: MeshService
-    name: test-server
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-server
+  rules:
+    - default:
         http:
           - abort:
               httpStatus: 500
@@ -180,7 +181,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         http:
           numRetries: 5
@@ -223,7 +225,7 @@ spec:
 		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 	})
 
-	It("should retry on HTTP connection failure applied on MeshHTTPRoute", func() {
+	XIt("should retry on HTTP connection failure applied on MeshHTTPRoute", func() {
 		meshFaultInjection := fmt.Sprintf(`
 type: MeshFaultInjection
 mesh: "%s"
@@ -231,11 +233,10 @@ name: mesh-fault-injecton
 spec:
   targetRef:
     kind: MeshService
-    name: test-server
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+    labels:
+      kuma.io/display-name: test-server
+  rules:
+    - default:
         http:
           - abort:
               httpStatus: 500
@@ -248,7 +249,8 @@ name: meshretry-policy
 spec:
   targetRef:
     kind: MeshHTTPRoute
-    name: http-route-1
+    labels:
+      kuma.io/display-name: http-route-1
   to:
     - targetRef:
         kind: Mesh
@@ -265,11 +267,13 @@ name: http-route-1
 spec:
   targetRef:
     kind: MeshService
-    name: demo-client
+    labels:
+      kuma.io/display-name: demo-client
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:

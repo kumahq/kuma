@@ -35,7 +35,7 @@ filterChains:
           prefixLen: 32
       normalizePath: true
       routeConfig:
-        name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_
+        name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
         requestHeadersToAdd:
         - header:
             key: x-kuma-tags
@@ -44,15 +44,17 @@ filterChains:
         virtualHosts:
         - domains:
           - '*'
-          name: default_other-meshservice-http_other-ns_zone-1_msvc_27777
+          name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
           routes:
           - match: {}
             route:
-              cluster: default_other-meshservice-http_other-ns_zone-1_msvc_27777
+              cluster: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
               timeout: 0s
-      statPrefix: default_other-meshservice-http_other-ns_zone-1_msvc_27777
+      statPrefix: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
 metadata:
   filterMetadata:
-    io.kuma.tags: {}
-name: outbound:127.0.0.1:27777
+    io.kuma.tags:
+      kuma.io/unified-name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
+name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
+statPrefix: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
 trafficDirection: OUTBOUND

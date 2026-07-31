@@ -8,7 +8,6 @@ import (
 )
 
 // MeshAccessLog configures access logging for traffic between services in the mesh. It allows you to capture and export request/response logs to various backends (file, TCP, or OpenTelemetry) for monitoring, debugging, and auditing purposes.
-// +kuma:policy:is_from_as_rules=true
 // +kuma:policy:has_status=true
 // +kuma:policy:order=600
 type MeshAccessLog struct {
@@ -18,8 +17,6 @@ type MeshAccessLog struct {
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
 	To *[]To `json:"to,omitempty"`
-	// From list makes a match between clients and corresponding configurations
-	From *[]From `json:"from,omitempty"`
 	// Rules defines inbound access log configurations.
 	Rules *[]Rule `json:"rules,omitempty"`
 }
@@ -38,15 +35,6 @@ type To struct {
 	// destinations.
 	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of destinations referenced in
-	// 'targetRef'
-	Default Conf `json:"default"`
-}
-
-type From struct {
-	// TargetRef is a reference to the resource that represents a group of
-	// clients.
-	TargetRef common_api.TargetRef `json:"targetRef"`
-	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
 	Default Conf `json:"default"`
 }
@@ -95,15 +83,8 @@ type OtelBackend struct {
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	// +kubebuilder:example={kvlistValue: {values: {{key: "mesh", value: {stringValue: "%KUMA_MESH%"}}}}}
 	Body *apiextensionsv1.JSON `json:"body,omitempty"`
-	// Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
-	//
-	// Deprecated: use BackendRef instead.
-	// +kubebuilder:example="otel-collector:4317"
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=""
-	Endpoint string `json:"endpoint"`
 	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
-	// defines the collector endpoint. Mutually exclusive with Endpoint.
+	// defines the collector endpoint.
 	BackendRef *common_api.BackendResourceRef `json:"backendRef,omitempty"`
 }
 

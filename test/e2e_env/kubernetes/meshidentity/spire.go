@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
@@ -45,7 +44,7 @@ spec:
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(YamlK8s(samples.MeshDefaultBuilder().WithName(meshName).WithMeshServicesEnabled(v1alpha1.Mesh_MeshServices_Exclusive).KubeYaml())).
+			Install(YamlK8s(samples.MeshDefaultBuilder().WithName(meshName).KubeYaml())).
 			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName, trustDomain)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(spireNamespace)).
@@ -147,7 +146,7 @@ spec:
 
 		// and it's a tls traffic
 		Eventually(func(g Gomega) {
-			s, err := admin.GetStats("listener.*_80.ssl.handshake")
+			s, err := admin.GetStats("listener.self_inbound_dp_main.ssl.handshake")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s).To(stats.BeGreaterThanZero())
 		}, "30s", "1s").Should(Succeed())

@@ -1,7 +1,5 @@
 #/meshes/default/meshtimeouts/bar/_resources/dataplanes 404
 type: Mesh
-meshServices:
-  mode: Disabled
 name: default
 ---
 type: MeshTimeout
@@ -9,8 +7,7 @@ name: foo
 mesh: default
 spec:
   targetRef:
-    kind: MeshHTTPRoute
-    name: the-http-route
+    kind: Mesh
   to:
     - targetRef:
         kind: Mesh
@@ -23,12 +20,12 @@ name: the-http-route
 mesh: default
 spec:
   targetRef:
-    kind: MeshService
-    name: svc-1
+    kind: Mesh
   to:
     - targetRef:
         kind: MeshService
-        name: backend_kuma-demo_svc_3001
+        labels:
+          kuma.io/display-name: backend_kuma-demo_svc_3001
       rules:
         - matches:
             - path:

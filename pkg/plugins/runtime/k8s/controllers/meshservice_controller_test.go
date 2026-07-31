@@ -20,7 +20,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	meshservice_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -32,9 +31,8 @@ var _ = Describe("MeshServiceController", func() {
 	var reconciler kube_reconcile.Reconciler
 
 	type testCase struct {
-		inputFile           string
-		outputFile          string
-		inboundTagsDisabled bool
+		inputFile  string
+		outputFile string
 	}
 
 	DescribeTable("should reconcile service",
@@ -69,12 +67,10 @@ var _ = Describe("MeshServiceController", func() {
 				Build()
 
 			reconciler = &MeshServiceReconciler{
-				Client:              kubeClient,
-				Log:                 logr.Discard(),
-				Scheme:              k8sClientScheme,
-				EventRecorder:       kube_events.NewFakeRecorder(10),
-				ResourceConverter:   k8s.NewSimpleConverter(),
-				InboundTagsDisabled: given.inboundTagsDisabled,
+				Client:        kubeClient,
+				Log:           logr.Discard(),
+				Scheme:        k8sClientScheme,
+				EventRecorder: kube_events.NewFakeRecorder(10),
 			}
 
 			key := kube_types.NamespacedName{
@@ -124,14 +120,13 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "ignore.resources.yaml",
 			outputFile: "ignore.meshservice.yaml",
 		}),
-		Entry("headless gateway service with mode Disabled", testCase{
+		Entry("headless gateway service is unaffected by meshServices.mode", testCase{
 			inputFile:  "headless-gateway-disabled.resources.yaml",
 			outputFile: "headless-gateway-disabled.meshservice.yaml",
 		}),
-		Entry("with InboundTagsDisabled enabled", testCase{
-			inputFile:           "skip-inbound-tags.resources.yaml",
-			outputFile:          "skip-inbound-tags.meshservice.yaml",
-			inboundTagsDisabled: true,
+		Entry("with Service selector matching Pod labels", testCase{
+			inputFile:  "skip-inbound-tags.resources.yaml",
+			outputFile: "skip-inbound-tags.meshservice.yaml",
 		}),
 	)
 })

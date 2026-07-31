@@ -16,17 +16,14 @@ func (r *MeshAccessLogResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.GetTargetRef(), inbound.AffectsInbounds(r.Spec)))
-	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
-		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
+	if len(pointer.Deref(r.Spec.Rules)) > 0 && len(pointer.Deref(r.Spec.To)) > 0 {
+		verr.AddViolationAt(path, "'to' must be empty when 'rules' is defined")
 	}
-	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
-		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
+	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 {
+		verr.AddViolationAt(path, "at least one of 'to' or 'rules' has to be defined")
 	}
 	if r.Spec.To != nil {
-		verr.AddErrorAt(path, validateTo(r.Spec.GetTargetRef().Kind, pointer.Deref(r.Spec.To)))
-	}
-	if r.Spec.From != nil {
-		verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
+		verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
 	}
 	if r.Spec.Rules != nil {
 		verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules)))
@@ -38,32 +35,12 @@ func (r *MeshAccessLogResource) validateTop(targetRef common_api.TargetRef, isIn
 	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
-			common_api.MeshSubset,
-			common_api.MeshGateway,
-			common_api.MeshService,
-			common_api.MeshServiceSubset,
 			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
 		IsInboundPolicy:            isInboundPolicy,
 	})
 	return targetRefErr
-}
-
-func validateFrom(from []From) validators.ValidationError {
-	var verr validators.ValidationError
-	for idx, fromItem := range from {
-		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-			},
-		}))
-
-		defaultField := path.Field("default")
-		verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
-	}
-	return verr
 }
 
 func validateRules(rules []Rule) validators.ValidationError {
@@ -85,28 +62,18 @@ func validateMatches(field string, matches []common_api.Match) validators.Valida
 	return verr
 }
 
-func validateTo(topLevelKind common_api.TargetRefKind, to []To) validators.ValidationError {
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-
-		var supportedKinds []common_api.TargetRefKind
-		switch topLevelKind {
-		case common_api.MeshGateway:
-			supportedKinds = []common_api.TargetRefKind{
-				common_api.Mesh,
-			}
-		default:
-			supportedKinds = []common_api.TargetRefKind{
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
 				common_api.MeshExternalService,
 				common_api.MeshMultiZoneService,
 				common_api.MeshHTTPRoute,
-			}
-		}
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: supportedKinds,
+			},
 		}))
 
 		defaultField := path.Field("default")
@@ -164,10 +131,12 @@ func validateBackend(backend Backend) validators.ValidationError {
 			verr.AddViolationAt(root, validators.MustBeDefined)
 			break
 		}
-		verr.AddErrorAt(root, validators.ValidateOtelBackendRefOrEndpoint(
-			backend.OpenTelemetry.Endpoint,
-			backend.OpenTelemetry.BackendRef,
-		))
+		switch backend.OpenTelemetry.BackendRef {
+		case nil:
+			verr.AddViolationAt(root.Field("backendRef"), validators.MustBeDefined)
+		default:
+			verr.AddErrorAt(root.Field("backendRef"), validators.ValidateBackendResourceRef(backend.OpenTelemetry.BackendRef))
+		}
 		verr.AddErrorAt(root, validateOtelAttributes(pointer.Deref(backend.OpenTelemetry.Attributes)))
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))

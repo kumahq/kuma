@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-logr/logr"
 	v1 "k8s.io/api/admission/v1"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -74,7 +73,7 @@ func (h *PodValidator) validateMultipleMeshesPerNamespace(ctx context.Context, p
 		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("failed to get namespace: %w", err))
 	}
 
-	podMesh := util.MeshOfByLabelOrAnnotation(logr.Discard(), pod, ns)
+	podMesh := util.MeshOfByLabel(pod, ns)
 
 	// Create a selector to find dataplanes NOT in our mesh
 	// This is much more efficient than listing all dataplanes and filtering

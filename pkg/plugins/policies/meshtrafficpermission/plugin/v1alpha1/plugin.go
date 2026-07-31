@@ -7,7 +7,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	"github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -23,7 +22,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -50,7 +48,10 @@ func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_cont
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.ZoneEgressProxy != nil {
-		return p.configureEgress(rs, proxy, unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource))
+		// Zone egress filter chains are always named with unified/system
+		// names now (see egress.Generator.Generate), so the MeshExternalService
+		// destination names matched against them here must agree unconditionally.
+		return p.configureEgress(rs, proxy)
 	}
 
 	if proxy.Dataplane == nil || proxy.Dataplane.Spec.IsBuiltinGateway() {
@@ -112,15 +113,15 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
+// configureLegacyRules now only serves two callers: dataplanes still relying on the old
+// MeshTrafficPermission `Rules` format, and zone egress (see configureEgress). Legacy
+// TrafficPermission no longer contributes to xDS generation, so the absence of an old-format
+// rule always means default-deny.
 func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key core_rules.InboundListener, listener *envoy_listener.Listener, resource *core_xds.Resource, proxy *core_xds.Proxy) error {
 	//nolint:staticcheck // SA1019 configureLegacyRules explicitly uses old Rules format for legacy RBAC
 	rules, ok := mtp.FromRules.Rules[key]
 	if !ok {
-		if len(proxy.Policies.TrafficPermissions) == 0 {
-			rules = p.denyRules()
-		} else {
-			return nil
-		}
+		rules = p.denyRules()
 	}
 
 	configurer := &v3.LegacyRBACConfigurer{
@@ -219,7 +220,7 @@ func (p plugin) allowRules() core_rules.Rules {
 	}
 }
 
-func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, unifiedNaming bool) error {
+func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	listeners := policies_xds.GatherListeners(rs)
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
 		meshName := resource.Mesh.GetMeta().GetName()
@@ -235,81 +236,39 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy,
 			continue
 		}
 
-		esNames := []string{}
-		for _, es := range resource.ExternalServices {
-			name := es.Spec.GetService()
-			if name != "" {
-				esNames = append(esNames, es.Spec.GetService())
-			}
-		}
-		// egress is configured for all meshes so we cannot use mesh context in this case
-		mesNames := []string{}
+		mesNames := map[string]string{}
 		for _, mes := range resource.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType).GetItems() {
 			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
-			mesNames = append(mesNames, destinationname.MustResolve(unifiedNaming, meshExtSvc, meshExtSvc.Spec.Match))
+			mesNames[destinationname.MustResolve(true, meshExtSvc, meshExtSvc.Spec.Match)] = destinationname.MustResolve(false, meshExtSvc, meshExtSvc.Spec.Match)
 		}
 
-		for _, esName := range esNames {
-			var rules core_rules.FromRules
-			if policies, ok := resource.Dynamic[esName]; ok {
-				if mtp, ok := policies[api.MeshTrafficPermissionType]; ok {
-					rules = mtp.FromRules
-				}
-			}
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
-			if len(rules.Rules) == 0 {
-				if resource.ExternalServicePermissionMap[esName] == nil {
-					rules = core_rules.FromRules{
-						Rules: map[core_rules.InboundListener]core_rules.Rules{
-							{}: p.denyRules(),
-						},
-					}
-				} else {
+		for filterChainName, serviceName := range mesNames {
+			mtp := resource.Dynamic[serviceName][api.MeshTrafficPermissionType]
+			inboundRules := mtp.FromRules.InboundRules[core_rules.InboundListener{}]
+
+			for _, filterChain := range listeners.Egress.FilterChains {
+				if filterChain.Name != filterChainName {
 					continue
 				}
-			}
 
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
-			for _, rule := range rules.Rules {
-				configurer := &v3.LegacyRBACConfigurer{
-					StatsName: listeners.Egress.Name,
-					Rules:     rule,
-					Mesh:      meshName,
-				}
-				for _, filterChain := range listeners.Egress.FilterChains {
-					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
-						if err := configurer.Configure(filterChain); err != nil {
-							return err
-						}
+				if len(inboundRules) == 0 {
+					legacyConfigurer := &v3.LegacyRBACConfigurer{
+						StatsName: listeners.Egress.Name,
+						Rules:     p.allowRules(),
+						Mesh:      meshName,
 					}
-				}
-			}
-		}
-
-		for _, mesName := range mesNames {
-			rule := p.allowRules()
-			if resource.Mesh.Spec.GetRouting() != nil && resource.Mesh.Spec.GetRouting().DefaultForbidMeshExternalServiceAccess {
-				rule = p.denyRules()
-			}
-			rules := core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{}: rule,
-				},
-			}
-
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for MeshExternalService
-			for _, rule := range rules.Rules {
-				configurer := &v3.LegacyRBACConfigurer{
-					StatsName: listeners.Egress.Name,
-					Rules:     rule,
-					Mesh:      meshName,
-				}
-				for _, filterChain := range listeners.Egress.FilterChains {
-					if filterChain.Name == mesName {
-						if err := configurer.Configure(filterChain); err != nil {
-							return err
-						}
+					if err := legacyConfigurer.Configure(filterChain); err != nil {
+						return err
 					}
+					continue
+				}
+
+				configurer := &v3.RBACConfigurer{
+					StatsName:    listeners.Egress.Name,
+					InboundRules: inboundRules,
+				}
+				if err := configurer.Configure(filterChain); err != nil {
+					return err
 				}
 			}
 		}

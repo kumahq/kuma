@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_time "github.com/kumahq/kuma/v3/pkg/util/time"
@@ -300,7 +301,16 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 	serviceTagIdentities := map[string]struct{}{}
 	spiffeIDs := map[string]struct{}{}
 	for _, dpp := range dpps {
-		for service := range dpp.Spec.TagSet()[mesh_proto.ServiceTag] {
+		tagIdentities := dpp.Spec.TagSet()[mesh_proto.ServiceTag]
+		if len(tagIdentities) == 0 {
+			// No kuma.io/service tag in tag-free mode.
+			// Fall back to the workload label, same as the mTLS identity
+			// path and MeshService generation.
+			if workload := dpp.GetMeta().GetLabels()[metadata.KumaWorkload]; workload != "" {
+				serviceTagIdentities[workload] = struct{}{}
+			}
+		}
+		for service := range tagIdentities {
 			serviceTagIdentities[service] = struct{}{}
 		}
 		for _, identity := range meshidentity_api.AllMatched(dpp.Meta.GetLabels(), meshIdentities) {

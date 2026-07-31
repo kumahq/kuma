@@ -15,6 +15,26 @@ import (
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
+// fakeDataplanePolicy is a minimal policy.DataplanePolicy implementation used
+// to exercise the generic matching/sorting logic without depending on any
+// concrete resource type.
+type fakeDataplanePolicy struct {
+	test_model.Resource
+
+	selectors []*mesh_proto.Selector
+}
+
+func (f *fakeDataplanePolicy) Selectors() []*mesh_proto.Selector {
+	return f.selectors
+}
+
+func newFakePolicy(meta *test_model.ResourceMeta, selectors ...*mesh_proto.Selector) *fakeDataplanePolicy {
+	return &fakeDataplanePolicy{
+		Resource:  test_model.Resource{Meta: meta},
+		selectors: selectors,
+	}
+}
+
 var _ = Describe("Dataplane matcher", func() {
 	Describe("DataplanePolicyByName", func() {
 		type testCase struct {
@@ -31,32 +51,24 @@ var _ = Describe("Dataplane matcher", func() {
 			},
 			Entry("DataplanePolicy in the same mesh", testCase{
 				input: []policy.DataplanePolicy{
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "demo",
-							Name: "last",
-						},
-					},
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "demo",
-							Name: "first",
-						},
-					},
+					newFakePolicy(&test_model.ResourceMeta{
+						Mesh: "demo",
+						Name: "last",
+					}),
+					newFakePolicy(&test_model.ResourceMeta{
+						Mesh: "demo",
+						Name: "first",
+					}),
 				},
 				expected: []policy.DataplanePolicy{
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "demo",
-							Name: "first",
-						},
-					},
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "demo",
-							Name: "last",
-						},
-					},
+					newFakePolicy(&test_model.ResourceMeta{
+						Mesh: "demo",
+						Name: "first",
+					}),
+					newFakePolicy(&test_model.ResourceMeta{
+						Mesh: "demo",
+						Name: "last",
+					}),
 				},
 			}),
 		)
@@ -88,72 +100,42 @@ var _ = Describe("Dataplane matcher", func() {
 			Entry("policies have no selectors (latest should be selected)", testCase{
 				proxy: &model.Proxy{Dataplane: core_mesh.NewDataplaneResource()},
 				policies: []policy.DataplanePolicy{
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh:         "demo",
-							Name:         "b",
-							CreationTime: time.Unix(1, 1),
-						},
-						Spec: &mesh_proto.ProxyTemplate{},
-					},
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh:         "demo",
-							Name:         "a",
-							CreationTime: time.Unix(0, 0),
-						},
-						Spec: &mesh_proto.ProxyTemplate{},
-					},
-				},
-				expected: &core_mesh.ProxyTemplateResource{
-					Meta: &test_model.ResourceMeta{
+					newFakePolicy(&test_model.ResourceMeta{
 						Mesh:         "demo",
 						Name:         "b",
 						CreationTime: time.Unix(1, 1),
-					},
-					Spec: &mesh_proto.ProxyTemplate{},
+					}),
+					newFakePolicy(&test_model.ResourceMeta{
+						Mesh:         "demo",
+						Name:         "a",
+						CreationTime: time.Unix(0, 0),
+					}),
 				},
+				expected: newFakePolicy(&test_model.ResourceMeta{
+					Mesh:         "demo",
+					Name:         "b",
+					CreationTime: time.Unix(1, 1),
+				}),
 			}),
 			Entry("policies have empty selectors (latest should be selected)", testCase{
 				proxy: &model.Proxy{Dataplane: core_mesh.NewDataplaneResource()},
 				policies: []policy.DataplanePolicy{
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh:         "demo",
-							Name:         "b",
-							CreationTime: time.Unix(1, 1),
-						},
-						Spec: &mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.Selector{
-								{},
-							},
-						},
-					},
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh:         "demo",
-							Name:         "a",
-							CreationTime: time.Unix(0, 0),
-						},
-						Spec: &mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.Selector{
-								{},
-							},
-						},
-					},
-				},
-				expected: &core_mesh.ProxyTemplateResource{
-					Meta: &test_model.ResourceMeta{
+					newFakePolicy(&test_model.ResourceMeta{
 						Mesh:         "demo",
 						Name:         "b",
 						CreationTime: time.Unix(1, 1),
-					},
-					Spec: &mesh_proto.ProxyTemplate{
-						Selectors: []*mesh_proto.Selector{
-							{},
-						},
-					},
+					}, &mesh_proto.Selector{}),
+					newFakePolicy(&test_model.ResourceMeta{
+						Mesh:         "demo",
+						Name:         "a",
+						CreationTime: time.Unix(0, 0),
+					}, &mesh_proto.Selector{}),
 				},
+				expected: newFakePolicy(&test_model.ResourceMeta{
+					Mesh:         "demo",
+					Name:         "b",
+					CreationTime: time.Unix(1, 1),
+				}, &mesh_proto.Selector{}),
 			}),
 			Entry("policies have non-empty selectors (the one with the highest number of matching key-value pairs should become the best match)", testCase{
 				proxy: &model.Proxy{Dataplane: builders.Dataplane().
@@ -170,67 +152,50 @@ var _ = Describe("Dataplane matcher", func() {
 					).
 					Build()},
 				policies: []policy.DataplanePolicy{
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "demo",
-							Name: "last",
+					newFakePolicy(&test_model.ResourceMeta{
+						Mesh: "demo",
+						Name: "last",
+					}, &mesh_proto.Selector{
+						Match: map[string]string{
+							"app":     "example",
+							"version": "1.0",
 						},
-						Spec: &mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"app":     "example",
-										"version": "1.0",
-									},
-								},
-							},
-						},
-					},
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "demo",
-							Name: "first",
-						},
-						Spec: &mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"app": "example",
-									},
-								},
-								{
-									Match: map[string]string{
-										"app":     "example",
-										"version": "1.0",
-										"env":     "prod",
-									},
-								},
-							},
-						},
-					},
-				},
-				expected: &core_mesh.ProxyTemplateResource{
-					Meta: &test_model.ResourceMeta{
+					}),
+					newFakePolicy(&test_model.ResourceMeta{
 						Mesh: "demo",
 						Name: "first",
 					},
-					Spec: &mesh_proto.ProxyTemplate{
-						Selectors: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"app": "example",
-								},
-							},
-							{
-								Match: map[string]string{
-									"app":     "example",
-									"version": "1.0",
-									"env":     "prod",
-								},
+						&mesh_proto.Selector{
+							Match: map[string]string{
+								"app": "example",
 							},
 						},
-					},
+						&mesh_proto.Selector{
+							Match: map[string]string{
+								"app":     "example",
+								"version": "1.0",
+								"env":     "prod",
+							},
+						},
+					),
 				},
+				expected: newFakePolicy(&test_model.ResourceMeta{
+					Mesh: "demo",
+					Name: "first",
+				},
+					&mesh_proto.Selector{
+						Match: map[string]string{
+							"app": "example",
+						},
+					},
+					&mesh_proto.Selector{
+						Match: map[string]string{
+							"app":     "example",
+							"version": "1.0",
+							"env":     "prod",
+						},
+					},
+				),
 			}),
 			Entry("two policies with the same rank (latest should be picked)", testCase{
 				proxy: &model.Proxy{Dataplane: &core_mesh.DataplaneResource{
@@ -249,55 +214,34 @@ var _ = Describe("Dataplane matcher", func() {
 					},
 				}},
 				policies: []policy.DataplanePolicy{
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh:         "demo",
-							Name:         "b",
-							CreationTime: time.Unix(1, 1),
-						},
-						Spec: &mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"app": "example",
-									},
-								},
-							},
-						},
-					},
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh:         "demo",
-							Name:         "a",
-							CreationTime: time.Unix(0, 0),
-						},
-						Spec: &mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"app": "example",
-									},
-								},
-							},
-						},
-					},
-				},
-				expected: &core_mesh.ProxyTemplateResource{
-					Meta: &test_model.ResourceMeta{
+					newFakePolicy(&test_model.ResourceMeta{
 						Mesh:         "demo",
 						Name:         "b",
 						CreationTime: time.Unix(1, 1),
-					},
-					Spec: &mesh_proto.ProxyTemplate{
-						Selectors: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"app": "example",
-								},
-							},
+					}, &mesh_proto.Selector{
+						Match: map[string]string{
+							"app": "example",
 						},
-					},
+					}),
+					newFakePolicy(&test_model.ResourceMeta{
+						Mesh:         "demo",
+						Name:         "a",
+						CreationTime: time.Unix(0, 0),
+					}, &mesh_proto.Selector{
+						Match: map[string]string{
+							"app": "example",
+						},
+					}),
 				},
+				expected: newFakePolicy(&test_model.ResourceMeta{
+					Mesh:         "demo",
+					Name:         "b",
+					CreationTime: time.Unix(1, 1),
+				}, &mesh_proto.Selector{
+					Match: map[string]string{
+						"app": "example",
+					},
+				}),
 			}),
 			Entry("gateway dataplane matches policies", testCase{
 				proxy: &model.Proxy{Dataplane: &core_mesh.DataplaneResource{
@@ -314,58 +258,37 @@ var _ = Describe("Dataplane matcher", func() {
 					},
 				}},
 				policies: []policy.DataplanePolicy{
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh:         "demo",
-							Name:         "first",
-							CreationTime: time.Unix(1, 1),
-						},
-						Spec: &mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"app": "example",
-									},
-								},
-							},
-						},
-					},
-				},
-				expected: &core_mesh.ProxyTemplateResource{
-					Meta: &test_model.ResourceMeta{
+					newFakePolicy(&test_model.ResourceMeta{
 						Mesh:         "demo",
 						Name:         "first",
 						CreationTime: time.Unix(1, 1),
-					},
-					Spec: &mesh_proto.ProxyTemplate{
-						Selectors: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"app": "example",
-								},
-							},
+					}, &mesh_proto.Selector{
+						Match: map[string]string{
+							"app": "example",
 						},
-					},
+					}),
 				},
+				expected: newFakePolicy(&test_model.ResourceMeta{
+					Mesh:         "demo",
+					Name:         "first",
+					CreationTime: time.Unix(1, 1),
+				}, &mesh_proto.Selector{
+					Match: map[string]string{
+						"app": "example",
+					},
+				}),
 			}),
 			Entry("none of policies have matching selectors", testCase{
 				proxy: &model.Proxy{Dataplane: core_mesh.NewDataplaneResource()},
 				policies: []policy.DataplanePolicy{
-					&core_mesh.ProxyTemplateResource{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "demo",
-							Name: "last",
+					newFakePolicy(&test_model.ResourceMeta{
+						Mesh: "demo",
+						Name: "last",
+					}, &mesh_proto.Selector{
+						Match: map[string]string{
+							"app": "example",
 						},
-						Spec: &mesh_proto.ProxyTemplate{
-							Selectors: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"app": "example",
-									},
-								},
-							},
-						},
-					},
+					}),
 				},
 				expected: nil,
 			}),

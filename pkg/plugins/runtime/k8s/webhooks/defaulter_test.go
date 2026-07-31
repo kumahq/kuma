@@ -15,6 +15,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	k8s_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
@@ -99,124 +100,13 @@ var _ = Describe("Defaulter", func() {
 			}
 			Expect(actual).To(MatchJSON(given.expected))
 		},
-		Entry("should apply defaults to empty conf", testCase{
-			checker: globalChecker(),
-			kind:    string(mesh.MeshType),
-			inputObject: `
-            {
-              "apiVersion": "kuma.io/v1alpha1",
-              "kind": "Mesh",
-              "metadata": {
-				"name": "empty"
-              },
-              "spec": {
-				"metrics": {
-				  "backends": [
-					{
-					  "type": "prometheus"
-					}
-				  ]
-				}
-              }
-            }
-`,
-			expected: `
-            {
-              "apiVersion": "kuma.io/v1alpha1",
-              "kind": "Mesh",
-              "metadata": {
-				"name": "empty",
-				"labels": {
-				  "kuma.io/origin": "global"
-				},
-				"annotations": {
-				  "kuma.io/display-name": "empty"
-				}
-              },
-              "spec": {
-				"metrics": {
-				  "backends": [
-					{
-					  "type": "prometheus",
-					  "conf": {
-						"path": "/metrics",
-						"port": 5670,
-						"tags": {
-						  "kuma.io/service": "dataplane-metrics"
-						},
-						"tls": {}
-					  }
-					}
-				  ]
-				}
-              }
-            }
-`,
-		}),
-		Entry("should not override non-empty spec fields", testCase{
-			checker: globalChecker(),
-			kind:    string(mesh.MeshType),
-			inputObject: `
-            {
-              "apiVersion": "kuma.io/v1alpha1",
-              "kind": "Mesh",
-              "metadata": {
-				"name": "empty"
-              },
-              "spec": {
-				"metrics": {
-				  "backends": [
-					{
-					  "type": "prometheus",
-					  "conf": {
-						"path": "/dont/override"
-					  }
-					}
-				  ]
-				}
-              }
-            }
-`,
-			expected: `
-            {
-              "apiVersion": "kuma.io/v1alpha1",
-              "kind": "Mesh",
-              "metadata": {
-				"name": "empty",
-				"labels": {
-				  "kuma.io/origin": "global"
-				},
-				"annotations": {
-				  "kuma.io/display-name": "empty"
-				}
-              },
-              "spec": {
-				"metrics": {
-				  "backends": [
-					{
-					  "type": "prometheus",
-					  "conf": {
-						"path": "/dont/override",
-						"port": 5670,
-						"tags": {
-						  "kuma.io/service": "dataplane-metrics"
-						},
-						"tls": {}
-					  }
-					}
-				  ]
-				}
-              }
-            }
-`,
-		}),
 		Entry("should not override mesh label if it's already set", testCase{
 			checker: globalChecker(),
-			kind:    string(mesh.TrafficRouteType),
+			kind:    string(meshexternalservice_api.MeshExternalServiceType),
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -224,13 +114,24 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/mesh": "my-mesh-1"
                 }
               },
-              "spec": {}
+              "spec": {
+                "match": {
+                  "port": 80,
+                  "protocol": "http"
+                },
+                "endpoints": [
+                  {
+                    "address": "example.com",
+                    "port": 80
+                  }
+                ]
+              }
             }
 `,
 			expected: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -243,7 +144,22 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/display-name": "empty"
                 }
               },
-              "spec": {}
+              "spec": {
+                "match": {
+                  "port": 80,
+                  "protocol": "http",
+                  "type": ""
+                },
+                "endpoints": [
+                  {
+                    "address": "example.com",
+                    "port": 80
+                  }
+                ]
+              },
+              "status": {
+                "vip": {}
+              }
             }
 `,
 		}),

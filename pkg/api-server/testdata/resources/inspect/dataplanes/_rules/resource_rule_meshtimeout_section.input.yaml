@@ -1,8 +1,6 @@
 #/meshes/mesh-1/dataplanes/dp-1/_rules 200
 type: Mesh
 name: mesh-1
-meshServices:
-  mode: Disabled
 ---
 type: Dataplane
 name: dp-1
@@ -24,7 +22,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend-4
+        labels:
+          kuma.io/display-name: backend-4
         sectionName: super-port
       default:
         idleTimeout: 7s
@@ -37,6 +36,7 @@ name: backend-4
 mesh: mesh-1
 labels:
   env: prod
+  kuma.io/display-name: backend-4
 spec:
   selector:
     dataplaneTags:

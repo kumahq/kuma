@@ -80,7 +80,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         connectionTimeout: 20s
         http:
@@ -92,10 +93,8 @@ mesh: %s
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         connectionTimeout: 20s
         http:
           requestTimeout: 1s`, meshName)),

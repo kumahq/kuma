@@ -78,11 +78,6 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		return
 	}
 
-	if baseMeshContext.Mesh.Spec.MeshServicesMode() != v1alpha1.Mesh_MeshServices_Exclusive {
-		rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError("can't use _layout endpoint without meshService enabled"), "Bad Request")
-		return
-	}
-
 	dataplane := core_mesh.NewDataplaneResource()
 	err = dle.resManager.Get(request.Request.Context(), dataplane, store.GetByKey(dataplaneName, meshName))
 	if err != nil {

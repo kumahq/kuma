@@ -23,6 +23,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Timeout is retained only for its nested Conf type, which is reused by
+// pkg/defaults/mesh.DefaultInboundTimeout and the Envoy timeout configurer
+// for inbound listeners. The Timeout resource itself has been removed.
 type Timeout struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// List of selectors to match dataplanes that are sources of traffic.
@@ -343,7 +346,7 @@ var File_api_mesh_v1alpha1_timeout_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_timeout_proto_rawDesc = "" +
 	"\n" +
-	"\x1fapi/mesh/v1alpha1/timeout.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a api/mesh/v1alpha1/selector.proto\x1a\x1egoogle/protobuf/duration.proto\"\x87\b\n" +
+	"\x1fapi/mesh/v1alpha1/timeout.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a api/mesh/v1alpha1/selector.proto\x1a\x1egoogle/protobuf/duration.proto\"\xb9\a\n" +
 	"\aTimeout\x126\n" +
 	"\asources\x18\x01 \x03(\v2\x1c.kuma.mesh.v1alpha1.SelectorR\asources\x12@\n" +
 	"\fdestinations\x18\x02 \x03(\v2\x1c.kuma.mesh.v1alpha1.SelectorR\fdestinations\x124\n" +
@@ -362,9 +365,7 @@ const file_api_mesh_v1alpha1_timeout_proto_rawDesc = "" +
 	"\x13max_stream_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\x11maxStreamDuration\x1a\x9c\x01\n" +
 	"\x04Grpc\x12I\n" +
 	"\x13stream_idle_timeout\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x11streamIdleTimeout\x12I\n" +
-	"\x13max_stream_duration\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11maxStreamDuration:L\xaa\x8c\x89\xa6\x01F\n" +
-	"\x0fTimeoutResource\x12\aTimeout\"\x04mesh:\t\n" +
-	"\atimeoutR\x17model.GlobalToZonesFlagh\x01B-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
+	"\x13max_stream_duration\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11maxStreamDurationB-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_timeout_proto_rawDescOnce sync.Once

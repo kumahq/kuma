@@ -3,7 +3,6 @@ package context
 import (
 	"encoding/base64"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
@@ -33,12 +32,11 @@ type ConnectionInfo struct {
 // ControlPlaneContext contains shared global data and components that are required for generating XDS
 // This data is the same regardless of a data plane proxy and mesh we are generating the data for.
 type ControlPlaneContext struct {
-	CLACache            envoy.CLACache
-	Secrets             secrets.Secrets
-	IdentityManager     providers.IdentityProviderManager
-	Zone                string
-	SystemNamespace     string
-	InboundTagsDisabled bool
+	CLACache        envoy.CLACache
+	Secrets         secrets.Secrets
+	IdentityManager providers.IdentityProviderManager
+	Zone            string
+	SystemNamespace string
 }
 
 // GlobalContext holds resources that are Global
@@ -82,20 +80,19 @@ type MeshContext struct {
 	Hash string
 	// PolicyMatchingHash hashes matching-relevant resources (policies, gateways, external services).
 	// Excludes Dataplane roster; stays stable across DP-registration waves.
-	PolicyMatchingHash          string
-	Resource                    *core_mesh.MeshResource
-	BaseMeshContext             *BaseMeshContext
-	Resources                   Resources
-	DataplanesByName            map[string]*core_mesh.DataplaneResource
-	EndpointMap                 xds.EndpointMap
-	IngressEndpointMap          xds.EndpointMap
-	ExternalServicesEndpointMap xds.EndpointMap
-	CrossMeshEndpoints          map[xds.MeshName]xds.EndpointMap
-	VIPDomains                  []xds_types.VIPDomains
-	VIPOutbounds                xds_types.Outbounds
-	ServicesInformation         map[string]*ServiceInformation
-	DataSourceLoader            datasource.Loader
-	CAsByTrustDomain            map[string][]PEMBytes
+	PolicyMatchingHash  string
+	Resource            *core_mesh.MeshResource
+	BaseMeshContext     *BaseMeshContext
+	Resources           Resources
+	DataplanesByName    map[string]*core_mesh.DataplaneResource
+	EndpointMap         xds.EndpointMap
+	IngressEndpointMap  xds.EndpointMap
+	CrossMeshEndpoints  map[xds.MeshName]xds.EndpointMap
+	VIPDomains          []xds_types.VIPDomains
+	VIPOutbounds        xds_types.Outbounds
+	ServicesInformation map[string]*ServiceInformation
+	DataSourceLoader    datasource.Loader
+	CAsByTrustDomain    map[string][]PEMBytes
 	// ZoneEgresses holds one entry per zone egress instance (either a legacy ZoneEgress
 	// resource or a Dataplane with a ZoneEgress listener). Each entry carries the address,
 	// port and, when WorkloadIdentity is enabled, the SPIFFE ID (SAN) that clients must
@@ -132,36 +129,6 @@ func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destina
 	return mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
 }
 
-func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {
-	if tt == nil {
-		return nil
-	}
-	if tb := mc.Resource.GetTracingBackend(tt.Spec.GetConf().GetBackend()); tb == nil {
-		logger.Info("Tracing backend is not found. Ignoring.",
-			"backendName", tt.Spec.GetConf().GetBackend(),
-			"trafficTraceName", tt.GetMeta().GetName(),
-			"trafficTraceMesh", tt.GetMeta().GetMesh())
-		return nil
-	} else {
-		return tb
-	}
-}
-
-func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh_proto.LoggingBackend {
-	if tl == nil {
-		return nil
-	}
-	if lb := mc.Resource.GetLoggingBackend(tl.Spec.GetConf().GetBackend()); lb == nil {
-		logger.Info("Logging backend is not found. Ignoring.",
-			"backendName", tl.Spec.GetConf().GetBackend(),
-			"trafficLogName", tl.GetMeta().GetName(),
-			"trafficLogMesh", tl.GetMeta().GetMesh())
-		return nil
-	} else {
-		return lb
-	}
-}
-
 func (mc *MeshContext) GetServiceProtocol(serviceName string) core_meta.Protocol {
 	if info, found := mc.ServicesInformation[serviceName]; found {
 		return info.Protocol
@@ -189,7 +156,7 @@ func (mc *MeshContext) GetTLSReadiness() map[string]bool {
 }
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {
-	return len(mc.Resources.RateLimits().Items) > 0 || len(mc.Resources.FaultInjections().Items) > 0 || len(mc.Resources.MeshFaultInjections().Items) > 0
+	return len(mc.Resources.MeshFaultInjections().Items) > 0
 }
 
 // ZoneEgressSANs returns the SPIFFE IDs of all zone egress instances that have a SAN set.
@@ -242,13 +209,4 @@ func (m AggregatedMeshContexts) ZoneIngresses() []*core_mesh.ZoneIngressResource
 		return meshCtx.Resources.ZoneIngresses().Items // all mesh contexts has the same list
 	}
 	return nil
-}
-
-func (m AggregatedMeshContexts) AllMeshGateways() []*core_mesh.MeshGatewayResource {
-	var resources []*core_mesh.MeshGatewayResource
-	for _, mesh := range m.Meshes {
-		meshCtx := m.MustGetMeshContext(mesh.Meta.GetName())
-		resources = append(resources, meshCtx.Resources.MeshGateways().Items...)
-	}
-	return resources
 }

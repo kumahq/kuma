@@ -56,7 +56,3 @@ func (s *meshedSigningKeyAccessor) getKeyBytes(ctx context.Context, keyID KeyID)
 	}
 	return resource.Spec.GetData().GetValue(), nil
 }
-
-func (s *meshedSigningKeyAccessor) GetLegacyKey(ctx context.Context, keyID KeyID) ([]byte, error) {
-	return s.getKeyBytes(ctx, keyID)
-}

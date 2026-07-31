@@ -18,6 +18,9 @@ const (
 	K8sKumaIOPrefix = "k8s.kuma.io/"
 )
 
+// WildcardHostname matches any hostname when used in hostname-based matching.
+const WildcardHostname = "*"
+
 const (
 	KubeNamespaceTag = "k8s.kuma.io/namespace"
 	KubeServiceTag   = "k8s.kuma.io/service-name"
@@ -49,6 +52,11 @@ const (
 	EnvTag = "kuma.io/env"
 
 	MeshTag = "kuma.io/mesh"
+
+	// UnifiedNameTag is the io.kuma.tags listener key filled when tags are empty
+	// so listenerTags keeps matching: the destination KRI on an outbound, the
+	// contextual self-reference on an inbound.
+	UnifiedNameTag = "kuma.io/unified-name"
 
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.

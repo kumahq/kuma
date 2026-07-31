@@ -35,7 +35,6 @@ spec:
       targetPort: {{ .Values.controlPlane.admissionServerPort | default "5443" }}
       appProtocol: https
     {{- end }}
-    {{- if ne .Values.controlPlane.mode "global" }}
     {{- if .Values.controlPlane.madsServer.enabled }}
     - port: 5676
       name: mads-server
@@ -44,7 +43,6 @@ spec:
     - port: 5678
       name: dp-server
       appProtocol: https
-    {{- end }}
   selector:
     app: {{ include "kuma.name" . }}-control-plane
   {{- include "kuma.selectorLabels" . | nindent 4 }}

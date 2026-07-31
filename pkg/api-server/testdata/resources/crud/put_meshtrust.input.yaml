@@ -1,4 +1,4 @@
-# Create MeshTrust with spec.origin (should succeed)
+# Create MeshTrust (should succeed)
 #/meshes/meshtrust-test/meshtrusts/trust-1 201 method=PUT
 # Verify status field is present but empty
 #/meshes/meshtrust-test/meshtrusts/trust-1 200

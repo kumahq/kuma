@@ -22,21 +22,13 @@ func HeadlessServices() {
 	meshName := "headless-svc"
 	namespace := "headless-svc"
 
-	// The test reaches the headless Service through native kube DNS
-	// (test-server-headless:9090), which resolves to raw Pod IPs served by the
-	// legacy kuma.io/service headless VIP outbounds. Under the Exclusive
-	// meshServices default those per-endpoint outbounds are replaced by per-Pod
-	// MeshServices addressed via <pod>.<svc>.<ns>.svc.<zone>.mesh.local, so pin
-	// the mesh to Disabled to keep exercising the legacy native-DNS path.
-	mtlsMeshDisabledMeshServices := func(name string) InstallFunc {
+	mtlsMesh := func(name string) InstallFunc {
 		return YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   name: %s
 spec:
-  meshServices:
-    mode: Disabled
   mtls:
     enabledBackend: ca-1
     backends:
@@ -47,7 +39,7 @@ spec:
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(mtlsMeshDisabledMeshServices(meshName)).
+			Install(mtlsMesh(meshName)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
@@ -80,6 +72,11 @@ spec:
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-server-headless",
 				Namespace: namespace,
+				// Without this the generated MeshService lands in the default mesh
+				// and the client never gets an outbound for it.
+				Labels: map[string]string{
+					"kuma.io/mesh": meshName,
+				},
 			},
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{

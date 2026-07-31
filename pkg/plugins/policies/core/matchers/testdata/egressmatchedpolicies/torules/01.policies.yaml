@@ -3,12 +3,14 @@ mesh: mesh-1
 name: mlbs-1
 spec:
   targetRef:
-    kind: MeshService
-    name: backend
+    kind: Dataplane
+    labels:
+      kuma.io/service: backend
   to:
     - targetRef:
         kind: MeshService
-        name: external-database
+        labels:
+          kuma.io/display-name: external-database
       default:
         localityAwareness:
           disabled: true
@@ -18,14 +20,15 @@ mesh: mesh-1
 name: mlbs-2
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: backend
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: backend
       version: v2
   to:
     - targetRef:
         kind: MeshService
-        name: external-database
+        labels:
+          kuma.io/display-name: external-database
       default:
         localityAwareness:
           disabled: false

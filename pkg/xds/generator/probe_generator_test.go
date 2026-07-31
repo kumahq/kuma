@@ -48,8 +48,17 @@ var _ = Describe("ProbeGenerator", func() {
 				InternalAddresses: DummyInternalAddresses,
 			}
 
+			xdsCtx := xds_context.Context{
+				Mesh: xds_context.MeshContext{
+					Resource: &core_mesh.MeshResource{
+						Meta: &test_model.ResourceMeta{Name: "default"},
+						Spec: &mesh_proto.Mesh{},
+					},
+				},
+			}
+
 			// when
-			rs, err := gen.Generate(context.Background(), nil, xds_context.Context{}, proxy)
+			rs, err := gen.Generate(context.Background(), nil, xdsCtx, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

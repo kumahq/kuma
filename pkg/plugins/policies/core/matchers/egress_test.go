@@ -1,108 +1,52 @@
 package matchers_test
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/yaml"
 
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	mt_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	mtp_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	test_matchers "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	policies_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 var _ = Describe("EgressMatchedPolicies", func() {
-	type testCase struct {
-		esFile       string
-		mesFile      string
-		policiesFile string
-		goldenFile   string
-	}
+	It("should build inbound rules for mesh-scoped MeshTrafficPermission on MeshExternalService egress", func() {
+		mes := builders.MeshExternalService().WithMesh("mesh-1").WithName("es-1").Build()
+		mtp := builders.MeshTrafficPermission().
+			WithMesh("mesh-1").
+			WithTargetRef(common_api.TargetRef{
+				Kind: common_api.Mesh,
+			}).
+			AddRule(policies_api.Allow).
+			Build()
 
-	generateTableEntries := func(testDir string) []TableEntry {
-		var res []TableEntry
-		files, err := os.ReadDir(testDir)
+		resources := xds_context.Resources{
+			MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+				meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
+					Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
+				},
+				policies_api.MeshTrafficPermissionType: &policies_api.MeshTrafficPermissionResourceList{
+					Items: []*policies_api.MeshTrafficPermissionResource{mtp},
+				},
+			},
+		}
+
+		policies, err := matchers.EgressMatchedPolicies(
+			policies_api.MeshTrafficPermissionType,
+			map[string]string{mesh_proto.ServiceTag: destinationname.MustResolve(false, mes, mes.Spec.Match)},
+			resources,
+		)
 		Expect(err).ToNot(HaveOccurred())
 
-		testCaseMap := map[string]*testCase{}
-		for _, f := range files {
-			parts := strings.Split(f.Name(), ".")
-			// file name has a format 01.golden.yaml
-			num, fileType := parts[0], parts[1]
-			if _, ok := testCaseMap[num]; !ok {
-				testCaseMap[num] = &testCase{}
-			}
-			switch fileType {
-			case "es":
-				testCaseMap[num].esFile = filepath.Join(testDir, f.Name())
-			case "mes":
-				testCaseMap[num].mesFile = filepath.Join(testDir, f.Name())
-			case "policies":
-				testCaseMap[num].policiesFile = filepath.Join(testDir, f.Name())
-			case "golden":
-				testCaseMap[num].goldenFile = filepath.Join(testDir, f.Name())
-			}
-		}
-
-		for num, tc := range testCaseMap {
-			res = append(res, Entry(num, *tc))
-		}
-		return res
-	}
-
-	DescribeTable("should return egress fromRules for the given external service",
-		func(given testCase) {
-			// given external service resource
-			es := readES(given.esFile)
-			// given policies
-			resources, _ := readPolicies(given.policiesFile)
-
-			// when
-			policies, err := matchers.EgressMatchedPolicies(mtp_api.MeshTrafficPermissionType, es.Spec.Tags, resources)
-			Expect(err).ToNot(HaveOccurred())
-
-			// then
-			bytes, err := yaml.Marshal(policies.FromRules)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
-		}, generateTableEntries(filepath.Join("testdata", "egressmatchedpolicies", "fromrules")))
-
-	DescribeTable("should return egress fromRules for the given external service when policy has From and To",
-		func(given testCase) {
-			// given external service resource
-			es := readES(given.esFile)
-			// given policies
-			resources, _ := readPolicies(given.policiesFile)
-
-			// when
-			policies, err := matchers.EgressMatchedPolicies(mt_api.MeshTimeoutType, es.Spec.Tags, resources)
-			Expect(err).ToNot(HaveOccurred())
-
-			// then
-			bytes, err := yaml.Marshal(policies.FromRules)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
-		}, generateTableEntries(filepath.Join("testdata", "egressmatchedpolicies", "fromtorules")))
-
-	DescribeTable("should return egress toRules for the given external service",
-		func(given testCase) {
-			// given external service resource
-			es := readES(given.esFile)
-			// given policies
-			resources, _ := readPolicies(given.policiesFile)
-
-			// when
-			policies, err := matchers.EgressMatchedPolicies(v1alpha1.MeshLoadBalancingStrategyType, es.Spec.Tags, resources)
-			Expect(err).ToNot(HaveOccurred())
-
-			// then
-			bytes, err := yaml.Marshal(policies.FromRules)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
-		}, generateTableEntries(filepath.Join("testdata", "egressmatchedpolicies", "torules")))
+		rules := policies.FromRules.InboundRules[core_rules.InboundListener{}]
+		Expect(rules).To(HaveLen(1))
+		Expect(rules[0].Conf.(policies_api.RuleConf).Allow).ToNot(BeNil())
+	})
 })

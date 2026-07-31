@@ -19,6 +19,8 @@ message MeshInsight {
   option (kuma.mesh.resource).policy_matching_exempt = true;
 
   reserved 1; // formerly last_sync
+  reserved 3; // formerly policies
+  reserved "policies";
 
   // DataplaneStat defines statistic specifically for Dataplane
   message DataplaneStat {
@@ -28,13 +30,6 @@ message MeshInsight {
     uint32 partially_degraded = 4;
   }
   DataplaneStat dataplanes = 2;
-
-  // PolicyStat defines statistic for all policies in general
-  // Deprecated: use resources
-  message PolicyStat {
-    uint32 total = 1;
-  }
-  map<string, PolicyStat> policies = 3;
 
   // DpVersions defines statistics grouped by dataplane versions
   message DpVersions {

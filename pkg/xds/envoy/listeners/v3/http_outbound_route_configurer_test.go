@@ -100,7 +100,6 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                       - match:
                           prefix: /
                         route:
-                          timeout: 0s
                           weightedClusters:
                             clusters:
                             - name: backend-0
@@ -267,7 +266,6 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                           cluster: backend-0
                           hostRewriteLiteral: test
                           prefixRewrite: /another
-                          timeout: 0s
                   statPrefix: "127_0_0_1_18080"
                   internalAddressConfig:
                     cidrRanges:

@@ -1,6 +1,12 @@
 # MeshService migration
 
-- Status: accepted
+- Status: superseded
+
+`meshServices` (and its `mode` enum) has been removed from the `Mesh` spec.
+The `mode`-gated migration path this MADR describes never shipped the
+"new behavior stays off by default" outcome below: `MeshService` generation
+and unified resource naming now apply unconditionally, independent of any
+per-mesh opt-in.
 
 ## Context and Problem Statement
 

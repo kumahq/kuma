@@ -324,44 +324,6 @@ var _ = Describe("SecretsGenerator", func() {
 								}},
 							},
 						},
-						CrossMeshResources: map[string]xds_context.ResourceMap{
-							"mesh-2": {
-								core_mesh.MeshGatewayType: &core_mesh.MeshGatewayResourceList{
-									Items: []*core_mesh.MeshGatewayResource{{
-										Meta: &test_model.ResourceMeta{
-											Name: "mesh2",
-										},
-										Spec: &mesh_proto.MeshGateway{
-											Conf: &mesh_proto.MeshGateway_Conf{
-												Listeners: []*mesh_proto.MeshGateway_Listener{{
-													Hostname: "gateway1.mesh",
-													Port:     80,
-													Protocol: mesh_proto.MeshGateway_Listener_HTTP,
-													Tags: map[string]string{
-														"listener": "internal",
-													},
-												}, {
-													Hostname: "*",
-													Port:     80,
-													Protocol: mesh_proto.MeshGateway_Listener_HTTP,
-													Tags: map[string]string{
-														"listener": "wildcard",
-													},
-												}},
-											},
-											Selectors: []*mesh_proto.Selector{{
-												Match: map[string]string{
-													mesh_proto.ServiceTag: "gateway",
-												},
-											}},
-											Tags: map[string]string{
-												"gateway": "prod",
-											},
-										},
-									}},
-								},
-							},
-						},
 					},
 				},
 			},
@@ -431,23 +393,6 @@ var _ = Describe("SecretsGenerator", func() {
 												Name: "ca-1",
 												Type: "builtin",
 											},
-										},
-									},
-								},
-							},
-							// only meshes with external services are taken into account
-							ExternalServices: []*core_mesh.ExternalServiceResource{
-								{
-									Meta: &test_model.ResourceMeta{
-										Name: "es-mesh-2",
-										Mesh: "mesh-2",
-									},
-									Spec: &mesh_proto.ExternalService{
-										Networking: &mesh_proto.ExternalService_Networking{
-											Address: "example.com:80",
-										},
-										Tags: map[string]string{
-											"kuma.io/service": "service2",
 										},
 									},
 								},

@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -342,6 +343,56 @@ func (c *K8sControlPlane) GetAPIServerAddress() string {
 	}
 
 	panic("Port forward wasn't setup!")
+}
+
+// inspectEnvoyProxyTimeout bounds an inspect request. It is generous because
+// the call is routed client -> CP -> proxy over mTLS and can return a full
+// stats/config dump; the sibling GetMetrics uses the same budget. There is no
+// retry here, so callers wrap it in Eventually.
+const inspectEnvoyProxyTimeout = 30 * time.Second
+
+// InspectEnvoyProxy performs an authenticated GET against the control plane's
+// Envoy admin inspect API (e.g. /meshes/{mesh}/dataplanes/{name}/stats) and
+// returns the raw response body. This is how e2e reads a proxy's Envoy admin
+// state now that the kuma-dp readiness port no longer proxies admin: the CP
+// reaches the proxy over its own mTLS admin channel. The CP may reshape some
+// responses (config dump is sanitized before it is returned), so this is not
+// byte-for-byte identical to Envoy's admin output, but the stats/clusters/
+// config_dump parsers accept it.
+func (c *K8sControlPlane) InspectEnvoyProxy(inspectPath string, query url.Values) ([]byte, error) {
+	reqURL := c.GetAPIServerAddress() + inspectPath
+	if encoded := query.Encode(); encoded != "" {
+		reqURL += "?" + encoded
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), inspectEnvoyProxyTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	for _, header := range c.apiHeaders {
+		if kv := strings.SplitN(header, "=", 2); len(kv) == 2 {
+			req.Header.Set(kv[0], kv[1])
+		}
+	}
+
+	client := &http.Client{Timeout: inspectEnvoyProxyTimeout}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "inspect %q request failed", inspectPath)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("inspect %q returned %d: %s", inspectPath, resp.StatusCode, string(body))
+	}
+	return body, nil
 }
 
 func (c *K8sControlPlane) GetMetrics() (string, error) {

@@ -2,8 +2,6 @@ package generator_test
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -11,54 +9,26 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
-	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/xds"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator"
-	modifications "github.com/kumahq/kuma/v3/pkg/xds/generator/modifications/v3"
 )
 
 var _ = Describe("ProxyTemplateGenerator", func() {
 	Context("Error case", func() {
 		type testCase struct {
-			proxy    *model.Proxy
 			template *mesh_proto.ProxyTemplate
-			err      string
 		}
 
-		DescribeTable("Avoid producing invalid Envoy xDS resources",
+		DescribeTable("should reject a template that still carries the legacy raw-Envoy fields",
 			func(given testCase) {
 				// setup
 				gen := &generator.ProxyTemplateGenerator{
 					ProxyTemplate: given.template,
 				}
-				xdsCtx := xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource: &core_mesh.MeshResource{
-							Meta: &test_model.ResourceMeta{
-								Name: "demo",
-							},
-							Spec: &mesh_proto.Mesh{},
-						},
-					},
-				}
-
-				// when
-				rs, err := gen.Generate(context.Background(), xdsCtx, given.proxy)
-
-				// then
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(given.err))
-				Expect(rs).To(BeNil())
-			},
-			Entry("should fail when raw xDS resource is not valid", testCase{
-				proxy: &model.Proxy{
+				proxy := &model.Proxy{
 					Id: *model.BuildProxyId("", "demo.backend-01"),
 					Dataplane: &core_mesh.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
@@ -85,43 +55,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 					Metadata:       &model.DataplaneMetadata{},
 					SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 					APIVersion:     envoy_common.APIV3,
-				},
-				template: &mesh_proto.ProxyTemplate{
-					Conf: &mesh_proto.ProxyTemplate_Conf{
-						Imports: []string{
-							core_mesh.ProfileDefaultProxy,
-						},
-						Resources: []*mesh_proto.ProxyTemplateRawResource{{
-							Name:     "raw-name",
-							Version:  "raw-version",
-							Resource: `{`,
-						}},
-					},
-				},
-				err: "resources: raw.resources[0]{name=\"raw-name\"}.resource: unexpected EOF",
-			}),
-		)
-	})
-
-	Context("Happy case", func() {
-		type testCase struct {
-			dataplane         string
-			proxyTemplateFile string
-			expected          string
-		}
-
-		DescribeTable("Generate Envoy xDS resources",
-			func(given testCase) {
-				// setup
-				proxyTemplate := mesh_proto.ProxyTemplate{}
-				ptBytes, err := os.ReadFile(filepath.Join("testdata", "template-proxy", given.proxyTemplateFile))
-				Expect(err).ToNot(HaveOccurred())
-				Expect(util_proto.FromYAML(ptBytes, &proxyTemplate)).To(Succeed())
-				gen := &generator.ProxyTemplateGenerator{
-					ProxyTemplate: &proxyTemplate,
 				}
-
-				// given
 				xdsCtx := xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{
 						Secrets: &xds.TestSecrets{},
@@ -131,89 +65,53 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 							Meta: &test_model.ResourceMeta{
 								Name: "demo",
 							},
-							Spec: &mesh_proto.Mesh{
-								Mtls: &mesh_proto.Mesh_Mtls{
-									EnabledBackend: "builtin",
-									Backends: []*mesh_proto.CertificateAuthorityBackend{
-										{
-											Name: "builtin",
-											Type: "builtin",
+							Spec: &mesh_proto.Mesh{},
+						},
+					},
+				}
+
+				// when
+				rs, err := gen.Generate(context.Background(), xdsCtx, proxy)
+
+				// then
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("MeshProxyPatch"))
+				Expect(rs).To(BeNil())
+			},
+			Entry("should fail when Conf.Modifications is non-empty", testCase{
+				template: &mesh_proto.ProxyTemplate{
+					Conf: &mesh_proto.ProxyTemplate_Conf{
+						Imports: []string{
+							core_mesh.ProfileDefaultProxy,
+						},
+						Modifications: []*mesh_proto.ProxyTemplate_Modifications{
+							{
+								Type: &mesh_proto.ProxyTemplate_Modifications_Cluster_{
+									Cluster: &mesh_proto.ProxyTemplate_Modifications_Cluster{
+										Operation: mesh_proto.OpRemove,
+										Match: &mesh_proto.ProxyTemplate_Modifications_Cluster_Match{
+											Name: "to-be-removed",
 										},
 									},
 								},
 							},
 						},
 					},
-				}
-
-				dataplane := &mesh_proto.Dataplane{}
-				Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
-				proxy := &model.Proxy{
-					Id: *model.BuildProxyId("", "demo.backend-01"),
-					Dataplane: &core_mesh.DataplaneResource{
-						Meta: &test_model.ResourceMeta{
-							Name:    "backend-01",
-							Mesh:    "demo",
-							Version: "1",
-						},
-						Spec: dataplane,
-					},
-					SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
-					APIVersion:     envoy_common.APIV3,
-					Metadata:       &model.DataplaneMetadata{},
-					InternalAddresses: []model.InternalAddress{
-						{AddressPrefix: "172.16.0.0", PrefixLen: 12},
-					},
-				}
-
-				// when
-				rs, err := gen.Generate(context.Background(), xdsCtx, proxy)
-				Expect(err).ToNot(HaveOccurred())
-				err = modifications.Apply(rs, proxyTemplate.GetConf().GetModifications())
-				Expect(err).ToNot(HaveOccurred())
-
-				// then
-				resp, err := rs.List().ToDeltaDiscoveryResponse()
-				Expect(err).ToNot(HaveOccurred())
-				actual, err := util_proto.ToYAML(resp)
-				Expect(err).ToNot(HaveOccurred())
-
-				// and output matches golden files
-				Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "template-proxy", given.expected)))
-			},
-			Entry("should support a combination of pre-defined profiles and raw xDS resources", testCase{
-				dataplane: `
-                networking:
-                  transparentProxying:
-                    redirectPortOutbound: 15001
-                    redirectPortInbound: 15006
-                    ipFamilyMode: IPv4
-                  address: 192.168.0.1
-                  inbound:
-                    - port: 80
-                      servicePort: 8080
-                      tags:
-                        kuma.io/service: backend
-`,
-				proxyTemplateFile: "1-proxy-template.input.yaml",
-				expected:          "1-envoy-config.golden.yaml",
+				},
 			}),
-			Entry("should support merging non entire seconds durations", testCase{
-				dataplane: `
-                networking:
-                  transparentProxying:
-                    redirectPortOutbound: 15001
-                    redirectPortInbound: 15006
-                    ipFamilyMode: IPv4
-                  address: 192.168.0.1
-                  inbound:
-                    - port: 80
-                      servicePort: 8080
-                      tags:
-                        kuma.io/service: backend
-`,
-				proxyTemplateFile: "2-proxy-template.input.yaml",
-				expected:          "2-envoy-config.golden.yaml",
+			Entry("should fail when Conf.Resources is non-empty", testCase{
+				template: &mesh_proto.ProxyTemplate{
+					Conf: &mesh_proto.ProxyTemplate_Conf{
+						Imports: []string{
+							core_mesh.ProfileDefaultProxy,
+						},
+						Resources: []*mesh_proto.ProxyTemplateRawResource{{
+							Name:     "raw-name",
+							Version:  "raw-version",
+							Resource: `{}`,
+						}},
+					},
+				},
 			}),
 		)
 	})

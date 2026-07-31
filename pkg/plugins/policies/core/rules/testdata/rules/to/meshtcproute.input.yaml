@@ -7,7 +7,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend_kuma-demo_svc_8080
+        labels:
+          kuma.io/display-name: backend_kuma-demo_svc_8080
       rules:
         - default:
             backendRefs:
@@ -22,13 +23,14 @@ type: MeshTCPRoute
 name: split-40-40-20
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       team: mesh
   to:
     - targetRef:
         kind: MeshService
-        name: backend_kuma-demo_svc_8080
+        labels:
+          kuma.io/display-name: backend_kuma-demo_svc_8080
       rules:
         - default:
             backendRefs:

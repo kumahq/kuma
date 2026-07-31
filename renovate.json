@@ -314,6 +314,15 @@
     },
     {
       "description": [
+        " Group the SPIRE server and agent image bumps (ghcr.io/spiffe/spire-server and",
+        " spire-agent in test/dockerfiles/universal.Dockerfile) into a single PR since they",
+        " are released together and must stay on the same version"
+      ],
+      "matchPackageNames": ["ghcr.io/spiffe/spire-server", "ghcr.io/spiffe/spire-agent"],
+      "groupName": "spire"
+    },
+    {
+      "description": [
         " Apply the 'immediately' helper for all dependencies from the 'kumahq' org (matching both",
         " 'kumahq/*' and 'github.com/kumahq/*') so Renovate proposes updates as soon as they're",
         " available, without waiting for the default release-age delay. This lets us consume our own",

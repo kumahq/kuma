@@ -4,7 +4,6 @@ import (
 	"slices"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
@@ -19,14 +18,11 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/merge"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/plugin/xds"
-	gateway_plugin "github.com/kumahq/kuma/v3/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 )
 
 var (
@@ -64,7 +60,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 
 	listeners := xds.GatherListeners(rs)
-	routes := xds.GatherRoutes(rs)
 
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy); err != nil {
 		return err
@@ -72,46 +67,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToZoneProxyListeners(policies, listeners, proxy); err != nil {
 		return err
 	}
-	if err := applyToGateways(policies.GatewayRules, listeners.Gateway, routes.Gateway, proxy); err != nil {
-		return err
-	}
 
-	return nil
-}
-
-func applyToGateways(
-	toRules core_rules.GatewayRules,
-	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
-	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
-	proxy *core_xds.Proxy,
-) error {
-	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
-		address := proxy.Dataplane.Spec.GetNetworking().Address
-		port := listenerInfo.Listener.Port
-		listenerKey := core_rules.InboundListener{
-			Address: address,
-			Port:    port,
-		}
-		gatewayListener, ok := gatewayListeners[listenerKey]
-		if !ok {
-			continue
-		}
-		rules, ok := toRules.ToRules.ByListener[listenerKey]
-		if !ok {
-			continue
-		}
-
-		for _, listenerHostname := range listenerInfo.ListenerHostnames {
-			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
-			if !ok {
-				continue
-			}
-
-			if err := configureGateway(rules.Rules, gatewayListener, route); err != nil {
-				return err
-			}
-		}
-	}
 	return nil
 }
 
@@ -122,9 +78,6 @@ func applyToInbounds(
 ) error {
 	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
 		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
-		if _, exists := proxy.Policies.RateLimitsInbound[iface]; exists {
-			continue
-		}
 
 		listenerKey := core_rules.InboundListener{
 			Address: iface.DataplaneIP,
@@ -248,60 +201,6 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 		)
 		return nil
 	}
-	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
-		for _, es := range resource.ExternalServices {
-			meshName := resource.Mesh.GetMeta().GetName()
-			esName, ok := es.Spec.GetTags()[mesh_proto.ServiceTag]
-			if !ok {
-				continue
-			}
-			policies, ok := resource.Dynamic[esName]
-			if !ok {
-				continue
-			}
-			mrl, ok := policies[api.MeshRateLimitType]
-			if !ok {
-				continue
-			}
-
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
-			for _, rule := range mrl.FromRules.Rules {
-				for _, filterChain := range listeners.Egress.FilterChains {
-					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
-						configurer := plugin_xds.Configurer{
-							Rules:   rule,
-							Element: subsetutils.MeshElement(),
-						}
-						if err := configurer.ConfigureFilterChain(filterChain); err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func configureGateway(
-	fromRules core_rules.Rules,
-	listener *envoy_listener.Listener,
-	route *envoy_route.RouteConfiguration,
-) error {
-	configurer := plugin_xds.Configurer{
-		Rules:   fromRules,
-		Element: subsetutils.MeshElement(),
-	}
-
-	for _, chain := range listener.FilterChains {
-		if err := configurer.ConfigureFilterChain(chain); err != nil {
-			return err
-		}
-	}
-	if err := configurer.ConfigureGatewayRoute(route); err != nil {
-		return err
-	}
-
 	return nil
 }
 

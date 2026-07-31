@@ -49,16 +49,16 @@
       "kri": "kri_mt_default_my-zone_kong-mesh-system_timeout-2_",
       "spec": {
         "targetRef": {
-          "kind": "Mesh",
-          "proxyTypes": [
-            "Gateway"
-          ]
+          "kind": "Mesh"
         },
         "to": [
           {
             "targetRef": {
               "kind": "MeshService",
-              "name": "api-play-000_microservice-mesh_svc_8080"
+              "labels": {
+                "k8s.kuma.io/namespace": "microservice-mesh",
+                "kuma.io/display-name": "api-play-000"
+              }
             },
             "default": {
               "http": {
@@ -85,14 +85,19 @@
       "kri": "kri_mt_default_my-zone_kong-mesh-system_timeout-3_",
       "spec": {
         "targetRef": {
-          "kind": "MeshService",
-          "name": "api-play-002_microservice-mesh_svc_8080"
+          "kind": "Dataplane",
+          "labels": {
+            "kuma.io/service": "api-play-002_microservice-mesh_svc_8080"
+          }
         },
         "to": [
           {
             "targetRef": {
               "kind": "MeshService",
-              "name": "api-play-003_microservice-mesh_svc_8080"
+              "labels": {
+                "k8s.kuma.io/namespace": "microservice-mesh",
+                "kuma.io/display-name": "api-play-003"
+              }
             },
             "default": {
               "http": {
@@ -119,14 +124,19 @@
       "kri": "kri_mt_default_my-zone_kong-mesh-system_timeout-4_",
       "spec": {
         "targetRef": {
-          "kind": "MeshService",
-          "name": "api-play-000_microservice-mesh_svc_8080"
+          "kind": "Dataplane",
+          "labels": {
+            "kuma.io/service": "api-play-000_microservice-mesh_svc_8080"
+          }
         },
         "to": [
           {
             "targetRef": {
               "kind": "MeshService",
-              "name": "api-play-002_microservice-mesh_svc_8080"
+              "labels": {
+                "k8s.kuma.io/namespace": "microservice-mesh",
+                "kuma.io/display-name": "api-play-002"
+              }
             },
             "default": {
               "http": {

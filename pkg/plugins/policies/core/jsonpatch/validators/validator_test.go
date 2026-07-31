@@ -317,4 +317,17 @@ var _ = Describe("JsonPatchBlock Validator", func() {
             `,
 		}),
 	)
+
+	DescribeTable("TopLevelTargetRefDeprecations",
+		func(targetRef *common_api.TargetRef) {
+			Expect(jsonpatch_validators.TopLevelTargetRefDeprecations(targetRef)).To(BeEmpty())
+		},
+		Entry("nil targetRef", nil),
+		Entry("Mesh", &common_api.TargetRef{Kind: common_api.Mesh}),
+		Entry("Dataplane", &common_api.TargetRef{Kind: common_api.Dataplane}),
+		Entry("MeshHTTPRoute", &common_api.TargetRef{Kind: common_api.MeshHTTPRoute}),
+		Entry("MeshService", &common_api.TargetRef{Kind: common_api.MeshService}),
+		Entry("MeshServiceSubset", &common_api.TargetRef{Kind: common_api.LegacyMeshServiceSubsetKind()}),
+		Entry("MeshSubset", &common_api.TargetRef{Kind: common_api.LegacyMeshSubsetKind()}),
+	)
 })

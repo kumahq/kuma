@@ -5,25 +5,6 @@ components:
       properties:
         dataplane:
           properties:
-            metrics:
-              description: |-
-                Configuration for metrics that should be collected and exposed by the
-                data plane proxy.
-
-                Settings defined here will override their respective defaults
-                defined at a Mesh level.
-              properties:
-                conf:
-                  oneOf:
-                  - $ref: /specs/protoresources/prometheusmetricsbackendconfig/schema.yaml#/components/schemas/PrometheusMetricsBackendConfig
-                  type: object
-                name:
-                  description: Name of the backend, can be then used in Mesh.metrics.enabledBackend
-                  type: string
-                type:
-                  description: Type of the backend (Kuma ships with 'prometheus')
-                  type: string
-              type: object
             networking:
               description: |-
                 Networking describes inbound and outbound interfaces of the data plane
@@ -340,8 +321,8 @@ components:
                           items:
                             properties:
                               kind:
-                                description: "Type of the backend: MeshService or
-                                  MeshExternalService\n\n\t+required"
+                                description: "Type of the backend: MeshService, MeshExternalService
+                                  or MeshMultiZoneService\n\n\t+required"
                                 type: string
                               labels:
                                 additionalProperties:
@@ -361,15 +342,6 @@ components:
                             type: object
                           type: array
                       type: object
-                    reachableServices:
-                      description: |-
-                        List of reachable services (represented by the value of
-                        `kuma.io/service`) via transparent proxying. Setting an explicit list
-                        can dramatically improve the performance of the mesh. If not specified,
-                        all services in the mesh are reachable.
-                      items:
-                        type: string
-                      type: array
                     redirectPortInbound:
                       description: Port on which all inbound traffic is being transparently
                         redirected.
@@ -658,7 +630,7 @@ components:
                       dependencies:
                         additionalProperties:
                           type: string
-                        description: Versions of other dependencies, i.e. CoreDNS
+                        description: Versions of other dependencies
                         type: object
                       envoy:
                         description: Version of Envoy

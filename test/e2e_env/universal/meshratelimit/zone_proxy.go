@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	meshratelimit_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -151,8 +150,7 @@ func ZoneProxy() {
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().
 				WithName(meshName).
-				WithoutInitialPolicies().
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive))).
+				WithoutInitialPolicies())).
 			Install(YamlUniversal(zoneProxyMeshIdentity(meshName))).
 			Install(YamlUniversal(zoneProxyMeshTrafficPermission(meshName, zoneName))).
 			Install(zoneproxy.Install(

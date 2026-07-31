@@ -31,7 +31,6 @@ func Setup(rt runtime.Runtime) error {
 		rt,
 		rt.KDSContext().TypesSentByGlobal,
 		"global",
-		rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
 		rt.KDSContext().GlobalProvidedFilter,
 		rt.KDSContext().GlobalResourceMapper,
 		rt.Config().Multizone.Global.KDS.NackBackoff.Duration,

@@ -5,7 +5,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/origin"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
@@ -25,7 +24,6 @@ func GenerateCDS(
 	services envoy_common.Services,
 	meshName string,
 	origin origin.Origin,
-	unifiedNaming bool,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 
@@ -43,7 +41,7 @@ func GenerateCDS(
 			ToTagKeysSlice().
 			Transform(envoy_tags.Without(mesh_proto.ServiceTag))
 
-		clusterName := resolveClusterName(service.BackendRef(), serviceName, meshName, unifiedNaming)
+		clusterName := resolveClusterName(service.BackendRef(), serviceName, meshName)
 
 		resource, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
 			Configure(envoy_clusters.EdsCluster()).
@@ -70,14 +68,13 @@ func GenerateEDS(
 	services envoy_common.Services,
 	meshName string,
 	origin origin.Origin,
-	unifiedNaming bool,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		endpoints := endpointMap[serviceName]
-		clusterName := resolveClusterName(service.BackendRef(), serviceName, meshName, unifiedNaming)
+		clusterName := resolveClusterName(service.BackendRef(), serviceName, meshName)
 
 		cla, err := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints, proxy.APIVersion)
 		if err != nil {
@@ -97,7 +94,7 @@ func GenerateEDS(
 // CreateFilterChain builds filter chains for a listener with mTLS enabled.
 // TLSInspector checks the SNI value, which contains service name and tags in
 // the format "backend{cluster=2,version=1}". For every unique destination
-// from TrafficRoutes, MeshHTTPRoutes, and GatewayRoutes we create a
+// from MeshHTTPRoutes and MeshTCPRoutes we create a
 // FilterChainsMatcher. Limitation: extra tags on outbound in Universal mode
 // do not work across zones. Traffic is not decrypted, so certificates and
 // mTLS settings are not needed here.
@@ -115,11 +112,9 @@ func GetServices(
 	destinations MeshDestinations,
 	endpointMap core_xds.EndpointMap,
 	availableServices []*mesh_proto.ZoneIngress_AvailableService,
-	unifiedNaming bool,
 ) envoy_common.Services {
 	acc := envoy_common.NewServicesAccumulator(nil)
 
-	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
 	matchAll := destinations.KumaIoServices[mesh_proto.MatchAllTag]
 	sniUsed := map[string]struct{}{}
 
@@ -189,11 +184,11 @@ func GetServices(
 
 		sniUsed[br.SNI] = struct{}{}
 
-		clusterName := getName(br.Resource().String(), br.LegacyServiceName)
+		clusterName := br.Resource().String()
 
 		cluster := plugins_xds.NewClusterBuilder().
 			WithName(clusterName).
-			WithService(br.LegacyServiceName).
+			WithService(br.EndpointMapKey).
 			WithSNI(br.SNI).
 			WithMesh(br.Mesh).
 			Build()
@@ -208,14 +203,9 @@ func resolveClusterName(
 	br *resolve.ResolvedBackendRef,
 	serviceName string,
 	meshName string,
-	unifiedNaming bool,
 ) string {
-	switch {
-	case !br.ReferencesRealResource():
+	if !br.ReferencesRealResource() {
 		return envoy_names.GetMeshClusterName(meshName, serviceName)
-	case unifiedNaming:
-		return br.Resource().String()
-	default:
-		return serviceName
 	}
+	return br.Resource().String()
 }

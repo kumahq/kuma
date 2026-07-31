@@ -98,7 +98,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode
 	dockerExtraOptions = append(dockerExtraOptions, app.publishPortsForDocker()...)
 	if !runOptions.EnableIPv6 {
 		// For now supporting mixed environments with IPv4 and IPv6 addresses is challenging, specifically with
-		// builtin DNS. This is due to our mix of CoreDNS and Envoy DNS architecture.
+		// builtin DNS.
 		// Here we make sure the IPv6 address is not allocated to the container unless explicitly requested.
 		dockerExtraOptions = append(dockerExtraOptions, "--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
 	}

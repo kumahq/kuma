@@ -118,8 +118,8 @@ spec:
 				g.Expect(parseLogs(logs)).To(ContainElement(
 					And(
 						HaveField("Start", WithTransform(parseTimestamp, BeTemporally("~", time.Now(), time.Hour))),
-						HaveField("Source", fmt.Sprintf("%s-gateway-admin_%s_svc_8444", config.Mesh, config.Namespace)),
-						HaveField("Destination", fmt.Sprintf("test-server_%s_svc_80", config.Namespace)),
+						HaveField("Source", "gateway"),
+						HaveField("Destination", "test-server"),
 					),
 				))
 			}, "30s", "1s").Should(Succeed())

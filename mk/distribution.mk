@@ -3,10 +3,8 @@ DISTRIBUTION_CONFIG_PATH ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 DISTRIBUTION_EXTRA_DIRS ?= dashboards
 DISTRIBUTION_EXTRA_FILES ?= UPGRADE.md
 # A list of all distributions
-# OS:ARCH:COREDNS:ENVOY_FLAVOUR
-# COREDNS is always coredns(CORDNS_EXT)
-# If you don't want to include just put skip
-DISTRIBUTION_LIST ?= linux:amd64:coredns:envoy linux:arm64:coredns:envoy darwin:amd64:coredns:envoy darwin:arm64:coredns:envoy
+# OS:ARCH:ENVOY_FLAVOUR
+DISTRIBUTION_LIST ?= linux:amd64:envoy linux:arm64:envoy darwin:amd64:envoy darwin:arm64:envoy
 
 PULP_HOST ?= "https://api.pulp.konnect-prod.konghq.com"
 PULP_PACKAGE_TYPE ?= $(PROJECT_NAME)
@@ -22,8 +20,7 @@ TAR_EXCLUDES=--exclude=passwd --exclude=group
 # This function dynamically builds targets for building distribution packages and uploading them to pulp with a set of parameters
 # $(1) - GOOS to build for
 # $(2) - GOARCH to build for
-# $(3) - coredns extension to use (or `skip` if we shouldn't include COREDNS)
-# $(4) - primary envoy to use in the distribution (the binary that will be called `envoy`)
+# $(3) - primary envoy to use in the distribution (the binary that will be called `envoy`)
 define make_distributions_target
 build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-$(2)/kumactl build/artifacts-$(1)-$(2)/kuma-cp build/artifacts-$(1)-$(2)/kuma-dp
 	rm -rf $$@
@@ -35,14 +32,9 @@ build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-
 	command cp $(DISTRIBUTION_CONFIG_PATH) $$@/conf
 	$(foreach dir,$(DISTRIBUTION_EXTRA_DIRS),command cp -r $(dir) $$@/ &&) true
 	$(foreach file,$(DISTRIBUTION_EXTRA_FILES),command cp $(file) $$@/ &&) true
-# CoreDNS is not included when the value is `skip` otherwise it's used as the COREDNS_EXT (which is most commonly just coredns)
-ifneq ($(3),skip)
-	$(MAKE) build/artifacts-$(1)-$(2)/coredns COREDNS_EXT=$(subst coredns,,$(3))
-	command cp build/artifacts-$(1)-$(2)/coredns/coredns $$@/bin
-endif
 
 # Package envoy
-	$(MAKE) build/artifacts-$(1)-$(2)/envoy ENVOY_EXT_$(1)_$(2)=$(subst envoy,,$(4))
+	$(MAKE) build/artifacts-$(1)-$(2)/envoy ENVOY_EXT_$(1)_$(2)=$(subst envoy,,$(3))
 	command cp -r build/artifacts-$(1)-$(2)/envoy/* $$@/bin
 
 	# Set permissions correctly
@@ -86,12 +78,11 @@ endef
 # These are meant to be used inside foreach
 dist_os = $(word 1, $(subst :, ,$(elt)))
 dist_arch = $(word 2, $(subst :, ,$(elt)))
-dist_coredns = $(word 3, $(subst :, ,$(elt)))
-dist_envoy = $(word 4, $(subst :, ,$(elt)))
-dist_envoy_alt = $(word 5, $(subst :, ,$(elt)))
+dist_envoy = $(word 3, $(subst :, ,$(elt)))
+dist_envoy_alt = $(word 4, $(subst :, ,$(elt)))
 dist_name = $(dist_os)-$(dist_arch)
 # Call make_distribution_target with each combination
-$(foreach elt,$(DISTRIBUTION_LIST),$(eval $(call make_distributions_target,$(dist_os),$(dist_arch),$(dist_coredns),$(dist_envoy),$(dist_envoy_alt))))
+$(foreach elt,$(DISTRIBUTION_LIST),$(eval $(call make_distributions_target,$(dist_os),$(dist_arch),$(dist_envoy),$(dist_envoy_alt))))
 ENABLED_DIST_NAMES=$(filter $(addprefix %,$(ENABLED_ARCH_OS)),$(foreach elt,$(DISTRIBUTION_LIST),$(dist_name)))
 
 # Create a main target which will call the tar.gz target for each distribution

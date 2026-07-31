@@ -1,5 +1,5 @@
 resources:
-- name: outbound:10.0.0.2:80
+- name: kri_mzsvc_default___multi-backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -26,17 +26,19 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: default_multi-backend___mzsvc_80
+              name: kri_mzsvc_default___multi-backend_80
               routes:
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
-                  cluster: default_multi-backend___mzsvc_80
+                  cluster: kri_mzsvc_default___multi-backend_80
                   timeout: 0s
-          statPrefix: default_multi-backend___mzsvc_80
+          statPrefix: kri_mzsvc_default___multi-backend_80
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
-    name: outbound:10.0.0.2:80
+        io.kuma.tags:
+          kuma.io/unified-name: kri_mzsvc_default___multi-backend_80
+    name: kri_mzsvc_default___multi-backend_80
+    statPrefix: kri_mzsvc_default___multi-backend_80
     trafficDirection: OUTBOUND

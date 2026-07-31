@@ -35,7 +35,7 @@ resources:
               name: envoy.tracers.datadog
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
-                collectorCluster: meshtrace:datadog
+                collectorCluster: system_meshtrace_datadog_http---ingest-datadog-eu-8126
                 serviceName: backend_INBOUND
             spawnUpstreamSpan: false
     name: inbound:192.168.0.1:17777
@@ -80,7 +80,7 @@ resources:
               name: envoy.tracers.datadog
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
-                collectorCluster: meshtrace:datadog
+                collectorCluster: system_meshtrace_datadog_http---ingest-datadog-eu-8126
                 serviceName: backend
             spawnUpstreamSpan: false
       name: mes-http

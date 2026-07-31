@@ -8,7 +8,6 @@ import (
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
@@ -27,36 +26,6 @@ type Headers struct {
 	Key    string
 	Value  string
 	Append bool
-}
-
-func RateLimitConfigurationFromProto(rl *mesh_proto.RateLimit) *RateLimitConfiguration {
-	if rl.GetConf() == nil || rl.GetConf().GetHttp() == nil {
-		return &RateLimitConfiguration{}
-	}
-	rateLimit := &RateLimitConfiguration{
-		Interval:    rl.GetConf().GetHttp().GetInterval().AsDuration(),
-		Requests:    rl.GetConf().GetHttp().GetRequests(),
-		OnRateLimit: &OnRateLimit{},
-	}
-	if rl.GetConf().GetHttp().GetOnRateLimit() != nil {
-		headers := []*Headers{}
-		for _, h := range rl.GetConf().GetHttp().GetOnRateLimit().GetHeaders() {
-			header := &Headers{
-				Key:   h.GetKey(),
-				Value: h.GetValue(),
-			}
-			if h.GetAppend() != nil {
-				header.Append = h.GetAppend().Value
-			}
-			headers = append(headers, header)
-		}
-		rateLimit.OnRateLimit.Headers = headers
-
-		if rl.GetConf().GetHttp().GetOnRateLimit().GetStatus() != nil {
-			rateLimit.OnRateLimit.Status = rl.GetConf().GetHttp().GetOnRateLimit().GetStatus().GetValue()
-		}
-	}
-	return rateLimit
 }
 
 func NewRateLimitConfiguration(rlHttp *RateLimitConfiguration) (*anypb.Any, error) {

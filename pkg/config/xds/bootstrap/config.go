@@ -10,7 +10,6 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/config"
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
-	"github.com/kumahq/kuma/v3/pkg/util/files"
 )
 
 var _ config.Config = &BootstrapServerConfig{}
@@ -68,8 +67,6 @@ type BootstrapParamsConfig struct {
 	// HTTP/2 receive window.
 	// Default: 4 MiB.
 	XdsGrpcMaxReceiveMessageBytes uint32 `json:"xdsGrpcMaxReceiveMessageBytes" envconfig:"kuma_bootstrap_server_params_xds_grpc_max_receive_message_bytes"`
-	// Path to the template of Corefile for data planes to use
-	CorefileTemplatePath string `json:"corefileTemplatePath" envconfig:"kuma_bootstrap_server_params_corefile_template_path"`
 }
 
 func (b *BootstrapParamsConfig) Validate() error {
@@ -97,9 +94,6 @@ func (b *BootstrapParamsConfig) Validate() error {
 	if b.XdsGrpcMaxReceiveMessageBytes == 0 {
 		return errors.New("XdsGrpcMaxReceiveMessageBytes cannot be zero")
 	}
-	if b.CorefileTemplatePath != "" && !files.FileExists(b.CorefileTemplatePath) {
-		return errors.New("CorefileTemplatePath must point to an existing file")
-	}
 	return nil
 }
 
@@ -114,6 +108,5 @@ func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 		XdsPort:                       0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
 		XdsConnectTimeout:             config_types.Duration{Duration: 1 * time.Second},
 		XdsGrpcMaxReceiveMessageBytes: 4194304,
-		CorefileTemplatePath:          "", // by default, data plane will use the embedded Corefile to be the template
 	}
 }

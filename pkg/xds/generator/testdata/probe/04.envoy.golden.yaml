@@ -35,7 +35,7 @@ resources:
                       exact: GET
                   path: /8080/healthz/probe
                 route:
-                  cluster: localhost:8080
+                  cluster: self_inbound_dp_8080
                   regexRewrite:
                     pattern:
                       regex: .*

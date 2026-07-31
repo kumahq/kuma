@@ -7,13 +7,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	generator_core "github.com/kumahq/kuma/v3/pkg/xds/generator/core"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	generator_secrets "github.com/kumahq/kuma/v3/pkg/xds/generator/secrets"
@@ -33,16 +31,13 @@ func (g Generator) Generate(
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
 
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
-	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
-
 	zoneEgress := proxy.ZoneEgressProxy.ZoneEgressResource
 	address := zoneEgress.Spec.GetNetworking().GetAddress()
 	port := zoneEgress.Spec.GetNetworking().GetPort()
 
 	inboundContextualID := naming.MustContextualInboundName(zoneEgress, port)
-	listenerName := getName(inboundContextualID, envoy_names.GetInboundListenerName(address, port))
-	statPrefix := getName(inboundContextualID, "")
+	listenerName := inboundContextualID
+	statPrefix := inboundContextualID
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.InboundListener(address, port, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
@@ -56,13 +51,13 @@ func (g Generator) Generate(
 		// Secrets are generated in relation to a mesh so we need to create a new tracker
 		secretsTracker := envoy_common.NewSecretsTracker(meshName, []string{meshName})
 
-		internal, internalFCB, err := genInternalResources(proxy, xdsCtx, meshResources)
+		internal, internalFCB, err := genInternalResources(proxy, meshResources)
 		if err != nil {
 			return nil, err
 		}
 		rs.AddSet(internal)
 
-		external, externalFCB, err := genExternalResources(proxy, meshResources, secretsTracker, unifiedNaming)
+		external, externalFCB, err := genExternalResources(proxy, meshResources, secretsTracker)
 		if err != nil {
 			return nil, err
 		}

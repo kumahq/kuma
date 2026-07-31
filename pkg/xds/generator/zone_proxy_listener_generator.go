@@ -50,13 +50,6 @@ func (g ZoneProxyListenerGenerator) Generate(
 		return nil, nil
 	}
 
-	if xdsCtx.Mesh.Resource.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-		zoneProxyLog.Info("skipping zone proxy listeners: MeshServices must be in Exclusive mode",
-			"mesh", xdsCtx.Mesh.Resource.GetMeta().GetName(),
-		)
-		return nil, nil
-	}
-
 	rs := core_xds.NewResourceSet()
 
 	localResources := xds_context.Resources{MeshLocalResources: xdsCtx.Mesh.Resources.MeshLocalResources}
@@ -134,19 +127,19 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	)
 	dest := zoneproxy.MeshDestinations{BackendRefs: backendRefs}
 
-	services := zoneproxy.GetServices(dest, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, nil, true)
+	services := zoneproxy.GetServices(dest, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, nil)
 	clusters := services.Clusters()
 	if len(clusters) == 0 {
 		return nil, nil
 	}
 
-	cds, err := zoneproxy.GenerateCDS(proxy, dest, services, meshName, metadata.OriginIngress, true)
+	cds, err := zoneproxy.GenerateCDS(proxy, dest, services, meshName, metadata.OriginIngress)
 	if err != nil {
 		return nil, err
 	}
 	rs.AddSet(cds)
 
-	eds, err := zoneproxy.GenerateEDS(proxy, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, services, meshName, metadata.OriginIngress, true)
+	eds, err := zoneproxy.GenerateEDS(proxy, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, services, meshName, metadata.OriginIngress)
 	if err != nil {
 		return nil, err
 	}

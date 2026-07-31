@@ -26,7 +26,7 @@ func AvailableServices() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Disabled")).
+			Install(MTLSMeshUniversal(meshName)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -77,7 +77,11 @@ func AvailableServices() {
 
 	It("is always updated on all ZoneIngresses, even if they are offline", func() {
 		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(multizone.UniZone1, "demo-client", "http://test-server.mesh")
+			response, err := client.CollectEchoResponse(
+				multizone.UniZone1,
+				"demo-client",
+				fmt.Sprintf("http://test-server.svc.%s.mesh.local", statefulCluster.ZoneName()),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(Equal("uni-test-server"))
 		}, "30s", "1s").Should(Succeed())
@@ -85,12 +89,12 @@ func AvailableServices() {
 
 		Consistently(func(g Gomega) {
 			ingress := getIngress(g, kumactl, ingress1Port)
-			g.Expect(ingress.GetAvailableServices()).To(HaveLen(1))
+			g.Expect(ingress.GetAvailableServices()).To(BeEmpty())
 		}).Should(Succeed())
 
 		Consistently(func(g Gomega) {
 			ingress := getIngress(g, kumactl, ingress2Port)
-			g.Expect(ingress.GetAvailableServices()).To(HaveLen(1))
+			g.Expect(ingress.GetAvailableServices()).To(BeEmpty())
 		}).Should(Succeed())
 
 		// Kill ingress

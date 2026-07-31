@@ -1,0 +1,19 @@
+ingress:
+  enabled: true
+  livenessProbe:
+    initialDelaySeconds: 90
+    failureThreshold: 6
+  readinessProbe:
+    failureThreshold: 20
+  startupProbe:
+    enabled: true
+    failureThreshold: 120
+    periodSeconds: 10
+egress:
+  enabled: true
+  livenessProbe:
+    enabled: false
+  readinessProbe:
+    timeoutSeconds: 5
+  startupProbe:
+    enabled: true

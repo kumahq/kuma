@@ -7,9 +7,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_postgres "github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
@@ -58,11 +59,17 @@ var _ = Describe("PgxStore", func() {
 
 			// create resources
 			for i := range 5 {
-				ts := &core_mesh.TrafficRouteResource{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources:      []*mesh_proto.Selector{{Match: map[string]string{"kuma.io/service": "web"}}},
-						Destinations: []*mesh_proto.Selector{{Match: map[string]string{"kuma.io/service": "backend"}}},
-						Conf:         &mesh_proto.TrafficRoute_Conf{Destination: map[string]string{"kuma.io/service": "backend"}},
+				ts := &meshexternalservice_api.MeshExternalServiceResource{
+					Spec: &meshexternalservice_api.MeshExternalService{
+						Match: meshexternalservice_api.Match{
+							Type:     meshexternalservice_api.HostnameGeneratorType,
+							Port:     8080,
+							Protocol: core_meta.ProtocolHTTP,
+						},
+						Endpoints: &[]meshexternalservice_api.Endpoint{{
+							Address: "192.168.0.1",
+							Port:    8080,
+						}},
 					},
 				}
 				err := pStore.Create(ctx, ts, store.CreateByKey("tr-"+string(rune('a'+i)), "default"))
@@ -78,7 +85,7 @@ var _ = Describe("PgxStore", func() {
 				{Name: "tr-e", Mesh: "default"},
 			}
 
-			list := &core_mesh.TrafficRouteResourceList{}
+			list := &meshexternalservice_api.MeshExternalServiceResourceList{}
 			err = pStore.List(ctx, list, store.ListByResourceKeys(resourceKeys))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list.Items).To(HaveLen(5))
@@ -89,7 +96,7 @@ var _ = Describe("PgxStore", func() {
 			Expect(metric.GetCounter().GetValue()).To(Equal(float64(1)))
 
 			// list again to verify counter increments
-			list = &core_mesh.TrafficRouteResourceList{}
+			list = &meshexternalservice_api.MeshExternalServiceResourceList{}
 			err = pStore.List(ctx, list, store.ListByResourceKeys(resourceKeys))
 			Expect(err).ToNot(HaveOccurred())
 
@@ -105,11 +112,17 @@ var _ = Describe("PgxStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// create resources
-			ts := &core_mesh.TrafficRouteResource{
-				Spec: &mesh_proto.TrafficRoute{
-					Sources:      []*mesh_proto.Selector{{Match: map[string]string{"kuma.io/service": "web"}}},
-					Destinations: []*mesh_proto.Selector{{Match: map[string]string{"kuma.io/service": "backend"}}},
-					Conf:         &mesh_proto.TrafficRoute_Conf{Destination: map[string]string{"kuma.io/service": "backend"}},
+			ts := &meshexternalservice_api.MeshExternalServiceResource{
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Port:     8080,
+						Protocol: core_meta.ProtocolHTTP,
+					},
+					Endpoints: &[]meshexternalservice_api.Endpoint{{
+						Address: "192.168.0.1",
+						Port:    8080,
+					}},
 				},
 			}
 			err = pStore.Create(ctx, ts, store.CreateByKey("tr-a", "default"))
@@ -120,7 +133,7 @@ var _ = Describe("PgxStore", func() {
 				{Name: "tr-a", Mesh: "default"},
 			}
 
-			list := &core_mesh.TrafficRouteResourceList{}
+			list := &meshexternalservice_api.MeshExternalServiceResourceList{}
 			err = pStore.List(ctx, list, store.ListByResourceKeys(resourceKeys))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list.Items).To(HaveLen(1))
@@ -139,7 +152,7 @@ var _ = Describe("PgxStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// list without resource keys
-			list := &core_mesh.TrafficRouteResourceList{}
+			list := &meshexternalservice_api.MeshExternalServiceResourceList{}
 			err = pStore.List(ctx, list)
 			Expect(err).ToNot(HaveOccurred())
 

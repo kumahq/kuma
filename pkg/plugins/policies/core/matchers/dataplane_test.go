@@ -10,16 +10,21 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
-	meshaccesslog_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	test_matchers "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_resources "github.com/kumahq/kuma/v3/pkg/test/resources"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 var _ = Describe("MatchedPolicies", func() {
@@ -190,22 +195,6 @@ var _ = Describe("MatchedPolicies", func() {
 		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "meshexternalservice")),
 	)
 
-	DescribeTable("should match MeshGateways",
-		func(given testCase) {
-			dpp := readDPP(given.dppFile)
-
-			resources, _ := readPolicies(given.policiesFile)
-
-			policies, err := matchers.MatchedPolicies(meshaccesslog_api.MeshAccessLogType, dpp, resources)
-			Expect(err).ToNot(HaveOccurred())
-
-			bytes, err := yaml.Marshal(policies.GatewayRules)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
-		},
-		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "meshgateways")),
-	)
-
 	type dataplaneTestCase struct {
 		dataplaneMeta test_resources.BuildMeta
 		policyMeta    test_resources.BuildMeta
@@ -309,6 +298,77 @@ var _ = Describe("MatchedPolicies", func() {
 			}),
 		)
 	}, generateTableEntries(filepath.Join("testdata", "matchedpolicies", "dataplane-kind")))
+})
+
+var _ = Describe("DppSelectedByPolicy MeshHTTPRoute namespace scoping", func() {
+	// route with a shared display-name across namespaces, selecting dataplanes
+	// by the given app label.
+	route := func(name, namespace, appLabel string) *v1alpha1.MeshHTTPRouteResource {
+		return &v1alpha1.MeshHTTPRouteResource{
+			Meta: &test_model.ResourceMeta{
+				Mesh: "mesh-1",
+				Name: name,
+				Labels: map[string]string{
+					mesh_proto.DisplayName:      "route-1",
+					mesh_proto.KubeNamespaceTag: namespace,
+				},
+			},
+			Spec: &v1alpha1.MeshHTTPRoute{
+				TargetRef: pointer.To(common_api.TargetRef{
+					Kind:   common_api.Dataplane,
+					Labels: pointer.To(map[string]string{"app": appLabel}),
+				}),
+			},
+		}
+	}
+
+	resources := xds_context.Resources{
+		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+			v1alpha1.MeshHTTPRouteType: &v1alpha1.MeshHTTPRouteResourceList{
+				Items: []*v1alpha1.MeshHTTPRouteResource{
+					route("route-1.ns-a", "ns-a", "foo"),
+					route("route-1.ns-b", "ns-b", "bar"),
+				},
+			},
+		},
+	}
+
+	// dpp lives in ns-a but carries app=bar, so it is only reachable through
+	// the ns-b route.
+	dpp := builders.Dataplane().
+		WithName("dp-1").
+		WithMesh("mesh-1").
+		WithLabels(map[string]string{mesh_proto.KubeNamespaceTag: "ns-a", "app": "bar"}).
+		AddInboundOfService("backend").
+		Build()
+
+	ref := common_api.TargetRef{
+		Kind:   common_api.MeshHTTPRoute,
+		Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "route-1"}),
+	}
+
+	It("does not leak a namespaced (consumer) policy across namespaces", func() {
+		meta := &test_model.ResourceMeta{
+			Mesh: "mesh-1",
+			Name: "timeout-1",
+			Labels: map[string]string{
+				mesh_proto.PolicyRoleLabel:  string(mesh_proto.ConsumerPolicyRole),
+				mesh_proto.KubeNamespaceTag: "ns-a",
+			},
+		}
+
+		inbounds, _, err := matchers.DppSelectedByPolicy(meta, ref, dpp, resources)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(inbounds).To(BeEmpty())
+	})
+
+	It("selects through any matching route for a namespace-agnostic (system) policy", func() {
+		meta := &test_model.ResourceMeta{Mesh: "mesh-1", Name: "timeout-1"}
+
+		inbounds, _, err := matchers.DppSelectedByPolicy(meta, ref, dpp, resources)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(inbounds).ToNot(BeEmpty())
+	})
 })
 
 func getResourceType(resTypes []core_model.ResourceType) core_model.ResourceType {

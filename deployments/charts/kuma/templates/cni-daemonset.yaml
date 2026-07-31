@@ -59,7 +59,6 @@ spec:
       containers:
         - name: install-cni
           imagePullPolicy: {{ .Values.cni.image.imagePullPolicy }}
-          {{- if not  .Values.experimental.ebpf.enabled  }}
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
           readinessProbe:
             initialDelaySeconds: {{ .Values.cni.delayStartupSeconds }}
@@ -69,32 +68,8 @@ spec:
                 - /tmp/ready
           command: [ "sh", "-c", "--" ]
           args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni" ]
-          {{- else }}
-          {{- with .Values.cni.experimental.imageEbpf }}
-          image: {{ printf "%s/%s:%s" .registry .repository .tag | quote }}
-          {{- end }}
-          args:
-          - /app/mbctl
-          - --mode=kuma
-          - --use-reconnect=true
-          - --cni-mode=true
-          {{- if eq .Values.cni.logLevel "debug" }}
-          - --debug=true
-          {{- end }}
-          lifecycle:
-            preStop:
-              exec:
-                command:
-                - make
-                - --keep-going
-                - clean
-          {{- end }}
           securityContext:
           {{- toYaml .Values.cni.containerSecurityContext | trim | nindent 12 }}
-          {{- if .Values.experimental.ebpf.enabled }}
-            privileged: true
-          {{- end }}
-          {{- if not .Values.experimental.ebpf.enabled }}
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME
@@ -112,7 +87,6 @@ spec:
               value: "{{ .Values.cni.chained }}"
             - name: CNI_LOG_LEVEL
               value: "{{ .Values.cni.logLevel }}"
-          {{- end }}
           resources:
           {{- toYaml .Values.cni.resources | trim | nindent 12 }}
           volumeMounts:
@@ -120,15 +94,6 @@ spec:
               name: cni-bin-dir
             - mountPath: /host/etc/cni/net.d
               name: cni-net-dir
-            {{- if .Values.experimental.ebpf.enabled }}
-            - mountPath: /sys/fs/cgroup
-              name: sys-fs-cgroup
-            - mountPath: /host/proc
-              name: host-proc
-            - mountPath: /host/var/run
-              name: host-var-run
-              mountPropagation: Bidirectional
-            {{- end }}
             - name: tmp
               mountPath: /tmp
       volumes:
@@ -139,17 +104,6 @@ spec:
         - name: cni-net-dir
           hostPath:
             path: {{ .Values.cni.netDir }}
-        {{- if .Values.experimental.ebpf.enabled }}
-        - hostPath:
-            path: /var/run
-          name: host-var-run
-        - hostPath:
-            path: /sys/fs/cgroup
-          name: sys-fs-cgroup
-        - hostPath:
-            path: /proc
-          name: host-proc
-        {{- end }}
         - name: tmp
           emptyDir: {}
 {{- end }}

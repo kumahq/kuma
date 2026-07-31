@@ -75,6 +75,26 @@ var _ = Describe("components", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(res.Answer[0].String()).To(ContainSubstring("17.0.0.1"))
 	})
+	It("serves queries over TCP", func() {
+		f := func(req *dns.Msg) (*dns.Msg, error) { //nolint:unparam
+			response := new(dns.Msg)
+			response.SetRcode(req, dns.RcodeSuccess)
+			response.Authoritative = true
+			response.Answer = []dns.RR{
+				&dns.A{Hdr: dns.RR_Header{Name: req.Question[0].Name, Ttl: uint32(123), Rrtype: dns.TypeA, Class: dns.ClassINET}, A: net.ParseIP("17.0.0.1")},
+			}
+			return response, nil
+		}
+		mock.Store(&f)
+		msg := &dns.Msg{}
+		msg.SetQuestion("example.com.", dns.TypeA)
+		msg.RecursionAvailable = true
+
+		c := &dns.Client{Net: "tcp"}
+		res, _, err := c.Exchange(msg, address)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res.Answer[0].String()).To(ContainSubstring("17.0.0.1"))
+	})
 	It("failing upstream", func() {
 		f := func(req *dns.Msg) (*dns.Msg, error) { //nolint:unparam
 			response := new(dns.Msg)

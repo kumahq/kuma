@@ -29,21 +29,8 @@ var CustomTablePrinters = map[model.ResourceType]RowPrinter{
 			}
 		},
 	},
-	mesh.ExternalServiceType: {
-		Headers: []string{"MESH", "NAME", "TAGS", "ADDRESS", "AGE"},
-		RowFn: func(rootTime time.Time, item model.Resource) []string {
-			externalService := item.(*mesh.ExternalServiceResource)
-			return []string{
-				externalService.Meta.GetMesh(),                                        // MESH
-				externalService.Meta.GetName(),                                        // NAME,
-				externalService.Spec.TagSet().String(),                                // TAGS
-				externalService.Spec.Networking.Address,                               // ADDRESS
-				table.TimeSince(externalService.Meta.GetModificationTime(), rootTime), // AGE
-			}
-		},
-	},
 	model.ScopeMesh: {
-		Headers: []string{"NAME", "mTLS", "LOCALITY", "ZONEEGRESS", "AGE"},
+		Headers: []string{"NAME", "mTLS", "AGE"},
 		RowFn: func(rootTime time.Time, item model.Resource) []string {
 			mesh := item.(*mesh.MeshResource)
 
@@ -52,20 +39,9 @@ var CustomTablePrinters = map[model.ResourceType]RowPrinter{
 				backend := mesh.GetEnabledCertificateAuthorityBackend()
 				mtls = fmt.Sprintf("%s/%s", backend.Type, backend.Name)
 			}
-
-			locality := "off"
-			if mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() {
-				locality = "on"
-			}
-			zoneEgress := "off"
-			if mesh.Spec.GetRouting().GetZoneEgress() {
-				zoneEgress = "on"
-			}
 			return []string{
 				mesh.GetMeta().GetName(), // NAME
 				mtls,                     // mTLS
-				locality,                 // LOCALITY
-				zoneEgress,               // ZONEEGRESS
 				table.TimeSince(mesh.GetMeta().GetModificationTime(), rootTime), // AGE
 			}
 		},

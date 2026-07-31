@@ -1,9 +1,9 @@
 ARG ARCH
 FROM kumahq/envoy:no-push-$ARCH AS envoy
-FROM ghcr.io/spiffe/spire-server:1.15.1@sha256:abfb368f538557646d5eb138ab0854361b79fa5ae36243ca5efe378dcbe85d61 AS spire_server
-FROM ghcr.io/spiffe/spire-agent:1.15.1@sha256:501ea7072748adb74d1f9ac3320ddceedcf3b8c4a1cc9d2b4bedd427d277475b AS spire_agent
+FROM ghcr.io/spiffe/spire-server:1.15.2@sha256:aa74ef1be86bc8e0684007d84a4d9859d294384d842c30425048d73429f3216e AS spire_server
+FROM ghcr.io/spiffe/spire-agent:1.15.2@sha256:1d042e4040466686e0ee46f74981ff2167c86adfadca19b3835946f4d6047536 AS spire_agent
 # Built in github.com/kumahq/ci-tools
-FROM ghcr.io/kumahq/ubuntu-netools:main@sha256:71653eb9e17fd6529df13a404c4ffac2b14ec260dd13db5bfa10d83ba7d56f9d
+FROM ghcr.io/kumahq/ubuntu-netools:main@sha256:491d33cbc20b096f727a7338c89edc43afeaf7f36ee4da2e9dc673de9fbe6954
 
 ARG ARCH
 
@@ -28,7 +28,6 @@ COPY --from=spire_agent /opt/spire/bin/spire-agent /usr/bin
 COPY --from=spire_server /opt/spire/bin/spire-server /usr/bin
 ADD /test/dockerfiles/spire-server.conf /spire
 ADD /test/dockerfiles/spire-agent.conf /spire
-ADD /build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
 ADD /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
 ADD /build/artifacts-linux-$ARCH/test-server/test-server /usr/bin
 ADD /test/server/certs/server.crt /kuma

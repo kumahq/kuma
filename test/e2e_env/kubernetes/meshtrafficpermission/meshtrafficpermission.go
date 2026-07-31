@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -95,8 +94,7 @@ spec:
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(Yaml(builders.Mesh().
-				WithName(mesh).
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive))).
+				WithName(mesh))).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh)),

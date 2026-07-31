@@ -40,7 +40,7 @@ var _ = Describe("EnsureDefaultMeshResourcesUpToDate", func() {
 		m := core_mesh.NewMeshResource()
 		err := resManager.Create(context.Background(), m, core_store.CreateByKey(name, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
-		err = defaults_mesh.EnsureDefaultMeshResources(context.Background(), resManager, m, []string{}, context.Background(), false, false, "", config_core.Zone, "zone-1", false)
+		err = defaults_mesh.EnsureDefaultMeshResources(context.Background(), resManager, m, []string{}, context.Background(), false, "", config_core.Zone, "zone-1", false)
 		Expect(err).ToNot(HaveOccurred())
 		mcb := meshcircuitbreaker.NewMeshCircuitBreakerResource()
 		Expect(resManager.Get(context.Background(), mcb, mcbKey(name))).ToNot(HaveOccurred())

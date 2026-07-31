@@ -18,9 +18,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplaneinsight"
-	externalservice_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/external_service"
 	mesh_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
-	ratelimit_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/ratelimit"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneegressinsight"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneingressinsight"
@@ -39,7 +37,6 @@ import (
 	runtime_reports "github.com/kumahq/kuma/v3/pkg/core/runtime/reports"
 	secret_cipher "github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	"github.com/kumahq/kuma/v3/pkg/dp-server/server"
 	"github.com/kumahq/kuma/v3/pkg/envoy/admin"
 	envoyadmin_access "github.com/kumahq/kuma/v3/pkg/envoy/admin/access"
@@ -429,22 +426,6 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 		),
 	)
 
-	rateLimitValidator := ratelimit_managers.RateLimitValidator{
-		Store: builder.ResourceStore(),
-	}
-	customizableManager.Customize(
-		mesh.RateLimitType,
-		ratelimit_managers.NewRateLimitManager(builder.ResourceStore(), rateLimitValidator),
-	)
-
-	externalServiceValidator := externalservice_managers.ExternalServiceValidator{
-		Store: builder.ResourceStore(),
-	}
-	customizableManager.Customize(
-		mesh.ExternalServiceType,
-		externalservice_managers.NewExternalServiceManager(builder.ResourceStore(), externalServiceValidator),
-	)
-
 	customizableManager.Customize(
 		mesh.DataplaneType,
 		dataplane.NewDataplaneManager(
@@ -541,9 +522,6 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		xds_server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), builder.Config().Experimental.UseTagFirstVirtualOutboundModel),
-		builder.Config().DNSServer.Domain,
-		builder.Config().DNSServer.ServiceVipPort,
 		builder.CAProvider(),
 		mcbOpts...,
 	)

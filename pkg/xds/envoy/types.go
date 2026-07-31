@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
@@ -41,8 +40,6 @@ type ClusterImpl struct {
 	tags              tags.Tags
 	mesh              string
 	isExternalService bool
-	lb                *mesh_proto.TrafficRoute_LoadBalancer
-	timeout           *mesh_proto.Timeout_Conf
 }
 
 func (c *ClusterImpl) Service() string { return c.service }
@@ -53,11 +50,9 @@ func (c *ClusterImpl) SNI() string     { return "" }
 
 // Mesh returns a non-empty string only if the cluster is in a different mesh
 // from the context.
-func (c *ClusterImpl) Mesh() string                              { return c.mesh }
-func (c *ClusterImpl) IsExternalService() bool                   { return c.isExternalService }
-func (c *ClusterImpl) LB() *mesh_proto.TrafficRoute_LoadBalancer { return c.lb }
-func (c *ClusterImpl) Timeout() *mesh_proto.Timeout_Conf         { return c.timeout }
-func (c *ClusterImpl) Hash() string                              { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
+func (c *ClusterImpl) Mesh() string            { return c.mesh }
+func (c *ClusterImpl) IsExternalService() bool { return c.isExternalService }
+func (c *ClusterImpl) Hash() string            { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
 
 func (c *ClusterImpl) SetName(name string) {
 	c.name = name
@@ -123,18 +118,6 @@ func WithWeight(weight uint32) NewClusterOpt {
 func WithTags(tags tags.Tags) NewClusterOpt {
 	return newClusterOptFunc(func(cluster *ClusterImpl) {
 		cluster.tags = tags
-	})
-}
-
-func WithTimeout(timeout *mesh_proto.Timeout_Conf) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *ClusterImpl) {
-		cluster.timeout = timeout
-	})
-}
-
-func WithLB(lb *mesh_proto.TrafficRoute_LoadBalancer) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *ClusterImpl) {
-		cluster.lb = lb
 	})
 }
 

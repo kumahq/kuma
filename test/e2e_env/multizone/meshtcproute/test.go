@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
@@ -29,10 +28,13 @@ func Test() {
 		group := errgroup.Group{}
 		NewClusterSetup().
 			Install(Parallel(
-				DemoClientUniversal(AppModeDemoClient, meshName,
+				DemoClientUniversal(
+					AppModeDemoClient, meshName,
 					WithTransparentProxy(true),
+					WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}),
 				),
-				TestServerUniversal("test-server-echo-1", meshName,
+				TestServerUniversal(
+					"test-server-echo-1", meshName,
 					WithArgs([]string{"echo", "--instance", "zone1"}),
 					WithServiceVersion("v1"),
 				),
@@ -41,11 +43,13 @@ func Test() {
 
 		NewClusterSetup().
 			Install(Parallel(
-				TestServerUniversal("test-server-echo-2", meshName,
+				TestServerUniversal(
+					"test-server-echo-2", meshName,
 					WithArgs([]string{"echo", "--instance", "zone2"}),
 					WithServiceVersion("v2"),
 				),
-				TestServerUniversal("test-server-echo-3", meshName,
+				TestServerUniversal(
+					"test-server-echo-3", meshName,
 					WithArgs([]string{"echo", "--instance", "alias-zone2"}),
 					WithServiceName("alias-test-server"),
 					WithServiceVersion("v2"),
@@ -54,12 +58,6 @@ func Test() {
 			SetupInGroup(multizone.UniZone2, &group)
 
 		Expect(group.Wait()).To(Succeed())
-
-		Expect(DeleteMeshResources(
-			multizone.Global,
-			meshName,
-			core_mesh.TrafficRouteResourceTypeDescriptor,
-		)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
@@ -89,8 +87,8 @@ name: route-1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: demo-client
   to:
   - targetRef:

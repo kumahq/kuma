@@ -13,7 +13,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	xds_config "github.com/kumahq/kuma/v3/pkg/config/xds"
 	bootstrap_config "github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -33,13 +32,11 @@ type BootstrapGenerator interface {
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
 	serverConfig *bootstrap_config.BootstrapServerConfig,
-	proxyConfig xds_config.Proxy,
 	dpServerCertFile string,
 	authEnabledForProxyType map[string]bool,
 	enableReloadableTokens bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
-	inboundTagsDisabled bool,
 	envoyAdminUnixSocket bool,
 ) (BootstrapGenerator, error) {
 	dpServerCert, err := parseCertFromFile(dpServerCertFile)
@@ -54,14 +51,12 @@ func NewDefaultBootstrapGenerator(
 	return &bootstrapGenerator{
 		resManager:              resManager,
 		config:                  serverConfig,
-		proxyConfig:             proxyConfig,
 		xdsCertFile:             dpServerCertFile,
 		authEnabledForProxyType: authEnabledForProxyType,
 		enableReloadableTokens:  enableReloadableTokens,
 		dpServerCert:            dpServerCert,
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
-		inboundTagsDisabled:     inboundTagsDisabled,
 		envoyAdminUnixSocket:    envoyAdminUnixSocket,
 	}, nil
 }
@@ -69,14 +64,12 @@ func NewDefaultBootstrapGenerator(
 type bootstrapGenerator struct {
 	resManager              core_manager.ResourceManager
 	config                  *bootstrap_config.BootstrapServerConfig
-	proxyConfig             xds_config.Proxy
 	authEnabledForProxyType map[string]bool
 	enableReloadableTokens  bool
 	xdsCertFile             string
 	dpServerCert            *x509.Certificate
 	hdsEnabled              bool
 	defaultAdminPort        uint32
-	inboundTagsDisabled     bool
 	envoyAdminUnixSocket    bool
 }
 
@@ -175,25 +168,11 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			return nil, kumaDpBootstrap, err
 		}
 
-		if dataplane.Spec.IsBuiltinGateway() {
-			params.IsGatewayDataplane = true
-		}
 		kumaDpBootstrap.NetworkingConfig.Address = dataplane.Spec.GetNetworking().GetAddress()
-		if b.config.Params.CorefileTemplatePath != "" {
-			corefileTemplate, err := os.ReadFile(b.config.Params.CorefileTemplatePath)
-			if err != nil {
-				return nil, kumaDpBootstrap, errors.Wrap(err, "could not read Corefile template")
-			}
-			kumaDpBootstrap.NetworkingConfig.CorefileTemplate = corefileTemplate
-		}
-		params.Service = dataplane.IdentifyingName(b.inboundTagsDisabled)
+		params.Service = dataplane.IdentifyingName()
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 
 		err = b.resManager.Get(ctx, meshResource, core_store.GetByKey(dataplane.Meta.GetMesh(), core_model.NoMesh))
-		if err != nil {
-			return nil, kumaDpBootstrap, err
-		}
-		err = b.getMetricsConfig(ctx, dataplane, &kumaDpBootstrap, meshResource)
 		if err != nil {
 			return nil, kumaDpBootstrap, err
 		}
@@ -206,7 +185,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, kumaDpBootstrap, err
 	}
 
-	config, err := genConfig(params, b.proxyConfig, b.enableReloadableTokens, meshResource)
+	config, err := genConfig(params, b.enableReloadableTokens, meshResource)
 	if err != nil {
 		return nil, kumaDpBootstrap, errors.Wrap(err, "failed creating bootstrap conf")
 	}
@@ -239,45 +218,6 @@ func ISSANMismatchErr(err error) bool {
 		return false
 	}
 	return strings.HasPrefix(err.Error(), "A data plane proxy is trying to connect to the control plane using")
-}
-
-func (b *bootstrapGenerator) getMetricsConfig(
-	_ context.Context,
-	dataplane *core_mesh.DataplaneResource,
-	kumaDpBootstrap *KumaDpBootstrap,
-	meshResource *core_mesh.MeshResource,
-) error {
-	config, err := dataplane.GetPrometheusConfig(meshResource)
-	if err != nil {
-		return err
-	}
-	if config != nil {
-		aggregateConfig := []AggregateMetricsConfig{}
-		for _, config := range config.GetAggregate() {
-			if config.GetEnabled() != nil && !config.GetEnabled().GetValue() {
-				continue
-			}
-			aggregateConfig = append(aggregateConfig, AggregateMetricsConfig{
-				Address: b.getMetricsAddress(config, dataplane),
-				Name:    config.Name,
-				Port:    config.Port,
-				Path:    config.Path,
-			})
-		}
-		kumaDpBootstrap.AggregateMetricsConfig = aggregateConfig
-	}
-	return nil
-}
-
-func (b *bootstrapGenerator) getMetricsAddress(
-	metricsConfig *mesh_proto.PrometheusAggregateMetricsConfig,
-	dataplane *core_mesh.DataplaneResource,
-) string {
-	if metricsConfig.Address != "" {
-		return metricsConfig.Address
-	}
-
-	return dataplane.Spec.GetNetworking().GetAddress()
 }
 
 func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {

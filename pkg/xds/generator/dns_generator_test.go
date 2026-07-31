@@ -22,12 +22,11 @@ import (
 
 var _ = Describe("DNSGenerator", func() {
 	type testCase struct {
-		dataplaneFile    string
-		expected         string
-		features         map[string]bool
-		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
-		dpLabels         map[string]string
-		dpMesh           string
+		dataplaneFile string
+		expected      string
+		features      map[string]bool
+		dpLabels      map[string]string
+		dpMesh        string
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -41,11 +40,7 @@ var _ = Describe("DNSGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
-						Spec: &mesh_proto.Mesh{
-							MeshServices: &mesh_proto.Mesh_MeshServices{
-								Mode: given.meshServicesMode,
-							},
-						},
+						Spec: &mesh_proto.Mesh{},
 					},
 					VIPDomains: []xds_types.VIPDomains{
 						{Address: "240.0.0.1", Domains: []string{"httpbin.mesh"}},
@@ -111,26 +106,8 @@ var _ = Describe("DNSGenerator", func() {
 			expected:      "3-envoy-config.golden.yaml",
 		}),
 		Entry("04. DNS using proxy map", testCase{
-			features: map[string]bool{
-				"feature-embedded-dns": true,
-			},
 			dataplaneFile: "4-dataplane.input.yaml",
 			expected:      "4-envoy-config.golden.yaml",
-			dpLabels: map[string]string{
-				"kuma.io/workload":      "backend",
-				"k8s.kuma.io/namespace": "test-ns",
-				"kuma.io/zone":          "zone-1",
-			},
-			dpMesh: "default",
-		}),
-		Entry("05. DNS using proxy with unified naming", testCase{
-			dataplaneFile:    "5-dataplane.input.yaml",
-			expected:         "5-envoy-config.golden.yaml",
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			features: map[string]bool{
-				"feature-embedded-dns":            true,
-				"feature-unified-resource-naming": true,
-			},
 			dpLabels: map[string]string{
 				"kuma.io/workload":      "backend",
 				"k8s.kuma.io/namespace": "test-ns",

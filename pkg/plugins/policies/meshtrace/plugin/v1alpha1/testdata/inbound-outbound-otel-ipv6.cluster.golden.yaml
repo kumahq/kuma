@@ -1,11 +1,10 @@
 resources:
-- name: meshtrace:opentelemetry
+- name: system_meshtrace_otel_otel-collector-ipv6
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: meshtrace_opentelemetry
     connectTimeout: 5s
     loadAssignment:
-      clusterName: meshtrace:opentelemetry
+      clusterName: system_meshtrace_otel_otel-collector-ipv6
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -13,7 +12,7 @@ resources:
               socketAddress:
                 address: 2001:db8::1
                 portValue: 4317
-    name: meshtrace:opentelemetry
+    name: system_meshtrace_otel_otel-collector-ipv6
     type: STATIC
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

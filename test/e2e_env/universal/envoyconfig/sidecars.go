@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	meshopentelemetrybackend "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	meshaccesslog "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshcircuitbreaker "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
@@ -52,6 +52,7 @@ func Sidecars() {
 		meshloadbalancing.MeshLoadBalancingStrategyResourceTypeDescriptor,
 		meshmetric.MeshMetricResourceTypeDescriptor,
 		meshtrafficpermission.MeshTrafficPermissionResourceTypeDescriptor,
+		meshopentelemetrybackend.MeshOpenTelemetryBackendResourceTypeDescriptor,
 	))
 
 	DescribeTable("should generate proper Envoy config",
@@ -93,7 +94,6 @@ func SetupSidecarCluster() {
 				builders.Mesh().
 					WithName(meshName).
 					WithoutInitialPolicies().
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
 					WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
 			),
 		).
@@ -126,7 +126,7 @@ func SetupSidecarCluster() {
 }
 
 func CleanupAfterSidecarTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(meshName, []string{"demo-client", "test-server"}, policies...)
+	return cleanupAfterTest(meshName, []string{"demo-client", "test-server"}, MeshTrafficPermissionAllowAllUniversal(meshName), policies...)
 }
 
 func CleanupAfterSidecarSuite() {

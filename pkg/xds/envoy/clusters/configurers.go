@@ -13,21 +13,8 @@ import (
 	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
-func OutlierDetection(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.OutlierDetectionConfigurer{CircuitBreaker: circuitBreaker})
-	})
-}
-
-func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.CircuitBreakerConfigurer{CircuitBreaker: circuitBreaker})
-	})
-}
-
 func ClientSideMTLS(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	mesh *core_mesh.MeshResource,
 	upstreamService string,
 	upstreamTLSReady bool,
@@ -36,21 +23,19 @@ func ClientSideMTLS(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
-			UpstreamMesh:          mesh,
-			UpstreamService:       upstreamService,
-			LocalMesh:             mesh,
-			Tags:                  tags,
-			UpstreamTLSReady:      upstreamTLSReady,
-			UseMeshTrust:          useMeshTrust,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  upstreamService,
+			LocalMesh:        mesh,
+			Tags:             tags,
+			UpstreamTLSReady: upstreamTLSReady,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }
 
 func ClientSideMTLSCustomSNI(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	mesh *core_mesh.MeshResource,
 	upstreamService string,
 	upstreamTLSReady bool,
@@ -59,22 +44,20 @@ func ClientSideMTLSCustomSNI(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
-			UpstreamMesh:          mesh,
-			UpstreamService:       upstreamService,
-			LocalMesh:             mesh,
-			Tags:                  nil,
-			UpstreamTLSReady:      upstreamTLSReady,
-			SNI:                   sni,
-			UseMeshTrust:          useMeshTrust,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  upstreamService,
+			LocalMesh:        mesh,
+			Tags:             nil,
+			UpstreamTLSReady: upstreamTLSReady,
+			SNI:              sni,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }
 
 func ClientSideMultiIdentitiesMTLS(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	mesh *core_mesh.MeshResource,
 	upstreamTLSReady bool,
 	sni string,
@@ -83,23 +66,21 @@ func ClientSideMultiIdentitiesMTLS(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
-			UpstreamMesh:          mesh,
-			UpstreamService:       "*",
-			LocalMesh:             mesh,
-			SNI:                   sni,
-			Tags:                  nil,
-			UpstreamTLSReady:      upstreamTLSReady,
-			VerifyIdentities:      identities,
-			UseMeshTrust:          useMeshTrust,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  "*",
+			LocalMesh:        mesh,
+			SNI:              sni,
+			Tags:             nil,
+			UpstreamTLSReady: upstreamTLSReady,
+			VerifyIdentities: identities,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }
 
 func CrossMeshClientSideMTLS(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	localMesh *core_mesh.MeshResource,
 	upstreamMesh *core_mesh.MeshResource,
 	upstreamService string,
@@ -108,13 +89,12 @@ func CrossMeshClientSideMTLS(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
-			UpstreamMesh:          upstreamMesh,
-			UpstreamService:       upstreamService,
-			LocalMesh:             localMesh,
-			Tags:                  tags,
-			UpstreamTLSReady:      upstreamTLSReady,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     upstreamMesh,
+			UpstreamService:  upstreamService,
+			LocalMesh:        localMesh,
+			Tags:             tags,
+			UpstreamTLSReady: upstreamTLSReady,
 		})
 	})
 }
@@ -189,15 +169,6 @@ func ProvidedCustomEndpointCluster(hasIPv6 bool, allowsMixingEndpoints bool, end
 			AllowMixingIpAndNonIpEndpoints: allowsMixingEndpoints,
 		})
 		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
-	})
-}
-
-func HealthCheck(protocol core_meta.Protocol, healthCheck *core_mesh.HealthCheckResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.HealthCheckConfigurer{
-			HealthCheck: healthCheck,
-			Protocol:    protocol,
-		})
 	})
 }
 

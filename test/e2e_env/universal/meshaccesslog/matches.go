@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
@@ -37,8 +36,7 @@ func Matches() {
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().
 				WithName(meshName).
-				WithoutInitialPolicies().
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive))).
+				WithoutInitialPolicies())).
 			Install(YamlUniversal(fmt.Sprintf(`
 type: MeshIdentity
 name: identity
@@ -131,7 +129,8 @@ mesh: %s
 spec:
   targetRef:
     kind: Dataplane
-    name: %s
+    labels:
+      kuma.io/workload: %s
   rules:
     - matches:
         - spiffeID:
@@ -173,7 +172,8 @@ mesh: %s
 spec:
   targetRef:
     kind: Dataplane
-    name: %s
+    labels:
+      kuma.io/workload: %s
   rules:
     - matches:
         - spiffeID:

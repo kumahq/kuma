@@ -157,7 +157,7 @@ mtls:
 		func(yaml string) {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
-				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
+				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithLabels(map[string]string{"kuma.io/service": "test-server"}))).
 				Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
@@ -173,16 +173,21 @@ mtls:
 
 			By("When adding traffic-permission")
 			perm := fmt.Sprintf(`
-type: TrafficPermission
+type: MeshTrafficPermission
 name: example
 mesh: "%s"
-sources:
-  - match:
-      kuma.io/service: demo-client
-destinations:
-  - match:
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
       kuma.io/service: test-server
-`, meshName)
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://%s/demo-client
+`, meshName, meshName)
 			Expect(universal.Cluster.Install(YamlUniversal(perm))).To(Succeed())
 
 			By("Can access test-server again")

@@ -23,68 +23,118 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         http:
           requestTimeout: 3s
 `, meshName)
-	faultInjection := fmt.Sprintf(`
+	meshIdentity := fmt.Sprintf(`
+type: MeshIdentity
+name: identity
+mesh: "%s"
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+  provider:
+    type: Bundled
+    bundled:
+      meshTrustCreation: Enabled
+      insecureAllowSelfSigned: true
+      certificateParameters:
+        expiry: 24h
+      autogenerate:
+        enabled: true
+`, meshName)
+	meshTrafficPermission := func(zoneName string) string {
+		return fmt.Sprintf(`
+type: MeshTrafficPermission
+name: allow-mesh
+mesh: "%s"
+spec:
+  rules:
+  - default:
+      allow:
+      - spiffeID:
+          type: Prefix
+          value: spiffe://%s.%s.mesh.local
+`, meshName, meshName, zoneName)
+	}
+	faultInjection := func(zoneName string) string {
+		return fmt.Sprintf(`
 type: MeshFaultInjection
 mesh: "%s"
 name: mesh-fault-injecton-402
 spec:
   targetRef:
-    kind: MeshService
-    name: test-server
-  from:
-    - targetRef:
-        kind: MeshService
-        name: demo-client-blocked
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-server
+  rules:
+    - matches:
+        - spiffeID:
+            type: Exact
+            value: spiffe://%s.%s.mesh.local/workload/demo-client-blocked
       default:
         http:
           - abort:
               httpStatus: 402
               percentage: "100.0"
-    - targetRef:
-        kind: MeshService
-        name: demo-client-timeout
+    - matches:
+        - spiffeID:
+            type: Exact
+            value: spiffe://%s.%s.mesh.local/workload/demo-client-timeout
       default:
         http:
           - delay:
               value: 5s
               percentage: "100.0"
-`, meshName)
+`, meshName, meshName, zoneName, meshName, zoneName)
+	}
 	faultInjectionAllSources := fmt.Sprintf(`
 type: MeshFaultInjection
 mesh: "%s"
 name: mesh-fault-injecton-all
 spec:
   targetRef:
-    kind: MeshService
-    name: test-service-block-all-sources
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-service-block-all-sources
+  rules:
+    - default:
         http:
           - abort:
               httpStatus: 421
               percentage: 100
 `, meshName)
 	BeforeAll(func() {
+		zoneName := universal.Cluster.ZoneName()
 		Expect(NewClusterSetup().
 			Install(MeshUniversal(meshName)).
-			Install(YamlUniversal(faultInjection)).
+			Install(YamlUniversal(meshIdentity)).
+			Install(YamlUniversal(meshTrafficPermission(zoneName))).
+			Install(YamlUniversal(faultInjection(zoneName))).
 			Install(YamlUniversal(faultInjectionAllSources)).
 			Install(YamlUniversal(timeout)).
-			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal-1"}))).
-			Install(TestServerUniversal("test-server-block-all-sources", meshName,
+			Install(TestServerUniversal(
+				"test-server", meshName,
+				WithArgs([]string{"echo", "--instance", "universal-1"}),
+				WithLabels(map[string]string{"kuma.io/service": "test-server"}),
+				WithWorkload("test-server"),
+			)).
+			Install(TestServerUniversal(
+				"test-server-block-all-sources", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"}),
 				WithServiceName("test-service-block-all-sources"),
+				WithLabels(map[string]string{"kuma.io/service": "test-service-block-all-sources"}),
+				WithWorkload("test-server-block-all-sources"),
 			)).
-			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
-			Install(DemoClientUniversal("demo-client-blocked", meshName, WithTransparentProxy(true))).
-			Install(DemoClientUniversal("demo-client-timeout", meshName, WithTransparentProxy(true))).
+			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithWorkload("demo-client"))).
+			Install(DemoClientUniversal("demo-client-blocked", meshName, WithTransparentProxy(true), WithWorkload("demo-client-blocked"))).
+			Install(DemoClientUniversal("demo-client-timeout", meshName, WithTransparentProxy(true), WithWorkload("demo-client-timeout"))).
 			Setup(universal.Cluster)).To(Succeed())
 	})
 
@@ -103,7 +153,8 @@ spec:
 		expectedResponseCode int
 	}
 
-	DescribeTable("should be affected by fault and return",
+	DescribeTable(
+		"should be affected by fault and return",
 		func(given testCase) {
 			Eventually(func(g Gomega) {
 				response, err := client.CollectFailure(
@@ -120,17 +171,17 @@ spec:
 		}),
 		Entry("421 when requests from any client are blocked", testCase{
 			client:               "demo-client",
-			address:              "test-service-block-all-sources.svc.mesh.local",
+			address:              "test-server-block-all-sources.svc.mesh.local",
 			expectedResponseCode: 421,
 		}),
 		Entry("421 when requests from the demo-client-blocked", testCase{
 			client:               "demo-client-timeout",
-			address:              "test-service-block-all-sources.svc.mesh.local",
+			address:              "test-server-block-all-sources.svc.mesh.local",
 			expectedResponseCode: 421,
 		}),
 		Entry("421 when requests from the demo-client-blocked", testCase{
 			client:               "demo-client-blocked",
-			address:              "test-service-block-all-sources.svc.mesh.local",
+			address:              "test-server-block-all-sources.svc.mesh.local",
 			expectedResponseCode: 421,
 		}),
 	)

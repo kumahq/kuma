@@ -3,19 +3,21 @@ mesh: mesh-1
 name: mtp-1
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: external-database
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: external-database
       version: v1
   from:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         action: Allow
     - targetRef:
         kind: MeshService
-        name: orders
+        labels:
+          kuma.io/display-name: orders
       default:
         action: AllowWithShadowDeny
 ---

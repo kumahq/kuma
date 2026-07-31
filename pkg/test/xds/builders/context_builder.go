@@ -58,12 +58,6 @@ func (mc *ContextBuilder) WithEndpointMap(endpointMap *EndpointMapBuilder) *Cont
 	return mc
 }
 
-func (mc *ContextBuilder) WithExternalServicesEndpointMap(endpointMap *EndpointMapBuilder) *ContextBuilder {
-	mc.res.Mesh.ExternalServicesEndpointMap = endpointMap.Build()
-	mc.res.ControlPlane.CLACache.(*xds.DummyCLACache).OutboundTargets = endpointMap.Build()
-	return mc
-}
-
 func (mc *ContextBuilder) WithZone(zone string) *ContextBuilder {
 	mc.res.ControlPlane.Zone = zone
 	return mc

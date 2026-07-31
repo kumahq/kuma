@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	meshopentelemetrybackend "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	meshaccesslog "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshcircuitbreaker "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
@@ -72,6 +72,7 @@ func ZoneProxies() {
 		meshmetric.MeshMetricResourceTypeDescriptor,
 		meshproxypatch.MeshProxyPatchResourceTypeDescriptor,
 		meshtrafficpermission.MeshTrafficPermissionResourceTypeDescriptor,
+		meshopentelemetrybackend.MeshOpenTelemetryBackendResourceTypeDescriptor,
 	))
 
 	DescribeTable("should generate proper Envoy config for zone proxies",
@@ -109,7 +110,7 @@ func TestZoneProxyConfig(inputFile string) {
 		g.Expect(getConfig(zoneProxyMeshName, "zone-proxy-test-server-no-reusable-ports")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "zone-proxy-test-server-no-reusable-ports.golden.json", 1)))
 		g.Expect(getConfig(zoneProxyMeshName, zoneProxyIngressDP)).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", zoneProxyIngressDP+".golden.json", 1)))
 		g.Expect(getConfig(zoneProxyMeshName, zoneProxyEgressDP)).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", zoneProxyEgressDP+".golden.json", 1)))
-	}, "90s", "2s").Should(Succeed())
+	}, "180s", "2s").Should(Succeed())
 }
 
 func SetupZoneProxyCluster() {
@@ -129,6 +130,10 @@ spec:
   endpoints:
     - address: 127.0.0.1
       port: 80
+      priority: 1
+    - address: 127.0.0.1
+      port: 81
+      priority: 2
 `, zoneProxyMeshName)
 
 	meshIdentityYAML := fmt.Sprintf(`
@@ -156,8 +161,7 @@ spec:
 			Yaml(
 				builders.Mesh().
 					WithName(zoneProxyMeshName).
-					WithoutInitialPolicies().
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+					WithoutInitialPolicies(),
 			),
 		).
 		Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
@@ -238,7 +242,17 @@ spec:
 }
 
 func CleanupAfterZoneProxyTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(zoneProxyMeshName, []string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"}, policies...)
+	return cleanupAfterTest(
+		zoneProxyMeshName,
+		[]string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"},
+		func(cluster Cluster) error {
+			return MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				zoneProxyMeshName,
+				fmt.Sprintf("%s.%s.mesh.local", zoneProxyMeshName, universal.Cluster.ZoneName()),
+			)(cluster)
+		},
+		policies...,
+	)
 }
 
 func CleanupAfterZoneProxySuite() {

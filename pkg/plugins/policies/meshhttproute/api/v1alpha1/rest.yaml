@@ -165,7 +165,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -185,24 +184,14 @@ components:
                   type: string
                 name:
                   description: |-
-                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                    Name of the referenced resource. Can only be used with kinds: `MeshService`
+                    and `MeshServiceSubset`
                   type: string
                 namespace:
                   description: |-
                     Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                     will be targeted.
                   type: string
-                proxyTypes:
-                  description: |-
-                    ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: |-
                     SectionName is used to target specific section of resource.
@@ -223,11 +212,7 @@ components:
               items:
                 properties:
                   hostnames:
-                    description: |-
-                      Hostnames is only valid when targeting MeshGateway and limits the
-                      effects of the rules to requests to this hostname.
-                      Given hostnames must intersect with the hostname of the listeners the
-                      route attaches to.
+                    description: Hostnames is not currently supported and must not be set.
                     items:
                       type: string
                     type: array
@@ -251,7 +236,6 @@ components:
                                     enum:
                                       - Mesh
                                       - MeshSubset
-                                      - MeshGateway
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -271,8 +255,8 @@ components:
                                     type: string
                                   name:
                                     description: |-
-                                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                      `MeshServiceSubset` and `MeshGatewayRoute`
+                                      Name of the referenced resource. Can only be used with kinds: `MeshService`
+                                      and `MeshServiceSubset`
                                     type: string
                                   namespace:
                                     description: |-
@@ -283,16 +267,6 @@ components:
                                     description: Port is only supported when this ref refers to a real MeshService object
                                     format: int32
                                     type: integer
-                                  proxyTypes:
-                                    description: |-
-                                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                                      all data plane types are targeted by the policy.
-                                    items:
-                                      enum:
-                                        - Sidecar
-                                        - Gateway
-                                      type: string
-                                    type: array
                                   sectionName:
                                     description: |-
                                       SectionName is used to target specific section of resource.
@@ -376,7 +350,6 @@ components:
                                             enum:
                                               - Mesh
                                               - MeshSubset
-                                              - MeshGateway
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
@@ -396,8 +369,8 @@ components:
                                             type: string
                                           name:
                                             description: |-
-                                              Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                              `MeshServiceSubset` and `MeshGatewayRoute`
+                                              Name of the referenced resource. Can only be used with kinds: `MeshService`
+                                              and `MeshServiceSubset`
                                             type: string
                                           namespace:
                                             description: |-
@@ -408,16 +381,6 @@ components:
                                             description: Port is only supported when this ref refers to a real MeshService object
                                             format: int32
                                             type: integer
-                                          proxyTypes:
-                                            description: |-
-                                              ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                                              all data plane types are targeted by the policy.
-                                            items:
-                                              enum:
-                                                - Sidecar
-                                                - Gateway
-                                              type: string
-                                            type: array
                                           sectionName:
                                             description: |-
                                               SectionName is used to target specific section of resource.
@@ -567,9 +530,7 @@ components:
                                   urlRewrite:
                                     properties:
                                       hostToBackendHostname:
-                                        description: |-
-                                          HostToBackendHostname rewrites the hostname to the hostname of the
-                                          upstream host. This option is only available when targeting MeshGateways.
+                                        description: HostToBackendHostname is not currently supported and must not be set.
                                         type: boolean
                                       hostname:
                                         description: Hostname is the value to be used to replace the host header value during forwarding.
@@ -705,7 +666,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -725,24 +685,14 @@ components:
                         type: string
                       name:
                         description: |-
-                          Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                          `MeshServiceSubset` and `MeshGatewayRoute`
+                          Name of the referenced resource. Can only be used with kinds: `MeshService`
+                          and `MeshServiceSubset`
                         type: string
                       namespace:
                         description: |-
                           Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                           will be targeted.
                         type: string
-                      proxyTypes:
-                        description: |-
-                          ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: |-
                           SectionName is used to target specific section of resource.

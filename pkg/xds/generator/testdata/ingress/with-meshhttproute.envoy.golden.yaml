@@ -8,13 +8,6 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - region
-        - version
     name: mesh1:backend
     type: EDS
 - name: mesh1:backend
@@ -55,7 +48,7 @@ resources:
               mesh: mesh1
               region: us
               version: v2
-- name: inbound:10.0.0.1:10001
+- name: self_inbound_zi_10001
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -64,21 +57,6 @@ resources:
         portValue: 10001
     enableReusePort: false
     filterChains:
-    - filterChainMatch:
-        serverNames:
-        - backend{mesh=mesh1,region=eu,version=v1}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh1:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                region: eu
-                version: v1
-          statPrefix: mesh1_backend
     - filterChainMatch:
         serverNames:
         - backend{mesh=mesh1}
@@ -93,5 +71,6 @@ resources:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-    name: inbound:10.0.0.1:10001
+    name: self_inbound_zi_10001
+    statPrefix: self_inbound_zi_10001
     trafficDirection: INBOUND

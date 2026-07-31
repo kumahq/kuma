@@ -17,10 +17,6 @@ controlPlane:
     annotations:
       foo: '{"bar": "baz"}'
       service: "ingress"
-  globalZoneSyncService:
-    annotations:
-      foo: '{"bar": "baz"}'
-      service: "globalSync"
 ingress:
   enabled: true
   annotations:

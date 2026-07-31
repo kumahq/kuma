@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	"github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/server"
 )
@@ -21,13 +20,6 @@ func NewApiServer(cfg kuma_cp.Config, runtime runtime.Runtime) (*api_server.ApiS
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(
-				runtime.ResourceManager(),
-				runtime.ConfigManager(),
-				cfg.Experimental.UseTagFirstVirtualOutboundModel,
-			),
-			cfg.DNSServer.Domain,
-			cfg.DNSServer.ServiceVipPort,
 			runtime.CAProvider(),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),

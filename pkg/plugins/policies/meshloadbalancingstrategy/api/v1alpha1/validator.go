@@ -14,8 +14,7 @@ func (r *MeshLoadBalancingStrategyResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
-	verr.AddErrorAt(path, validateTo(topLevel, pointer.Deref(r.Spec.To)))
+	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
@@ -26,10 +25,6 @@ func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.Ta
 	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
-			common_api.MeshSubset,
-			common_api.MeshGateway,
-			common_api.MeshService,
-			common_api.MeshServiceSubset,
 			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
@@ -37,42 +32,20 @@ func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.Ta
 	return targetRefErr
 }
 
-func validateTo(topTargetRef common_api.TargetRef, to []To) validators.ValidationError {
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		var supportedKinds []common_api.TargetRefKind
-		var supportedKindsError string
-		switch topTargetRef.Kind {
-		case common_api.MeshGateway:
-			if toItem.Default.LoadBalancer != nil {
-				supportedKindsError = fmt.Sprintf("value '%s' is not supported, only %s is allowed if loadBalancer is set", topTargetRef.Kind, common_api.Mesh)
-				supportedKinds = []common_api.TargetRefKind{
-					common_api.Mesh,
-				}
-			} else {
-				supportedKinds = []common_api.TargetRefKind{
-					common_api.Mesh,
-					common_api.MeshService,
-					common_api.MeshMultiZoneService,
-				}
-			}
-		default:
-			supportedKinds = []common_api.TargetRefKind{
+		errs := mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
+				common_api.MeshExternalService,
 				common_api.MeshMultiZoneService,
 				common_api.MeshHTTPRoute,
-			}
-		}
-		errs := mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
-			SupportedKinds:      supportedKinds,
-			SupportedKindsError: supportedKindsError,
+			},
 		})
 		verr.AddErrorAt(path.Field("targetRef"), errs)
-		if toItem.TargetRef.Kind == common_api.MeshExternalService && topTargetRef.Kind != common_api.Mesh {
-			verr.AddViolationAt(path.Field("targetRef.kind"), "kind MeshExternalService is only allowed with targetRef.kind: Mesh as it is configured on the Zone Egress and shared by all clients in the mesh")
-		}
 		verr.AddErrorAt(path.Field("default"), validateConf(toItem.Default, toItem))
 	}
 	return verr
@@ -97,16 +70,6 @@ func validateConf(conf Conf, to To) validators.ValidationError {
 		verr.AddError("loadBalancer", validateLoadBalancer(conf.LoadBalancer))
 		verr.AddError("localityAwareness", validateLocalityAwareness(conf.LocalityAwareness, to))
 		verr.AddError("hashPolicies", validateHashPolicies(conf.HashPolicies))
-
-		// Check if hashPolicies is specified both at the top level and in one of the load balancer types
-		if conf.HashPolicies != nil && conf.LoadBalancer != nil {
-			if conf.LoadBalancer.RingHash != nil && conf.LoadBalancer.RingHash.HashPolicies != nil {
-				verr.AddViolation("loadBalancer.ringHash.hashPolicies", "hashPolicies already specified in the root level")
-			}
-			if conf.LoadBalancer.Maglev != nil && conf.LoadBalancer.Maglev.HashPolicies != nil {
-				verr.AddViolation("loadBalancer.maglev.hashPolicies", "hashPolicies already specified in the root level")
-			}
-		}
 	}
 
 	return verr
@@ -206,13 +169,7 @@ func validateLoadBalancer(conf *LoadBalancer) validators.ValidationError {
 
 	switch conf.Type {
 	case RingHashType:
-		if conf.RingHash != nil {
-			verr.AddError("ringHash", validateRingHash(conf.RingHash))
-		}
 	case MaglevType:
-		if conf.Maglev != nil {
-			verr.AddError("maglev", validateMaglev(conf.Maglev))
-		}
 	case RoundRobinType:
 	case RandomType:
 	case LeastRequestType:
@@ -222,30 +179,12 @@ func validateLoadBalancer(conf *LoadBalancer) validators.ValidationError {
 	return verr
 }
 
-func validateRingHash(conf *RingHash) validators.ValidationError {
-	var verr validators.ValidationError
-	if conf == nil {
-		return verr
-	}
-	verr.AddError("hashPolicies", validateHashPolicies(conf.HashPolicies))
-	return verr
-}
-
 func validateLeastRequest(conf *LeastRequest) validators.ValidationError {
 	var verr validators.ValidationError
 	if conf == nil {
 		return verr
 	}
 	verr.Add(validators.ValidateIntOrStringGreaterOrEqualThan(validators.RootedAt("activeRequestBias"), conf.ActiveRequestBias, 0))
-	return verr
-}
-
-func validateMaglev(conf *Maglev) validators.ValidationError {
-	var verr validators.ValidationError
-	if conf == nil {
-		return verr
-	}
-	verr.AddError("hashPolicies", validateHashPolicies(conf.HashPolicies))
 	return verr
 }
 

@@ -26,12 +26,9 @@ var _ = Describe("MeshRateLimit", func() {
 			},
 			Entry("full example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+  kind: Dataplane
+rules:
+  - default:
       local:
         http:
           disabled: false
@@ -51,12 +48,9 @@ from:
             interval: 100ms`),
 			Entry("full example, only http", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+  kind: Dataplane
+rules:
+  - default:
       local:
         http:
           requestRate:
@@ -70,12 +64,9 @@ from:
                 value: "123"`),
 			Entry("full example, only tcp", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+  kind: Dataplane
+rules:
+  - default:
       local:
         tcp:
           disabled: false
@@ -84,12 +75,9 @@ from:
             interval: 100ms`),
 			Entry("minimal example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+  kind: Dataplane
+rules:
+  - default:
       local:
         http:
           requestRate:
@@ -101,51 +89,14 @@ from:
             interval: 100ms`),
 			Entry("disable rate limit", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+  kind: Dataplane
+rules:
+  - default:
       local:
         http:
           disabled: true
         tcp:
           disabled: true`),
-			Entry("gateway example", `
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      local:
-        http:
-          requestRate:
-            num: 100
-            interval: 10s
-        tcp:
-          connectionRate:
-            num: 100
-            interval: 100ms`),
-			Entry("gateway example and targeting MeshHTTPRoute", `
-targetRef:
-  kind: MeshHTTPRoute
-  name: http-route-1
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      local:
-        http:
-          requestRate:
-            num: 100
-            interval: 10s
-        tcp:
-          connectionRate:
-            num: 100
-            interval: 100ms`),
 			Entry("rules example with sni match", `
 targetRef:
   kind: Dataplane
@@ -182,34 +133,12 @@ rules:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("unsupported kind in from selector", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: MeshGatewayRoute
-    default:
-      local:
-        http:
-          requestRate:
-            num: 10
-            interval: 10s`,
-				expected: `
-violations:
-  - field: spec.from[0].targetRef.kind
-    message: value 'MeshGatewayRoute' is not supported`,
-			}),
 			Entry("not allow invalid values", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-- targetRef:
-    kind: Mesh
-  default:
+  kind: Dataplane
+rules:
+- default:
     local:
       http:
         requestRate:
@@ -221,91 +150,33 @@ from:
           interval: 49ms`,
 				expected: `
 violations:
-  - field: spec.from[0].default.local.http.requestRate.num
+  - field: spec.rules[0].default.local.http.requestRate.num
     message: must be greater than 0
-  - field: spec.from[0].default.local.http.requestRate.interval
+  - field: spec.rules[0].default.local.http.requestRate.interval
     message: 'must be greater than: 50ms'
-  - field: spec.from[0].default.local.tcp.connectionRate.num
+  - field: spec.rules[0].default.local.tcp.connectionRate.num
     message: must be greater than 0
-  - field: spec.from[0].default.local.tcp.connectionRate.interval
+  - field: spec.rules[0].default.local.tcp.connectionRate.interval
     message: 'must be greater than: 50ms'`,
 			}),
-			Entry("not allow from to be MeshService for tcp", testCase{
+			Entry("neither to nor rules defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-- targetRef:
-    kind: MeshService
-    name: backend
-  default:
-    local:
-      tcp:
-        connectionRate:
-          num: 100
-          interval: 500ms`,
+  kind: Dataplane`,
 				expected: `
 violations:
-  - field: spec.from[0].targetRef.kind
-    message: value 'MeshService' is not supported`,
-			}),
-			Entry("not allow from to be MeshService when http and tcp set", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-- targetRef:
-    kind: MeshService
-    name: backend
-  default:
-    local:
-      http:
-        requestRate:
-          num: 100
-          interval: 500ms
-      tcp:
-        connectionRate:
-          num: 100
-          interval: 500ms`,
-				expected: `
-violations:
-  - field: spec.from[0].targetRef.kind
-    message: value 'MeshService' is not supported`,
-			}),
-			Entry("not allow from to be MeshService", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-- targetRef:
-    kind: MeshService
-    name: backend
-  default:
-    local:
-      http:
-        requestRate:
-          num: 100
-          interval: 500ms`,
-				expected: `
-violations:
-  - field: spec.from[0].targetRef.kind
-    message: value 'MeshService' is not supported`,
+  - field: spec
+    message: at least one of 'to' or 'rules' has to be defined`,
 			}),
 			Entry("empty default", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-- targetRef:
-    kind: Mesh
-  default: {}`,
+  kind: Dataplane
+rules:
+- default: {}`,
 				expected: `
 violations:
-  - field: spec.from[0].default.local
+  - field: spec.rules[0].default.local
     message: must be defined`,
 			}),
 			Entry("sectionName with outbound policy", testCase{
@@ -327,78 +198,46 @@ violations:
 			Entry("neither tcp or http defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-- targetRef:
-    kind: Mesh
-  default: 
+  kind: Dataplane
+rules:
+- default:
     local: {}`,
 				expected: `
 violations:
-  - field: spec.from[0].default.local
+  - field: spec.rules[0].default.local
     message: 'must have at least one defined: tcp, http'`,
 			}),
 			Entry("empty tcp", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-- targetRef:
-    kind: Mesh
-  default: 
-    local: 
+  kind: Dataplane
+rules:
+- default:
+    local:
       tcp: {}`,
 				expected: `
 violations:
-  - field: spec.from[0].default.local.tcp
+  - field: spec.rules[0].default.local.tcp
     message: 'must have at least one defined: disabled, connectionRate'`,
 			}),
 			Entry("empty http", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-- targetRef:
-    kind: Mesh
-  default: 
-    local: 
+  kind: Dataplane
+rules:
+- default:
+    local:
       http: {}`,
 				expected: `
 violations:
-  - field: spec.from[0].default.local.http
+  - field: spec.rules[0].default.local.http
     message: 'must have at least one defined: disabled, requestRate, onRateLimit'`,
 			}),
-			Entry("invalid gateway example", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshGateway
-  name: edge
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      local:
-        http:
-          requestRate:
-            num: 100
-            interval: 10s
-        tcp:
-          connectionRate:
-            num: 100
-            interval: 100ms`,
-				expected: `
-violations:
-  - field: spec.from
-    message: 'must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to'`,
-			}),
-			Entry("mixing from with rules", testCase{
+			Entry("mixing to with rules", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
-from:
+to:
   - targetRef:
       kind: Mesh
     default:
@@ -417,18 +256,16 @@ rules:
 				expected: `
 violations:
 - field: spec
-  message: fields 'to' and 'from' must be empty when 'rules' is defined
+  message: field 'to' must be empty when 'rules' is defined
 - field: spec.rules
-  message: must not be defined
-- field: spec.from
-  message: must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to`,
+  message: must not be defined`,
 			}),
-			Entry("invalid gateway example when targeting MeshHTTPRoute", testCase{
+			Entry("top-level MeshHTTPRoute is rejected", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshHTTPRoute
   name: http-route-1
-from:
+to:
   - targetRef:
       kind: Mesh
     default:
@@ -443,8 +280,8 @@ from:
             interval: 100ms`,
 				expected: `
 violations:
-  - field: spec.from
-    message: 'must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to'`,
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported`,
 			}),
 			Entry("spiffeID match with tcp rule", testCase{
 				inputYaml: `

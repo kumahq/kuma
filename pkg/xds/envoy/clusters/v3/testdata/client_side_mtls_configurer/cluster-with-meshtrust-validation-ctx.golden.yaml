@@ -19,7 +19,7 @@ transportSocket:
             ads: {}
             resourceApiVersion: V3
       tlsCertificateSdsSecretConfigs:
-      - name: identity_cert:secret:default
+      - name: system_mtls_identity_default
         sdsConfig:
           ads: {}
           resourceApiVersion: V3

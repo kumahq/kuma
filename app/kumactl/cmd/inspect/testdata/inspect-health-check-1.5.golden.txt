@@ -1,9 +1,0 @@
-Affected data plane proxies:
-
-  web-1:
-    service backend
-
-  backend-1:
-    service redis
-    service external
-

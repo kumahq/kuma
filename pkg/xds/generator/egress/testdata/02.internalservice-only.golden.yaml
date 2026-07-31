@@ -33,7 +33,7 @@ resources:
             envoy.transport_socket_match:
               kuma.io/protocol: http
               mesh: mesh-1
-- name: inbound:192.168.0.1:10002
+- name: self_inbound_ze_10002
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -56,5 +56,6 @@ resources:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-    name: inbound:192.168.0.1:10002
+    name: self_inbound_ze_10002
+    statPrefix: self_inbound_ze_10002
     trafficDirection: INBOUND

@@ -4,6 +4,7 @@ import (
 	"cmp"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -96,7 +97,11 @@ func CompareMatch(a Match, b Match) int {
 
 type Route struct {
 	Name        string
+	Origin      kri.Identifier
 	Match       Match
 	Filters     []Filter
 	BackendRefs []resolve.ResolvedBackendRef
+	// MirrorBackendRefs contains resolved backendRefs of RequestMirror filters,
+	// keyed by the index of the filter in Filters.
+	MirrorBackendRefs map[int]resolve.ResolvedBackendRef
 }

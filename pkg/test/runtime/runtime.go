@@ -31,7 +31,6 @@ import (
 	secret_cipher "github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/v3/pkg/dns/vips"
 	"github.com/kumahq/kuma/v3/pkg/dp-server/server"
 	"github.com/kumahq/kuma/v3/pkg/envoy/admin"
 	envoyadmin_access "github.com/kumahq/kuma/v3/pkg/envoy/admin/access"
@@ -175,9 +174,6 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		xds_server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), builder.Config().Experimental.UseTagFirstVirtualOutboundModel),
-		builder.Config().DNSServer.Domain,
-		builder.Config().DNSServer.ServiceVipPort,
 		builder.CAProvider(),
 	)
 
@@ -321,6 +317,10 @@ func (r *TestRuntime) TokenIssuers() tokens_builtin.TokenIssuers {
 
 func (r *TestRuntime) APIWebServiceCustomize() func(ws *restful.WebService) error {
 	return func(*restful.WebService) error { return nil }
+}
+
+func (r *TestRuntime) RouteMetadataProvider() core_runtime.RouteMetadataProvider {
+	return nil
 }
 
 func (r *TestRuntime) Extensions() context.Context {

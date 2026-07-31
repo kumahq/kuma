@@ -4,6 +4,9 @@ name: dp-1
 labels:
   kuma.io/origin: zone
   kuma.io/zone: zone-1
+  kuma.io/service: web
+  version: v1
+  team: mesh
 networking:
   address: 1.1.1.1
   inbound:

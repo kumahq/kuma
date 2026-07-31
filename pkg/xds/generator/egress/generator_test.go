@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -53,7 +52,6 @@ var _ = Describe("EgressGenerator", func() {
 			// given
 			var zoneEgress *core_mesh.ZoneEgressResource
 			var zoneIngresses []*core_mesh.ZoneIngressResource
-			var trafficPermissions []*core_mesh.TrafficPermissionResource
 
 			meshResourcesMap := map[string]*core_xds.MeshResources{}
 
@@ -80,15 +78,12 @@ var _ = Describe("EgressGenerator", func() {
 					zoneEgress = res.(*core_mesh.ZoneEgressResource)
 				case core_mesh.ZoneIngressType:
 					zoneIngresses = append(zoneIngresses, res.(*core_mesh.ZoneIngressResource))
-				case core_mesh.TrafficPermissionType:
-					trafficPermissions = append(trafficPermissions, res.(*core_mesh.TrafficPermissionResource))
 				case core_mesh.MeshType:
 					meshName := res.GetMeta().GetName()
 
 					if _, ok := meshResourcesMap[meshName]; !ok {
 						meshResourcesMap[meshName] = &core_xds.MeshResources{
 							Resources: map[core_model.ResourceType]core_model.ResourceList{
-								core_mesh.TrafficRouteType:                      &core_mesh.TrafficRouteResourceList{},
 								meshhttproute_api.MeshHTTPRouteType:             &meshhttproute_api.MeshHTTPRouteResourceList{},
 								meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{},
 							},
@@ -96,30 +91,11 @@ var _ = Describe("EgressGenerator", func() {
 					}
 
 					meshResourcesMap[meshName].Mesh = res.(*core_mesh.MeshResource)
-				case core_mesh.ExternalServiceType:
-					if _, ok := meshResourcesMap[meshName]; !ok {
-						meshResourcesMap[meshName] = &core_xds.MeshResources{}
-					}
-
-					meshResourcesMap[meshName].ExternalServices = append(
-						meshResourcesMap[meshName].ExternalServices,
-						res.(*core_mesh.ExternalServiceResource),
-					)
 				case meshexternalservice_api.MeshExternalServiceType:
 					mesList := meshResourcesMap[meshName].Resources[meshexternalservice_api.MeshExternalServiceType].(*meshexternalservice_api.MeshExternalServiceResourceList)
 					mesList.Items = append(
 						mesList.Items,
 						res.(*meshexternalservice_api.MeshExternalServiceResource),
-					)
-				case core_mesh.TrafficRouteType:
-					if _, ok := meshResourcesMap[meshName]; !ok {
-						meshResourcesMap[meshName] = &core_xds.MeshResources{}
-					}
-
-					routeList := meshResourcesMap[meshName].Resources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList)
-					routeList.Items = append(
-						routeList.Items,
-						res.(*core_mesh.TrafficRouteResource),
 					)
 				case meshhttproute_api.MeshHTTPRouteType:
 					routeList := meshResourcesMap[meshName].Resources[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList)
@@ -146,14 +122,8 @@ var _ = Describe("EgressGenerator", func() {
 					meshResources.Mesh,
 					zoneName,
 					zoneIngresses,
-					meshResources.ExternalServices,
 					mes,
 					&loader,
-				)
-
-				meshResources.ExternalServicePermissionMap = permissions.BuildExternalServicesPermissionsMapForZoneEgress(
-					meshResources.ExternalServices,
-					trafficPermissions,
 				)
 			}
 

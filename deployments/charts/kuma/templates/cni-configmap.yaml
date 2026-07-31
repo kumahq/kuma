@@ -1,4 +1,4 @@
-{{- if and .Values.cni.enabled (not .Values.experimental.ebpf.enabled) }}
+{{- if .Values.cni.enabled }}
 kind: ConfigMap
 apiVersion: v1
 metadata:

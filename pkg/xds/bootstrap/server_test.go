@@ -19,7 +19,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	dp_server_cfg "github.com/kumahq/kuma/v3/pkg/config/dp-server"
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
-	xds_config "github.com/kumahq/kuma/v3/pkg/config/xds"
 	bootstrap_config "github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -95,9 +94,7 @@ var _ = Describe("Bootstrap Server", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		proxyConfig := xds_config.DefaultProxyConfig()
-
-		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0, false, false)
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0, false)
 		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
 			Generator: generator,
@@ -145,23 +142,6 @@ var _ = Describe("Bootstrap Server", func() {
 							Tags: map[string]string{
 								"kuma.io/service": "backend",
 							},
-						},
-					},
-					Admin: &mesh_proto.EnvoyAdmin{},
-				},
-			},
-		}
-	}
-
-	gatewayDataplane := func() *mesh.DataplaneResource {
-		return &mesh.DataplaneResource{
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: "8.8.8.8",
-					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-						Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "gateway",
 						},
 					},
 					Admin: &mesh_proto.EnvoyAdmin{},
@@ -221,12 +201,6 @@ var _ = Describe("Bootstrap Server", func() {
 			dataplane:          defaultDataplane,
 			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneToken": "token", "workdir": "/tmp", %s }`, version),
 			expectedConfigFile: "bootstrap.k8s.golden.yaml",
-		}),
-		Entry("with max heap size", testCase{
-			dataplaneName:      "gateway-1.default",
-			dataplane:          gatewayDataplane,
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "gateway-1.default", "dataplaneToken": "token", "workdir": "/tmp", "resources": { "maxHeapSizeBytes": 2000000 }, %s }`, version),
-			expectedConfigFile: "bootstrap.gateway.golden.yaml",
 		}),
 		Entry("full data provided", testCase{
 			dataplaneName: "dp-1.default",

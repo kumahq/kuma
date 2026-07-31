@@ -5,24 +5,6 @@ Rules:
       requestTimeout: 1s
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
-    kri: kri_mt_mesh-1___mtp-1_
-    mesh: mesh-1
-    modificationTime: "0001-01-01T00:00:00Z"
-    name: mtp-1
-    type: MeshTimeout
-  OriginByMatches: {}
-  Subset:
-  - Key: __rule-matches-hash__
-    Not: false
-    Value: OTqJZOueoDIMeYnpSETLYoaD2htefPQ7CcHHRBgrODk=
-  - Key: kuma.io/service
-    Not: false
-    Value: another-test-server
-- Conf:
-    http:
-      requestTimeout: 1s
-  Origin:
-  - creationTime: "0001-01-01T00:00:00Z"
     kri: kri_mt_mesh-1___mtp-2_
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
@@ -35,10 +17,4 @@ Rules:
     name: mtp-1
     type: MeshTimeout
   OriginByMatches: {}
-  Subset:
-  - Key: __rule-matches-hash__
-    Not: false
-    Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
-  - Key: kuma.io/service
-    Not: false
-    Value: test-server
+  Subset: []

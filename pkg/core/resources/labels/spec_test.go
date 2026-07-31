@@ -74,7 +74,7 @@ var _ = Describe("RequiredOn.Matches", func() {
 		ctx.Descriptor.Name = core_mesh.DataplaneType
 		Expect(r.Matches(ctx)).To(BeTrue())
 
-		ctx.Descriptor.Name = core_mesh.MeshGatewayType
+		ctx.Descriptor.Name = core_mesh.MeshType
 		Expect(r.Matches(ctx)).To(BeFalse())
 	})
 

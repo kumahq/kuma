@@ -10,10 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
-	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes/v3"
 	envoy_virtual_hosts "github.com/kumahq/kuma/v3/pkg/xds/envoy/virtualhosts"
 )
 
@@ -316,65 +313,6 @@ func RoutePerFilterConfig(filterName string, filterConfig *anypb.Any) RouteConfi
 		}
 
 		m[filterName] = filterConfig
-		return nil
-	})
-}
-
-// RouteActionRetryDefault initializes the retry policy with defaults appropriate for the protocol.
-func RouteActionRetryDefault(protocol core_meta.Protocol) RouteConfigurer {
-	// The retry policy only supports HTTP and GRPC.
-	switch protocol {
-	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-	default:
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteConfigureFunc(func(r *envoy_config_route_v3.Route) error {
-		route := r.GetRoute()
-		if route == nil {
-			return nil
-		}
-
-		p := &envoy_config_route_v3.RetryPolicy{}
-
-		switch protocol {
-		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
-			p.RetryOn = envoy_routes.HttpRetryOnDefault
-		case core_meta.ProtocolGRPC:
-			p.RetryOn = envoy_routes.GrpcRetryOnDefault
-		}
-
-		route.RetryPolicy = p
-		return nil
-	})
-}
-
-func RouteActionRetry(retry *core_mesh.RetryResource, protocol core_meta.Protocol) RouteConfigurer {
-	// The retry policy only supports HTTP and GRPC.
-	switch protocol {
-	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-	default:
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteConfigureFunc(func(r *envoy_config_route_v3.Route) error {
-		route := r.GetRoute()
-		route.RetryPolicy = envoy_routes.RetryConfig(retry, protocol)
-		return nil
-	})
-}
-
-// RouteActionRequestTimeout sets the total timeout for an upstream request.
-func RouteActionRequestTimeout(timeout time.Duration) RouteConfigurer {
-	if timeout == 0 {
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteConfigureFunc(func(r *envoy_config_route_v3.Route) error {
-		if p := r.GetRoute(); p != nil {
-			p.Timeout = util_proto.Duration(timeout)
-		}
-
 		return nil
 	})
 }

@@ -32,7 +32,7 @@ skipRBAC: false
 restartOnSecretChange: true
 
 controlPlane:
-  # -- Environment that control plane is run in, useful when running universal global control plane on k8s
+  # -- Environment that control plane is run in
   environment: "kubernetes"
 
   # -- Labels to add to resources in addition to default labels
@@ -44,7 +44,7 @@ controlPlane:
   # -- Kuma CP log output path: Defaults to /dev/stdout
   logOutputPath: ""
 
-  # -- Kuma CP modes: one of zone,global
+  # -- Kuma CP modes: one of zone,standalone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart
   mode: "zone"
 
   # -- (string) Kuma CP zone, if running multizone
@@ -188,26 +188,6 @@ controlPlane:
     # -- Map of serviceMonitor annotations.
     annotations: {}
 
-  globalZoneSyncService:
-    # -- Whether to create a k8s service for the global zone sync
-    # service. It will only be created when enabled and deploying the global
-    # control plane.
-    enabled: true
-    # -- Service type of the Global-zone sync
-    type: LoadBalancer
-    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
-    loadBalancerIP:
-    # -- Optionally specify allowed source ranges that can access the load balancer
-    loadBalancerSourceRanges: []
-    # -- Additional annotations to put on the Global Zone Sync Service
-    annotations: { }
-    # -- Port on which Global Zone Sync Service is exposed on Node for service of type NodePort
-    nodePort: 30685
-    # -- Port on which Global Zone Sync Service is exposed
-    port: 5685
-    # -- Protocol of the Global Zone Sync service port
-    protocol: grpc
-
   defaults:
     # -- Whether to skip creating the default Mesh
     skipMeshCreation: false
@@ -279,21 +259,6 @@ controlPlane:
       secretName: ""
       # -- Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
       clientCertsSecretName: ""
-    # - if not creating the global control plane, then do nothing
-    # - if secretName is empty and create is false, then do nothing
-    # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
-    # - if secretName is empty and create is true, then create a secret with a default name and use it
-    # - if secretName is non-empty and create is true, then create the secret using the provided name
-    kdsGlobalServer:
-      # -- Name of the K8s TLS Secret resource. If you set this and don't set
-      # create=true, you have to create the secret manually.
-      secretName: ""
-      # -- Whether to create the TLS secret in helm.
-      create: false
-      # -- The TLS certificate to offer.
-      cert: ""
-      # -- The TLS key to use.
-      key: ""
     # - if not creating the zonal control plane, then do nothing
     # - if secretName is empty and create is false, then do nothing
     # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
@@ -385,9 +350,6 @@ controlPlane:
   containerSecurityContext:
     readOnlyRootFilesystem: true
 
-  # -- If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
-  # The downside is that control plane requires permission to read Secrets in all namespaces.
-  supportGatewaySecretsInAllNamespaces: false
   # -- DNS configuration for the control-plane pod.
   # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
   dns:
@@ -446,16 +408,6 @@ cni:
   # -- it's only useful in tests to trigger a possible race condition
   delayStartupSeconds: 0
 
-  # -- use new CNI (experimental)
-  experimental:
-    imageEbpf:
-      # -- CNI experimental eBPF image registry
-      registry: "docker.io/kumahq"
-      # -- CNI experimental eBPF image repository
-      repository: "merbridge"
-      # -- CNI experimental eBPF image tag
-      tag: "0.8.5"
-
   resources:
     requests:
       cpu: 100m
@@ -474,8 +426,6 @@ cni:
     runAsGroup: 0
 
 dataPlane:
-  # -- If true, then turn on CoreDNS query logging
-  dnsLogging: false
   image:
     # -- The Kuma DP image repository
     repository: "kuma-dp"
@@ -534,7 +484,7 @@ dataPlane:
     # This option only automates setting the required flags and does not enable or disable the feature itself.
     # You can still opt in manually by setting KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true
     # in ZoneIngress or ZoneEgress deployments, or in regular data plane proxies using a ContainerPatch
-    unifiedResourceNaming: false
+    unifiedResourceNaming: true
 
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
@@ -563,6 +513,36 @@ ingress:
     limits:
       cpu: 1000m
       memory: 512Mi
+
+  # -- Liveness probe settings for the Ingress proxy
+  livenessProbe:
+    # -- Whether to enable the liveness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Readiness probe settings for the Ingress proxy
+  readinessProbe:
+    # -- Whether to enable the readiness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Startup probe settings for the Ingress proxy
+  startupProbe:
+    # -- Whether to enable the startup probe.
+    enabled: false
+    failureThreshold: 60
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
 
   # -- Pod lifecycle settings (useful for adding a preStop hook, when
   # using AWS ALB or NLB)
@@ -722,6 +702,36 @@ egress:
     limits:
       cpu: 1000m
       memory: 512Mi
+
+  # -- Liveness probe settings for the Egress proxy
+  livenessProbe:
+    # -- Whether to enable the liveness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Readiness probe settings for the Egress proxy
+  readinessProbe:
+    # -- Whether to enable the readiness probe.
+    enabled: true
+    failureThreshold: 12
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  # -- Startup probe settings for the Egress proxy
+  startupProbe:
+    # -- Whether to enable the startup probe.
+    enabled: false
+    failureThreshold: 60
+    initialDelaySeconds: 1
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
 
   service:
     # -- Whether to create the service object
@@ -956,7 +966,7 @@ kubectl:
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: v1.36.2@sha256:b0d792e0d8dfb9bb1b922b78b23137e2a34bb6f9667640353a9d2aadd1fd7761
+    tag: v1.36.3@sha256:6e4fce3c83651edb91b74bc67701c5cd263dd8aa3cd4254b1798d6425a5ab789
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
@@ -977,17 +987,6 @@ hooks:
   # -- Security context at the container level for crd/webhook/ns
   containerSecurityContext:
     readOnlyRootFilesystem: true
-
-  # -- ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs
-  # Changing below values will potentially break ebpf cleanup completely,
-  # so be cautious when doing so.
-  ebpfCleanup:
-    # -- Security context at the pod level for crd/webhook/cleanup-ebpf
-    podSecurityContext:
-      runAsNonRoot: false
-    # -- Security context at the container level for crd/webhook/cleanup-ebpf
-    containerSecurityContext:
-      readOnlyRootFilesystem: false
 
 transparentProxy:
   configMap:
@@ -1053,21 +1052,6 @@ transparentProxy:
           # - "br+:172.18.0.0/16" (matches any interface starting with "br")
           # - "iface:::1/64" (for IPv6)
           networks: []
-      ebpf:
-        # -- Enables eBPF support for handling traffic redirection in the transparent proxy
-        enabled: false
-        # -- The path of the BPF filesystem
-        bpffsPath: /run/kuma/bpf
-        # -- The path of cgroup2
-        cgroupPath: /sys/fs/cgroup
-        # -- The name of the environment variable containing the IP address of the instance (pod/vm)
-        # where transparent proxy will be installed
-        instanceIPEnvVarName: ""
-        # -- Path where compiled eBPF programs and other necessary files for eBPF mode can be found
-        programsSourcePath: /tmp/kuma-ebpf
-        # -- The network interface for TC eBPF programs to bind to. If not provided, it will be
-        # automatically determined
-        tcAttachIface: ""
       retry:
         # -- The maximum number of retry attempts for operations
         maxRetries: 4
@@ -1105,25 +1089,6 @@ transparentProxy:
       verbose: false
 
 experimental:
-  # Configuration for the experimental ebpf mode for transparent proxy
-  ebpf:
-    # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
-    enabled: false
-    # -- Name of the environmental variable which will contain the IP address of a pod
-    instanceIPEnvVarName: INSTANCE_IP
-    # -- Path where BPF file system should be mounted
-    bpffsPath: /sys/fs/bpf
-    # -- Host's cgroup2 path
-    cgroupPath: /sys/fs/cgroup
-    # -- Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty
-    tcAttachIface: ""
-    # -- Path where compiled eBPF programs which will be installed can be found
-    programsSourcePath: /tmp/kuma-ebpf
-  # -- If true, enable native Kubernetes sidecars. This requires at least
-  # Kubernetes v1.29
-  sidecarContainers: true
-  # -- If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching.
-  inboundTagsDisabled: false
   # -- If true, Envoy admin API binds to a Unix domain socket instead of TCP.
   envoyAdminUnixSocket: true
 

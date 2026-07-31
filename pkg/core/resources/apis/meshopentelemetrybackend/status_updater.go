@@ -341,9 +341,6 @@ func meshAccessLogRefs(mal *meshaccesslog_api.MeshAccessLogResource) []*common_a
 	for _, to := range pointer.Deref(mal.Spec.To) {
 		collectFromConf(to.Default)
 	}
-	for _, from := range pointer.Deref(mal.Spec.From) {
-		collectFromConf(from.Default)
-	}
 	for _, rule := range pointer.Deref(mal.Spec.Rules) {
 		collectFromConf(rule.Default)
 	}

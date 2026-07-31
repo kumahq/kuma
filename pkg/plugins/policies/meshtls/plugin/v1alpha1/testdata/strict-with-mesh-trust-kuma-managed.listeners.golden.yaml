@@ -1,5 +1,5 @@
 resources:
-- name: inbound:127.0.0.1:17777
+- name: self_inbound_dp_17777
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -10,17 +10,12 @@ resources:
     enableReusePort: false
     filterChains:
     - filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: inbound_127_0_0_1_17777.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:17777
+          cluster: self_inbound_dp_17777
           idleTimeout: 7200s
-          statPrefix: localhost_17777
+          statPrefix: self_inbound_dp_17777
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -47,9 +42,10 @@ resources:
       filterMetadata:
         io.kuma.tags:
           kuma.io/service: backend
-    name: inbound:127.0.0.1:17777
+    name: self_inbound_dp_17777
+    statPrefix: self_inbound_dp_17777
     trafficDirection: INBOUND
-- name: inbound:127.0.0.1:17778
+- name: self_inbound_dp_17778
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -60,17 +56,12 @@ resources:
     enableReusePort: false
     filterChains:
     - filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: inbound_127_0_0_1_17778.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:17778
+          cluster: self_inbound_dp_17778
           idleTimeout: 7200s
-          statPrefix: localhost_17778
+          statPrefix: self_inbound_dp_17778
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -97,9 +88,10 @@ resources:
       filterMetadata:
         io.kuma.tags:
           kuma.io/service: frontend
-    name: inbound:127.0.0.1:17778
+    name: self_inbound_dp_17778
+    statPrefix: self_inbound_dp_17778
     trafficDirection: INBOUND
-- name: inbound:passthrough:ipv4
+- name: self_transparentproxy_passthrough_inbound_ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -114,20 +106,21 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:passthrough:ipv4
-          statPrefix: inbound_passthrough_ipv4
+          cluster: self_transparentproxy_passthrough_inbound_ipv4
+          statPrefix: self_transparentproxy_passthrough_inbound_ipv4
     - filterChainMatch:
         destinationPort: 17778
       filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:passthrough:ipv4
-          statPrefix: inbound_passthrough_ipv4
-    name: inbound:passthrough:ipv4
+          cluster: self_transparentproxy_passthrough_inbound_ipv4
+          statPrefix: self_transparentproxy_passthrough_inbound_ipv4
+    name: self_transparentproxy_passthrough_inbound_ipv4
+    statPrefix: self_transparentproxy_passthrough_inbound_ipv4
     trafficDirection: INBOUND
     useOriginalDst: true
-- name: inbound:passthrough:ipv6
+- name: self_transparentproxy_passthrough_inbound_ipv6
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -142,16 +135,17 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:passthrough:ipv6
-          statPrefix: inbound_passthrough_ipv6
+          cluster: self_transparentproxy_passthrough_inbound_ipv6
+          statPrefix: self_transparentproxy_passthrough_inbound_ipv6
     - filterChainMatch:
         destinationPort: 17778
       filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:passthrough:ipv6
-          statPrefix: inbound_passthrough_ipv6
-    name: inbound:passthrough:ipv6
+          cluster: self_transparentproxy_passthrough_inbound_ipv6
+          statPrefix: self_transparentproxy_passthrough_inbound_ipv6
+    name: self_transparentproxy_passthrough_inbound_ipv6
+    statPrefix: self_transparentproxy_passthrough_inbound_ipv6
     trafficDirection: INBOUND
     useOriginalDst: true

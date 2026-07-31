@@ -13,8 +13,22 @@ func TargetRefMesh() common_api.TargetRef {
 
 func TargetRefMeshSubset(kv ...string) common_api.TargetRef {
 	return common_api.TargetRef{
-		Kind: common_api.MeshSubset,
+		Kind: common_api.LegacyMeshSubsetKind(),
 		Tags: pointer.To(TagsKVToMap(kv)),
+	}
+}
+
+func TargetRefDataplaneLabels(kv ...string) common_api.TargetRef {
+	return common_api.TargetRef{
+		Kind:   common_api.Dataplane,
+		Labels: pointer.To(TagsKVToMap(kv)),
+	}
+}
+
+func TargetRefDataplaneName(name string) common_api.TargetRef {
+	return common_api.TargetRef{
+		Kind: common_api.Dataplane,
+		Name: &name,
 	}
 }
 
@@ -27,7 +41,7 @@ func TargetRefService(name string) common_api.TargetRef {
 
 func TargetRefServiceSubset(name string, kv ...string) common_api.TargetRef {
 	return common_api.TargetRef{
-		Kind: common_api.MeshServiceSubset,
+		Kind: common_api.LegacyMeshServiceSubsetKind(),
 		Name: &name,
 		Tags: pointer.To(TagsKVToMap(kv)),
 	}
@@ -42,14 +56,6 @@ func TargetRefMeshService(name, namespace, sectionName string) common_api.Target
 	}
 }
 
-func TargetRefMeshHTTPRoute(name, namespace string) common_api.TargetRef {
-	return common_api.TargetRef{
-		Kind:      common_api.MeshHTTPRoute,
-		Name:      &name,
-		Namespace: pointer.To(namespace),
-	}
-}
-
 func TargetRefMeshServiceLabels(labels map[string]string, sectionName string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind:        common_api.MeshService,
@@ -58,16 +64,16 @@ func TargetRefMeshServiceLabels(labels map[string]string, sectionName string) co
 	}
 }
 
-func TargetRefMeshExternalService(name string) common_api.TargetRef {
+func TargetRefMeshHTTPRouteLabels(labels map[string]string) common_api.TargetRef {
 	return common_api.TargetRef{
-		Kind: common_api.MeshExternalService,
-		Name: &name,
+		Kind:   common_api.MeshHTTPRoute,
+		Labels: pointer.To(labels),
 	}
 }
 
-func TargetRefMeshGateway(name string) *common_api.TargetRef {
-	return &common_api.TargetRef{
-		Kind: common_api.MeshGateway,
+func TargetRefMeshExternalService(name string) common_api.TargetRef {
+	return common_api.TargetRef{
+		Kind: common_api.MeshExternalService,
 		Name: &name,
 	}
 }

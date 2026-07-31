@@ -66,13 +66,11 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 		},
 	}
 
-	if !b.Config().Runtime.Kubernetes.SupportGatewaySecretsInAllNamespaces {
-		// we don't want to react on events about secrets from other namespaces
-		cacheOpts.ByObject[&kube_core.Secret{}] = cache.ByObject{
-			Namespaces: map[string]cache.Config{
-				systemNamespace: {},
-			},
-		}
+	// we don't want to react on events about secrets from other namespaces
+	cacheOpts.ByObject[&kube_core.Secret{}] = cache.ByObject{
+		Namespaces: map[string]cache.Config{
+			systemNamespace: {},
+		},
 	}
 
 	mgr, err := kube_ctrl.NewManager(

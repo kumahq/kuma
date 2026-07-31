@@ -127,8 +127,8 @@ mtls:
 			cmd := tunnel.AdminCurlCmd("/stats")
 			stdout, _, err := universal.Cluster.Exec("", "", "demo-client", cmd...)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("cluster.%s_backend__kuma-3_msvc_80.ssl.handshake", meshName)))
-			g.Expect(stdout).ToNot(ContainSubstring(fmt.Sprintf("cluster.%s_backend__kuma-3_msvc_80.ssl.handshake: 0", meshName)))
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("cluster.kri_msvc_%s_kuma-3__backend_80.ssl.handshake", meshName)))
+			g.Expect(stdout).ToNot(ContainSubstring(fmt.Sprintf("cluster.kri_msvc_%s_kuma-3__backend_80.ssl.handshake: 0", meshName)))
 		}, "30s", "1s").Should(Succeed())
 		Expect(reqError.Load()).To(BeNil())
 

@@ -214,10 +214,6 @@ var basicProfileLabels = []selectorFunction{
 		Type:  v1alpha1.PrefixSelectorType,
 		Match: names.GetOpenTelemetryClusterPrefix(),
 	}),
-	selectorToFilterFunction(v1alpha1.Selector{
-		Type:  v1alpha1.PrefixSelectorType,
-		Match: names.GetTracingClusterPrefix(),
-	}),
 }
 
 var profileOrder = map[v1alpha1.ProfileName]int{

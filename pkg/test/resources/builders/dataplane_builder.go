@@ -9,7 +9,6 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var (
@@ -209,15 +208,20 @@ func TagsKVToMap(tagsKV []string) map[string]string {
 	return tags
 }
 
-func (d *DataplaneBuilder) WithPrometheusMetrics(config *mesh_proto.PrometheusMetricsBackendConfig) *DataplaneBuilder {
-	d.res.Spec.Metrics = &mesh_proto.MetricsBackend{
-		Name: "prometheus-1",
-		Type: mesh_proto.MetricsPrometheusType,
-		Conf: proto.MustToStruct(config),
+func (d *DataplaneBuilder) WithDelegatedGateway(name string) *DataplaneBuilder {
+	d.res.Spec.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{
+		Tags: map[string]string{
+			mesh_proto.ServiceTag: name,
+		},
+		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
 	}
 	return d
 }
 
+// WithBuiltInGateway builds a BUILTIN gateway dataplane. Kuma no longer accepts
+// BUILTIN on create/update (DataplaneResource.Validate rejects it), so this
+// exists only to construct legacy, pre-upgrade-shaped fixtures for testing
+// backward-compat read paths (e.g. label computation, insight resync).
 func (d *DataplaneBuilder) WithBuiltInGateway(name string) *DataplaneBuilder {
 	d.res.Spec.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{
 		Tags: map[string]string{
@@ -228,7 +232,7 @@ func (d *DataplaneBuilder) WithBuiltInGateway(name string) *DataplaneBuilder {
 	return d
 }
 
-func (d *DataplaneBuilder) AddBuiltInGatewayTags(tags map[string]string) *DataplaneBuilder {
+func (d *DataplaneBuilder) AddGatewayTags(tags map[string]string) *DataplaneBuilder {
 	maps.Copy(d.res.Spec.Networking.Gateway.Tags, tags)
 	return d
 }

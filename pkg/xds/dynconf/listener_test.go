@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
@@ -32,7 +31,7 @@ var _ = Describe("AddConfigRoute", func() {
 		// when
 		rs := core_xds.NewResourceSet()
 		body := make([]byte, 1024)
-		err := dynconf.AddConfigRoute(proxy, rs, false, "/meshmetric", "/meshmetric", body)
+		err := dynconf.AddConfigRoute(proxy, rs, "meshmetric", "/meshmetric", body)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -50,7 +49,7 @@ var _ = Describe("AddConfigRoute", func() {
 
 		// then
 		Expect(listener).ToNot(BeNil())
-		Expect(listener.GetName()).To(Equal(dynconf.ListenerName))
+		Expect(listener.GetName()).To(Equal("system_dynamicconfig"))
 
 		filterChains := listener.GetFilterChains()
 		Expect(filterChains).To(HaveLen(1))
@@ -65,19 +64,16 @@ var _ = Describe("AddConfigRoute", func() {
 		Expect(hcm.GetRouteConfig().MaxDirectResponseBodySizeBytes.GetValue()).To(Equal(uint32(1024)))
 	})
 
-	It("configure mesh metric and embedded dns dynamic configurations with unified naming", func() {
+	It("configure mesh metric and embedded dns dynamic configurations", func() {
 		// when
-		proxy.Metadata.Features = map[string]bool{
-			xds_types.FeatureUnifiedResourceNaming: true,
-		}
 		rs := core_xds.NewResourceSet()
 		body := make([]byte, 1024)
-		err := dynconf.AddConfigRoute(proxy, rs, true, "meshmetric", "/meshmetric", body)
+		err := dynconf.AddConfigRoute(proxy, rs, "meshmetric", "/meshmetric", body)
 		Expect(err).ToNot(HaveOccurred())
 
 		// again with a different body size
 		newBody := make([]byte, 2048)
-		err = dynconf.AddConfigRoute(proxy, rs, true, "dns", "/dns", newBody)
+		err = dynconf.AddConfigRoute(proxy, rs, "dns", "/dns", newBody)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

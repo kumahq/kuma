@@ -114,22 +114,9 @@ func createBootstrapResponse(bootstrap []byte, config *KumaDpBootstrap) *types.B
 	bootstrapConfig := types.BootstrapResponse{
 		Bootstrap: bootstrap,
 	}
-	aggregate := []types.Aggregate{}
-	for _, value := range config.AggregateMetricsConfig {
-		aggregate = append(aggregate, types.Aggregate{
-			Address: value.Address,
-			Name:    value.Name,
-			Port:    value.Port,
-			Path:    value.Path,
-		})
-	}
 	bootstrapConfig.KumaSidecarConfiguration = types.KumaSidecarConfiguration{
-		Metrics: types.MetricsConfiguration{
-			Aggregate: aggregate,
-		},
 		Networking: types.NetworkingConfiguration{
-			Address:          config.NetworkingConfig.Address,
-			CorefileTemplate: config.NetworkingConfig.CorefileTemplate,
+			Address: config.NetworkingConfig.Address,
 		},
 	}
 	return &bootstrapConfig

@@ -2,6 +2,10 @@
 
 * Status: accepted
 
+> Note: `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` was removed in Kuma 3.0.0.
+> The compatibility mode described below is no longer available in 3.0.0 and
+> newer releases.
+
 Technical Story: https://github.com/kumahq/kuma/issues/8467
 
 ## Context and Problem Statement

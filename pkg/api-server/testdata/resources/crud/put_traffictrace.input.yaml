@@ -1,4 +1,0 @@
-#/meshes/default/traffic-traces/backends-eu 201 method=PUT
-#/meshes/default/traffic-traces/backends-eu 200
-type: Mesh
-name: default
