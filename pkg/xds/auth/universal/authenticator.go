@@ -37,15 +37,12 @@ func NewAuthenticator(
 // universalAuthenticator defines authentication for Dataplane Tokens
 // All fields in token are optional, so we only validate data that is available in token. This way you can pick your level of security.
 // Generate token for mesh+name for maximum security.
-// Generate token for mesh+tags (matched against Dataplane labels, e.g. kuma.io/workload,
-// or against the tags a legacy Dataplane still declares in its spec) so you can reuse the
-// token for many dataplanes.
+// Generate token for mesh+tags (matched against Dataplane labels, e.g. kuma.io/workload)
+// so you can reuse the token for many dataplanes.
 // Generate token for mesh if you trust the scope of the mesh.
 //
 // If you generate token bound to tags, the Dataplane needs to have all the tags defined in
-// the token, and every value it declares for a tag has to be allowed by the token. So for
-// a legacy Dataplane with inbounds 1) kuma.io/service:web 2) kuma.io/service:web-api you
-// need a token for both values kuma.io/service=web,web-api.
+// the token, and every value it declares for a tag has to be allowed by the token.
 type universalAuthenticator struct {
 	dataplaneValidator builtin_issuer.Validator
 	zoneValidator      zone.Validator
