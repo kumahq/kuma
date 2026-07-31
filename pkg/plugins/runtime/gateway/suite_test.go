@@ -28,6 +28,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	"github.com/kumahq/kuma/v2/pkg/core/xds/issuer"
 	"github.com/kumahq/kuma/v2/pkg/dns/vips"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/v2/pkg/test"
@@ -111,6 +112,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 		rt.CAProvider(),
 		idProvider,
 		rt.Metrics(),
+		issuer.Unlimited(),
 	)
 	Expect(err).To(Succeed())
 

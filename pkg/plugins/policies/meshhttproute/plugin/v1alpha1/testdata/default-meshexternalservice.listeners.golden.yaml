@@ -38,6 +38,7 @@ resources:
           statPrefix: default_example___extsvc_9090
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/unified-name: kri_extsvc_default___example_
     name: outbound:10.20.20.1:9090
     trafficDirection: OUTBOUND
