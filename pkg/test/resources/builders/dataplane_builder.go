@@ -283,11 +283,6 @@ func (b *InboundBuilder) WithServicePort(port uint32) *InboundBuilder {
 
 func (b *InboundBuilder) WithTags(tags map[string]string) *InboundBuilder {
 	maps.Copy(b.res.Tags, tags)
-	// GetProtocolFallback() only reads the Protocol field now; keep test
-	// fixtures written against the kuma.io/protocol tag working.
-	if protocol, ok := tags[mesh_proto.ProtocolTag]; ok {
-		b.res.Protocol = protocol
-	}
 	return b
 }
 

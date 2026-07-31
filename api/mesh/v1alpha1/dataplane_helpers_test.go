@@ -272,7 +272,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 			expected string
 		}
 
-		DescribeTable("should return protocol from field",
+		DescribeTable("should return protocol from field, falling back to the tag",
 			func(given testCase) {
 				Expect(given.inbound.GetProtocolFallback()).To(Equal(given.expected))
 			},
@@ -287,6 +287,19 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 			Entry("inbound has protocol field set", testCase{
 				inbound: &Dataplane_Networking_Inbound{
 					Protocol: "grpc",
+				},
+				expected: "grpc",
+			}),
+			Entry("legacy inbound carries the protocol only as a tag", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Tags: map[string]string{ProtocolTag: "http"},
+				},
+				expected: "http",
+			}),
+			Entry("protocol field wins over the tag", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Protocol: "grpc",
+					Tags:     map[string]string{ProtocolTag: "http"},
 				},
 				expected: "grpc",
 			}),

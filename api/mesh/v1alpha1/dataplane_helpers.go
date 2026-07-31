@@ -392,11 +392,17 @@ func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
 }
 
 // GetProtocolFallback returns the protocol supported by this inbound interface.
+// The kuma.io/protocol tag is still read as a fallback: protocol is a per-port
+// property that resource labels cannot express, so Universal dataplanes
+// persisted before the Protocol field existed carry it only as an inbound tag.
 func (d *Dataplane_Networking_Inbound) GetProtocolFallback() string {
 	if d == nil {
 		return ""
 	}
-	return d.Protocol
+	if d.Protocol != "" {
+		return d.Protocol
+	}
+	return d.Tags[ProtocolTag]
 }
 
 // GetSectionName returns either inbound name or stringified port value
