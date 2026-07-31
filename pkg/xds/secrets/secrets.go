@@ -34,7 +34,6 @@ type MeshCa struct {
 
 type Secrets interface {
 	GetForDataPlane(ctx context.Context, dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error)
-	GetForZoneEgress(ctx context.Context, zoneEgress *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
 	GetAllInOne(ctx context.Context, mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
 	Info(mesh_proto.ProxyType, model.ResourceKey) *Info
 	Cleanup(mesh_proto.ProxyType, model.ResourceKey)
@@ -176,21 +175,6 @@ func (s *secrets) GetAllInOne(
 	}
 	identity, _, allInOne, err := s.get(ctx, mesh_proto.DataplaneProxyType, dataplane, tags, mesh, otherMeshes)
 	return identity, allInOne.CaSecret, err
-}
-
-func (s *secrets) GetForZoneEgress(
-	ctx context.Context,
-	zoneEgress *core_mesh.ZoneEgressResource,
-	mesh *core_mesh.MeshResource,
-) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	tags := mesh_proto.MultiValueTagSetFrom(map[string][]string{
-		mesh_proto.ServiceTag: {
-			mesh_proto.ZoneEgressServiceName,
-		},
-	})
-
-	identity, cas, _, err := s.get(ctx, mesh_proto.EgressProxyType, zoneEgress, tags, mesh, nil)
-	return identity, cas[mesh.GetMeta().GetName()], err
 }
 
 func (s *secrets) get(
