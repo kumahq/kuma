@@ -303,22 +303,22 @@ violations:
   - field: spec.to[0].default.http.maxConnectionDuration
     message: can't be specified when top-level TargetRef is referencing MeshHTTPRoute`,
 			}),
-			Entry("to TargetRef using labels and name for MeshExternalService", testCase{
+			Entry("to TargetRef using labels and sectionName for MeshExternalService", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
 to:
   - targetRef:
       kind: MeshExternalService
-      name: web-backend
       labels:
         kuma.io/display-name: web-backend
+      sectionName: web-backend
     default:
       connectionTimeout: 10s
       idleTimeout: 1h`,
 				expected: `
 violations:
-  - field: spec.to[0].targetRef.name
+  - field: spec.to[0].targetRef.sectionName
     message: must not be set with kind MeshExternalService`,
 			}),
 			Entry("when rules is defined, to cannot be defined", testCase{

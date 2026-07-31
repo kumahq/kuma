@@ -158,7 +158,9 @@ var _ = Describe("FromLegacyTargetRef", func() {
 		Entry("MeshService", testCase{
 			targetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
-				Name: pointer.To("backend"),
+				Labels: pointer.To(map[string]string{
+					mesh_proto.DisplayName: "backend",
+				}),
 			},
 			expected: tags.Tags{mesh_proto.ServiceTag: "backend"},
 		}),

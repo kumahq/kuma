@@ -1,7 +1,10 @@
 package context
 
 import (
+	"fmt"
 	"maps"
+	"strconv"
+	"strings"
 	"time"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
@@ -50,20 +53,30 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 	networking := dataplane.Spec.GetNetworking()
 
 	processRef := func(kind string, name string, namespace string, port *uint32, labels map[string]string) {
-		var targetNamespace *string
-		if namespace != "" {
-			targetNamespace = &namespace
+		selectorLabels, sectionName := normalizeReachableBackendRef(
+			kind,
+			name,
+			namespace,
+			port,
+			labels,
+			dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
+		)
+		if len(selectorLabels) == 0 {
+			return
 		}
 
-		selectorLabels, sectionName, ok := common_api.BackendRef{
+		backendRef := common_api.BackendRef{
 			TargetRef: common_api.TargetRef{
-				Kind:      common_api.TargetRefKind(kind),
-				Name:      &name,
-				Namespace: targetNamespace,
-				Labels:    &labels,
+				Kind:   common_api.TargetRefKind(kind),
+				Labels: &selectorLabels,
 			},
 			Port: port,
-		}.RealResourceSelector(dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag])
+		}
+		if sectionName != "" {
+			backendRef.SectionName = pointer.To(sectionName)
+		}
+
+		selectorLabels, sectionName, ok := backendRef.RealResourceSelector("")
 		if !ok {
 			return
 		}
@@ -120,6 +133,56 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 	}
 
 	return outbounds, true
+}
+
+func normalizeReachableBackendRef(kind, name, namespace string, port *uint32, labels map[string]string, defaultNamespace string) (map[string]string, string) {
+	sectionName := ""
+	if port != nil && *port > 0 {
+		sectionName = fmt.Sprintf("%d", *port)
+	}
+	if len(labels) > 0 {
+		return labels, sectionName
+	}
+	if name == "" {
+		return nil, sectionName
+	}
+
+	if common_api.TargetRefKind(kind) == common_api.MeshService && namespace == "" {
+		if service, parsedNamespace, parsedPort, ok := parseLegacyMeshServiceTag(name); ok {
+			name = service
+			namespace = parsedNamespace
+			if sectionName == "" && parsedPort > 0 {
+				sectionName = fmt.Sprintf("%d", parsedPort)
+			}
+		}
+	}
+
+	normalized := map[string]string{
+		mesh_proto.DisplayName: name,
+	}
+	switch common_api.TargetRefKind(kind) {
+	case common_api.MeshService, common_api.MeshExternalService, common_api.MeshMultiZoneService:
+		if namespace == "" {
+			namespace = defaultNamespace
+		}
+		if namespace != "" {
+			normalized[mesh_proto.KubeNamespaceTag] = namespace
+		}
+	}
+	return normalized, sectionName
+}
+
+func parseLegacyMeshServiceTag(name string) (string, string, int32, bool) {
+	segments := strings.Split(name, "_")
+	if len(segments) != 4 || segments[2] != "svc" {
+		return "", "", 0, false
+	}
+
+	port, err := strconv.ParseInt(segments[3], 10, 32)
+	if err != nil {
+		return "", "", 0, false
+	}
+	return segments[0], segments[1], int32(port), true
 }
 
 func (di *DestinationIndex) getDestinationByKRI(id kri.Identifier) core.Destination {

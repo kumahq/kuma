@@ -56,17 +56,9 @@ type ValidateTargetRefOpts struct {
 	SupportedKinds             []common_api.TargetRefKind
 	SupportedKindsError        string
 	GatewayListenerTagsAllowed bool
-	// AllowedInvalidNames field allows to provide names that deviate from
-	// standard naming conventions in specific scenarios. I.e. normally,
-	// service names cannot contain forward slashes ("/"). However, there
-	// are exceptions during resource conversion:
-	// * Gateway API to Kuma HTTPRoute Conversion
-	//   When converting an HTTPRoute from Gateway API to a MeshHTTPRoute
-	//   (Kuma's resource definition), there might be situations where the
-	//   targeted backend reference cannot be found. In such cases, Kuma
-	//   sets the service name to "kuma.io/unresolved-backend". This name
-	//   includes a forward slash, but it's allowed as an exception to
-	//   handle unresolved references.
+	// AllowedInvalidNames is kept for compatibility with callers that still pass
+	// legacy validation options while common TargetRef uses labels-only real
+	// resource selectors.
 	AllowedInvalidNames []string
 	IsInboundPolicy     bool
 	IsBackendRef        bool
@@ -375,104 +367,37 @@ func ValidateTargetRef(
 
 	switch ref.Kind {
 	case common_api.Mesh:
-		if pointer.Deref(ref.Name) != "" {
-			err.AddViolation("name", fmt.Sprintf("using name with kind %v is not yet supported", ref.Kind))
-		}
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
-		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
 	case common_api.Dataplane:
-		err.Add(disallowedField("name", pointer.Deref(ref.Name), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
-		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		if !opts.IsInboundPolicy && pointer.Deref(ref.SectionName) != "" {
 			err.AddViolation("sectionName", "can only be used with inbound policies")
 		}
 	case common_api.LegacyMeshSubsetKind():
-		err.Add(disallowedField("name", pointer.Deref(ref.Name), ref.Kind))
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(ValidateTags(validators.RootedAt("tags"), pointer.Deref(ref.Tags), ValidateTagsOpts{}))
 		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
-		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
 	case common_api.MeshService:
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		if opts.IsBackendRef {
-			err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
-			if len(pointer.Deref(ref.Labels)) == 0 && pointer.Deref(ref.Name) == "" {
-				err.AddViolation("", fmt.Sprintf("name or labels must be set when kind is %v", ref.Kind))
-			}
-			if len(pointer.Deref(ref.Labels)) > 0 && (pointer.Deref(ref.Name) != "" || pointer.Deref(ref.Namespace) != "") {
-				err.AddViolation("labels", "either labels or name and namespace must be specified")
-			}
-			break
-		}
-		err.Add(disallowedField("name", pointer.Deref(ref.Name), ref.Kind))
-		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
 	case common_api.MeshHTTPRoute:
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
-		if opts.IsBackendRef {
-			err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
-			if len(pointer.Deref(ref.Labels)) == 0 && pointer.Deref(ref.Name) == "" {
-				err.AddViolation("", fmt.Sprintf("name or labels must be set when kind is %v", ref.Kind))
-			}
-			if len(pointer.Deref(ref.Labels)) > 0 && (pointer.Deref(ref.Name) != "" || pointer.Deref(ref.Namespace) != "") {
-				err.AddViolation("labels", "either labels or name and namespace must be specified")
-			}
-			break
-		}
-		err.Add(disallowedField("name", pointer.Deref(ref.Name), ref.Kind))
-		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
 	case common_api.LegacyMeshServiceSubsetKind():
-		err.Add(requiredField("name", pointer.Deref(ref.Name), ref.Kind))
-		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
+		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
 		err.Add(ValidateSelector(validators.RootedAt("tags"), pointer.Deref(ref.Tags), ValidateTagsOpts{}))
-		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
-		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
 	case common_api.MeshExternalService:
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
-		if opts.IsBackendRef {
-			err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
-			if len(pointer.Deref(ref.Labels)) == 0 && pointer.Deref(ref.Name) == "" {
-				err.AddViolation("", fmt.Sprintf("name or labels must be set when kind is %v", ref.Kind))
-			}
-			if len(pointer.Deref(ref.Labels)) > 0 && (pointer.Deref(ref.Name) != "" || pointer.Deref(ref.Namespace) != "") {
-				err.AddViolation("labels", "either labels or name must be specified")
-			}
-			break
-		}
-		err.Add(disallowedField("name", pointer.Deref(ref.Name), ref.Kind))
-		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
 	case common_api.MeshMultiZoneService:
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		// sectionName selects a MeshMultiZoneService port and stays allowed,
 		// mirroring MeshService and the pre-refactor behavior.
-		if opts.IsBackendRef {
-			err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
-			if len(pointer.Deref(ref.Labels)) == 0 && pointer.Deref(ref.Name) == "" {
-				err.AddViolation("", fmt.Sprintf("name or labels must be set when kind is %v", ref.Kind))
-			}
-			if len(pointer.Deref(ref.Labels)) > 0 && (pointer.Deref(ref.Name) != "" || pointer.Deref(ref.Namespace) != "") {
-				err.AddViolation("labels", "either labels or name must be specified")
-			}
-			break
-		}
-		err.Add(disallowedField("name", pointer.Deref(ref.Name), ref.Kind))
-		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
 	}
 

@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"maps"
 	"sort"
-	"strconv"
 	"strings"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -102,19 +100,12 @@ type TargetRef struct {
 	// Kind of the referenced resource
 	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
 	Kind TargetRefKind `json:"kind"`
-	// Name of the referenced resource. Can only be used with kinds: `MeshService`
-	// and `MeshServiceSubset`
-	Name *string `json:"name,omitempty"`
 	// Tags used to select a subset of proxies by tags. Can only be used with kinds
 	// `MeshSubset` and `MeshServiceSubset`
 	Tags *map[string]string `json:"tags,omitempty"`
-	// Mesh is reserved for future use to identify cross mesh resources.
-	Mesh *string `json:"mesh,omitempty"`
-	// Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-	// will be targeted.
-	Namespace *string `json:"namespace,omitempty"`
-	// Labels are used to select group of MeshServices that match labels. Either Labels or
-	// Name and Namespace can be used.
+	// Labels are used to select referenced real resources and to carry legacy
+	// service identity when a common TargetRef must still target old
+	// service-tag based paths.
 	Labels *map[string]string `json:"labels,omitempty"`
 	// SectionName is used to target specific section of resource.
 	// For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
@@ -200,12 +191,12 @@ type MatchesHash string
 
 type BackendRefHash string
 
-func (b BackendRef) RealResourceSelector(defaultNamespace string) (map[string]string, string, bool) {
+func (b BackendRef) RealResourceSelector(_ string) (map[string]string, string, bool) {
 	if !b.ReferencesRealObject() {
 		return nil, "", false
 	}
 
-	labels, sectionName, ok := realResourceSelector(b.TargetRef, defaultNamespace)
+	labels, sectionName, ok := realResourceSelector(b.TargetRef)
 	if !ok {
 		return nil, "", false
 	}
@@ -219,21 +210,13 @@ func (b BackendRef) RealResourceSelector(defaultNamespace string) (map[string]st
 
 // Hash returns a hash of the BackendRef
 func (in BackendRef) Hash() BackendRefHash {
+	labels := pointer.Deref(in.Labels)
+	sectionName := pointer.Deref(in.SectionName)
 	if in.ReferencesRealObject() {
-		labels, sectionName, _ := in.RealResourceSelector("")
-		keys := util_maps.SortedKeys(labels)
-		orderedLabels := make([]string, 0, len(labels))
-		for _, k := range keys {
-			orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, labels[k]))
+		if selectorLabels, selectorSectionName, ok := in.RealResourceSelector(""); ok {
+			labels = selectorLabels
+			sectionName = selectorSectionName
 		}
-
-		return BackendRefHash(fmt.Sprintf(
-			"%s/%s/%d/%s",
-			in.Kind,
-			strings.Join(orderedLabels, "/"),
-			pointer.DerefOr(in.Port, 0),
-			sectionName,
-		))
 	}
 
 	keys := util_maps.SortedKeys(pointer.Deref(in.Tags))
@@ -242,94 +225,27 @@ func (in BackendRef) Hash() BackendRefHash {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, pointer.Deref(in.Tags)[k]))
 	}
 
-	keys = util_maps.SortedKeys(pointer.Deref(in.Labels))
-	orderedLabels := make([]string, 0, len(pointer.Deref(in.Labels)))
+	keys = util_maps.SortedKeys(labels)
+	orderedLabels := make([]string, 0, len(labels))
 	for _, k := range keys {
-		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, pointer.Deref(in.Labels)[k]))
+		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, labels[k]))
 	}
 
-	name := in.Name
-	if in.Port != nil {
-		name = pointer.To(fmt.Sprintf("%s_svc_%d", pointer.Deref(in.Name), *in.Port))
-	}
-	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, pointer.Deref(name), strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), pointer.Deref(in.Mesh)))
+	return BackendRefHash(fmt.Sprintf(
+		"%s/%s/%s/%d/%s",
+		in.Kind,
+		strings.Join(orderedTags, "/"),
+		strings.Join(orderedLabels, "/"),
+		pointer.DerefOr(in.Port, 0),
+		sectionName,
+	))
 }
 
-func realResourceSelector(ref TargetRef, defaultNamespace string) (map[string]string, string, bool) {
+func realResourceSelector(ref TargetRef) (map[string]string, string, bool) {
 	if len(pointer.Deref(ref.Labels)) > 0 {
 		return cloneStringMap(pointer.Deref(ref.Labels)), pointer.Deref(ref.SectionName), true
 	}
-
-	name := pointer.Deref(ref.Name)
-	if name == "" {
-		return nil, "", false
-	}
-
-	switch ref.Kind {
-	case MeshService:
-		if ref.Namespace == nil && pointer.Deref(ref.SectionName) == "" {
-			if serviceName, namespace, port, ok := parseMeshServiceName(name); ok {
-				labels := map[string]string{
-					mesh_proto.DisplayName:      serviceName,
-					mesh_proto.KubeNamespaceTag: namespace,
-				}
-				sectionName := ""
-				if port > 0 {
-					sectionName = fmt.Sprintf("%d", port)
-				}
-				return labels, sectionName, true
-			}
-		}
-
-		namespace := pointer.Deref(ref.Namespace)
-		if namespace == "" {
-			namespace = defaultNamespace
-		}
-
-		labels := map[string]string{
-			mesh_proto.DisplayName: name,
-		}
-		if namespace != "" {
-			labels[mesh_proto.KubeNamespaceTag] = namespace
-		}
-		return labels, pointer.Deref(ref.SectionName), true
-	case MeshExternalService, MeshMultiZoneService:
-		namespace := pointer.Deref(ref.Namespace)
-		if namespace == "" {
-			namespace = defaultNamespace
-		}
-
-		labels := map[string]string{
-			mesh_proto.DisplayName: name,
-		}
-		if namespace != "" {
-			labels[mesh_proto.KubeNamespaceTag] = namespace
-		}
-		return labels, pointer.Deref(ref.SectionName), true
-	default:
-		return nil, "", false
-	}
-}
-
-func parseMeshServiceName(name string) (string, string, int32, bool) {
-	segments := strings.Split(name, "_")
-
-	var port int32
-	switch len(segments) {
-	case 4:
-		p, err := strconv.ParseInt(segments[3], 10, 32)
-		if err != nil {
-			return "", "", 0, false
-		}
-		port = int32(p)
-	default:
-		return "", "", 0, false
-	}
-	if segments[2] != "svc" {
-		return "", "", 0, false
-	}
-
-	return segments[0], segments[1], port, true
+	return nil, "", false
 }
 
 func cloneStringMap(in map[string]string) map[string]string {

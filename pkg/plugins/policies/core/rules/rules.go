@@ -351,7 +351,9 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 						}
 						targetRef = common_api.TargetRef{
 							Kind: common_api.LegacyMeshServiceSubsetKind(),
-							Name: pointer.To(service),
+							Labels: &map[string]string{
+								mesh_proto.DisplayName: service,
+							},
 							Tags: &map[string]string{
 								RuleMatchesHashTag: string(matchesHash),
 							},
@@ -651,8 +653,5 @@ func policySelectsByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) 
 // MeshService targetRef. Under the labels-only contract the service name lives
 // in the kuma.io/display-name label, so fall back to it when name is unset.
 func serviceTagValue(tr common_api.TargetRef) string {
-	if name := pointer.Deref(tr.Name); name != "" {
-		return name
-	}
 	return pointer.Deref(tr.Labels)[mesh_proto.DisplayName]
 }

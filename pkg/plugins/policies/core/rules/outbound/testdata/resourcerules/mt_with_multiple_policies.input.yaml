@@ -18,7 +18,8 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: backend
+                labels:
+                  kuma.io/display-name: backend
                 weight: 100
 ---
 # First MeshTimeout policy targeting the MeshHTTPRoute

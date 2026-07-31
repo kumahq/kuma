@@ -1353,7 +1353,7 @@ var _ = Describe("buildToListWithRoutes", func() {
 	expandedServices := func(items []core_model.PolicyItem) []string {
 		var services []string
 		for _, item := range items {
-			services = append(services, pointer.Deref(item.GetTargetRef().Name))
+			services = append(services, pointer.Deref(item.GetTargetRef().Labels)[mesh_proto.DisplayName])
 		}
 		return services
 	}
