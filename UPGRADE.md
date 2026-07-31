@@ -168,13 +168,36 @@ once per connected legacy proxy.
 **Action required**
 
 Migrate to mesh-scoped zone proxies **before** upgrading the zone control plane.
-On Kubernetes set `ingress.enabled=false` / `egress.enabled=false` and deploy the
-mesh-scoped zone proxies through `meshes[].ingress.enabled` /
-`meshes[].egress.enabled` instead. On Universal, replace
+On Kubernetes deploy them through `meshes[].ingress.enabled` /
+`meshes[].egress.enabled`. On Universal, replace
 `kuma-dp run --proxy-type=ingress|egress` with a regular `Dataplane` that
 declares `networking.listeners` of type `ZoneIngress`/`ZoneEgress`. Upgrading the
 control plane first blackholes cross-zone traffic as soon as the legacy zone
 proxy Pods restart.
+
+### Legacy `ingress`/`egress` Helm values and `kumactl install` flags removed
+
+The chart no longer renders standalone `ZoneIngress`/`ZoneEgress` Deployments.
+The top-level `ingress` and `egress` value blocks are gone, along with the
+Deployment, Service, HorizontalPodAutoscaler, PodDisruptionBudget and RBAC
+templates they drove. `kumactl install control-plane` lost the matching flags:
+`--ingress-enabled`, `--ingress-drain-time`, `--ingress-use-node-port`,
+`--ingress-node-selector`, `--egress-enabled`, `--egress-drain-time`,
+`--egress-service-type` and `--egress-node-selector`. `controlPlane.ingress.*`
+is unrelated and still configures the Kubernetes Ingress for the control plane
+GUI and API.
+
+Helm does not reject unknown values, so an upgrade with `ingress.enabled=true`
+left in your values file succeeds without any warning. Because the templates are
+gone, the upgrade deletes the legacy zone proxy Deployment, Service and RBAC
+objects that the previous release owned, which drops all cross-zone traffic
+still flowing through them.
+
+**Action required**
+
+Complete the migration described in the previous section, then drop the
+top-level `ingress` and `egress` blocks from your values files and the removed
+flags from any `kumactl install control-plane` invocation.
 
 ### ServiceInsight, MeshInsight, and inspect `_rules` no longer report kuma.io/service based data
 
