@@ -14,23 +14,18 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	builtin_issuer "github.com/kumahq/kuma/v3/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/v3/pkg/xds/auth"
 )
 
 func NewAuthenticator(
 	dataplaneValidator builtin_issuer.Validator,
-	zoneValidator zone.Validator,
 	resManager manager.ReadOnlyResourceManager,
 	env config_core.EnvironmentType,
-	zone string,
 ) auth.Authenticator {
 	return &universalAuthenticator{
 		dataplaneValidator: dataplaneValidator,
-		zoneValidator:      zoneValidator,
 		resManager:         resManager,
 		env:                env,
-		zone:               zone,
 	}
 }
 
@@ -45,10 +40,8 @@ func NewAuthenticator(
 // Dataplane also needs to have all tags defined in the token
 type universalAuthenticator struct {
 	dataplaneValidator builtin_issuer.Validator
-	zoneValidator      zone.Validator
 	resManager         manager.ReadOnlyResourceManager
 	env                config_core.EnvironmentType
-	zone               string
 }
 
 var _ auth.Authenticator = &universalAuthenticator{}
@@ -57,10 +50,6 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, resource mode
 	switch resource := resource.(type) {
 	case *core_mesh.DataplaneResource:
 		return u.authDataplane(ctx, resource, credential)
-	case *core_mesh.ZoneIngressResource:
-		return u.authZoneEntity(ctx, credential, zone.IngressScope)
-	case *core_mesh.ZoneEgressResource:
-		return u.authZoneEntity(ctx, credential, zone.EgressScope)
 	default:
 		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
@@ -103,31 +92,6 @@ func (u *universalAuthenticator) identityDerivesFromWorkloadLabel(ctx context.Co
 		return false, nil
 	}
 	return matched.Spec.UsesWorkloadLabel(u.env), nil
-}
-
-func (u *universalAuthenticator) authZoneEntity(
-	ctx context.Context,
-	credential auth.Credential,
-	scope string,
-) error {
-	identity, err := u.zoneValidator.Validate(ctx, credential)
-	if err != nil {
-		return err
-	}
-
-	if !zone.InScope(identity.Scope, scope) {
-		return errors.Errorf(
-			"token cannot be used to authenticate zone entity (%s is out of token's scope: %+v)",
-			scope,
-			identity.Scope,
-		)
-	}
-
-	if identity.Zone != "" && u.zone != identity.Zone {
-		return errors.Errorf("zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
-	}
-
-	return nil
 }
 
 func validateTags(tokenTags mesh_proto.MultiValueTagSet, dpTags mesh_proto.MultiValueTagSet) error {

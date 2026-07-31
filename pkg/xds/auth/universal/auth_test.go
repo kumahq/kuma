@@ -24,7 +24,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	builtin_issuer "github.com/kumahq/kuma/v3/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/v3/pkg/xds/auth"
 	"github.com/kumahq/kuma/v3/pkg/xds/auth/universal"
 )
@@ -56,11 +55,7 @@ var _ = Describe("Authentication flow", func() {
 			UseSecrets: true,
 		})
 		Expect(err).ToNot(HaveOccurred())
-		zoneTokenValidator, err := builtin.NewZoneTokenValidator(resManager, false, store_config.MemoryStore, dp_server.ZoneTokenValidatorConfig{
-			UseSecrets: true,
-		})
-		Expect(err).ToNot(HaveOccurred())
-		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneTokenValidator, resManager, config_core.UniversalEnvironment, "zone-1")
+		authenticator = universal.NewAuthenticator(dataplaneValidator, resManager, config_core.UniversalEnvironment)
 
 		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("default"), "default")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
@@ -344,43 +339,58 @@ var _ = Describe("Authentication flow", func() {
 		Expect(err.Error()).To(ContainSubstring(`there is no signing key`))
 	})
 
-	Context("Zone Ingress", func() {
-		ziRes := core_mesh.ZoneIngressResource{
+	Context("zone proxy", func() {
+		zoneProxyRes := core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{
-				Mesh: "zi-1",
+				Name: "zone-proxy-1",
+				Mesh: "default",
 			},
-			Spec: &mesh_proto.ZoneIngress{
-				Networking: &mesh_proto.ZoneIngress_Networking{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "127.0.0.1",
+					Listeners: []*mesh_proto.Dataplane_Networking_Listener{{
+						Type:    mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+						Address: "127.0.0.1",
+						Port:    10001,
+					}},
 				},
 			},
 		}
 
-		var zoneTokenIssuer zone.TokenIssuer
-
 		BeforeEach(func() {
-			err := resStore.Create(ctx, &ziRes, core_store.CreateByKey("zi-1", model.NoMesh))
-			Expect(err).ToNot(HaveOccurred())
-
-			zoneKeyManager := tokens.NewSigningKeyManager(resManager, system.ZoneTokenSigningKeyPrefix)
-			Expect(zoneKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
-			zoneTokenIssuer = builtin.NewZoneTokenIssuer(resManager)
+			Expect(resStore.Create(ctx, &zoneProxyRes, core_store.CreateByKey("zone-proxy-1", "default"))).To(Succeed())
 		})
 
-		It("should authenticate zone ingress with zone token", func() {
+		It("should authenticate a zone proxy Dataplane with a dataplane token", func() {
 			// given
-			identity := zone.Identity{
-				Zone:  "zone-1",
-				Scope: []string{zone.IngressScope},
+			token, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
+				Name: "zone-proxy-1",
+				Mesh: "default",
+			}, 24*time.Hour)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when / then
+			Expect(authenticator.Authenticate(ctx, &zoneProxyRes, token)).To(Succeed())
+		})
+
+		It("should reject a standalone ZoneIngress resource", func() {
+			// given
+			ziRes := core_mesh.ZoneIngressResource{
+				Meta: &test_model.ResourceMeta{Name: "zi-1"},
+				Spec: &mesh_proto.ZoneIngress{
+					Networking: &mesh_proto.ZoneIngress_Networking{
+						Address: "127.0.0.1",
+					},
+				},
 			}
-			token, err := zoneTokenIssuer.Generate(ctx, identity, time.Hour)
+			token, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{Mesh: "default"}, 24*time.Hour)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
 			err = authenticator.Authenticate(ctx, &ziRes, token)
 
 			// then
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("no matching authenticator for ZoneIngress resource")))
 		})
 	})
 })

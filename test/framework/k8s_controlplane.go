@@ -504,18 +504,6 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service, workload string) (strin
 	return c.generateToken("", string(dataBytes))
 }
 
-func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`{"zone": %q, "scope": ["ingress"]}`, zone)
-
-	return c.generateToken("/zone", data)
-}
-
-func (c *K8sControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`{"zone": %q, "scope": ["egress"]}`, zone)
-
-	return c.generateToken("/zone", data)
-}
-
 func (c *K8sControlPlane) GenerateZoneToken(zone string, scope []string) (string, error) {
 	scopeJson, err := json.Marshal(scope)
 	if err != nil {
