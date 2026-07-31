@@ -301,10 +301,20 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 	serviceTagIdentities := map[string]struct{}{}
 	spiffeIDs := map[string]struct{}{}
 	for _, dpp := range dpps {
-		// Same identity signal the mTLS identity path and MeshService
-		// generation already rely on.
-		if workload := dpp.GetMeta().GetLabels()[metadata.KumaWorkload]; workload != "" {
-			serviceTagIdentities[workload] = struct{}{}
+		// Must mirror the precedence in pkg/xds/secrets.identityTags: the SAN
+		// minted for a legacy dataplane still comes from its inbound
+		// kuma.io/service tags, so publishing only the workload label here
+		// would make clients verify a SAN the certificate doesn't carry.
+		tagIdentities := dpp.Spec.LegacyTagSet()[mesh_proto.ServiceTag]
+		if len(tagIdentities) == 0 {
+			// Tag-free dataplane: identity comes from the workload label, same
+			// as the mTLS identity path and MeshService generation.
+			if workload := dpp.GetMeta().GetLabels()[metadata.KumaWorkload]; workload != "" {
+				serviceTagIdentities[workload] = struct{}{}
+			}
+		}
+		for service := range tagIdentities {
+			serviceTagIdentities[service] = struct{}{}
 		}
 		for _, identity := range meshidentity_api.AllMatched(dpp.Meta.GetLabels(), meshIdentities) {
 			if identity.Status == nil || (!identity.Status.IsInitialized() && !identity.Status.IsPartiallyReady()) {
