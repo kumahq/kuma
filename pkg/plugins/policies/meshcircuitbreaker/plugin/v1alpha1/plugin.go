@@ -7,9 +7,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
@@ -23,7 +21,7 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
-var _ core_plugins.EgressPolicyPlugin = &plugin{}
+var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -41,20 +39,12 @@ func (p plugin) MatchedPolicies(
 	return matchers.MatchedPolicies(api.MeshCircuitBreakerType, dataplane, resources, opts...)
 }
 
-func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.EgressMatchedPolicies(api.MeshCircuitBreakerType, tags, resources, opts...)
-}
-
 func (p plugin) Apply(
 	rs *core_xds.ResourceSet,
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
 	applyTrackRemaining(policies_xds.GatherAllClusters(rs))
-
-	if proxy.ZoneEgressProxy != nil {
-		return applyToEgressRealResources(rs, proxy)
-	}
 
 	clusters := policies_xds.GatherClusters(rs)
 
@@ -143,40 +133,6 @@ func configure(
 		return plugin_xds.NewConfigurer(computed.Conf.(api.Conf)).ConfigureCluster(cluster)
 	}
 
-	return nil
-}
-
-func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	indexed := rs.IndexByOrigin()
-	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
-		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
-		for _, mes := range meshExternalServices.GetItems() {
-			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
-			policies, ok := meshResources.Dynamic[destinationname.MustResolve(false, meshExtSvc, meshExtSvc.Spec.Match)]
-			if !ok {
-				continue
-			}
-			mhc, ok := policies[api.MeshCircuitBreakerType]
-			if !ok {
-				continue
-			}
-			for mesID, typedResources := range indexed {
-				conf := mhc.ToRules.ResourceRules.Compute(mesID, meshResources)
-				if conf == nil {
-					continue
-				}
-
-				for typ, resources := range typedResources {
-					if typ == envoy_resource.ClusterType {
-						err := configureClusters(resources, conf.Conf[0].(api.Conf))
-						if err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
-	}
 	return nil
 }
 

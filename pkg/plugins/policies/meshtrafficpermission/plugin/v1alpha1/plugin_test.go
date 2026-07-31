@@ -4,8 +4,6 @@ import (
 	"path"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
-	network_rbac "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/rbac/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -14,12 +12,7 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/plugins"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
@@ -33,7 +26,6 @@ import (
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
@@ -540,212 +532,6 @@ var _ = Describe("RBAC", func() {
 			bytes, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply-ze-listener-with-mtp.golden.yaml")))
-		})
-	})
-
-	Context("for ZoneEgress proxy", func() {
-		It("should attach MeshTrafficPermission RBAC when unified naming is enabled", func() {
-			// given a MeshExternalService whose egress filter chain is named using the
-			// unified (KRI) scheme, not the legacy one
-			mes := builders.MeshExternalService().WithMesh("mesh-1").WithName("es-1").Build()
-			filterChainName := destinationname.MustResolve(true, mes, mes.Spec.Match)
-			serviceName := destinationname.MustResolve(false, mes, mes.Spec.Match)
-
-			rs := core_xds.NewResourceSet()
-			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
-				WithOverwriteName("egress-listener").
-				Configure(
-					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, filterChainName).Configure(
-						listeners.MatchTransportProtocol("tls"),
-						listeners.TCPProxy(filterChainName),
-					)),
-				).
-				Build()
-			Expect(err).ToNot(HaveOccurred())
-			rs.Add(&core_xds.Resource{
-				Name:     listener.GetName(),
-				Origin:   metadata.OriginEgress,
-				Resource: listener,
-			})
-
-			meshRes := builders.Mesh().WithName("mesh-1").WithBuiltinMTLSBackend("builtin-1").WithEnabledMTLSBackend("builtin-1").Build()
-			// ctx.Mesh.Resource is deliberately left nil here: zone-egress proxies
-			// aren't scoped to a single mesh, so this is what production actually
-			// passes. A non-nil ctx.Mesh would make an old mesh-scoped naming check
-			// succeed even on the buggy code, masking the regression this test
-			// exists to catch.
-			ctx := &xds_context.Context{}
-
-			proxy := &core_xds.Proxy{
-				APIVersion: envoy.APIV3,
-				Metadata: &core_xds.DataplaneMetadata{
-					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-				},
-				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-					ZoneEgressResource: &core_mesh.ZoneEgressResource{
-						Meta: &test_model.ResourceMeta{Name: "ze1", Mesh: "mesh-1"},
-						Spec: &mesh_proto.ZoneEgress{
-							Networking: &mesh_proto.ZoneEgress_Networking{
-								Address: "192.168.0.1",
-								Port:    10002,
-							},
-						},
-					},
-					MeshResourcesList: []*core_xds.MeshResources{
-						{
-							Mesh: meshRes,
-							Resources: map[core_model.ResourceType]core_model.ResourceList{
-								meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
-									Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
-								},
-							},
-							Dynamic: core_xds.ExternalServiceDynamicPolicies{
-								serviceName: {
-									policies_api.MeshTrafficPermissionType: {
-										Type: policies_api.MeshTrafficPermissionType,
-										FromRules: core_rules.FromRules{
-											InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-												{}: {
-													{
-														Conf: policies_api.RuleConf{
-															Allow: &[]common_api.Match{
-																{
-																	SpiffeID: &common_api.SpiffeIDMatch{
-																		Type:  common_api.ExactMatchType,
-																		Value: "spiffe://mesh-1/frontend",
-																	},
-																},
-															},
-														},
-														Origin: common.Origin{
-															Resource: &test_model.ResourceMeta{
-																Mesh: "mesh-1",
-																Name: "mtp-1",
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			}
-
-			// when
-			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
-			Expect(p.Apply(rs, *ctx, proxy)).To(Succeed())
-
-			// then the RBAC filter must have attached to the unified-named filter chain:
-			// ctx.Mesh.Resource is always nil for zone-egress proxies, so a naive
-			// mesh-scoped naming check would always report naming as disabled and
-			// this filter chain (named per the unified scheme) would never match,
-			// silently skipping RBAC entirely.
-			var egressListener *envoy_listener.Listener
-			for _, r := range rs.List() {
-				if r.Name == "egress-listener" {
-					egressListener = r.Resource.(*envoy_listener.Listener)
-				}
-			}
-			Expect(egressListener).ToNot(BeNil())
-			var matched *envoy_listener.FilterChain
-			for _, fc := range egressListener.GetFilterChains() {
-				if fc.GetName() == filterChainName {
-					matched = fc
-				}
-			}
-			Expect(matched).ToNot(BeNil())
-			var actualRBAC *network_rbac.RBAC
-			for _, filter := range matched.GetFilters() {
-				if filter.GetName() != "envoy.filters.network.rbac" {
-					continue
-				}
-				actualRBAC = &network_rbac.RBAC{}
-				Expect(filter.GetTypedConfig().UnmarshalTo(actualRBAC)).To(Succeed())
-			}
-			Expect(actualRBAC).ToNot(BeNil())
-			Expect(actualRBAC.GetRules()).To(BeNil())
-			Expect(actualRBAC.GetMatcher()).ToNot(BeNil())
-			Expect(actualRBAC.GetMatcher().GetMatcherList().GetMatchers()).To(HaveLen(1))
-		})
-
-		It("should keep MeshExternalService traffic allowed when no MeshTrafficPermission matches", func() {
-			mes := builders.MeshExternalService().WithMesh("mesh-1").WithName("es-1").Build()
-			filterChainName := destinationname.MustResolve(true, mes, mes.Spec.Match)
-
-			rs := core_xds.NewResourceSet()
-			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
-				WithOverwriteName("egress-listener").
-				Configure(
-					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, filterChainName).Configure(
-						listeners.MatchTransportProtocol("tls"),
-						listeners.TCPProxy(filterChainName),
-					)),
-				).
-				Build()
-			Expect(err).ToNot(HaveOccurred())
-			rs.Add(&core_xds.Resource{
-				Name:     listener.GetName(),
-				Origin:   metadata.OriginEgress,
-				Resource: listener,
-			})
-
-			meshRes := builders.Mesh().WithName("mesh-1").WithBuiltinMTLSBackend("builtin-1").WithEnabledMTLSBackend("builtin-1").Build()
-			ctx := &xds_context.Context{}
-			proxy := &core_xds.Proxy{
-				APIVersion: envoy.APIV3,
-				Metadata: &core_xds.DataplaneMetadata{
-					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-				},
-				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-					ZoneEgressResource: &core_mesh.ZoneEgressResource{
-						Meta: &test_model.ResourceMeta{Name: "ze1", Mesh: "mesh-1"},
-						Spec: &mesh_proto.ZoneEgress{
-							Networking: &mesh_proto.ZoneEgress_Networking{
-								Address: "192.168.0.1",
-								Port:    10002,
-							},
-						},
-					},
-					MeshResourcesList: []*core_xds.MeshResources{
-						{
-							Mesh: meshRes,
-							Resources: map[core_model.ResourceType]core_model.ResourceList{
-								meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
-									Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
-								},
-							},
-							Dynamic: core_xds.ExternalServiceDynamicPolicies{},
-						},
-					},
-				},
-			}
-
-			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
-			Expect(p.Apply(rs, *ctx, proxy)).To(Succeed())
-
-			var actualRBAC *network_rbac.RBAC
-			egressListener := rs.ListOf(envoy_resource.ListenerType)[0].Resource.(*envoy_listener.Listener)
-			for _, fc := range egressListener.GetFilterChains() {
-				if fc.GetName() != filterChainName {
-					continue
-				}
-				for _, filter := range fc.GetFilters() {
-					if filter.GetName() != "envoy.filters.network.rbac" {
-						continue
-					}
-					actualRBAC = &network_rbac.RBAC{}
-					Expect(filter.GetTypedConfig().UnmarshalTo(actualRBAC)).To(Succeed())
-				}
-			}
-			Expect(actualRBAC).ToNot(BeNil())
-			Expect(actualRBAC.GetMatcher()).To(BeNil())
-			Expect(actualRBAC.GetRules()).ToNot(BeNil())
-			Expect(actualRBAC.GetRules().GetAction()).To(Equal(rbac_config.RBAC_ALLOW))
-			Expect(actualRBAC.GetRules().GetPolicies()).To(HaveKey("MeshTrafficPermission"))
 		})
 	})
 })
