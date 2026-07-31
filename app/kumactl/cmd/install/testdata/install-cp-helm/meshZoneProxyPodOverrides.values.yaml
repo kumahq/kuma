@@ -1,0 +1,34 @@
+# Zone ingress exercises the falsy overrides (replicas: 0,
+# terminationGracePeriodSeconds: 0, automountServiceAccountToken: false).
+# Zone egress overrides terminationGracePeriodSeconds with a non-falsy value
+# and leaves replicas, restartPolicy and imagePullPolicy unset so the
+# meshZoneProxyDefaults fallback is covered too.
+global:
+  imagePullSecrets: [image-secret]
+meshes:
+  - name: default
+    ingress:
+      enabled: true
+      image:
+        registry: registry.k8s.io
+        repository: pause
+        tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+      imagePullPolicy: Always
+      terminationGracePeriodSeconds: 0
+      automountServiceAccountToken: false
+      serviceAccountAnnotations:
+        foo: '{"baz": "ingress"}'
+        ping: "ingress"
+      deployment:
+        replicas: 0
+    egress:
+      enabled: true
+      image:
+        registry: registry.k8s.io
+        repository: pause
+        tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+      terminationGracePeriodSeconds: 15
+      automountServiceAccountToken: true
+      serviceAccountAnnotations:
+        foo: '{"baz": "egress"}'
+        ping: "egress"
