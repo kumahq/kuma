@@ -53,12 +53,13 @@ type DataplaneWatchdog struct {
 	log logr.Logger
 
 	// state of watchdog
-	lastHash         string // last Mesh hash that was used to **successfully** generate Reconcile Envoy config
-	dpType           mesh_proto.ProxyType
-	proxyTypeSettled bool
-	envoyAdminMTLS   *core_xds.ServerSideMTLSCerts
-	dpAddress        string
-	xdsMeta          *core_xds.DataplaneMetadata
+	lastHash              string // last Mesh hash that was used to **successfully** generate Reconcile Envoy config
+	dpType                mesh_proto.ProxyType
+	proxyTypeSettled      bool
+	legacyZoneProxyLogged bool // guards the one-time log for unsupported legacy zone proxies
+	envoyAdminMTLS        *core_xds.ServerSideMTLSCerts
+	dpAddress             string
+	xdsMeta               *core_xds.DataplaneMetadata
 	// used by MeshIdentity
 	workloadIdentity *core_xds.WorkloadIdentity
 	lastIdentityHash string // last Hash of MeshIdentities
@@ -84,8 +85,13 @@ func (d *DataplaneWatchdog) Sync(ctx context.Context) (SyncResult, error) {
 	case mesh_proto.DataplaneProxyType:
 		return d.syncDataplane(ctx)
 	case mesh_proto.IngressProxyType, mesh_proto.EgressProxyType:
-		d.log.Info("xDS generation for legacy ZoneIngress/ZoneEgress dataplanes is no longer supported")
-		return SyncResult{}, nil
+		// Sync() runs on every refresh interval, so log only once per watchdog to avoid flooding the CP logs.
+		if !d.legacyZoneProxyLogged {
+			d.legacyZoneProxyLogged = true
+			d.log.Info("xDS generation for legacy ZoneIngress/ZoneEgress dataplanes is no longer supported. " +
+				"Migrate to mesh-scoped zone proxies, see UPGRADE.md")
+		}
+		return SyncResult{ProxyType: d.dpType, Status: SkipStatus}, nil
 	default:
 		// It might be a case that dp type is not yet inferred because there is no Dataplane definition yet.
 		return SyncResult{}, nil
