@@ -46,8 +46,8 @@ type LocalityAwareness struct {
 	Disabled *bool `json:"disabled,omitempty"`
 	// LocalZone defines locality aware load balancing priorities between dataplane proxies inside a zone
 	LocalZone *LocalZone `json:"localZone,omitempty"`
-	// CrossZone defines locality aware load balancing priorities when dataplane proxies inside local zone
-	// are unavailable
+	// CrossZone defines locality-aware load balancing priorities for MeshMultiZoneService
+	// targets when dataplane proxies inside the local zone are unavailable.
 	CrossZone *CrossZone `json:"crossZone,omitempty"`
 }
 
