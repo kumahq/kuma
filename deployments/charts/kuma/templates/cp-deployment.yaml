@@ -67,7 +67,11 @@ spec:
   {{- end }}
   minReadySeconds: {{ .Values.controlPlane.minReadySeconds }}
   strategy:
+    {{- if eq (.Values.controlPlane.deploymentStrategy.type | default "RollingUpdate") "Recreate" }}
+    type: Recreate
+    {{- else }}
     {{- toYaml .Values.controlPlane.deploymentStrategy | nindent 4 }}
+    {{- end }}
   selector:
     matchLabels:
       {{- include "kuma.selectorLabels" . | nindent 6 }}
