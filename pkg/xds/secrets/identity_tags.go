@@ -9,15 +9,23 @@ import (
 )
 
 // identityTags returns the tag set used to derive a dataplane's mTLS
-// identity (SPIFFE/kuma SAN URIs), built from the kuma.io/workload label,
-// the same identity signal MeshService generation and the MeshIdentity
-// Universal default already rely on.
+// identity (SPIFFE/kuma SAN URIs). Legacy Universal dataplanes that still
+// declare kuma.io/service on their inbounds keep deriving identity from
+// those tags, so an upgrade doesn't silently re-issue their certificates
+// under a different SAN. Tag-free dataplanes fall back to the
+// kuma.io/workload label, the same identity signal MeshService generation
+// and the MeshIdentity Universal default already rely on.
 func identityTags(dataplane *core_mesh.DataplaneResource) (mesh_proto.MultiValueTagSet, error) {
+	tags := dataplane.Spec.LegacyTagSet()
+	if len(tags.Values(mesh_proto.ServiceTag)) > 0 {
+		return tags, nil
+	}
+
 	workload := dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]
 	if workload == "" {
 		return nil, errors.Errorf(
-			"dataplane %q has no %s label, cannot derive mTLS identity",
-			dataplane.GetMeta().GetName(), k8s_metadata.KumaWorkload,
+			"dataplane %q has no %s tag and no %s label, cannot derive mTLS identity",
+			dataplane.GetMeta().GetName(), mesh_proto.ServiceTag, k8s_metadata.KumaWorkload,
 		)
 	}
 

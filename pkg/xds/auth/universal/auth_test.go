@@ -129,6 +129,18 @@ var _ = Describe("Authentication flow", func() {
 			},
 			dpRes: &dpResWithWorkload,
 		}),
+		Entry("should auth with a legacy token bound to the service tags declared in the dataplane spec", testCase{
+			id: builtin_issuer.DataplaneIdentity{
+				Mesh: "default",
+				Tags: map[string]map[string]bool{
+					"kuma.io/service": {
+						"web":     true,
+						"web-api": true,
+					},
+				},
+			},
+			dpRes: &dpRes,
+		}),
 	)
 
 	DescribeTable("should fail auth",
@@ -185,6 +197,19 @@ var _ = Describe("Authentication flow", func() {
 			},
 			dpRes: &dpRes,
 			err:   `dataplane has no tag "kuma.io/zone" required by the token`,
+		}),
+		Entry("on legacy token missing one of the service tag values declared in the dataplane spec", testCase{
+			id: builtin_issuer.DataplaneIdentity{
+				Mesh: "default",
+				Tags: map[string]map[string]bool{
+					"kuma.io/service": {
+						"web": true,
+						// "web-api": true a valid token should also allow web-api
+					},
+				},
+			},
+			dpRes: &dpRes,
+			err:   `which is not allowed with this token. Allowed values in token are ["web"]`,
 		}),
 		Entry("on token bound to multiple tags where one does not match", testCase{
 			id: builtin_issuer.DataplaneIdentity{

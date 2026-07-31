@@ -37,12 +37,15 @@ func NewAuthenticator(
 // universalAuthenticator defines authentication for Dataplane Tokens
 // All fields in token are optional, so we only validate data that is available in token. This way you can pick your level of security.
 // Generate token for mesh+name for maximum security.
-// Generate token for mesh+tags (matched against Dataplane labels, e.g. kuma.io/workload) so you can reuse the token for many dataplanes.
+// Generate token for mesh+tags (matched against Dataplane labels, e.g. kuma.io/workload,
+// or against the tags a legacy Dataplane still declares in its spec) so you can reuse the
+// token for many dataplanes.
 // Generate token for mesh if you trust the scope of the mesh.
 //
-// If you generate token bound to tags, the Dataplane needs to have all the tags defined
-// in the token, and each of its label values must be one of the values allowed for that
-// tag in the token.
+// If you generate token bound to tags, the Dataplane needs to have all the tags defined in
+// the token, and every value it declares for a tag has to be allowed by the token. So for
+// a legacy Dataplane with inbounds 1) kuma.io/service:web 2) kuma.io/service:web-api you
+// need a token for both values kuma.io/service=web,web-api.
 type universalAuthenticator struct {
 	dataplaneValidator builtin_issuer.Validator
 	zoneValidator      zone.Validator
@@ -78,7 +81,7 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 	if dpIdentity.Mesh != "" && dataplane.Meta.GetMesh() != dpIdentity.Mesh {
 		return errors.Errorf("proxy mesh from requestor: %s is different than in token: %s", dataplane.Meta.GetMesh(), dpIdentity.Mesh)
 	}
-	if err := validateTags(dpIdentity.Tags, dataplane.Meta.GetLabels()); err != nil {
+	if err := validateTags(dpIdentity.Tags, dataplane); err != nil {
 		return err
 	}
 	if err := u.validateWorkload(ctx, dpIdentity.Workload, dataplane); err != nil {
@@ -130,14 +133,30 @@ func (u *universalAuthenticator) authZoneEntity(
 	return nil
 }
 
-func validateTags(tokenTags mesh_proto.MultiValueTagSet, dpLabels map[string]string) error {
+// validateTags checks a tag-bound token against the dataplane. A tag is
+// satisfied by the dataplane's labels or, for legacy dataplanes still carrying
+// service tags in their spec, by those tags. Every value the dataplane declares
+// for a tag must be allowed by the token, so widening the lookup never widens
+// what a token grants.
+func validateTags(tokenTags mesh_proto.MultiValueTagSet, dataplane *core_mesh.DataplaneResource) error {
+	dpTags := dataplane.Spec.LegacyTagSet()
+	dpLabels := dataplane.Meta.GetLabels()
+
 	for tagName, allowedValues := range tokenTags {
-		dpValue, exist := dpLabels[tagName]
-		if !exist {
+		dpValues := map[string]bool{}
+		for value := range dpTags[tagName] {
+			dpValues[value] = true
+		}
+		if labelValue, exist := dpLabels[tagName]; exist {
+			dpValues[labelValue] = true
+		}
+		if len(dpValues) == 0 {
 			return errors.Errorf("dataplane has no tag %q required by the token", tagName)
 		}
-		if !allowedValues[dpValue] {
-			return errors.Errorf("dataplane contains tag %q with value %q which is not allowed with this token. Allowed values in token are %q", tagName, dpValue, tokenTags.Values(tagName))
+		for value := range dpValues {
+			if !allowedValues[value] {
+				return errors.Errorf("dataplane contains tag %q with value %q which is not allowed with this token. Allowed values in token are %q", tagName, value, tokenTags.Values(tagName))
+			}
 		}
 	}
 	return nil
