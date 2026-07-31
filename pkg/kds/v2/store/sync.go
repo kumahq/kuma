@@ -34,6 +34,10 @@ import (
 var globalSyncLog = core.Log.WithName("kds-global-sync")
 
 const (
+	// Retries of an update that lost a write conflict. The first one runs
+	// immediately, which is all a store reading its own writes needs; the later
+	// ones wait so a cached store (Kubernetes informer) can observe the write
+	// that won.
 	updateConflictRetries = 2
 	updateConflictBackoff = 100 * time.Millisecond
 )
@@ -301,11 +305,13 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
 			// from upstream store, because we update downstream only when resource have changed in upstream
 			if err := s.resourceStore.Update(ctx, upd.r, append(upd.opts, store.ModifiedAt(time.Now()))...); err != nil {
-				if store.IsConflict(err) {
-					conflicted = append(conflicted, upd)
-					continue
+				if !store.IsConflict(err) {
+					return err
 				}
-				return err
+				// Retry outside the transaction, so the backoff doesn't hold its
+				// connection and row locks. Continuing is safe: a conflict is a
+				// zero-row update, not a database error, so the transaction lives on.
+				conflicted = append(conflicted, upd)
 			}
 		}
 		return nil
@@ -316,11 +322,18 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	return s.retryConflictedUpdates(ctx, conflicted, opts, log), nackError
 }
 
+// retryConflictedUpdates reapplies updates that lost a write conflict, rebased on a
+// fresh copy: zone-local writers (VIP allocator, hostname generators) invalidate the
+// version read at List time. It runs after the transaction commits, so the waits
+// hold no connection or row locks, and the batch shares one wait per attempt. Sync
+// is no longer all-or-nothing, which is fine for a convergent reconciliation of a
+// single type, and the Kubernetes store has no transactions anyway. Exhausting the
+// retries returns the error and forces a resync; skipping would drift silently,
+// since delta xDS marks the resource delivered on send.
 func (s *syncResourceStore) retryConflictedUpdates(ctx context.Context, pending []OnUpdate, opts *SyncOption, log logr.Logger) error {
 	if len(pending) == 0 {
 		return nil
 	}
-
 	backoff := retry.WithMaxRetries(updateConflictRetries, retry.WithFullJitter(retry.NewConstant(updateConflictBackoff)))
 	err := retry.Do(ctx, backoff, func(ctx context.Context) error {
 		for _, upd := range pending {
@@ -330,7 +343,6 @@ func (s *syncResourceStore) retryConflictedUpdates(ctx context.Context, pending 
 				return err
 			}
 		}
-
 		var conflicted []OnUpdate
 		var lastConflict error
 		if err := store.InTx(ctx, s.transactions, func(ctx context.Context) error {
@@ -360,6 +372,10 @@ func (s *syncResourceStore) retryConflictedUpdates(ctx context.Context, pending 
 	return err
 }
 
+// refreshForUpdate re-reads the downstream copy and rebases the pending upstream
+// change onto it, so the retry carries the current version. Status comes from the
+// fresh copy for the same reason Sync preserves it: on the Zone it belongs to
+// local components, not to the upstream.
 func (s *syncResourceStore) refreshForUpdate(ctx context.Context, upd OnUpdate, opts *SyncOption) error {
 	fresh, err := registry.Global().NewObject(upd.r.Descriptor().Name)
 	if err != nil {

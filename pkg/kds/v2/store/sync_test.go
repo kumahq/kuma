@@ -325,11 +325,16 @@ resource already exists: type="GlobalSecret" name="zone-token-signing-public-key
 	})
 })
 
+// conflictingStore simulates another writer winning the race on the first
+// 'conflicts' updates: the update is rejected and the stored record is bumped to
+// a new version, so a retry that doesn't rebase on a fresh copy keeps losing.
 type conflictingStore struct {
 	store.ResourceStore
 	conflicts int
 	updates   int
-	mutate    func(model.Resource)
+	// mutate changes the record the winning writer leaves behind, on top of the
+	// version bump.
+	mutate func(model.Resource)
 }
 
 func (c *conflictingStore) Update(ctx context.Context, r model.Resource, fs ...store.UpdateOptionsFunc) error {
@@ -359,6 +364,8 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 	var syncer sync_store.ResourceSyncer
 	var key model.ResourceKey
 
+	// meshBuilder(1) with a different spec, so syncing it against the stored copy
+	// produces an update rather than a create.
 	changedMesh := func() *mesh.MeshResource {
 		m := meshBuilder(1)
 		m.Spec.Mtls.EnabledBackend = "ca-changed"
@@ -398,6 +405,8 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 		Expect(resourceStore.Get(context.Background(), actual, store.GetBy(key))).To(Succeed())
 		Expect(actual.Spec.Mtls.EnabledBackend).To(Equal("ca-changed"))
 		Expect(resourceStore.updates).To(Equal(2))
+		// create, then the concurrent writer, then the retried sync: without a
+		// rebase on the fresh copy the retry would carry version 1 and conflict again
 		Expect(actual.GetMeta().GetVersion()).To(Equal("3"))
 	})
 
@@ -407,6 +416,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 		err, nackError := syncChangedMesh()
 		Expect(store.IsConflict(err)).To(BeTrue())
 		Expect(nackError).ToNot(HaveOccurred())
+		// the update in the transaction, then 3 attempts: immediate, then 2 backed off
 		Expect(resourceStore.updates).To(Equal(4))
 
 		actual := mesh.NewMeshResource()
@@ -419,6 +429,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 			res := meshBuilder(i)
 			Expect(resourceStore.Create(context.Background(), res, store.CreateBy(model.MetaToResourceKey(res.GetMeta())))).To(Succeed())
 		}
+		// only the first update of the batch loses the race
 		resourceStore.conflicts = 1
 
 		upstream := &mesh.MeshResourceList{}
@@ -441,6 +452,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 		for _, item := range actual.Items {
 			Expect(item.Spec.Mtls.EnabledBackend).To(Equal("ca-changed"))
 		}
+		// 3 updates in the transaction, 1 retried after it
 		Expect(resourceStore.updates).To(Equal(4))
 	})
 })
@@ -462,6 +474,9 @@ var _ = Describe("SyncResourceStoreDelta write conflicts on zone-owned status", 
 			Create(resourceStore)).To(Succeed())
 	})
 
+	// The rebase is only safe because Global owns the spec and the Zone owns the
+	// status. The VIP allocator writes a status while Sync is applying a spec, and
+	// the retry has to carry the allocator's status, not the one read before it ran.
 	It("should keep the status written by the writer that won the race", func() {
 		resourceStore.conflicts = 1
 		resourceStore.mutate = func(r model.Resource) {
@@ -470,6 +485,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts on zone-owned status", 
 			})).To(Succeed())
 		}
 
+		// Global syncs the spec down with the status stripped
 		upstream := &meshservice_api.MeshServiceResourceList{}
 		Expect(upstream.AddItem(builders.MeshService().
 			AddIntPort(90, 9090, core_meta.ProtocolHTTP).
@@ -485,8 +501,11 @@ var _ = Describe("SyncResourceStoreDelta write conflicts on zone-owned status", 
 
 		actual := meshservice_api.NewMeshServiceResource()
 		Expect(resourceStore.Get(context.Background(), actual, store.GetBy(builders.MeshService().Key()))).To(Succeed())
+		// upstream owns the spec
 		Expect(actual.Spec.Ports).To(HaveLen(1))
 		Expect(actual.Spec.Ports[0].Port).To(Equal(int32(90)))
+		// the zone owns the status, and the retry must not roll it back to the copy
+		// read before the allocator wrote
 		Expect(actual.Status.VIPs).To(Equal([]meshservice_api.VIP{{IP: "10.0.0.2"}}))
 	})
 })
