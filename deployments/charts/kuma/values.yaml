@@ -65,7 +65,9 @@ controlPlane:
   # -- Annotations applied only to the `Deployment` resource
   deploymentAnnotations: {}
 
-  # -- Deployment update strategy for the control plane
+  # -- Deployment update strategy for the control plane. Note: setting this to
+  # `{}` does not disable the default strategy (Helm re-merges the chart
+  # default); use `type: Recreate` to fully replace the rolling update strategy.
   deploymentStrategy:
     rollingUpdate:
       maxSurge: 1

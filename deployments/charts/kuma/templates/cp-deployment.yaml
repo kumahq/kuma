@@ -66,12 +66,17 @@ spec:
   replicas: {{ .Values.controlPlane.replicas }}
   {{- end }}
   minReadySeconds: {{ .Values.controlPlane.minReadySeconds }}
+  {{- $strategy := .Values.controlPlane.deploymentStrategy }}
+  {{- if not (kindIs "map" $strategy) }}
+  {{- $strategy = dict }}
+  {{- end }}
+  {{- if eq ($strategy.type | default "RollingUpdate") "Recreate" }}
   strategy:
-    {{- if eq (.Values.controlPlane.deploymentStrategy.type | default "RollingUpdate") "Recreate" }}
     type: Recreate
-    {{- else }}
-    {{- toYaml .Values.controlPlane.deploymentStrategy | nindent 4 }}
-    {{- end }}
+  {{- else if $strategy }}
+  strategy:
+    {{- toYaml $strategy | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "kuma.selectorLabels" . | nindent 6 }}
