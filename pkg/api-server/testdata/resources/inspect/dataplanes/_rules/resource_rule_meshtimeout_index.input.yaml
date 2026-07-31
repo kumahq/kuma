@@ -40,7 +40,8 @@ spec:
           requestTimeout: 5s
     - targetRef:
         kind: MeshService
-        name: backend-4
+        labels:
+          kuma.io/display-name: backend-4
         sectionName: super-port
       default:
         idleTimeout: 7s

@@ -1,4 +1,4 @@
-# combining policies using kind Dataplane selecting Dataplanes by name and namespace with specific inbound selected by sectionName
+# combining policies using kind Dataplane selecting Dataplanes by labels with specific inbound selected by sectionName
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-1
@@ -8,8 +8,8 @@ labels:
 spec:
   targetRef:
     kind: Dataplane
-    name: dp-1
-    namespace: kuma-demo
+    labels:
+      k8s.kuma.io/namespace: kuma-demo
   rules:
     - default:
         deny:
@@ -26,8 +26,8 @@ labels:
 spec:
   targetRef:
     kind: Dataplane
-    name: dp-1
-    namespace: kuma-demo
+    labels:
+      k8s.kuma.io/namespace: kuma-demo
     sectionName: main-port
   rules:
     - default:

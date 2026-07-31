@@ -46,7 +46,6 @@ mesh: default
 spec:
   targetRef:
     kind: Dataplane
-    name: dp-1
   rules:
     - default:
         connectionTimeout: 20s
@@ -57,17 +56,18 @@ mesh: default
 spec:
   targetRef:
     kind: Dataplane
-    name: dp-1
   to:
     - targetRef:
         kind: MeshService
-        name: foo
+        labels:
+          kuma.io/display-name: foo
       default:
         http:
           requestTimeout: 15s
     - targetRef:
         kind: MeshService
-        name: bar
+        labels:
+          kuma.io/display-name: bar
       default:
         http:
           requestTimeout: 20s

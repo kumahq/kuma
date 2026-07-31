@@ -3,7 +3,6 @@ package resolve
 import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -112,29 +111,3 @@ type RealResourceBackendRef struct {
 }
 
 func (rbr *RealResourceBackendRef) isResolvedBackendRef() {}
-
-func TargetRefToKRI(origin kri.Identifier, ref common_api.TargetRef) kri.Identifier {
-	if origin.IsEmpty() {
-		return kri.Identifier{}
-	}
-
-	if ref.Kind == common_api.Mesh {
-		return kri.Identifier{
-			ResourceType: core_mesh.MeshType,
-			Name:         origin.Mesh,
-		}
-	}
-
-	var ns string
-	if ns = pointer.Deref(ref.Namespace); ns == "" {
-		ns = origin.Namespace
-	}
-
-	return kri.Identifier{
-		ResourceType: core_model.ResourceType(ref.Kind),
-		Name:         pointer.Deref(ref.Name),
-		Mesh:         origin.Mesh,
-		Zone:         origin.Zone,
-		Namespace:    ns,
-	}
-}

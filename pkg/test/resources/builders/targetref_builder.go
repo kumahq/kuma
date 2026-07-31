@@ -56,19 +56,18 @@ func TargetRefMeshService(name, namespace, sectionName string) common_api.Target
 	}
 }
 
-func TargetRefMeshHTTPRoute(name, namespace string) common_api.TargetRef {
-	return common_api.TargetRef{
-		Kind:      common_api.MeshHTTPRoute,
-		Name:      &name,
-		Namespace: pointer.To(namespace),
-	}
-}
-
 func TargetRefMeshServiceLabels(labels map[string]string, sectionName string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind:        common_api.MeshService,
 		Labels:      pointer.To(labels),
 		SectionName: pointer.To(sectionName),
+	}
+}
+
+func TargetRefMeshHTTPRouteLabels(labels map[string]string) common_api.TargetRef {
+	return common_api.TargetRef{
+		Kind:   common_api.MeshHTTPRoute,
+		Labels: pointer.To(labels),
 	}
 }
 

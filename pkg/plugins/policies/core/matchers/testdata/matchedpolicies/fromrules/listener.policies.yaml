@@ -4,7 +4,6 @@ name: mtp-listener
 spec:
   targetRef:
     kind: Dataplane
-    name: dp-1
     sectionName: ze-port
   rules:
     - default:

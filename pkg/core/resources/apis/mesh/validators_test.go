@@ -156,7 +156,8 @@ kind: MeshSubset
 		Entry("MeshService", testCase{
 			inputYaml: `
 kind: MeshService
-name: backend
+labels:
+  kuma.io/display-name: backend
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -167,17 +168,6 @@ name: backend
 		Entry("Dataplane", testCase{
 			inputYaml: `
 kind: Dataplane
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.Dataplane,
-				},
-			},
-		}),
-		Entry("Dataplane by name", testCase{
-			inputYaml: `
-kind: Dataplane
-name: backend-asb3210d
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -200,7 +190,8 @@ labels:
 		Entry("Dataplane with sectionName", testCase{
 			inputYaml: `
 kind: Dataplane
-name: backend-asb3210d
+labels:
+  app: demo-app
 sectionName: http-port
 `,
 			opts: &ValidateTargetRefOpts{
@@ -213,7 +204,8 @@ sectionName: http-port
 		Entry("MeshHTTPRoute", testCase{
 			inputYaml: `
 kind: MeshHTTPRoute
-name: http-route1
+labels:
+  kuma.io/display-name: http-route1
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -260,8 +252,9 @@ tags: {}
 		Entry("MeshService with name and namespace", testCase{
 			inputYaml: `
 kind: MeshService
-name: backend
-namespace: test-ns
+labels:
+  kuma.io/display-name: backend
+  k8s.kuma.io/namespace: test-ns
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -284,8 +277,9 @@ labels:
 		Entry("MeshService with name, namespace and sectionName", testCase{
 			inputYaml: `
 kind: MeshService
-name: backend
-namespace: test-ns
+labels:
+  kuma.io/display-name: backend
+  k8s.kuma.io/namespace: test-ns
 sectionName: http-port
 `,
 			opts: &ValidateTargetRefOpts{
@@ -297,8 +291,9 @@ sectionName: http-port
 		Entry("MeshExternalService with name and namespace", testCase{
 			inputYaml: `
 kind: MeshExternalService
-name: backend
-namespace: test-ns
+labels:
+  kuma.io/display-name: backend
+  k8s.kuma.io/namespace: test-ns
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -501,7 +496,8 @@ violations:
 		Entry("MeshService with mesh", testCase{
 			inputYaml: `
 kind: MeshService
-name: backend
+labels:
+  kuma.io/display-name: backend
 mesh: mesh-1
 `,
 			opts: &ValidateTargetRefOpts{
@@ -530,11 +526,11 @@ tags:
 violations:
   - field: targetRef.tags
     message: must not be set with kind MeshService
-  - field: targetRef
-    message: name or labels must be set when kind is MeshService
+  - field: targetRef.labels
+    message: must be set when kind is MeshService
 `,
 		}),
-		Entry("MeshService with invalid name", testCase{
+		Entry("MeshService backendRef with invalid name", testCase{
 			inputYaml: `
 kind: MeshService
 name: "*"
@@ -543,6 +539,7 @@ name: "*"
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.MeshService,
 				},
+				IsBackendRef: true,
 			},
 			expected: `
 violations:
@@ -660,8 +657,8 @@ labels:
 			},
 			expected: `
 violations:
-  - field: targetRef.labels
-    message: either labels or name and namespace must be specified
+  - field: targetRef.name
+    message: must not be set with kind MeshService
 `,
 		}),
 		Entry("MeshService should not combine name/namespace with labels", testCase{
@@ -678,8 +675,8 @@ labels:
 			},
 			expected: `
 violations:
-  - field: targetRef.labels
-    message: either labels or name and namespace must be specified
+  - field: targetRef.namespace
+    message: must not be set with kind MeshService
 `,
 		}),
 		Entry("MeshService should not combine name and namespace with labels", testCase{
@@ -697,14 +694,15 @@ labels:
 			},
 			expected: `
 violations:
-  - field: targetRef.labels
-    message: either labels or name and namespace must be specified
+  - field: targetRef.name
+    message: must not be set with kind MeshService
+  - field: targetRef.namespace
+    message: must not be set with kind MeshService
 `,
 		}),
-		Entry("MeshService should have name when labels are not specified", testCase{
+		Entry("MeshService should require labels", testCase{
 			inputYaml: `
 kind: MeshService
-namespace: test-ns
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -713,11 +711,11 @@ namespace: test-ns
 			},
 			expected: `
 violations:
-  - field: targetRef
-    message: name or labels must be set when kind is MeshService
+  - field: targetRef.labels
+    message: must be set when kind is MeshService
 `,
 		}),
-		Entry("MeshHTTPRoute should have name or labels", testCase{
+		Entry("MeshHTTPRoute should require labels", testCase{
 			inputYaml: `
 kind: MeshHTTPRoute
 `,
@@ -728,11 +726,11 @@ kind: MeshHTTPRoute
 			},
 			expected: `
 violations:
-  - field: targetRef
-    message: name or labels must be set when kind is MeshHTTPRoute
+  - field: targetRef.labels
+    message: must be set when kind is MeshHTTPRoute
 `,
 		}),
-		Entry("MeshExternalService should have name or labels", testCase{
+		Entry("MeshExternalService should require labels", testCase{
 			inputYaml: `
 kind: MeshExternalService
 `,
@@ -743,8 +741,8 @@ kind: MeshExternalService
 			},
 			expected: `
 violations:
-  - field: targetRef
-    message: name or labels must be set when kind is MeshExternalService
+  - field: targetRef.labels
+    message: must be set when kind is MeshExternalService
 `,
 		}),
 		Entry("Mesh should not be used with namespace or labels or sectionName", testCase{
@@ -832,15 +830,15 @@ labels:
 			},
 			expected: `
 violations:
-- field: targetRef.labels
-  message: either labels or name and namespace must be specified
+- field: targetRef.name
+  message: must not be set with kind Dataplane
+- field: targetRef.namespace
+  message: must not be set with kind Dataplane
 `,
 		}),
 		Entry("Dataplane with tags and mesh", testCase{
 			inputYaml: `
 kind: Dataplane
-name: test
-namespace: test-ns
 mesh: mesh-1
 tags:
   app: demo
@@ -861,7 +859,8 @@ violations:
 		Entry("Dataplane with sectionName on a non-inbound policy", testCase{
 			inputYaml: `
 kind: Dataplane
-name: test
+labels:
+  app: demo
 sectionName: http-port
 `,
 			opts: &ValidateTargetRefOpts{

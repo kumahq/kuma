@@ -146,7 +146,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
         sectionName: main
       rules:
         - matches:
@@ -189,7 +190,9 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: kumaioservice-targeted-test-server_%s_svc_80
+        labels:
+          kuma.io/display-name: kumaioservice-targeted-test-server
+          k8s.kuma.io/namespace: %s
       rules:
         - matches:
             - path:
@@ -244,7 +247,8 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: test-server
+      labels:
+        kuma.io/display-name: test-server
       sectionName: main
     rules:
     - default:

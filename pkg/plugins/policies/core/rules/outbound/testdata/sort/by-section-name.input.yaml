@@ -8,7 +8,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
         sectionName: http-port
       default:
         connectionTimeout: 111s
@@ -23,7 +24,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         connectionTimeout: 11s
         http:

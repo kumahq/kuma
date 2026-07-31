@@ -31,7 +31,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: the-http-route
+        labels:
+          kuma.io/display-name: the-http-route
       default:
         http:
           requestTimeout: 20s
@@ -45,13 +46,16 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: the-http-route
+        labels:
+          kuma.io/display-name: the-http-route
       default:
         connectionTimeout: 2s
 ---
 type: MeshHTTPRoute
 name: the-http-route
 mesh: default
+labels:
+  kuma.io/display-name: the-http-route
 spec:
   to:
     - targetRef:

@@ -2,13 +2,16 @@
 type: MeshHTTPRoute
 name: matched-for-rules-http-route-1
 mesh: mesh-1
+labels:
+  kuma.io/display-name: matched-for-rules-http-route-1
 spec:
   targetRef:
     kind: Mesh
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       rules:
         - matches:
             - path:
@@ -26,13 +29,16 @@ spec:
 type: MeshHTTPRoute
 name: matched-for-rules-http-route-2
 mesh: mesh-1
+labels:
+  kuma.io/display-name: matched-for-rules-http-route-2
 spec:
   targetRef:
     kind: Mesh
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       rules:
         - matches:
             - path:
@@ -46,6 +52,8 @@ spec:
 type: MeshService
 name: backend
 mesh: mesh-1
+labels:
+  kuma.io/display-name: backend
 spec:
   selector:
     dataplaneTags:
@@ -58,6 +66,8 @@ spec:
 type: MeshService
 name: backend-v1
 mesh: mesh-1
+labels:
+  kuma.io/display-name: backend-v1
 spec:
   selector:
     dataplaneTags:
