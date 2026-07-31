@@ -71,8 +71,8 @@ spec:
   {{- $strategy = dict }}
   {{- end }}
   {{- $strategyType := toString ($strategy.type | default "RollingUpdate") }}
-  {{- if and $strategy.type (not (has $strategyType (list "Recreate" "RollingUpdate"))) }}
-  {{- fail (printf "controlPlane.deploymentStrategy.type must be Recreate or RollingUpdate, got %q" $strategyType) }}
+  {{- if and (hasKey $strategy "type") (not (has (toString $strategy.type) (list "Recreate" "RollingUpdate"))) }}
+  {{- fail (printf "controlPlane.deploymentStrategy.type must be Recreate or RollingUpdate, got %q" (toString $strategy.type)) }}
   {{- end }}
   {{- if eq $strategyType "Recreate" }}
   strategy:
