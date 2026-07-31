@@ -24,7 +24,6 @@ import (
 const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
 
 var (
-	NameCharacterSet     = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
 	DomainRegexp         = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
 	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
 	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
@@ -429,19 +428,6 @@ func ValidateMatch(match common_api.Match) validators.ValidationError {
 		}
 	}
 	return verr
-}
-
-func validateName(value string, allowedInvalidNames []string) validators.ValidationError {
-	var err validators.ValidationError
-
-	if !slices.Contains(allowedInvalidNames, value) && !NameCharacterSet.MatchString(value) {
-		err.AddViolation(
-			"name",
-			"invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'.",
-		)
-	}
-
-	return err
 }
 
 func disallowedField[T ~string | ~map[string]string](
