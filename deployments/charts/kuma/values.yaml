@@ -65,6 +65,12 @@ controlPlane:
   # -- Annotations applied only to the `Deployment` resource
   deploymentAnnotations: {}
 
+  # -- Deployment update strategy for the control plane
+  deploymentStrategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
   # -- Annotations applied only to the `Pod` resource
   podAnnotations: {}
 

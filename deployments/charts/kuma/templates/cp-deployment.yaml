@@ -67,9 +67,7 @@ spec:
   {{- end }}
   minReadySeconds: {{ .Values.controlPlane.minReadySeconds }}
   strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+    {{- toYaml .Values.controlPlane.deploymentStrategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "kuma.selectorLabels" . | nindent 6 }}
