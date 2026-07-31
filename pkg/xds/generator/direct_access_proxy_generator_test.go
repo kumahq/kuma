@@ -129,5 +129,11 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			meshFile:       "04.mesh.input.yaml",
 			expected:       "04.envoy-config.golden.yaml",
 		}),
+		Entry("should not leak inbounds of other services declared by a legacy dataplane", testCase{
+			dataplaneFile:  "05.dataplane.input.yaml",
+			dataplanesFile: "05.dataplanes.input.yaml",
+			meshFile:       "05.mesh.input.yaml",
+			expected:       "05.envoy-config.golden.yaml",
+		}),
 	)
 })

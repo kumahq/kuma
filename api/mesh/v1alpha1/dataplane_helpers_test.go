@@ -305,6 +305,51 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 			}),
 		)
 	})
+
+	Describe("GetServiceFallback()", func() {
+		type testCase struct {
+			inbound  *Dataplane_Networking_Inbound
+			fallback string
+			expected string
+		}
+
+		DescribeTable("should return the legacy inbound tag, falling back to the Dataplane's service",
+			func(given testCase) {
+				Expect(given.inbound.GetServiceFallback(given.fallback)).To(Equal(given.expected))
+			},
+			Entry("inbound is `nil`", testCase{
+				inbound:  nil,
+				fallback: "backend",
+				expected: "backend",
+			}),
+			Entry("inbound carries no tags", testCase{
+				inbound:  &Dataplane_Networking_Inbound{},
+				fallback: "backend",
+				expected: "backend",
+			}),
+			Entry("inbound carries an empty service tag", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Tags: map[string]string{ServiceTag: ""},
+				},
+				fallback: "backend",
+				expected: "backend",
+			}),
+			Entry("legacy inbound declares its own service", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Tags: map[string]string{ServiceTag: "backend-api"},
+				},
+				fallback: "backend",
+				expected: "backend-api",
+			}),
+			Entry("legacy inbound on a Dataplane with no service at all", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Tags: map[string]string{ServiceTag: "backend-api"},
+				},
+				fallback: "",
+				expected: "backend-api",
+			}),
+		)
+	})
 })
 
 var _ = Describe("Dataplane classification", func() {
