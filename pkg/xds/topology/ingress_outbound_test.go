@@ -66,7 +66,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 				mesh: samples.MeshDefault(),
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
-						Meta: &test_model.ResourceMeta{Mesh: "default"},
+						Meta: &test_model.ResourceMeta{Mesh: "default", Labels: map[string]string{mesh_proto.ServiceTag: "redis"}},
 						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								AdvertisedAddress: "192.168.0.2",
@@ -99,7 +99,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 					{
 						Meta: &test_model.ResourceMeta{
 							Mesh:   "default",
-							Labels: map[string]string{"version": "v1"},
+							Labels: map[string]string{"version": "v1", mesh_proto.ServiceTag: "redis"},
 						},
 						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
@@ -188,28 +188,13 @@ var _ = Describe("IngressTrafficRoute", func() {
 						Build(),
 				},
 				expected: core_xds.EndpointMap{
-					"kong_kong-system_svc_80": []core_xds.Endpoint{
-						{
-							Target:         "192.168.0.2",
-							UnixDomainPath: "",
-							Port:           80,
-							Tags: map[string]string{
-								"kuma.io/service": "kong_kong-system_svc_80",
-								"app":             "kong",
-							},
-							Weight:          1,
-							Locality:        nil,
-							ExternalService: nil,
-						},
-					},
 					"default_kong.kong-system___msvc_8080": []core_xds.Endpoint{
 						{
 							Target:         "192.168.0.2",
 							UnixDomainPath: "",
 							Port:           80,
 							Tags: map[string]string{
-								"kuma.io/service": "kong_kong-system_svc_80",
-								"app":             "kong",
+								"app": "kong",
 							},
 							Weight:          1,
 							Locality:        nil,
@@ -250,28 +235,13 @@ var _ = Describe("IngressTrafficRoute", func() {
 							Weight: 1,
 						},
 					},
-					"kong_kong-system_svc_8001": []core_xds.Endpoint{
-						{
-							Target:         "192.168.0.2",
-							UnixDomainPath: "",
-							Port:           8001,
-							Tags: map[string]string{
-								"kuma.io/service": "kong_kong-system_svc_8001",
-								"app":             "kong",
-							},
-							Weight:          1,
-							Locality:        nil,
-							ExternalService: nil,
-						},
-					},
 					"default_kong.kong-system___msvc_8081": []core_xds.Endpoint{
 						{
 							Target:         "192.168.0.2",
 							UnixDomainPath: "",
 							Port:           8001,
 							Tags: map[string]string{
-								"kuma.io/service": "kong_kong-system_svc_8001",
-								"app":             "kong",
+								"app": "kong",
 							},
 							Weight:          1,
 							Locality:        nil,

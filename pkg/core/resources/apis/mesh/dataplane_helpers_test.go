@@ -73,7 +73,7 @@ var _ = Describe("InboundIdentifyingName", func() {
 			portName:   "",
 			expected:   "backend",
 		}),
-		Entry("falls back to service tag when no portName and no workload label", testCase{
+		Entry("falls back to unknown when no portName and no workload label", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",
 				Mesh: "default",
@@ -82,9 +82,11 @@ var _ = Describe("InboundIdentifyingName", func() {
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
 				},
 			},
+			// The inbound's service tag is no longer read; with no
+			// kuma.io/workload label there's nothing left to identify by.
 			serviceTag: "backend",
 			portName:   "",
-			expected:   "backend",
+			expected:   mesh_proto.ServiceUnknown,
 		}),
 	)
 })

@@ -1,13 +1,17 @@
 {
  "items": [
   {
-   "labels": {},
+   "labels": {
+    "app": "test-server"
+   },
    "mesh": "default",
    "name": "ts-01",
    "type": "Dataplane"
   },
   {
-   "labels": {},
+   "labels": {
+    "app": "test-server"
+   },
    "mesh": "default",
    "name": "ts-02",
    "type": "Dataplane"

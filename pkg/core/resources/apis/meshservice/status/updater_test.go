@@ -231,7 +231,14 @@ var _ = Describe("Updater", func() {
 			for _, mt := range given.meshTrusts {
 				Expect(resManager.Create(context.TODO(), mt, store.CreateByKey(mt.Meta.GetName(), "test"))).To(Succeed())
 			}
-			Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().WithMesh("test").Build(), store.CreateByKey("dp-1", "test"), store.CreateWithLabels(given.dppLabels))).To(Succeed())
+			// dp-1 always carries the workload label so it keeps matching
+			// MeshServiceBackendBuilder's (labels-only) selector; dppLabels
+			// layers on the MeshIdentity-selection labels each entry varies.
+			dppLabels := map[string]string{metadata.KumaWorkload: "backend"}
+			for k, v := range given.dppLabels {
+				dppLabels[k] = v
+			}
+			Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().WithMesh("test").Build(), store.CreateByKey("dp-1", "test"), store.CreateWithLabels(dppLabels))).To(Succeed())
 			if !given.dpInsightMissing {
 				Expect(samples.DataplaneInsightBackendBuilder().
 					WithMesh("test").

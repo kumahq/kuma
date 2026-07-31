@@ -27,13 +27,13 @@ var _ = Describe("MeshService", func() {
 			ResourceValidationCase{
 				Violations: []validators.Violation{{
 					Field:   `spec.selector`,
-					Message: `must specify only one of: dataplaneTags, dataplaneRef, or dataplaneLabels`,
+					Message: `must specify only one of: dataplaneRef or dataplaneLabels`,
 				}},
 				Name: "meshservice",
 				Resource: `
 selector:
-  dataplaneTags:
-    app: redis
+  dataplaneRef:
+    name: redis-01
   dataplaneLabels:
     matchLabels:
       app: redis
@@ -48,17 +48,6 @@ selector:
 			ResourceValidationCase{
 				Name:     "meshservice",
 				Resource: "",
-			},
-		),
-		Entry(
-			"accepts dataplaneTags selector",
-			ResourceValidationCase{
-				Name: "meshservice",
-				Resource: `
-selector:
-  dataplaneTags:
-    app: redis
-`,
 			},
 		),
 		Entry(

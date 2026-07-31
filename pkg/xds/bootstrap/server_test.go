@@ -28,6 +28,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/dp-server/server"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
@@ -160,7 +161,8 @@ var _ = Describe("Bootstrap Server", func() {
 	DescribeTable("should return configuration",
 		func(given testCase) {
 			// given
-			err := resManager.Create(context.Background(), given.dataplane(), store.CreateByKey(given.dataplaneName, "default"))
+			err := resManager.Create(context.Background(), given.dataplane(), store.CreateByKey(given.dataplaneName, "default"),
+				store.CreateWithLabels(map[string]string{metadata.KumaWorkload: "backend"}))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when

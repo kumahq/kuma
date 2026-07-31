@@ -31,7 +31,15 @@ var _ = Describe("Ingress Dataplane", func() {
 					dpRes := core_mesh.NewDataplaneResource()
 					err := util_proto.FromYAML([]byte(dp), dpRes.Spec)
 					Expect(err).ToNot(HaveOccurred())
-					dpRes.SetMeta(&test_model.ResourceMeta{Name: fmt.Sprintf("dp-%d", i), Mesh: mesh})
+					// GetIngressAvailableServices reads Dataplane labels, not
+					// inbound tags; promote the single inbound's tags to
+					// labels so these fixtures (still written as inbound
+					// tags for readability) exercise the real code path.
+					var labels map[string]string
+					if inbounds := dpRes.Spec.GetNetworking().GetInbound(); len(inbounds) > 0 {
+						labels = inbounds[0].Tags
+					}
+					dpRes.SetMeta(&test_model.ResourceMeta{Name: fmt.Sprintf("dp-%d", i), Mesh: mesh, Labels: labels})
 					dataplanes = append(dataplanes, dpRes)
 				}
 			}
@@ -225,7 +233,11 @@ var _ = Describe("Ingress Dataplane", func() {
 		}
 		others := []*core_mesh.DataplaneResource{
 			{
-				Meta: &test_model.ResourceMeta{Mesh: "mesh1"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh1", Labels: map[string]string{
+					"service": "backend",
+					"version": "v1",
+					"region":  "eu",
+				}},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -241,7 +253,11 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 			{
-				Meta: &test_model.ResourceMeta{Mesh: "mesh1"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh1", Labels: map[string]string{
+					"service": "web",
+					"version": "v2",
+					"region":  "us",
+				}},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -257,7 +273,11 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 			{
-				Meta: &test_model.ResourceMeta{Mesh: "mesh1"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh1", Labels: map[string]string{
+					"service": "web",
+					"version": "v2",
+					"region":  "us",
+				}},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -281,7 +301,11 @@ var _ = Describe("Ingress Dataplane", func() {
 	It("should generate available services for multiple meshes", func() {
 		dataplanes := []*core_mesh.DataplaneResource{
 			{
-				Meta: &test_model.ResourceMeta{Mesh: "mesh1"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh1", Labels: map[string]string{
+					"service": "backend",
+					"version": "v1",
+					"region":  "eu",
+				}},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -297,7 +321,11 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 			{
-				Meta: &test_model.ResourceMeta{Mesh: "mesh2"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh2", Labels: map[string]string{
+					"service": "web",
+					"version": "v2",
+					"region":  "us",
+				}},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -313,7 +341,11 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 			{
-				Meta: &test_model.ResourceMeta{Mesh: "mesh2"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh2", Labels: map[string]string{
+					"service": "web",
+					"version": "v1",
+					"region":  "eu",
+				}},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -366,7 +398,11 @@ var _ = Describe("Ingress Dataplane", func() {
 	It("should generate available services for multiple meshes with the same tags", func() {
 		dataplanes := []*core_mesh.DataplaneResource{
 			{
-				Meta: &test_model.ResourceMeta{Mesh: "mesh1"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh1", Labels: map[string]string{
+					"service": "backend",
+					"version": "v1",
+					"region":  "eu",
+				}},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -382,7 +418,11 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 			{
-				Meta: &test_model.ResourceMeta{Mesh: "mesh2"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh2", Labels: map[string]string{
+					"service": "backend",
+					"version": "v1",
+					"region":  "eu",
+				}},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
