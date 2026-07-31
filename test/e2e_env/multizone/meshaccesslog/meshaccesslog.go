@@ -8,11 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v3/pkg/kds/hash"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
@@ -22,11 +17,12 @@ import (
 
 func ZoneIngress() {
 	const meshName = "mal-zone-ingress"
+	const identityName = "mal-zone-ingress-identity"
 	const demoClient = "demo-client"
 	const testServer1 = "test-server-1"
 	const testServer2 = "test-server-2"
-	const ingressWorkload = "zone-proxy-ingress"
-	const ingressPort = uint32(11001)
+
+	ingressWorkload := zoneproxy.IngressName(meshName)
 
 	dppEnvs := map[string]string{
 		"KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED": "true",
@@ -41,41 +37,12 @@ func ZoneIngress() {
 		testServer1SNI = fmt.Sprintf("sni.msvc.%s.%s.%s.80", meshName, zone1Name, testServer1)
 		testServer2SNI = fmt.Sprintf("sni.msvc.%s.%s.%s.80", meshName, zone1Name, testServer2)
 
+		zones := []Cluster{multizone.UniZone1, multizone.UniZone2}
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().
 				WithName(meshName))).
-			Install(YamlUniversal(fmt.Sprintf(`
-type: MeshIdentity
-name: identity
-mesh: %s
-spec:
-  selector:
-    dataplane:
-      matchLabels: {}
-  spiffeID:
-    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
-  provider:
-    type: Bundled
-    bundled:
-      meshTrustCreation: Enabled
-      insecureAllowSelfSigned: true
-      certificateParameters:
-        expiry: 24h
-      autogenerate:
-        enabled: true
-`, meshName))).
-			Install(YamlUniversal(fmt.Sprintf(`
-type: MeshTrafficPermission
-name: allow-mesh
-mesh: %s
-spec:
-  rules:
-  - default:
-      allow:
-      - spiffeID:
-          type: Prefix
-          value: "spiffe://%s."
-`, meshName, meshName))).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
@@ -97,8 +64,7 @@ spec:
 				TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName)),
 				zoneproxy.Install(
 					zoneproxy.WithMesh(meshName),
-					zoneproxy.WithIngressPort(ingressPort),
-					zoneproxy.WithWorkload(ingressWorkload),
+					zoneproxy.WithIngress(),
 					zoneproxy.WithDpEnvs(dppEnvs),
 				),
 			)).
@@ -113,59 +79,7 @@ spec:
 			SetupInGroup(multizone.UniZone2, &group)
 		Expect(group.Wait()).To(Succeed())
 
-		// MeshZoneAddress is auto-created on k8s; on Universal it must be installed by hand.
-		ingressIP := multizone.UniZone1.GetApp(ingressWorkload).GetIP()
-		Expect(NewClusterSetup().
-			Install(YamlUniversal(fmt.Sprintf(`
-type: MeshZoneAddress
-name: %s
-mesh: %s
-labels:
-  kuma.io/origin: zone
-  kuma.io/zone: %s
-spec:
-  address: %s
-  port: %d
-`, ingressWorkload, meshName, zone1Name, ingressIP, ingressPort))).
-			Setup(multizone.UniZone1)).To(Succeed())
-
-		// Wait for MeshIdentity to sync, then publish per-zone MeshTrust to Global so
-		// KDS distributes it to all zones and cross-zone mTLS is established.
-		hashedIdentityName := hash.HashedName(meshName, "identity")
-		Expect(WaitForResource(
-			meshidentity_api.MeshIdentityResourceTypeDescriptor,
-			model.ResourceKey{Mesh: meshName, Name: hashedIdentityName},
-			multizone.UniZone1, multizone.UniZone2,
-		)).To(Succeed())
-
-		getMeshTrust := func(zoneName string) *meshtrust_api.MeshTrust {
-			var trust *meshtrust_api.MeshTrust
-			Eventually(func(g Gomega) {
-				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput(
-					"get", "meshtrust", "-m", meshName,
-					hash.HashedName(meshName, hashedIdentityName, zoneName),
-					"-ojson",
-				)
-				g.Expect(err).ToNot(HaveOccurred())
-				r, err := rest.JSON.Unmarshal([]byte(out), meshtrust_api.MeshTrustResourceTypeDescriptor)
-				g.Expect(err).ToNot(HaveOccurred())
-				trust = r.GetSpec().(*meshtrust_api.MeshTrust)
-			}, "60s", "1s").Should(Succeed())
-			return trust
-		}
-
-		installTrustToGlobal := func(trust *meshtrust_api.MeshTrust, sourceZone string) {
-			yaml := builders.MeshTrust().
-				WithName("meshtrust-of-zone-" + sourceZone).
-				WithMesh(meshName).
-				WithCA(trust.CABundles[0].PEM.Value).
-				WithTrustDomain(trust.TrustDomain).
-				UniYaml()
-			Expect(NewClusterSetup().Install(YamlUniversal(yaml)).Setup(multizone.Global)).To(Succeed())
-		}
-
-		installTrustToGlobal(getMeshTrust(multizone.UniZone1.Name()), multizone.UniZone1.Name())
-		installTrustToGlobal(getMeshTrust(multizone.UniZone2.Name()), multizone.UniZone2.Name())
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

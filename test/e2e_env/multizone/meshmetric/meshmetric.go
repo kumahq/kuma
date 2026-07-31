@@ -48,18 +48,7 @@ spec:
 
 		group := errgroup.Group{}
 		NewClusterSetup().
-			Install(Parallel(
-				zoneproxy.Install(
-					zoneproxy.WithMesh(mesh),
-					zoneproxy.WithIngressPort(11001),
-					zoneproxy.WithWorkload("zone-proxy-ingress"),
-				),
-				zoneproxy.Install(
-					zoneproxy.WithMesh(mesh),
-					zoneproxy.WithEgressPort(11002),
-					zoneproxy.WithWorkload("zone-proxy-egress"),
-				),
-			)).
+			Install(zoneproxy.Install(zoneproxy.WithMesh(mesh))).
 			SetupInGroup(multizone.UniZone1, &group)
 		Expect(group.Wait()).To(Succeed())
 	})
@@ -103,7 +92,7 @@ spec:
 
 		// then — zone-egress
 		Eventually(func(g Gomega) {
-			payload := dynConfigJSON(g, "zone-proxy-egress")
+			payload := dynConfigJSON(g, zoneproxy.EgressName(mesh))
 			// MeshMetric reached the proxy and emitted the dynconf listener.
 			g.Expect(payload).To(ContainSubstring("system_dynamicconfig"))
 			// applications[] must be cleared on a zone-proxy-only DPP.
@@ -123,7 +112,7 @@ spec:
 
 		// then — zone-ingress
 		Eventually(func(g Gomega) {
-			payload := dynConfigJSON(g, "zone-proxy-ingress")
+			payload := dynConfigJSON(g, zoneproxy.IngressName(mesh))
 			g.Expect(payload).To(ContainSubstring("system_dynamicconfig"))
 			g.Expect(payload).To(ContainSubstring(`\"applications\":null`))
 			g.Expect(payload).ToNot(ContainSubstring("ignored-on-zone-proxy"))
