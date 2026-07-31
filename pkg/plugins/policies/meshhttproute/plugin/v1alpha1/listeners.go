@@ -137,7 +137,11 @@ func generateFromService(
 
 	var dpTags mesh_proto.MultiValueTagSet
 	if meshCtx.IsXKumaTagsUsed() {
-		dpTags = proxy.Dataplane.Spec.TagSet()
+		data := map[string][]string{}
+		for key, value := range proxy.Dataplane.GetMeta().GetLabels() {
+			data[key] = []string{value}
+		}
+		dpTags = mesh_proto.MultiValueTagSetFrom(data)
 	}
 
 	listener, err := GenerateOutboundListener(proxy, svc, routes, dpTags)

@@ -75,18 +75,19 @@ func GetIngressAvailableServices(
 		if _, ok := skipAvailableServices[dp.GetMeta().GetMesh()]; ok {
 			continue
 		}
-		for _, dpInbound := range dp.Spec.GetNetworking().GetHealthyInbounds() {
-			tags := map[string]string{}
-			for key, value := range dpInbound.Tags {
-				hasPrefix := func(tagFilter string) bool {
-					return strings.HasPrefix(key, tagFilter)
-				}
-				if len(tagFilters) == 0 || slices.ContainsFunc(tagFilters, hasPrefix) {
-					tags[key] = value
-				}
-			}
-			tagSets.addInstanceOfTags(dp.GetMeta().GetMesh(), tags)
+		if len(dp.Spec.GetNetworking().GetHealthyInbounds()) == 0 {
+			continue
 		}
+		tags := map[string]string{}
+		for key, value := range dp.GetMeta().GetLabels() {
+			hasPrefix := func(tagFilter string) bool {
+				return strings.HasPrefix(key, tagFilter)
+			}
+			if len(tagFilters) == 0 || slices.ContainsFunc(tagFilters, hasPrefix) {
+				tags[key] = value
+			}
+		}
+		tagSets.addInstanceOfTags(dp.GetMeta().GetMesh(), tags)
 	}
 	return tagSets.toAvailableServices()
 }

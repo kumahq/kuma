@@ -339,11 +339,19 @@ func fillDataplaneOutbounds(
 		dpNetworking := dpSpec.GetNetworking()
 
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
-			inboundTags := endpointIdentity(inbound.GetTags(), dataplane)
+			inboundTags := endpointIdentity(dataplane)
 			serviceName := inboundTags[mesh_proto.ServiceTag]
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
 			inboundPort := inboundInterface.DataplanePort
+
+			// A Dataplane resource only carries labels at the whole-resource
+			// level, so a serviceless (labels-only) dataplane cannot resolve a
+			// per-inbound kuma.io/service here; it relies on MeshService for
+			// outbound discovery instead.
+			if serviceName == "" {
+				continue
+			}
 
 			if _, ok := meshServiceDestinations[serviceName]; ok {
 				continue
@@ -363,18 +371,11 @@ func fillDataplaneOutbounds(
 }
 
 // endpointIdentity returns the tags that make up an endpoint's load-balancing
-// identity. Dataplane workload/resource labels are merged in to preserve
-// label-based identity (affinity, matching). Inbound tags always win over
-// labels on key conflicts.
-func endpointIdentity(inboundTags map[string]string, dataplane *core_mesh.DataplaneResource) map[string]string {
-	tags := maps.Clone(inboundTags)
+// identity, sourced from the Dataplane's own resource labels.
+func endpointIdentity(dataplane *core_mesh.DataplaneResource) map[string]string {
+	tags := maps.Clone(dataplane.GetMeta().GetLabels())
 	if tags == nil {
 		tags = map[string]string{}
-	}
-	for k, v := range dataplane.GetMeta().GetLabels() {
-		if _, exists := tags[k]; !exists {
-			tags[k] = v
-		}
 	}
 	return tags
 }
@@ -398,7 +399,7 @@ func fillLocalMeshServices(
 						continue
 					}
 
-					inboundTags := endpointIdentity(inbound.GetTags(), dpp)
+					inboundTags := endpointIdentity(dpp)
 					serviceName := destinationname.MustResolve(false, meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
