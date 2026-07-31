@@ -149,6 +149,33 @@ Also update any automation that expected the `MeshServicesDisabled`
 `MeshIdentity` status reason or treated inspect `_layout` as unavailable
 outside `Exclusive` mode.
 
+### Standalone `ZoneIngress`/`ZoneEgress` proxies no longer receive Envoy config
+
+The control plane no longer generates xDS configuration for data plane proxies
+started as standalone zone proxies, i.e. `kuma-dp run --proxy-type=ingress|egress`
+on Universal and the `ingress.enabled` / `egress.enabled` Helm deployments on
+Kubernetes. Cross-zone traffic is now served by mesh-scoped zone proxies, which
+are regular `Dataplane` resources.
+
+Such a proxy still connects, registers its `ZoneIngress`/`ZoneEgress` resource,
+and reports an insight, but it receives no listeners, clusters, or endpoints.
+Envoy keeps whatever configuration it already had until it restarts, at which
+point it starts with an empty configuration and drops all cross-zone traffic.
+The control plane logs
+`xDS generation for legacy ZoneIngress/ZoneEgress dataplanes is no longer supported`
+once per connected legacy proxy.
+
+**Action required**
+
+Migrate to mesh-scoped zone proxies **before** upgrading the zone control plane.
+On Kubernetes set `ingress.enabled=false` / `egress.enabled=false` and deploy the
+mesh-scoped zone proxies through `meshes[].ingress.enabled` /
+`meshes[].egress.enabled` instead. On Universal, replace
+`kuma-dp run --proxy-type=ingress|egress` with a regular `Dataplane` that
+declares `networking.listeners` of type `ZoneIngress`/`ZoneEgress`. Upgrading the
+control plane first blackholes cross-zone traffic as soon as the legacy zone
+proxy Pods restart.
+
 ### ServiceInsight, MeshInsight, and inspect `_rules` no longer report kuma.io/service based data
 
 With `meshServices.mode` always `Exclusive`, `kuma.io/service`-tagged services and
