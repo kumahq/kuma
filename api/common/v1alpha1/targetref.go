@@ -2,11 +2,13 @@
 package v1alpha1
 
 import (
+	"encoding/json"
 	"fmt"
 	"maps"
 	"sort"
 	"strings"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -112,6 +114,51 @@ type TargetRef struct {
 	SectionName *string `json:"sectionName,omitempty"`
 }
 
+type targetRefWire struct {
+	Kind        TargetRefKind      `json:"kind"`
+	Tags        *map[string]string `json:"tags,omitempty"`
+	Labels      *map[string]string `json:"labels,omitempty"`
+	SectionName *string            `json:"sectionName,omitempty"`
+
+	Name      *string `json:"name,omitempty"`
+	Namespace *string `json:"namespace,omitempty"`
+}
+
+func (t *TargetRef) UnmarshalJSON(data []byte) error {
+	var wire targetRefWire
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return err
+	}
+
+	*t = targetRefFromWire(wire)
+	return nil
+}
+
+func targetRefFromWire(wire targetRefWire) TargetRef {
+	ref := TargetRef{
+		Kind:        wire.Kind,
+		Tags:        wire.Tags,
+		Labels:      wire.Labels,
+		SectionName: wire.SectionName,
+	}
+	ref.convertLegacyNameNamespace(wire.Name, wire.Namespace)
+	return ref
+}
+
+func (t *TargetRef) convertLegacyNameNamespace(name, namespace *string) {
+	if len(pointer.Deref(t.Labels)) > 0 || pointer.Deref(name) == "" {
+		return
+	}
+
+	labels := map[string]string{
+		mesh_proto.DisplayName: pointer.Deref(name),
+	}
+	if ns := pointer.Deref(namespace); ns != "" {
+		labels[mesh_proto.KubeNamespaceTag] = ns
+	}
+	t.Labels = &labels
+}
+
 func (t TargetRef) CompareDataplaneKind(other TargetRef) int {
 	if t.Kind != Dataplane || other.Kind != Dataplane {
 		return 0
@@ -169,6 +216,24 @@ type BackendRef struct {
 	Weight *uint `json:"weight,omitempty"`
 	// Port is only supported when this ref refers to a real MeshService object
 	Port *uint32 `json:"port,omitempty"`
+}
+
+func (b *BackendRef) UnmarshalJSON(data []byte) error {
+	var wire struct {
+		targetRefWire
+		Weight *uint   `json:"weight,omitempty"`
+		Port   *uint32 `json:"port,omitempty"`
+	}
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return err
+	}
+
+	*b = BackendRef{
+		TargetRef: targetRefFromWire(wire.targetRefWire),
+		Weight:    wire.Weight,
+		Port:      wire.Port,
+	}
+	return nil
 }
 
 func (b BackendRef) ReferencesRealObject() bool {

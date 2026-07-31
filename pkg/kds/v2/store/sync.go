@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sethvargo/go-retry"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
@@ -31,6 +32,11 @@ import (
 )
 
 var globalSyncLog = core.Log.WithName("kds-global-sync")
+
+const (
+	updateConflictRetries = 2
+	updateConflictBackoff = 100 * time.Millisecond
+)
 
 // ResourceSyncer allows to synchronize resources in Store
 type ResourceSyncer interface {
@@ -254,6 +260,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		}
 	}
 	var nackError error
+	var conflicted []OnUpdate
 	err = store.InTx(ctx, s.transactions, func(ctx context.Context) error {
 		for _, r := range onCreate {
 			rk := core_model.MetaToResourceKey(r.GetMeta())
@@ -290,17 +297,83 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 
 		for _, upd := range onUpdate {
 			log.V(1).Info("updating a resource", "name", upd.r.GetMeta().GetName(), "mesh", upd.r.GetMeta().GetMesh())
-			now := time.Now()
 			// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
 			// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
 			// from upstream store, because we update downstream only when resource have changed in upstream
-			if err := s.resourceStore.Update(ctx, upd.r, append(upd.opts, store.ModifiedAt(now))...); err != nil {
+			if err := s.resourceStore.Update(ctx, upd.r, append(upd.opts, store.ModifiedAt(time.Now()))...); err != nil {
+				if store.IsConflict(err) {
+					conflicted = append(conflicted, upd)
+					continue
+				}
 				return err
 			}
 		}
 		return nil
 	})
-	return err, nackError
+	if err != nil {
+		return err, nackError
+	}
+	return s.retryConflictedUpdates(ctx, conflicted, opts, log), nackError
+}
+
+func (s *syncResourceStore) retryConflictedUpdates(ctx context.Context, pending []OnUpdate, opts *SyncOption, log logr.Logger) error {
+	if len(pending) == 0 {
+		return nil
+	}
+
+	backoff := retry.WithMaxRetries(updateConflictRetries, retry.WithFullJitter(retry.NewConstant(updateConflictBackoff)))
+	err := retry.Do(ctx, backoff, func(ctx context.Context) error {
+		for _, upd := range pending {
+			log.Info("resource was modified in another place while syncing, retrying with a fresh copy",
+				"name", upd.r.GetMeta().GetName(), "mesh", upd.r.GetMeta().GetMesh())
+			if err := s.refreshForUpdate(ctx, upd, opts); err != nil {
+				return err
+			}
+		}
+
+		var conflicted []OnUpdate
+		var lastConflict error
+		if err := store.InTx(ctx, s.transactions, func(ctx context.Context) error {
+			for _, upd := range pending {
+				if err := s.resourceStore.Update(ctx, upd.r, append(upd.opts, store.ModifiedAt(time.Now()))...); err != nil {
+					if !store.IsConflict(err) {
+						return err
+					}
+					lastConflict = err
+					conflicted = append(conflicted, upd)
+				}
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+		pending = conflicted
+		if len(pending) > 0 {
+			return retry.RetryableError(lastConflict)
+		}
+		return nil
+	})
+	if store.IsConflict(err) {
+		log.Info("gave up syncing a resource that keeps being modified in another place, forcing a resync",
+			"name", pending[0].r.GetMeta().GetName(), "mesh", pending[0].r.GetMeta().GetMesh())
+	}
+	return err
+}
+
+func (s *syncResourceStore) refreshForUpdate(ctx context.Context, upd OnUpdate, opts *SyncOption) error {
+	fresh, err := registry.Global().NewObject(upd.r.Descriptor().Name)
+	if err != nil {
+		return err
+	}
+	rk := core_model.MetaToResourceKey(upd.r.GetMeta())
+	if err := s.resourceStore.Get(ctx, fresh, store.GetByKey(rk.Name, rk.Mesh)); err != nil {
+		return err
+	}
+	upd.r.SetMeta(fresh.GetMeta())
+	if upd.r.Descriptor().HasStatus && opts.IgnoreStatusChange {
+		return upd.r.SetStatus(fresh.GetStatus())
+	}
+	return nil
 }
 
 func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bool) (core_model.ResourceList, error) {

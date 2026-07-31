@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -241,6 +242,61 @@ func TestBackendRefRealResourceSelectorRejectsRealRefsWithoutLabels(t *testing.T
 
 	if _, _, ok := ref.RealResourceSelector("default"); ok {
 		t.Fatal("RealResourceSelector() returned ok=true, want false")
+	}
+}
+
+func TestTargetRefUnmarshalConvertsLegacyNameNamespaceToLabels(t *testing.T) {
+	t.Parallel()
+
+	var ref TargetRef
+	err := json.Unmarshal([]byte(`{
+		"kind": "MeshService",
+		"name": "backend",
+		"namespace": "team-a",
+		"sectionName": "http"
+	}`), &ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedLabels := map[string]string{
+		mesh_proto.DisplayName:      "backend",
+		mesh_proto.KubeNamespaceTag: "team-a",
+	}
+	if !reflect.DeepEqual(pointer.Deref(ref.Labels), expectedLabels) {
+		t.Fatalf("labels = %v, want %v", pointer.Deref(ref.Labels), expectedLabels)
+	}
+	if pointer.Deref(ref.SectionName) != "http" {
+		t.Fatalf("sectionName = %q, want http", pointer.Deref(ref.SectionName))
+	}
+}
+
+func TestBackendRefUnmarshalConvertsLegacyNameAndKeepsBackendFields(t *testing.T) {
+	t.Parallel()
+
+	var ref BackendRef
+	err := json.Unmarshal([]byte(`{
+		"kind": "MeshService",
+		"name": "backend",
+		"weight": 7,
+		"port": 8080
+	}`), &ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	labels, sectionName, ok := ref.RealResourceSelector("kuma-demo")
+	if !ok {
+		t.Fatal("RealResourceSelector() returned ok=false")
+	}
+	if !reflect.DeepEqual(labels, map[string]string{mesh_proto.DisplayName: "backend"}) {
+		t.Fatalf("labels = %v, want display-name backend", labels)
+	}
+	if sectionName != "8080" {
+		t.Fatalf("sectionName = %q, want 8080", sectionName)
+	}
+	if pointer.Deref(ref.Weight) != 7 {
+		t.Fatalf("weight = %d, want 7", pointer.Deref(ref.Weight))
 	}
 }
 
