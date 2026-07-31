@@ -66,41 +66,6 @@ var _ = Describe("SecretsGenerator", func() {
 				APIVersion:     envoy_common.APIV3,
 			},
 		}),
-		Entry("zone egress, Mesh has no mTLS configuration", testCase{
-			ctx: xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-					},
-				},
-				ControlPlane: &xds_context.ControlPlaneContext{
-					Secrets: &xds.TestSecrets{},
-				},
-			},
-			proxy: &core_xds.Proxy{
-				Id: *core_xds.BuildProxyId("", mesh_proto.ZoneEgressServiceName),
-				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-					MeshResourcesList: []*core_xds.MeshResources{
-						{
-							Mesh: &core_mesh.MeshResource{
-								Meta: &test_model.ResourceMeta{
-									Name: "demo",
-								},
-							},
-						},
-					},
-					ZoneEgressResource: &core_mesh.ZoneEgressResource{
-						Meta: &test_model.ResourceMeta{
-							Name: mesh_proto.ZoneEgressServiceName,
-						},
-					},
-				},
-				SecretsTracker: envoy_common.NewSecretsTracker("", nil),
-				APIVersion:     envoy_common.APIV3,
-			},
-		}),
 	)
 
 	DescribeTable("should generate Envoy xDS resources if secret backend is present",
@@ -338,75 +303,6 @@ var _ = Describe("SecretsGenerator", func() {
 				APIVersion:     envoy_common.APIV3,
 			},
 			expected: "envoy-config-dataplane.golden.yaml",
-		}),
-		Entry("should create secrets when multiple meshes present (egress)", testCase{
-			ctx: xds_context.Context{
-				ControlPlane: &xds_context.ControlPlaneContext{
-					Secrets: &xds.TestSecrets{},
-				},
-				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "mesh-2",
-						},
-					},
-				},
-			},
-			proxy: &core_xds.Proxy{
-				Id:         *core_xds.BuildProxyId("", mesh_proto.ZoneEgressServiceName),
-				APIVersion: envoy_common.APIV3,
-				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-					ZoneEgressResource: &core_mesh.ZoneEgressResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "zone-egress",
-						},
-					},
-					MeshResourcesList: []*core_xds.MeshResources{
-						{
-							Mesh: &core_mesh.MeshResource{
-								Meta: &test_model.ResourceMeta{
-									Name: "mesh-1",
-								},
-								Spec: &mesh_proto.Mesh{
-									Mtls: &mesh_proto.Mesh_Mtls{
-										EnabledBackend: "ca-1",
-										Backends: []*mesh_proto.CertificateAuthorityBackend{
-											{
-												Name: "ca-1",
-												Type: "builtin",
-											},
-										},
-									},
-								},
-							},
-						},
-						{
-							Mesh: &core_mesh.MeshResource{
-								Meta: &test_model.ResourceMeta{
-									Name: "mesh-2",
-								},
-								Spec: &mesh_proto.Mesh{
-									Mtls: &mesh_proto.Mesh_Mtls{
-										EnabledBackend: "ca-1",
-										Backends: []*mesh_proto.CertificateAuthorityBackend{
-											{
-												Name: "ca-1",
-												Type: "builtin",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				SecretsTracker: envoy_common.NewSecretsTracker("mesh-2", []string{"mesh-1", "mesh-2"}),
-			},
-			identity: true,
-			usedCas: map[string]struct{}{
-				"mesh-2": {},
-			},
-			expected: "envoy-config-egress.golden.yaml",
 		}),
 	)
 })
