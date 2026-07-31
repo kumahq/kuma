@@ -13,7 +13,7 @@ filterChains:
           '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
           attributes: {}
           body:
-            stringValue: '[%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-meshservice-tcp)
+            stringValue: '[%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(unknown)->%UPSTREAM_HOST%(other-meshservice-tcp)
               took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED%
               bytes'
           grpcService:

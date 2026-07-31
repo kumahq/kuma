@@ -73,19 +73,6 @@ var _ = Describe("InboundIdentifyingName", func() {
 			portName:   "",
 			expected:   "backend",
 		}),
-		Entry("falls back to the legacy service tag when no portName and no workload label", testCase{
-			meta: test_model.ResourceMeta{
-				Name: "backend-abc",
-				Mesh: "default",
-				Labels: map[string]string{
-					mesh_proto.ZoneTag:          "zone-1",
-					mesh_proto.KubeNamespaceTag: "kuma-demo",
-				},
-			},
-			serviceTag: "backend",
-			portName:   "",
-			expected:   "backend",
-		}),
 		Entry("falls back to unknown when nothing identifies the dataplane", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",

@@ -499,11 +499,7 @@ func GlobalSyncCallback(
 			case core_mesh.DataplaneType:
 				for _, dp := range upstream.AddedResources.(*core_mesh.DataplaneResourceList).Items {
 					var rejected []string
-					networking := dp.Spec.GetNetworking()
-					for _, inbound := range networking.GetInbound() {
-						rejected = pinZoneTag(inbound.GetTags(), clientID, rejected)
-					}
-					rejected = pinZoneTag(networking.GetGateway().GetTags(), clientID, rejected)
+					rejected = pinZoneTag(dp.Spec.GetNetworking().GetGateway().GetTags(), clientID, rejected)
 					recordZoneRewrite(rewrites, upstream.Type, dp.GetMeta(), clientID, rejected)
 				}
 			}

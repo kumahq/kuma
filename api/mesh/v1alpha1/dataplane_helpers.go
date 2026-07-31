@@ -642,26 +642,6 @@ func (d *Dataplane) TagSet() MultiValueTagSet {
 	return tags
 }
 
-// LegacyTagSet returns TagSet extended with the tags a legacy Dataplane still
-// declares on its inbounds. Inbound tags are no longer part of a Dataplane's
-// identity — labels are (see TagSet) — but the mTLS identity, dataplane token
-// and identifying-name paths keep honoring them so proxies provisioned before
-// the move to labels keep getting certificates, authenticating and reporting
-// their own name across an upgrade.
-func (d *Dataplane) LegacyTagSet() MultiValueTagSet {
-	tags := d.TagSet()
-	for _, inbound := range d.GetNetworking().GetInbound() {
-		for tag, value := range inbound.GetTags() {
-			_, exists := tags[tag]
-			if !exists {
-				tags[tag] = map[string]bool{}
-			}
-			tags[tag][value] = true
-		}
-	}
-	return tags
-}
-
 // SingleValueTagSets returns the gateway's tag set; regular inbounds carry
 // no tag-shaped identity and are represented by Dataplane labels instead.
 func (d *Dataplane) SingleValueTagSets() []SingleValueTagSet {

@@ -186,34 +186,6 @@ var _ = Describe("Updater", func() {
 		}, "10s", "100ms").Should(Succeed())
 	})
 
-	It("should derive identity from the legacy service tag when it differs from the workload label", func() {
-		// given a pre-upgrade dataplane whose certificate SAN is still minted
-		// from the inbound kuma.io/service tag, not from the workload label
-		Expect(builders.MeshService().
-			WithName("backend").
-			WithDataplaneLabelsSelector(map[string]string{
-				metadata.KumaWorkload: "app",
-			}).
-			AddIntPort(int32(builders.FirstInboundPort), int32(builders.FirstInboundPort), "http").
-			Create(resManager)).To(Succeed())
-		Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().Build(), store.CreateByKey("dp-1", model.DefaultMesh), store.CreateWithLabels(map[string]string{
-			metadata.KumaWorkload: "app",
-		}))).To(Succeed())
-
-		// then
-		Eventually(func(g Gomega) {
-			ms := meshservice_api.NewMeshServiceResource()
-			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
-				{
-					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-					Value: "backend",
-				},
-			}))
-		}, "10s", "100ms").Should(Succeed())
-	})
-
 	It("should not override identity to status of service from another zone", func() {
 		// when
 		Expect(samples.MeshServiceBackendBuilder().

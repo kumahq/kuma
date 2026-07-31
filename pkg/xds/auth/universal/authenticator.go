@@ -133,20 +133,14 @@ func (u *universalAuthenticator) authZoneEntity(
 	return nil
 }
 
-// validateTags checks a tag-bound token against the dataplane. A tag is
-// satisfied by the dataplane's labels or, for legacy dataplanes still carrying
-// service tags in their spec, by those tags. Every value the dataplane declares
-// for a tag must be allowed by the token, so widening the lookup never widens
-// what a token grants.
+// validateTags checks a tag-bound token against the dataplane's labels. Every
+// value the dataplane declares for a tag must be allowed by the token, so
+// widening the lookup never widens what a token grants.
 func validateTags(tokenTags mesh_proto.MultiValueTagSet, dataplane *core_mesh.DataplaneResource) error {
-	dpTags := dataplane.Spec.LegacyTagSet()
 	dpLabels := dataplane.Meta.GetLabels()
 
 	for tagName, allowedValues := range tokenTags {
 		dpValues := map[string]bool{}
-		for value := range dpTags[tagName] {
-			dpValues[value] = true
-		}
 		if labelValue, exist := dpLabels[tagName]; exist {
 			dpValues[labelValue] = true
 		}
