@@ -495,8 +495,8 @@ zoneProxyImage:
   # -- The pause image tag
   tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
 
-# Default service settings for mesh zone proxies. Used as fallback when
-# meshes[].ingress.service or meshes[].egress.service fields are not set.
+# Default settings for mesh zone proxies. Used as fallback when the matching
+# meshes[].ingress or meshes[].egress field is not set.
 meshZoneProxyDefaults:
   ingress:
     # -- Default number of replicas for zone ingress. Ignored when hpa.enabled is true.
