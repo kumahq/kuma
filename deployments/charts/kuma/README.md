@@ -31,7 +31,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.restartPolicy | string | `"Always"` | Pod restart policy for the Control Plane. |
 | controlPlane.minReadySeconds | int | `0` | Minimum number of seconds for which a newly created pod should be ready for it to be considered available. |
 | controlPlane.deploymentAnnotations | object | `{}` | Annotations applied only to the `Deployment` resource |
-| controlPlane.deploymentStrategy | object | `{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0}}` | Deployment update strategy for the control plane. Note: setting this to `{}` does not disable the default strategy (Helm re-merges the chart default); use `type: Recreate` to fully replace the rolling update strategy. |
+| controlPlane.deploymentStrategy | object | `{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0}}` | Deployment update strategy for the control plane. Note: `{}` does not disable the strategy (Helm re-merges the chart default); use `type: Recreate` to fully replace it. Setting it to `null` removes the default entirely, falling back to Kubernetes' own default strategy. |
 | controlPlane.podAnnotations | object | `{}` | Annotations applied only to the `Pod` resource |
 | controlPlane.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
 | controlPlane.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
