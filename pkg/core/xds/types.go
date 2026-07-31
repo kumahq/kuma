@@ -106,7 +106,7 @@ type Endpoint struct {
 	UnixDomainPath string
 	Port           uint32
 	// Tags is the endpoint's load-balancing identity. It is derived from the
-	// Dataplane inbound tags merged with workload/resource labels
+	// Dataplane's workload/resource labels plus the inbound's protocol
 	// (see BuildEdsEndpointMap), so a single well-known key carries the identity.
 	Tags            map[string]string
 	Weight          uint32

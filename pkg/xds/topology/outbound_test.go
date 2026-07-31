@@ -286,6 +286,47 @@ var _ = Describe("TrafficRoute", func() {
 			}))
 		})
 
+		It("should carry the inbound protocol into endpoint tags", func() {
+			// given - protocol is a per-port property, so it comes from the
+			// inbound's Protocol field rather than from a Dataplane label
+			dp := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh:   "default",
+					Name:   "backend-1",
+					Labels: map[string]string{mesh_proto.ServiceTag: "backend"},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Port:        8080,
+								ServicePort: 18080,
+								Protocol:    "http",
+							},
+						},
+					},
+				},
+			}
+			dataplanes := []*core_mesh.DataplaneResource{dp}
+
+			// when
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
+
+			// then
+			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
+				{
+					Target: "192.168.0.1",
+					Port:   8080,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag:  "backend",
+						mesh_proto.ProtocolTag: "http",
+					},
+					Weight: 1,
+				},
+			}))
+		})
+
 		It("should fold the full set of kuma.io labels into endpoint tags", func() {
 			// given - the labels a real Dataplane carries, not a synthetic subset
 			dp := &core_mesh.DataplaneResource{

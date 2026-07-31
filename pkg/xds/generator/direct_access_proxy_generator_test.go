@@ -28,8 +28,9 @@ func parseResource(bytes []byte, resource core_model.Resource) {
 	err := yaml.Unmarshal(bytes, &resMeta)
 	Expect(err).ToNot(HaveOccurred())
 	resource.SetMeta(&model.ResourceMeta{
-		Mesh: resMeta.Mesh,
-		Name: resMeta.Name,
+		Mesh:   resMeta.Mesh,
+		Name:   resMeta.Name,
+		Labels: resMeta.Labels,
 	})
 }
 

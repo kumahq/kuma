@@ -339,7 +339,7 @@ func fillDataplaneOutbounds(
 		dpNetworking := dpSpec.GetNetworking()
 
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
-			inboundTags := endpointIdentity(dataplane)
+			inboundTags := endpointIdentity(dataplane, inbound)
 			serviceName := inboundTags[mesh_proto.ServiceTag]
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
@@ -371,11 +371,17 @@ func fillDataplaneOutbounds(
 }
 
 // endpointIdentity returns the tags that make up an endpoint's load-balancing
-// identity, sourced from the Dataplane's own resource labels.
-func endpointIdentity(dataplane *core_mesh.DataplaneResource) map[string]string {
+// identity, sourced from the Dataplane's own resource labels. The inbound's
+// protocol is carried alongside them because service-level protocol inference
+// (MeshContext.GetServiceProtocol) reads it off the endpoint, and it is a
+// per-port property that resource labels cannot express.
+func endpointIdentity(dataplane *core_mesh.DataplaneResource, inbound *mesh_proto.Dataplane_Networking_Inbound) map[string]string {
 	tags := maps.Clone(dataplane.GetMeta().GetLabels())
 	if tags == nil {
 		tags = map[string]string{}
+	}
+	if protocol := inbound.GetProtocolFallback(); protocol != "" {
+		tags[mesh_proto.ProtocolTag] = protocol
 	}
 	return tags
 }
@@ -399,7 +405,7 @@ func fillLocalMeshServices(
 						continue
 					}
 
-					inboundTags := endpointIdentity(dpp)
+					inboundTags := endpointIdentity(dpp, inbound)
 					serviceName := destinationname.MustResolve(false, meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
