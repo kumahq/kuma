@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	"maps"
 
 	"github.com/pkg/errors"
 
@@ -77,11 +78,19 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		inboundListenerName := unifiedName
 		statPrefix := unifiedName
 
+		listenerTags := maps.Clone(proxy.Dataplane.GetMeta().GetLabels())
+		if listenerTags == nil {
+			listenerTags = map[string]string{}
+		}
+		if protocol := iface.GetProtocolFallback(); protocol != "" {
+			listenerTags[mesh_proto.ProtocolTag] = protocol
+		}
+
 		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, inboundListenerName).
 			Configure(envoy_listeners.InboundListener(endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 			Configure(envoy_listeners.StatPrefix(statPrefix)).
 			Configure(envoy_listeners.TransparentProxying(proxy)).
-			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(nil, unifiedName)))
+			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(listenerTags, unifiedName)))
 
 		switch xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
 		case mesh_proto.CertificateAuthorityBackend_STRICT:
