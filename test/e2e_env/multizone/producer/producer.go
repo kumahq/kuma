@@ -280,7 +280,8 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: test-server
+                labels:
+                  kuma.io/display-name: test-server
                 port: 80
 `, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
 

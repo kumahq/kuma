@@ -34,12 +34,14 @@ spec:
           default:
             backendRefs:
               - kind: MeshServiceSubset
-                name: service-in-zone-2
+                labels:
+                  kuma.io/display-name: service-in-zone-2
                 weight: 1
                 tags:
                   version: v1
               - kind: MeshServiceSubset
-                name: service-in-zone-2
+                labels:
+                  kuma.io/display-name: service-in-zone-2
                 weight: 1
                 tags:
                   version: v2

@@ -34,7 +34,8 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: non-existent
+                labels:
+                  kuma.io/display-name: non-existent
 ---
 type: ZoneIngress
 name: zone-2-zoneingress-1

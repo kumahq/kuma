@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -389,12 +388,16 @@ var _ = Describe("IngressGenerator", func() {
 									Spec: &meshhttproute_api.MeshHTTPRoute{
 										TargetRef: &common_api.TargetRef{
 											Kind: common_api.MeshService,
-											Name: pointer.To("frontend"),
+											Labels: &map[string]string{
+												mesh_proto.DisplayName: "frontend",
+											},
 										},
 										To: &[]meshhttproute_api.To{{
 											TargetRef: common_api.TargetRef{
 												Kind: common_api.MeshService,
-												Name: pointer.To("backend"),
+												Labels: &map[string]string{
+													mesh_proto.DisplayName: "backend",
+												},
 											},
 											Rules: []meshhttproute_api.Rule{{
 												Matches: []meshhttproute_api.Match{{
@@ -407,7 +410,9 @@ var _ = Describe("IngressGenerator", func() {
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
 															Kind: common_api.LegacyMeshServiceSubsetKind(),
-															Name: pointer.To("backend"),
+															Labels: &map[string]string{
+																mesh_proto.DisplayName: "backend",
+															},
 															Tags: &map[string]string{
 																"version": "v1",
 																"region":  "eu",
@@ -483,12 +488,16 @@ var _ = Describe("IngressGenerator", func() {
 									Spec: &meshhttproute_api.MeshHTTPRoute{
 										TargetRef: &common_api.TargetRef{
 											Kind: common_api.MeshService,
-											Name: pointer.To("frontend"),
+											Labels: &map[string]string{
+												mesh_proto.DisplayName: "frontend",
+											},
 										},
 										To: &[]meshhttproute_api.To{{
 											TargetRef: common_api.TargetRef{
 												Kind: common_api.MeshService,
-												Name: pointer.To("backend"),
+												Labels: &map[string]string{
+													mesh_proto.DisplayName: "backend",
+												},
 											},
 											Rules: []meshhttproute_api.Rule{{
 												Matches: []meshhttproute_api.Match{{
@@ -501,7 +510,9 @@ var _ = Describe("IngressGenerator", func() {
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
 															Kind: common_api.LegacyMeshServiceSubsetKind(),
-															Name: pointer.To("backend"),
+															Labels: &map[string]string{
+																mesh_proto.DisplayName: "backend",
+															},
 															Tags: &map[string]string{
 																"version":      "v1",
 																"region":       "eu",
@@ -578,19 +589,25 @@ var _ = Describe("IngressGenerator", func() {
 									Spec: &meshtcproute_api.MeshTCPRoute{
 										TargetRef: &common_api.TargetRef{
 											Kind: common_api.MeshService,
-											Name: pointer.To("frontend"),
+											Labels: &map[string]string{
+												mesh_proto.DisplayName: "frontend",
+											},
 										},
 										To: &[]meshtcproute_api.To{{
 											TargetRef: common_api.TargetRef{
 												Kind: common_api.MeshService,
-												Name: pointer.To("backend"),
+												Labels: &map[string]string{
+													mesh_proto.DisplayName: "backend",
+												},
 											},
 											Rules: []meshtcproute_api.Rule{{
 												Default: meshtcproute_api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
 															Kind: common_api.LegacyMeshServiceSubsetKind(),
-															Name: pointer.To("backend"),
+															Labels: &map[string]string{
+																mesh_proto.DisplayName: "backend",
+															},
 															Tags: &map[string]string{
 																"version":      "v1",
 																"region":       "eu",

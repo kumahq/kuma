@@ -44,7 +44,7 @@ to:
 `),
 		ErrorCase("invalid backendRefs",
 			validators.Violation{
-				Field:   "spec.to[0].rules[0].default.backendRefs[0].name",
+				Field:   "spec.to[0].rules[0].default.backendRefs[0].labels",
 				Message: "must be set when kind is MeshServiceSubset",
 			}, `
 type: MeshTCPRoute
@@ -83,7 +83,8 @@ to:
   - default:
       backendRefs:
       - kind: MeshMultiZoneService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
 `),
 	)
 	DescribeValidCases(
@@ -103,7 +104,8 @@ to:
   - default:
       backendRefs:
       - kind: MeshService
-        name: other
+        labels:
+          kuma.io/display-name: other
 `),
 		Entry("accepts valid resource without to.rules", `
 type: MeshTCPRoute
@@ -133,7 +135,8 @@ to:
   - default:
       backendRefs:
       - kind: MeshMultiZoneService
-        name: other
+        labels:
+          kuma.io/display-name: other
         port: 8080
 - targetRef:
     kind: MeshMultiZoneService
@@ -143,7 +146,8 @@ to:
   - default:
       backendRefs:
       - kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
         port: 8080
 `),
 	)
