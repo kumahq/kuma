@@ -189,15 +189,21 @@ GUI and API.
 
 Helm does not reject unknown values, so an upgrade with `ingress.enabled=true`
 left in your values file succeeds without any warning. Because the templates are
-gone, the upgrade deletes the legacy zone proxy Deployment, Service and RBAC
-objects that the previous release owned, which drops all cross-zone traffic
-still flowing through them.
+gone, the upgrade deletes the legacy zone proxy Deployment, Service,
+HorizontalPodAutoscaler, PodDisruptionBudget and RBAC objects that the previous
+release owned, which drops all cross-zone traffic still flowing through them.
 
 **Action required**
 
 Complete the migration described in the previous section, then drop the
 top-level `ingress` and `egress` blocks from your values files and the removed
 flags from any `kumactl install control-plane` invocation.
+
+Most legacy settings map onto `meshes[].ingress` / `meshes[].egress`. These have
+no equivalent there: `podAnnotations`, `annotations`, `logLevel`, `drainTime`,
+`lifecycle`, `livenessProbe`, `readinessProbe`, `startupProbe`, `dns.policy`,
+`dns.config`, `service.enabled` and `service.nodePort`. Drain time and probes
+are now control-plane-wide sidecar injector settings.
 
 ### ServiceInsight, MeshInsight, and inspect `_rules` no longer report kuma.io/service based data
 
