@@ -130,9 +130,13 @@ func (u *universalAuthenticator) authZoneEntity(
 	return nil
 }
 
-// validateTags checks a tag-bound token against the dataplane's labels. Every
-// value the dataplane declares for a tag must be allowed by the token, so
-// widening the lookup never widens what a token grants.
+// validateTags checks a tag-bound token against the dataplane's labels or,
+// for a Dataplane that has not migrated off tag-based provisioning, the tags
+// it still declares on its inbounds. `kumactl generate dataplane-token --tag`
+// stays usable against such a Dataplane even though xDS identity generation
+// itself is labels-only (see Dataplane.TagSet). Every value the dataplane
+// declares for a tag must be allowed by the token, so widening the lookup
+// never widens what a token grants.
 func validateTags(tokenTags mesh_proto.MultiValueTagSet, dataplane *core_mesh.DataplaneResource) error {
 	dpLabels := dataplane.Meta.GetLabels()
 
@@ -140,6 +144,11 @@ func validateTags(tokenTags mesh_proto.MultiValueTagSet, dataplane *core_mesh.Da
 		dpValues := map[string]bool{}
 		if labelValue, exist := dpLabels[tagName]; exist {
 			dpValues[labelValue] = true
+		}
+		for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
+			if value, exist := inbound.GetTags()[tagName]; exist {
+				dpValues[value] = true
+			}
 		}
 		if len(dpValues) == 0 {
 			return errors.Errorf("dataplane has no tag %q required by the token", tagName)

@@ -129,6 +129,23 @@ var _ = Describe("Authentication flow", func() {
 			},
 			dpRes: &dpResWithWorkload,
 		}),
+		Entry("should auth with a legacy token bound to the service tags declared in the dataplane spec", testCase{
+			// dpRes declares kuma.io/service only on its inbounds (via
+			// AddInboundOfService), not as a label, so this pins
+			// `kumactl generate dataplane-token --tag` staying usable
+			// against a Dataplane that has not migrated that tag to a
+			// label, even though xDS identity generation is labels-only.
+			id: builtin_issuer.DataplaneIdentity{
+				Mesh: "default",
+				Tags: map[string]map[string]bool{
+					"kuma.io/service": {
+						"web":     true,
+						"web-api": true,
+					},
+				},
+			},
+			dpRes: &dpRes,
+		}),
 	)
 
 	DescribeTable("should fail auth",
