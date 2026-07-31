@@ -71,16 +71,20 @@ build/info/short:
 build/info/version:
 	@echo $(BUILD_INFO_VERSION)
 
+# Override to assert against something other than what this checkout computes,
+# e.g. a tag name in CI, which then also covers the checkout computing it wrong.
+EXPECTED_VERSION ?= $(BUILD_INFO_VERSION)
+
 # Assert on an already built binary, so callers that just built it (e.g. `build/distributions`)
 # don't pay for a rebuild: every `build/artifacts-*` target is .PHONY.
 .PHONY: check/binary-version
-check/binary-version: ## Dev: Assert the already built kuma-cp binary reports the expected version
+check/binary-version: ## Dev: Assert the already built kuma-cp binary reports $(EXPECTED_VERSION)
 	@actual=$$($(BUILD_ARTIFACTS_DIR)/kuma-cp/kuma-cp version | awk '{print $$NF}'); \
-	if [ -z "$$actual" ] || [ "$$actual" != "$(BUILD_INFO_VERSION)" ]; then \
-		echo "kuma-cp binary reports version '$$actual', expected version '$(BUILD_INFO_VERSION)'"; \
+	if [ -z "$$actual" ] || [ "$$actual" != "$(EXPECTED_VERSION)" ]; then \
+		echo "kuma-cp binary reports version '$$actual', expected version '$(EXPECTED_VERSION)'"; \
 		exit 1; \
 	fi; \
-	echo "kuma-cp binary correctly reports version '$(BUILD_INFO_VERSION)'"
+	echo "kuma-cp binary correctly reports version '$(EXPECTED_VERSION)'"
 
 .PHONY: build/assert-tag-version
 build/assert-tag-version: build/kuma-cp ## Dev: Build kuma-cp and assert it reports the tag version

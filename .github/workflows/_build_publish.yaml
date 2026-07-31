@@ -78,19 +78,15 @@ jobs:
       - run: |
           make -j"$(nproc)" build/distributions
       # Gates publishing, not building: a wrong version must never reach Pulp or
-      # Cloudsmith, but there is no reason to hold the build back for it.
-      - name: Assert version matches tag
+      # Cloudsmith, but there is no reason to hold the build back for it. Asserting
+      # the binary against the tag also covers this checkout computing the version
+      # wrong, since that is where the binary got stamped from.
+      - name: Assert built binary reports tag version
         if: ${{ github.ref_type == 'tag' }}
         env:
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          expected="${TAG_NAME#v}"
-          actual="$(make build/info/version)"
-          if [ "${actual}" != "${expected}" ]; then
-            echo "::error title=Version mismatch::build reports version '${actual}', expected tag version '${expected}'"
-            exit 1
-          fi
-          make check/binary-version
+          make check/binary-version EXPECTED_VERSION="${TAG_NAME#v}"
       - id: inspect-binary-output
         run: |
           for i in build/distributions/out/*.tar.gz; do echo "$i"; tar -tvf "$i"; done
