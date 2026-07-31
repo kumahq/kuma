@@ -31,7 +31,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/os"
 	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
 	"github.com/kumahq/kuma/v3/pkg/xds"
-	"github.com/kumahq/kuma/v3/pkg/zone"
 )
 
 var runLog = controlPlaneLog.WithName("run")
@@ -153,10 +152,6 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 			}
 			if err := workload_generate.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Workload generator")
-				return err
-			}
-			if err := zone.Setup(rt); err != nil {
-				runLog.Error(err, "unable to set up ZoneIngress available services")
 				return err
 			}
 			if err := dns.SetupHostnameGenerator(rt); err != nil {
