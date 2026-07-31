@@ -255,7 +255,13 @@ func (d *DataplaneWatchdog) syncOtelStatus(backends *core_xds.OtelPipeBackends) 
 func hashMeshIdentity(identity *meshidentity_api.MeshIdentityResource) []byte {
 	hasher := fnv.New128a()
 	if identity != nil {
+<<<<<<< HEAD
 		_, _ = hasher.Write(core_model.Hash(identity))
+=======
+		// XDSHash covers readiness, so dataplanes resync when a MeshIdentity
+		// becomes initialized and workload identity can finally be issued.
+		_, _ = hasher.Write(identity.XDSHash())
+>>>>>>> 50d3e08057 (fix(xds): resync dataplanes when identity is ready (#17764))
 	}
 	return hasher.Sum(nil)
 }
