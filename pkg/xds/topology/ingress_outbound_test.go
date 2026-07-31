@@ -248,6 +248,36 @@ var _ = Describe("IngressTrafficRoute", func() {
 							ExternalService: nil,
 						},
 					},
+					// the kong dataplane carries no kuma.io/service label, so
+					// its legacy entries are keyed by the per-inbound tag
+					"kong_kong-system_svc_80": []core_xds.Endpoint{
+						{
+							Target:         "192.168.0.2",
+							UnixDomainPath: "",
+							Port:           80,
+							Tags: map[string]string{
+								"kuma.io/service": "kong_kong-system_svc_80",
+								"app":             "kong",
+							},
+							Weight:          1,
+							Locality:        nil,
+							ExternalService: nil,
+						},
+					},
+					"kong_kong-system_svc_8001": []core_xds.Endpoint{
+						{
+							Target:         "192.168.0.2",
+							UnixDomainPath: "",
+							Port:           8001,
+							Tags: map[string]string{
+								"kuma.io/service": "kong_kong-system_svc_8001",
+								"app":             "kong",
+							},
+							Weight:          1,
+							Locality:        nil,
+							ExternalService: nil,
+						},
+					},
 				},
 			}),
 		)

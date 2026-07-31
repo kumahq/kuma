@@ -340,18 +340,22 @@ func fillDataplaneOutbounds(
 
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
 			inboundTags := endpointIdentity(dataplane, inbound)
-			serviceName := inboundTags[mesh_proto.ServiceTag]
+			// This map is keyed by the legacy kuma.io/service, so the inbound's
+			// own service tag has to win over the Dataplane's kuma.io/service
+			// label: a Dataplane provisioned before the move to labels declares
+			// its service only per inbound, and may expose several of them.
+			serviceName := inbound.GetServiceFallback(inboundTags[mesh_proto.ServiceTag])
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
 			inboundPort := inboundInterface.DataplanePort
 
-			// A Dataplane resource only carries labels at the whole-resource
-			// level, so a serviceless (labels-only) dataplane cannot resolve a
-			// per-inbound kuma.io/service here; it relies on MeshService for
-			// outbound discovery instead.
+			// A dataplane that declares no service at all (neither an inbound
+			// tag nor a kuma.io/service label) has no legacy identity to
+			// publish; it relies on MeshService for outbound discovery instead.
 			if serviceName == "" {
 				continue
 			}
+			inboundTags[mesh_proto.ServiceTag] = serviceName
 
 			if _, ok := meshServiceDestinations[serviceName]; ok {
 				continue
