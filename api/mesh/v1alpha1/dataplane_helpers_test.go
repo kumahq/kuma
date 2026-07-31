@@ -266,42 +266,13 @@ var _ = Describe("Dataplane_Networking", func() {
 })
 
 var _ = Describe("Dataplane_Networking_Inbound", func() {
-	Describe("GetService()", func() {
-		type testCase struct {
-			inbound  *Dataplane_Networking_Inbound
-			expected string
-		}
-
-		DescribeTable("should infer service name from `service` tag",
-			func(given testCase) {
-				Expect(given.inbound.GetService()).To(Equal(given.expected))
-			},
-			Entry("inbound is `nil`", testCase{
-				inbound:  nil,
-				expected: "",
-			}),
-			Entry("inbound has no `service` tag", testCase{
-				inbound:  &Dataplane_Networking_Inbound{},
-				expected: "",
-			}),
-			Entry("inbound has `service` tag", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{
-						"kuma.io/service": "backend",
-					},
-				},
-				expected: "backend",
-			}),
-		)
-	})
-
 	Describe("GetProtocolFallback()", func() {
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
 			expected string
 		}
 
-		DescribeTable("should return protocol from field or fall back to tag",
+		DescribeTable("should return protocol from field",
 			func(given testCase) {
 				Expect(given.inbound.GetProtocolFallback()).To(Equal(given.expected))
 			},
@@ -309,7 +280,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 				inbound:  nil,
 				expected: "",
 			}),
-			Entry("inbound has no protocol field or tag", testCase{
+			Entry("inbound has no protocol field", testCase{
 				inbound:  &Dataplane_Networking_Inbound{},
 				expected: "",
 			}),
@@ -319,66 +290,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 				},
 				expected: "grpc",
 			}),
-			Entry("inbound has `protocol` tag with a known value", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{
-						"kuma.io/protocol": "http",
-					},
-				},
-				expected: "http",
-			}),
-			Entry("inbound has both protocol field and tag - field takes precedence", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Protocol: "grpc",
-					Tags: map[string]string{
-						"kuma.io/protocol": "http",
-					},
-				},
-				expected: "grpc",
-			}),
-			Entry("inbound has `protocol` tag with an unknown value", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{
-						"kuma.io/protocol": "not-yet-supported-protocol",
-					},
-				},
-				expected: "not-yet-supported-protocol",
-			}),
 		)
-	})
-})
-
-var _ = Describe("Dataplane with inbound", func() {
-	d := Dataplane{
-		Networking: &Dataplane_Networking{
-			Inbound: []*Dataplane_Networking_Inbound{
-				{
-					Tags: map[string]string{
-						"kuma.io/service": "backend",
-						"version":         "v1",
-					},
-				},
-				{
-					Tags: map[string]string{
-						"kuma.io/service": "backend-metrics",
-						"version":         "v1",
-						"role":            "metrics",
-					},
-				},
-			},
-		},
-	}
-
-	Describe("TagSet()", func() {
-		It("should provide combined tags", func() {
-			// when
-			tags := d.TagSet()
-
-			// then
-			Expect(tags.Values("kuma.io/service")).To(Equal([]string{"backend", "backend-metrics"}))
-			Expect(tags.Values("version")).To(Equal([]string{"v1"}))
-			Expect(tags.Values("role")).To(Equal([]string{"metrics"}))
-		})
 	})
 })
 
