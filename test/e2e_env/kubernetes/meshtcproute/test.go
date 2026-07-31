@@ -149,8 +149,9 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: test-http-server
-      namespace: %s
+      labels:
+        kuma.io/display-name: test-http-server
+        k8s.kuma.io/namespace: %s
     rules:
     - matches:
       - path:
@@ -177,8 +178,9 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: test-http-server
-      namespace: %s
+      labels:
+        kuma.io/display-name: test-http-server
+        k8s.kuma.io/namespace: %s
     rules:
     - default:
         backendRefs:
@@ -249,8 +251,9 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: test-tcp-server
-      namespace: %s
+      labels:
+        kuma.io/display-name: test-tcp-server
+        k8s.kuma.io/namespace: %s
     rules:
     - matches:
       - path:
@@ -277,8 +280,9 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: test-tcp-server
-      namespace: %s
+      labels:
+        kuma.io/display-name: test-tcp-server
+        k8s.kuma.io/namespace: %s
     rules:
     - default:
         backendRefs:

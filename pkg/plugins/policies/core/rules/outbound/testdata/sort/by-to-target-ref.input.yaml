@@ -21,7 +21,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         connectionTimeout: 11s
         http:

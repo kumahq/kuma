@@ -22,7 +22,8 @@ items:
             value: /
       targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
   type: MeshHTTPRoute
 next: null
 total: 0

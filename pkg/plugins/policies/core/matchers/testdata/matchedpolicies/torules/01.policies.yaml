@@ -9,7 +9,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -18,7 +19,8 @@ spec:
           default: {}
     - targetRef:
         kind: MeshService
-        name: another-test-server
+        labels:
+          kuma.io/display-name: another-test-server
       rules:
         - matches:
             - path:

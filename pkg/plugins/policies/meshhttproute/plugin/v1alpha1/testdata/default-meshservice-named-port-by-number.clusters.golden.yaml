@@ -1,12 +1,12 @@
 resources:
-- name: backend-c72efb5be46fae6b
+- name: kri_msvc_default_remote-zone__backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: backend-c72efb5be46fae6b
+    name: kri_msvc_default_remote-zone__backend_80
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
@@ -21,16 +21,16 @@ resources:
                   exact: spiffe://default/backend
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
+              name: system_trust_bundle
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
+          - name: identity_cert:secret:default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: backend{mesh=default,region=us}
+        sni: sni.msvc.default.remote-zone.backend.http
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

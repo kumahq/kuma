@@ -45,7 +45,8 @@
         requestTimeout: 3m32s
     targetRef:
       kind: MeshService
-      name: backend
+      labels:
+        kuma.io/display-name: backend
   Meta:
     creationTime: "0001-01-01T00:00:00Z"
     kri: kri_mt_mesh-1_another-zone__matched-for-rules-ccc_
@@ -78,4 +79,5 @@
   RuleIndex: 0
   TopLevel:
     kind: Dataplane
-    name: frontend-dp
+    labels:
+      kuma.io/service: frontend-dp

@@ -38,7 +38,9 @@ spec:
         requestTimeout: 4s
     targetRef:
       kind: MeshService
-      name: api-play-000_microservice-mesh_svc_8080
+      labels:
+        k8s.kuma.io/namespace: microservice-mesh
+        kuma.io/display-name: api-play-000
 type: MeshTimeout
 ---
 creationTime: "2024-02-08T14:51:16.69429Z"
@@ -62,7 +64,9 @@ spec:
         requestTimeout: 2s
     targetRef:
       kind: MeshService
-      name: api-play-003_microservice-mesh_svc_8080
+      labels:
+        k8s.kuma.io/namespace: microservice-mesh
+        kuma.io/display-name: api-play-003
 type: MeshTimeout
 ---
 creationTime: "2024-02-08T14:52:20.692623Z"
@@ -86,5 +90,7 @@ spec:
         requestTimeout: 2s
     targetRef:
       kind: MeshService
-      name: api-play-002_microservice-mesh_svc_8080
+      labels:
+        k8s.kuma.io/namespace: microservice-mesh
+        kuma.io/display-name: api-play-002
 type: MeshTimeout

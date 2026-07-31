@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -41,6 +42,25 @@ func (f *fromTestPolicyItem) GetTargetRef() common_api.TargetRef {
 func (f *fromTestPolicyItem) GetDefault() any {
 	return f.conf
 }
+
+// toTestPolicy / toTestPolicyItem are minimal PolicyWithToList / PolicyItem
+// stand-ins used to exercise buildToListWithRoutes without depending on a
+// concrete policy type (whose validation forbids a top-level MeshHTTPRoute ref).
+type toTestPolicy struct {
+	targetRef common_api.TargetRef
+	toList    []core_model.PolicyItem
+}
+
+func (p *toTestPolicy) GetTargetRef() common_api.TargetRef { return p.targetRef }
+func (p *toTestPolicy) GetToList() []core_model.PolicyItem { return p.toList }
+
+type toTestPolicyItem struct {
+	targetRef common_api.TargetRef
+	conf      any
+}
+
+func (t *toTestPolicyItem) GetTargetRef() common_api.TargetRef { return t.targetRef }
+func (t *toTestPolicyItem) GetDefault() any                    { return t.conf }
 
 var _ = Describe("Rules", func() {
 	Describe("SubsetIter", func() {
@@ -1289,5 +1309,101 @@ var _ = Describe("Rules", func() {
 			}
 			verifySemanticEquivalence(rulesCliques, rulesComponents, testElements)
 		})
+	})
+})
+
+var _ = Describe("buildToListWithRoutes", func() {
+	route := func(name, namespace, backend string) core_model.Resource {
+		return &v1alpha1.MeshHTTPRouteResource{
+			Meta: &test_model.ResourceMeta{
+				Mesh: "mesh-1",
+				Name: name,
+				Labels: map[string]string{
+					mesh_proto.DisplayName:      "route-1",
+					mesh_proto.KubeNamespaceTag: namespace,
+				},
+			},
+			Spec: &v1alpha1.MeshHTTPRoute{
+				To: &[]v1alpha1.To{{
+					TargetRef: common_api.TargetRef{
+						Kind:   common_api.MeshService,
+						Labels: pointer.To(map[string]string{mesh_proto.DisplayName: backend}),
+					},
+					Rules: []v1alpha1.Rule{{}},
+				}},
+			},
+		}
+	}
+
+	policyTargetingRoute := &toTestPolicy{
+		targetRef: common_api.TargetRef{
+			Kind:   common_api.MeshHTTPRoute,
+			Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "route-1"}),
+		},
+		toList: []core_model.PolicyItem{
+			&toTestPolicyItem{targetRef: common_api.TargetRef{Kind: common_api.Mesh}, conf: map[string]any{}},
+		},
+	}
+
+	routes := []core_model.Resource{
+		route("route-1.ns-a", "ns-a", "backend-a"),
+		route("route-1.ns-b", "ns-b", "backend-b"),
+	}
+
+	expandedServices := func(items []core_model.PolicyItem) []string {
+		var services []string
+		for _, item := range items {
+			services = append(services, pointer.Deref(item.GetTargetRef().Name))
+		}
+		return services
+	}
+
+	It("expands only same-namespace routes for a namespaced (consumer) policy", func() {
+		meta := &test_model.ResourceMeta{
+			Mesh: "mesh-1",
+			Name: "timeout-1",
+			Labels: map[string]string{
+				mesh_proto.PolicyRoleLabel:  string(mesh_proto.ConsumerPolicyRole),
+				mesh_proto.KubeNamespaceTag: "ns-a",
+			},
+		}
+
+		items, err := core_rules.BuildToListWithRoutesForTesting(meta, policyTargetingRoute, routes)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(expandedServices(items)).To(ConsistOf("backend-a"))
+	})
+
+	It("expands all matching routes for a namespace-agnostic (system) policy", func() {
+		meta := &test_model.ResourceMeta{Mesh: "mesh-1", Name: "timeout-1"}
+
+		items, err := core_rules.BuildToListWithRoutesForTesting(meta, policyTargetingRoute, routes)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(expandedServices(items)).To(ConsistOf("backend-a", "backend-b"))
+	})
+
+	It("fails when a route target selects a service by labels without kuma.io/display-name", func() {
+		routeWithoutDisplayName := &v1alpha1.MeshHTTPRouteResource{
+			Meta: &test_model.ResourceMeta{
+				Mesh: "mesh-1",
+				Name: "route-1.ns-a",
+				Labels: map[string]string{
+					mesh_proto.DisplayName:      "route-1",
+					mesh_proto.KubeNamespaceTag: "ns-a",
+				},
+			},
+			Spec: &v1alpha1.MeshHTTPRoute{
+				To: &[]v1alpha1.To{{
+					TargetRef: common_api.TargetRef{
+						Kind:   common_api.MeshService,
+						Labels: pointer.To(map[string]string{"env": "dev"}),
+					},
+					Rules: []v1alpha1.Rule{{}},
+				}},
+			},
+		}
+		meta := &test_model.ResourceMeta{Mesh: "mesh-1", Name: "timeout-1"}
+
+		_, err := core_rules.BuildToListWithRoutesForTesting(meta, policyTargetingRoute, []core_model.Resource{routeWithoutDisplayName})
+		Expect(err).To(MatchError(ContainSubstring("kuma.io/display-name label is required")))
 	})
 })

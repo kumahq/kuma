@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	. "github.com/kumahq/kuma/v3/pkg/xds/bootstrap"
@@ -415,6 +417,91 @@ var _ = Describe("bootstrapGenerator", func() {
 			hdsEnabled:         false,
 		}),
 	)
+
+	It("should use the workload label as cluster identity when inbound tags are empty", func() {
+		// given
+		dp := defaultDataplane()
+		dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
+		err := resManager.Create(
+			context.Background(),
+			dp,
+			store.CreateByKey("name.namespace", "mesh"),
+			store.CreateWithLabels(map[string]string{
+				k8s_metadata.KumaWorkload: "backend-workload",
+			}),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		cfg := bootstrap_config.DefaultBootstrapServerConfig()
+		cfg.Params.XdsHost = "localhost"
+		cfg.Params.XdsPort = 5678
+		generator, err := NewDefaultBootstrapGenerator(
+			resManager,
+			cfg,
+			filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			map[string]bool{},
+			false,
+			false,
+			0,
+			false,
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		bootstrapConfig, _, err := generator.Generate(context.Background(), types.BootstrapRequest{
+			Mesh:    "mesh",
+			Name:    "name.namespace",
+			Version: defaultVersion,
+			Workdir: "/tmp",
+		})
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		envoyBootstrap, ok := bootstrapConfig.(*envoy_bootstrap_v3.Bootstrap)
+		Expect(ok).To(BeTrue())
+		Expect(envoyBootstrap.GetNode().GetCluster()).To(Equal("backend-workload"))
+	})
+
+	It("should use unknown service as cluster identity when inbound tags and workload label are empty", func() {
+		// given
+		dp := defaultDataplane()
+		dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
+		err := resManager.Create(
+			context.Background(),
+			dp,
+			store.CreateByKey("name.namespace", "mesh"),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		cfg := bootstrap_config.DefaultBootstrapServerConfig()
+		cfg.Params.XdsHost = "localhost"
+		cfg.Params.XdsPort = 5678
+		generator, err := NewDefaultBootstrapGenerator(
+			resManager,
+			cfg,
+			filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			map[string]bool{},
+			false,
+			false,
+			0,
+			false,
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		bootstrapConfig, _, err := generator.Generate(context.Background(), types.BootstrapRequest{
+			Mesh:    "mesh",
+			Name:    "name.namespace",
+			Version: defaultVersion,
+			Workdir: "/tmp",
+		})
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		envoyBootstrap, ok := bootstrapConfig.(*envoy_bootstrap_v3.Bootstrap)
+		Expect(ok).To(BeTrue())
+		Expect(envoyBootstrap.GetNode().GetCluster()).To(Equal(mesh_proto.ServiceUnknown))
+	})
 
 	type errTestCase struct {
 		request  types.BootstrapRequest

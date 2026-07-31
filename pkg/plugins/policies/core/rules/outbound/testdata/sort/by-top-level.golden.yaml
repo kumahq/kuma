@@ -31,4 +31,5 @@
   RuleIndex: 0
   TopLevel:
     kind: Dataplane
-    name: backend-dp
+    labels:
+      kuma.io/service: backend-dp

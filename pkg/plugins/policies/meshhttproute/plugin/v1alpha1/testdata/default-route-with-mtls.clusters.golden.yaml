@@ -1,8 +1,12 @@
 resources:
-- name: outbound
+- name: kri_msvc_default___backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    name: outgoing
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: kri_msvc_default___backend_80
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
@@ -14,7 +18,7 @@ resources:
             defaultValidationContext:
               matchTypedSubjectAltNames:
               - matcher:
-                  exact: spiffe://default/outgoing
+                  exact: spiffe://default/backend
                 sanType: URI
             validationContextSdsSecretConfig:
               name: system_mtls_ca_default
@@ -26,13 +30,10 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-          tlsParams:
-            cipherSuites:
-            - ECDHE-ECDSA-AES128-GCM-SHA256
-            - ECDHE-ECDSA-AES256-GCM-SHA384
-            - ECDHE-ECDSA-CHACHA20-POLY1305
-            - ECDHE-RSA-AES128-GCM-SHA256
-            - ECDHE-RSA-AES256-GCM-SHA384
-            - ECDHE-RSA-CHACHA20-POLY1305
-            tlsMaximumProtocolVersion: TLSv1_2
-            tlsMinimumProtocolVersion: TLSv1_1
+        sni: a601e0c00295a9fbe.backend.80.default.ms
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}

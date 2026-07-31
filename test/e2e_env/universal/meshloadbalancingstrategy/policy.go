@@ -63,7 +63,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         hashPolicies:
           - type: Header
@@ -92,7 +93,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -108,7 +110,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         hashPolicies:
           - type: Header
@@ -144,7 +147,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: test-server-route
+        labels:
+          kuma.io/display-name: test-server-route
       default:
         hashPolicies:
           - type: Header

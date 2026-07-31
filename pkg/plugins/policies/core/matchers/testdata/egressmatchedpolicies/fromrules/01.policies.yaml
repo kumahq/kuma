@@ -10,12 +10,14 @@ spec:
   from:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         action: Allow
     - targetRef:
         kind: MeshService
-        name: orders
+        labels:
+          kuma.io/display-name: orders
       default:
         action: AllowWithShadowDeny
 ---

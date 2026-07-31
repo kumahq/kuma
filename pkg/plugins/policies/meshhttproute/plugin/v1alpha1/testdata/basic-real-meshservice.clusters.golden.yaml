@@ -1,12 +1,12 @@
 resources:
-- name: backend-c72efb5be46fae6b
+- name: kri_msvc_default___backend-us_test-port
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: backend-c72efb5be46fae6b
+    name: kri_msvc_default___backend-us_test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

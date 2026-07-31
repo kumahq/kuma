@@ -9,7 +9,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: external-database
+        labels:
+          kuma.io/display-name: external-database
       default:
         localityAwareness:
           disabled: true
@@ -31,7 +32,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: external-database
+        labels:
+          kuma.io/display-name: external-database
       default:
         localityAwareness:
           disabled: false
@@ -42,7 +44,8 @@ spec:
           disabled: true
     - targetRef:
         kind: MeshService
-        name: some-other-service
+        labels:
+          kuma.io/display-name: some-other-service
       default:
         localityAwareness:
           disabled: false

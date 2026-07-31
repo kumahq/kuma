@@ -128,7 +128,8 @@ mesh: %s
 spec:
   targetRef:
     kind: Dataplane
-    name: %s
+    labels:
+      kuma.io/workload: %s
   rules:
     - matches:
         - spiffeID:
@@ -170,7 +171,8 @@ mesh: %s
 spec:
   targetRef:
     kind: Dataplane
-    name: %s
+    labels:
+      kuma.io/workload: %s
   rules:
     - matches:
         - spiffeID:

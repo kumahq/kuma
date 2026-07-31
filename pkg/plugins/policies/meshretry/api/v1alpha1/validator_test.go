@@ -36,7 +36,8 @@ to:
         maxConnectAttempt: 5
   - targetRef:
       kind: MeshService
-      name: backend
+      labels:
+        kuma.io/display-name: backend
     default:
       tcp:
         maxConnectAttempt: 5
@@ -130,7 +131,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshMultiZoneService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       http:
         numRetries: 5

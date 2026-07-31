@@ -249,7 +249,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes-retry
+        labels:
+          kuma.io/display-name: mes-retry
       default:
         http:
           numRetries: 5
@@ -315,7 +316,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes-timeout
+        labels:
+          kuma.io/display-name: mes-timeout
       default:
         idleTimeout: 20s
         http:
@@ -404,7 +406,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes-http-route
+        labels:
+          kuma.io/display-name: mes-http-route
       rules:
         - matches:
             - path:
@@ -493,7 +496,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes-tcp-route
+        labels:
+          kuma.io/display-name: mes-tcp-route
       rules:
         - default:
             backendRefs:
@@ -583,7 +587,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes-access-log
+        labels:
+          kuma.io/display-name: mes-access-log
       default:
         backends:
           - type: Tcp

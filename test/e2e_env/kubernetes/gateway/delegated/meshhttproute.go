@@ -72,7 +72,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server_%[2]s_svc_80
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path: 
@@ -174,8 +175,9 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
-        namespace: %[3]s
+        labels:
+          kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: %[3]s
       rules:
         - matches:
             - path:

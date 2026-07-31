@@ -128,7 +128,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         http:
           requestTimeout: 2s
@@ -175,8 +176,9 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
-        namespace: random-ns-name
+        labels:
+          kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: random-ns-name
       default:
         http:
           requestTimeout: 2s
@@ -213,7 +215,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -251,7 +254,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: add-response-delay-header
+        labels:
+          kuma.io/display-name: add-response-delay-header
       default:
         http:
           requestTimeout: 2s
@@ -292,7 +296,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -317,7 +322,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: to-test-server
+        labels:
+          kuma.io/display-name: to-test-server
       default:
         http:
           numRetries: 5

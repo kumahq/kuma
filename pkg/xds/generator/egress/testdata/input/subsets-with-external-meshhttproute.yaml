@@ -39,7 +39,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: externalservice-2
+        labels:
+          kuma.io/display-name: externalservice-2
       rules:
         - matches:
             - path:

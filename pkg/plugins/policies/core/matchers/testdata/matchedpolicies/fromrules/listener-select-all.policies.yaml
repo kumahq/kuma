@@ -4,7 +4,6 @@ name: mtp-all
 spec:
   targetRef:
     kind: Dataplane
-    name: dp-1
   rules:
     - default:
         allow:
