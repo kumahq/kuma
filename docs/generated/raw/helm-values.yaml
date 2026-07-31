@@ -835,6 +835,16 @@ zoneProxyImage:
 # meshes[].ingress.service or meshes[].egress.service fields are not set.
 meshZoneProxyDefaults:
   ingress:
+    # -- Default number of replicas for zone ingress. Ignored when hpa.enabled is true.
+    replicas: 1
+    # -- Default pod restart policy for zone ingress.
+    restartPolicy: Always
+    # -- Default number of seconds to wait before force killing the zone ingress pod.
+    terminationGracePeriodSeconds: 40
+    # -- Whether to automountServiceAccountToken for zone ingress. Optionally set to false
+    automountServiceAccountToken: true
+    # -- Default image pull policy for the zone ingress pause container.
+    imagePullPolicy: IfNotPresent
     service:
       # -- Default Service type for zone ingress.
       type: LoadBalancer
@@ -844,6 +854,16 @@ meshZoneProxyDefaults:
       # zone proxy binary is reconfigured.
       targetPort: 10001
   egress:
+    # -- Default number of replicas for zone egress. Ignored when hpa.enabled is true.
+    replicas: 1
+    # -- Default pod restart policy for zone egress.
+    restartPolicy: Always
+    # -- Default number of seconds to wait before force killing the zone egress pod.
+    terminationGracePeriodSeconds: 40
+    # -- Whether to automountServiceAccountToken for zone egress. Optionally set to false
+    automountServiceAccountToken: true
+    # -- Default image pull policy for the zone egress pause container.
+    imagePullPolicy: IfNotPresent
     service:
       # -- Default Service type for zone egress.
       type: ClusterIP
@@ -865,6 +885,20 @@ meshes:
       # .Values.zoneProxyImage when unset. Partial overrides inherit the
       # remaining registry/repository/tag fields from the chart-level default.
       image: {}
+      # -- (string) Per-mesh override for pod restart policy. Falls back to
+      # meshZoneProxyDefaults.ingress.restartPolicy when unset.
+      restartPolicy:
+      # -- (int) Per-mesh override for the pod termination grace period. Falls back
+      # to meshZoneProxyDefaults.ingress.terminationGracePeriodSeconds when unset.
+      terminationGracePeriodSeconds:
+      # -- (bool) Per-mesh override for automountServiceAccountToken. Falls back to
+      # meshZoneProxyDefaults.ingress.automountServiceAccountToken when unset.
+      automountServiceAccountToken:
+      # -- (string) Per-mesh override for the pause container image pull policy.
+      # Falls back to meshZoneProxyDefaults.ingress.imagePullPolicy when unset.
+      imagePullPolicy:
+      # -- Annotations to add to the zone ingress Service Account.
+      serviceAccountAnnotations: {}
       service:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride)
@@ -884,8 +918,9 @@ meshes:
         labels: {}
       # -- Deployment-level settings.
       deployment:
-        # -- Number of replicas. Ignored when hpa.enabled is true.
-        replicas: 1
+        # -- (int) Number of replicas. Ignored when hpa.enabled is true. Falls back
+        # to meshZoneProxyDefaults.<role>.replicas when unset.
+        replicas:
         # -- Annotations to add to the Deployment resource.
         annotations: {}
         # -- Labels to add to the Deployment resource.
@@ -913,6 +948,20 @@ meshes:
       # .Values.zoneProxyImage when unset. Partial overrides inherit the
       # remaining registry/repository/tag fields from the chart-level default.
       image: {}
+      # -- (string) Per-mesh override for pod restart policy. Falls back to
+      # meshZoneProxyDefaults.egress.restartPolicy when unset.
+      restartPolicy:
+      # -- (int) Per-mesh override for the pod termination grace period. Falls back
+      # to meshZoneProxyDefaults.egress.terminationGracePeriodSeconds when unset.
+      terminationGracePeriodSeconds:
+      # -- (bool) Per-mesh override for automountServiceAccountToken. Falls back to
+      # meshZoneProxyDefaults.egress.automountServiceAccountToken when unset.
+      automountServiceAccountToken:
+      # -- (string) Per-mesh override for the pause container image pull policy.
+      # Falls back to meshZoneProxyDefaults.egress.imagePullPolicy when unset.
+      imagePullPolicy:
+      # -- Annotations to add to the zone egress Service Account.
+      serviceAccountAnnotations: {}
       service:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride)
@@ -932,8 +981,9 @@ meshes:
         labels: {}
       # -- Deployment-level settings.
       deployment:
-        # -- Number of replicas. Ignored when hpa.enabled is true.
-        replicas: 1
+        # -- (int) Number of replicas. Ignored when hpa.enabled is true. Falls back
+        # to meshZoneProxyDefaults.<role>.replicas when unset.
+        replicas:
         # -- Annotations to add to the Deployment resource.
         annotations: {}
         # -- Labels to add to the Deployment resource.

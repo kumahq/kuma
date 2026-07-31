@@ -228,23 +228,38 @@ A Helm chart for the Kuma Control Plane
 | zoneProxyImage.registry | string | `"registry.k8s.io"` | The pause image registry |
 | zoneProxyImage.repository | string | `"pause"` | The pause image repository |
 | zoneProxyImage.tag | string | `"3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"` | The pause image tag |
+| meshZoneProxyDefaults.ingress.replicas | int | `1` | Default number of replicas for zone ingress. Ignored when hpa.enabled is true. |
+| meshZoneProxyDefaults.ingress.restartPolicy | string | `"Always"` | Default pod restart policy for zone ingress. |
+| meshZoneProxyDefaults.ingress.terminationGracePeriodSeconds | int | `40` | Default number of seconds to wait before force killing the zone ingress pod. |
+| meshZoneProxyDefaults.ingress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for zone ingress. Optionally set to false |
+| meshZoneProxyDefaults.ingress.imagePullPolicy | string | `"IfNotPresent"` | Default image pull policy for the zone ingress pause container. |
 | meshZoneProxyDefaults.ingress.service.type | string | `"LoadBalancer"` | Default Service type for zone ingress. |
 | meshZoneProxyDefaults.ingress.service.port | int | `10001` | Default port for zone ingress Service. |
 | meshZoneProxyDefaults.ingress.service.targetPort | int | `10001` | Container port the zone ingress listens on. Do not change unless the zone proxy binary is reconfigured. |
+| meshZoneProxyDefaults.egress.replicas | int | `1` | Default number of replicas for zone egress. Ignored when hpa.enabled is true. |
+| meshZoneProxyDefaults.egress.restartPolicy | string | `"Always"` | Default pod restart policy for zone egress. |
+| meshZoneProxyDefaults.egress.terminationGracePeriodSeconds | int | `40` | Default number of seconds to wait before force killing the zone egress pod. |
+| meshZoneProxyDefaults.egress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for zone egress. Optionally set to false |
+| meshZoneProxyDefaults.egress.imagePullPolicy | string | `"IfNotPresent"` | Default image pull policy for the zone egress pause container. |
 | meshZoneProxyDefaults.egress.service.type | string | `"ClusterIP"` | Default Service type for zone egress. |
 | meshZoneProxyDefaults.egress.service.port | int | `10002` | Default port for zone egress Service. |
 | meshZoneProxyDefaults.egress.service.targetPort | int | `10002` | Container port the zone egress listens on. Do not change unless the zone proxy binary is reconfigured. |
 | meshes[0].name | string | `"default"` | The mesh must already exist or be created separately; this Helm chart will not create it. |
 | meshes[0].ingress.enabled | bool | `false` | Deploy a zone ingress for this mesh. |
 | meshes[0].ingress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
+| meshes[0].ingress.restartPolicy | string | `nil` | Per-mesh override for pod restart policy. Falls back to meshZoneProxyDefaults.ingress.restartPolicy when unset. |
+| meshes[0].ingress.terminationGracePeriodSeconds | int | `nil` | Per-mesh override for the pod termination grace period. Falls back to meshZoneProxyDefaults.ingress.terminationGracePeriodSeconds when unset. |
+| meshes[0].ingress.automountServiceAccountToken | bool | `nil` | Per-mesh override for automountServiceAccountToken. Falls back to meshZoneProxyDefaults.ingress.automountServiceAccountToken when unset. |
+| meshes[0].ingress.imagePullPolicy | string | `nil` | Per-mesh override for the pause container image pull policy. Falls back to meshZoneProxyDefaults.ingress.imagePullPolicy when unset. |
+| meshes[0].ingress.serviceAccountAnnotations | object | `{}` | Annotations to add to the zone ingress Service Account. |
 | meshes[0].ingress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride) |
 | meshes[0].ingress.service.type | string | `nil` | Per-mesh override for Service type. Falls back to meshZoneProxyDefaults.ingress.service.type when unset. |
 | meshes[0].ingress.service.port | int | `nil` | Per-mesh override for Service port. Falls back to meshZoneProxyDefaults.ingress.service.port when unset. |
 | meshes[0].ingress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].ingress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
 | meshes[0].ingress.service.labels | object | `{}` | Labels to add to the Service resource. |
-| meshes[0].ingress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":1}` | Deployment-level settings. |
-| meshes[0].ingress.deployment.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
+| meshes[0].ingress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":null}` | Deployment-level settings. |
+| meshes[0].ingress.deployment.replicas | int | `nil` | Number of replicas. Ignored when hpa.enabled is true. Falls back to meshZoneProxyDefaults.<role>.replicas when unset. |
 | meshes[0].ingress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].ingress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
 | meshes[0].ingress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
@@ -252,14 +267,19 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.pdb | object | `{"enabled":false,"maxUnavailable":1}` | Pod Disruption Budget settings. |
 | meshes[0].egress.enabled | bool | `false` | Deploy a zone egress for this mesh. |
 | meshes[0].egress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
+| meshes[0].egress.restartPolicy | string | `nil` | Per-mesh override for pod restart policy. Falls back to meshZoneProxyDefaults.egress.restartPolicy when unset. |
+| meshes[0].egress.terminationGracePeriodSeconds | int | `nil` | Per-mesh override for the pod termination grace period. Falls back to meshZoneProxyDefaults.egress.terminationGracePeriodSeconds when unset. |
+| meshes[0].egress.automountServiceAccountToken | bool | `nil` | Per-mesh override for automountServiceAccountToken. Falls back to meshZoneProxyDefaults.egress.automountServiceAccountToken when unset. |
+| meshes[0].egress.imagePullPolicy | string | `nil` | Per-mesh override for the pause container image pull policy. Falls back to meshZoneProxyDefaults.egress.imagePullPolicy when unset. |
+| meshes[0].egress.serviceAccountAnnotations | object | `{}` | Annotations to add to the zone egress Service Account. |
 | meshes[0].egress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride) |
 | meshes[0].egress.service.type | string | `nil` | Per-mesh override for Service type. Falls back to meshZoneProxyDefaults.egress.service.type when unset. |
 | meshes[0].egress.service.port | int | `nil` | Per-mesh override for Service port. Falls back to meshZoneProxyDefaults.egress.service.port when unset. |
 | meshes[0].egress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].egress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
 | meshes[0].egress.service.labels | object | `{}` | Labels to add to the Service resource. |
-| meshes[0].egress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":1}` | Deployment-level settings. |
-| meshes[0].egress.deployment.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
+| meshes[0].egress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":null}` | Deployment-level settings. |
+| meshes[0].egress.deployment.replicas | int | `nil` | Number of replicas. Ignored when hpa.enabled is true. Falls back to meshZoneProxyDefaults.<role>.replicas when unset. |
 | meshes[0].egress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].egress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
 | meshes[0].egress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
