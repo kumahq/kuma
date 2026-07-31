@@ -8,7 +8,6 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/test/framework"
-	"github.com/kumahq/kuma/v3/test/framework/portforward"
 	"github.com/kumahq/kuma/v3/test/framework/report"
 )
 
@@ -26,8 +25,6 @@ func SetupAndGetState() []byte {
 
 	kumaOptions := append(
 		[]framework.KumaDeploymentOption{
-			framework.WithEgress(),
-			framework.WithEgressEnvoyAdminTunnel(),
 			// Occasionally CP will lose a leader in the E2E test just because of this deadline,
 			// which does not make sense in such controlled environment (one k3d node, one instance of the CP).
 			// 100s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
@@ -45,11 +42,6 @@ func SetupAndGetState() []byte {
 		KumaCp: Cluster.GetKuma().(*framework.K8sControlPlane).PortFwd(),
 		MADS:   Cluster.GetKuma().(*framework.K8sControlPlane).MadsPortFwd(),
 	}
-	state.ZoneEgress = Cluster.GetPortForward(portforward.Spec{
-		AppName:    framework.Config.ZoneEgressApp,
-		Namespace:  framework.Config.KumaNamespace,
-		RemotePort: 9902,
-	})
 
 	bytes, err := json.Marshal(state)
 	Expect(err).ToNot(HaveOccurred())
@@ -82,11 +74,6 @@ func RestoreState(bytes []byte) {
 	)
 	Expect(cp.FinalizeAddWithPortFwd(state.KumaCp, state.MADS)).To(Succeed())
 	Cluster.SetCP(cp)
-	Cluster.AddPortForward(state.ZoneEgress, portforward.Spec{
-		AppName:    framework.Config.ZoneEgressApp,
-		Namespace:  framework.Config.KumaNamespace,
-		RemotePort: 9902,
-	})
 }
 
 func SynchronizedAfterSuite() {

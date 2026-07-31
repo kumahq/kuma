@@ -17,7 +17,7 @@ import (
 func Matches() {
 	meshName := "mal-matches"
 	externalServiceName := "mal-matches-ext"
-	egressDP := "zone-proxy-egress"
+	egressDP := zoneproxy.EgressName(meshName)
 	demoClient1 := "demo-client-1"
 	demoClient2 := "demo-client-2"
 	testServer := "test-server"
@@ -86,8 +86,7 @@ spec:
 `, meshName, externalServiceDockerName))).
 			Install(zoneproxy.Install(
 				zoneproxy.WithMesh(meshName),
-				zoneproxy.WithEgressPort(11102),
-				zoneproxy.WithWorkload(egressDP),
+				zoneproxy.WithEgress(),
 				zoneproxy.WithDpEnvs(dppEnvs),
 			)).
 			Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).

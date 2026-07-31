@@ -20,26 +20,18 @@ import (
 	meshretry_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func MeshExternalService() {
 	var tcpSinkDockerName string
 	meshNameNoDefaults := "mesh-external-service-no-default-policy"
-	meshDefaulMtlsOn := func(meshName string) InstallFunc {
-		return YamlUniversal(fmt.Sprintf(`
-type: Mesh
-name: "%s"
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-`, meshName))
-	}
+	identityName := "mes-identity"
 	disableDefaultPassthrough := func(meshName string) InstallFunc {
 		return YamlUniversal(fmt.Sprintf(`
 type: MeshPassthrough
@@ -104,8 +96,17 @@ spec:
 		esHttp2ContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttp2Name)
 
 		err := NewClusterSetup().
-			Install(meshDefaulMtlsOn(meshNameNoDefaults)).
+			Install(Yaml(builders.Mesh().WithName(meshNameNoDefaults))).
+			Install(MeshIdentityBundled(meshNameNoDefaults, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				meshNameNoDefaults,
+				MeshIdentityTrustDomain(meshNameNoDefaults, universal.Cluster),
+			)).
 			Install(disableDefaultPassthrough(meshNameNoDefaults)).
+			Install(zoneproxy.Install(
+				zoneproxy.WithMesh(meshNameNoDefaults),
+				zoneproxy.WithEgress(),
+			)).
 			Install(TcpSinkUniversal("mes-tcp-sink", WithDockerContainerName(tcpSinkDockerName))).
 			Install(TestServerExternalServiceUniversal(esHttpName, 80, false, WithDockerContainerName(esHttpContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).
@@ -113,6 +114,13 @@ spec:
 			Install(DemoClientUniversal("mes-demo-client-no-defaults", meshNameNoDefaults, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(func(g Gomega) {
+			out, err := universal.Cluster.GetKumactlOptions().
+				RunKumactlAndGetOutput("get", "meshidentity", "-m", meshNameNoDefaults, identityName, "-o", "json")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).To(ContainSubstring("Successfully initialized"))
+		}, "30s", "1s").Should(Succeed())
 	})
 
 	AfterEachFailure(func() {

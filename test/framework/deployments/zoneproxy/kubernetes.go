@@ -1,14 +1,14 @@
 package zoneproxy
 
 import (
-	"fmt"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/test/framework"
 )
 
@@ -23,11 +23,11 @@ func (d *k8sDeployment) Name() string {
 }
 
 func (d *k8sDeployment) ingressName() string {
-	return fmt.Sprintf("%s-ingress", d.opts.Name)
+	return ingressName(d.opts.Name)
 }
 
 func (d *k8sDeployment) egressName() string {
-	return fmt.Sprintf("%s-egress", d.opts.Name)
+	return egressName(d.opts.Name)
 }
 
 // workloadServiceAccount returns a ServiceAccount whose name kuma uses as the
@@ -240,7 +240,7 @@ func (d *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	if d.opts.Workload != "" {
 		funcs = append(funcs, framework.YamlK8sObject(d.workloadServiceAccount()))
 	}
-	if d.opts.IngressPort > 0 {
+	if d.opts.Ingress {
 		name := d.ingressName()
 		funcs = append(funcs,
 			framework.YamlK8sObject(d.ingressDeployment()),
@@ -248,9 +248,10 @@ func (d *k8sDeployment) Deploy(cluster framework.Cluster) error {
 			framework.WaitNumPods(d.opts.Namespace, 1, name),
 			framework.WaitPodsAvailable(d.opts.Namespace, name),
 			framework.WaitService(d.opts.Namespace, name),
+			d.waitMeshZoneAddress(),
 		)
 	}
-	if d.opts.EgressPort > 0 {
+	if d.opts.Egress {
 		name := d.egressName()
 		funcs = append(funcs,
 			framework.YamlK8sObject(d.egressDeployment()),
@@ -261,6 +262,23 @@ func (d *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		)
 	}
 	return framework.Combine(funcs...)(cluster)
+}
+
+// waitMeshZoneAddress blocks until the meshzoneaddress controller has published
+// the ingress address. Waiting on the pods is not enough: the controller only
+// creates the resource once the Service has a ready endpoint, and drops it again
+// whenever the endpoints go away. Without this gate other zones can still be
+// routing to the legacy ZoneIngress when the assertions start.
+func (d *k8sDeployment) waitMeshZoneAddress() framework.InstallFunc {
+	// kumactl reports a Kubernetes resource under "{name}.{namespace}".
+	name := d.ingressName() + "." + d.opts.Namespace
+	return func(cluster framework.Cluster) error {
+		return framework.WaitForResource(
+			meshzoneaddress_api.MeshZoneAddressResourceTypeDescriptor,
+			core_model.ResourceKey{Mesh: d.opts.Mesh, Name: name},
+			cluster,
+		)
+	}
 }
 
 func (d *k8sDeployment) Delete(_ framework.Cluster) error {
