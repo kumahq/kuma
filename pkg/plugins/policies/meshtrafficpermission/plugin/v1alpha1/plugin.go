@@ -23,8 +23,8 @@ import (
 )
 
 var (
-	_   core_plugins.EgressPolicyPlugin = &plugin{}
-	log                                 = core.Log.WithName("MeshTrafficPermission")
+	_   core_plugins.PolicyPlugin = &plugin{}
+	log                           = core.Log.WithName("MeshTrafficPermission")
 )
 
 type plugin struct{}
@@ -37,10 +37,6 @@ func NewPlugin() core_plugins.Plugin {
 
 func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
 	return matchers.MatchedPolicies(api.MeshTrafficPermissionType, dataplane, resources, opts...)
-}
-
-func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.EgressMatchedPolicies(api.MeshTrafficPermissionType, tags, resources, opts...)
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
@@ -103,10 +99,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
-// configureLegacyRules now only serves two callers: dataplanes still relying on the old
-// MeshTrafficPermission `Rules` format, and zone egress (see configureEgress). Legacy
-// TrafficPermission no longer contributes to xDS generation, so the absence of an old-format
-// rule always means default-deny.
+// configureLegacyRules now only serves dataplanes still relying on the old
+// MeshTrafficPermission `Rules` format. Legacy TrafficPermission no longer contributes to
+// xDS generation, so the absence of an old-format rule always means default-deny.
 func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key core_rules.InboundListener, listener *envoy_listener.Listener, resource *core_xds.Resource, proxy *core_xds.Proxy) error {
 	//nolint:staticcheck // SA1019 configureLegacyRules explicitly uses old Rules format for legacy RBAC
 	rules, ok := mtp.FromRules.Rules[key]
@@ -198,4 +193,3 @@ func (p plugin) denyRules() core_rules.Rules {
 		},
 	}
 }
-

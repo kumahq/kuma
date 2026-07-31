@@ -178,10 +178,6 @@ func (ds *dummySecrets) GetForDataPlane(_ context.Context, _ *core_mesh.Dataplan
 	return ds.identity(), ds.cas(append(meshes, mesh)...), nil
 }
 
-func (ds *dummySecrets) GetForZoneEgress(_ context.Context, _ *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	return ds.identity(), ds.cas(mesh)[mesh.GetMeta().GetName()], nil
-}
-
 func (ds *dummySecrets) GetAllInOne(ctx context.Context, _ *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ []*core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
 	return ds.identity(), &core_xds.CaSecret{PemCerts: [][]byte{[]byte("COMBINED")}}, nil
 }

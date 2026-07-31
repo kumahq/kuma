@@ -603,5 +603,4 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].GetPriority()).To(Equal(envoy_config_core_v3.RoutingPriority_DEFAULT))
 		Expect(cluster.GetCircuitBreakers().GetThresholds()[0].TrackRemaining).To(BeTrue())
 	})
-
 })

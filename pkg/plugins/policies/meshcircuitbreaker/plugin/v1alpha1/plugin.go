@@ -21,7 +21,7 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
-var _ core_plugins.EgressPolicyPlugin = &plugin{}
+var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -37,10 +37,6 @@ func (p plugin) MatchedPolicies(
 	opts ...core_plugins.MatchedPoliciesOption,
 ) (core_xds.TypedMatchingPolicies, error) {
 	return matchers.MatchedPolicies(api.MeshCircuitBreakerType, dataplane, resources, opts...)
-}
-
-func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.EgressMatchedPolicies(api.MeshCircuitBreakerType, tags, resources, opts...)
 }
 
 func (p plugin) Apply(

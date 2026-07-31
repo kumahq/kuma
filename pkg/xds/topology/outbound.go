@@ -521,22 +521,6 @@ func fillIngressOutbounds(
 	return uint32(len(ziInstances))
 }
 
-func fillMeshExternalServicesOutbounds(
-	ctx context.Context,
-	outbound core_xds.EndpointMap,
-	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
-	mesh *core_mesh.MeshResource,
-	loader datasource.Loader,
-) {
-	for _, mes := range meshExternalServices {
-		err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, false)
-		if err != nil {
-			outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
-			continue
-		}
-	}
-}
-
 func createMeshExternalServiceEndpoint(
 	ctx context.Context,
 	outbounds core_xds.EndpointMap,
