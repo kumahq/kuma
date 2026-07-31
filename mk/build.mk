@@ -71,14 +71,20 @@ build/info/short:
 build/info/version:
 	@echo $(BUILD_INFO_VERSION)
 
-.PHONY: build/assert-tag-version
-build/assert-tag-version: build/kuma-cp ## Dev: Assert the built kuma-cp binary reports the tag version
+# Assert on an already built binary, so callers that just built it (e.g. `build/distributions`)
+# don't pay for a rebuild: every `build/artifacts-*` target is .PHONY.
+.PHONY: check/binary-version
+check/binary-version: ## Dev: Assert the already built kuma-cp binary reports the expected version
 	@actual=$$($(BUILD_ARTIFACTS_DIR)/kuma-cp/kuma-cp version | awk '{print $$NF}'); \
 	if [ -z "$$actual" ] || [ "$$actual" != "$(BUILD_INFO_VERSION)" ]; then \
-		echo "kuma-cp binary reports version '$$actual', expected tag version '$(BUILD_INFO_VERSION)'"; \
+		echo "kuma-cp binary reports version '$$actual', expected version '$(BUILD_INFO_VERSION)'"; \
 		exit 1; \
 	fi; \
-	echo "kuma-cp binary correctly reports tag version '$(BUILD_INFO_VERSION)'"
+	echo "kuma-cp binary correctly reports version '$(BUILD_INFO_VERSION)'"
+
+.PHONY: build/assert-tag-version
+build/assert-tag-version: build/kuma-cp ## Dev: Build kuma-cp and assert it reports the tag version
+	@$(MAKE) check/binary-version
 
 .PHONY: build
 build: build/release build/test ## Dev: Build all binaries

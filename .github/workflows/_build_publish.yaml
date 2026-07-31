@@ -45,10 +45,15 @@ env:
 jobs:
   assert-tag-version:
     # Tag check lives on the steps, not the job, so this job always reports
-    # success/failure and never "skipped". That lets build-binaries and
-    # build-images depend on it with a plain `needs:` and GitHub's default
-    # job-status semantics, which correctly cascade to digest-images and
-    # publish-helm further down the chain and correctly stop on cancellation.
+    # success/failure and never "skipped". That lets the build jobs depend on it
+    # with a plain `needs:` and GitHub's default job-status semantics, which
+    # correctly cascade to digest-images and publish-helm further down the chain
+    # and correctly stop on cancellation.
+    #
+    # This gate only compares the version the build would stamp against the tag,
+    # so it needs no compilation. That the binary actually carries that version
+    # (i.e. the -X ldflags paths are still correct) is asserted in build-binaries
+    # on the binary it already built, before anything is published.
     timeout-minutes: 10
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
@@ -57,24 +62,27 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Cache Go build
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: ${{ github.ref_type == 'tag' }}
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            go-build-${{ runner.os }}-
       - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
         if: ${{ github.ref_type == 'tag' }}
         with:
           version: 2026.7.7
-      - name: Assert built binary reports tag version
+      - name: Assert computed version matches tag
         if: ${{ github.ref_type == 'tag' }}
+        env:
+          TAG_NAME: ${{ github.ref_name }}
         run: |
-          make build/assert-tag-version
+          # Non-version tags legitimately build as previews, only gate version tags.
+          if ! printf '%s' "${TAG_NAME}" | grep -qE '^v?[0-9]'; then
+            echo "Tag '${TAG_NAME}' is not a version tag, skipping"
+            exit 0
+          fi
+          expected="${TAG_NAME#v}"
+          actual="$(make build/info/version)"
+          if [ "${actual}" != "${expected}" ]; then
+            echo "::error title=Version mismatch::build reports version '${actual}', expected tag version '${expected}'"
+            exit 1
+          fi
+          echo "build correctly reports tag version '${actual}'"
   build-binaries:
     needs: [assert-tag-version]
     timeout-minutes: 70
@@ -92,14 +100,16 @@ jobs:
       - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
         with:
           version: 2026.7.7
-      - run: |
-          make build
       - id: annotate-image-tag
         name: Image tag
         run: |
           echo "::notice title=Image tag::$(make build/info/version)"
       - run: |
-          make -j build/distributions
+          make -j"$(nproc)" build/distributions
+      - name: Assert built binary reports tag version
+        if: ${{ github.ref_type == 'tag' }}
+        run: |
+          make check/binary-version
       - id: inspect-binary-output
         run: |
           for i in build/distributions/out/*.tar.gz; do echo "$i"; tar -tvf "$i"; done
