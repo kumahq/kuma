@@ -36,7 +36,7 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                 collectorCluster: system_meshtrace_datadog_http---ingest-datadog-eu-8126
-                serviceName: unknown_INBOUND
+                serviceName: backend_INBOUND
             randomSampling:
               value: 50
             spawnUpstreamSpan: false
@@ -78,7 +78,7 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                 collectorCluster: system_meshtrace_datadog_http---ingest-datadog-eu-8126
-                serviceName: unknown_OUTBOUND_default_backend_backend-ns_zone-1_msvc_80
+                serviceName: backend_OUTBOUND_default_backend_backend-ns_zone-1_msvc_80
             randomSampling:
               value: 50
             spawnUpstreamSpan: false

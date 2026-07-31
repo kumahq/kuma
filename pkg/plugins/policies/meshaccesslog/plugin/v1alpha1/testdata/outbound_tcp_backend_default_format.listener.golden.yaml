@@ -15,7 +15,7 @@ filterChains:
             jsonFormat:
               address: logging.backend
               message: |
-                [%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(unknown)->%UPSTREAM_HOST%(other-meshservice-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                [%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-meshservice-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
           path: /tmp/kuma-al-backend-default.sock
       cluster: kri_msvc_default_zone-1_other-ns_other-meshservice-tcp_37777
       statPrefix: kri_msvc_default_zone-1_other-ns_other-meshservice-tcp_37777

@@ -52,7 +52,7 @@ resources:
                 grpcService:
                   envoyGrpc:
                     clusterName: system_meshtrace_otel_otel-collector
-                serviceName: unknown
+                serviceName: backend
             randomSampling:
               value: 50
             spawnUpstreamSpan: false
@@ -110,7 +110,7 @@ resources:
                 grpcService:
                   envoyGrpc:
                     clusterName: system_meshtrace_otel_otel-collector
-                serviceName: unknown
+                serviceName: backend
             randomSampling:
               value: 50
             spawnUpstreamSpan: false

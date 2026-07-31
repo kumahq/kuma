@@ -38,7 +38,7 @@ resources:
                 grpcService:
                   envoyGrpc:
                     clusterName: system_meshtrace_otel_otel-collector-ipv6
-                serviceName: unknown
+                serviceName: backend
             spawnUpstreamSpan: false
     name: self_inbound_dp_17777
     trafficDirection: INBOUND
@@ -80,7 +80,7 @@ resources:
                 grpcService:
                   envoyGrpc:
                     clusterName: system_meshtrace_otel_otel-collector-ipv6
-                serviceName: unknown
+                serviceName: backend
             spawnUpstreamSpan: false
     name: kri_msvc_default_zone-1_backend-ns_backend_80
     trafficDirection: OUTBOUND

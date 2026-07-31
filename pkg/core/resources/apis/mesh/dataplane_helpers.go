@@ -169,12 +169,15 @@ func (d *DataplaneResource) InboundIdentifyingName(inbound *mesh_proto.Dataplane
 }
 
 // IdentifyingName returns the workload label when set, falling back to the
-// identifying service name from the dataplane spec.
+// identifying service name from the dataplane spec. The fallback reads the
+// legacy tag set so a proxy provisioned before the move to labels keeps the
+// name it already reports in bootstrap, metrics, logs and traces instead of
+// regressing to "unknown" on upgrade.
 func (d *DataplaneResource) IdentifyingName() string {
 	if workload := d.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 		return workload
 	}
-	services := d.Spec.TagSet().Values(mesh_proto.ServiceTag)
+	services := d.Spec.LegacyTagSet().Values(mesh_proto.ServiceTag)
 	if len(services) > 0 {
 		return services[0]
 	}
