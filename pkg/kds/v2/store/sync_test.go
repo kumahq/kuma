@@ -8,12 +8,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-<<<<<<< HEAD
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
+	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/kds/util"
 	client_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/client"
@@ -21,28 +23,9 @@ import (
 	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	model2 "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 	test_store "github.com/kumahq/kuma/v2/pkg/test/store"
-=======
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/kds/util"
-	client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
-	sync_store "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
-	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
-	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
-	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
-	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
-	model2 "github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	test_store "github.com/kumahq/kuma/v3/pkg/test/store"
->>>>>>> d6edc9c474 (fix(kds): retry sync updates on write conflicts (#17738))
 )
 
 var meshBuilder = func(idx int) *mesh.MeshResource {

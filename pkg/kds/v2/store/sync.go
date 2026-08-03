@@ -334,7 +334,7 @@ func (s *syncResourceStore) retryConflictedUpdates(ctx context.Context, pending 
 	if len(pending) == 0 {
 		return nil
 	}
-	backoff := retry.WithMaxRetries(updateConflictRetries, retry.WithFullJitter(retry.NewConstant(updateConflictBackoff)))
+	backoff := retry.WithMaxRetries(updateConflictRetries, retry.WithJitterPercent(100, retry.NewConstant(updateConflictBackoff)))
 	err := retry.Do(ctx, backoff, func(ctx context.Context) error {
 		for _, upd := range pending {
 			log.Info("resource was modified in another place while syncing, retrying with a fresh copy",
