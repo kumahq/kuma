@@ -18,6 +18,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
+	meshzoneaddress_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -395,7 +396,7 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {
 		return nil, err
 	}
-	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType && filterFn == nil {
+	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType && resType != meshzoneaddress_api.MeshZoneAddressType && filterFn == nil {
 		// No post processing stuff so return the list as is
 		return list, nil
 	}
@@ -406,6 +407,18 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 			return nil, nil
 		}
 		switch resType {
+		case meshzoneaddress_api.MeshZoneAddressType:
+			mza, ok := resource.(*meshzoneaddress_api.MeshZoneAddressResource)
+			if !ok {
+				return nil, errors.New("entry is not a meshZoneAddress this shouldn't happen")
+			}
+
+			resolvedMeshZoneAddress, err := xds_topology.ResolveMeshZoneAddressPublicAddress(m.ipFunc, mza)
+			if err != nil {
+				l.Error(err, "failed to resolve meshZoneAddress's domain name, ignoring meshZoneAddress", "mesh", mza.GetMeta().GetMesh(), "name", mza.GetMeta().GetName())
+				return nil, nil
+			}
+			return resolvedMeshZoneAddress, nil
 		case core_mesh.ZoneIngressType:
 			zi, ok := resource.(*core_mesh.ZoneIngressResource)
 			if !ok {
