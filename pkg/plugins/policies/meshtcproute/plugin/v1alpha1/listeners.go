@@ -38,8 +38,7 @@ func GenerateOutboundListener(
 	tags := svc.OutboundListenerTags()
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...)).
-		ConfigureIf(svc.Protocol == core_meta.ProtocolKafka, envoy_listeners.Kafka(tcpProxyStatPrefix))
+		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...))
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).

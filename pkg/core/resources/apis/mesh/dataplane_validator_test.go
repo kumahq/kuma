@@ -721,7 +721,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
-                  message: 'tag "kuma.io/protocol" has an invalid value "". Allowed values: grpc, http, http2, kafka, tcp'
+                  message: 'tag "kuma.io/protocol" has an invalid value "". Allowed values: grpc, http, http2, tcp'
                 - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
                   message: tag value must be non-empty`,
 		}),
@@ -744,7 +744,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
-                  message: 'tag "kuma.io/protocol" has an invalid value "not-yet-supported-protocol". Allowed values: grpc, http, http2, kafka, tcp'`,
+                  message: 'tag "kuma.io/protocol" has an invalid value "not-yet-supported-protocol". Allowed values: grpc, http, http2, tcp'`,
 		}),
 		Entry("networking.gateway: empty service tag", testCase{
 			dataplane: `
