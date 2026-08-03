@@ -202,20 +202,24 @@ func (p *PodConverter) dataplaneFor(
 
 	var tp mesh_proto.Dataplane_Networking_TransparentProxying
 
-	if v, ok := annotations.GetString(metadata.KumaTrafficTransparentProxyConfig); ok && v != "" {
-		if v, exist := annotations.GetList(metadata.KumaDirectAccess); exist {
-			tp.DirectAccessServices = v
+	// Read directAccessServices and reachableBackends whenever the user set the
+	// annotations, independent of how transparent proxy is delivered. These are
+	// user-provided outbound settings turned into live Envoy config, so gating
+	// them behind the injector's transparent-proxy-config annotation would drop
+	// them from pods injected by an older control plane until restart, silently
+	// widening outbounds and breaking direct access.
+	if v, exist := annotations.GetList(metadata.KumaDirectAccess); exist {
+		tp.DirectAccessServices = v
+	}
+
+	if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
+		var refs ReachableBackendRefs
+		if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
+			return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
 		}
 
-		if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
-			var refs ReachableBackendRefs
-			if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
-				return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
-			}
-
-			tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
-				Refs: processReachableBackendRefs(refs),
-			}
+		tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
+			Refs: processReachableBackendRefs(refs),
 		}
 	}
 
