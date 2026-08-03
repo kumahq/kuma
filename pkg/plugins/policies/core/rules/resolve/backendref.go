@@ -2,6 +2,7 @@ package resolve
 
 import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -47,10 +48,10 @@ func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelR
 }
 
 func shouldFallbackToLegacyMeshService(br common_api.BackendRef) bool {
+	labels := pointer.Deref(br.Labels)
 	return br.Kind == common_api.MeshService &&
-		br.Name != nil && *br.Name != "" &&
-		len(pointer.Deref(br.Labels)) == 0 &&
-		br.Namespace == nil &&
+		labels[mesh_proto.DisplayName] != "" &&
+		len(labels) == 1 &&
 		br.SectionName == nil &&
 		br.Port == nil
 }

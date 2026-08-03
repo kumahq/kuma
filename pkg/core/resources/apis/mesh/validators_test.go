@@ -216,7 +216,8 @@ labels:
 		Entry("MeshServiceSubset", testCase{
 			inputYaml: `
 kind: MeshServiceSubset
-name: backend
+labels:
+  kuma.io/display-name: backend
 tags:
   version: v1
 `,
@@ -229,7 +230,8 @@ tags:
 		Entry("MeshServiceSubset without tags", testCase{
 			inputYaml: `
 kind: MeshServiceSubset
-name: backend
+labels:
+  kuma.io/display-name: backend
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -240,7 +242,8 @@ name: backend
 		Entry("MeshServiceSubset with empty tags", testCase{
 			inputYaml: `
 kind: MeshServiceSubset
-name: backend
+labels:
+  kuma.io/display-name: backend
 tags: {}
 `,
 			opts: &ValidateTargetRefOpts{
@@ -350,10 +353,9 @@ violations:
     message: value 'Mesh' is not supported
 `,
 		}),
-		Entry("Mesh with mesh and tags", testCase{
+		Entry("Mesh with tags", testCase{
 			inputYaml: `
 kind: Mesh
-mesh: mesh-1
 tags:
   tag1: value1
 `,
@@ -364,16 +366,15 @@ tags:
 			},
 			expected: `
 violations:
-  - field: targetRef.mesh
-    message: must not be set with kind Mesh
   - field: targetRef.tags
     message: must not be set with kind Mesh
 `,
 		}),
-		Entry("Mesh with name", testCase{
+		Entry("Mesh with labels", testCase{
 			inputYaml: `
 kind: Mesh
-name: mesh-1
+labels:
+  kuma.io/display-name: mesh-1
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -382,8 +383,8 @@ name: mesh-1
 			},
 			expected: `
 violations:
-  - field: targetRef.name
-    message: using name with kind Mesh is not yet supported 
+  - field: targetRef.labels
+    message: must not be set with kind Mesh
 `,
 		}),
 		Entry("MeshSubset when it's not supported", testCase{
@@ -400,10 +401,11 @@ violations:
   - field: targetRef.kind
     message: value 'MeshSubset' is not supported`,
 		}),
-		Entry("MeshSubset with name", testCase{
+		Entry("MeshSubset with labels", testCase{
 			inputYaml: `
 kind: MeshSubset
-name: mesh-1
+labels:
+  kuma.io/display-name: mesh-1
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -412,7 +414,7 @@ name: mesh-1
 			},
 			expected: `
 violations:
-  - field: targetRef.name
+  - field: targetRef.labels
     message: must not be set with kind MeshSubset`,
 		}),
 		Entry("MeshSubset with empty tag name", testCase{
@@ -493,12 +495,9 @@ violations:
   - field: targetRef.kind
     message: value 'MeshService' is not supported`,
 		}),
-		Entry("MeshService with mesh", testCase{
+		Entry("MeshService without labels", testCase{
 			inputYaml: `
 kind: MeshService
-labels:
-  kuma.io/display-name: backend
-mesh: mesh-1
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -507,8 +506,8 @@ mesh: mesh-1
 			},
 			expected: `
 violations:
-  - field: targetRef.mesh
-    message: must not be set with kind MeshService
+  - field: targetRef.labels
+    message: must be set when kind is MeshService
 `,
 		}),
 		Entry("MeshService without name with tags", testCase{
@@ -530,10 +529,9 @@ violations:
     message: must be set when kind is MeshService
 `,
 		}),
-		Entry("MeshService backendRef with invalid name", testCase{
+		Entry("MeshService backendRef without labels", testCase{
 			inputYaml: `
 kind: MeshService
-name: "*"
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -543,8 +541,8 @@ name: "*"
 			},
 			expected: `
 violations:
-  - field: targetRef.name
-    message: "invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'."
+  - field: targetRef.labels
+    message: must be set when kind is MeshService
 `,
 		}),
 		Entry("MeshGateway when it's not supported", testCase{
@@ -576,7 +574,7 @@ violations:
     message: value 'MeshServiceSubset' is not supported
 `,
 		}),
-		Entry("MeshServiceSubset without name with empty tags", testCase{
+		Entry("MeshServiceSubset without labels with empty tags", testCase{
 			inputYaml: `
 kind: MeshServiceSubset
 tags: {}
@@ -588,14 +586,13 @@ tags: {}
 			},
 			expected: `
 violations:
-  - field: targetRef.name
+  - field: targetRef.labels
     message: must be set when kind is MeshServiceSubset
 `,
 		}),
-		Entry("MeshServiceSubset with invalid name with empty tags", testCase{
+		Entry("MeshServiceSubset without labels and invalid empty-tag shape", testCase{
 			inputYaml: `
 kind: MeshServiceSubset
-name: "*"
 tags: {}
 `,
 			opts: &ValidateTargetRefOpts{
@@ -605,15 +602,16 @@ tags: {}
 			},
 			expected: `
 violations:
- - field: targetRef.name
-   message: "invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'."
+ - field: targetRef.labels
+   message: must be set when kind is MeshServiceSubset
 `,
 		}),
-		Entry("MeshServiceSubset with mesh", testCase{
+		Entry("MeshServiceSubset with sectionName", testCase{
 			inputYaml: `
 kind: MeshServiceSubset
-name: backend
-mesh: mesh-1
+labels:
+  kuma.io/display-name: backend
+sectionName: port-http
 tags:
   version: v1
 `,
@@ -624,7 +622,7 @@ tags:
 			},
 			expected: `
 violations:
-  - field: targetRef.mesh
+  - field: targetRef.sectionName
     message: must not be set with kind MeshServiceSubset 
 `,
 		}),
@@ -643,12 +641,13 @@ violations:
     message: value 'MeshGatewayRoute' is not supported
 `,
 		}),
-		Entry("MeshService should not combine name with labels", testCase{
+		Entry("MeshService should not combine tags with labels", testCase{
 			inputYaml: `
 kind: MeshService
-name: test
 labels:
   kuma.io/zone: east
+tags:
+  version: v1
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -657,47 +656,48 @@ labels:
 			},
 			expected: `
 violations:
-  - field: targetRef.name
+  - field: targetRef.tags
     message: must not be set with kind MeshService
 `,
 		}),
-		Entry("MeshService should not combine name/namespace with labels", testCase{
+		Entry("Mesh should not combine labels with sectionName", testCase{
 			inputYaml: `
-kind: MeshService
-namespace: test-ns
+kind: Mesh
 labels:
   kuma.io/zone: east
+sectionName: port-http
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshService,
+					common_api.Mesh,
 				},
 			},
 			expected: `
 violations:
-  - field: targetRef.namespace
-    message: must not be set with kind MeshService
+  - field: targetRef.labels
+    message: must not be set with kind Mesh
+  - field: targetRef.sectionName
+    message: must not be set with kind Mesh
 `,
 		}),
-		Entry("MeshService should not combine name and namespace with labels", testCase{
+		Entry("MeshSubset should not combine labels with sectionName", testCase{
 			inputYaml: `
-kind: MeshService
-name: test
-namespace: test-ns
+kind: MeshSubset
 labels:
   kuma.io/zone: east
+sectionName: port-http
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshService,
+					common_api.LegacyMeshSubsetKind(),
 				},
 			},
 			expected: `
 violations:
-  - field: targetRef.name
-    message: must not be set with kind MeshService
-  - field: targetRef.namespace
-    message: must not be set with kind MeshService
+  - field: targetRef.labels
+    message: must not be set with kind MeshSubset
+  - field: targetRef.sectionName
+    message: must not be set with kind MeshSubset
 `,
 		}),
 		Entry("MeshService should require labels", testCase{
@@ -745,10 +745,9 @@ violations:
     message: must be set when kind is MeshExternalService
 `,
 		}),
-		Entry("Mesh should not be used with namespace or labels or sectionName", testCase{
+		Entry("Mesh should not be used with labels or sectionName", testCase{
 			inputYaml: `
 kind: Mesh
-namespace: test-ns
 labels:
   kuma.io/zone: east
 sectionName: port-http
@@ -762,16 +761,13 @@ sectionName: port-http
 violations:
 - field: targetRef.labels
   message: must not be set with kind Mesh
-- field: targetRef.namespace
-  message: must not be set with kind Mesh
 - field: targetRef.sectionName
   message: must not be set with kind Mesh
 `,
 		}),
-		Entry("MeshSubset should not be used with namespace or labels or sectionName", testCase{
+		Entry("MeshSubset should not be used with labels or sectionName", testCase{
 			inputYaml: `
 kind: MeshSubset
-namespace: test-ns
 labels:
   kuma.io/zone: east
 sectionName: port-http
@@ -785,19 +781,15 @@ sectionName: port-http
 violations:
 - field: targetRef.labels
   message: must not be set with kind MeshSubset
-- field: targetRef.namespace
-  message: must not be set with kind MeshSubset
 - field: targetRef.sectionName
   message: must not be set with kind MeshSubset
 `,
 		}),
-		Entry("MeshServiceSubset should not be used with namespace or labels or sectionName", testCase{
+		Entry("MeshServiceSubset should not be used with sectionName", testCase{
 			inputYaml: `
 kind: MeshServiceSubset
-name: test
-namespace: test-ns
 labels:
-  kuma.io/zone: east
+  kuma.io/display-name: test
 sectionName: port-http
 `,
 			opts: &ValidateTargetRefOpts{
@@ -807,19 +799,13 @@ sectionName: port-http
 			},
 			expected: `
 violations:
-- field: targetRef.labels
-  message: must not be set with kind MeshServiceSubset
-- field: targetRef.namespace
-  message: must not be set with kind MeshServiceSubset
 - field: targetRef.sectionName
   message: must not be set with kind MeshServiceSubset
 `,
 		}),
-		Entry("Dataplane both labels and name", testCase{
+		Entry("Dataplane with labels only", testCase{
 			inputYaml: `
 kind: Dataplane
-name: test
-namespace: test-ns
 labels:
   kuma.io/zone: east
 `,
@@ -829,17 +815,12 @@ labels:
 				},
 			},
 			expected: `
-violations:
-- field: targetRef.name
-  message: must not be set with kind Dataplane
-- field: targetRef.namespace
-  message: must not be set with kind Dataplane
+violations: null
 `,
 		}),
-		Entry("Dataplane with tags and mesh", testCase{
+		Entry("Dataplane with tags", testCase{
 			inputYaml: `
 kind: Dataplane
-mesh: mesh-1
 tags:
   app: demo
 `,
@@ -851,8 +832,6 @@ tags:
 			expected: `
 violations:
 - field: targetRef.tags
-  message: must not be set with kind Dataplane
-- field: targetRef.mesh
   message: must not be set with kind Dataplane
 `,
 		}),

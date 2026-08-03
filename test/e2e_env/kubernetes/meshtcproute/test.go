@@ -160,8 +160,9 @@ spec:
       default:
         backendRefs:
         - kind: MeshService
-          name: test-http-server-2
-          namespace: %s
+          labels:
+            kuma.io/display-name: test-http-server-2
+            k8s.kuma.io/namespace: %s
           port: 80
 `, namespace, meshName, namespace, namespace)
 			meshTCPRoute := fmt.Sprintf(`
@@ -185,12 +186,10 @@ spec:
     - default:
         backendRefs:
         - kind: MeshExternalService
-          name: external-tcp-service-mtcpr
-          # MeshExternalService resources live in the CP's own namespace
-          # (see how it's installed above); without an explicit namespace
-          # here the backendRef falls back to this policy's namespace and
-          # silently fails to resolve, producing an empty outbound listener.
-          namespace: %s
+          labels:
+            kuma.io/display-name: external-tcp-service-mtcpr
+            # MeshExternalService resources live in the CP's own namespace.
+            k8s.kuma.io/namespace: %s
           port: 80
 `, namespace, meshName, namespace, Config.KumaNamespace)
 			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)
@@ -262,8 +261,9 @@ spec:
       default:
         backendRefs:
         - kind: MeshService
-          name: test-http-server-2
-          namespace: %s
+          labels:
+            kuma.io/display-name: test-http-server-2
+            k8s.kuma.io/namespace: %s
           port: 80
 `, namespace, meshName, namespace, namespace)
 			meshTCPRoute := fmt.Sprintf(`
@@ -287,12 +287,10 @@ spec:
     - default:
         backendRefs:
         - kind: MeshExternalService
-          name: external-tcp-service-mtcpr
-          # MeshExternalService resources live in the CP's own namespace
-          # (see how it's installed above); without an explicit namespace
-          # here the backendRef falls back to this policy's namespace and
-          # silently fails to resolve, producing an empty outbound listener.
-          namespace: %s
+          labels:
+            kuma.io/display-name: external-tcp-service-mtcpr
+            # MeshExternalService resources live in the CP's own namespace.
+            k8s.kuma.io/namespace: %s
           port: 80
 `, namespace, meshName, namespace, Config.KumaNamespace)
 			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)

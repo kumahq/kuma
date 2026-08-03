@@ -50,20 +50,30 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 	networking := dataplane.Spec.GetNetworking()
 
 	processRef := func(kind string, name string, namespace string, port *uint32, labels map[string]string) {
-		var targetNamespace *string
-		if namespace != "" {
-			targetNamespace = &namespace
+		selectorLabels, sectionName := NormalizeBackendRefTarget(
+			kind,
+			name,
+			namespace,
+			port,
+			labels,
+			dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
+		)
+		if len(selectorLabels) == 0 {
+			return
 		}
 
-		selectorLabels, sectionName, ok := common_api.BackendRef{
+		backendRef := common_api.BackendRef{
 			TargetRef: common_api.TargetRef{
-				Kind:      common_api.TargetRefKind(kind),
-				Name:      &name,
-				Namespace: targetNamespace,
-				Labels:    &labels,
+				Kind:   common_api.TargetRefKind(kind),
+				Labels: &selectorLabels,
 			},
 			Port: port,
-		}.RealResourceSelector(dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag])
+		}
+		if sectionName != "" {
+			backendRef.SectionName = pointer.To(sectionName)
+		}
+
+		selectorLabels, sectionName, ok := backendRef.RealResourceSelector("")
 		if !ok {
 			return
 		}

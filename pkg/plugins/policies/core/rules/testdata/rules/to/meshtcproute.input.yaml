@@ -13,10 +13,12 @@ spec:
         - default:
             backendRefs:
               - kind: MeshService
-                name: backend-v1
+                labels:
+                  kuma.io/display-name: backend-v1
                 weight: 90
               - kind: MeshService
-                name: backend-v2
+                labels:
+                  kuma.io/display-name: backend-v2
                 weight: 10
 ---
 type: MeshTCPRoute
@@ -35,11 +37,14 @@ spec:
         - default:
             backendRefs:
               - kind: MeshService
-                name: backend-v1
+                labels:
+                  kuma.io/display-name: backend-v1
                 weight: 40
               - kind: MeshService
-                name: backend-v2
+                labels:
+                  kuma.io/display-name: backend-v2
                 weight: 40
               - kind: MeshService
-                name: backend-v3
+                labels:
+                  kuma.io/display-name: backend-v3
                 weight: 20

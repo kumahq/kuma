@@ -219,9 +219,6 @@ spec:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
       type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -274,23 +271,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -349,23 +333,10 @@ spec:
                                       additionalProperties:
                                         type: string
                                       description: |-
-                                        Labels are used to select group of MeshServices that match labels. Either Labels or
-                                        Name and Namespace can be used.
+                                        Labels are used to select referenced real resources and to carry legacy
+                                        service identity when a common TargetRef must still target old
+                                        service-tag based paths.
                                       type: object
-                                    mesh:
-                                      description: Mesh is reserved for future use
-                                        to identify cross mesh resources.
-                                      type: string
-                                    name:
-                                      description: |-
-                                        Name of the referenced resource. Can only be used with kinds: `MeshService`
-                                        and `MeshServiceSubset`
-                                      type: string
-                                    namespace:
-                                      description: |-
-                                        Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                                        will be targeted.
-                                      type: string
                                     port:
                                       description: Port is only supported when this
                                         ref refers to a real MeshService object
@@ -467,23 +438,10 @@ spec:
                                               additionalProperties:
                                                 type: string
                                               description: |-
-                                                Labels are used to select group of MeshServices that match labels. Either Labels or
-                                                Name and Namespace can be used.
+                                                Labels are used to select referenced real resources and to carry legacy
+                                                service identity when a common TargetRef must still target old
+                                                service-tag based paths.
                                               type: object
-                                            mesh:
-                                              description: Mesh is reserved for future
-                                                use to identify cross mesh resources.
-                                              type: string
-                                            name:
-                                              description: |-
-                                                Name of the referenced resource. Can only be used with kinds: `MeshService`
-                                                and `MeshServiceSubset`
-                                              type: string
-                                            namespace:
-                                              description: |-
-                                                Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                                                will be targeted.
-                                              type: string
                                             port:
                                               description: Port is only supported
                                                 when this ref refers to a real MeshService
@@ -792,23 +750,10 @@ spec:
                           additionalProperties:
                             type: string
                           description: |-
-                            Labels are used to select group of MeshServices that match labels. Either Labels or
-                            Name and Namespace can be used.
+                            Labels are used to select referenced real resources and to carry legacy
+                            service identity when a common TargetRef must still target old
+                            service-tag based paths.
                           type: object
-                        mesh:
-                          description: Mesh is reserved for future use to identify
-                            cross mesh resources.
-                          type: string
-                        name:
-                          description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`
-                            and `MeshServiceSubset`
-                          type: string
-                        namespace:
-                          description: |-
-                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                            will be targeted.
-                          type: string
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -1193,9 +1138,6 @@ spec:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
       type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -1248,23 +1190,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -1600,23 +1529,10 @@ spec:
                           additionalProperties:
                             type: string
                           description: |-
-                            Labels are used to select group of MeshServices that match labels. Either Labels or
-                            Name and Namespace can be used.
+                            Labels are used to select referenced real resources and to carry legacy
+                            service identity when a common TargetRef must still target old
+                            service-tag based paths.
                           type: object
-                        mesh:
-                          description: Mesh is reserved for future use to identify
-                            cross mesh resources.
-                          type: string
-                        name:
-                          description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`
-                            and `MeshServiceSubset`
-                          type: string
-                        namespace:
-                          description: |-
-                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                            will be targeted.
-                          type: string
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -1664,9 +1580,6 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
       type: string
     name: v1alpha1
     schema:
@@ -1904,23 +1817,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -2425,9 +2325,6 @@ spec:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
       type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -2531,23 +2428,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -2591,9 +2475,6 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
       type: string
     name: v1alpha1
     schema:
@@ -3069,23 +2950,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -3131,9 +2999,6 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
       type: string
     name: v1alpha1
     schema:
@@ -3355,23 +3220,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -3533,23 +3385,10 @@ spec:
                           additionalProperties:
                             type: string
                           description: |-
-                            Labels are used to select group of MeshServices that match labels. Either Labels or
-                            Name and Namespace can be used.
+                            Labels are used to select referenced real resources and to carry legacy
+                            service identity when a common TargetRef must still target old
+                            service-tag based paths.
                           type: object
-                        mesh:
-                          description: Mesh is reserved for future use to identify
-                            cross mesh resources.
-                          type: string
-                        name:
-                          description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`
-                            and `MeshServiceSubset`
-                          type: string
-                        namespace:
-                          description: |-
-                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                            will be targeted.
-                          type: string
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -3670,9 +3509,6 @@ spec:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
       type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -3723,23 +3559,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -4100,23 +3923,10 @@ spec:
                           additionalProperties:
                             type: string
                           description: |-
-                            Labels are used to select group of MeshServices that match labels. Either Labels or
-                            Name and Namespace can be used.
+                            Labels are used to select referenced real resources and to carry legacy
+                            service identity when a common TargetRef must still target old
+                            service-tag based paths.
                           type: object
-                        mesh:
-                          description: Mesh is reserved for future use to identify
-                            cross mesh resources.
-                          type: string
-                        name:
-                          description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`
-                            and `MeshServiceSubset`
-                          type: string
-                        namespace:
-                          description: |-
-                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                            will be targeted.
-                          type: string
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -4399,9 +4209,6 @@ spec:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
       type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -4454,23 +4261,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -4524,23 +4318,10 @@ spec:
                                       additionalProperties:
                                         type: string
                                       description: |-
-                                        Labels are used to select group of MeshServices that match labels. Either Labels or
-                                        Name and Namespace can be used.
+                                        Labels are used to select referenced real resources and to carry legacy
+                                        service identity when a common TargetRef must still target old
+                                        service-tag based paths.
                                       type: object
-                                    mesh:
-                                      description: Mesh is reserved for future use
-                                        to identify cross mesh resources.
-                                      type: string
-                                    name:
-                                      description: |-
-                                        Name of the referenced resource. Can only be used with kinds: `MeshService`
-                                        and `MeshServiceSubset`
-                                      type: string
-                                    namespace:
-                                      description: |-
-                                        Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                                        will be targeted.
-                                      type: string
                                     port:
                                       description: Port is only supported when this
                                         ref refers to a real MeshService object
@@ -4593,23 +4374,10 @@ spec:
                           additionalProperties:
                             type: string
                           description: |-
-                            Labels are used to select group of MeshServices that match labels. Either Labels or
-                            Name and Namespace can be used.
+                            Labels are used to select referenced real resources and to carry legacy
+                            service identity when a common TargetRef must still target old
+                            service-tag based paths.
                           type: object
-                        mesh:
-                          description: Mesh is reserved for future use to identify
-                            cross mesh resources.
-                          type: string
-                        name:
-                          description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`
-                            and `MeshServiceSubset`
-                          type: string
-                        namespace:
-                          description: |-
-                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                            will be targeted.
-                          type: string
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -4659,9 +4427,6 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
       type: string
     name: v1alpha1
     schema:
@@ -4817,23 +4582,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -4927,23 +4679,10 @@ spec:
                           additionalProperties:
                             type: string
                           description: |-
-                            Labels are used to select group of MeshServices that match labels. Either Labels or
-                            Name and Namespace can be used.
+                            Labels are used to select referenced real resources and to carry legacy
+                            service identity when a common TargetRef must still target old
+                            service-tag based paths.
                           type: object
-                        mesh:
-                          description: Mesh is reserved for future use to identify
-                            cross mesh resources.
-                          type: string
-                        name:
-                          description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`
-                            and `MeshServiceSubset`
-                          type: string
-                        namespace:
-                          description: |-
-                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                            will be targeted.
-                          type: string
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -4991,9 +4730,6 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
       type: string
     name: v1alpha1
     schema:
@@ -5102,23 +4838,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -5162,9 +4885,6 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
       type: string
     name: v1alpha1
     schema:
@@ -5396,23 +5116,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -5499,9 +5206,6 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
       type: string
     name: v1alpha1
     schema:
@@ -5705,23 +5409,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -6474,9 +6165,6 @@ spec:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
       type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -6756,23 +6444,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -6989,23 +6664,10 @@ spec:
                           additionalProperties:
                             type: string
                           description: |-
-                            Labels are used to select group of MeshServices that match labels. Either Labels or
-                            Name and Namespace can be used.
+                            Labels are used to select referenced real resources and to carry legacy
+                            service identity when a common TargetRef must still target old
+                            service-tag based paths.
                           type: object
-                        mesh:
-                          description: Mesh is reserved for future use to identify
-                            cross mesh resources.
-                          type: string
-                        name:
-                          description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`
-                            and `MeshServiceSubset`
-                          type: string
-                        namespace:
-                          description: |-
-                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                            will be targeted.
-                          type: string
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -7097,9 +6759,6 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
       type: string
     name: v1alpha1
     schema:
@@ -7407,23 +7066,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -7714,23 +7360,10 @@ spec:
                           additionalProperties:
                             type: string
                           description: |-
-                            Labels are used to select group of MeshServices that match labels. Either Labels or
-                            Name and Namespace can be used.
+                            Labels are used to select referenced real resources and to carry legacy
+                            service identity when a common TargetRef must still target old
+                            service-tag based paths.
                           type: object
-                        mesh:
-                          description: Mesh is reserved for future use to identify
-                            cross mesh resources.
-                          type: string
-                        name:
-                          description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`
-                            and `MeshServiceSubset`
-                          type: string
-                        namespace:
-                          description: |-
-                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                            will be targeted.
-                          type: string
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -8181,9 +7814,6 @@ spec:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
       type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -8366,23 +7996,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -8504,23 +8121,10 @@ spec:
                           additionalProperties:
                             type: string
                           description: |-
-                            Labels are used to select group of MeshServices that match labels. Either Labels or
-                            Name and Namespace can be used.
+                            Labels are used to select referenced real resources and to carry legacy
+                            service identity when a common TargetRef must still target old
+                            service-tag based paths.
                           type: object
-                        mesh:
-                          description: Mesh is reserved for future use to identify
-                            cross mesh resources.
-                          type: string
-                        name:
-                          description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`
-                            and `MeshServiceSubset`
-                          type: string
-                        namespace:
-                          description: |-
-                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                            will be targeted.
-                          type: string
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.
@@ -8568,9 +8172,6 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .spec.targetRef.kind
       name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
       type: string
     name: v1alpha1
     schema:
@@ -8622,23 +8223,10 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Labels are used to select group of MeshServices that match labels. Either Labels or
-                      Name and Namespace can be used.
+                      Labels are used to select referenced real resources and to carry legacy
+                      service identity when a common TargetRef must still target old
+                      service-tag based paths.
                     type: object
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
-                    type: string
-                  name:
-                    description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`
-                      and `MeshServiceSubset`
-                    type: string
-                  namespace:
-                    description: |-
-                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                      will be targeted.
-                    type: string
                   sectionName:
                     description: |-
                       SectionName is used to target specific section of resource.
@@ -8879,23 +8467,10 @@ spec:
                           additionalProperties:
                             type: string
                           description: |-
-                            Labels are used to select group of MeshServices that match labels. Either Labels or
-                            Name and Namespace can be used.
+                            Labels are used to select referenced real resources and to carry legacy
+                            service identity when a common TargetRef must still target old
+                            service-tag based paths.
                           type: object
-                        mesh:
-                          description: Mesh is reserved for future use to identify
-                            cross mesh resources.
-                          type: string
-                        name:
-                          description: |-
-                            Name of the referenced resource. Can only be used with kinds: `MeshService`
-                            and `MeshServiceSubset`
-                          type: string
-                        namespace:
-                          description: |-
-                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                            will be targeted.
-                          type: string
                         sectionName:
                           description: |-
                             SectionName is used to target specific section of resource.

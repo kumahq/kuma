@@ -499,10 +499,12 @@ spec:
           default:
             backendRefs:
               - kind: MeshExternalService
-                name: external-service-with-httproute
+                labels:
+                  kuma.io/display-name: external-service-with-httproute
+                  k8s.kuma.io/namespace: %s
                 port: 80
                 weight: 100
-`, Config.KumaNamespace, meshName)
+`, Config.KumaNamespace, meshName, Config.KumaNamespace)
 
 		BeforeAll(func() {
 			err := NewClusterSetup().

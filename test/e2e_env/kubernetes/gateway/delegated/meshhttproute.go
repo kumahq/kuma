@@ -82,10 +82,14 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: test-server_%[2]s_svc_80
+                labels:
+                  kuma.io/display-name: test-server
+                port: 80
                 weight: 50
               - kind: MeshExternalService
-                name: external-service-mhr-delegated
+                labels:
+                  kuma.io/display-name: external-service-mhr-delegated
+                  k8s.kuma.io/namespace: %[1]s
                 port: 80
                 weight: 50
 `, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
@@ -186,12 +190,15 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: test-server
-                namespace: %[3]s
+                labels:
+                  kuma.io/display-name: test-server
+                  k8s.kuma.io/namespace: %[3]s
                 port: 80
                 weight: 50
               - kind: MeshExternalService
-                name: plain-external-service-delegated-ms
+                labels:
+                  kuma.io/display-name: plain-external-service-delegated-ms
+                  k8s.kuma.io/namespace: %[1]s
                 port: 80
                 weight: 50
 `, config.CpNamespace, config.Mesh, config.Namespace))(kubernetes.Cluster)).To(Succeed())
