@@ -18,7 +18,6 @@ import (
 type Listeners struct {
 	Inbound         map[core_rules.InboundListener]*envoy_listener.Listener
 	Outbound        map[mesh_proto.OutboundInterface]*envoy_listener.Listener
-	Egress          *envoy_listener.Listener
 	ZoneIngress     map[string]*envoy_listener.Listener
 	ZoneEgress      map[string]*envoy_listener.Listener
 	Gateway         map[core_rules.InboundListener]*envoy_listener.Listener
@@ -56,7 +55,6 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 				Port:    address.GetPortValue(),
 			}] = listener
 		case generator_meta.OriginEgress:
-			listeners.Egress = listener
 			if strings.HasPrefix(listener.Name, zoneEgressPrefix) {
 				listeners.ZoneEgress[listener.Name] = listener
 			}

@@ -1,7 +1,5 @@
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       mode: Permissive

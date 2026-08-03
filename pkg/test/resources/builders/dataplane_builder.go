@@ -9,7 +9,6 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var (
@@ -45,8 +44,13 @@ func (d *DataplaneBuilder) Build() *core_mesh.DataplaneResource {
 	return d.res
 }
 
-func (d *DataplaneBuilder) Create(s store.ResourceStore) error {
-	return s.Create(context.Background(), d.Build(), store.CreateBy(d.Key()))
+func (d *DataplaneBuilder) Create(s store.ResourceStore, moreOpts ...store.CreateOptionsFunc) error {
+	opts := []store.CreateOptionsFunc{store.CreateBy(d.Key())}
+	opts = append(opts, moreOpts...)
+	if ls := d.res.GetMeta().GetLabels(); len(ls) > 0 {
+		opts = append(opts, store.CreateWithLabels(ls))
+	}
+	return s.Create(context.Background(), d.Build(), opts...)
 }
 
 func (d *DataplaneBuilder) Key() core_model.ResourceKey {
@@ -207,15 +211,6 @@ func TagsKVToMap(tagsKV []string) map[string]string {
 		tags[tagsKV[i]] = tagsKV[i+1]
 	}
 	return tags
-}
-
-func (d *DataplaneBuilder) WithPrometheusMetrics(config *mesh_proto.PrometheusMetricsBackendConfig) *DataplaneBuilder {
-	d.res.Spec.Metrics = &mesh_proto.MetricsBackend{
-		Name: "prometheus-1",
-		Type: mesh_proto.MetricsPrometheusType,
-		Conf: proto.MustToStruct(config),
-	}
-	return d
 }
 
 func (d *DataplaneBuilder) WithDelegatedGateway(name string) *DataplaneBuilder {

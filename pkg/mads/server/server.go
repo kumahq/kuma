@@ -39,9 +39,8 @@ type muxServer struct {
 	metrics core_metrics.Metrics
 	ready   atomic.Bool
 	mesh_proto.UnimplementedMultiplexServiceServer
-	rm                  manager.ReadOnlyResourceManager
-	meshCache           *mesh.Cache
-	inboundTagsDisabled bool
+	rm        manager.ReadOnlyResourceManager
+	meshCache *mesh.Cache
 }
 
 type HttpService interface {
@@ -84,7 +83,7 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 		})))
 	if s.config.VersionIsEnabled(mads.API_V1) {
 		log.Info("MADS v1 is enabled")
-		svc := mads_v1.NewService(s.config, s.rm, log.WithValues("apiVersion", mads.API_V1), s.meshCache, s.inboundTagsDisabled)
+		svc := mads_v1.NewService(s.config, s.rm, log.WithValues("apiVersion", mads.API_V1), s.meshCache)
 		svc.RegisterRoutes(ws)
 		svc.Start(ctx)
 	}
@@ -126,10 +125,9 @@ func SetupServer(rt core_runtime.Runtime) error {
 		return nil
 	}
 	return rt.Add(&muxServer{
-		meshCache:           rt.MeshCache(),
-		rm:                  rt.ReadOnlyResourceManager(),
-		config:              rt.Config().MonitoringAssignmentServer,
-		metrics:             rt.Metrics(),
-		inboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
+		meshCache: rt.MeshCache(),
+		rm:        rt.ReadOnlyResourceManager(),
+		config:    rt.Config().MonitoringAssignmentServer,
+		metrics:   rt.Metrics(),
 	})
 }

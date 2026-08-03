@@ -53,13 +53,12 @@ rules:
   - default:
       http: []
 `),
-		Entry("Kind Mesh with to and only gateway", `
+		Entry("Kind Mesh with to", `
 type: MeshFaultInjection
 mesh: mesh-1
 name: fi1
 targetRef:
   kind: Mesh
-  proxyTypes: ["Gateway"]
 to:
   - targetRef:
       kind: Mesh

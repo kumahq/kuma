@@ -141,6 +141,7 @@ const (
 var PodAnnotationDeprecations = []Deprecation{
 	NewReplaceByDeprecation("kuma.io/builtindns", KumaBuiltinDNS, true),
 	NewReplaceByDeprecation("kuma.io/builtindnsport", KumaBuiltinDNSPort, true),
+	NewReplaceByDeprecation("kuma.io/transparent-proxying-reachable-services", KumaReachableBackends, true),
 	NewDeprecation(KumaVirtualProbesAnnotation, false),
 	NewReplaceByDeprecation(KumaVirtualProbesPortAnnotation, KumaApplicationProbeProxyPortAnnotation, false),
 	{
@@ -186,18 +187,17 @@ func NewDeprecation(old string, removed bool) Deprecation {
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
-	KumaSidecarInjectedAnnotation                      = "kuma.io/sidecar-injected"
-	KumaIgnoreAnnotation                               = "kuma.io/ignore"
-	KumaSidecarUID                                     = "kuma.io/sidecar-uid"
-	KumaEnvoyAdminPort                                 = "kuma.io/envoy-admin-port"
-	KumaTransparentProxyingAnnotation                  = "kuma.io/transparent-proxying"
-	KumaTransparentProxyingInboundPortAnnotation       = "kuma.io/transparent-proxying-inbound-port"
-	KumaTransparentProxyingIPFamilyMode                = "kuma.io/transparent-proxying-ip-family-mode"
-	KumaTransparentProxyingOutboundPortAnnotation      = "kuma.io/transparent-proxying-outbound-port"
-	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"
-	KumaReachableBackends                              = "kuma.io/reachable-backends"
-	CNCFNetworkAnnotation                              = "k8s.v1.cni.cncf.io/networks"
-	KumaCNI                                            = "kuma-cni"
+	KumaSidecarInjectedAnnotation                 = "kuma.io/sidecar-injected"
+	KumaIgnoreAnnotation                          = "kuma.io/ignore"
+	KumaSidecarUID                                = "kuma.io/sidecar-uid"
+	KumaEnvoyAdminPort                            = "kuma.io/envoy-admin-port"
+	KumaTransparentProxyingAnnotation             = "kuma.io/transparent-proxying"
+	KumaTransparentProxyingInboundPortAnnotation  = "kuma.io/transparent-proxying-inbound-port"
+	KumaTransparentProxyingIPFamilyMode           = "kuma.io/transparent-proxying-ip-family-mode"
+	KumaTransparentProxyingOutboundPortAnnotation = "kuma.io/transparent-proxying-outbound-port"
+	KumaReachableBackends                         = "kuma.io/reachable-backends"
+	CNCFNetworkAnnotation                         = "k8s.v1.cni.cncf.io/networks"
+	KumaCNI                                       = "kuma-cni"
 )
 
 // Annotations related to the gateway

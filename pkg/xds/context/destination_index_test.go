@@ -58,6 +58,38 @@ var _ = Describe("DestinationIndex", func() {
 			Expect(outbounds).To(HaveKey(expectedKRI))
 		})
 
+		It("should resolve MeshService name refs using display name derived from resource metadata", func() {
+			ms := builders.MeshService().
+				WithName("backend-svc").
+				AddIntPort(9000, 9000, metadata.ProtocolHTTP).
+				Build()
+
+			dp := builders.Dataplane().
+				WithName("dp-1").
+				WithAddress("127.0.0.1").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+				WithTransparentProxying(15001, 15006, "").
+				Build()
+
+			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
+				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
+					{
+						Kind: "MeshService",
+						Name: "backend-svc",
+					},
+				},
+			}
+
+			index := xds_context.NewDestinationIndex([]core_model.Resource{ms})
+			outbounds, matched := index.GetReachableBackends(dp)
+
+			Expect(matched).To(BeTrue())
+			Expect(outbounds).To(HaveLen(1))
+
+			expectedKRI := kri.WithSectionName(kri.From(ms), "9000")
+			Expect(outbounds).To(HaveKey(expectedKRI))
+		})
+
 		It("should fallback to dataplane namespace when namespace not specified", func() {
 			ms := builders.MeshService().
 				WithName("backend-svc-hash456").
@@ -97,6 +129,79 @@ var _ = Describe("DestinationIndex", func() {
 
 			expectedKRI := kri.WithSectionName(kri.From(ms), "9000")
 			Expect(outbounds).To(HaveKey(expectedKRI))
+		})
+
+		It("should resolve legacy MeshService name forms through derived labels", func() {
+			ms := builders.MeshService().
+				WithName("backend-svc-hash321").
+				WithLabels(map[string]string{
+					mesh_proto.DisplayName:      "backend-svc",
+					mesh_proto.KubeNamespaceTag: "other-ns",
+					mesh_proto.ZoneTag:          "zone-1",
+				}).
+				AddIntPort(8080, 8080, metadata.ProtocolHTTP).
+				Build()
+
+			dp := builders.Dataplane().
+				WithName("dp-1").
+				WithLabels(map[string]string{
+					mesh_proto.KubeNamespaceTag: "default",
+					mesh_proto.ZoneTag:          "zone-1",
+				}).
+				WithAddress("127.0.0.1").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+				WithTransparentProxying(15001, 15006, "").
+				Build()
+
+			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
+				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
+					{
+						Kind: "MeshService",
+						Name: "backend-svc_other-ns_svc_8080",
+					},
+				},
+			}
+
+			index := xds_context.NewDestinationIndex([]core_model.Resource{ms})
+			outbounds, matched := index.GetReachableBackends(dp)
+
+			Expect(matched).To(BeTrue())
+			Expect(outbounds).To(HaveLen(1))
+			Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(ms), "8080")))
+		})
+
+		It("should resolve user-defined outbound legacy MeshService name forms through derived labels", func() {
+			ms := builders.MeshService().
+				WithName("backend-svc-hash654").
+				WithLabels(map[string]string{
+					mesh_proto.DisplayName:      "backend-svc",
+					mesh_proto.KubeNamespaceTag: "other-ns",
+					mesh_proto.ZoneTag:          "zone-1",
+				}).
+				AddIntPort(8080, 8080, metadata.ProtocolHTTP).
+				Build()
+
+			dp := builders.Dataplane().
+				WithName("dp-1").
+				WithLabels(map[string]string{
+					mesh_proto.KubeNamespaceTag: "default",
+					mesh_proto.ZoneTag:          "zone-1",
+				}).
+				WithAddress("127.0.0.1").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+				AddOutbound(
+					builders.Outbound().
+						WithPort(10001).
+						WithMeshService("backend-svc_other-ns_svc_8080", 8080),
+				).
+				Build()
+
+			index := xds_context.NewDestinationIndex([]core_model.Resource{ms})
+			outbounds, matched := index.GetReachableBackends(dp)
+
+			Expect(matched).To(BeTrue())
+			Expect(outbounds).To(HaveLen(1))
+			Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(ms), "8080")))
 		})
 
 		It("should not resolve when namespace does not match", func() {

@@ -2,10 +2,8 @@ targetRef:
   kind: Dataplane
   labels:
     app: demo
-from:
-  - targetRef:
-      kind: Mesh
-    default:
+rules:
+  - default:
       tlsVersion:
         min: TLS15
         max: TLS16

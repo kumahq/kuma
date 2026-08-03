@@ -12,12 +12,7 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/plugins"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
@@ -31,7 +26,6 @@ import (
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
@@ -50,7 +44,7 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -66,7 +60,7 @@ var _ = Describe("RBAC", func() {
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
 					Configure(listeners.HttpConnectionManager("test_listener2", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -80,7 +74,7 @@ var _ = Describe("RBAC", func() {
 			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
 					Configure(listeners.HttpConnectionManager("test_listener3", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -153,7 +147,7 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -204,7 +198,7 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -218,7 +212,7 @@ var _ = Describe("RBAC", func() {
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
 					Configure(listeners.HttpConnectionManager("test_listener2", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -232,7 +226,7 @@ var _ = Describe("RBAC", func() {
 			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
 					Configure(listeners.HttpConnectionManager("test_listener3", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -334,7 +328,7 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -388,7 +382,7 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -538,99 +532,6 @@ var _ = Describe("RBAC", func() {
 			bytes, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply-ze-listener-with-mtp.golden.yaml")))
-		})
-	})
-
-	Context("for ZoneEgress proxy", func() {
-		It("should attach RBAC filter chain when unified naming is enabled", func() {
-			// given a MeshExternalService whose egress filter chain is named using the
-			// unified (KRI) scheme, not the legacy one
-			mes := builders.MeshExternalService().WithMesh("mesh-1").WithName("es-1").Build()
-			filterChainName := destinationname.MustResolve(true, mes, mes.Spec.Match)
-
-			rs := core_xds.NewResourceSet()
-			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP, true).
-				WithOverwriteName("egress-listener").
-				Configure(
-					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, filterChainName).Configure(
-						listeners.MatchTransportProtocol("tls"),
-						listeners.TCPProxy(filterChainName),
-					)),
-				).
-				Build()
-			Expect(err).ToNot(HaveOccurred())
-			rs.Add(&core_xds.Resource{
-				Name:     listener.GetName(),
-				Origin:   metadata.OriginEgress,
-				Resource: listener,
-			})
-
-			meshRes := builders.Mesh().WithName("mesh-1").WithBuiltinMTLSBackend("builtin-1").WithEnabledMTLSBackend("builtin-1").Build()
-			// ctx.Mesh.Resource is deliberately left nil here: zone-egress proxies
-			// aren't scoped to a single mesh, so this is what production actually
-			// passes. A non-nil ctx.Mesh would make unified_naming.Enabled() return
-			// true even on the old buggy code, masking the regression this test
-			// exists to catch.
-			ctx := &xds_context.Context{}
-
-			proxy := &core_xds.Proxy{
-				APIVersion: envoy.APIV3,
-				Metadata: &core_xds.DataplaneMetadata{
-					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-				},
-				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-					ZoneEgressResource: &core_mesh.ZoneEgressResource{
-						Meta: &test_model.ResourceMeta{Name: "ze1", Mesh: "mesh-1"},
-						Spec: &mesh_proto.ZoneEgress{
-							Networking: &mesh_proto.ZoneEgress_Networking{
-								Address: "192.168.0.1",
-								Port:    10002,
-							},
-						},
-					},
-					MeshResourcesList: []*core_xds.MeshResources{
-						{
-							Mesh: meshRes,
-							Resources: map[core_model.ResourceType]core_model.ResourceList{
-								meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
-									Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
-								},
-							},
-						},
-					},
-				},
-			}
-
-			// when
-			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
-			Expect(p.Apply(rs, *ctx, proxy)).To(Succeed())
-
-			// then the RBAC filter must have attached to the unified-named filter chain:
-			// ctx.Mesh.Resource is always nil for zone-egress proxies, so a naive
-			// unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource) call would always
-			// report unified naming as disabled and this filter chain (named per the
-			// unified scheme) would never match, silently skipping RBAC entirely.
-			var egressListener *envoy_listener.Listener
-			for _, r := range rs.List() {
-				if r.Name == "egress-listener" {
-					egressListener = r.Resource.(*envoy_listener.Listener)
-				}
-			}
-			Expect(egressListener).ToNot(BeNil())
-			var matched *envoy_listener.FilterChain
-			for _, fc := range egressListener.GetFilterChains() {
-				if fc.GetName() == filterChainName {
-					matched = fc
-				}
-			}
-			Expect(matched).ToNot(BeNil())
-			hasRBAC := false
-			for _, filter := range matched.GetFilters() {
-				if filter.GetName() == "envoy.filters.network.rbac" {
-					hasRBAC = true
-				}
-			}
-			Expect(hasRBAC).To(BeTrue())
 		})
 	})
 })

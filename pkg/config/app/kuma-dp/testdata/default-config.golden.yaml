@@ -24,6 +24,7 @@ dataplaneRuntime:
   reusePortEnabled: true
   spire: {}
   strictInboundPortsEnabled: true
+  unifiedResourceNamingEnabled: true
 dns:
   enabled: true
   proxyPort: 15053

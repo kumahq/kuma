@@ -12,7 +12,8 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: backend
+      labels:
+        kuma.io/display-name: backend
     default:
       loadBalancer:
         type: RingHash

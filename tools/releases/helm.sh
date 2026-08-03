@@ -17,11 +17,12 @@ GH_PAGES_BRANCH="gh-pages"
 #  appVersion equal to the kuma version
 #  version:
 #    using version.sh logic
-#  dependencies (with non-empty first argument):
-#    for any dependency $chart where charts/$chart exists, it deletes $chart from
-#    .dependencies so that the embedded $chart is used and not the one fetched
-#    from the repository. `cr` fetches explicit dependencies and they take
-#    precedence over embedded files.
+#  dependencies:
+#    dev builds keep the embedded charts/$chart and drop it from
+#    .dependencies to avoid the network. Release builds do the opposite:
+#    they remove the embedded charts/$chart dir, since it's always a stale
+#    vendored copy and cr/helm don't reliably prefer a freshly fetched
+#    dependency over a same-named embedded directory.
 function update_version {
   local dev=${1}
   for dir in "${CHARTS_DIR}"/*; do
@@ -37,15 +38,17 @@ function update_version {
     yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
     yq -i ".version = \"${kuma_version}\"" "${dir}/Chart.yaml"
 
-    if [ -n "${dev}" ]; then
-      local chart
-      for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
-          if [ ! -d "${dir}/charts/${chart}" ]; then
-              continue
-          fi
+    local chart
+    for chart in $(yq e '.dependencies[]?.name' "${dir}/Chart.yaml"); do
+        if [ ! -d "${dir}/charts/${chart}" ]; then
+            continue
+        fi
+        if [ -n "${dev}" ]; then
           yq -i e "del(.dependencies[] | select(.name == \"${chart}\"))" "${dir}/Chart.yaml"
-      done
-    fi
+        else
+          rm -rf "${dir}/charts/${chart}"
+        fi
+    done
 
     make helm-docs
   done

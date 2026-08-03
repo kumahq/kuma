@@ -127,12 +127,10 @@ func ZoneProxy() {
 	const ns = "mfi-zoneproxy"
 	const extNs = "mfi-zoneproxy-ext"
 	const mesh = "mfi-zoneproxy"
-	const workload = "zone-egress"
 	const targetedMES = "external-target-mfi-zoneproxy"
 	const untargetedMES = "external-other-mfi-zoneproxy"
 	const demoClient = "demo-client"
 	const externalServer = "external-server"
-	const egressPort = uint32(11102)
 
 	fromDemoClient := client.FromKubernetesPod(ns, demoClient)
 
@@ -205,11 +203,9 @@ func ZoneProxy() {
 					testserver.WithEchoArgs("echo", "--instance", externalServer),
 				),
 				zoneproxy.Install(
-					zoneproxy.WithName("zp-meshfaultinjection"),
 					zoneproxy.WithNamespace(ns),
 					zoneproxy.WithMesh(mesh),
-					zoneproxy.WithWorkload(workload),
-					zoneproxy.WithEgressPort(egressPort),
+					zoneproxy.WithEgress(),
 				),
 			)).
 			Install(YamlK8s(zoneProxyMeshIdentity(mesh))).

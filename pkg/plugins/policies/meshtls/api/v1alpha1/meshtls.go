@@ -8,15 +8,13 @@ import (
 
 // MeshTLS configures TLS and mutual TLS (mTLS) settings for secure communication between services in the mesh. It allows you to enforce encryption, configure TLS versions and cipher suites, and control whether mTLS is required (strict mode) or optional (permissive mode) for inbound traffic.
 // +kuma:policy:singular_display_name=Mesh TLS
-// +kuma:policy:is_from_as_rules=true
+// +kuma:policy:skip_get_default=true
 // +kuma:policy:order=300
 type MeshTLS struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined in-place.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
-	// From list makes a match between clients and corresponding configurations
-	From *[]From `json:"from,omitempty"`
 	// Rules defines inbound tls configurations. Currently limited to
 	// selecting all inbound traffic, as L7 matching is not yet implemented.
 	Rules *[]Rule `json:"rules,omitempty"`
@@ -24,15 +22,6 @@ type MeshTLS struct {
 
 type Rule struct {
 	// Default contains configuration of the inbound tls
-	Default Conf `json:"default,omitempty"`
-}
-
-type From struct {
-	// TargetRef is a reference to the resource that represents a group of
-	// clients.
-	TargetRef common_api.TargetRef `json:"targetRef"`
-	// Default is a configuration specific to the group of clients referenced in
-	// 'targetRef'
 	Default Conf `json:"default,omitempty"`
 }
 

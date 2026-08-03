@@ -417,7 +417,7 @@ runtime:
       # unifiedResourceNamingEnabled enables automatic injection of the unified naming feature flag into all sidecar-injected workloads.
       # When set to true, the injector will add the required environment variable directly to the `kuma-sidecar` container.
       # This ensures that the data plane proxy uses the new unified naming format for Envoy resources and stats.
-      unifiedResourceNamingEnabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
+      unifiedResourceNamingEnabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
       # OtelPipeEnabled controls whether kuma-dp pipe mode is enabled for OTel backends.
       # When true (default), kuma-dp proxies OTel traffic through a Unix socket.
       otelPipeEnabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED

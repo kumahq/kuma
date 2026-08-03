@@ -102,13 +102,13 @@ func (s *Stream) Request(clientId string, typ string, dp rest.Resource) error {
 			},
 		},
 	}
-	// Empty ResourceNamesSubscribe means a wildcard subscription for the type.
+	// "*" subscribes to all resources of the type (wildcard delta subscription).
 	return s.stream.Send(&envoy_discovery.DeltaDiscoveryRequest{
 		Node: &envoy_core.Node{
 			Id:       clientId,
 			Metadata: md,
 		},
-		ResourceNamesSubscribe: []string{},
+		ResourceNamesSubscribe: []string{"*"},
 		TypeUrl:                typ,
 	})
 }

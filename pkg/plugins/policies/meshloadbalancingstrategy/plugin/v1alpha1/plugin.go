@@ -7,16 +7,17 @@ import (
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/pkg/errors"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/origin"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -31,15 +32,15 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
+	gateway_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	generator_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
-var _ core_plugins.EgressPolicyPlugin = &plugin{}
+var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -53,15 +54,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshLoadBalancingStrategyType, dataplane, resources, opts...)
 }
 
-func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.EgressMatchedPolicies(api.MeshLoadBalancingStrategyType, tags, resources, opts...)
-}
-
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	if proxy.ZoneEgressProxy != nil {
-		return p.configureEgress(rs, proxy)
-	}
-
 	policies, ok := proxy.Policies.Dynamic[api.MeshLoadBalancingStrategyType]
 	if !ok {
 		return nil
@@ -70,6 +63,21 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
 	endpoints := policies_xds.GatherOutboundEndpoints(rs)
+	gatewayEndpoints := policies_xds.GatherGatewayEndpoints(rs)
+	routes := policies_xds.GatherRoutes(rs)
+
+	if err := p.configureGateway(
+		proxy,
+		policies.GatewayRules,
+		listeners.Gateway,
+		clusters.Gateway,
+		gatewayEndpoints,
+		routes.Gateway,
+		rs,
+		ctx.Mesh,
+	); err != nil {
+		return err
+	}
 
 	return p.configureDPP(
 		proxy,
@@ -96,6 +104,8 @@ func (p plugin) configureDPP(
 	}
 	serviceConfs := map[string]api.Conf{}
 
+	affinityLabels := proxy.Dataplane.GetMeta().GetLabels()
+
 	for _, outbound := range proxy.Outbounds.Filter(xds_types.NonBackendRefFilter) {
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
 		serviceName := outbound.LegacyOutbound.GetService()
@@ -117,9 +127,10 @@ func (p plugin) configureDPP(
 	}
 
 	clusterModifier := func(cluster *envoy_cluster.Cluster, conf api.Conf) error {
+		egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
 		return NewModifier(cluster).
 			Configure(clusterConfigurer(conf)).
-			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound))).
+			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, generator_metadata.OriginOutbound))).
 			Modify()
 	}
 
@@ -136,8 +147,9 @@ func (p plugin) configureDPP(
 				return err
 			}
 		}
+		egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
 		for _, cla := range endpoints[serviceName] {
-			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, meshCtx.Resource.ZoneEgressEnabled(), generator_metadata.OriginOutbound)).Modify(); err != nil {
+			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, generator_metadata.OriginOutbound)).Modify(); err != nil {
 				return err
 			}
 		}
@@ -148,28 +160,56 @@ func (p plugin) configureDPP(
 		svcCtx := rctx.
 			WithID(kri.NoSectionName(r.ResourceOrigin)).
 			WithID(r.ResourceOrigin)
-		if err := p.applyToRealResource(svcCtx, r, proxy); err != nil {
+		if err := p.applyToRealResource(svcCtx, r, proxy, affinityLabels); err != nil {
 			return err
+		}
+	}
+
+	// A zone proxy egress listener holds one filter chain per MeshExternalService,
+	// so the listener resource carries no ResourceOrigin and is skipped by the loop
+	// above. Route level hash policies still have to be programmed, so match the
+	// filter chains by their KRI name instead.
+	for _, listener := range listeners.ZoneEgress {
+		for _, fc := range listener.FilterChains {
+			id, err := kri.FromString(fc.Name)
+			if err != nil {
+				continue
+			}
+			fcCtx := rctx.
+				WithID(kri.NoSectionName(id)).
+				WithID(id)
+			if err := NewModifier(fc).Configure(filterChainConfigurer(fcCtx)).Modify(); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
 }
 
-func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Conf], r *core_xds.Resource, proxy *core_xds.Proxy) error {
+func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Conf], r *core_xds.Resource, proxy *core_xds.Proxy, affinityLabels map[string]string) error {
 	switch envoyResource := r.Resource.(type) {
 	case *envoy_listener.Listener:
 		return NewModifier(envoyResource).
 			Configure(listenerConfigurer(rctx)).
 			Modify()
 	case *envoy_cluster.Cluster:
+		conf := rctx.Conf()
+		// Clusters of the zone proxy egress listener are STATIC and their endpoints
+		// are the real external addresses: their Locality carries an empty Zone
+		// Locality awareness matches nothing there, so it would demote or drop
+		// every endpoint and leave the cluster with an empty load assignment.
+		isEgress := r.Origin == generator_metadata.OriginEgress
+		if isEgress {
+			conf.LocalityAwareness = nil
+		}
 		return NewModifier(envoyResource).
-			Configure(clusterConfigurer(rctx.Conf())).
-			Configure(If(envoyResource.LoadAssignment != nil, staticCLAConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, false, generator_metadata.OriginOutbound))).
+			Configure(clusterConfigurer(conf)).
+			Configure(If(!isEgress && envoyResource.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound))).
 			Modify()
 	case *envoy_endpoint.ClusterLoadAssignment:
 		return NewModifier(envoyResource).
-			Configure(claConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), proxy.Dataplane.GetMeta().GetLabels(), proxy.Zone, false, generator_metadata.OriginOutbound)).
+			Configure(claConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound)).
 			Modify()
 	}
 	return nil
@@ -316,28 +356,7 @@ func getDurationOrNil(d *k8s.Duration) *time.Duration {
 }
 
 func getHashPolicies(conf api.Conf) *[]api.HashPolicy {
-	if conf.HashPolicies != nil {
-		return conf.HashPolicies
-	}
-
-	if conf.LoadBalancer == nil {
-		return nil
-	}
-
-	switch conf.LoadBalancer.Type {
-	case api.RingHashType:
-		if conf.LoadBalancer.RingHash == nil {
-			return nil
-		}
-		return conf.LoadBalancer.RingHash.HashPolicies
-	case api.MaglevType:
-		if conf.LoadBalancer.Maglev == nil {
-			return nil
-		}
-		return conf.LoadBalancer.Maglev.HashPolicies
-	default:
-		return nil
-	}
+	return conf.HashPolicies
 }
 
 func overprovisioningFactor(conf api.Conf) uint32 {
@@ -351,70 +370,76 @@ func overprovisioningFactor(conf api.Conf) uint32 {
 	return uint32(100/val.InexactFloat64()) * 100
 }
 
-func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	indexed := rs.IndexByOrigin()
-	endpoints := policies_xds.GatherEgressEndpoints(rs)
-	listeners := policies_xds.GatherListeners(rs)
-	if listeners.Egress == nil {
+func (p plugin) configureGateway(
+	proxy *core_xds.Proxy,
+	gatewayRules core_rules.GatewayRules,
+	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
+	gatewayClusters map[string]*envoy_cluster.Cluster,
+	gatewayEndpoints policies_xds.EndpointMap,
+	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
+	rs *core_xds.ResourceSet,
+	meshCtx xds_context.MeshContext,
+) error {
+	if len(gatewayListeners) == 0 {
 		return nil
 	}
-	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
-		for serviceName, dynamic := range meshResources.Dynamic {
-			meshName := meshResources.Mesh.GetMeta().GetName()
-			policies, ok := dynamic[api.MeshLoadBalancingStrategyType]
-			if !ok {
+
+	affinityLabels := proxy.Dataplane.GetMeta().GetLabels()
+	egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
+
+	for listenerKey, listener := range gatewayListeners {
+		toRules, ok := gatewayRules.ToRules.ByListener[listenerKey]
+		if !ok {
+			continue
+		}
+
+		targetClusterNames, err := gatewayTargetClusterNames(listener, gatewayRoutes)
+		if err != nil {
+			return err
+		}
+
+		serviceConfs := map[string]*api.Conf{}
+		for clusterName, cluster := range gatewayClusters {
+			if _, ok := targetClusterNames[clusterName]; !ok {
 				continue
 			}
 
-			rule := p.computeFrom(policies.FromRules)
-			if rule == nil {
+			serviceName := tags.ServiceFromClusterName(clusterName)
+			conf := core_rules.ComputeConf[api.Conf](toRules.Rules, subsetutils.KumaServiceTagElement(serviceName))
+			if conf == nil {
 				continue
 			}
-			conf := rule.Conf.(api.Conf)
+			serviceConfs[serviceName] = conf
 
-			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
-			for _, cla := range endpoints[clusterName] {
-				if err := NewModifier(cla).Configure(claConfigurer(conf, mesh_proto.MultiValueTagSet{}, nil, proxy.Zone, true, generator_metadata.OriginEgress)).Modify(); err != nil {
-					return err
-				}
+			if err := NewModifier(cluster).
+				Configure(clusterConfigurer(*conf)).
+				Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(*conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, gateway_metadata.OriginGateway))).
+				Modify(); err != nil {
+				return err
 			}
 		}
 
-		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
-		for _, mes := range meshExternalServices.GetItems() {
-			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
-			destinationName := destinationname.MustResolve(false, meshExtSvc, meshExtSvc.Spec.Match)
-			policies, ok := meshResources.Dynamic[destinationName]
-			if !ok {
-				continue
+		for serviceName, conf := range serviceConfs {
+			for _, cla := range gatewayEndpoints[serviceName] {
+				if err := NewModifier(cla).Configure(claConfigurer(*conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, gateway_metadata.OriginGateway)).Modify(); err != nil {
+					return err
+				}
 			}
-			mlbs, ok := policies[api.MeshLoadBalancingStrategyType]
-			if !ok {
-				continue
+
+			if err := p.configureRDS(listener, gatewayRoutes, serviceName, conf); err != nil {
+				return err
 			}
-			for mesID, typedResources := range indexed {
-				conf := mlbs.ToRules.ResourceRules.Compute(mesID, meshResources)
-				if conf == nil {
-					continue
-				}
+		}
 
-				for typ, resources := range typedResources {
-					if typ == envoy_resource.ClusterType {
-						for _, cluster := range resources {
-							if err := NewModifier(cluster.Resource.(*envoy_cluster.Cluster)).Configure(clusterConfigurer(conf.Conf[0].(api.Conf))).Modify(); err != nil {
-								return err
-							}
-						}
-					}
-				}
-
-				for _, fc := range listeners.Egress.FilterChains {
-					if fc.Name == destinationName {
-						if err := NewModifier(fc).Configure(filterChainConfigurer(rules_outbound.AsResourceContext(conf.Conf[0].(api.Conf)))).Modify(); err != nil {
-							return err
-						}
-					}
-				}
+		rctx := rules_outbound.RootContext[api.Conf](meshCtx.Resource, toRules.ResourceRules)
+		for _, r := range util_slices.Filter(rs.List(), func(r *core_xds.Resource) bool {
+			return r.Origin == gateway_metadata.OriginGateway && core_xds.HasAssociatedServiceResource(r)
+		}) {
+			svcCtx := rctx.
+				WithID(kri.NoSectionName(r.ResourceOrigin)).
+				WithID(r.ResourceOrigin)
+			if err := p.applyToRealResource(svcCtx, r, proxy, affinityLabels); err != nil {
+				return err
 			}
 		}
 	}
@@ -422,16 +447,172 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 	return nil
 }
 
-// Zone egress is a single point for multiple clients. At this moment we don't support different
-// configurations based on the client. That's why we are computing rules for MeshSubset
-//
-//nolint:staticcheck // SA1019 Zone egress uses old Rule format, per function comment
-func (p plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
-	rules := util_maps.AllValues(fr.Rules)
-	if len(rules) == 0 {
+func gatewayTargetClusterNames(
+	listener *envoy_listener.Listener,
+	routes map[string]*envoy_route.RouteConfiguration,
+) (map[string]struct{}, error) {
+	clusterNames := map[string]struct{}{}
+	for _, chain := range listener.FilterChains {
+		for _, filter := range chain.Filters {
+			if filter.GetTypedConfig() == nil {
+				continue
+			}
+
+			msg, err := filter.GetTypedConfig().UnmarshalNew()
+			if err != nil {
+				return nil, err
+			}
+
+			switch filter.Name {
+			case wellknown.HTTPConnectionManager:
+				hcm, ok := msg.(*envoy_hcm.HttpConnectionManager)
+				if !ok {
+					continue
+				}
+				routeConfigs, err := routeConfigurationsFromHCM(hcm, routes)
+				if err != nil {
+					return nil, err
+				}
+				for _, routeConfig := range routeConfigs {
+					for _, route := range routesFromRouteConfiguration(routeConfig) {
+						for _, clusterName := range clusterNamesFromRouteAction(route.GetRoute()) {
+							clusterNames[clusterName] = struct{}{}
+						}
+					}
+				}
+			case "envoy.filters.network.tcp_proxy":
+				tcpProxy, ok := msg.(*envoy_tcp.TcpProxy)
+				if !ok {
+					continue
+				}
+				if clusterName := tcpProxy.GetCluster(); clusterName != "" {
+					clusterNames[clusterName] = struct{}{}
+				}
+				for _, cluster := range tcpProxy.GetWeightedClusters().GetClusters() {
+					if cluster.GetName() != "" {
+						clusterNames[cluster.GetName()] = struct{}{}
+					}
+				}
+			}
+		}
+	}
+	return clusterNames, nil
+}
+
+func routeConfigurationsFromHCM(
+	hcm *envoy_hcm.HttpConnectionManager,
+	routes map[string]*envoy_route.RouteConfiguration,
+) ([]*envoy_route.RouteConfiguration, error) {
+	switch rs := hcm.RouteSpecifier.(type) {
+	case *envoy_hcm.HttpConnectionManager_Rds:
+		route, ok := routes[rs.Rds.RouteConfigName]
+		if !ok {
+			return nil, nil
+		}
+		return []*envoy_route.RouteConfiguration{route}, nil
+	case *envoy_hcm.HttpConnectionManager_RouteConfig:
+		return []*envoy_route.RouteConfiguration{rs.RouteConfig}, nil
+	default:
+		return nil, errors.Errorf("unexpected RouteSpecifer %T", hcm.RouteSpecifier)
+	}
+}
+
+func routesFromRouteConfiguration(routeConfig *envoy_route.RouteConfiguration) []*envoy_route.Route {
+	var routes []*envoy_route.Route
+	for _, virtualHost := range routeConfig.GetVirtualHosts() {
+		routes = append(routes, virtualHost.GetRoutes()...)
+	}
+	return routes
+}
+
+func clusterNamesFromRouteAction(routeAction *envoy_route.RouteAction) []string {
+	if routeAction == nil {
 		return nil
 	}
-	return rules[0].Compute(subsetutils.MeshElement())
+	if clusterName := routeAction.GetCluster(); clusterName != "" {
+		return []string{clusterName}
+	}
+	var clusterNames []string
+	for _, cluster := range routeAction.GetWeightedClusters().GetClusters() {
+		if cluster.GetName() != "" {
+			clusterNames = append(clusterNames, cluster.GetName())
+		}
+	}
+	return clusterNames
+}
+
+func (p plugin) configureRDS(
+	l *envoy_listener.Listener,
+	routes map[string]*envoy_route.RouteConfiguration,
+	serviceName string,
+	conf *api.Conf,
+) error {
+	if conf == nil || conf.HashPolicies == nil {
+		return nil
+	}
+
+	routeConfigs := []string{}
+	for _, chain := range l.FilterChains {
+		for _, filter := range chain.Filters {
+			if filter.Name != wellknown.HTTPConnectionManager {
+				continue
+			}
+			var hcm *envoy_hcm.HttpConnectionManager
+			if msg, err := filter.GetTypedConfig().UnmarshalNew(); err != nil {
+				return err
+			} else {
+				hcm = msg.(*envoy_hcm.HttpConnectionManager)
+			}
+			rs, ok := hcm.RouteSpecifier.(*envoy_hcm.HttpConnectionManager_Rds)
+			if !ok {
+				return errors.Errorf("unexpected RouteSpecifer %T", hcm.RouteSpecifier)
+			}
+			routeConfigs = append(routeConfigs, rs.Rds.RouteConfigName)
+		}
+	}
+
+	for _, rc := range routeConfigs {
+		route, ok := routes[rc]
+		if !ok {
+			continue
+		}
+		err := NewModifier(route).
+			Configure(routesToService(serviceName, routeConfigurer(rules_outbound.AsResourceContext(*conf)))).
+			Modify()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func routesToService(serviceName string, configurer Configurer[envoy_route.Route]) Configurer[envoy_route.RouteConfiguration] {
+	return func(routeConfig *envoy_route.RouteConfiguration) error {
+		for _, virtualHost := range routeConfig.GetVirtualHosts() {
+			for _, route := range virtualHost.GetRoutes() {
+				if !routeTargetsService(route, serviceName) {
+					continue
+				}
+				if err := NewModifier(route).Configure(configurer).Modify(); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+}
+
+func routeTargetsService(route *envoy_route.Route, serviceName string) bool {
+	clusterNames := clusterNamesFromRouteAction(route.GetRoute())
+	if len(clusterNames) == 0 {
+		return false
+	}
+	for _, clusterName := range clusterNames {
+		if tags.ServiceFromClusterName(clusterName) != serviceName {
+			return false
+		}
+	}
+	return true
 }
 
 func shouldUseLocalityWeightedLb(config api.Conf) bool {

@@ -39,6 +39,6 @@ filterChains:
               cluster: backend
               idleTimeout: 9s
               timeout: 99s
-      statPrefix: outbound_127_0_0_1_10001
-name: outbound:127.0.0.1:10001
+      statPrefix: kri_extsvc_default_zone-1_backend-ns_backend_10001
+name: kri_extsvc_default_zone-1_backend-ns_backend_10001
 trafficDirection: OUTBOUND

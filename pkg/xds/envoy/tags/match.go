@@ -11,7 +11,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_policy "github.com/kumahq/kuma/v3/pkg/core/policy"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -113,24 +112,17 @@ func (t Tags) String() string {
 
 func FromLegacyTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
 	var service string
-	tags := Tags{}
 
 	switch targetRef.Kind {
 	case common_api.MeshService:
-		service = pointer.Deref(targetRef.Name)
-	case common_api.MeshServiceSubset:
-		service = pointer.Deref(targetRef.Name)
-		tags = pointer.Deref(targetRef.Tags)
+		service = pointer.Deref(targetRef.Labels)[mesh_proto.DisplayName]
 	case common_api.Mesh:
 		service = mesh_proto.MatchAllTag
-	case common_api.MeshSubset:
-		service = mesh_proto.MatchAllTag
-		tags = pointer.Deref(targetRef.Tags)
 	default:
 		return nil, false
 	}
 
-	return tags.WithTags(mesh_proto.ServiceTag, service), true
+	return Tags{}.WithTags(mesh_proto.ServiceTag, service), true
 }
 
 type (
@@ -286,12 +278,4 @@ func RegexOR(r ...string) string {
 		return r[0]
 	}
 	return fmt.Sprintf("(%s)", strings.Join(r, "|"))
-}
-
-func MatchSourceRegex(policy core_policy.ConnectionPolicy) string {
-	var selectorRegexs []string
-	for _, selector := range policy.Sources() {
-		selectorRegexs = append(selectorRegexs, MatchingRegex(selector.Match))
-	}
-	return RegexOR(selectorRegexs...)
 }

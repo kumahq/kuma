@@ -160,7 +160,3 @@ func GetMeshClusterName(meshName string, serviceName string) string {
 func GetSecretName(category string, scope string, identifier string) string {
 	return Join(category, scope, identifier)
 }
-
-func GetEgressFilterChainName(serviceName string, meshName string) string {
-	return fmt.Sprintf("%s_%s", serviceName, meshName)
-}

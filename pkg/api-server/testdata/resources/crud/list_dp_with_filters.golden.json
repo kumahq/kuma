@@ -7,6 +7,9 @@
    "name": "dp-1",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
+   "labels": {
+    "kuma.io/service": "my-svc"
+   },
    "kri": "kri_dp_default___dp-1_",
    "networking": {
     "address": "10.1.2.1",
@@ -26,6 +29,9 @@
    "name": "dp-2",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
+   "labels": {
+    "kuma.io/service": "my-svc"
+   },
    "kri": "kri_dp_default___dp-2_",
    "networking": {
     "address": "10.1.2.2",

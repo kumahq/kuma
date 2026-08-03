@@ -68,7 +68,10 @@ var _ = Describe("ComputePolicyRole", func() {
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend", "kuma-demo", ""), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name":  "backend",
+					"k8s.kuma.io/namespace": "kuma-demo",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
@@ -79,7 +82,9 @@ var _ = Describe("ComputePolicyRole", func() {
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend", "", ""), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name": "backend",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
@@ -90,63 +95,39 @@ var _ = Describe("ComputePolicyRole", func() {
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshHTTPRoute("route-1", "kuma-demo"), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshHTTPRouteLabels(map[string]string{
+					"kuma.io/display-name":  "route-1",
+					"k8s.kuma.io/namespace": "kuma-demo",
+				}), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
 			namespace:    resource_labels.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.ProducerPolicyRole,
 		}),
-		Entry("workload-owner policy with from", testCase{
+		Entry("workload-owner policy with rules", testCase{
 			policy: builders.MeshAccessLog().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFrom(builders.TargetRefMesh(), builders.MeshAccessLogConf().
+				AddRule(builders.MeshAccessLogConf().
 					AddBackends(make([]meshaccesslog_api.Backend, 0))).
 				Build().Spec,
 			namespace:    resource_labels.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.WorkloadOwnerPolicyRole,
 		}),
-		Entry("workload-owner policy with both from and to", testCase{
-			policy: builders.MeshAccessLog().
-				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMesh(), builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				AddFrom(builders.TargetRefMesh(), builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				Build().Spec,
-			namespace:   resource_labels.NewNamespace("kuma-demo", false),
-			expectedErr: "it's not allowed to mix 'to' and 'from' arrays in the same policy",
-		}),
-		Entry("consumer policy with from", testCase{
-			policy: builders.MeshAccessLog().
-				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend", "backend-ns", ""), builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				AddFrom(builders.TargetRefMesh(), builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				Build().Spec,
-			namespace:   resource_labels.NewNamespace("kuma-demo", false),
-			expectedErr: "it's not allowed to mix 'to' and 'from' arrays in the same policy",
-		}),
-		Entry("system policy with both from and to", testCase{
-			policy: builders.MeshAccessLog().
-				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMesh(), builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				AddFrom(builders.TargetRefMesh(), builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				Build().Spec,
-			namespace:    resource_labels.NewNamespace("kuma-system", true),
-			expectedRole: mesh_proto.SystemPolicyRole,
-		}),
 		Entry("policy with consumer and producer to-items", testCase{
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend-1", "backend-1-ns", ""), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name":  "backend-1",
+					"k8s.kuma.io/namespace": "backend-1-ns",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
-				AddTo(builders.TargetRefMeshService("backend-2", "backend-2-ns", ""), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name":  "backend-2",
+					"k8s.kuma.io/namespace": "backend-2-ns",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,

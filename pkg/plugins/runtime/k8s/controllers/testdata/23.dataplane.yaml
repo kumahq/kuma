@@ -17,12 +17,3 @@ spec:
         ready: true
       port: 7070
       protocol: http
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: example
-        k8s.kuma.io/service-port: "80"
-        kuma.io/protocol: http
-        kuma.io/service: example_demo_svc_80
-        kuma.io/zone: zone-1
-        version: "0.1"

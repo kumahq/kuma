@@ -3,13 +3,18 @@ package samples
 import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 )
 
+// DataplaneBackendBuilder carries the kuma.io/workload label matching
+// MeshServiceBackendBuilder's label selector, so the two samples still
+// pair up now that MeshService selection is labels-only.
 func DataplaneBackendBuilder() *builders.DataplaneBuilder {
 	return builders.Dataplane().
 		WithAddress("192.168.0.1").
-		WithServices("backend")
+		WithServices("backend").
+		WithLabels(map[string]string{metadata.KumaWorkload: "backend"})
 }
 
 func DataplaneBackend() *mesh.DataplaneResource {
@@ -21,6 +26,7 @@ func DataplaneWebBuilder() *builders.DataplaneBuilder {
 		WithName("web-01").
 		WithAddress("192.168.0.2").
 		WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+		WithLabels(map[string]string{metadata.KumaWorkload: "web"}).
 		AddOutboundToService("backend")
 }
 

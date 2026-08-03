@@ -5,11 +5,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: 2-my-policy
   spec:
-    from:
+    rules:
     - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
+        allow:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Mesh
   type: MeshTrafficPermission
@@ -19,11 +20,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: 1-my-policy
   spec:
-    from:
+    rules:
     - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
+        allow:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Mesh
   type: MeshTrafficPermission
@@ -33,11 +35,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: my-policy-2
   spec:
-    from:
+    rules:
     - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
+        allow:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Dataplane
       labels:
@@ -49,11 +52,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: my-policy-1
   spec:
-    from:
+    rules:
     - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
+        allow:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Dataplane
       labels:
@@ -65,11 +69,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: bbb
   spec:
-    from:
+    rules:
     - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
+        allow:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Dataplane
       labels:
@@ -82,11 +87,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: aaa
   spec:
-    from:
+    rules:
     - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
+        allow:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Dataplane
       labels:
@@ -99,11 +105,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: "222"
   spec:
-    from:
+    rules:
     - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
+        allow:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Dataplane
       labels:
@@ -115,11 +122,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: "111"
   spec:
-    from:
+    rules:
     - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
+        allow:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://mesh-1
     targetRef:
       kind: Dataplane
       labels:

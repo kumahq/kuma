@@ -169,9 +169,13 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 func (s *Server) Start(stop <-chan struct{}) error {
 	defer close(s.componentDone)
 
-	servers := make([]*dns.Server, len(s.addresses))
-	for i, addr := range s.addresses {
-		servers[i] = &dns.Server{Addr: addr, Handler: dns.HandlerFunc(s.Handler), Net: "udp"}
+	// Bind both UDP and TCP: resolvers retry over TCP after a truncated UDP
+	// response, and some clients query DNS over TCP directly.
+	servers := make([]*dns.Server, 0, len(s.addresses)*2)
+	for _, addr := range s.addresses {
+		for _, netProto := range []string{"udp", "tcp"} {
+			servers = append(servers, &dns.Server{Addr: addr, Handler: dns.HandlerFunc(s.Handler), Net: netProto})
+		}
 	}
 
 	errCh := make(chan error, len(servers))
@@ -275,7 +279,7 @@ func (s *Server) WaitForReady() {
 
 // ConfigReady returns a channel that is closed once the first DNS configuration
 // has been successfully loaded from Envoy. Use this to gate readiness on DNS
-// proxy being fully initialized, not just the UDP servers being up.
+// proxy being fully initialized, not just the listeners being up.
 func (s *Server) ConfigReady() <-chan struct{} {
 	return s.configReady
 }

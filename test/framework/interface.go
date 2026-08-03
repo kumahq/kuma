@@ -10,7 +10,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/v3/test/framework/kumactl"
 )
 
@@ -29,31 +28,27 @@ type kumaDeploymentOptions struct {
 	verbose *bool
 
 	// cp specific
-	ctlOpts                     map[string]string
-	globalAddress               string
-	installationMode            InstallationMode
-	skipDefaultMesh             bool
-	helmReleaseName             string
-	helmChartPath               *string
-	helmChartVersion            string
-	helmOpts                    map[string]string
-	helmOptsExcluded            []string
-	env                         map[string]string
-	zoneIngress                 bool
-	zoneIngressEnvoyAdminTunnel bool
-	zoneEgress                  bool
-	zoneEgressEnvoyAdminTunnel  bool
-	cni                         bool
-	cniNamespace                string
-	cpReplicas                  int
-	hdsDisabled                 bool
-	runPostgresMigration        bool
-	yamlConfig                  string
-	apiHeaders                  []string
-	zoneName                    string
-	verifyKuma                  bool
-	setupKumactl                bool
-	memory                      string
+	ctlOpts              map[string]string
+	globalAddress        string
+	installationMode     InstallationMode
+	skipDefaultMesh      bool
+	helmReleaseName      string
+	helmChartPath        *string
+	helmChartVersion     string
+	helmOpts             map[string]string
+	helmOptsExcluded     []string
+	env                  map[string]string
+	cni                  bool
+	cniNamespace         string
+	cpReplicas           int
+	hdsDisabled          bool
+	runPostgresMigration bool
+	yamlConfig           string
+	apiHeaders           []string
+	zoneName             string
+	verifyKuma           bool
+	setupKumactl         bool
+	memory               string
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -117,7 +112,6 @@ type appDeploymentOptions struct {
 	omitDataplane         bool
 	proxyOnly             bool
 	serviceProbe          bool
-	reachableServices     []string
 	reachableBackends     string
 	appendDataplaneConfig string
 	boundToContainerIp    bool
@@ -127,6 +121,7 @@ type appDeploymentOptions struct {
 	bindOutbounds         bool
 	labels                map[string]string
 	workload              string
+	omitWorkloadLabel     bool
 	spireAgent            bool
 	spireAgentToken       string
 	spireServerAddress    string
@@ -298,36 +293,12 @@ func WithYamlConfig(cfg string) KumaDeploymentOption {
 	})
 }
 
-func WithIngressEnvoyAdminTunnel() KumaDeploymentOption {
-	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		o.zoneIngressEnvoyAdminTunnel = true
-	})
-}
-
-func WithIngress() KumaDeploymentOption {
-	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		o.zoneIngress = true
-	})
-}
-
-func WithEgressEnvoyAdminTunnel() KumaDeploymentOption {
-	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		o.zoneEgressEnvoyAdminTunnel = true
-	})
-}
-
 type CNIVersion string
 
 const (
 	CNIVersion1 CNIVersion = "v1"
 	CNIVersion2 CNIVersion = "v2"
 )
-
-func WithEgress() KumaDeploymentOption {
-	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		o.zoneEgress = true
-	})
-}
 
 func WithCNI() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
@@ -586,12 +557,6 @@ func WithConcurrency(concurrency int) AppDeploymentOption {
 	})
 }
 
-func WithReachableServices(services ...string) AppDeploymentOption {
-	return AppOptionFunc(func(o *appDeploymentOptions) {
-		o.reachableServices = services
-	})
-}
-
 // WithReachableBackends sets networking.transparentProxying.reachableBackends
 // on the Dataplane. The config is the YAML body under reachableBackends (e.g. a
 // `refs:` list of MeshService references). Only applies with transparent proxy.
@@ -632,6 +597,12 @@ func WithWorkload(workload string) AppDeploymentOption {
 	})
 }
 
+func WithoutWorkloadLabel() AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.omitWorkloadLabel = true
+	})
+}
+
 type NamespaceDeleteHookFunc func(c Cluster, namespace string) error
 
 type Deployment interface {
@@ -657,8 +628,6 @@ type Cluster interface {
 	DeleteDeployment(name string) error
 	WithTimeout(timeout time.Duration) Cluster
 	WithRetries(retries int) Cluster
-	GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel
-	GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel
 	Verbose() bool
 	Install(fn InstallFunc) error
 	ZoneName() string
@@ -684,8 +653,6 @@ type ControlPlane interface {
 	GetXDSServerAddress() string
 	GetAPIServerAddress() string
 	GenerateDpToken(mesh, serviceName, workload string) (string, error)
-	GenerateZoneIngressToken(zone string) (string, error)
-	GenerateZoneEgressToken(zone string) (string, error)
 	GenerateZoneToken(zone string, scope []string) (string, error)
 	Exec(cmd ...string) (string, string, error)
 }

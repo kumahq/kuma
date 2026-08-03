@@ -44,6 +44,23 @@ app: {{ include "kuma.mesh.zoneproxy.name" . }}
 {{- end -}}
 
 {{/*
+Resolve a scalar setting for a per-mesh zone proxy component.
+An override on meshes[].ingress.<field> / meshes[].egress.<field> wins over
+the chart-level default at .Values.meshZoneProxyDefaults.<role>.<field>. The
+override is detected by presence rather than truthiness, so an explicit
+false or 0 is honoured.
+params: { cfg: <map holding the override>, defaults: <meshZoneProxyDefaults.<role>>, field: string }
+*/}}
+{{- define "kuma.mesh.zoneproxy.setting" -}}
+{{- $override := index (.cfg | default dict) .field -}}
+{{- if kindIs "invalid" $override -}}
+{{- index .defaults .field -}}
+{{- else -}}
+{{- $override -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Resolve the pause container image for a per-mesh zone proxy component.
 Per-field override on meshes[].ingress.image / meshes[].egress.image falls
 back to the chart-level default at .Values.zoneProxyImage so users enabling

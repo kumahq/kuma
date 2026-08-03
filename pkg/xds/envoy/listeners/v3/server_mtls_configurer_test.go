@@ -31,7 +31,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			tracker := envoy_common.NewSecretsTracker(given.mesh.GetMeta().GetName(), nil)
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(ServerSideMTLS(given.mesh, tracker, nil, nil, false, false)).
+					Configure(ServerSideMTLS(given.mesh, tracker, nil, nil, false)).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
 				Build()
 			// then
@@ -88,12 +88,12 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                             prefix: spiffe://default/
                           sanType: URI
                       validationContextSdsSecretConfig:
-                        name: mesh_ca:secret:default
+                        name: system_mtls_ca_default
                         sdsConfig:
                           ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert:secret:default
+                    - name: system_mtls_identity_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
@@ -147,12 +147,12 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                             prefix: spiffe://default/
                           sanType: URI
                       validationContextSdsSecretConfig:
-                        name: mesh_ca:secret:default
+                        name: system_mtls_ca_default
                         sdsConfig:
                           ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert:secret:default
+                    - name: system_mtls_identity_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3

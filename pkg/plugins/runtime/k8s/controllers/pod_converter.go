@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"reflect"
-	"regexp"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -25,10 +24,7 @@ import (
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
-var (
-	converterLog          = core.Log.WithName("discovery").WithName("k8s").WithName("pod-to-dataplane-converter")
-	metricsAggregateRegex = regexp.MustCompile(metadata.KumaMetricsPrometheusAggregatePattern)
-)
+var converterLog = core.Log.WithName("discovery").WithName("k8s").WithName("pod-to-dataplane-converter")
 
 type PodConverter struct {
 	NodeGetter        kube_client.Reader
@@ -60,14 +56,9 @@ func (p *PodConverter) PodToDataplane(
 	}
 	// we need to validate if the labels have changed
 	workloadName := computeWorkloadName(pod.Labels, p.WorkloadLabels, pod.Spec.ServiceAccountName)
-	// Copy the allow-listed node labels onto the Dataplane labels, the same set
-	// that lands on inbound tags.
-	var nodeLabels map[string]string
-	if p.InboundConverter.InboundTagsDisabled {
-		nodeLabels, err = p.InboundConverter.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
-		if err != nil {
-			return err
-		}
+	nodeLabels, err := p.InboundConverter.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
+	if err != nil {
+		return err
 	}
 
 	labels, err := resource_labels.Compute(
@@ -228,10 +219,6 @@ func (p *PodConverter) dataplaneFor(
 			tp.DirectAccessServices = v
 		}
 
-		if v, exist := annotations.GetList(metadata.KumaTransparentProxyingReachableServicesAnnotation); exist {
-			tp.ReachableServices = v
-		}
-
 		if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
 			var refs ReachableBackendRefs
 			if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
@@ -279,7 +266,6 @@ func (p *PodConverter) dataplaneFor(
 	// Avoid setting an empty TransparentProxying object by checking if any fields are set.
 	// Only assign it if at least one relevant field has a non-zero or non-nil value.
 	if tp.DirectAccessServices != nil ||
-		tp.ReachableServices != nil ||
 		tp.ReachableBackends != nil ||
 		tp.RedirectPortInbound != 0 ||
 		tp.RedirectPortOutbound != 0 ||
@@ -293,13 +279,13 @@ func (p *PodConverter) dataplaneFor(
 	if exist {
 		switch gwType {
 		case "enabled":
-			gateway, err := p.GatewayByServiceFor(ctx, p.Zone, pod, services)
+			gateway, err := p.GatewayByServiceFor(ctx, pod, services)
 			if err != nil {
 				return nil, err
 			}
 			dataplane.Networking.Gateway = gateway
 		case "provided":
-			gateway, err := p.GatewayByDeploymentFor(ctx, p.Zone, pod, services)
+			gateway, err := p.GatewayByDeploymentFor(ctx, pod, services)
 			if err != nil {
 				return nil, err
 			}
@@ -321,28 +307,7 @@ func (p *PodConverter) dataplaneFor(
 		// (has zone proxy services but no regular services) to avoid the
 		// serviceless inbound fallback in InboundInterfacesFor.
 		if len(regularServices) > 0 || len(zoneProxyServices) == 0 {
-			var ifaces []*mesh_proto.Dataplane_Networking_Inbound
-			var err error
-			// Deduplicating inbounds by address:port is only safe when inbound
-			// tags are disabled: identity and MeshService matching then rely on
-			// the workload rather than per-service inbound tags, so collapsing
-			// several services that select the same port loses nothing. When
-			// inbound tags are enabled each service produces a distinctly tagged
-			// inbound with its own Ready/Ignored state; deduplication would drop
-			// one of them (e.g. keep an Ignored inbound over a Ready one), so we
-			// keep every inbound like the tagged path does.
-			if p.InboundConverter.InboundTagsDisabled {
-				ifaces, err = p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, regularServices)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				ifaces, err = p.InboundConverter.LegacyInboundInterfacesFor(ctx, p.Zone, pod, regularServices)
-				if err != nil {
-					return nil, err
-				}
-			}
-			dataplane.Networking.Inbound = ifaces
+			dataplane.Networking.Inbound = p.InboundConverter.InboundInterfacesFor(pod, regularServices)
 		}
 
 		// portSvc tracks which service already claimed each address:port to produce
@@ -386,12 +351,6 @@ func (p *PodConverter) dataplaneFor(
 		}
 	}
 
-	metrics, err := MetricsFor(pod)
-	if err != nil {
-		return nil, err
-	}
-	dataplane.Metrics = metrics
-
 	probes, err := ProbesFor(pod)
 	if err != nil {
 		return nil, err
@@ -409,110 +368,26 @@ func (p *PodConverter) dataplaneFor(
 	return dataplane, nil
 }
 
-func (p *PodConverter) GatewayByServiceFor(ctx context.Context, clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
-	interfaces, err := p.InboundConverter.LegacyInboundInterfacesFor(ctx, clusterName, pod, services)
-	if err != nil {
-		return nil, err
-	}
+func (p *PodConverter) GatewayByServiceFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
 	return &mesh_proto.Dataplane_Networking_Gateway{
 		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-		Tags: interfaces[0].Tags,
+		Tags: map[string]string{},
 	}, nil
 }
 
-func (p *PodConverter) GatewayByDeploymentFor(ctx context.Context, clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
+func (p *PodConverter) GatewayByDeploymentFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
 	namespace := pod.GetObjectMeta().GetNamespace()
 	deployment, kind, err := p.InboundConverter.NameExtractor.Name(ctx, pod)
 	if err != nil {
 		return nil, err
 	}
 	if kind != "Deployment" {
-		return p.GatewayByServiceFor(ctx, clusterName, pod, services)
+		return p.GatewayByServiceFor(ctx, pod, services)
 	}
 	return &mesh_proto.Dataplane_Networking_Gateway{
 		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
 		Tags: map[string]string{"kuma.io/service-name": fmt.Sprintf("%s_%s_svc", deployment, namespace)},
 	}, nil
-}
-
-func MetricsFor(pod *kube_core.Pod) (*mesh_proto.MetricsBackend, error) {
-	path, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaMetricsPrometheusPath)
-	port, exist, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaMetricsPrometheusPort)
-	if err != nil {
-		return nil, err
-	}
-
-	aggregate, err := MetricsAggregateFor(pod)
-	if err != nil {
-		return nil, err
-	}
-	if path == "" && !exist && aggregate == nil {
-		return nil, nil
-	}
-	cfg := &mesh_proto.PrometheusMetricsBackendConfig{
-		Path:      path,
-		Port:      port,
-		Aggregate: aggregate,
-	}
-
-	str, err := util_proto.ToStruct(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return &mesh_proto.MetricsBackend{
-		Type: mesh_proto.MetricsPrometheusType,
-		Conf: str,
-	}, nil
-}
-
-func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateMetricsConfig, error) {
-	aggregateConfigNames := make(map[string]bool)
-	for key := range pod.Annotations {
-		matchedGroups := metricsAggregateRegex.FindStringSubmatch(key)
-		if len(matchedGroups) == 3 {
-			// first group is service name and second one of (port|path|enabled)
-			aggregateConfigNames[matchedGroups[1]] = true
-		}
-	}
-	if len(aggregateConfigNames) == 0 {
-		return nil, nil
-	}
-
-	var aggregateConfig []*mesh_proto.PrometheusAggregateMetricsConfig
-	for app := range aggregateConfigNames {
-		enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(fmt.Sprintf(metadata.KumaMetricsPrometheusAggregateEnabled, app))
-		if err != nil {
-			return nil, err
-		}
-		if exist && !enabled {
-			enabled = false
-		} else {
-			enabled = true
-		}
-		path, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault("/metrics", fmt.Sprintf(metadata.KumaMetricsPrometheusAggregatePath, app))
-
-		address, addressExists := metadata.Annotations(pod.Annotations).GetString(fmt.Sprintf(metadata.KumaMetricsPrometheusAggregateAddress, app))
-
-		port, portExist, err := metadata.Annotations(pod.Annotations).GetUint32(fmt.Sprintf(metadata.KumaMetricsPrometheusAggregatePort, app))
-		if err != nil {
-			return nil, err
-		}
-		if !portExist && enabled {
-			return nil, errors.New("port needs to be specified for metrics scraping")
-		}
-
-		config := &mesh_proto.PrometheusAggregateMetricsConfig{
-			Name:    app,
-			Path:    path,
-			Port:    port,
-			Enabled: util_proto.Bool(enabled),
-		}
-		if addressExists {
-			config.Address = address
-		}
-		aggregateConfig = append(aggregateConfig, config)
-	}
-	return aggregateConfig, nil
 }
 
 func mergeLabels(existingLabels map[string]string, labelSets ...map[string]string) map[string]string {

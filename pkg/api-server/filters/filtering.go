@@ -106,7 +106,7 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 					return false
 				}
 
-				if !dataplane.Spec.MatchTagsFuzzy(tags) {
+				if !dataplane.Spec.MatchTagsFuzzy(tags) && !mesh_proto.TagSelector(tags).MatchesFuzzy(dataplane.GetMeta().GetLabels()) {
 					return false
 				}
 

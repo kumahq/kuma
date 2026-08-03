@@ -28,7 +28,10 @@ func GenerateEndpoints(
 
 		internalService := !ctx.Mesh.IsExternalService(serviceName)
 		meshExternalService := isMeshExternalService(meshCtx.EndpointMap[serviceName])
-		externalServiceThroughEgress := ctx.Mesh.IsExternalService(serviceName) && !meshExternalService && meshCtx.Resource.ZoneEgressEnabled()
+		externalServiceThroughEgress := ctx.Mesh.IsExternalService(serviceName) &&
+			!meshExternalService &&
+			meshCtx.Resource.MTLSEnabled() &&
+			len(meshCtx.ZoneEgresses) > 0
 		if internalService || meshExternalService || externalServiceThroughEgress {
 			for _, cluster := range service.Clusters() {
 				var endpoints core_xds.EndpointMap

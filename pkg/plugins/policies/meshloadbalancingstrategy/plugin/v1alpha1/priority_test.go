@@ -11,7 +11,7 @@ import (
 )
 
 var _ = Describe("GetLocalityGroups()", func() {
-	Describe("label fallback when inbound tags are disabled", func() {
+	Describe("label fallback when inbound tags are absent", func() {
 		It("should build local lb groups from pod labels when inbound tags are absent", func() {
 			// given: configuration with a single affinity tag
 			conf := &api.Conf{
@@ -24,7 +24,7 @@ var _ = Describe("GetLocalityGroups()", func() {
 				},
 			}
 
-			// given: no inbound tags (simulates KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED)
+			// given: no inbound tags (tag-free mode)
 			var inboundTags mesh_proto.MultiValueTagSet
 
 			// given: pod labels carry the affinity key

@@ -8,7 +8,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       rules:
         - matches:
             - path:
@@ -17,7 +18,8 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: backend
+                labels:
+                  kuma.io/display-name: backend
                 weight: 100
 ---
 # First MeshTimeout policy targeting the MeshHTTPRoute
@@ -28,7 +30,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: http-route-1
+        labels:
+          kuma.io/display-name: http-route-1
       default:
         connectionTimeout: 1s
         http:
@@ -46,7 +49,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: http-route-1
+        labels:
+          kuma.io/display-name: http-route-1
       default:
         connectionTimeout: 2s
         idleTimeout: 30s
@@ -74,7 +78,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         connectionTimeout: 5s
         http:
@@ -83,6 +88,8 @@ spec:
 type: MeshService
 name: backend
 mesh: mesh-1
+labels:
+  kuma.io/display-name: backend
 spec:
   selector:
     dataplaneTags:

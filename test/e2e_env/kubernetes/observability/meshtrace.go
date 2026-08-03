@@ -49,8 +49,16 @@ func PluginTest() {
 			Install(NamespaceWithSidecarInjection(ns)).
 			Install(MeshKubernetes(mesh)).
 			Install(Parallel(
-				democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh)),
-				testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(ns)),
+				democlient.Install(
+					democlient.WithNamespace(ns),
+					democlient.WithMesh(mesh),
+					democlient.WithPodLabels(map[string]string{"app.kubernetes.io/name": "demo-client"}),
+				),
+				testserver.Install(
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(ns),
+					testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server"}),
+				),
 				obs.Install(obsDeployment, obs.WithNamespace(obsNs)),
 			)).
 			Setup(kubernetes.Cluster)
@@ -82,9 +90,9 @@ func PluginTest() {
 			srvs, err := obsClient.TracedServices()
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(srvs).To(ContainElements([]string{
-				fmt.Sprintf("demo-client_%s_svc", ns),
+				"demo-client",
 				"jaeger-all-in-one",
-				fmt.Sprintf("test-server_%s_svc_80", ns),
+				"test-server",
 			}))
 		}, "30s", "1s").Should(Succeed())
 	})

@@ -5,7 +5,8 @@ mesh: mesh-1
 spec:
   targetRef:
     kind: Dataplane
-    name: backend-dp
+    labels:
+      kuma.io/service: backend-dp
   to:
     - targetRef:
         kind: Mesh

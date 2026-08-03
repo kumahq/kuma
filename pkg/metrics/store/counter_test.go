@@ -113,7 +113,7 @@ var _ = Describe("Counter", func() {
 			builders.MeshTrafficPermission().
 				WithMesh("mesh-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFrom(builders.TargetRefMesh(), mtp_proto.Allow).
+				AddRule(mtp_proto.Allow).
 				Build(),
 			core_store.CreateByKey("mtp-1", "mesh-1"),
 		)
@@ -127,7 +127,7 @@ var _ = Describe("Counter", func() {
 			builders.MeshTrafficPermission().
 				WithMesh("mesh-2").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFrom(builders.TargetRefMesh(), mtp_proto.Allow).
+				AddRule(mtp_proto.Allow).
 				Build(),
 			core_store.CreateByKey("mtp-2", "mesh-2"),
 		)

@@ -181,13 +181,13 @@ spec:
     kind: Dataplane
     labels:
       kuma.io/service: test-server
-  from:
-    - targetRef:
-        kind: MeshService
-        name: demo-client
-      default:
-        action: Allow
-`, meshName)
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://%s/demo-client
+`, meshName, meshName)
 			Expect(universal.Cluster.Install(YamlUniversal(perm))).To(Succeed())
 
 			By("Can access test-server again")

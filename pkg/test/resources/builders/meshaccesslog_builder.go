@@ -39,10 +39,9 @@ func (m *MeshAccessLogBuilder) WithTargetRef(targetRef common_api.TargetRef) *Me
 	return m
 }
 
-func (m *MeshAccessLogBuilder) AddFrom(targetRef common_api.TargetRef, conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
-	m.res.Spec.From = pointer.To(append(pointer.Deref(m.res.Spec.From), meshaccesslog_proto.From{
-		TargetRef: targetRef,
-		Default:   conf.res,
+func (m *MeshAccessLogBuilder) AddRule(conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
+	m.res.Spec.Rules = pointer.To(append(pointer.Deref(m.res.Spec.Rules), meshaccesslog_proto.Rule{
+		Default: conf.res,
 	}))
 	return m
 }

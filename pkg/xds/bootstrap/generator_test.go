@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	. "github.com/kumahq/kuma/v3/pkg/xds/bootstrap"
@@ -79,17 +81,7 @@ var _ = Describe("bootstrapGenerator", func() {
 	BeforeEach(func() {
 		// when
 		err := resManager.Create(context.Background(), &core_mesh.MeshResource{
-			Spec: &mesh_proto.Mesh{
-				Metrics: &mesh_proto.Metrics{
-					EnabledBackend: "prometheus-1",
-					Backends: []*mesh_proto.MetricsBackend{
-						{
-							Name: "prometheus-1",
-							Type: mesh_proto.MetricsPrometheusType,
-						},
-					},
-				},
-			},
+			Spec: &mesh_proto.Mesh{},
 		}, store.CreateByKey("mesh", model.NoMesh))
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -108,10 +100,11 @@ var _ = Describe("bootstrapGenerator", func() {
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			err := resManager.Create(context.Background(), given.dataplane(), store.CreateByKey("name.namespace", "mesh"))
+			err := resManager.Create(context.Background(), given.dataplane(), store.CreateByKey("name.namespace", "mesh"),
+				store.CreateWithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}))
 			Expect(err).ToNot(HaveOccurred())
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -252,6 +245,9 @@ var _ = Describe("bootstrapGenerator", func() {
   "name": "name.namespace",
   "creationTime": "1970-01-01T00:00:00Z",
   "modificationTime": "1970-01-01T00:00:00Z",
+  "labels": {
+    "kuma.io/workload": "backend"
+  },
   "networking": {
     "address": "127.0.0.1",
     "inbound": [
@@ -321,41 +317,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.default-config.kubernetes.ipv6.golden.yaml",
 			hdsEnabled:         false,
 		}),
-		Entry("default config, kubernetes with application metrics", testCase{
-			dpAuthForProxyType: authEnabled,
-			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
-				cfg := bootstrap_config.DefaultBootstrapServerConfig()
-				cfg.Params.XdsHost = "localhost"
-				cfg.Params.XdsPort = 5678
-				return cfg
-			}(),
-			dataplane: func() *core_mesh.DataplaneResource {
-				dp := defaultDataplane()
-				dp.Spec.Networking.Admin.Port = 1234
-				dp.Spec.Metrics = &mesh_proto.MetricsBackend{
-					Type: mesh_proto.MetricsPrometheusType,
-					Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-						Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
-							{
-								Name: "app1",
-								Port: 123,
-								Path: "/stats",
-							},
-						},
-					}),
-				}
-				return dp
-			},
-			request: types.BootstrapRequest{
-				Mesh:           "mesh",
-				Name:           "name.namespace",
-				DataplaneToken: "token",
-				Version:        defaultVersion,
-				Workdir:        "/tmp",
-			},
-			expectedConfigFile: "generator.metrics-config.kubernetes.golden.yaml",
-			hdsEnabled:         false,
-		}),
 		Entry("default config, kubernetes with custom system ca path", testCase{
 			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
@@ -367,18 +328,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			dataplane: func() *core_mesh.DataplaneResource {
 				dp := defaultDataplane()
 				dp.Spec.Networking.Admin.Port = 1234
-				dp.Spec.Metrics = &mesh_proto.MetricsBackend{
-					Type: mesh_proto.MetricsPrometheusType,
-					Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-						Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
-							{
-								Name: "app1",
-								Port: 123,
-								Path: "/stats",
-							},
-						},
-					}),
-				}
 				return dp
 			},
 			request: types.BootstrapRequest{
@@ -473,6 +422,91 @@ var _ = Describe("bootstrapGenerator", func() {
 		}),
 	)
 
+	It("should use the workload label as cluster identity when inbound tags are empty", func() {
+		// given
+		dp := defaultDataplane()
+		dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
+		err := resManager.Create(
+			context.Background(),
+			dp,
+			store.CreateByKey("name.namespace", "mesh"),
+			store.CreateWithLabels(map[string]string{
+				k8s_metadata.KumaWorkload: "backend-workload",
+			}),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		cfg := bootstrap_config.DefaultBootstrapServerConfig()
+		cfg.Params.XdsHost = "localhost"
+		cfg.Params.XdsPort = 5678
+		generator, err := NewDefaultBootstrapGenerator(
+			resManager,
+			cfg,
+			filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			map[string]bool{},
+			false,
+			false,
+			0,
+			false,
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		bootstrapConfig, _, err := generator.Generate(context.Background(), types.BootstrapRequest{
+			Mesh:    "mesh",
+			Name:    "name.namespace",
+			Version: defaultVersion,
+			Workdir: "/tmp",
+		})
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		envoyBootstrap, ok := bootstrapConfig.(*envoy_bootstrap_v3.Bootstrap)
+		Expect(ok).To(BeTrue())
+		Expect(envoyBootstrap.GetNode().GetCluster()).To(Equal("backend-workload"))
+	})
+
+	It("should use unknown service as cluster identity when inbound tags and workload label are empty", func() {
+		// given
+		dp := defaultDataplane()
+		dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
+		err := resManager.Create(
+			context.Background(),
+			dp,
+			store.CreateByKey("name.namespace", "mesh"),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		cfg := bootstrap_config.DefaultBootstrapServerConfig()
+		cfg.Params.XdsHost = "localhost"
+		cfg.Params.XdsPort = 5678
+		generator, err := NewDefaultBootstrapGenerator(
+			resManager,
+			cfg,
+			filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			map[string]bool{},
+			false,
+			false,
+			0,
+			false,
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		bootstrapConfig, _, err := generator.Generate(context.Background(), types.BootstrapRequest{
+			Mesh:    "mesh",
+			Name:    "name.namespace",
+			Version: defaultVersion,
+			Workdir: "/tmp",
+		})
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		envoyBootstrap, ok := bootstrapConfig.(*envoy_bootstrap_v3.Bootstrap)
+		Expect(ok).To(BeTrue())
+		Expect(envoyBootstrap.GetNode().GetCluster()).To(Equal(mesh_proto.ServiceUnknown))
+	})
+
 	type errTestCase struct {
 		request  types.BootstrapRequest
 		expected string
@@ -485,7 +519,7 @@ var _ = Describe("bootstrapGenerator", func() {
 
 			cfg := bootstrap_config.DefaultBootstrapServerConfig()
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901, false, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -541,211 +575,4 @@ w/vjIriD0mGwwccxbojmEHq4rO4ZrjQNmwvOgxoL2dTm/L9Smr6RXmIgu/0Pnrlq
 Provide CA that was used to sign a certificate used in the control plane by using 'kuma-dp run --ca-cert-file=file' or via KUMA_CONTROL_PLANE_CA_CERT_FILE`,
 		}),
 	)
-
-	It("should override configuration from Mesh", func() {
-		// given
-		err := resManager.Create(context.Background(), &core_mesh.MeshResource{
-			Spec: &mesh_proto.Mesh{
-				Metrics: &mesh_proto.Metrics{
-					EnabledBackend: "prometheus-1",
-					Backends: []*mesh_proto.MetricsBackend{
-						{
-							Name: "prometheus-1",
-							Type: mesh_proto.MetricsPrometheusType,
-							Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-								Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
-									{
-										Name: "opa",
-										Port: 123,
-										Path: "/mesh/config",
-									},
-									{
-										Name: "dp-disabled",
-										Port: 999,
-										Path: "/stats/default",
-									},
-								},
-							}),
-						},
-					},
-				},
-			},
-		}, store.CreateByKey("metrics", model.NoMesh))
-		Expect(err).ToNot(HaveOccurred())
-
-		// and
-		dataplane := &core_mesh.DataplaneResource{
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: "8.8.8.8",
-					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-						{
-							Port:        443,
-							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
-						},
-					},
-					TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-						RedirectPortInbound:  12345,
-						RedirectPortOutbound: 12346,
-					},
-					Admin: &mesh_proto.EnvoyAdmin{},
-				},
-				Metrics: &mesh_proto.MetricsBackend{
-					Type: mesh_proto.MetricsPrometheusType,
-					Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-						Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
-							{
-								Name:    "dp-disabled",
-								Enabled: util_proto.Bool(false),
-							},
-							{
-								Name: "app",
-								Port: 12,
-								Path: "/dp/override",
-							},
-						},
-					}),
-				},
-			},
-		}
-
-		config := func() *bootstrap_config.BootstrapServerConfig {
-			cfg := bootstrap_config.DefaultBootstrapServerConfig()
-			cfg.Params.XdsHost = "localhost"
-			cfg.Params.XdsPort = 5678
-			return cfg
-		}
-
-		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
-		Expect(err).ToNot(HaveOccurred())
-
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, false, false)
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		bootstrapConfig, configParam, err := generator.Generate(context.Background(), types.BootstrapRequest{
-			Mesh:           "metrics",
-			Name:           "name.namespace",
-			DataplaneToken: "token",
-			Version:        defaultVersion,
-		})
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// and config is as expected
-		_, err = util_proto.ToYAML(bootstrapConfig)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(configParam.AggregateMetricsConfig).To(ContainElements([]AggregateMetricsConfig{
-			{
-				Address: "8.8.8.8",
-				Name:    "opa",
-				Path:    "/mesh/config",
-				Port:    123,
-			},
-			{
-				Address: "8.8.8.8",
-				Name:    "app",
-				Path:    "/dp/override",
-				Port:    12,
-			},
-		}))
-	})
-
-	It("should take configuration from Mesh when service do not define", func() {
-		// given
-		err := resManager.Create(context.Background(), &core_mesh.MeshResource{
-			Spec: &mesh_proto.Mesh{
-				Metrics: &mesh_proto.Metrics{
-					EnabledBackend: "prometheus-1",
-					Backends: []*mesh_proto.MetricsBackend{
-						{
-							Name: "prometheus-1",
-							Type: mesh_proto.MetricsPrometheusType,
-							Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-								Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
-									{
-										Name: "opa",
-										Port: 123,
-										Path: "/mesh/opa",
-									},
-									{
-										Name: "app",
-										Port: 999,
-										Path: "/mesh/app",
-									},
-								},
-							}),
-						},
-					},
-				},
-			},
-		}, store.CreateByKey("metrics", model.NoMesh))
-		Expect(err).ToNot(HaveOccurred())
-
-		// and
-		dataplane := &core_mesh.DataplaneResource{
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: "8.8.8.8",
-					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-						{
-							Port:        443,
-							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
-						},
-					},
-					Admin: &mesh_proto.EnvoyAdmin{},
-				},
-			},
-		}
-
-		config := func() *bootstrap_config.BootstrapServerConfig {
-			cfg := bootstrap_config.DefaultBootstrapServerConfig()
-			cfg.Params.XdsHost = "localhost"
-			cfg.Params.XdsPort = 5678
-			return cfg
-		}
-
-		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
-		Expect(err).ToNot(HaveOccurred())
-
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, false, false)
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		bootstrapConfig, configParam, err := generator.Generate(context.Background(), types.BootstrapRequest{
-			Mesh:           "metrics",
-			Name:           "name.namespace",
-			DataplaneToken: "token",
-			Version:        defaultVersion,
-			Workdir:        "/tmp",
-		})
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// and config is as expected
-		_, err = util_proto.ToYAML(bootstrapConfig)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(configParam.AggregateMetricsConfig).To(Equal([]AggregateMetricsConfig{
-			{
-				Address: "8.8.8.8",
-				Name:    "opa",
-				Path:    "/mesh/opa",
-				Port:    123,
-			},
-			{
-				Address: "8.8.8.8",
-				Name:    "app",
-				Path:    "/mesh/app",
-				Port:    999,
-			},
-		}))
-	})
 })

@@ -24,11 +24,11 @@ import (
 	// to match custom policy resource type like you need to register them manually in tests
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/server"
@@ -40,41 +40,6 @@ var _ = Describe("snapshotGenerator", func() {
 		var resourceManager core_manager.ResourceManager
 		var store core_store.ResourceStore
 		node1Id := "one"
-		snapshotWithTwoAssignments := map[string]envoy_types.Resource{
-			"/meshes/demo/dataplanes/backend-02": &observability_v1.MonitoringAssignment{
-				Mesh:    "demo",
-				Service: "backend",
-				Targets: []*observability_v1.MonitoringAssignment_Target{{
-					Name:        "backend-02",
-					Address:     "192.168.0.2:1234",
-					Scheme:      "http",
-					MetricsPath: "/metrics",
-					Labels: map[string]string{
-						"env":              "intg",
-						"envs":             ",intg,",
-						"kuma_io_service":  "backend",
-						"kuma_io_services": ",backend,",
-					},
-				}},
-			},
-			"/meshes/demo/dataplanes/web-01": &observability_v1.MonitoringAssignment{
-				Mesh:    "demo",
-				Service: "web",
-				Targets: []*observability_v1.MonitoringAssignment_Target{{
-					Name:        "web-01",
-					Address:     "192.168.0.3:8765",
-					Scheme:      "http",
-					MetricsPath: "/even-more-non-standard-path",
-					Labels: map[string]string{
-						"env":              "test",
-						"envs":             ",test,",
-						"kuma_io_service":  "web",
-						"kuma_io_services": ",web,",
-					},
-				}},
-			},
-		}
-
 		meshMetricSnapshot := map[string]envoy_types.Resource{
 			"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
 				Mesh:    "default",
@@ -128,7 +93,9 @@ var _ = Describe("snapshotGenerator", func() {
 				}
 				for _, dataplane := range given.dataplanes {
 					// when
-					err := resourceManager.Create(ctx, dataplane, core_store.CreateBy(core_model.MetaToResourceKey(dataplane.GetMeta())))
+					err := resourceManager.Create(ctx, dataplane,
+						core_store.CreateBy(core_model.MetaToResourceKey(dataplane.GetMeta())),
+						core_store.CreateWithLabels(dataplane.GetMeta().GetLabels()))
 					// then
 					Expect(err).ToNot(HaveOccurred())
 				}
@@ -140,7 +107,7 @@ var _ = Describe("snapshotGenerator", func() {
 				}
 
 				// given
-				snapshotter := NewSnapshotGenerator(resourceManager, meshmetrics_generator.MonitoringAssignmentsGenerator{}, cache, false)
+				snapshotter := NewSnapshotGenerator(resourceManager, cache)
 				// when
 				snapshotPerClient, err := snapshotter.GenerateSnapshot(context.Background())
 				// then
@@ -157,117 +124,6 @@ var _ = Describe("snapshotGenerator", func() {
 			Entry("no Meshes, no Dataplanes, no MeshMetrics", testCase{
 				expectedSnapshots: map[string]map[string]envoy_types.Resource{
 					meshmetrics_generator.DefaultKumaClientId: {},
-				},
-			}),
-			Entry("no Meshes with Prometheus enabled, no MeshMetrics", testCase{
-				meshes: []*core_mesh.MeshResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-						Spec: &mesh_proto.Mesh{},
-					},
-				},
-				dataplanes: []*core_mesh.DataplaneResource{
-					samples.DataplaneBackendBuilder().
-						WithName("backend-01").
-						Build(),
-				},
-				expectedSnapshots: map[string]map[string]envoy_types.Resource{
-					meshmetrics_generator.DefaultKumaClientId: {},
-				},
-			}),
-			Entry("Mesh with Prometheus enabled but no Dataplanes, no MeshMetrics", testCase{
-				meshes: []*core_mesh.MeshResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-						Spec: &mesh_proto.Mesh{},
-					},
-					{
-						Meta: &test_model.ResourceMeta{
-							Name: "demo",
-						},
-						Spec: &mesh_proto.Mesh{
-							Metrics: &mesh_proto.Metrics{
-								EnabledBackend: "prometheus-1",
-								Backends: []*mesh_proto.MetricsBackend{
-									{
-										Name: "prometheus-1",
-										Type: mesh_proto.MetricsPrometheusType,
-										Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-											Port: 1234,
-											Path: "/non-standard-path",
-										}),
-									},
-								},
-							},
-						},
-					},
-				},
-				dataplanes: []*core_mesh.DataplaneResource{
-					samples.DataplaneBackendBuilder().
-						WithName("backend-01").
-						Build(),
-				},
-				expectedSnapshots: map[string]map[string]envoy_types.Resource{
-					meshmetrics_generator.DefaultKumaClientId: {},
-				},
-			}),
-			Entry("Mesh with Prometheus enabled and some Dataplanes, no MeshMetrics", testCase{
-				meshes: []*core_mesh.MeshResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-						Spec: &mesh_proto.Mesh{},
-					},
-					{
-						Meta: &test_model.ResourceMeta{
-							Name: "demo",
-						},
-						Spec: &mesh_proto.Mesh{
-							Metrics: &mesh_proto.Metrics{
-								EnabledBackend: "prometheus-1",
-								Backends: []*mesh_proto.MetricsBackend{
-									{
-										Name: "prometheus-1",
-										Type: mesh_proto.MetricsPrometheusType,
-										Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-											Port: 1234,
-										}),
-									},
-								},
-							},
-						},
-					},
-				},
-				dataplanes: []*core_mesh.DataplaneResource{
-					builders.Dataplane().
-						WithName("backend-01").
-						WithAddress("192.168.0.1").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend", "env", "prod").
-						Build(),
-					builders.Dataplane().
-						WithName("backend-02").
-						WithMesh("demo").
-						WithAddress("192.168.0.2").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend", "env", "intg").
-						Build(),
-					builders.Dataplane().
-						WithName("web-01").
-						WithMesh("demo").
-						WithAddress("192.168.0.3").
-						WithInboundOfTags(mesh_proto.ServiceTag, "web", "env", "test").
-						WithPrometheusMetrics(&mesh_proto.PrometheusMetricsBackendConfig{
-							Port: 8765,
-							Path: "/even-more-non-standard-path",
-						}).
-						Build(),
-				},
-				expectedSnapshots: map[string]map[string]envoy_types.Resource{
-					meshmetrics_generator.DefaultKumaClientId: snapshotWithTwoAssignments,
 				},
 			}),
 			Entry("no Meshes with Prometheus enabled, MeshMetric with Prometheus enabled for all nodes", testCase{
@@ -473,6 +329,7 @@ var _ = Describe("snapshotGenerator", func() {
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-01").
 						WithServices("backend-01").
 						WithAddress("192.168.0.1").
+						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-01", metadata.KumaWorkload: "backend-01"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-02").
@@ -488,8 +345,8 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
-								Kind: common_api.Dataplane,
-								Name: pointer.To("backend-01"),
+								Kind:   common_api.Dataplane,
+								Labels: pointer.To(map[string]string{mesh_proto.ServiceTag: "backend-01"}),
 							},
 							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
@@ -540,16 +397,19 @@ var _ = Describe("snapshotGenerator", func() {
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-01").
 						WithServices("backend-01").
 						WithAddress("192.168.0.1").
+						WithLabels(map[string]string{metadata.KumaWorkload: "backend-01"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-02").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-02").
 						WithAddress("192.168.0.2").
+						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-02", metadata.KumaWorkload: "backend-02"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-03").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-03").
 						WithAddress("192.168.0.3").
+						WithLabels(map[string]string{metadata.KumaWorkload: "backend-03"}).
 						Build(),
 				},
 				meshMetrics: []*v1alpha1.MeshMetricResource{
@@ -586,8 +446,8 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
-								Kind: common_api.Dataplane,
-								Name: pointer.To("backend-02"),
+								Kind:   common_api.Dataplane,
+								Labels: pointer.To(map[string]string{mesh_proto.ServiceTag: "backend-02"}),
 							},
 							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
@@ -660,16 +520,19 @@ var _ = Describe("snapshotGenerator", func() {
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-01").
 						WithServices("backend-01").
 						WithAddress("192.168.0.1").
+						WithLabels(map[string]string{metadata.KumaWorkload: "backend-01"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-02").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-02").
 						WithAddress("192.168.0.2").
+						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-02", metadata.KumaWorkload: "backend-02"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-03").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-03").
 						WithAddress("192.168.0.3").
+						WithLabels(map[string]string{metadata.KumaWorkload: "backend-03"}).
 						Build(),
 				},
 				meshMetrics: []*v1alpha1.MeshMetricResource{
@@ -706,8 +569,8 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
-								Kind: common_api.Dataplane,
-								Name: pointer.To("backend-02"),
+								Kind:   common_api.Dataplane,
+								Labels: pointer.To(map[string]string{mesh_proto.ServiceTag: "backend-02"}),
 							},
 							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{

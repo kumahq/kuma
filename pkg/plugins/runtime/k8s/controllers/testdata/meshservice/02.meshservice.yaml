@@ -25,8 +25,9 @@ items:
       port: 443
       targetPort: 8443
     selector:
-      dataplaneTags:
-        k8s.kuma.io/namespace: demo
+      dataplaneLabels:
+        matchLabels:
+          k8s.kuma.io/namespace: demo
   status:
     dataplaneProxies: {}
     tls: {}

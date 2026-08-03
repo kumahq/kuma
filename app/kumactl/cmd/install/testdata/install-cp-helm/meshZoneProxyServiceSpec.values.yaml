@@ -12,6 +12,15 @@ meshes:
             - 192.168.5.2
           loadBalancerSourceRanges:
             - 10.0.0.0/8
+      deployment:
+        podSpec:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
     egress:
       enabled: true
       image:
@@ -21,3 +30,12 @@ meshes:
       service:
         spec:
           publishNotReadyAddresses: true
+      deployment:
+        podSpec:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

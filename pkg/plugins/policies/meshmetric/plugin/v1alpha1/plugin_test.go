@@ -376,67 +376,6 @@ var _ = Describe("MeshMetric", func() {
 				).
 				Build(),
 		}),
-		Entry("otel_and_prometheus_unified_naming", testCase{
-			context: *xds_builders.Context().WithMeshBuilder(
-				samples.MeshDefaultBuilder(),
-			).
-				WithMeshLocalResources([]core_model.Resource{otelBackendResource("otel-collector", "otel-collector.observability.svc")}).
-				Build(),
-			proxy: xds_builders.Proxy().
-				WithID(*core_xds.BuildProxyId("default", "backend")).
-				WithDataplane(
-					samples.DataplaneBackendBuilder().
-						WithLabels(workloadLabels()),
-				).
-				WithMetadata(&core_xds.DataplaneMetadata{
-					WorkDir: "/tmp",
-					Features: map[string]bool{
-						xds_types.FeatureUnifiedResourceNaming: true,
-					},
-				}).
-				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Origin: []core_model.ResourceMeta{
-									&test_model.ResourceMeta{
-										Mesh: "default",
-										Name: "meshmetric1",
-									},
-								},
-								Conf: api.Conf{
-									Sidecar: &api.Sidecar{
-										IncludeUnused: pointer.To(false),
-									},
-									Applications: &[]api.Application{
-										{
-											Path: "/metrics",
-											Port: 8080,
-										},
-									},
-									Backends: &[]api.Backend{
-										{
-											Type: api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{
-												Path: "/metrics",
-												Port: 5670,
-											},
-										},
-										{
-											Type: api.OpenTelemetryBackendType,
-											OpenTelemetry: &api.OpenTelemetryBackend{
-												BackendRef: otelBackendRef("otel-collector"),
-											},
-										},
-									},
-								},
-							},
-						},
-					}),
-				).
-				Build(),
-		}),
 		Entry("multiple_otel", testCase{
 			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithMeshLocalResources([]core_model.Resource{
@@ -596,8 +535,7 @@ var _ = Describe("MeshMetric", func() {
 			Expect(body).ToNot(ContainSubstring(`"applications":[{`))
 			// service label is omitted entirely (no "unknown" fallback) to keep cardinality low.
 			Expect(body).ToNot(ContainSubstring(`"service":`))
-			// dataplane label identifies the individual DPP.
-			Expect(body).To(ContainSubstring(`"dataplane":"zone-egress-1"`))
+			Expect(body).ToNot(ContainSubstring(`"dataplane":"zone-egress-1"`))
 			// proxy_role identifies the zone egress.
 			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"zone-egress"`))
 			// kuma.workload is not set on zone-proxy-only Dataplanes (no co-located workload).
@@ -607,7 +545,7 @@ var _ = Describe("MeshMetric", func() {
 		It("zone-ingress-only: omits service label when unknown", func() {
 			body := applyAndExtractDynconfBody(buildProxy(zoneIngressOnlyDataplane("zone-ingress-1"), "zone-ingress-1"))
 			Expect(body).ToNot(ContainSubstring(`"service":`))
-			Expect(body).To(ContainSubstring(`"dataplane":"zone-ingress-1"`))
+			Expect(body).ToNot(ContainSubstring(`"dataplane":"zone-ingress-1"`))
 			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"zone-ingress"`))
 			Expect(body).ToNot(ContainSubstring(`"kuma.workload"`))
 		})
@@ -641,50 +579,6 @@ var _ = Describe("MeshMetric", func() {
 			body := applyAndExtractDynconfBody(noAppsProxy)
 			Expect(body).ToNot(ContainSubstring("my-app"))
 			Expect(body).ToNot(ContainSubstring(`"service":`))
-		})
-
-		It("zone-egress-only in unified-naming mode: does not emit dataplane label", func() {
-			ctx := *xds_builders.Context().WithMeshBuilder(
-				samples.MeshDefaultBuilder(),
-			).Build()
-			proxy := xds_builders.Proxy().
-				WithID(*core_xds.BuildProxyId("default", "zone-egress-1")).
-				WithMetadata(&core_xds.DataplaneMetadata{
-					WorkDir: "/tmp",
-					Features: map[string]bool{
-						xds_types.FeatureUnifiedResourceNaming: true,
-					},
-				}).
-				WithDataplane(zoneEgressOnlyDataplane()).
-				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Backends: &[]api.Backend{
-										{
-											Type:       api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{Path: "/metrics", Port: 5670},
-										},
-									},
-								},
-							},
-						},
-					}),
-				).
-				Build()
-			resources := core_xds.NewResourceSet()
-			plug := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plug.Apply(resources, ctx, proxy)).To(Succeed())
-			listeners, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
-			Expect(err).ToNot(HaveOccurred())
-			body := string(listeners)
-			// Per-DPP identification is intentionally not auto-added to keep metric cardinality low;
-			// users can opt in via observability labels if needed.
-			Expect(body).ToNot(ContainSubstring(`"dataplane":"zone-egress-1"`))
-			Expect(body).To(ContainSubstring(`"kuma.proxy_role":"zone-egress"`))
-			Expect(body).ToNot(ContainSubstring(`"kuma.workload"`))
 		})
 	})
 
