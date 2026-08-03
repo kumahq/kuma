@@ -202,7 +202,7 @@ func HttpOutboundRoute(
 	})
 }
 
-func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_meta.Protocol) FilterChainBuilderOpt {
+func Timeout(timeout *envoy_common.Timeouts, protocol core_meta.Protocol) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.TimeoutConfigurer{
 		Conf:     timeout,
 		Protocol: protocol,

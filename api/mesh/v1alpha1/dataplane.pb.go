@@ -715,12 +715,8 @@ type Dataplane_Networking_Outbound struct {
 	// port.
 	Port uint32 `protobuf:"varint,4,opt,name=port,proto3" json:"port,omitempty"`
 	// Tags of consumed data plane proxies.
-	// `kuma.io/service` tag is required.
-	// These tags can then be referenced in `destinations` section of policies
-	// like TrafficRoute or in `to` section in policies like MeshAccessLog. It
-	// is recommended to only use `kuma.io/service`. If you need to consume
-	// specific data plane proxy of a service (for example: `version=v2`) the
-	// better practice is to use TrafficRoute.
+	// These tags can then be referenced in `to` section in policies like
+	// MeshAccessLog.
 	Tags map[string]string `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// BackendRef is a way to target MeshService.
 	// Experimental. Do not use on production yet.
