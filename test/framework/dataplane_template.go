@@ -2,6 +2,7 @@ package framework
 
 import (
 	"bytes"
+	"maps"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -167,12 +168,8 @@ networking:
 // Dataplane labels, not inbound tags (see pkg/xds/topology/outbound.go).
 func RenderDataplaneTemplate(data DataplaneTemplateData) (string, error) {
 	labels := make(map[string]string, len(data.Labels)+len(data.AdditionalTags)+2)
-	for k, v := range data.Labels {
-		labels[k] = v
-	}
-	for k, v := range data.AdditionalTags {
-		labels[k] = v
-	}
+	maps.Copy(labels, data.Labels)
+	maps.Copy(labels, data.AdditionalTags)
 	if data.Team != "" {
 		labels["team"] = data.Team
 	}
