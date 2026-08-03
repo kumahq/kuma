@@ -6,7 +6,3 @@ controlPlane:
     enabled: true
   extraLabels:
     foo: bar
-ingress:
-  enabled: true
-  extraLabels:
-    foo: bar

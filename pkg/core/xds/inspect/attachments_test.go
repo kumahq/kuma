@@ -117,18 +117,20 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 			},
+			// Inbound attachments no longer carry a Service label (inbound
+			// tags are no longer read), so it's empty for every Inbound key.
 			expected: inspect.AttachmentMap{
-				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"}: {
+				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.1:80:81"}: {
 					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
 						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta1},
 					},
 				},
-				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"}: {
+				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:80:81"}: {
 					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
 						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta2},
 					},
 				},
-				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:90:91", Service: "web-admin"}: {
+				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:90:91"}: {
 					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
 						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta3},
 					},
@@ -361,14 +363,14 @@ var _ = Describe("GroupByPolicy", func() {
 					Type: meshexternalservice_api.MeshExternalServiceType,
 					Key:  core_model.ResourceKey{Name: "t-1", Mesh: "default"},
 				}: {
-					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
-					{Type: inspect.Inbound, Name: "192.168.0.2:90:91", Service: "web-api"},
+					{Type: inspect.Inbound, Name: "192.168.0.1:80:81"},
+					{Type: inspect.Inbound, Name: "192.168.0.2:90:91"},
 				},
 				inspect.PolicyKey{
 					Type: meshexternalservice_api.MeshExternalServiceType,
 					Key:  core_model.ResourceKey{Name: "t-2", Mesh: "default"},
 				}: {
-					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
+					{Type: inspect.Inbound, Name: "192.168.0.3:80:81"},
 				},
 			},
 		}),
@@ -481,7 +483,7 @@ var _ = Describe("GroupByPolicy", func() {
 					Type: core_mesh.ZoneIngressType,
 					Key:  core_model.ResourceKey{Name: "rl-3", Mesh: "mesh-1"},
 				}: {
-					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
+					{Type: inspect.Inbound, Name: "192.168.0.1:80:81"},
 					{Type: inspect.Outbound, Name: "192.168.0.3:80", Service: "redis"},
 				},
 			},

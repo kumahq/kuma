@@ -479,346 +479,10 @@ dataPlane:
     # KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED=true in the control plane,
     # which causes the sidecar injector to add
     # KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true to each injected kuma-sidecar container.
-    # It also adds the same KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true environment variable
-    # to all ZoneIngress and ZoneEgress deployments.
     # This option only automates setting the required flags and does not enable or disable the feature itself.
     # You can still opt in manually by setting KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true
-    # in ZoneIngress or ZoneEgress deployments, or in regular data plane proxies using a ContainerPatch
+    # in data plane proxies using a ContainerPatch
     unifiedResourceNaming: true
-
-ingress:
-  # -- If true, it deploys Ingress for cross cluster communication
-  enabled: false
-
-  # -- Labels to add to resources, in addition to default labels
-  extraLabels: {}
-
-  # -- Time for which old listener will still be active as draining
-  drainTime: 30s
-
-  # -- Number of replicas of the Ingress. Ignored when autoscaling is enabled.
-  replicas: 1
-
-  # -- Log level for ingress (available values: off|info|debug)
-  logLevel: info
-
-  # -- Pod restart policy for the ingress pods
-  restartPolicy: Always
-
-  # -- Define the resources to allocate to mesh ingress
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      cpu: 1000m
-      memory: 512Mi
-
-  # -- Liveness probe settings for the Ingress proxy
-  livenessProbe:
-    # -- Whether to enable the liveness probe.
-    enabled: true
-    failureThreshold: 12
-    initialDelaySeconds: 60
-    periodSeconds: 5
-    successThreshold: 1
-    timeoutSeconds: 3
-
-  # -- Readiness probe settings for the Ingress proxy
-  readinessProbe:
-    # -- Whether to enable the readiness probe.
-    enabled: true
-    failureThreshold: 12
-    initialDelaySeconds: 1
-    periodSeconds: 5
-    successThreshold: 1
-    timeoutSeconds: 3
-
-  # -- Startup probe settings for the Ingress proxy
-  startupProbe:
-    # -- Whether to enable the startup probe.
-    enabled: false
-    failureThreshold: 60
-    initialDelaySeconds: 1
-    periodSeconds: 5
-    successThreshold: 1
-    timeoutSeconds: 3
-
-  # -- Pod lifecycle settings (useful for adding a preStop hook, when
-  # using AWS ALB or NLB)
-  lifecycle: {}
-
-  # -- Number of seconds to wait before force killing the pod. Make sure to
-  # update this if you add a preStop hook.
-  terminationGracePeriodSeconds: 40
-
-  # Horizontal Pod Autoscaling configuration
-  autoscaling:
-    # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster
-    enabled: false
-
-    # -- The minimum CP pods to allow
-    minReplicas: 2
-    # -- The max CP pods to scale to
-    maxReplicas: 5
-
-    # -- Target metrics for the HPA to scale on
-    metrics:
-      - type: Resource
-        resource:
-          name: cpu
-          target:
-            type: Utilization
-            averageUtilization: 80
-
-  service:
-    # -- Whether to create a Service resource.
-    enabled: true
-    # -- Service type of the Ingress
-    type: LoadBalancer
-    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
-    loadBalancerIP:
-    # -- A list of CIDRs or IPs for the cloud-provider load balancer to allow access from.
-    loadBalancerSourceRanges: []
-    # -- Additional annotations to put on the Ingress service
-    annotations: { }
-    # -- Port on which Ingress is exposed
-    port: 10001
-    # -- Port on which service is exposed on Node for service of type NodePort
-    nodePort:
-  # -- Additional pod annotations (deprecated favor `podAnnotations`)
-  annotations: { }
-  # -- Additional pod annotations
-  podAnnotations: { }
-  # -- Annotations to add to the Deployment resource.
-  deploymentAnnotations: { }
-  # -- Node Selector for the Ingress pods
-  nodeSelector:
-    kubernetes.io/os: linux
-  # -- Tolerations for the Ingress pods
-  tolerations: []
-  podDisruptionBudget:
-    # -- Whether to create a pod disruption budget
-    enabled: false
-    # -- The maximum number of unavailable pods allowed by the budget
-    maxUnavailable: 1
-
-  # -- Affinity placement rule for the Kuma Ingress pods
-  # This is rendered as a template, so you can reference other helm variables
-  # or includes.
-  affinity:
-    podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-      - weight: 100
-        podAffinityTerm:
-          labelSelector:
-            # These match the selector labels used on the deployment.
-            matchExpressions:
-              - key: app.kubernetes.io/name
-                operator: In
-                values:
-                  - '{{ include "kuma.name" . }}'
-              - key: app.kubernetes.io/instance
-                operator: In
-                values:
-                  - '{{ .Release.Name }}'
-              - key: app
-                operator: In
-                values:
-                  - kuma-ingress
-          topologyKey: kubernetes.io/hostname
-
-  # -- Topology spread constraints rule for the Kuma Mesh Ingress pods.
-  # This is rendered as a template, so you can use variables to generate match labels.
-  topologySpreadConstraints:
-
-  # -- Priority Class Name of the ingress
-  priorityClassName: ""
-
-  # -- Security context at the pod level for ingress
-  podSecurityContext:
-    runAsNonRoot: true
-    runAsUser: 5678
-    runAsGroup: 5678
-
-  # -- Security context at the container level for ingress
-  containerSecurityContext:
-    readOnlyRootFilesystem: true
-
-  # -- Annotations to add for Control Plane's Service Account
-  serviceAccountAnnotations: { }
-  # -- Whether to automountServiceAccountToken for cp. Optionally set to false
-  automountServiceAccountToken: true
-  # -- DNS configuration for the ingress pod.
-  # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
-  dns:
-    # -- Defines how DNS resolution is configured for that Pod.
-    policy: ""
-    # -- Optional dns configuration, required when policy is 'None'
-    config:
-      # -- A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified.
-      nameservers: []
-      # -- A list of DNS search domains for hostname lookup in the Pod.
-      searches: []
-
-egress:
-  # -- If true, it deploys Egress for cross cluster communication
-  enabled: false
-  # -- Labels to add to resources, in addition to the default labels.
-  extraLabels: {}
-  # -- Time for which old listener will still be active as draining
-  drainTime: 30s
-  # -- Number of replicas of the Egress. Ignored when autoscaling is enabled.
-  replicas: 1
-
-  # -- Log level for egress (available values: off|info|debug)
-  logLevel: info
-
-  # -- Pod restart policy for the egress pods
-  restartPolicy: Always
-
-  # Horizontal Pod Autoscaling configuration
-  autoscaling:
-    # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster
-    enabled: false
-
-    # -- The minimum CP pods to allow
-    minReplicas: 2
-    # -- The max CP pods to scale to
-    maxReplicas: 5
-
-    # -- Target metrics for the HPA to scale on
-    metrics:
-      - type: Resource
-        resource:
-          name: cpu
-          target:
-            type: Utilization
-            averageUtilization: 80
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      cpu: 1000m
-      memory: 512Mi
-
-  # -- Liveness probe settings for the Egress proxy
-  livenessProbe:
-    # -- Whether to enable the liveness probe.
-    enabled: true
-    failureThreshold: 12
-    initialDelaySeconds: 60
-    periodSeconds: 5
-    successThreshold: 1
-    timeoutSeconds: 3
-
-  # -- Readiness probe settings for the Egress proxy
-  readinessProbe:
-    # -- Whether to enable the readiness probe.
-    enabled: true
-    failureThreshold: 12
-    initialDelaySeconds: 1
-    periodSeconds: 5
-    successThreshold: 1
-    timeoutSeconds: 3
-
-  # -- Startup probe settings for the Egress proxy
-  startupProbe:
-    # -- Whether to enable the startup probe.
-    enabled: false
-    failureThreshold: 60
-    initialDelaySeconds: 1
-    periodSeconds: 5
-    successThreshold: 1
-    timeoutSeconds: 3
-
-  service:
-    # -- Whether to create the service object
-    enabled: true
-    # -- Service type of the Egress
-    type: ClusterIP
-    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
-    loadBalancerIP:
-    # -- Additional annotations to put on the Egress service
-    annotations: { }
-    # -- Port on which Egress is exposed
-    port: 10002
-    # -- Port on which service is exposed on Node for service of type NodePort
-    nodePort:
-  # -- Additional pod annotations (deprecated favor `podAnnotations`)
-  annotations: { }
-  # -- Additional pod annotations
-  podAnnotations: { }
-  # -- Annotations to add to the Deployment resource.
-  deploymentAnnotations: { }
-  # -- Node Selector for the Egress pods
-  nodeSelector:
-    kubernetes.io/os: linux
-  # -- Tolerations for the Egress pods
-  tolerations: []
-  podDisruptionBudget:
-    # -- Whether to create a pod disruption budget
-    enabled: false
-    # -- The maximum number of unavailable pods allowed by the budget
-    maxUnavailable: 1
-
-  # -- Affinity placement rule for the Kuma Egress pods.
-  # This is rendered as a template, so you can reference other helm variables or includes.
-  affinity:
-    podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-      - weight: 100
-        podAffinityTerm:
-          labelSelector:
-            # These match the selector labels used on the deployment.
-            matchExpressions:
-              - key: app.kubernetes.io/name
-                operator: In
-                values:
-                  - '{{ include "kuma.name" . }}'
-              - key: app.kubernetes.io/instance
-                operator: In
-                values:
-                  - '{{ .Release.Name }}'
-              - key: app
-                operator: In
-                values:
-                  - kuma-egress
-          topologyKey: kubernetes.io/hostname
-
-  # -- Topology spread constraints rule for the Kuma Egress pods.
-  # This is rendered as a template, so you can use variables to generate match labels.
-  topologySpreadConstraints:
-
-  # -- Priority Class Name of the egress
-  priorityClassName: ""
-
-  # -- Security context at the pod level for egress
-  podSecurityContext:
-    runAsNonRoot: true
-    runAsUser: 5678
-    runAsGroup: 5678
-
-  # -- Security context at the container level for egress
-  containerSecurityContext:
-    readOnlyRootFilesystem: true
-
-  # -- Annotations to add for Control Plane's Service Account
-  serviceAccountAnnotations: { }
-  # -- Whether to automountServiceAccountToken for cp. Optionally set to false
-  automountServiceAccountToken: true
-  # -- DNS configuration for the egress pod.
-  # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
-  dns:
-    # -- Defines how DNS resolution is configured for that Pod.
-    policy: ""
-    # -- Optional dns configuration, required when policy is 'None'
-    config:
-      # -- A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified.
-      nameservers: []
-      # -- A list of DNS search domains for hostname lookup in the Pod.
-      searches: []
 
 # Default pause container image for mesh-scoped zone proxy deployments.
 # Individual meshes[].ingress.image / meshes[].egress.image override per-mesh.
@@ -831,10 +495,20 @@ zoneProxyImage:
   # -- The pause image tag
   tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
 
-# Default service settings for mesh zone proxies. Used as fallback when
-# meshes[].ingress.service or meshes[].egress.service fields are not set.
+# Default settings for mesh zone proxies. Used as fallback when the matching
+# meshes[].ingress or meshes[].egress field is not set.
 meshZoneProxyDefaults:
   ingress:
+    # -- Default number of replicas for zone ingress. Ignored when hpa.enabled is true.
+    replicas: 1
+    # -- Default pod restart policy for zone ingress.
+    restartPolicy: Always
+    # -- Default number of seconds to wait before force killing the zone ingress pod.
+    terminationGracePeriodSeconds: 40
+    # -- Whether to automountServiceAccountToken for zone ingress. Optionally set to false
+    automountServiceAccountToken: true
+    # -- Default image pull policy for the zone ingress pause container.
+    imagePullPolicy: IfNotPresent
     service:
       # -- Default Service type for zone ingress.
       type: LoadBalancer
@@ -844,6 +518,16 @@ meshZoneProxyDefaults:
       # zone proxy binary is reconfigured.
       targetPort: 10001
   egress:
+    # -- Default number of replicas for zone egress. Ignored when hpa.enabled is true.
+    replicas: 1
+    # -- Default pod restart policy for zone egress.
+    restartPolicy: Always
+    # -- Default number of seconds to wait before force killing the zone egress pod.
+    terminationGracePeriodSeconds: 40
+    # -- Whether to automountServiceAccountToken for zone egress. Optionally set to false
+    automountServiceAccountToken: true
+    # -- Default image pull policy for the zone egress pause container.
+    imagePullPolicy: IfNotPresent
     service:
       # -- Default Service type for zone egress.
       type: ClusterIP
@@ -865,6 +549,20 @@ meshes:
       # .Values.zoneProxyImage when unset. Partial overrides inherit the
       # remaining registry/repository/tag fields from the chart-level default.
       image: {}
+      # -- (string) Per-mesh override for pod restart policy. Falls back to
+      # meshZoneProxyDefaults.ingress.restartPolicy when unset.
+      restartPolicy:
+      # -- (int) Per-mesh override for the pod termination grace period. Falls back
+      # to meshZoneProxyDefaults.ingress.terminationGracePeriodSeconds when unset.
+      terminationGracePeriodSeconds:
+      # -- (bool) Per-mesh override for automountServiceAccountToken. Falls back to
+      # meshZoneProxyDefaults.ingress.automountServiceAccountToken when unset.
+      automountServiceAccountToken:
+      # -- (string) Per-mesh override for the pause container image pull policy.
+      # Falls back to meshZoneProxyDefaults.ingress.imagePullPolicy when unset.
+      imagePullPolicy:
+      # -- Annotations to add to the zone ingress Service Account.
+      serviceAccountAnnotations: {}
       service:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride)
@@ -884,8 +582,9 @@ meshes:
         labels: {}
       # -- Deployment-level settings.
       deployment:
-        # -- Number of replicas. Ignored when hpa.enabled is true.
-        replicas: 1
+        # -- (int) Number of replicas. Ignored when hpa.enabled is true. Falls back
+        # to meshZoneProxyDefaults.<role>.replicas when unset.
+        replicas:
         # -- Annotations to add to the Deployment resource.
         annotations: {}
         # -- Labels to add to the Deployment resource.
@@ -913,6 +612,20 @@ meshes:
       # .Values.zoneProxyImage when unset. Partial overrides inherit the
       # remaining registry/repository/tag fields from the chart-level default.
       image: {}
+      # -- (string) Per-mesh override for pod restart policy. Falls back to
+      # meshZoneProxyDefaults.egress.restartPolicy when unset.
+      restartPolicy:
+      # -- (int) Per-mesh override for the pod termination grace period. Falls back
+      # to meshZoneProxyDefaults.egress.terminationGracePeriodSeconds when unset.
+      terminationGracePeriodSeconds:
+      # -- (bool) Per-mesh override for automountServiceAccountToken. Falls back to
+      # meshZoneProxyDefaults.egress.automountServiceAccountToken when unset.
+      automountServiceAccountToken:
+      # -- (string) Per-mesh override for the pause container image pull policy.
+      # Falls back to meshZoneProxyDefaults.egress.imagePullPolicy when unset.
+      imagePullPolicy:
+      # -- Annotations to add to the zone egress Service Account.
+      serviceAccountAnnotations: {}
       service:
         # -- Override the auto-generated Service name (max 63 chars).
         # Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride)
@@ -932,8 +645,9 @@ meshes:
         labels: {}
       # -- Deployment-level settings.
       deployment:
-        # -- Number of replicas. Ignored when hpa.enabled is true.
-        replicas: 1
+        # -- (int) Number of replicas. Ignored when hpa.enabled is true. Falls back
+        # to meshZoneProxyDefaults.<role>.replicas when unset.
+        replicas:
         # -- Annotations to add to the Deployment resource.
         annotations: {}
         # -- Labels to add to the Deployment resource.

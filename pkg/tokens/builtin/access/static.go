@@ -32,7 +32,3 @@ func NewStaticGenerateDataplaneTokenAccess(cfg config_access.GenerateDPTokenStat
 func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateDataplaneToken(ctx context.Context, name string, mesh string, tags map[string][]string, user user.User) error {
 	return access.Validate(s.usernames, s.groups, user, "generate dataplane token")
 }
-
-func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateZoneIngressToken(ctx context.Context, zone string, user user.User) error {
-	return access.Validate(s.usernames, s.groups, user, "generate zone ingress token")
-}

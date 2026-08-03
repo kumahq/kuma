@@ -57,31 +57,3 @@ func NewDataplaneTokenValidator(resManager manager.ReadOnlyResourceManager, stor
 		), nil
 	}), nil
 }
-
-func NewZoneTokenValidator(resManager manager.ReadOnlyResourceManager, isFederatedZone bool, storeType store_config.StoreType, cfg dp_server.ZoneTokenValidatorConfig) (zone.Validator, error) {
-	publicKeys, err := tokens.PublicKeyFromConfig(cfg.PublicKeys)
-	if err != nil {
-		return nil, err
-	}
-	staticSigningKeyAccessor, err := tokens.NewStaticSigningKeyAccessor(publicKeys)
-	if err != nil {
-		return nil, err
-	}
-	accessors := []tokens.SigningKeyAccessor{staticSigningKeyAccessor}
-	if cfg.UseSecrets {
-		if isFederatedZone {
-			accessors = append(accessors, tokens.NewSigningKeyFromPublicKeyAccessor(resManager, system.ZoneTokenSigningPublicKeyPrefix))
-		} else {
-			accessors = append(accessors, tokens.NewSigningKeyAccessor(resManager, system.ZoneTokenSigningKeyPrefix))
-		}
-	}
-
-	return zone.NewValidator(
-		tokens.NewValidator(
-			log.WithName("zone-token"),
-			accessors,
-			tokens.NewRevocations(resManager, model.ResourceKey{Name: system.ZoneTokenRevocations}),
-			storeType,
-		),
-	), nil
-}

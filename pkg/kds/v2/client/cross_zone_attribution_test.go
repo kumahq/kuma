@@ -140,10 +140,6 @@ func dataplaneWithZoneTag(zone string) *mesh_proto.Dataplane {
 	}
 }
 
-func dataplaneWithDivergentZoneTags() *mesh_proto.Dataplane {
-	return dataplaneWithZoneTag(otherZone)
-}
-
 func gatewayDataplaneWithDivergentZoneTag() *mesh_proto.Dataplane {
 	return &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
@@ -209,30 +205,9 @@ func storedZoneIngress(t *testing.T, s store.ResourceStore, ctx context.Context)
 
 // TestZoneToGlobalSyncAttribution asserts the top-level attribution (kuma.io/zone
 // label, ZoneIngress.Spec.Zone) and the in-spec zone tags (ZoneIngress
-// AvailableServices, Dataplane inbound/gateway) all resolve to the connecting
+// AvailableServices, Dataplane gateway) all resolve to the connecting
 // zone's client-id, and that a matching zone is a no-op.
 func TestZoneToGlobalSyncAttribution(t *testing.T) {
-	t.Run("Dataplane", func(t *testing.T) {
-		g := NewWithT(t)
-		ctx := hashSuffixCtx()
-		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.DataplaneType)
-		defer cleanup()
-
-		clientStream.RecvCh <- deltaResponse(t, core_mesh.DataplaneType, otherZone, "dp-1", "default", dataplaneWithDivergentZoneTags())
-
-		stored := storedDataplane(t, globalStore, ctx)
-		zone := stored.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-		g.Expect(zone).To(Equal(connectingZone),
-			"kuma.io/zone label must be the connecting zone's client-id %q, not the sender-provided zone %q", connectingZone, zone)
-
-		inboundZone := stored.Spec.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]
-		g.Expect(inboundZone).To(Equal(connectingZone),
-			"Dataplane inbound kuma.io/zone tag must resolve to the connecting zone's client-id %q, not the sender-provided zone %q", connectingZone, inboundZone)
-
-		g.Expect(testutil.ToFloat64(rewrites.WithLabelValues(string(core_mesh.DataplaneType)))).To(Equal(1.0),
-			"the rewrite must be counted once for the diverging Dataplane")
-	})
-
 	t.Run("DataplaneGateway", func(t *testing.T) {
 		g := NewWithT(t)
 		ctx := hashSuffixCtx()
@@ -280,7 +255,7 @@ func TestZoneToGlobalSyncAttribution(t *testing.T) {
 		clientStream.RecvCh <- deltaResponse(t, core_mesh.DataplaneType, connectingZone, "dp-ok", "default", dataplaneWithZoneTag(connectingZone))
 
 		stored := storedDataplane(t, globalStore, ctx)
-		g.Expect(stored.Spec.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]).To(Equal(connectingZone))
+		g.Expect(stored.GetMeta().GetLabels()[mesh_proto.ZoneTag]).To(Equal(connectingZone))
 		g.Consistently(func() float64 {
 			return testutil.ToFloat64(rewrites.WithLabelValues(string(core_mesh.DataplaneType)))
 		}, "1s", "100ms").Should(Equal(0.0), "no rewrite must be counted when values already match")

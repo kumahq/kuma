@@ -27,7 +27,7 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels: {{ include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 4 }}
 spec:
-  maxUnavailable: {{ default 1 $cfg.maxUnavailable }}
+  maxUnavailable: {{ include "kuma.mesh.zoneproxy.setting" (dict "cfg" $cfg "defaults" (dict "maxUnavailable" 1) "field" "maxUnavailable") }}
   selector:
     matchLabels:
       {{- include "kuma.mesh.zoneproxy.selectorLabels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 6 }}

@@ -289,11 +289,23 @@ func fillDataplaneOutbounds(
 		dpNetworking := dpSpec.GetNetworking()
 
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
-			inboundTags := endpointIdentity(inbound.GetTags(), dataplane)
-			serviceName := inboundTags[mesh_proto.ServiceTag]
+			inboundTags := endpointIdentity(dataplane, inbound)
+			// This map is keyed by the legacy kuma.io/service, so the inbound's
+			// own service tag has to win over the Dataplane's kuma.io/service
+			// label: a Dataplane provisioned before the move to labels declares
+			// its service only per inbound, and may expose several of them.
+			serviceName := inbound.GetServiceFallback(inboundTags[mesh_proto.ServiceTag])
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneIP
 			inboundPort := inboundInterface.DataplanePort
+
+			// A dataplane that declares no service at all (neither an inbound
+			// tag nor a kuma.io/service label) has no legacy identity to
+			// publish; it relies on MeshService for outbound discovery instead.
+			if serviceName == "" {
+				continue
+			}
+			inboundTags[mesh_proto.ServiceTag] = serviceName
 
 			if _, ok := meshServiceDestinations[serviceName]; ok {
 				continue
@@ -313,18 +325,17 @@ func fillDataplaneOutbounds(
 }
 
 // endpointIdentity returns the tags that make up an endpoint's load-balancing
-// identity. Dataplane workload/resource labels are merged in to preserve
-// label-based identity (affinity, matching). Inbound tags always win over
-// labels on key conflicts.
-func endpointIdentity(inboundTags map[string]string, dataplane *core_mesh.DataplaneResource) map[string]string {
-	tags := maps.Clone(inboundTags)
+// identity, sourced from the Dataplane's own resource labels. The inbound's
+// protocol is carried alongside them because service-level protocol inference
+// (MeshContext.GetServiceProtocol) reads it off the endpoint, and it is a
+// per-port property that resource labels cannot express.
+func endpointIdentity(dataplane *core_mesh.DataplaneResource, inbound *mesh_proto.Dataplane_Networking_Inbound) map[string]string {
+	tags := maps.Clone(dataplane.GetMeta().GetLabels())
 	if tags == nil {
 		tags = map[string]string{}
 	}
-	for k, v := range dataplane.GetMeta().GetLabels() {
-		if _, exists := tags[k]; !exists {
-			tags[k] = v
-		}
+	if protocol := inbound.GetProtocolFallback(); protocol != "" {
+		tags[mesh_proto.ProtocolTag] = protocol
 	}
 	return tags
 }
@@ -348,7 +359,7 @@ func fillLocalMeshServices(
 						continue
 					}
 
-					inboundTags := endpointIdentity(inbound.GetTags(), dpp)
+					inboundTags := endpointIdentity(dpp, inbound)
 					serviceName := destinationname.MustResolve(false, meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 

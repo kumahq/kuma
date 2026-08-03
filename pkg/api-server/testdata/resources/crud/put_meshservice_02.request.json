@@ -4,8 +4,10 @@
   "mesh": "default",
   "spec": {
     "selector": {
-      "dataplaneTags": {
-        "app": "httpbin"
+      "dataplaneLabels": {
+        "matchLabels": {
+          "app": "httpbin"
+        }
       }
     },
     "ports": [

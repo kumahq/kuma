@@ -453,7 +453,7 @@ var _ = Describe("ServicesInformation", func() {
 		msBuilder := builders.MeshService().
 			WithMesh(meshName).
 			WithName("backend").
-			WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "backend").
+			WithDataplaneLabelsSelectorKV(mesh_proto.ServiceTag, "backend").
 			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
 			WithTLSStatus(meshservice_api.TLSReady)
 		Expect(msBuilder.Create(resourceStore)).To(Succeed())
@@ -550,7 +550,7 @@ var _ = Describe("ServicesInformation", func() {
 		msBuilder := builders.MeshService().
 			WithMesh(meshName).
 			WithName("backend").
-			WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "backend").
+			WithDataplaneLabelsSelectorKV(mesh_proto.ServiceTag, "backend").
 			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
 			WithTLSStatus(meshservice_api.TLSReady)
 		Expect(msBuilder.Create(resourceStore)).To(Succeed())

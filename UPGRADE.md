@@ -178,13 +178,42 @@ once per connected legacy proxy.
 **Action required**
 
 Migrate to mesh-scoped zone proxies **before** upgrading the zone control plane.
-On Kubernetes set `ingress.enabled=false` / `egress.enabled=false` and deploy the
-mesh-scoped zone proxies through `meshes[].ingress.enabled` /
-`meshes[].egress.enabled` instead. On Universal, replace
+On Kubernetes deploy them through `meshes[].ingress.enabled` /
+`meshes[].egress.enabled`. On Universal, replace
 `kuma-dp run --proxy-type=ingress|egress` with a regular `Dataplane` that
 declares `networking.listeners` of type `ZoneIngress`/`ZoneEgress`. Upgrading the
 control plane first blackholes cross-zone traffic as soon as the legacy zone
 proxy Pods restart.
+
+### Legacy `ingress`/`egress` Helm values and `kumactl install` flags removed
+
+The chart no longer renders standalone `ZoneIngress`/`ZoneEgress` Deployments.
+The top-level `ingress` and `egress` value blocks are gone, along with the
+Deployment, Service, HorizontalPodAutoscaler, PodDisruptionBudget and RBAC
+templates they drove. `kumactl install control-plane` lost the matching flags:
+`--ingress-enabled`, `--ingress-drain-time`, `--ingress-use-node-port`,
+`--ingress-node-selector`, `--egress-enabled`, `--egress-drain-time`,
+`--egress-service-type` and `--egress-node-selector`. `controlPlane.ingress.*`
+is unrelated and still configures the Kubernetes Ingress for the control plane
+GUI and API.
+
+Helm does not reject unknown values, so an upgrade with `ingress.enabled=true`
+left in your values file succeeds without any warning. Because the templates are
+gone, the upgrade deletes the legacy zone proxy Deployment, Service,
+HorizontalPodAutoscaler, PodDisruptionBudget and RBAC objects that the previous
+release owned, which drops all cross-zone traffic still flowing through them.
+
+**Action required**
+
+Complete the migration described in the previous section, then drop the
+top-level `ingress` and `egress` blocks from your values files and the removed
+flags from any `kumactl install control-plane` invocation.
+
+Most legacy settings map onto `meshes[].ingress` / `meshes[].egress`. These have
+no equivalent there: `podAnnotations`, `annotations`, `logLevel`, `drainTime`,
+`lifecycle`, `livenessProbe`, `readinessProbe`, `startupProbe`, `dns.policy`,
+`dns.config`, `service.enabled` and `service.nodePort`. Drain time and probes
+are now control-plane-wide sidecar injector settings.
 
 ### ServiceInsight, MeshInsight, and inspect `_rules` no longer report kuma.io/service based data
 
@@ -208,6 +237,71 @@ Update any automation or dashboards that read `ServiceInsight.services` for
 non-gateway services, `MeshInsight.services`, or the `_rules` `toRules` field
 to use `MeshService`/`MeshExternalService` status and `_rules`
 `toResourceRules` instead.
+
+### Zone proxies authenticate with a dataplane token
+
+A zone proxy is now a `Dataplane` with zone proxy listeners, so the DP server
+authenticates it exactly like any other data plane proxy. The separate zone
+proxy authenticator is gone: every proxy is authenticated with the method
+configured under `dpServer.authn.dpProxy` (`serviceAccountToken` on Kubernetes,
+`dpToken` on Universal), and zone tokens are no longer validated.
+
+`dpServer.authn.zoneProxy.type` and
+`dpServer.authn.zoneProxy.zoneToken.validator` no longer affect
+authentication. `dpServer.authn.zoneProxy.type` still controls whether the
+bootstrap server requires a token from the legacy `ingress`/`egress` proxy
+types.
+
+**Action required**
+
+On Universal, issue a dataplane token for each zone proxy
+(`kumactl generate dataplane-token --mesh <mesh> --name <zone-proxy-dp>`)
+instead of a zone token, and pass it to `kuma-dp` with `--dataplane-token-file`.
+Tokens generated with `kumactl generate zone-token` are no longer accepted by
+the DP server. If you relied on `dpServer.authn.zoneProxy.type: none` to let
+zone proxies connect without a token while data plane proxies used `dpToken`,
+zone proxies now need a dataplane token too.
+
+### `dataplaneTags` removed from the `MeshService` selector
+
+`spec.selector.dataplaneTags` matched data plane proxies by their inbound tags.
+The field has been removed; `MeshService` selects proxies by
+`spec.selector.dataplaneRef` or `spec.selector.dataplaneLabels` only.
+
+**Warning**: un-migrated selectors are silently dropped during deserialization.
+An affected `MeshService` keeps its name and ports but matches zero data plane
+proxies, so it stops producing endpoints and its status goes `Unavailable`.
+The control plane returns a warning for any `MeshService` left without a
+selector, but only when the resource is next created or updated.
+
+**Action required**
+
+Migrate any `MeshService` using `dataplaneTags` to `dataplaneLabels` before
+upgrading. Audit with:
+
+```bash
+kubectl get meshservices -A -o yaml | grep -B5 'dataplaneTags:'
+kumactl get meshservices -o yaml --all-meshes | grep -B5 'dataplaneTags:'
+```
+
+```yaml
+# Before (removed)
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+
+# After
+spec:
+  selector:
+    dataplaneLabels:
+      matchLabels:
+        app: redis
+```
+
+Inbound tags are no longer an identity source, so the replacement labels must
+exist on the `Dataplane` resource itself. On Kubernetes those come from the Pod
+labels; on Universal, set them under `labels` in the `Dataplane` resource.
 
 ### CoreDNS removed from the data plane
 

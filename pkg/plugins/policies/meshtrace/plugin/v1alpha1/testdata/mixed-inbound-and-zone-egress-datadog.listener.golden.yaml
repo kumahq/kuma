@@ -36,7 +36,7 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                 collectorCluster: system_meshtrace_datadog_http---ingest-datadog-eu-8126
-                serviceName: backend_INBOUND
+                serviceName: unknown_INBOUND
             spawnUpstreamSpan: false
     name: inbound:192.168.0.1:17777
     trafficDirection: INBOUND
@@ -81,7 +81,7 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                 collectorCluster: system_meshtrace_datadog_http---ingest-datadog-eu-8126
-                serviceName: backend
+                serviceName: unknown
             spawnUpstreamSpan: false
       name: mes-http
     name: self_zoneegress_dp_ze-port

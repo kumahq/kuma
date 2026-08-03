@@ -43,15 +43,6 @@ type InstallControlPlaneArgs struct {
 	ControlPlane_mode                            string            `helm:"controlPlane.mode"`
 	ControlPlane_zone                            string            `helm:"controlPlane.zone"`
 	Image_registry                               string            `helm:"global.image.registry"`
-	Ingress_enabled                              bool              `helm:"ingress.enabled"`
-	Ingress_mesh                                 string            `helm:"ingress.mesh"`
-	Ingress_drainTime                            string            `helm:"ingress.drainTime"`
-	Ingress_service_type                         string            `helm:"ingress.service.type"`
-	Ingress_nodeSelector                         map[string]string `helm:"ingress.nodeSelector"`
-	Egress_enabled                               bool              `helm:"egress.enabled"`
-	Egress_drainTime                             string            `helm:"egress.drainTime"`
-	Egress_service_type                          string            `helm:"egress.service.type"`
-	Egress_nodeSelector                          map[string]string `helm:"egress.nodeSelector"`
 	Hooks_nodeSelector                           map[string]string `helm:"hooks.nodeSelector"`
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
 	ValueFiles                                   []string
@@ -59,10 +50,9 @@ type InstallControlPlaneArgs struct {
 	SkipKinds                                    []string
 	SkipCRDs                                     bool
 	// APIVersions is a hidden, internal option
-	APIVersions        []string
-	DumpValues         bool
-	UseNodePort        bool
-	IngressUseNodePort bool
+	APIVersions []string
+	DumpValues  bool
+	UseNodePort bool
 }
 
 type ImageEnvSecret struct {
@@ -106,13 +96,6 @@ func DefaultInstallCpContext() InstallCpContext {
 			ControlPlane_mode:                  core.Zone,
 			ControlPlane_zone:                  "",
 			Image_registry:                     "docker.io/kumahq",
-			Ingress_enabled:                    false,
-			Ingress_mesh:                       "default",
-			Ingress_drainTime:                  "30s",
-			Ingress_service_type:               "LoadBalancer",
-			Egress_enabled:                     false,
-			Egress_drainTime:                   "30s",
-			Egress_service_type:                "ClusterIP",
 		},
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
 			return data.ReadFiles(deployments.KumaChartFS())
