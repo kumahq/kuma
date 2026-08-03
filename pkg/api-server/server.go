@@ -516,11 +516,14 @@ func SetupServer(rt runtime.Runtime) error {
 	apiServer, err := NewApiServer(
 		rt,
 		xds_context.NewMeshContextBuilder(
-			rt.ResourceManager(),
+			// Read through the cached read-only manager so hot inspection
+			// endpoints (_rules, _policies, dataplane layout) don't hit the
+			// store on every request. Mirrors initializeMeshCache in bootstrap.
+			rt.ReadOnlyResourceManager(),
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), cfg.Experimental.UseTagFirstVirtualOutboundModel),
+			vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager(), cfg.Experimental.UseTagFirstVirtualOutboundModel),
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
