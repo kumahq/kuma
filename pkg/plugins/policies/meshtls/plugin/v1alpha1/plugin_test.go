@@ -256,6 +256,19 @@ var _ = Describe("MeshTLS", func() {
 				},
 			},
 		}),
+		Entry("tls version on both ends of the range with workload identity", testCase{
+			caseName:    "strict-with-workload-identity-tls-version",
+			meshBuilder: samples.MeshDefaultBuilder(),
+			workloadIdentity: &core_xds.WorkloadIdentity{
+				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"my-secret-name",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			},
+		}),
 		Entry("strict inbound ports feature = port filtering", testCase{
 			caseName:    "strict-with-feature-strict-inbound-ports",
 			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
