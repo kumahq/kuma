@@ -16,15 +16,14 @@ import (
 )
 
 var _ = Describe("TimeoutConfigurer", func() {
-	userTimeout := &envoy_common.Timeouts{
-		Connect:               100 * time.Second,
-		TcpIdle:               101 * time.Second,
-		HttpIdle:              103 * time.Second,
-		HttpStreamIdle:        104 * time.Second,
-		HttpMaxStreamDuration: 105 * time.Second,
+	userTimeout := envoy_common.Timeouts{
+		Connect:        100 * time.Second,
+		TcpIdle:        101 * time.Second,
+		HttpIdle:       103 * time.Second,
+		HttpStreamIdle: 104 * time.Second,
 	}
 
-	timeoutConf := &envoy_common.Timeouts{
+	timeoutConf := envoy_common.Timeouts{
 		Connect:        policies_defaults.DefaultConnectTimeout,
 		TcpIdle:        policies_defaults.DefaultIdleTimeout,
 		HttpIdle:       policies_defaults.DefaultIdleTimeout,
@@ -32,7 +31,7 @@ var _ = Describe("TimeoutConfigurer", func() {
 	}
 
 	type testCase struct {
-		timeout  *envoy_common.Timeouts
+		timeout  envoy_common.Timeouts
 		expected string
 	}
 

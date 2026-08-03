@@ -8,8 +8,8 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
-func DefaultTimeout() *envoy_common.Timeouts {
-	return &envoy_common.Timeouts{
+func DefaultTimeout() envoy_common.Timeouts {
+	return envoy_common.Timeouts{
 		Connect: 5 * time.Second,
 	}
 }

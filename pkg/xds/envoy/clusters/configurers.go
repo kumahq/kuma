@@ -196,7 +196,7 @@ func LbSubset(tagSets envoy_tags.TagKeysSlice) ClusterBuilderOptFunc {
 	}
 }
 
-func Timeout(timeout *envoy_common.Timeouts, protocol core_meta.Protocol) ClusterBuilderOpt {
+func Timeout(timeout envoy_common.Timeouts, protocol core_meta.Protocol) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.TimeoutConfigurer{
 			Protocol: protocol,

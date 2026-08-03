@@ -18,12 +18,6 @@ type HttpStaticRouteConfigurer struct {
 	Builder *envoy_routes.RouteConfigurationBuilder
 }
 
-func NewHttpStaticRouteConfigurer(builder *envoy_routes.RouteConfigurationBuilder) *HttpStaticRouteConfigurer {
-	return &HttpStaticRouteConfigurer{
-		Builder: builder,
-	}
-}
-
 func (c *HttpStaticRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	routeConfig, err := c.Builder.Build()
 	if err != nil {

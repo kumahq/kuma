@@ -13,7 +13,7 @@ import (
 )
 
 type TimeoutConfigurer struct {
-	Conf     *envoy_common.Timeouts
+	Conf     envoy_common.Timeouts
 	Protocol core_meta.Protocol
 }
 
@@ -21,13 +21,13 @@ func (c *TimeoutConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 	switch c.Protocol {
 	case core_meta.ProtocolUnknown, core_meta.ProtocolTCP, core_meta.ProtocolKafka:
 		return UpdateTCPProxy(filterChain, func(proxy *envoy_tcp.TcpProxy) error {
-			proxy.IdleTimeout = util_proto.Duration(c.Conf.GetTcpIdle())
+			proxy.IdleTimeout = util_proto.Duration(c.Conf.TcpIdle)
 			return nil
 		})
 	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 		return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
 			c.setIdleTimeout(manager)
-			manager.StreamIdleTimeout = util_proto.Duration(c.Conf.GetHttpStreamIdle())
+			manager.StreamIdleTimeout = util_proto.Duration(c.Conf.HttpStreamIdle)
 			return nil
 		})
 	default:
@@ -39,5 +39,5 @@ func (c *TimeoutConfigurer) setIdleTimeout(manager *envoy_hcm.HttpConnectionMana
 	if manager.CommonHttpProtocolOptions == nil {
 		manager.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{}
 	}
-	manager.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(c.Conf.GetHttpIdle())
+	manager.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(c.Conf.HttpIdle)
 }

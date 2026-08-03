@@ -16,15 +16,14 @@ import (
 )
 
 var _ = Describe("TimeoutConfigurer", func() {
-	userTimeout := &envoy.Timeouts{
-		Connect:               100 * time.Second,
-		TcpIdle:               101 * time.Second,
-		HttpIdle:              103 * time.Second,
-		HttpStreamIdle:        104 * time.Second,
-		HttpMaxStreamDuration: 105 * time.Second,
+	userTimeout := envoy.Timeouts{
+		Connect:        100 * time.Second,
+		TcpIdle:        101 * time.Second,
+		HttpIdle:       103 * time.Second,
+		HttpStreamIdle: 104 * time.Second,
 	}
 
-	timeoutConf := &envoy.Timeouts{
+	timeoutConf := envoy.Timeouts{
 		Connect:        policies_defaults.DefaultConnectTimeout,
 		TcpIdle:        policies_defaults.DefaultIdleTimeout,
 		HttpIdle:       policies_defaults.DefaultIdleTimeout,
@@ -32,7 +31,7 @@ var _ = Describe("TimeoutConfigurer", func() {
 	}
 
 	type testCase struct {
-		timeout  *envoy.Timeouts
+		timeout  envoy.Timeouts
 		expected string
 	}
 
@@ -66,8 +65,7 @@ typedExtensionProtocolOptions:
   envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
     commonHttpProtocolOptions:
-      idleTimeout: 103s
-      maxStreamDuration: 105s`,
+      idleTimeout: 103s`,
 		}),
 		Entry("default timeout", testCase{
 			timeout: timeoutConf,
@@ -117,8 +115,7 @@ typedExtensionProtocolOptions:
   envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
     commonHttpProtocolOptions:
-      idleTimeout: 103s
-      maxStreamDuration: 105s`,
+      idleTimeout: 103s`,
 		}),
 		Entry("default timeout", testCase{
 			timeout: timeoutConf,

@@ -87,10 +87,10 @@ var defaultMeshTimeoutToResource = func() model.Resource {
 // in the store. It's used directly in InboundProxyGenerator. In the future, it could be replaced
 // with a new InboundTimeout policy. The main idea around these values is to have them either
 // bigger than outbound side timeouts or disabled.
-var DefaultInboundTimeout = func() *envoy_common.Timeouts {
+var DefaultInboundTimeout = func() envoy_common.Timeouts {
 	const factor = 2
 
-	return &envoy_common.Timeouts{
+	return envoy_common.Timeouts{
 		Connect:        factor * policies_defaults.DefaultConnectTimeout,
 		TcpIdle:        factor * policies_defaults.DefaultIdleTimeout,
 		HttpIdle:       factor * policies_defaults.DefaultIdleTimeout,

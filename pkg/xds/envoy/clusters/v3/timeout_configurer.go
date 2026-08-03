@@ -13,7 +13,7 @@ import (
 
 type TimeoutConfigurer struct {
 	Protocol core_meta.Protocol
-	Conf     *envoy_common.Timeouts
+	Conf     envoy_common.Timeouts
 }
 
 var _ ClusterConfigurer = &TimeoutConfigurer{}
@@ -27,22 +27,11 @@ func (t *TimeoutConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 				options.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
 			}
 
-			t.setIdleTimeout(options.CommonHttpProtocolOptions)
-			t.setMaxStreamDuration(options.CommonHttpProtocolOptions)
+			options.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(t.Conf.HttpIdle)
 		})
 		if err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func (t *TimeoutConfigurer) setIdleTimeout(options *envoy_core.HttpProtocolOptions) {
-	options.IdleTimeout = util_proto.Duration(t.Conf.GetHttpIdle())
-}
-
-func (t *TimeoutConfigurer) setMaxStreamDuration(options *envoy_core.HttpProtocolOptions) {
-	if msd := t.Conf.GetHttpMaxStreamDuration(); msd != 0 {
-		options.MaxStreamDuration = util_proto.Duration(msd)
-	}
 }
