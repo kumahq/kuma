@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
@@ -25,6 +24,7 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"

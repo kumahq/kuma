@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
@@ -24,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/plugin/v1alpha1"
