@@ -45,6 +45,31 @@ spec:
   port: 10001
 `
 
+// remoteMeshZoneAddressWithHostname is the same zone proxy address, published as a
+// load balancer hostname instead of an IP, which is what the ingress Service
+// reconciler produces on EKS.
+const remoteMeshZoneAddressWithHostname = `
+type: MeshZoneAddress
+name: zone-proxy-east
+mesh: default
+labels:
+  kuma.io/zone: east
+  kuma.io/origin: global
+spec:
+  address: lb.example.com
+  port: 10001
+`
+
+func endpointTargets(meshCtx *xds_context.MeshContext) []string {
+	var targets []string
+	for _, endpoints := range meshCtx.EndpointMap {
+		for _, endpoint := range endpoints {
+			targets = append(targets, endpoint.Target)
+		}
+	}
+	return targets
+}
+
 var _ = Describe("hash", func() {
 	lookupIPFunc := func(s string) ([]net.IP, error) {
 		return []net.IP{net.ParseIP(s)}, nil
@@ -357,6 +382,40 @@ status:
 		Expect(after.Hash).ToNot(Equal(before.Hash), "a newly synced remote MeshService+MeshZoneAddress must invalidate the mesh context")
 		Expect(after).ToNot(BeIdenticalTo(before))
 		Expect(after.EndpointMap).ToNot(BeEmpty(), "the remote MeshService should get an endpoint via the MeshZoneAddress")
+	})
+
+	It("recomputes the mesh context when the MeshZoneAddress hostname resolves to a new IP", func() {
+		// given a MeshZoneAddress pointing at a load balancer hostname, as reconciled
+		// from a LoadBalancer Service on EKS, where the hostname takes precedence
+		resolvedIP := "10.0.0.1"
+		builderWithMutableDNS := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			func(host string) ([]net.IP, error) {
+				if ip := net.ParseIP(host); ip != nil {
+					return []net.IP{ip}, nil
+				}
+				return []net.IP{net.ParseIP(resolvedIP)}, nil
+			},
+			"zone-1",
+			nil,
+		)
+		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
+		Expect(test_store.LoadResources(context.Background(), resourceStore, remoteMeshZoneAddressWithHostname)).To(Succeed())
+		Expect(samples.MeshServiceSyncedBackendBuilder().Create(resourceStore)).To(Succeed())
+
+		before, err := builderWithMutableDNS.BuildIfChanged(context.Background(), "default", nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(endpointTargets(before)).To(ConsistOf("10.0.0.1"))
+
+		// when the load balancer rotates to a different IP, without any resource changing
+		resolvedIP = "10.0.0.2"
+
+		// then the mesh context must be rebuilt so proxies stop dialing the stale address
+		after, err := builderWithMutableDNS.BuildIfChanged(context.Background(), "default", before)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(after.Hash).ToNot(Equal(before.Hash), "re-resolved MeshZoneAddress must invalidate the mesh context")
+		Expect(endpointTargets(after)).To(ConsistOf("10.0.0.2"))
 	})
 
 	It("recomputes the mesh context through the staged arrival matching the real KDS sequence", func() {
