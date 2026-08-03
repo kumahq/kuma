@@ -1,0 +1,51 @@
+---
+type: Dataplane
+name: web-1
+mesh: default
+networking:
+  address: 192.168.0.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: web
+  outbound:
+    - address: 192.168.0.4
+      port: 1234
+      tags:
+        kuma.io/service: redis
+  transparentProxying:
+    redirectPort: 15001
+    directAccessServices: ["*"]
+---
+type: Dataplane
+name: backend-1
+mesh: default
+networking:
+  address: 192.168.0.2
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: backend
+    - port: 1235
+      tags:
+        kuma.io/service: backend-api
+---
+type: Dataplane
+name: backend-2
+mesh: default
+networking:
+  address: 192.168.0.3
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: backend
+---
+type: Dataplane
+name: redis-1
+mesh: default
+networking:
+  address: 192.168.0.4
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: redis

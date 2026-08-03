@@ -1,0 +1,30 @@
+applicationProbeProxyServer: {}
+controlPlane:
+  caCert: ""
+  caCertFile: ""
+  retry:
+    backoff: 3s
+    maxDuration: 5m0s
+  tlsSkipVerify: false
+  url: https://localhost:5678
+dataplane:
+  drainTime: 30s
+  proxyType: dataplane
+  readinessPort: 9902
+  resilientComponentBaseBackoff: 5s
+  resilientComponentMaxBackoff: 1m0s
+dataplaneRuntime:
+  IPv6Enabled: true
+  binaryPath: envoy
+  dynamicConfiguration:
+    refreshInterval: 1s
+  metrics: {}
+  otelPipeEnabled: true
+  resources: {}
+  reusePortEnabled: true
+  spire: {}
+  strictInboundPortsEnabled: true
+  unifiedResourceNamingEnabled: true
+dns:
+  enabled: true
+  proxyPort: 15053

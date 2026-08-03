@@ -1,0 +1,14 @@
+schemaVersion: 2.0.0
+
+fileExistenceTests:
+- name: "/opt/cni/bin/kuma-cni"
+  path: /opt/cni/bin/kuma-cni
+  shouldExist: true
+  isExecutableBy: any
+- name: "/install-cni"
+  path: /install-cni
+  shouldExist: true
+  isExecutableBy: any
+
+metadataTest:
+  entrypoint: ["/install-cni"]

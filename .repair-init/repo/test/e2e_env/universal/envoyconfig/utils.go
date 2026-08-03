@@ -1,0 +1,384 @@
+package envoyconfig
+
+import (
+	"encoding/json"
+	"regexp"
+	"slices"
+	"strings"
+
+	jsonpatch "github.com/evanphx/json-patch/v5"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/v3/api/openapi/types"
+	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
+)
+
+func waitMeshServiceReady(mesh, name string, spiffeIDs ...string) {
+	Eventually(func(g Gomega) {
+		spec, status, err := GetMeshServiceStatus(universal.Cluster, name, mesh)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(spec.Identities).To(HaveValue(ContainElement(meshservice_api.MeshServiceIdentity{
+			Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+			Value: name,
+		})))
+		for _, spiffeID := range spiffeIDs {
+			g.Expect(spec.Identities).To(HaveValue(ContainElement(meshservice_api.MeshServiceIdentity{
+				Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+				Value: spiffeID,
+			})))
+		}
+		g.Expect(status.TLS.Status).To(Equal(meshservice_api.TLSReady))
+	}, "30s", "1s").Should(Succeed())
+}
+
+func getConfig(mesh, dpp string) string {
+	output, err := universal.Cluster.GetKumactlOptions().
+		RunKumactlAndGetOutput("inspect", "dataplane", dpp, "--type", "config", "--mesh", mesh, "--shadow", "--include=diff")
+	Expect(err).ToNot(HaveOccurred())
+	redacted := redactDnsLookupFamily(
+		redactStatPrefixes(
+			redactIPs(
+				normalizeAdminEndpoints(
+					redactSpiffeTrustBundles(
+						redactKumaDynamicConfig(output),
+					),
+				),
+			),
+		),
+	)
+
+	response := types.GetDataplaneXDSConfigResponse{}
+	Expect(json.Unmarshal([]byte(redacted), &response)).To(Succeed())
+	Expect(response.Diff).ToNot(BeNil())
+	response.Diff = pointer.To(slices.DeleteFunc(*response.Diff, func(item api_common.JsonPatchItem) bool {
+		// Drop Test ops (they only assert preconditions) and any standalone
+		// maxDirectResponseBodySizeBytes op. The byte count is just len(body);
+		// the shadow and the running Envoy can briefly disagree on it while
+		// the rest of the route is identical, producing a spurious remove/add
+		// pair that no golden expects. The body content + Etag hash already
+		// pin what's actually sent, so an op about only the byte count is
+		// pure noise.
+		return item.Op == api_common.Test ||
+			strings.HasSuffix(item.Path, "maxDirectResponseBodySizeBytes") ||
+			strings.HasSuffix(item.Path, "Listener/_kuma:dynamicconfig") ||
+			strings.HasSuffix(item.Path, "Listener/system_dynamicconfig")
+	}))
+	// Zero maxDirectResponseBodySizeBytes nested inside wholesale listener add
+	// values: the byte count re-derives from the body the golden already pins.
+	for i := range *response.Diff {
+		zeroMaxDirectResponseBodySizeBytes((*response.Diff)[i].Value)
+	}
+	slices.SortStableFunc(*response.Diff, func(a, b api_common.JsonPatchItem) int {
+		if cmp := strings.Compare(a.Path, b.Path); cmp != 0 {
+			return cmp
+		}
+		if a.Op == api_common.Remove && b.Op == api_common.Add {
+			return -1
+		}
+		if a.Op == api_common.Add && b.Op == api_common.Remove {
+			return 1
+		}
+		if a.Op == api_common.Add && b.Op == api_common.Add && jsonPatchArrayPath(a.Path) {
+			return 0
+		}
+		if cmp := strings.Compare(jsonPatchValueKey(a.Value), jsonPatchValueKey(b.Value)); cmp != 0 {
+			return cmp
+		}
+		return 0
+	})
+
+	result, err := json.MarshalIndent(response, "", "  ")
+	Expect(err).ToNot(HaveOccurred())
+	return string(result)
+}
+
+func jsonPatchArrayPath(path string) bool {
+	idx := strings.LastIndex(path, "/")
+	if idx == -1 || idx == len(path)-1 {
+		return false
+	}
+	if path[idx+1:] == "-" {
+		return true
+	}
+	for _, r := range path[idx+1:] {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func jsonPatchValueKey(value any) string {
+	GinkgoHelper()
+	result, err := json.Marshal(value)
+	Expect(err).ToNot(HaveOccurred())
+	return string(result)
+}
+
+var ipv6Regex = `\[?` + // Optional opening square bracket for IPv6 in URLs (e.g., [2001:db8::1])
+	`(` +
+	// Full IPv6 address with 8 segments (e.g., 2001:0db8:85a3:0000:0000:8a2e:0370:7334)
+	`([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|` +
+	// IPv6 with leading compression (e.g., ::1, ::8a2e:0370:7334)
+	`([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|` +
+	// IPv6 with trailing compression (e.g., 2001:db8::, 2001:db8::1:2)
+	`([0-9a-fA-F]{1,4}:){1,7}:|` +
+	// IPv6 with mixed compression (e.g., 2001:db8:0:0::1:2)
+	`([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|` +
+	`([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|` +
+	`([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|` +
+	`([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|` +
+	// IPv6 with only one segment and compression (e.g., 2001::1:2:3:4:5:6)
+	`[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|` +
+	// Fully compressed IPv6 (::) or with trailing segments (::1, ::8a2e:0370:7334)
+	`:((:[0-9a-fA-F]{1,4}){1,7}|:)|` +
+	// Link-local IPv6 with zone identifiers (e.g., fe80::1%eth0)
+	`fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|` +
+	// IPv6 with embedded IPv4 (e.g., ::ffff:192.168.1.1)
+	`::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}` +
+	`(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|` +
+	// Mixed IPv6 and IPv4 (e.g., 2001:db8::192.168.1.1)
+	`([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}` +
+	`(25[0-5]|(2[0-4]|1?[0-9])?[0-9])` +
+	`)` +
+	`]?` // Optional closing square bracket for IPv6 in URLs (e.g., [2001:db8::1])
+
+var ipv4Regex = `\b` + // Word boundary to ensure we match standalone IPv4 addresses
+	`\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}` + // Matches IPv4 format (e.g., 192.168.0.1)
+	`\b`
+
+var ipRegex = regexp.MustCompile(ipv4Regex + "|" + ipv6Regex)
+
+func redactIPs(jsonStr string) string {
+	return ipRegex.ReplaceAllString(jsonStr, "IP_REDACTED")
+}
+
+// TODO this should be removed after fixing: https://github.com/kumahq/kuma/issues/12733
+var statsPrefixRegex = regexp.MustCompile(`"statPrefix":\s*"[^"]*"`)
+
+func redactStatPrefixes(jsonStr string) string {
+	return statsPrefixRegex.ReplaceAllString(jsonStr, "\"statPrefix\": \"STAT_PREFIX_REDACTED\"")
+}
+
+var dnsLookupRegex = regexp.MustCompile(`,\s*"dnsLookupFamily":\s*"[^"]*"`)
+
+// This needs to be removed as we run tests on ipv4 and ipv6. In ipv4 dnslookupFamily is set to V4_ONLY,
+// and in the case of ipv6 this field is default, so it is missing in the config.
+func redactDnsLookupFamily(jsonStr string) string {
+	return dnsLookupRegex.ReplaceAllString(jsonStr, "")
+}
+
+// redactSpiffeTrustBundles replaces inlineBytes in SPIFFE trust domain bundles
+// with a placeholder. The bytes contain real CA certs that change every test run.
+func redactSpiffeTrustBundles(jsonStr string) string {
+	var data map[string]any
+	if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
+		return jsonStr
+	}
+
+	xds, _ := data["xds"].(map[string]any)
+	if xds == nil {
+		return jsonStr
+	}
+
+	secrets, _ := xds["type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret"].(map[string]any)
+	for _, v := range secrets {
+		secret, _ := v.(map[string]any)
+		if secret == nil {
+			continue
+		}
+		vc, _ := secret["validationContext"].(map[string]any)
+		cvc, _ := vc["customValidatorConfig"].(map[string]any)
+		tc, _ := cvc["typedConfig"].(map[string]any)
+		domains, _ := tc["trustDomains"].([]any)
+		for _, d := range domains {
+			dm, _ := d.(map[string]any)
+			if dm == nil {
+				continue
+			}
+			tb, _ := dm["trustBundle"].(map[string]any)
+			if tb != nil {
+				tb["inlineBytes"] = "CERT_REDACTED"
+			}
+		}
+	}
+
+	out, err := json.Marshal(data)
+	if err != nil {
+		return jsonStr
+	}
+	return string(out)
+}
+
+// The dynamic config listener is named "_kuma:dynamicconfig" with legacy
+// naming or "system_dynamicconfig" with unified resource naming.
+var dynamicConfigJsonPatch = []byte(`[
+	{ "op": "remove", "path": "/xds/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig" },
+	{ "op": "remove", "path": "/xds/type.googleapis.com~1envoy.config.listener.v3.Listener/system_dynamicconfig" }
+]`)
+
+// We can remove dynamic config as this contains dns config which changes in multiple places making it hard to mask
+func redactKumaDynamicConfig(jsonStr string) string {
+	patch, err := jsonpatch.DecodePatch(dynamicConfigJsonPatch)
+	if err != nil {
+		panic(err)
+	}
+
+	options := jsonpatch.NewApplyOptions()
+	options.AllowMissingPathOnRemove = true
+	modified, err := patch.ApplyWithOptions([]byte(jsonStr), options)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(modified)
+}
+
+// adminResourceNames covers both legacy and unified naming for admin/readiness resources.
+var adminResourceNames = map[string]bool{
+	"kuma:envoy:admin":       true,
+	"system_envoy_admin":     true,
+	"kuma:readiness":         true,
+	"system_probe_readiness": true,
+}
+
+var canonicalAdminAddress = map[string]any{
+	"socketAddress": map[string]any{
+		"address":   "ADMIN_REDACTED",
+		"portValue": float64(0),
+	},
+}
+
+// normalizeAdminEndpoints replaces the address details of admin/readiness
+// clusters and listeners with a canonical form so golden files work in both
+// TCP (socketAddress) and UDS (pipe) modes.
+func normalizeAdminEndpoints(jsonStr string) string {
+	var data map[string]any
+	if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
+		return jsonStr
+	}
+
+	xds, _ := data["xds"].(map[string]any)
+	if xds == nil {
+		return jsonStr
+	}
+
+	clusters, _ := xds["type.googleapis.com/envoy.config.cluster.v3.Cluster"].(map[string]any)
+	for name, v := range clusters {
+		if !adminResourceNames[name] {
+			continue
+		}
+		cluster, _ := v.(map[string]any)
+		normalizeClusterAddress(cluster)
+	}
+
+	listeners, _ := xds["type.googleapis.com/envoy.config.listener.v3.Listener"].(map[string]any)
+	for name, v := range listeners {
+		if !adminResourceNames[name] {
+			continue
+		}
+		listener, _ := v.(map[string]any)
+		if listener != nil {
+			listener["address"] = canonicalAdminAddress
+		}
+	}
+
+	out, err := json.Marshal(data)
+	if err != nil {
+		return jsonStr
+	}
+	return string(out)
+}
+
+// zeroMaxDirectResponseBodySizeBytes walks an arbitrary JSON value and sets
+// every "maxDirectResponseBodySizeBytes" field to 0. Used so that goldens for
+// wholesale listener adds don't carry the literal byte count, which is just
+// len(body) and re-derives from the body content the golden already pins.
+func zeroMaxDirectResponseBodySizeBytes(v any) {
+	switch x := v.(type) {
+	case map[string]any:
+		for k, vv := range x {
+			if k == "maxDirectResponseBodySizeBytes" {
+				x[k] = 0
+				continue
+			}
+			zeroMaxDirectResponseBodySizeBytes(vv)
+		}
+	case []any:
+		for _, vv := range x {
+			zeroMaxDirectResponseBodySizeBytes(vv)
+		}
+	}
+}
+
+func normalizeClusterAddress(cluster map[string]any) {
+	if cluster == nil {
+		return
+	}
+	la, _ := cluster["loadAssignment"].(map[string]any)
+	if la == nil {
+		return
+	}
+	eps, _ := la["endpoints"].([]any)
+	for _, ep := range eps {
+		epMap, _ := ep.(map[string]any)
+		if epMap == nil {
+			continue
+		}
+		lbEps, _ := epMap["lbEndpoints"].([]any)
+		for _, lbEp := range lbEps {
+			lbEpMap, _ := lbEp.(map[string]any)
+			if lbEpMap == nil {
+				continue
+			}
+			endpoint, _ := lbEpMap["endpoint"].(map[string]any)
+			if endpoint != nil {
+				endpoint["address"] = canonicalAdminAddress
+			}
+		}
+	}
+}
+
+func cleanupAfterTest(mesh string, dpps []string, reinstallMTP InstallFunc, policies ...core_model.ResourceTypeDescriptor) func() {
+	GinkgoHelper()
+	return func() {
+		GinkgoHelper()
+		Expect(DeleteMeshResources(universal.Cluster, mesh, policies...)).To(Succeed())
+		Expect(universal.Cluster.Install(reinstallMTP)).To(Succeed())
+		// Wait for the dataplane xDS configs to settle before letting the next
+		// spec start. Without this the next test races envoy convergence: a
+		// resource (e.g. an OpenTelemetry cluster from the previous meshmetric
+		// test) lingers in the snapshot for a few seconds after its parent
+		// policy was deleted, which makes the next golden-file comparison
+		// flake.
+		for _, dpp := range dpps {
+			waitConfigStable(mesh, dpp)
+		}
+	}
+}
+
+// waitConfigStable polls the dataplane xDS config until three consecutive
+// snapshots taken 1s apart are identical (that is, two consecutive equality
+// checks pass), with a generous total budget. This is a cheap way to make
+// sure no async push is in flight before the next test captures its baseline.
+func waitConfigStable(mesh, dpp string) {
+	GinkgoHelper()
+	var prev string
+	stable := 0
+	Eventually(func(g Gomega) {
+		cur := getConfig(mesh, dpp)
+		if cur == prev {
+			stable++
+		} else {
+			stable = 0
+		}
+		prev = cur
+		g.Expect(stable).To(BeNumerically(">=", 2), "dataplane %s xDS not yet stable", dpp)
+	}, "30s", "1s").Should(Succeed())
+}

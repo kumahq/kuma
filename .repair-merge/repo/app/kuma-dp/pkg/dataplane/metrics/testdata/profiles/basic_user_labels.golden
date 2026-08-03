@@ -1,0 +1,5 @@
+# TYPE envoy_cluster_upstream_rq_total counter
+envoy_cluster_upstream_rq_total{envoy_cluster_name="user_rq_time_svc"} 5
+envoy_cluster_upstream_rq_total{envoy_cluster_name="bytes_consumer"} 3
+envoy_cluster_upstream_rq_total{envoy_cluster_name="normal_svc"} 2
+

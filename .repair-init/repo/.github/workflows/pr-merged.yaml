@@ -1,0 +1,39 @@
+name: "Notify about updates to Kuma"
+on:
+  push:
+    tags:
+      - '*'
+    branches:
+      - master
+      - release-*
+permissions:
+  contents: read
+jobs:
+  notify-about-merged-pr:
+    timeout-minutes: 10
+    name: "Notify about merged PR"
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    steps:
+      - name: "Send repository dispatch event"
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
+          script: |
+            let branch = process.env.GITHUB_REF_NAME;
+            if (process.env.GITHUB_REF_TYPE === "tag") {
+              const versionRegex = /v?(\d+)\.(\d+)\.\d+/;
+              const versionMatch = process.env.GITHUB_REF_NAME.match(versionRegex);
+              if (!versionMatch) {
+                return;
+              }
+              const [_, major, minor] = [...versionMatch];
+              branch = `release-${major}.${minor}`;
+            }
+            return github.rest.repos.createDispatchEvent({
+              owner: '${{ secrets.NOTIFY_OWNER }}',
+              repo: '${{ secrets.NOTIFY_REPO }}',
+              event_type: '${{ secrets.NOTIFY_EVENT_TYPE }}',
+              client_payload: {
+                branch,
+              },
+            });

@@ -1,0 +1,9 @@
+type: Workload
+name: backend
+mesh: mesh-1
+spec: {}
+status:
+  dataplaneProxies:
+    total: 3
+    connected: 2
+    healthy: 1

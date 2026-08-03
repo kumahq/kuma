@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not create a resource",
+ "detail": "Mesh is not found",
+ "invalid_parameters": [
+  {
+   "field": "mesh",
+   "reason": "mesh of name default is not found"
+  }
+ ],
+ "details": "Mesh is not found",
+ "causes": [
+  {
+   "field": "mesh",
+   "message": "mesh of name default is not found"
+  }
+ ]
+}

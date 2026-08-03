@@ -1,0 +1,41 @@
+{
+  "total": 3,
+  "items": [
+    {
+      "type": "ServiceOverview",
+      "mesh": "mesh-1",
+      "name": "backend",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "status": "partially_degraded",
+      "dataplanes": {
+        "total": 10,
+        "online": 5
+      }
+    },
+    {
+      "type": "ServiceOverview",
+      "mesh": "mesh-1",
+      "name": "web",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "status": "online",
+      "dataplanes": {
+        "total": 20,
+        "online": 20
+      }
+    },
+    {
+      "type": "ServiceOverview",
+      "mesh": "mesh-1",
+      "name": "orders",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "status": "offline",
+      "dataplanes": {
+        "total": 5
+      }
+    }
+  ],
+  "next": null
+}

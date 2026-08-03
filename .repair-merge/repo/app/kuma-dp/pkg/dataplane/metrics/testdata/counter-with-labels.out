@@ -1,0 +1,38 @@
+# TYPE envoy_cluster_assignment_timeout_received counter
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="access_log_sink",custom_label="value2"} 1
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="ads_cluster",custom_label="value2"} 2
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="demo-client",custom_label="value2",kuma_io_mesh_traffic="true"} 3
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080",custom_label="value2",kuma_io_mesh_traffic="true"} 606
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv4",custom_label="value2",kuma_io_mesh_traffic="true"} 4
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv6",custom_label="value2",kuma_io_mesh_traffic="true"} 5
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="kuma_envoy_admin",custom_label="value2"} 6
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="localhost_3000",custom_label="value2",kuma_io_mesh_traffic="true"} 7
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv4",custom_label="value2",kuma_io_mesh_traffic="true"} 8
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv6",custom_label="value2",kuma_io_mesh_traffic="true"} 9
+
+# TYPE response_codes counter
+response_codes{response_code="200",envoy_cluster_name="backend",kuma_io_mesh_traffic="true"} 11
+response_codes{response_code="404",envoy_cluster_name="backend",kuma_io_mesh_traffic="true"} 22
+response_codes{response_code="500",envoy_cluster_name="backend",kuma_io_mesh_traffic="true"} 33
+response_codes{response_code="503",envoy_cluster_name="backend",kuma_io_mesh_traffic="true"} 4
+response_codes{response_code="401",envoy_cluster_name="backend",kuma_io_mesh_traffic="true"} 40
+response_codes{response_code="200",envoy_cluster_name="frontend",kuma_io_mesh_traffic="true"} 300
+response_codes{response_code="401",envoy_cluster_name="frontend",kuma_io_mesh_traffic="true"} 400
+
+# TYPE several_labels counter
+several_labels{envoy_cluster_name="backend",l1="v11",l2="v12",l3="v13",kuma_io_mesh_traffic="true"} 11
+several_labels{envoy_cluster_name="backend",l1="v21",l2="v22",l3="v23",kuma_io_mesh_traffic="true"} 22
+several_labels{envoy_cluster_name="backend",l1="v31",l2="v32",l3="v33",kuma_io_mesh_traffic="true"} 33
+
+# TYPE envoy_cluster_assignment_stale counter
+envoy_cluster_assignment_stale{envoy_cluster_name="access_log_sink",custom_label="value1"} 11
+envoy_cluster_assignment_stale{envoy_cluster_name="ads_cluster",custom_label="value1"} 12
+envoy_cluster_assignment_stale{envoy_cluster_name="demo-client",custom_label="value1",kuma_io_mesh_traffic="true"} 13
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080",custom_label="value1",kuma_io_mesh_traffic="true"} 306
+envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv4",custom_label="value1",kuma_io_mesh_traffic="true"} 14
+envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv6",custom_label="value1",kuma_io_mesh_traffic="true"} 15
+envoy_cluster_assignment_stale{envoy_cluster_name="kuma_envoy_admin",custom_label="value1"} 16
+envoy_cluster_assignment_stale{envoy_cluster_name="localhost_3000",custom_label="value1",kuma_io_mesh_traffic="true"} 17
+envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv4",custom_label="value1",kuma_io_mesh_traffic="true"} 18
+envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv6",custom_label="value1",kuma_io_mesh_traffic="true"} 19
+

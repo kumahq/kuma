@@ -1,0 +1,106 @@
+kri_mhttpr_mesh-1__ns-k8s_http-route-1_:
+  Conf:
+  - connectionTimeout: 2s
+    http:
+      maxStreamDuration: 1m0s
+      requestTimeout: 20s
+    idleTimeout: 30s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-third
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-third-bccxv6wzv4v2865x.kuma-system
+      NameExtensions:
+        k8s.kuma.io/name: matched-for-rules-third-bccxv6wzv4v2865x
+        k8s.kuma.io/namespace: kuma-system
+      Version: ""
+    RuleIndex: 0
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-first
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-first-bvwz2592dc5czf64.kuma-system
+      NameExtensions:
+        k8s.kuma.io/name: matched-for-rules-first-bvwz2592dc5czf64
+        k8s.kuma.io/namespace: kuma-system
+      Version: ""
+    RuleIndex: 0
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-second
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-second-89x67bd48662cb8w.kuma-system
+      NameExtensions:
+        k8s.kuma.io/name: matched-for-rules-second-89x67bd48662cb8w
+        k8s.kuma.io/namespace: kuma-system
+      Version: ""
+    RuleIndex: 0
+  OriginByMatches: {}
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      k8s.kuma.io/namespace: ns-k8s
+      kuma.io/display-name: http-route-1
+      kuma.io/mesh: mesh-1
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: http-route-1-bv2b744w86f46wvv.kuma-system
+    NameExtensions:
+      k8s.kuma.io/name: http-route-1-bv2b744w86f46wvv
+      k8s.kuma.io/namespace: kuma-system
+    Version: ""
+  ResourceSectionName: ""
+kri_msvc_mesh-1__ns-k8s_backend_:
+  Conf:
+  - connectionTimeout: 5s
+    http:
+      requestTimeout: 10s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-forth
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-forth-48z7xw686xw5z79v.kuma-system
+      NameExtensions:
+        k8s.kuma.io/name: matched-for-rules-forth-48z7xw686xw5z79v
+        k8s.kuma.io/namespace: kuma-system
+      Version: ""
+    RuleIndex: 0
+  OriginByMatches: {}
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      k8s.kuma.io/namespace: ns-k8s
+      kuma.io/display-name: backend
+      kuma.io/mesh: mesh-1
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: backend-xdc9b75d4z2w5b6d.kuma-system
+    NameExtensions:
+      k8s.kuma.io/name: backend-xdc9b75d4z2w5b6d
+      k8s.kuma.io/namespace: kuma-system
+    Version: ""
+  ResourceSectionName: ""

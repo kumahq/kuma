@@ -1,0 +1,19 @@
+---
+metadata:
+  namespace: demo
+  name: example
+spec:
+  clusterIP: 192.168.0.1
+  ports:
+  - protocol: UDP    # all non-TCP ports should be ignored
+    port: 80
+    targetPort: 8080
+  - protocol: SCTP   # all non-TCP ports should be ignored
+    port: 443
+    targetPort: 8443
+  - protocol: TCP
+    port: 7070
+    targetPort: api
+  - # defaults to TCP protocol
+    port: 6060
+    targetPort: diagnostics

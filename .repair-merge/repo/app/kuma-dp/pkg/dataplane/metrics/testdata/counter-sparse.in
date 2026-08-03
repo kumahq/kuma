@@ -1,0 +1,28 @@
+# TYPE envoy_cluster_assignment_stale counter
+envoy_cluster_assignment_stale{envoy_cluster_name="access_log_sink"} 11
+envoy_cluster_assignment_stale{envoy_cluster_name="ads_cluster"} 12
+envoy_cluster_assignment_stale{envoy_cluster_name="demo-client"} 13
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080-369bce2d30623ffb"} 102
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080-0382aaf295add2eb"} 103
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080-fe04929f294bcdea"} 103
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080-94bcdea309bceaff"} 103
+envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv4"} 14
+envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv6"} 15
+envoy_cluster_assignment_stale{envoy_cluster_name="kuma_envoy_admin"} 16
+envoy_cluster_assignment_stale{envoy_cluster_name="localhost_3000"} 17
+envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv4"} 18
+envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv6"} 19
+
+# TYPE envoy_cluster_assignment_timeout_received counter
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="access_log_sink"} 1
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="ads_cluster"} 2
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="demo-client"} 3
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080-94bcdea309bceaff"} 201
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080-fe04929f294bcdea"} 202
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080-0382aaf295add2eb"} 203
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv4"} 4
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv6"} 5
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="kuma_envoy_admin"} 6
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="localhost_3000"} 7
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv4"} 8
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv6"} 9

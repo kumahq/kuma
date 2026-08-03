@@ -1,0 +1,16 @@
+# user=system:serviceaccount:kuma-system:kuma-control-plane,operation=CREATE
+apiVersion: kuma.io/v1alpha1
+kind: MeshExternalService
+metadata:
+  name: mes.kuma-global
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: example.com
+      port: 80

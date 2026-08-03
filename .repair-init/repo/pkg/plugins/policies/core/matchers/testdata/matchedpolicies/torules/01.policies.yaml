@@ -1,0 +1,47 @@
+type: MeshHTTPRoute
+mesh: mesh-1
+name: http-route-1
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web-api
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server
+      rules:
+        - matches:
+            - path:
+                type: Exact
+                value: /
+          default: {}
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: another-test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /v1
+            - method: POST
+          default: {}
+---
+# mtp-1 should select DPP because it targets the same DPP as http-route-1
+type: MeshTimeout
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web-api
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 3s
+

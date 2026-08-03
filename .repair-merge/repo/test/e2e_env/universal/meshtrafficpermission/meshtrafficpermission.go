@@ -1,0 +1,233 @@
+package meshtrafficpermission
+
+import (
+	"net"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
+)
+
+func MeshTrafficPermissionUniversal() {
+	meshName := "meshtrafficpermission"
+
+	BeforeAll(func() {
+		Expect(NewClusterSetup().
+			Install(MTLSMeshUniversal(meshName)).
+			Install(TestServerUniversal(
+				"test-server",
+				meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+				WithLabels(map[string]string{"kuma.io/service": "test-server", "team": "server-owners"}),
+			)).
+			Install(TestServerUniversal(
+				"test-server-tcp",
+				meshName,
+				WithArgs([]string{"echo", "--instance", "test-server-tcp"}),
+				WithServiceName("test-server-tcp"),
+				WithProtocol("tcp"),
+				WithLabels(map[string]string{"kuma.io/service": "test-server-tcp", "team": "server-owners"}),
+			)).
+			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
+			Setup(universal.Cluster)).To(Succeed())
+	})
+
+	E2EAfterAll(func() {
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
+	})
+
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshName)
+	})
+
+	E2EAfterEach(func() {
+		// remove all MeshTrafficPermissions
+		items, err := universal.Cluster.GetKumactlOptions().KumactlList("meshtrafficpermissions", meshName)
+		Expect(err).ToNot(HaveOccurred())
+		for _, item := range items {
+			err := universal.Cluster.GetKumactlOptions().KumactlDelete("meshtrafficpermission", item, meshName)
+			Expect(err).ToNot(HaveOccurred())
+		}
+	})
+
+	trafficAllowed := func(addr string) {
+		GinkgoHelper()
+
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				universal.Cluster,
+				"demo-client",
+				addr,
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}).Should(Succeed())
+	}
+
+	httpTrafficBlocked := func(statusCode int) {
+		GinkgoHelper()
+
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(statusCode))
+		}).Should(Succeed())
+	}
+
+	tcpTrafficBlocked := func() {
+		GinkgoHelper()
+
+		Consistently(func(g Gomega) {
+			stdout, _, _ := universal.Cluster.Exec(
+				"",
+				"",
+				"dp-demo-client-mtls",
+				"/bin/bash",
+				"-c",
+				"\"echo request | nc test-server-tcp.mesh 80\"",
+			)
+
+			// there is no real attempt to set up a connection with test-server,
+			// but Envoy may return either empty response with EXIT_CODE = 0, or
+			// 'Ncat: Connection reset by peer.' with EXIT_CODE = 1
+			g.Expect(stdout).To(Or(
+				BeEmpty(),
+				ContainSubstring("Ncat: Connection reset by peer."),
+			))
+		}).Should(Succeed())
+	}
+
+	It("should allow the traffic with meshtrafficpermission based on MeshService (http)", func() {
+		// given no mesh traffic permissions
+		httpTrafficBlocked(403)
+
+		// when mesh traffic permission with MeshService
+		yaml := `
+type: MeshTrafficPermission
+name: mtp-1
+mesh: meshtrafficpermission
+spec:
+ targetRef:
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
+ rules:
+   - default:
+       allow:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client
+`
+		err := YamlUniversal(yaml)(universal.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+		trafficAllowed("test-server.svc.mesh.local")
+	})
+
+	It("should allow the traffic with meshtrafficpermission based on MeshService (tcp)", func() {
+		// given no mesh traffic permissions
+		tcpTrafficBlocked()
+
+		// when mesh traffic permission with MeshService
+		yaml := `
+type: MeshTrafficPermission
+name: mtp-2
+mesh: meshtrafficpermission
+spec:
+ targetRef:
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server-tcp
+ rules:
+   - default:
+       allow:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client
+`
+		err := YamlUniversal(yaml)(universal.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		trafficAllowed("test-server-tcp.svc.mesh.local")
+	})
+
+	It("should be able to allow the traffic with permissive mTLS (http)", func() {
+		// given mesh traffic permission with permissive mTLS
+		httpTrafficBlocked(403)
+		permissive := samples.MeshDefaultBuilder().
+			WithName(meshName).
+			WithEnabledMTLSBackend("ca-1").
+			WithBuiltinMTLSBackend("ca-1").
+			WithPermissiveMTLSBackends().
+			Build()
+		Expect(universal.Cluster.Install(ResourceUniversal(permissive))).To(Succeed())
+
+		// when specific MTP is applied
+		yaml := `
+type: MeshTrafficPermission
+name: mtp-4
+mesh: meshtrafficpermission
+spec:
+ targetRef:
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server
+ rules:
+   - default:
+       deny:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client`
+		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
+
+		// then
+		httpTrafficBlocked(403)
+
+		// and it's still possible to access a service from outside the mesh
+		publicAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server").GetIP(), "80")
+		trafficAllowed(publicAddress)
+	})
+
+	It("should be able to allow the traffic with permissive mTLS (tcp)", func() {
+		// given mesh traffic permission with permissive mTLS
+		tcpTrafficBlocked()
+		permissive := samples.MeshDefaultBuilder().
+			WithName(meshName).
+			WithEnabledMTLSBackend("ca-1").
+			WithBuiltinMTLSBackend("ca-1").
+			WithPermissiveMTLSBackends().
+			Build()
+		Expect(universal.Cluster.Install(ResourceUniversal(permissive))).To(Succeed())
+
+		// when specific MTP is applied
+		yaml := `
+type: MeshTrafficPermission
+name: mtp-5
+mesh: meshtrafficpermission
+spec:
+ targetRef:
+   kind: Dataplane
+   labels:
+     kuma.io/service: test-server-tcp
+ rules:
+   - default:
+       deny:
+         - spiffeID:
+             type: Prefix
+             value: spiffe://meshtrafficpermission/demo-client`
+		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
+
+		// then
+		tcpTrafficBlocked()
+
+		// and it's still possible to access a service from outside the mesh
+		publicAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-tcp").GetIP(), "80")
+		trafficAllowed(publicAddress)
+	})
+}

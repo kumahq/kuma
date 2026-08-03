@@ -1,0 +1,17 @@
+metadata:
+  namespace: demo
+  name: mysql-example
+  labels:
+    component: database
+    version: "5.7"
+    kuma.io/sidecar-injection: enabled
+spec:
+  serviceAccountName: mysql-service-account
+  containers:
+    - ports:
+        - containerPort: 3306
+status:
+  podIP: 192.168.0.20
+  containerStatuses:
+    - ready: true
+      started: true

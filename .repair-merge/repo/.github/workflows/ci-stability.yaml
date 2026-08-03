@@ -1,0 +1,58 @@
+name: Check CI stability for PRs with "ci/verify-stability" label
+
+on:
+  schedule:
+    # Outside business hours, UTC. Every 10 min — the pending-check guard
+    # and fresh-commit grace in ci-stability.sh make idle ticks cheap (a few
+    # API calls, no push), so tighter cadence buys faster flake detection
+    # without spamming PRs with extra trigger commits.
+    - cron: "*/10 18-23 * * 1-5"   # Mon-Fri evenings
+    - cron: "*/10 0-6 * * 1-5"     # Mon-Fri early mornings (00:00-06:59 UTC)
+    - cron: "*/10 * * * 0,6"       # Weekends, all day
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ci-stability
+  cancel-in-progress: false
+
+env:
+  GH_USER: "github-actions[bot]"
+  GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
+  STABILITY_CONSECUTIVE_GREEN_THRESHOLD: "5"
+  STABILITY_MAX_HISTORY: "20"
+  # Deterministic jobs (build/lint/distribution-packaging) that cannot be
+  # flaky by nature; excluded from the "Likely flaky jobs" rollup. Comma-
+  # separated, edit here to add/remove without script changes.
+  STABILITY_FLAKE_EXCLUDE: "check,distributions"
+
+jobs:
+  trigger-ci:
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    timeout-minutes: 20
+    steps:
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          token: ${{ steps.github-app-token.outputs.token }}
+      - name: List open PRs
+        env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+        run: |
+          gh pr list \
+            --state open \
+            --limit 200 \
+            --json number,labels,headRefName,headRepositoryOwner,state \
+            > open_prs.json
+      - name: Process PRs with ci/verify-stability label
+        env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+        run: bash .github/workflows/scripts/ci-stability.sh open_prs.json

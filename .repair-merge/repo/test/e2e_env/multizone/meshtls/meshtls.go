@@ -1,0 +1,129 @@
+package meshtls
+
+import (
+	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"golang.org/x/sync/errgroup"
+
+	meshtls_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	framework_client "github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
+)
+
+func MeshTLS() {
+	const meshName = "multizone-meshtls"
+	const k8sZoneNamespace = "multizone-meshtls"
+	const identityName = "multizone-meshtls-identity"
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(k8sZoneNamespace),
+			zoneproxy.WithIngress(),
+		)
+	}
+
+	var zones []Cluster
+
+	BeforeAll(func() {
+		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2}
+		// Global
+		Expect(NewClusterSetup().
+			Install(Yaml(builders.Mesh().WithName(meshName))).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
+			Setup(multizone.Global)).To(Succeed())
+		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
+
+		group := errgroup.Group{}
+		// Kube Zone 1
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(k8sZoneNamespace),
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
+				),
+				zoneIngress(),
+			)).
+			SetupInGroup(multizone.KubeZone1, &group)
+
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
+			Install(Parallel(
+				democlient.Install(
+					democlient.WithName("demo-client"),
+					democlient.WithMesh(meshName),
+					democlient.WithNamespace(k8sZoneNamespace),
+				),
+				zoneIngress(),
+			)).
+			SetupInGroup(multizone.KubeZone2, &group)
+		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
+	})
+
+	AfterEachFailure(func() {
+		DebugUniversal(multizone.Global, meshName)
+		DebugKube(multizone.KubeZone1, meshName, k8sZoneNamespace)
+		DebugKube(multizone.KubeZone2, meshName, k8sZoneNamespace)
+	})
+
+	E2EAfterEach(func() {
+		Expect(DeleteMeshResources(multizone.Global, meshName, meshtls_api.MeshTLSResourceTypeDescriptor)).To(Succeed())
+	})
+
+	E2EAfterAll(func() {
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(k8sZoneNamespace)).To(Succeed())
+		Expect(multizone.KubeZone2.TriggerDeleteNamespace(k8sZoneNamespace)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
+	})
+
+	It("should define TLS version and traffic should works", func() {
+		policy := fmt.Sprintf(`
+type: MeshTLS
+mesh: %s
+name: mesh-tls-policy
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        tlsVersion:
+          min: TLS13
+          max: TLS13`, meshName)
+
+		Eventually(func(g Gomega) {
+			resp, err := framework_client.CollectEchoResponse(
+				multizone.KubeZone2, "demo-client", fmt.Sprintf("test-server.%s.svc.%s.mesh.local", k8sZoneNamespace, multizone.KubeZone1.ZoneName()),
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Instance).To(Equal("kube-test-server-1"))
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+
+		// when
+		Expect(multizone.Global.Install(YamlUniversal(policy))).To(Succeed())
+
+		// then
+		// traffic should still works
+		Eventually(func(g Gomega) {
+			resp, err := framework_client.CollectEchoResponse(
+				multizone.KubeZone2, "demo-client", fmt.Sprintf("test-server.%s.svc.%s.mesh.local", k8sZoneNamespace, multizone.KubeZone1.ZoneName()),
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Instance).To(Equal("kube-test-server-1"))
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+	})
+}

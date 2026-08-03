@@ -1,0 +1,21 @@
+control_planes:
+- name: test1
+  coordinates:
+    api_server:
+      url: https://test1.internal:5681
+- name: test2
+  coordinates:
+    api_server:
+      url: https://test2.internal:5681
+
+contexts:
+- name: test1
+  control_plane: test1
+  defaults:
+    mesh: demo
+- name: test2
+  control_plane: test2
+  defaults:
+    mesh: default
+
+current_context: test1

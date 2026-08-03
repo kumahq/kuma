@@ -1,0 +1,55 @@
+#/meshes/default/meshtrafficpermissions/foo/_resources/dataplanes?name=dp-&offset=1&size=1 200
+type: Mesh
+name: default
+---
+type: MeshTrafficPermission
+name: foo
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://default
+---
+type: Dataplane
+name: dp-1
+mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: dp-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: foo
+---
+type: Dataplane
+name: dp-2
+mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: dp-2
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: bar
+---
+type: Dataplane
+name: the-dp
+mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: the-dp
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: bar

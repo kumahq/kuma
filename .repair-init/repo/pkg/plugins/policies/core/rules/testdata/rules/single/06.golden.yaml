@@ -1,0 +1,21 @@
+Rules:
+- Conf:
+    backends:
+    - type: Zipkin
+      zipkin:
+        apiVersion: httpJson
+        sharedSpanContext: true
+        traceId128bit: false
+        url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
+    tags:
+    - literal: core
+      name: team
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mtr_mesh-1___mt-1_
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mt-1
+    type: MeshTrace
+  OriginByMatches: {}
+  Subset: []

@@ -1,0 +1,955 @@
+openapi: 3.1.0
+info:
+  title: Kuma API
+  description: Kuma API
+  version: '1.0.0'
+paths:
+  /:
+    get:
+      operationId: index
+      summary: The index endpoint
+      description: The index endpoint, some common metadata
+      tags: ["System"]
+      responses:
+        '200':
+          $ref: '#/components/responses/IndexResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /_resources:
+    get:
+      operationId: get-resource-type-description
+      summary: A list of all resources that exist
+      description: Returns a Global Insight object
+      tags: ["System"]
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceTypeDescriptionListResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /global-insight:
+    get:
+      operationId: get-global-insight
+      description: Returns a Global Insight object
+      summary: Get Global Insight
+      tags: ["GlobalInsight"]
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalInsightResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/{resourceType}/{resourceName}/_rules:
+    get:
+      operationId: inspect-dataplanes-rules
+      summary: Returns rules matching this dataplane
+      description: Returns rules matching this dataplane
+      tags: ["Inspect"]
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the policy is part of
+        - in: path
+          name: resourceType
+          example: dataplanes
+          required: true
+          schema:
+            type: string
+            enum: [dataplanes]
+          description: The type of resource (only some resources support rules api)
+        - in: path
+          name: resourceName
+          example: my-dp
+          schema:
+            type: string
+          required: true
+          description: The name of the resource
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectRulesResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_config:
+    get:
+      operationId: get-dataplanes-xds-config
+      summary: Get a proxy XDS config on a CP, this endpoint is only available on zone CPs.
+      description: Returns the [xds](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) configuration of the proxy.
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+        - in: query
+          name: shadow
+          description: |
+            When computing XDS config the CP take into account policies with 'kuma.io/effect: shadow' label
+          schema:
+            type: boolean
+            default: false
+        - in: query
+          name: include
+          description: |
+            An array of extra fields to include in the response. When `include=diff` the server computes a diff in JSONPatch format
+            between the current proxy XDS config and the config returned in the 'xds' field.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [diff]
+      responses:
+        '200':
+          $ref: '#/components/responses/GetDataplaneXDSConfigResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_layout:
+    get:
+      operationId: get-dataplanes-layout
+      summary: Get networking layout for this dataplane
+      description: Returns detailed dataplane networking layout with most important information on dataplane and list of its inbounds and outbounds
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the layout for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the layout for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/DataplaneNetworkingLayoutResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_policies:
+    get:
+      operationId: get-proxy-policy-conf
+      summary: Get proxy policies for this dataplane
+      description: Returns proxy level policy configuration derived from combining all proxy policies selecting this dataplane
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ProxyPolicyConfResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_inbounds/{inbound-kri}/_policies:
+    get:
+      operationId: get-inbound-policy-conf
+      summary: Get policies for this inbound
+      description: Returns inbound policy configuration derived from combining all policies selecting this dataplane
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: inbound-kri
+          required: true
+          description: The name of the Inbound from DPP to get the policies for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/InboundPolicyConfResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_policies:
+    get:
+      operationId: get-outbound-policy-conf
+      summary: Get policies for this outbound
+      description: Returns outbound policy configuration derived from combining all policies selecting this dataplane
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: kri
+          required: true
+          description: The KRI of the Outbound to get the policies for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/OutboundPolicyConfResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_routes:
+    get:
+      operationId: get-outbound-routes
+      summary: Get routes configuration for this outbound
+      description: Returns routes configuration derived from combining all routes on this outbound
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: kri
+          required: true
+          description: The KRI of the Outbound to get the routes for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/RoutesListResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{outbound-kri}/_routes/{route-kri}/_policies:
+    get:
+      operationId: get-route-policy-conf
+      summary: Get policies for this route
+      description: Returns route policy configuration derived from combining all policies selecting this dataplane
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the policies for.
+          schema:
+            type: string
+        - in: path
+          name: outbound-kri
+          required: true
+          description: The KRI of the Outbound to get the routes for.
+          schema:
+            type: string
+        - in: path
+          name: route-kri
+          required: true
+          description: The KRI of the Route to get the configuration for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/RoutePolicyConfResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
+    get:
+      operationId: inspect-resources
+      summary: Returns resources matched by this policy
+      description: Returns resources matched by this policy. In the case of `targetRef` policies we'll match using the top level `targetRef`
+      tags: ["Inspect"]
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the policy is part of
+        - in: path
+          name: policyType
+          example: meshretries
+          schema:
+            type: string
+          required: true
+          description: The type of the policy
+        - in: path
+          name: policyName
+          example: retry-all
+          schema:
+            type: string
+          required: true
+          description: The type of the policy
+        - in: query
+          name: size
+          schema:
+            type: integer
+          required: false
+          description: The max number of items to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          required: false
+          description: The offset of result
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: false
+          description: A sub string to filter resources by name
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectDataplanesForPolicyResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/meshservices/{name}/_dataplanes:
+    get:
+      operationId: inspect-meshservices-dataplanes
+      summary: Returns dataplanes matched by a MeshService
+      description: Returns dataplanes matched by a MeshService
+      tags: ["Inspect"]
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the service is part of
+        - in: path
+          name: name
+          example: redis
+          schema:
+            type: string
+          required: true
+          description: The name of the service
+        - in: query
+          name: size
+          schema:
+            type: integer
+          required: false
+          description: The max number of items to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          required: false
+          description: The offset of result
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: false
+          description: A sub string to filter resources by name
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectDataplanesForPolicyResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/{serviceType}/{serviceName}/_hostnames:
+    get:
+      operationId: inspect-hostnames
+      summary: Returns hostnames for service
+      description: Returns hostnames for a service
+      tags: ["Inspect"]
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the service is part of
+        - in: path
+          name: serviceType
+          example: meshservices
+          schema:
+            type: string
+            enum: [meshservices, meshmultizoneservices, meshexternalservices]
+          required: true
+          description: The type of the service
+        - in: path
+          name: serviceName
+          example: redis
+          schema:
+            type: string
+          required: true
+          description: The name of the service
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectHostnamesResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '404':
+          $ref: "./common/error_schema.yaml#/components/responses/NotFound"
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+security:
+  - BasicAuth: []
+  - BearerAuth: []
+  - {}
+components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+    BearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Index:
+      type: object
+      title: Index
+      description: Some metadata about the service
+      required: [hostname, product, version, instanceId, clusterId, gui]
+      properties:
+        hostname:
+          type: string
+        product:
+          type: string
+          description: "The product line (Kuma for OSS, different for other distributions)"
+        version:
+          type: string
+          description: "The semantic version of the server running"
+        instanceId:
+          type: string
+          description: "A unique id to identify the instance requested"
+        clusterId:
+          type: string
+          description: "A unique id to identify the cluster being connected to"
+        gui:
+          type: string
+          description: "The path to the GUI"
+        basedOnKuma:
+          type: string
+          description: "In case of an alternative distribution of Kuma the Kuma version this release is based on"
+    ResourceTypeDescriptionList:
+      type: object
+      title: ResourceTypeDescriptionList
+      description: A list of all resources install
+      required: [resources]
+      properties:
+        resources:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/ResourceTypeDescription'
+    InspectDataplanesForPolicy:
+      type: object
+      title: InspectDataplanesForPolicy
+      description: A list of proxies
+      required: [total, items]
+      properties:
+        total:
+          type: integer
+          example: 200
+        next:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/Meta'
+    DataplaneXDSConfig:
+      type: object
+      title: DataplaneXDSConfig
+      required: [ xds ]
+      properties:
+        xds:
+          description: The raw XDS config as an inline JSON object
+          type: object
+        diff:
+          description: |
+            Contains a diff in a JSONPatch format between the XDS config returned in 'xds' and the current proxy XDS config.
+            By default, the field is empty. To include the diff in the response, use the `include=diff` query parameter.
+          type: array
+          items:
+            $ref: './common/jsonpatch.yaml#/components/schemas/JsonPatchItem'
+    InspectRules:
+      type: object
+      title: InspectRules
+      description: A list of rules for a dataplane
+      required: [rules, resource, httpMatches]
+      properties:
+        resource:
+          $ref: './common/resource.yaml#/components/schemas/Meta'
+        rules:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/InspectRule'
+        httpMatches:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/HttpMatch'
+    BaseStatus:
+      type: object
+      title: Status
+      required:
+        - online
+        - total
+      properties:
+        online:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 30
+    FullStatus:
+      allOf:
+        - $ref: "#/components/schemas/BaseStatus"
+        - type: object
+          required:
+            - offline
+            - partiallyDegraded
+          properties:
+            offline:
+              type: integer
+              example: 15
+            partiallyDegraded:
+              type: integer
+              example: 5
+    ServicesStats:
+      type: object
+      title: ServicesStats
+      description: Services statistics
+      required:
+        - total
+        - internal
+        - external
+        - gatewayBuiltin
+        - gatewayDelegated
+      properties:
+        internal:
+          description: Internal services statistics
+          allOf:
+            - $ref: "#/components/schemas/FullStatus"
+        external:
+          type: object
+          description: External services statistics
+          required:
+            - total
+          properties:
+            total:
+              type: integer
+              example: 5
+        gatewayBuiltin:
+          description: Builtin Gateway services statistics
+          allOf:
+            - $ref: "#/components/schemas/FullStatus"
+        gatewayDelegated:
+          description: Delegated Gateway services statistics
+          allOf:
+            - $ref: "#/components/schemas/FullStatus"
+    ZonesStats:
+      type: object
+      title: Zones Stats
+      description: Zone statistics
+      required:
+        - controlPlanes
+        - zoneEgresses
+        - zoneIngresses
+      properties:
+        controlPlanes:
+          description: Control Planes statistics
+          allOf:
+            - $ref: "#/components/schemas/BaseStatus"
+        zoneEgresses:
+          description: Zone Egresses statistics
+          allOf:
+            - $ref: "#/components/schemas/BaseStatus"
+        zoneIngresses:
+          description: Zone Ingresses statistics
+          allOf:
+            - $ref: "#/components/schemas/BaseStatus"
+    DataplanesStats:
+      type: object
+      title: Dataplanes Stats
+      description: Dataplanes statistics
+      required:
+        - standard
+        - gatewayBuiltin
+        - gatewayDelegated
+      properties:
+        standard:
+          description: Standard dataplane proxy statistics
+          allOf:
+            - $ref: "#/components/schemas/FullStatus"
+        gatewayBuiltin:
+          description: Builtin Gateway dataplane proxy statistics
+          allOf:
+            - $ref: "#/components/schemas/FullStatus"
+        gatewayDelegated:
+          description: Delegated Gateway dataplane proxy statistics
+          allOf:
+            - $ref: "#/components/schemas/FullStatus"
+    PoliciesStats:
+      type: object
+      title: Policies Stats
+      description: Policies statistics
+      required:
+        - total
+      properties:
+        total:
+          type: integer
+          description: Number of policies
+          example: 30
+    ResourceStats:
+      type: object
+      title: Resource Stats
+      description: Resource statistics
+      required:
+        - total
+      properties:
+        total:
+          type: integer
+          description: Number of resources
+          example: 30
+    MeshesStats:
+      type: object
+      title: Meshes Stats
+      description: Mesh statistics
+      required:
+        - total
+      properties:
+        total:
+          type: integer
+          description: Number of meshes
+          example: 3
+    GlobalInsightBase:
+      type: object
+      title: GlobalInsightBase
+      description: Global Insight contains statistics for all main resources
+      required:
+        - createdAt
+        - services
+        - zones
+        - dataplanes
+        - policies
+        - meshes
+        - resources
+      properties:
+        createdAt:
+          type: string
+          description: Time of Global Insight creation
+          format: date-time
+          example: '2023-01-11T02:30:42.227Z'
+        services:
+          description: Mesh services statistics
+          allOf:
+            - $ref: "#/components/schemas/ServicesStats"
+        zones:
+          description: Zones statistics
+          allOf:
+            - $ref: "#/components/schemas/ZonesStats"
+        dataplanes:
+          description: Dataplane proxy statistics
+          allOf:
+            - $ref: "#/components/schemas/DataplanesStats"
+        policies:
+          description: Policies statistics
+          allOf:
+            - $ref: "#/components/schemas/PoliciesStats"
+        meshes:
+          description: Mesh statistics
+          allOf:
+            - $ref: "#/components/schemas/MeshesStats"
+        resources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ResourceStats'
+          description: A map of resource names to their corresponding statistics
+    InspectHostnames:
+      type: object
+      title: InspectHostnames
+      description: A list of hostnames
+      required: [total, items]
+      properties:
+        total:
+          type: integer
+          example: 200
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectHostname'
+    InspectHostname:
+      type: object
+      title: InspectHostname
+      description: An supported hostname along with the zones it exists in
+      required: [hostname, zones]
+      properties:
+        hostname:
+          type: string
+          description: Generated hostname
+          example: redis.redis-system.svc.east.mesh.local
+        zones:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectHostnameZone'
+    InspectHostnameZone:
+      type: object
+      title: InspectHostnameZone
+      description: A name of the zone in which the hostname is available
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: east
+    DataplaneNetworkingLayout:
+      type: object
+      title: DataplaneLayout
+      description: Dataplane networking layout. It contains the most important information about the dataplane and lists the available inbounds, outbounds, and zone proxy listeners
+      required: [ kri, labels, inbounds, outbounds, listeners ]
+      properties:
+        kri:
+          type: string
+          example: kri_dp_default_default_kuma-demo_demo-app-75ff54499c-ttwd7_http-port
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "k8s.kuma.io/namespace": "kuma-demo"
+            "kuma.io/display-name": "demo-app"
+            "kuma.io/mesh": "default"
+            "kuma.io/origin": "zone"
+        inbounds:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/DataplaneInbound'
+        outbounds:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/DataplaneOutbound'
+        listeners:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/DataplaneListener'
+        spiffeId:
+          type: string
+          description: SPIFFE ID of the dataplane's workload identity certificate
+  responses:
+    IndexResponse:
+      description: A response for the index endpoint
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Index'
+    ResourceTypeDescriptionListResponse:
+      description: A response containing a list of all resources installed in Kuma
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResourceTypeDescriptionList'
+    GlobalInsightResponse:
+      description: A response containing global insight.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GlobalInsightBase'
+          examples:
+            Single control plane response:
+              $ref: '#/components/examples/GlobalInsightExample'
+    InspectDataplanesForPolicyResponse:
+      description: A response containing dataplanes that match a policy.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectDataplanesForPolicy'
+          examples:
+            ResponseForDataplane:
+              $ref: '#/components/examples/InspectDataplanesForPolicyExample'
+    GetDataplaneXDSConfigResponse:
+      description: Successfully retrieved proxy XDS config.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneXDSConfig'
+    InspectRulesResponse:
+      description: A response containing policies that match a resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectRules'
+    InspectHostnamesResponse:
+      description: A response containing hostnames that match a service.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectHostnames'
+          examples:
+            ResponseForHostnames:
+              $ref: '#/components/examples/InspectHostnamesExample'
+    DataplaneNetworkingLayoutResponse:
+      description: A response containing dataplane networking layout.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneNetworkingLayout'
+    ProxyPolicyConfResponse:
+      description: A response containing policies configuration for selected dataplane
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml#/components/schemas/PoliciesList'
+    InboundPolicyConfResponse:
+      description: A response containing policies configuration for selected inbound
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml#/components/schemas/InboundPoliciesList'
+    OutboundPolicyConfResponse:
+      description: A response containing policies configuration for selected outbound
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml#/components/schemas/PoliciesList'
+    RoutesListResponse:
+      description: A response containing routes configuration for selected outbound
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml#/components/schemas/RoutesList'
+    RoutePolicyConfResponse:
+      description: A response containing policies configuration for selected route
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml#/components/schemas/PoliciesList'
+  examples:
+    GlobalInsightExample:
+      value:
+        createdAt: '2023-01-11T02:30:42.227Z'
+        services:
+          total: 5
+          internal:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          external:
+            total: 1
+          gatewayDelegated:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          gatewayBuiltin:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          internalByStatus:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+        zones:
+          controlPlanes:
+            online: 1
+            total: 1
+          zoneEgresses:
+            online: 1
+            total: 1
+          zoneIngresses:
+            online: 1
+            total: 1
+        dataplanes:
+          standard:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          gatewayBuiltin:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          gatewayDelegated:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+        policies:
+          total: 100
+        meshes:
+          total: 3
+        resources:
+          MeshTrafficPermission:
+            total: 42
+          MeshService:
+            total: 84
+    InspectDataplanesForPolicyExample:
+      value:
+        total: 100
+        next: http://localhost:5681/meshes/default/meshretries/_resources/dataplanes?offset=100
+        items:
+          - type: Dataplane
+            mesh: default
+            name: dp-1
+            labels:
+              k8s.kuma.io/namespace: kuma-system
+          - type: Dataplane
+            mesh: default
+            name: dp-2
+            labels:
+              k8s.kuma.io/namespace: kuma-system
+    InspectHostnamesExample:
+      value:
+        total: 100
+        items:
+          - hostname: redis.redis-system.svc.east.mesh.local
+            zones:
+              - name: east
+              - name: west

@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Routing",
+    "definitions": {
+        "Routing": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Routing",
+            "description": "Routing defines configuration for the routing in the mesh"
+        }
+    }
+}

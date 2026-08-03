@@ -1,0 +1,9 @@
+schemaVersion: 2.0.0
+
+commandTests:
+- name: "kuma-dp binary should return version"
+  command: kuma-dp
+  args: ["version"]
+
+metadataTest:
+  entrypoint: ["/usr/bin/kuma-dp"]

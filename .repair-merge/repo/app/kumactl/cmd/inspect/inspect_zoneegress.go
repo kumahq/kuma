@@ -1,0 +1,77 @@
+package inspect
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
+	kuma_cmd "github.com/kumahq/kuma/v3/pkg/cmd"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+)
+
+const inspectZoneEgressError = "Policies are not applied on ZoneEgress, please use '--config-dump' flag to get " +
+	"envoy config dump of the ZoneEgress"
+
+func newInspectZoneEgressCmd(pctx *cmd.RootContext) *cobra.Command {
+	var configDump bool
+	var inspectionType string
+	var includeEDS bool
+	cmd := &cobra.Command{
+		Use:   "zoneegress NAME",
+		Short: "Inspect ZoneEgress",
+		Long:  "Inspect ZoneEgress.",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if configDump {
+				inspectionType = InspectionTypeConfigDump
+			}
+			if includeEDS && inspectionType != InspectionTypeConfigDump {
+				return errors.New(fmt.Sprintf("flag '--include-eds' can be used only when '--type=%s'", InspectionTypeConfigDump))
+			}
+
+			client, err := pctx.CurrentInspectEnvoyProxyClient(mesh.ZoneEgressResourceTypeDescriptor)
+			if err != nil {
+				return errors.Wrap(err, "failed to create a zoneegress inspect client")
+			}
+			name := args[0]
+			resourceKey := core_model.ResourceKey{Name: name, Mesh: core_model.NoMesh}
+
+			switch inspectionType {
+			case InspectionTypeConfigDump:
+				bytes, err := client.ConfigDump(context.Background(), resourceKey, includeEDS)
+				if err != nil {
+					return err
+				}
+				_, err = fmt.Fprint(cmd.OutOrStdout(), string(bytes))
+				return err
+			case InspectionTypeStats:
+				bytes, err := client.Stats(context.Background(), resourceKey)
+				if err != nil {
+					return err
+				}
+				_, err = fmt.Fprint(cmd.OutOrStdout(), string(bytes))
+				return err
+			case InspectionTypeClusters:
+				bytes, err := client.Clusters(context.Background(), resourceKey)
+				if err != nil {
+					return err
+				}
+				_, err = fmt.Fprint(cmd.OutOrStdout(), string(bytes))
+				return err
+			case InspectionTypePolicies:
+				return errors.New(inspectZoneEgressError)
+			default:
+				return errors.New("invalid inspection type")
+			}
+		},
+	}
+	cmd.PersistentFlags().BoolVar(&configDump, "config-dump", false, "if set then the command returns envoy config dump for provided dataplane")
+	_ = cmd.PersistentFlags().MarkDeprecated("config-dump", "use --type=config-dump")
+	cmd.PersistentFlags().BoolVar(&includeEDS, "include-eds", false, "include EDS when dumping envoy config for dataplane")
+	cmd.PersistentFlags().StringVar(&inspectionType, "type", InspectionTypeConfigDump, kuma_cmd.UsageOptions("inspection type", InspectionTypeConfigDump, InspectionTypeStats, InspectionTypeClusters))
+	return cmd
+}

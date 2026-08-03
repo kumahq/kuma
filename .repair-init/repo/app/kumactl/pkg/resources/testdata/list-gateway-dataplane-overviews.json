@@ -1,0 +1,53 @@
+{
+    "items": [
+        {
+            "type": "DataplaneOverview",
+            "mesh": "default",
+            "name": "one",
+            "dataplane": {
+                "networking": {
+                    "address": "127.0.0.1",
+                    "gateway": {
+                        "tags": {
+                            "service": "kong"
+                        }
+                    }
+                }
+            },
+            "dataplaneInsight": {
+                "subscriptions": [
+                    {
+                        "id": "1",
+                        "controlPlaneInstanceId": "node-001",
+                        "connectTime": "2018-07-17T16:05:36.995Z",
+                        "status": {
+                            "total": {
+                                "responsesSent": "10",
+                                "responsesRejected": "1"
+                            },
+                            "cds": {},
+                            "eds": {},
+                            "lds": {},
+                            "rds": {}
+                        }
+                    },
+                    {
+                        "id": "2",
+                        "controlPlaneInstanceId": "node-002",
+                        "connectTime": "2019-07-17T16:05:36.995Z",
+                        "status": {
+                            "total": {
+                                "responsesSent": "20",
+                                "responsesRejected": "2"
+                            },
+                            "cds": {},
+                            "eds": {},
+                            "lds": {},
+                            "rds": {}
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

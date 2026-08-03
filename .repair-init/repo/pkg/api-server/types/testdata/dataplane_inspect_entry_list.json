@@ -1,0 +1,191 @@
+{
+  "total": 3,
+  "items": [
+    {
+      "type": "inbound",
+      "name": "127.0.0.1:10010:10011",
+      "service": "backend",
+      "matchedPolicies": {
+        "TrafficPermission": [
+          {
+            "type": "TrafficPermission",
+            "mesh": "default",
+            "name": "allow-all-default",
+            "creationTime": "2022-02-04T12:42:09.91128+01:00",
+            "modificationTime": "2022-02-04T12:42:09.91128+01:00",
+            "sources": [
+              {
+                "match": {
+                  "kuma.io/service": "*"
+                }
+              }
+            ],
+            "destinations": [
+              {
+                "match": {
+                  "kuma.io/service": "*"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "outbound",
+      "name": "127.0.0.1:10006",
+      "service": "gateway",
+      "matchedPolicies": {
+        "Timeout": [
+          {
+            "type": "Timeout",
+            "mesh": "default",
+            "name": "timeout-all-default",
+            "creationTime": "2022-02-04T12:42:09.912324+01:00",
+            "modificationTime": "2022-02-04T12:42:09.912324+01:00",
+            "sources": [
+              {
+                "match": {
+                  "kuma.io/service": "*"
+                }
+              }
+            ],
+            "destinations": [
+              {
+                "match": {
+                  "kuma.io/service": "*"
+                }
+              }
+            ],
+            "conf": {
+              "connectTimeout": "5s",
+              "tcp": {
+                "idleTimeout": "3600s"
+              },
+              "http": {
+                "requestTimeout": "15s",
+                "idleTimeout": "3600s"
+              },
+              "grpc": {
+                "streamIdleTimeout": "300s"
+              }
+            }
+          }
+        ],
+        "TrafficRoute": [
+          {
+            "type": "TrafficRoute",
+            "mesh": "default",
+            "name": "route-all-default",
+            "creationTime": "2022-02-04T12:42:09.911501+01:00",
+            "modificationTime": "2022-02-04T12:42:09.911501+01:00",
+            "sources": [
+              {
+                "match": {
+                  "kuma.io/service": "*"
+                }
+              }
+            ],
+            "destinations": [
+              {
+                "match": {
+                  "kuma.io/service": "*"
+                }
+              }
+            ],
+            "conf": {
+              "loadBalancer": {
+                "roundRobin": {}
+              },
+              "destination": {
+                "kuma.io/service": "gateway"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "service",
+      "name": "gateway",
+      "service": "gateway",
+      "matchedPolicies": {
+        "CircuitBreaker": [
+          {
+            "type": "CircuitBreaker",
+            "mesh": "default",
+            "name": "circuit-breaker-all-default",
+            "creationTime": "2022-02-04T12:42:09.912978+01:00",
+            "modificationTime": "2022-02-04T12:42:09.912978+01:00",
+            "sources": [
+              {
+                "match": {
+                  "kuma.io/service": "*"
+                }
+              }
+            ],
+            "destinations": [
+              {
+                "match": {
+                  "kuma.io/service": "*"
+                }
+              }
+            ],
+            "conf": {
+              "thresholds": {
+                "maxConnections": 1024,
+                "maxPendingRequests": 1024,
+                "maxRetries": 3,
+                "maxRequests": 1024
+              }
+            }
+          }
+        ],
+        "Retry": [
+          {
+            "type": "Retry",
+            "mesh": "default",
+            "name": "retry-all-default",
+            "creationTime": "2022-02-04T12:42:09.913215+01:00",
+            "modificationTime": "2022-02-04T12:42:09.913215+01:00",
+            "sources": [
+              {
+                "match": {
+                  "kuma.io/service": "*"
+                }
+              }
+            ],
+            "destinations": [
+              {
+                "match": {
+                  "kuma.io/service": "*"
+                }
+              }
+            ],
+            "conf": {
+              "http": {
+                "numRetries": 5,
+                "perTryTimeout": "16s",
+                "backOff": {
+                  "baseInterval": "0.025s",
+                  "maxInterval": "0.250s"
+                }
+              },
+              "tcp": {
+                "maxConnectAttempts": 5
+              },
+              "grpc": {
+                "numRetries": 5,
+                "perTryTimeout": "16s",
+                "backOff": {
+                  "baseInterval": "0.025s",
+                  "maxInterval": "0.250s"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

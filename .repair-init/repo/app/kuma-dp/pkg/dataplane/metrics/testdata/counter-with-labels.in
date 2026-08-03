@@ -1,0 +1,47 @@
+# TYPE envoy_cluster_assignment_stale counter
+envoy_cluster_assignment_stale{envoy_cluster_name="access_log_sink",custom_label="value1"} 11
+envoy_cluster_assignment_stale{envoy_cluster_name="ads_cluster",custom_label="value1"} 12
+envoy_cluster_assignment_stale{envoy_cluster_name="demo-client",custom_label="value1"} 13
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080-0382aaf295add2eb",custom_label="value1"} 101
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080-369bce2d30623ffb",custom_label="value1"} 102
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080-94bcdea309bceaff",custom_label="value1"} 103
+envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv4",custom_label="value1"} 14
+envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv6",custom_label="value1"} 15
+envoy_cluster_assignment_stale{envoy_cluster_name="kuma_envoy_admin",custom_label="value1"} 16
+envoy_cluster_assignment_stale{envoy_cluster_name="localhost_3000",custom_label="value1"} 17
+envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv4",custom_label="value1"} 18
+envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv6",custom_label="value1"} 19
+
+# TYPE envoy_cluster_assignment_timeout_received counter
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="access_log_sink",custom_label="value2"} 1
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="ads_cluster",custom_label="value2"} 2
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="demo-client",custom_label="value2"} 3
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080-0382aaf295add2eb",custom_label="value2"} 201
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080-369bce2d30623ffb",custom_label="value2"} 202
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080-94bcdea309bceaff",custom_label="value2"} 203
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv4",custom_label="value2"} 4
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv6",custom_label="value2"} 5
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="kuma_envoy_admin",custom_label="value2"} 6
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="localhost_3000",custom_label="value2"} 7
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv4",custom_label="value2"} 8
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv6",custom_label="value2"} 9
+
+# TYPE response_codes counter
+response_codes{response_code="200",envoy_cluster_name="backend-fe04929f294bcdea"} 1
+response_codes{response_code="404",envoy_cluster_name="backend-fe04929f294bcdea"} 2
+response_codes{response_code="500",envoy_cluster_name="backend-fe04929f294bcdea"} 3
+response_codes{response_code="503",envoy_cluster_name="backend-fe04929f294bcdea"} 4
+response_codes{response_code="200",envoy_cluster_name="backend-0382aaf295add2eb"} 10
+response_codes{response_code="404",envoy_cluster_name="backend-0382aaf295add2eb"} 20
+response_codes{response_code="500",envoy_cluster_name="backend-0382aaf295add2eb"} 30
+response_codes{response_code="401",envoy_cluster_name="backend-0382aaf295add2eb"} 40
+response_codes{response_code="200",envoy_cluster_name="frontend-0382aaf295add2eb"} 300
+response_codes{response_code="401",envoy_cluster_name="frontend-0382aaf295add2eb"} 400
+
+# TYPE several_labels counter
+several_labels{envoy_cluster_name="backend-fe04929f294bcdea",l1="v11",l2="v12",l3="v13"} 1
+several_labels{envoy_cluster_name="backend-fe04929f294bcdea",l1="v21",l2="v22",l3="v23"} 2
+several_labels{envoy_cluster_name="backend-fe04929f294bcdea",l1="v31",l2="v32",l3="v33"} 3
+several_labels{envoy_cluster_name="backend-0382aaf295add2eb",l1="v11",l2="v12",l3="v13"} 10
+several_labels{envoy_cluster_name="backend-0382aaf295add2eb",l1="v21",l2="v22",l3="v23"} 20
+several_labels{envoy_cluster_name="backend-0382aaf295add2eb",l1="v31",l2="v32",l3="v33"} 30

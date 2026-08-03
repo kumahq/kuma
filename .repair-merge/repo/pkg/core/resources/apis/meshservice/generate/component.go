@@ -1,0 +1,48 @@
+package generate
+
+import (
+	"slices"
+
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+)
+
+func Setup(rt runtime.Runtime) error {
+	if rt.GetMode() == config_core.Global {
+		return nil
+	}
+	if storeType := rt.Config().Store.Type; storeType == store.KubernetesStore {
+		return nil
+	}
+	logger := core.Log.WithName("meshservice").WithName("generator")
+	if rt.Config().MeshService.GenerationInterval.Duration == 0 {
+		logger.Info("MeshService generator is disabled, MeshServices must be managed manually")
+		return nil
+	}
+	if !slices.Contains(rt.Config().CoreResources.Enabled, "meshservices") {
+		logger.Info("MeshServices are not enabled. Skip starting generator for MeshServices.")
+		return nil
+	}
+	generator, err := New(
+		logger,
+		rt.Config().MeshService.GenerationInterval.Duration,
+		rt.Config().MeshService.DeletionGracePeriod.Duration,
+		rt.Metrics(),
+		rt.ResourceManager(),
+		rt.MeshCache(),
+		rt.Config().Multizone.Zone.Name,
+		rt.Config().MeshService.LabelPropagation,
+	)
+	if err != nil {
+		return err
+	}
+	return rt.Add(component.NewResilientComponent(
+		logger,
+		generator,
+		rt.Config().General.ResilientComponentBaseBackoff.Duration,
+		rt.Config().General.ResilientComponentMaxBackoff.Duration,
+	))
+}

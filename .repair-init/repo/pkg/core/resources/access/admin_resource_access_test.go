@@ -1,0 +1,141 @@
+package access_test
+
+import (
+	"context"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	config_access "github.com/kumahq/kuma/v3/pkg/config/access"
+	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+)
+
+var _ = Describe("Admin Resource Access", func() {
+	resourceAccess := resources_access.NewAdminResourceAccess(config_access.AdminResourcesStaticAccessConfig{
+		Users: []string{user.Admin.Name},
+	})
+
+	It("should allow regular user to access non admin resource", func() {
+		err := resourceAccess.ValidateCreate(
+			context.Background(),
+			model.ResourceKey{Name: "xyz", Mesh: "demo"},
+			&meshexternalservice_api.MeshExternalService{},
+			meshexternalservice_api.NewMeshExternalServiceResource().Descriptor(),
+			user.Anonymous,
+		)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should allow admin to access Create", func() {
+		// when
+		err := resourceAccess.ValidateCreate(context.Background(), model.ResourceKey{Name: "xyz"}, &system_proto.Secret{}, system.NewSecretResource().Descriptor(), user.Admin)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should deny user to access Create", func() {
+		// when
+		err := resourceAccess.ValidateCreate(context.Background(), model.ResourceKey{Name: "xyz"}, &system_proto.Secret{}, system.NewSecretResource().Descriptor(), user.User{Name: "john doe", Groups: []string{"users"}})
+
+		// then
+		Expect(err).To(MatchError(`access denied: user "john doe/users" cannot access the resource of type "Secret"`))
+	})
+
+	It("should deny anonymous user to access Create", func() {
+		// when
+		err := resourceAccess.ValidateCreate(context.Background(), model.ResourceKey{Name: "xyz"}, &system_proto.Secret{}, system.NewSecretResource().Descriptor(), user.Anonymous)
+
+		// then
+		Expect(err).To(MatchError(`access denied: user "mesh-system:anonymous/mesh-system:unauthenticated" cannot access the resource of type "Secret"`))
+	})
+
+	It("should allow admin to access Update", func() {
+		// when
+		err := resourceAccess.ValidateUpdate(
+			context.Background(),
+			model.ResourceKey{Name: "xyz"},
+			&system_proto.Secret{},
+			&system_proto.Secret{},
+			system.NewSecretResource().Descriptor(),
+			user.Admin,
+		)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should deny user to access Update", func() {
+		// when
+		err := resourceAccess.ValidateUpdate(
+			context.Background(),
+			model.ResourceKey{Name: "xyz"},
+			&system_proto.Secret{},
+			&system_proto.Secret{},
+			system.NewSecretResource().Descriptor(),
+			user.User{Name: "john doe", Groups: []string{"users"}},
+		)
+
+		// then
+		Expect(err).To(MatchError(`access denied: user "john doe/users" cannot access the resource of type "Secret"`))
+	})
+
+	It("should allow admin to access Get", func() {
+		// when
+		err := resourceAccess.ValidateGet(
+			context.Background(),
+			model.ResourceKey{Name: "xyz"},
+			system.NewSecretResource().Descriptor(),
+			user.Admin,
+		)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should deny user to access Get", func() {
+		// when
+		err := resourceAccess.ValidateGet(
+			context.Background(),
+			model.ResourceKey{Name: "xyz"},
+			system.NewSecretResource().Descriptor(),
+			user.User{Name: "john doe", Groups: []string{"users"}},
+		)
+
+		// then
+		Expect(err).To(MatchError(`access denied: user "john doe/users" cannot access the resource of type "Secret"`))
+	})
+
+	It("should allow admin to access List", func() {
+		// when
+		err := resourceAccess.ValidateList(
+			context.Background(),
+			"",
+			system.NewSecretResource().Descriptor(),
+			user.Admin,
+		)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should deny user to access List", func() {
+		// when
+		err := resourceAccess.ValidateList(
+			context.Background(),
+			"",
+			system.NewSecretResource().Descriptor(),
+			user.User{Name: "john doe", Groups: []string{"users"}},
+		)
+
+		// then
+		Expect(err).To(MatchError(`access denied: user "john doe/users" cannot access the resource of type "Secret"`))
+	})
+})

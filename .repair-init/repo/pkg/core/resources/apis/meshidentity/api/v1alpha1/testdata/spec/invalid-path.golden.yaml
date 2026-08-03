@@ -1,0 +1,3 @@
+violations:
+- field: spec.spiffeID.path
+  message: 'couldn''t parse template: template: :1: function "invalid" not defined'

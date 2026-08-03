@@ -1,0 +1,19 @@
+{{- if .Values.controlPlane.autoscaling.enabled }}
+apiVersion: "autoscaling/v2"
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "kuma.name" . }}-control-plane
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "kuma.name" . }}-control-plane
+  minReplicas: {{ .Values.controlPlane.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.controlPlane.autoscaling.maxReplicas }}
+  metrics: {{- toYaml .Values.controlPlane.autoscaling.metrics | nindent 4 }}
+  {{- with .Values.controlPlane.autoscaling.behavior }}
+  behavior: {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

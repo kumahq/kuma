@@ -1,0 +1,7 @@
+# TYPE custom_metric_seconds summary
+custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080",kuma_io_mesh_traffic="true",quantile="0.5"} 9
+custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080",kuma_io_mesh_traffic="true",quantile="0.9"} 18
+custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080",kuma_io_mesh_traffic="true",quantile="0.99"} 44
+custom_metric_seconds_sum{envoy_cluster_name="echo-server_kuma-test_svc_8080",kuma_io_mesh_traffic="true"} 2400
+custom_metric_seconds_count{envoy_cluster_name="echo-server_kuma-test_svc_8080",kuma_io_mesh_traffic="true"} 800
+

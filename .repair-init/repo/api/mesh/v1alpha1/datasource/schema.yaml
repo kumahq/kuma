@@ -1,0 +1,10 @@
+components:
+  schemas:
+    DataSource:
+      properties:
+        Type:
+          description: "Types that are valid to be assigned to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+      type: object
+info:
+  x-ref-schema-name: DataSource
+openapi: 3.1.0

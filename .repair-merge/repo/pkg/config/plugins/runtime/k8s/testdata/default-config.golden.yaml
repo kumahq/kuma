@@ -1,0 +1,102 @@
+admissionServer:
+  address: ""
+  certDir: ""
+  port: 5443
+clientConfig:
+  burstQps: 100
+  qps: 100
+controlPlaneServiceName: kuma-control-plane
+controllersConcurrency:
+  podController: 10
+disallowMultipleMeshesPerNamespace: false
+injector:
+  applicationProbeProxyPort: 9001
+  builtinDNS:
+    enabled: true
+    port: 15053
+  caCertFile: ""
+  cniEnabled: false
+  containerPatches: []
+  exceptions:
+    labels:
+      openshift.io/build.name: '*'
+      openshift.io/deployer-pod-for.name: '*'
+  ignoredServiceSelectorLabels: []
+  initContainer:
+    image: kuma/kuma-init:latest
+    resources:
+      limits:
+        cpu: "0"
+        memory: 50M
+      requests:
+        cpu: 20m
+        memory: 20M
+  nodeLabelsToCopy:
+  - topology.kubernetes.io/zone
+  - topology.kubernetes.io/region
+  - kubernetes.io/hostname
+  otelPipeEnabled: true
+  sidecarContainer:
+    drainTime: 30s
+    envVars: {}
+    gid: 5678
+    image: kuma/kuma-dp:latest
+    ipFamilyMode: dualstack
+    livenessProbe:
+      failureThreshold: 12
+      initialDelaySeconds: 60
+      periodSeconds: 5
+      timeoutSeconds: 3
+    readinessProbe:
+      failureThreshold: 12
+      initialDelaySeconds: 1
+      periodSeconds: 5
+      successThreshold: 1
+      timeoutSeconds: 3
+    redirectPortInbound: 15006
+    redirectPortOutbound: 15001
+    resources:
+      limits:
+        cpu: "0"
+        memory: 512Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+    startupProbe:
+      failureThreshold: 12
+      initialDelaySeconds: 1
+      periodSeconds: 5
+      timeoutSeconds: 3
+    uid: 5678
+    waitForDataplaneReady: false
+  sidecarTraffic:
+    excludeInboundIPs: []
+    excludeInboundPorts: []
+    excludeOutboundIPs: []
+    excludeOutboundPorts: []
+  spire:
+    enabled: false
+    mountPath: /run/spire/sockets
+    socketFileName: socket
+  transparentProxyConfigMap: ""
+  unifiedResourceNamingEnabled: true
+  validationContainer:
+    resources:
+      limits:
+        cpu: "0"
+        memory: 50M
+      requests:
+        cpu: 20m
+        memory: 20M
+  virtualProbesEnabled: false
+  virtualProbesPort: 9000
+leaderElection:
+  leaseDuration: 15s
+  renewDeadline: 10s
+marshalingCacheExpirationTime: 5m0s
+nodeTaintController:
+  cniApp: ""
+  cniNamespace: kube-system
+  enabled: false
+skipMeshOwnerReference: false
+workloadLabels: []

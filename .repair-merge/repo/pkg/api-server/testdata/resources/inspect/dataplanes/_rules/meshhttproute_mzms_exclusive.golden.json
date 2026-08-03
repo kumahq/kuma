@@ -1,0 +1,89 @@
+{
+ "httpMatches": [
+  {
+   "hash": "JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=",
+   "match": [
+    {
+     "path": {
+      "value": "/",
+      "type": "Exact"
+     }
+    }
+   ]
+  }
+ ],
+ "resource": {
+  "labels": {
+   "app": "backend",
+   "kuma.io/origin": "zone",
+   "kuma.io/zone": "zone1"
+  },
+  "mesh": "default",
+  "name": "dp-1",
+  "type": "Dataplane"
+ },
+ "rules": [
+  {
+   "fromRules": [],
+   "inboundRules": [],
+   "toResourceRules": [
+    {
+     "conf": [
+      {
+       "rules": [
+        {
+         "matches": [
+          {
+           "path": {
+            "value": "/",
+            "type": "Exact"
+           }
+          }
+         ],
+         "default": {
+          "backendRefs": [
+           {
+            "kind": "MeshMultiZoneService",
+            "labels": {
+             "kuma.io/display-name": "kv"
+            },
+            "weight": 1,
+            "port": 5050
+           }
+          ]
+         }
+        }
+       ]
+      }
+     ],
+     "origin": [
+      {
+       "resourceMeta": {
+        "labels": {
+         "kuma.io/origin": "global"
+        },
+        "mesh": "default",
+        "name": "http-route-mmzs",
+        "type": "MeshHTTPRoute"
+       },
+       "ruleIndex": 0
+      }
+     ],
+     "resourceMeta": {
+      "labels": {
+       "kuma.io/display-name": "kv",
+       "kuma.io/origin": "global"
+      },
+      "mesh": "default",
+      "name": "kv",
+      "type": "MeshMultiZoneService"
+     },
+     "resourceSectionName": "5050"
+    }
+   ],
+   "toRules": [],
+   "type": "MeshHTTPRoute",
+   "warnings": []
+  }
+ ]
+}

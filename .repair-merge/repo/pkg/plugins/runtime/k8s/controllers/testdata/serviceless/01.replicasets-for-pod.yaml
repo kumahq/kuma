@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: test-server-1
+  namespace: demo
+  ownerReferences:
+    - name: test-server
+      kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: app
+        image: app-image

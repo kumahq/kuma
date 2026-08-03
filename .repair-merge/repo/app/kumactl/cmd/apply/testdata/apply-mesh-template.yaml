@@ -1,0 +1,5 @@
+name: {{name}}
+type: {{type}}
+mtls:
+  ca:
+    builtin:

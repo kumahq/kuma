@@ -1,0 +1,35 @@
+{
+ "policies": [
+  {
+   "kind": "MeshTimeout",
+   "origins": [
+    {
+     "kri": "kri_mt_default___inbound-timeout-1_"
+    },
+    {
+     "kri": "kri_mt_default___inbound-timeout_"
+    }
+   ],
+   "rules": [
+    {
+     "conf": {
+      "http": {
+       "requestTimeout": "10s",
+       "streamIdleTimeout": "1h0m0s",
+       "maxStreamDuration": "30m0s",
+       "maxConnectionDuration": "30m0s"
+      }
+     },
+     "kri": "kri_mt_default___inbound-timeout-1_"
+    },
+    {
+     "conf": {
+      "connectionTimeout": "2s",
+      "idleTimeout": "1m0s"
+     },
+     "kri": "kri_mt_default___inbound-timeout_"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,6 @@
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+metadata:
+  name: example
+  namespace: demo
+mesh: default

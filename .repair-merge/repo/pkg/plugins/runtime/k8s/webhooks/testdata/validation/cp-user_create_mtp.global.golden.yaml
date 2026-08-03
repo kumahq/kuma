@@ -1,0 +1,16 @@
+Patches: null
+allowed: false
+status:
+  code: 422
+  details:
+    causes:
+    - field: spec.targetRef.kind
+      message: value 'MeshService' is not supported
+      reason: FieldValueInvalid
+    kind: MeshTrafficPermission
+    name: mtp-es
+  message: 'spec.targetRef.kind: value ''MeshService'' is not supported'
+  metadata: {}
+  reason: Invalid
+  status: Failure
+uid: "12345"

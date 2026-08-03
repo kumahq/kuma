@@ -1,0 +1,23 @@
+schemaVersion: 2.0.0
+
+fileExistenceTests:
+- name: "/usr/bin/kumactl"
+  path: /usr/bin/kumactl
+  shouldExist: true
+  isExecutableBy: any
+
+commandTests:
+- name: "Contains kumactl"
+  command: kumactl
+  args: ["version"]
+# Skipping iptables test as it fails on arm64 with qemu-user-static
+# https://github.com/multiarch/qemu-user-static/issues/191
+# in some cases where iptables relies on nf_tables
+#- name: "Contains iptables"
+#  command: iptables
+#  args: ["--version"]
+#  expectedOutput: ["iptables v.*"]
+
+metadataTest:
+  entrypoint: ["/usr/bin/kumactl"]
+  cmd: ["install", "transparent-proxy"]

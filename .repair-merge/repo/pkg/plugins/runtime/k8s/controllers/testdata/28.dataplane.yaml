@@ -1,0 +1,41 @@
+mesh: default
+metadata:
+  labels:
+    app: example
+    k8s.kuma.io/namespace: demo
+    kuma.io/display-name: example
+    kuma.io/mesh: default
+    kuma.io/proxy-type: sidecar
+    version: "0.1"
+  name: example
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+    - health:
+        ready: true
+      port: 8080
+      protocol: tcp
+    transparentProxying:
+      ipFamilyMode: DualStack
+      reachableBackends:
+        refs:
+        - kind: MeshService
+          name: demo-app
+          namespace: kuma-demo
+          port: 5000
+        - kind: MeshService
+          name: redis
+          namespace: redis-system
+        - kind: MeshService
+          labels:
+            kuma.io/display-name: xyz
+            kuma.io/zone: east
+        - kind: MeshExternalService
+          name: demo-app
+          namespace: kuma-system
+        - kind: MeshExternalService
+          labels:
+            kuma.io/display-name: httpbin
+      redirectPortInbound: 15006
+      redirectPortOutbound: 15001

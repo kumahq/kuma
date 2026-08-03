@@ -1,0 +1,174 @@
+package server
+
+import (
+	"context"
+	"math/rand"
+	"strings"
+	"time"
+
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	"github.com/go-logr/logr"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/kds/status"
+	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
+	"github.com/kumahq/kuma/v3/pkg/kds/v2/util"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+)
+
+func New(
+	log logr.Logger,
+	rt core_runtime.Runtime,
+	providedTypes []model.ResourceType,
+	serverID string,
+	filter reconcile_v2.ResourceFilter,
+	mapper reconcile_v2.ResourceMapper,
+	nackBackoff time.Duration,
+) (delta.Server, *Metrics, error) {
+	hasher, cache := newKDSContext(log)
+	generator := reconcile_v2.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), filter, mapper)
+	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds_delta", kdsVersionExtractor)
+	if err != nil {
+		return nil, nil, err
+	}
+	syncTracker, kdsMetrics, err := newSyncTracker(
+		log,
+		reconcile_v2.NewReconciler(hasher, cache, generator, rt.GetMode(), statsCallbacks, rt.Tenants(), providedTypes),
+		rt.Metrics(),
+		rt.EventBus(),
+		rt.Config().Experimental.KDSEventBasedWatchdog,
+		rt.Extensions(),
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	callbacks := util_xds_v3.CallbacksChain{
+		NewTenancyCallbacks(rt.Tenants()),
+		&typeAdjustCallbacks{},
+		util_xds_v3.NewControlPlaneIdCallbacks(serverID),
+		util_xds_v3.AdaptDeltaCallbacks(util_xds.LoggingCallbacks{Log: log}),
+		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
+		// util_xds_v3.AdaptDeltaCallbacks(NewNackBackoff(nackBackoff)),
+		syncTracker,
+		status.DefaultStatusTracker(rt, log),
+	}
+	// Default resource types are length of XDS types. With KDS we have much more types.
+	// If we don't adjust this value, we can hit KDS deadlock.
+	// We could count exactly how many types we have, but overhead of larger map size is negligible for potential mistake here.
+	return delta.NewServer(context.Background(), cache, callbacks, delta.WithDistinctResourceTypes(1000)), kdsMetrics, nil
+}
+
+func newSyncTracker(
+	log logr.Logger,
+	reconciler reconcile_v2.Reconciler,
+	metrics core_metrics.Metrics,
+	eventBus events.EventBus,
+	experimentalWatchdogCfg kuma_cp.ExperimentalKDSEventBasedWatchdog,
+	extensions context.Context,
+) (envoy_xds.Callbacks, *Metrics, error) {
+	kdsMetrics, err := NewMetrics(metrics)
+	if err != nil {
+		return nil, nil, err
+	}
+	changedTypes := map[model.ResourceType]struct{}{}
+	for _, typ := range reconciler.SupportedTypes() {
+		changedTypes[typ] = struct{}{}
+	}
+	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_xds_v3.Watchdog, error) {
+		log := log.WithValues("streamID", streamID, "nodeID", node.Id)
+		log = kuma_log.AddFieldsFromCtx(log, ctx, extensions)
+		return &EventBasedWatchdog{
+			Node:          node,
+			EventBus:      eventBus,
+			Reconciler:    reconciler,
+			ProvidedTypes: changedTypes,
+			Metrics:       kdsMetrics,
+			Log:           log,
+			NewFlushTicker: func() *time.Ticker {
+				return time.NewTicker(experimentalWatchdogCfg.FlushInterval.Duration)
+			},
+			NewFullResyncTicker: func() (*time.Ticker, context.CancelFunc) {
+				return newFullResyncTicker(experimentalWatchdogCfg)
+			},
+		}, nil
+	}), kdsMetrics, nil
+}
+
+func newFullResyncTicker(cfg kuma_cp.ExperimentalKDSEventBasedWatchdog) (*time.Ticker, context.CancelFunc) {
+	if !cfg.DelayFullResync {
+		return time.NewTicker(cfg.FullResyncInterval.Duration), func() {}
+	}
+
+	// To ensure an even distribution of connections over time, we introduce a random delay within
+	// the full resync interval. This prevents clustering connections within a short timeframe
+	// and spreads them evenly across the entire interval. After the initial trigger, we reset
+	// the ticker, returning it to its full resync interval.
+	// #nosec G404 - math rand is enough
+	delay := time.Duration(cfg.FullResyncInterval.Seconds()*rand.Float64()) * time.Second
+
+	return newDelayedFullResyncTicker(cfg.FullResyncInterval.Duration, delay)
+}
+
+func newDelayedFullResyncTicker(interval, delay time.Duration) (*time.Ticker, context.CancelFunc) {
+	ticker := time.NewTicker(interval + delay)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		timer := time.NewTimer(delay)
+		defer timer.Stop()
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-timer.C:
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			ticker.Reset(interval)
+		}
+	}()
+
+	return ticker, cancel
+}
+
+func kdsVersionExtractor(metadata *structpb.Struct) string {
+	version := system_proto.NewVersion()
+	if err := status.ReadVersion(metadata, version); err != nil {
+		return "unknown"
+	}
+	ver := version.GetKumaCp().GetVersion()
+	if strings.Contains(ver, "preview") {
+		return "preview" // avoid high cardinality metrics
+	}
+	return ver
+}
+
+func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotCache) { //nolint:unparam
+	hasher := Hasher{}
+	logger := util_xds.NewLogger(log)
+	return hasher, envoy_cache.NewSnapshotCache(false, hasher, logger)
+}
+
+type Hasher struct{}
+
+func (Hasher) ID(node *envoy_core.Node) string {
+	tenantID, found := util.TenantFromMetadata(node)
+	if !found {
+		return node.Id
+	}
+	return node.Id + ":" + tenantID
+}

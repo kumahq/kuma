@@ -1,0 +1,55 @@
+type: MeshTimeout
+mesh: mesh-1
+name: aaa
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: backend
+      default:
+        http:
+          requestTimeout: 1s
+          streamIdleTimeout: 1s
+---
+# 'bbb' has less priority than 'aaa' based on the name, but it should take precedence because it's a zone-originated policy
+type: MeshTimeout
+mesh: mesh-1
+name: bbb
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: zone-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: backend
+      default:
+        http:
+          requestTimeout: 3s
+          streamIdleTimeout: 3s
+---
+# 'ccc' has more priority than other even though it's a global-originated policy
+type: MeshTimeout
+mesh: mesh-1
+name: ccc
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
+      version: v1
+      team: mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: backend
+      default:
+        http:
+          streamIdleTimeout: 5s

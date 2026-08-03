@@ -1,0 +1,12 @@
+type: MeshTimeout
+name: default-timeout-zone-1
+mesh: default
+spec:
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s
+        connectionTimeout: 2s
+        http:
+          requestTimeout: 2s

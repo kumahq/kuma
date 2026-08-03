@@ -1,0 +1,543 @@
+package bootstrap
+
+import (
+	"net"
+	"strconv"
+
+	"github.com/asaskevich/govalidator"
+	envoy_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_grpc_credentials_v3 "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
+	envoy_metrics_v3 "github.com/envoyproxy/go-control-plane/envoy/config/metrics/v3"
+	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
+	regex_engines "github.com/envoyproxy/go-control-plane/envoy/extensions/regex_engines/v3"
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/system_names"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	clusters_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
+)
+
+var BootstrapClusters = map[string]struct{}{}
+
+func RegisterBootstrapCluster(c string) string {
+	BootstrapClusters[c] = struct{}{}
+	return c
+}
+
+var (
+	adsClusterName                 = RegisterBootstrapCluster(names.GetAdsClusterName())
+	accessLogSinkClusterName       = RegisterBootstrapCluster(names.GetAccessLogSinkClusterName())
+	systemAdsClusterName           = RegisterBootstrapCluster(system_names.MustBeSystemName("ads"))
+	systemAccessLogSinkClusterName = RegisterBootstrapCluster(system_names.MustBeSystemName("access_log_sink"))
+)
+
+func genConfig(parameters configParameters, enableReloadableTokens bool, meshResource *core_mesh.MeshResource) (*envoy_bootstrap_v3.Bootstrap, error) {
+	unifiedNamingEnabled := unified_naming.Enabled(&core_xds.DataplaneMetadata{Features: parameters.Features}, meshResource)
+
+	adsName := adsClusterName
+	accessLogSinkName := accessLogSinkClusterName
+	if unifiedNamingEnabled {
+		adsName = systemAdsClusterName
+		accessLogSinkName = systemAccessLogSinkClusterName
+	}
+
+	staticClusters, err := buildStaticClusters(
+		parameters,
+		enableReloadableTokens,
+		adsName,
+		accessLogSinkName,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	features := []any{}
+	for feature := range parameters.Features {
+		features = append(features, feature)
+	}
+
+	runtimeLayers := []*envoy_bootstrap_v3.RuntimeLayer{{
+		Name: "kuma",
+		LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_StaticLayer{
+			StaticLayer: util_proto.MustStruct(map[string]any{
+				"re2.max_program_size.error_level": 4294967295,
+				"re2.max_program_size.warn_level":  1000,
+			}),
+		},
+	}}
+
+	// We create matchers
+	var matchNames []*envoy_tls.SubjectAltNameMatcher
+	for _, typ := range []envoy_tls.SubjectAltNameMatcher_SanType{
+		envoy_tls.SubjectAltNameMatcher_DNS,
+		envoy_tls.SubjectAltNameMatcher_IP_ADDRESS,
+	} {
+		matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
+			SanType: typ,
+			Matcher: &envoy_type_matcher_v3.StringMatcher{
+				MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: parameters.XdsHost},
+			},
+		})
+	}
+	configType := envoy_core_v3.ApiConfigSource_DELTA_GRPC
+
+	res := &envoy_bootstrap_v3.Bootstrap{
+		Node: &envoy_core_v3.Node{
+			Id:      parameters.Id,
+			Cluster: parameters.Service,
+			Metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					core_xds.FieldVersion: {
+						Kind: &structpb.Value_StructValue{
+							StructValue: util_proto.MustToStruct(parameters.Version),
+						},
+					},
+					core_xds.FieldFeatures:        util_proto.MustNewValueForStruct(features),
+					core_xds.FieldWorkdir:         util_proto.MustNewValueForStruct(parameters.Workdir),
+					core_xds.FieldMetricsCertPath: util_proto.MustNewValueForStruct(parameters.MetricsCertPath),
+					core_xds.FieldMetricsKeyPath:  util_proto.MustNewValueForStruct(parameters.MetricsKeyPath),
+					core_xds.FieldSystemCaPath:    util_proto.MustNewValueForStruct(parameters.SystemCaPath),
+					core_xds.FieldIPv6Enabled:     util_proto.MustNewValueForStruct(parameters.IPv6Enabled),
+					core_xds.FieldSpireSocketPath: util_proto.MustNewValueForStruct(parameters.SpireSocketPath),
+				},
+			},
+		},
+		LayeredRuntime: &envoy_bootstrap_v3.LayeredRuntime{
+			Layers: runtimeLayers,
+		},
+		StatsConfig: &envoy_metrics_v3.StatsConfig{
+			StatsTags: []*envoy_metrics_v3.TagSpecifier{
+				{
+					TagName:  "name",
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^grpc\\.((.+)\\.)"},
+				},
+				{
+					TagName:  "status",
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^grpc.*streams_closed(_([0-9]+))"},
+				},
+				{
+					TagName:  "kafka_name",
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^kafka(\\.(\\S*[0-9]))\\."},
+				},
+				{
+					TagName:  "kafka_type",
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^kafka\\..*\\.(.*?(?=_duration|$))"},
+				},
+				{
+					TagName:  "worker",
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "(worker_([0-9]+)\\.)"},
+				},
+				{
+					TagName:  "listener",
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "((.+?)\\.)rbac\\."},
+				},
+			},
+		},
+		DynamicResources: &envoy_bootstrap_v3.Bootstrap_DynamicResources{
+			LdsConfig: &envoy_core_v3.ConfigSource{
+				ConfigSourceSpecifier: &envoy_core_v3.ConfigSource_Ads{Ads: &envoy_core_v3.AggregatedConfigSource{}},
+				InitialFetchTimeout:   durationpb.New(0),
+				ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
+			},
+			CdsConfig: &envoy_core_v3.ConfigSource{
+				ConfigSourceSpecifier: &envoy_core_v3.ConfigSource_Ads{Ads: &envoy_core_v3.AggregatedConfigSource{}},
+				InitialFetchTimeout:   durationpb.New(0),
+				ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
+			},
+			AdsConfig: &envoy_core_v3.ApiConfigSource{
+				ApiType:                   configType,
+				TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
+				SetNodeOnFirstMessageOnly: true,
+				GrpcServices: []*envoy_core_v3.GrpcService{
+					buildGrpcService(parameters, enableReloadableTokens, adsName),
+				},
+			},
+		},
+		StaticResources: &envoy_bootstrap_v3.Bootstrap_StaticResources{
+			Secrets: []*envoy_tls.Secret{
+				{
+					Name: tls.CpValidationCtx,
+					Type: &envoy_tls.Secret_ValidationContext{
+						ValidationContext: &envoy_tls.CertificateValidationContext{
+							MatchTypedSubjectAltNames: matchNames,
+							TrustedCa: &envoy_core_v3.DataSource{
+								Specifier: &envoy_core_v3.DataSource_InlineBytes{
+									InlineBytes: parameters.CertBytes,
+								},
+							},
+						},
+					},
+				},
+			},
+			Clusters: staticClusters,
+		},
+		DefaultRegexEngine: &envoy_core_v3.TypedExtensionConfig{
+			Name:        "envoy.regex_engines.google_re2",
+			TypedConfig: util_proto.MustMarshalAny(&regex_engines.GoogleRE2{}),
+		},
+	}
+	for _, r := range res.StaticResources.Clusters {
+		if r.Name == adsName {
+			transport := &envoy_tls.UpstreamTlsContext{
+				Sni: parameters.XdsHost,
+				CommonTlsContext: &envoy_tls.CommonTlsContext{
+					TlsParams: &envoy_tls.TlsParameters{
+						TlsMinimumProtocolVersion: envoy_tls.TlsParameters_TLSv1_2,
+					},
+					ValidationContextType: &envoy_tls.CommonTlsContext_ValidationContextSdsSecretConfig{
+						ValidationContextSdsSecretConfig: &envoy_tls.SdsSecretConfig{
+							Name: tls.CpValidationCtx,
+						},
+					},
+				},
+			}
+			typedConfig, err := util_proto.MarshalAnyDeterministic(transport)
+			if err != nil {
+				return nil, err
+			}
+			r.TransportSocket = &envoy_core_v3.TransportSocket{
+				Name: "envoy.transport_sockets.tls",
+				ConfigType: &envoy_core_v3.TransportSocket_TypedConfig{
+					TypedConfig: typedConfig,
+				},
+			}
+		}
+	}
+	if parameters.HdsEnabled {
+		res.HdsConfig = &envoy_core_v3.ApiConfigSource{
+			ApiType:                   envoy_core_v3.ApiConfigSource_GRPC,
+			TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
+			SetNodeOnFirstMessageOnly: true,
+			GrpcServices: []*envoy_core_v3.GrpcService{
+				buildGrpcService(parameters, enableReloadableTokens, adsName),
+			},
+		}
+	}
+
+	if (!enableReloadableTokens || parameters.DataplaneTokenPath == "") && parameters.DataplaneToken != "" {
+		if res.HdsConfig != nil {
+			for _, n := range res.HdsConfig.GrpcServices {
+				n.InitialMetadata = []*envoy_core_v3.HeaderValue{
+					{Key: "authorization", Value: parameters.DataplaneToken},
+				}
+			}
+		}
+		for _, n := range res.DynamicResources.AdsConfig.GrpcServices {
+			n.InitialMetadata = []*envoy_core_v3.HeaderValue{
+				{Key: "authorization", Value: parameters.DataplaneToken},
+			}
+		}
+	}
+
+	if parameters.DataplaneResource != "" {
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneDataplaneResource] = util_proto.MustNewValueForStruct(parameters.DataplaneResource)
+	}
+	if parameters.AdminPort != 0 {
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneAdminPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.AdminPort)))
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneAdminAddress] = util_proto.MustNewValueForStruct(parameters.AdminAddress)
+		if parameters.AdminSocketPath != "" {
+			res.Node.Metadata.Fields[core_xds.FieldDataplaneAdminSocketPath] = util_proto.MustNewValueForStruct(parameters.AdminSocketPath)
+			res.Admin = &envoy_bootstrap_v3.Admin{
+				Address: &envoy_core_v3.Address{
+					Address: &envoy_core_v3.Address_Pipe{
+						Pipe: &envoy_core_v3.Pipe{
+							Path: parameters.AdminSocketPath,
+							Mode: 0o600,
+						},
+					},
+				},
+			}
+		} else {
+			res.Admin = &envoy_bootstrap_v3.Admin{
+				Address: &envoy_core_v3.Address{
+					Address: &envoy_core_v3.Address_SocketAddress{
+						SocketAddress: &envoy_core_v3.SocketAddress{
+							Address:  parameters.AdminAddress,
+							Protocol: envoy_core_v3.SocketAddress_TCP,
+							PortSpecifier: &envoy_core_v3.SocketAddress_PortValue{
+								PortValue: parameters.AdminPort,
+							},
+						},
+					},
+				},
+			}
+		}
+		if parameters.AdminAccessLogPath != "" {
+			fileAccessLog := &access_loggers_file.FileAccessLog{
+				Path: parameters.AdminAccessLogPath,
+			}
+			marshaled, err := util_proto.MarshalAnyDeterministic(fileAccessLog)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not marshall %T", fileAccessLog)
+			}
+			res.Admin.AccessLog = []*envoy_accesslog_v3.AccessLog{
+				{
+					Name: "envoy.access_loggers.file",
+					ConfigType: &envoy_accesslog_v3.AccessLog_TypedConfig{
+						TypedConfig: marshaled,
+					},
+				},
+			}
+		}
+	}
+	if parameters.DNSPort != 0 {
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneDNSPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.DNSPort)))
+	}
+	if parameters.ReadinessPort != 0 {
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneReadinessPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.ReadinessPort)))
+	}
+	// NOTE: parameters.AppProbeProxyEnabled originates from BootstrapRequest where
+	// the JSON wire key for this setting is "appProbeProxyDisabled" for backward
+	// compatibility. Do not try to auto-invert or post-process this value here
+	// based on names. Any such logic would diverge CP and DP behavior under
+	// version skew and can break rolling upgrades. If you think this should
+	// change, read https://github.com/kumahq/kuma/issues/13885 first and propose
+	// a versioned endpoint plan with a deprecation window
+	if parameters.AppProbeProxyEnabled {
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneAppProbeProxyEnabled] = util_proto.MustNewValueForStruct("true")
+	}
+	if parameters.ProxyType != "" {
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneProxyType] = util_proto.MustNewValueForStruct(parameters.ProxyType)
+	}
+	if len(parameters.DynamicMetadata) > 0 {
+		md := make(map[string]any, len(parameters.DynamicMetadata))
+		for k, v := range parameters.DynamicMetadata {
+			md[k] = v
+		}
+		res.Node.Metadata.Fields[core_xds.FieldDynamicMetadata] = util_proto.MustNewValueForStruct(md)
+	}
+
+	if parameters.TransparentProxy != nil {
+		res.Node.Metadata.Fields[core_xds.FieldTransparentProxy] = &structpb.Value{
+			Kind: &structpb.Value_StructValue{
+				StructValue: util_proto.MustStructToProtoStruct(parameters.TransparentProxy),
+			},
+		}
+	}
+
+	if parameters.OtelEnvInventory != nil {
+		res.Node.Metadata.Fields[core_xds.FieldOtelEnvInventory] = &structpb.Value{
+			Kind: &structpb.Value_StructValue{
+				StructValue: util_proto.MustStructToProtoStruct(parameters.OtelEnvInventory),
+			},
+		}
+	}
+
+	return res, nil
+}
+
+func dnsLookupFamilyFromXdsHost(host string, lookupFn func(host string) ([]net.IP, error)) envoy_cluster_v3.Cluster_DnsLookupFamily {
+	if govalidator.IsDNSName(host) && host != "localhost" {
+		ips, err := lookupFn(host)
+		if err != nil {
+			log.Info("[WARNING] error looking up XDS host to determine DnsLookupFamily, falling back to AUTO", "hostname", host)
+			return envoy_cluster_v3.Cluster_AUTO
+		}
+		hasIPv6 := false
+
+		for _, ip := range ips {
+			if ip.To4() == nil {
+				hasIPv6 = true
+			}
+		}
+
+		if !hasIPv6 && len(ips) > 0 {
+			return envoy_cluster_v3.Cluster_V4_ONLY
+		}
+	}
+
+	return envoy_cluster_v3.Cluster_AUTO // default
+}
+
+func clusterTypeFromHost(host string) envoy_cluster_v3.Cluster_DiscoveryType {
+	if govalidator.IsIP(host) {
+		return envoy_cluster_v3.Cluster_STATIC
+	}
+	return envoy_cluster_v3.Cluster_STRICT_DNS
+}
+
+func buildGrpcService(params configParameters, useTokenPath bool, clusterName string) *envoy_core_v3.GrpcService {
+	if useTokenPath && params.DataplaneTokenPath != "" {
+		googleGrpcService := &envoy_core_v3.GrpcService{
+			TargetSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_{
+				GoogleGrpc: &envoy_core_v3.GrpcService_GoogleGrpc{ // #nosec G101 -- CredentialsFactoryName is an Envoy plugin identifier, not a credential
+					TargetUri:              net.JoinHostPort(params.XdsHost, strconv.FormatUint(uint64(params.XdsPort), 10)),
+					StatPrefix:             "ads",
+					CredentialsFactoryName: "envoy.grpc_credentials.file_based_metadata",
+					CallCredentials: []*envoy_core_v3.GrpcService_GoogleGrpc_CallCredentials{
+						{
+							CredentialSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
+								FromPlugin: &envoy_core_v3.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
+									Name: "envoy.grpc_credentials.file_based_metadata",
+									ConfigType: &envoy_core_v3.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
+										TypedConfig: util_proto.MustMarshalAny(&envoy_grpc_credentials_v3.FileBasedMetadataConfig{
+											SecretData: &envoy_core_v3.DataSource{
+												Specifier: &envoy_core_v3.DataSource_Filename{Filename: params.DataplaneTokenPath},
+											},
+										}),
+									},
+								},
+							},
+						},
+					},
+					ChannelArgs: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelArgs{
+						Args: map[string]*envoy_core_v3.GrpcService_GoogleGrpc_ChannelArgs_Value{
+							"grpc.keepalive_time_ms": {
+								ValueSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelArgs_Value_IntValue{
+									IntValue: 10000, // 10 seconds
+								},
+							},
+							"grpc.keepalive_timeout_ms": {
+								ValueSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelArgs_Value_IntValue{
+									IntValue: 30000, // 30 seconds
+								},
+							},
+							"grpc.http2.max_pings_without_data": {
+								ValueSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelArgs_Value_IntValue{
+									IntValue: 0,
+								},
+							},
+							// In Envoy's GoogleGrpc transport, this arg sizes the per-stream HTTP/2
+							// receive window for the xDS stream. If a push doesn't fit in the window,
+							// the stream stalls and gRPC aborts it with CANCELLED. The default of 4 MiB
+							// may not be sufficient for large deployments that do not use reachable
+							// backends. 16 MiB covers typical large snapshots.
+							"grpc.max_receive_message_length": {
+								ValueSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelArgs_Value_IntValue{
+									IntValue: int64(params.XdsGrpcMaxReceiveMessageBytes),
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		if params.CertBytes != nil {
+			googleGrpcService.GetGoogleGrpc().ChannelCredentials = &envoy_core_v3.GrpcService_GoogleGrpc_ChannelCredentials{
+				CredentialSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials{
+					SslCredentials: &envoy_core_v3.GrpcService_GoogleGrpc_SslCredentials{
+						RootCerts: &envoy_core_v3.DataSource{
+							Specifier: &envoy_core_v3.DataSource_InlineBytes{
+								InlineBytes: params.CertBytes,
+							},
+						},
+					},
+				},
+			}
+		}
+		return googleGrpcService
+	} else {
+		envoyGrpcSerivce := &envoy_core_v3.GrpcService{
+			TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
+					ClusterName: clusterName,
+				},
+			},
+		}
+		return envoyGrpcSerivce
+	}
+}
+
+func buildStaticClusters(parameters configParameters, enableReloadableTokens bool, adsName string, logSinkName string) ([]*envoy_cluster_v3.Cluster, error) {
+	proxyId, err := core_xds.ParseProxyIdFromString(parameters.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	accessLogSink := &envoy_cluster_v3.Cluster{
+		// TODO does timeout and keepAlive make sense on this as it uses unix domain sockets?
+		Name:           logSinkName,
+		ConnectTimeout: util_proto.Duration(parameters.XdsConnectTimeout),
+		LbPolicy:       envoy_cluster_v3.Cluster_ROUND_ROBIN,
+		UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
+			TcpKeepalive: &envoy_core_v3.TcpKeepalive{
+				KeepaliveProbes:   util_proto.UInt32(3),
+				KeepaliveTime:     util_proto.UInt32(10),
+				KeepaliveInterval: util_proto.UInt32(10),
+			},
+		},
+		ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: envoy_cluster_v3.Cluster_STATIC},
+		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
+			ClusterName: logSinkName,
+			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
+				{
+					LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
+						{
+							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+								Endpoint: &envoy_config_endpoint_v3.Endpoint{
+									Address: &envoy_core_v3.Address{
+										Address: &envoy_core_v3.Address_Pipe{Pipe: &envoy_core_v3.Pipe{Path: core_xds.AccessLogSocketName(parameters.Workdir, proxyId.ToResourceKey().Name, proxyId.ToResourceKey().Mesh)}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	if err := (&clusters_v3.Http2Configurer{}).Configure(accessLogSink); err != nil {
+		return nil, err
+	}
+
+	clusters := []*envoy_cluster_v3.Cluster{accessLogSink}
+
+	if parameters.DataplaneTokenPath == "" || !enableReloadableTokens {
+		adsCluster := &envoy_cluster_v3.Cluster{
+			Name:           adsName,
+			ConnectTimeout: util_proto.Duration(parameters.XdsConnectTimeout),
+			LbPolicy:       envoy_cluster_v3.Cluster_ROUND_ROBIN,
+			UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
+				TcpKeepalive: &envoy_core_v3.TcpKeepalive{
+					KeepaliveProbes:   util_proto.UInt32(3),
+					KeepaliveTime:     util_proto.UInt32(10),
+					KeepaliveInterval: util_proto.UInt32(10),
+				},
+			},
+			ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: clusterTypeFromHost(parameters.XdsHost)},
+			DnsLookupFamily:      dnsLookupFamilyFromXdsHost(parameters.XdsHost, net.LookupIP),
+			LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
+				ClusterName: adsName,
+				Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
+					{
+						LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
+							{
+								HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+									Endpoint: &envoy_config_endpoint_v3.Endpoint{
+										Address: &envoy_core_v3.Address{
+											Address: &envoy_core_v3.Address_SocketAddress{
+												SocketAddress: &envoy_core_v3.SocketAddress{
+													Address:       parameters.XdsHost,
+													PortSpecifier: &envoy_core_v3.SocketAddress_PortValue{PortValue: parameters.XdsPort},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		if err := (&clusters_v3.Http2Configurer{}).Configure(adsCluster); err != nil {
+			return nil, err
+		}
+
+		clusters = append(clusters, adsCluster)
+	}
+	return clusters, nil
+}

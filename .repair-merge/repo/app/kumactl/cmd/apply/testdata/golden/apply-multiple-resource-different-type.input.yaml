@@ -1,0 +1,26 @@
+# Just a starting comment
+---
+name: sample1
+# --- Checking a random separation doesn't break everything
+mesh: default
+type: Dataplane
+networking:
+  address: 2.2.2.2
+  inbound:
+  - address: 1.1.1.1
+    port: 80
+    servicePort: 8080
+    tags:
+      kuma.io/service: "web"
+      service: web
+      version: "1.0"
+      env: production
+  outbound:
+  - port: 3000
+    tags:
+      kuma.io/service: postgres
+---
+type: Secret
+name: sample
+mesh: default
+data: dGVzdAo=

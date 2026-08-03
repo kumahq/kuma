@@ -1,0 +1,18 @@
+{
+  "type": "MeshExternalService",
+  "name": "mes.http",
+  "mesh": "default",
+  "spec": {
+    "match": {
+      "type": "HostnameGenerator",
+      "port": 80,
+      "protocol": "http"
+    },
+    "endpoints": [
+      {
+        "address": "httpbin.org",
+        "port": 80
+      }
+    ]
+  }
+}

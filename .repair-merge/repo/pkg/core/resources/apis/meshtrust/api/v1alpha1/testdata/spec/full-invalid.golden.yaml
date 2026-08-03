@@ -1,0 +1,7 @@
+violations:
+- field: spec.caBundles[0].pem.value
+  message: provided certificate has incorrect format
+- field: spec.caBundles[1].pem
+  message: must be defined
+- field: spec.trustDomain
+  message: must not be longer than 253 characters

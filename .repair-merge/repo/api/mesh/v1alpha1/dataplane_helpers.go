@@ -1,0 +1,742 @@
+package v1alpha1
+
+import (
+	"encoding"
+	"fmt"
+	"maps"
+	"net"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
+
+	"github.com/pkg/errors"
+)
+
+const (
+	KumaIOPrefix    = "kuma.io/"
+	K8sKumaIOPrefix = "k8s.kuma.io/"
+)
+
+// WildcardHostname matches any hostname when used in hostname-based matching.
+const WildcardHostname = "*"
+
+const (
+	KubeNamespaceTag = "k8s.kuma.io/namespace"
+	KubeServiceTag   = "k8s.kuma.io/service-name"
+	KubePortTag      = "k8s.kuma.io/service-port"
+	// KDSSyncLabel a label that controls properties of the KDS sync.
+	// currently only disabled/enabled is supported
+	KDSSyncLabel = "kuma.io/kds-sync"
+)
+
+// IsReservedLabelKey reports whether k belongs to a Kuma-reserved label namespace.
+func IsReservedLabelKey(k string) bool {
+	return strings.HasPrefix(k, KumaIOPrefix) || strings.HasPrefix(k, K8sKumaIOPrefix)
+}
+
+const (
+	KubernetesEnvironment = "kubernetes"
+	UniversalEnvironment  = "universal"
+)
+
+const (
+	// Mandatory tag that has a reserved meaning in Kuma.
+	ServiceTag     = "kuma.io/service"
+	ServiceUnknown = "unknown"
+
+	// Locality related tags
+	ZoneTag = "kuma.io/zone"
+
+	// EnvTag defines whether a zone is universal or Kubernetes
+	EnvTag = "kuma.io/env"
+
+	MeshTag = "kuma.io/mesh"
+
+	// UnifiedNameTag is the io.kuma.tags listener key filled when tags are empty
+	// so listenerTags keeps matching: the destination KRI on an outbound, the
+	// contextual self-reference on an inbound.
+	UnifiedNameTag = "kuma.io/unified-name"
+
+	// Optional tag that has a reserved meaning in Kuma.
+	// If absent, Kuma will treat application's protocol as opaque TCP.
+	ProtocolTag = "kuma.io/protocol"
+	// InstanceTag is set only for Dataplanes that implements headless services
+	InstanceTag = "kuma.io/instance"
+
+	// External service tag
+	ExternalServiceTag = "kuma.io/external-service-name"
+
+	// Listener tag is used to select Gateway listeners
+	ListenerTag = "gateways.kuma.io/listener-name"
+
+	// Port tag is used to select Gateway listeners
+	PortTag = "gateways.kuma.io/listener-port"
+
+	// Used for Service-less dataplanes
+	TCPPortReserved = 49151 // IANA Reserved
+
+	// DisplayName is a standard label that can be used to easier recognize policy name.
+	// On Kubernetes, Kuma resource name contains namespace. Display name is original name without namespace.
+	// The name contains hash when the resource is synced from global to zone. In this case, display name is original name from originated CP.
+	DisplayName = "kuma.io/display-name"
+
+	// ResourceOriginLabel is a standard label that has information about the origin of the resource.
+	// It can be either "global" or "zone".
+	ResourceOriginLabel = "kuma.io/origin"
+
+	// EffectLabel is a standard label that configures what effect the policy has on the DPPs. The only supported value
+	// at this moment is "shadow". When effect is "shadow" the policy doesn't change the DPPs configs, but could be
+	// observed using the Inspect API.
+	EffectLabel = "kuma.io/effect"
+
+	// PolicyRoleLabel is a standard label that reflects the role of the policy. The value is automatically set by the
+	// Kuma CP based on the policy spec. Supported values are "producer", "consumer", "system" and "workload-owner".
+	PolicyRoleLabel = "kuma.io/policy-role"
+
+	// ProxyTypeLabel is a standard label that reflects the type of proxy. Supported values are "sidecar", "gateway",
+	// "zoneingress", "zoneegress"
+	ProxyTypeLabel = "kuma.io/proxy-type"
+
+	// ManagedByLabel is used when a MeshService is auto-generated
+	ManagedByLabel = "kuma.io/managed-by"
+
+	// DeletionGracePeriodStartedLabel is used when generating MeshServices on
+	// universal, it's here to avoid import cycles
+	DeletionGracePeriodStartedLabel string = "kuma.io/deletion-grace-period-started-at"
+
+	// ListenerZoneIngressLabel is auto-computed when a Dataplane has at least one ZoneIngress listener.
+	ListenerZoneIngressLabel = "kuma.io/listener-zoneingress"
+
+	// ListenerZoneEgressLabel is auto-computed when a Dataplane has at least one ZoneEgress listener.
+	ListenerZoneEgressLabel = "kuma.io/listener-zoneegress"
+)
+
+type ResourceOrigin string
+
+const (
+	UnknownResourceOrigin ResourceOrigin = ""
+	GlobalResourceOrigin  ResourceOrigin = "global"
+	ZoneResourceOrigin    ResourceOrigin = "zone"
+)
+
+var originOrder = map[ResourceOrigin]int{
+	GlobalResourceOrigin:  1,
+	UnknownResourceOrigin: 2,
+	ZoneResourceOrigin:    3,
+}
+
+// Compare recreates the following comparison table:
+//
+// origin_1 | origin_2 | has_more_priority
+// ---------|----------|-------------
+// Global   | Zone     | origin_2
+// Global   | Unknown  | origin_2
+// Zone     | Global   | origin_1
+// Zone     | Unknown  | origin_1
+// Unknown  | Global   | origin_1
+// Unknown  | Zone     | origin_2
+//
+// If we assign numbers to origins like Global=1, Zone=3, Unknown=2, then we can compare them as numbers
+// and get the same result as in the table above.
+func (o ResourceOrigin) Compare(other ResourceOrigin) int {
+	return originOrder[o] - originOrder[other]
+}
+
+func (o ResourceOrigin) IsValid() error {
+	switch o {
+	case GlobalResourceOrigin, ZoneResourceOrigin:
+		return nil
+	default:
+		return errors.Errorf("unknown resource origin %q", o)
+	}
+}
+
+type PolicyRole string
+
+const (
+	SystemPolicyRole        PolicyRole = "system"
+	ProducerPolicyRole      PolicyRole = "producer"
+	ConsumerPolicyRole      PolicyRole = "consumer"
+	WorkloadOwnerPolicyRole PolicyRole = "workload-owner"
+)
+
+var roleOrder = map[PolicyRole]int{
+	SystemPolicyRole:        1,
+	ProducerPolicyRole:      2,
+	ConsumerPolicyRole:      3,
+	WorkloadOwnerPolicyRole: 4,
+}
+
+func (r PolicyRole) Compare(o PolicyRole) int {
+	return roleOrder[r] - roleOrder[o]
+}
+
+type ProxyTypeLabelValues string
+
+const (
+	SidecarLabel     ProxyTypeLabelValues = "sidecar"
+	GatewayLabel     ProxyTypeLabelValues = "gateway"
+	ZoneIngressLabel ProxyTypeLabelValues = "zoneingress"
+	ZoneEgressLabel  ProxyTypeLabelValues = "zoneegress"
+)
+
+type ProxyType string
+
+const (
+	DataplaneProxyType ProxyType = "dataplane"
+	IngressProxyType   ProxyType = "ingress"
+	EgressProxyType    ProxyType = "egress"
+)
+
+func (t ProxyType) IsValid() error {
+	switch t {
+	case DataplaneProxyType, IngressProxyType, EgressProxyType:
+		return nil
+	}
+	return errors.Errorf("%s is not a valid proxy type", t)
+}
+
+type InboundInterface struct {
+	DataplaneAdvertisedIP string
+	DataplaneIP           string
+	DataplanePort         uint32
+	WorkloadIP            string
+	WorkloadPort          uint32
+	InboundName           string
+}
+
+// We need to implement TextMarshaler because InboundInterface is used
+// as a key for maps that are JSON encoded for logging.
+var _ encoding.TextMarshaler = InboundInterface{}
+
+func (i InboundInterface) MarshalText() ([]byte, error) {
+	return []byte(i.String()), nil
+}
+
+func (i InboundInterface) String() string {
+	return fmt.Sprintf("%s:%d:%d", i.DataplaneIP, i.DataplanePort, i.WorkloadPort)
+}
+
+func (i *InboundInterface) IsServiceLess() bool {
+	return i.DataplanePort == TCPPortReserved
+}
+
+type OutboundInterface struct {
+	DataplaneIP   string
+	DataplanePort uint32
+}
+
+// We need to implement TextMarshaler because OutboundInterface is used
+// as a key for maps that are JSON encoded for logging.
+var _ encoding.TextMarshaler = OutboundInterface{}
+
+func (i OutboundInterface) MarshalText() ([]byte, error) {
+	return []byte(i.String()), nil
+}
+
+func (i OutboundInterface) String() string {
+	return net.JoinHostPort(i.DataplaneIP,
+		strconv.FormatUint(uint64(i.DataplanePort), 10))
+}
+
+func NonBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
+	return outbound.BackendRef == nil
+}
+
+func BackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
+	return outbound.BackendRef != nil
+}
+
+func (n *Dataplane_Networking) GetOutbounds(filters ...func(*Dataplane_Networking_Outbound) bool) []*Dataplane_Networking_Outbound {
+	var result []*Dataplane_Networking_Outbound
+	for _, outbound := range n.GetOutbound() {
+		add := true
+		for _, filter := range filters {
+			if !filter(outbound) {
+				add = false
+			}
+		}
+		if add {
+			result = append(result, outbound)
+		}
+	}
+	return result
+}
+
+func (n *Dataplane_Networking) GetOutboundInterfaces() []OutboundInterface {
+	if n == nil {
+		return nil
+	}
+	ofaces := make([]OutboundInterface, len(n.Outbound))
+	for i, outbound := range n.Outbound {
+		ofaces[i] = n.ToOutboundInterface(outbound)
+	}
+	return ofaces
+}
+
+func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networking_Outbound) OutboundInterface {
+	oface := OutboundInterface{
+		DataplanePort: outbound.Port,
+	}
+	if outbound.Address != "" {
+		oface.DataplaneIP = outbound.Address
+	} else {
+		oface.DataplaneIP = "127.0.0.1"
+	}
+	return oface
+}
+
+func (n *Dataplane_Networking) GetInboundInterfaces() []InboundInterface {
+	if n == nil {
+		return nil
+	}
+	ifaces := make([]InboundInterface, len(n.Inbound))
+	for i, inbound := range n.Inbound {
+		ifaces[i] = n.ToInboundInterface(inbound)
+	}
+	return ifaces
+}
+
+func (n *Dataplane_Networking) GetInboundForPort(port uint32) *Dataplane_Networking_Inbound {
+	for _, inbound := range n.Inbound {
+		if port == inbound.Port {
+			return inbound
+		}
+	}
+	return nil
+}
+
+// InboundsSelectedBySectionName returns the list of inbound interfaces selected by sectionName. It returns all inbounds if
+// sectionName is empty
+func (n *Dataplane_Networking) InboundsSelectedBySectionName(sectionName string) []InboundInterface {
+	var selectedInbounds []InboundInterface
+	for _, inbound := range n.Inbound {
+		if sectionName == "" || inbound.GetSectionName() == sectionName {
+			selectedInbounds = append(selectedInbounds, n.ToInboundInterface(inbound))
+		}
+	}
+	return selectedInbounds
+}
+
+// ListenersSelectedBySectionName returns the list of embedded zone-proxy listeners selected by
+// sectionName. It returns all listeners if sectionName is empty.
+func (n *Dataplane_Networking) ListenersSelectedBySectionName(sectionName string) []*Dataplane_Networking_Listener {
+	var selected []*Dataplane_Networking_Listener
+	for _, l := range n.Listeners {
+		if sectionName == "" || l.GetSectionName() == sectionName {
+			selected = append(selected, l)
+		}
+	}
+	return selected
+}
+
+func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {
+	iface := InboundInterface{
+		DataplanePort: inbound.Port,
+	}
+	if inbound.Address != "" {
+		iface.DataplaneIP = inbound.Address
+	} else {
+		iface.DataplaneIP = n.Address
+	}
+	if n.AdvertisedAddress != "" {
+		iface.DataplaneAdvertisedIP = n.AdvertisedAddress
+	} else {
+		iface.DataplaneAdvertisedIP = iface.DataplaneIP
+	}
+	if inbound.ServiceAddress != "" {
+		iface.WorkloadIP = inbound.ServiceAddress
+	} else {
+		iface.WorkloadIP = iface.DataplaneIP
+	}
+	if inbound.ServicePort != 0 {
+		iface.WorkloadPort = inbound.ServicePort
+	} else {
+		iface.WorkloadPort = inbound.Port
+	}
+	iface.InboundName = inbound.GetSectionName()
+	return iface
+}
+
+func (n *Dataplane_Networking) GetHealthyInbounds() []*Dataplane_Networking_Inbound {
+	var inbounds []*Dataplane_Networking_Inbound
+	for _, inbound := range n.GetInbound() {
+		if inbound.GetState() != Dataplane_Networking_Inbound_Ready {
+			continue
+		}
+		if inbound.Health != nil && !inbound.Health.Ready {
+			continue
+		}
+		inbounds = append(inbounds, inbound)
+	}
+	return inbounds
+}
+
+// Matches is simply an alias for MatchTags to make source code more aesthetic.
+// Only the gateway carries tags; regular inbounds are matched via labels.
+func (d *Dataplane) Matches(selector TagSelector) bool {
+	if d == nil {
+		return false
+	}
+	return selector.Matches(d.GetNetworking().GetGateway().GetTags())
+}
+
+// MatchTagsFuzzy fuzzy-matches the gateway's tags; regular inbounds are
+// matched via labels.
+func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
+	if d == nil {
+		return false
+	}
+	return selector.MatchesFuzzy(d.GetNetworking().GetGateway().GetTags())
+}
+
+// GetProtocolFallback returns the protocol supported by this inbound interface.
+// The kuma.io/protocol tag is still read as a fallback: protocol is a per-port
+// property that resource labels cannot express, so Universal dataplanes
+// persisted before the Protocol field existed carry it only as an inbound tag.
+func (d *Dataplane_Networking_Inbound) GetProtocolFallback() string {
+	if d == nil {
+		return ""
+	}
+	if d.Protocol != "" {
+		return d.Protocol
+	}
+	return d.Tags[ProtocolTag]
+}
+
+// GetServiceFallback returns the service this inbound belongs to, preferring
+// the legacy per-inbound kuma.io/service tag over the given Dataplane-scoped
+// fallback (its kuma.io/service label). A Dataplane carries a single service
+// label, so a Dataplane provisioned before the move to labels that exposes
+// several services can only be resolved per inbound, from the tag it still
+// declares. Without the tag every inbound would inherit one service and
+// per-service filtering would publish ports of unrelated services.
+func (d *Dataplane_Networking_Inbound) GetServiceFallback(fallback string) string {
+	if d == nil {
+		return fallback
+	}
+	if service := d.GetTags()[ServiceTag]; service != "" {
+		return service
+	}
+	return fallback
+}
+
+// GetSectionName returns either inbound name or stringified port value
+func (d *Dataplane_Networking_Inbound) GetSectionName() string {
+	if d == nil {
+		return ""
+	}
+	if d.Name != "" {
+		return d.Name
+	}
+	return strconv.Itoa(int(d.Port))
+}
+
+// GetSectionName returns either listener name or stringified port value.
+func (l *Dataplane_Networking_Listener) GetSectionName() string {
+	if l == nil {
+		return ""
+	}
+	if l.Name != "" {
+		return l.Name
+	}
+	return strconv.Itoa(int(l.Port))
+}
+
+// GetService returns a service name represented by this outbound interface.
+//
+// The purpose of this method is to encapsulate implementation detail
+// that service is modeled as a tag rather than a separate field.
+func (d *Dataplane_Networking_Outbound) GetService() string {
+	if d == nil || d.GetTags() == nil {
+		return ""
+	}
+	return d.GetTags()[ServiceTag]
+}
+
+const MatchAllTag = "*"
+
+type TagSelector map[string]string
+
+func (s TagSelector) Matches(tags map[string]string) bool {
+	if len(s) == 0 {
+		return true
+	}
+	for tag, value := range s {
+		inboundVal, exist := tags[tag]
+		if !exist {
+			return false
+		}
+		if value != inboundVal && value != MatchAllTag {
+			return false
+		}
+	}
+	return true
+}
+
+func (s TagSelector) MatchesFuzzy(tags map[string]string) bool {
+	if len(s) == 0 {
+		return true
+	}
+	for tag, value := range s {
+		inboundVal, exist := tags[tag]
+		if !exist {
+			return false
+		}
+		if !strings.Contains(inboundVal, value) && value != MatchAllTag {
+			return false
+		}
+	}
+	return true
+}
+
+func (s TagSelector) Rank() TagSelectorRank {
+	var r TagSelectorRank
+
+	for _, value := range s {
+		if value == MatchAllTag {
+			r.WildcardMatches++
+		} else {
+			r.ExactMatches++
+		}
+	}
+	return r
+}
+
+func (s TagSelector) Equal(other TagSelector) bool {
+	return len(s) == 0 && len(other) == 0 || len(s) == len(other) && reflect.DeepEqual(s, other)
+}
+
+func MatchAnyService() TagSelector {
+	return MatchService(MatchAllTag)
+}
+
+func MatchService(service string) TagSelector {
+	return TagSelector{ServiceTag: service}
+}
+
+func MatchTags(tags map[string]string) TagSelector {
+	return TagSelector(tags)
+}
+
+// Set of tags that only allows a single value per key.
+type SingleValueTagSet map[string]string
+
+func (t SingleValueTagSet) Keys() []string {
+	keys := make([]string, 0, len(t))
+	for key := range t {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func Merge[TagSet ~map[string]string](other ...TagSet) TagSet {
+	// Small optimization, to not iterate over the whole map if only one
+	// argument is provided
+	if len(other) == 1 {
+		return other[0]
+	}
+
+	merged := TagSet{}
+
+	for _, t := range other {
+		maps.Copy(merged, t)
+	}
+
+	return merged
+}
+
+// MergeAs is just syntactic sugar which converts merged result to assumed type
+func MergeAs[R ~map[string]string, T ~map[string]string](other ...T) R {
+	return R(Merge(other...))
+}
+
+func (t SingleValueTagSet) Exclude(key string) SingleValueTagSet {
+	rv := SingleValueTagSet{}
+	for k, v := range t {
+		if k == key {
+			continue
+		}
+		rv[k] = v
+	}
+	return rv
+}
+
+func (t SingleValueTagSet) String() string {
+	var tags []string
+	for tag, value := range t {
+		tags = append(tags, fmt.Sprintf("%s=%s", tag, value))
+	}
+	sort.Strings(tags)
+	return strings.Join(tags, " ")
+}
+
+// Set of tags that allows multiple values per key.
+type MultiValueTagSet map[string]map[string]bool
+
+func (t MultiValueTagSet) Keys() []string {
+	keys := make([]string, 0, len(t))
+	for key := range t {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func (t MultiValueTagSet) Values(key string) []string {
+	if t == nil {
+		return nil
+	}
+	var result []string
+	for value := range t[key] {
+		result = append(result, value)
+	}
+	sort.Strings(result)
+	return result
+}
+
+func (t MultiValueTagSet) UniqueValues(key string) []string {
+	if t == nil {
+		return nil
+	}
+	alreadyFound := map[string]bool{}
+	var result []string
+	for value := range t[key] {
+		if !alreadyFound[value] {
+			result = append(result, value)
+			alreadyFound[value] = true
+		}
+	}
+	sort.Strings(result)
+	return result
+}
+
+func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
+	set := MultiValueTagSet{}
+	for tagName, values := range data {
+		for _, value := range values {
+			m, ok := set[tagName]
+			if !ok {
+				m = map[string]bool{}
+			}
+			m[value] = true
+			set[tagName] = m
+		}
+	}
+	return set
+}
+
+// TagSet returns the gateway's tags; regular inbounds carry no tag-shaped
+// identity and are represented by Dataplane labels instead.
+func (d *Dataplane) TagSet() MultiValueTagSet {
+	tags := MultiValueTagSet{}
+	for tag, value := range d.GetNetworking().GetGateway().GetTags() {
+		_, exists := tags[tag]
+		if !exists {
+			tags[tag] = map[string]bool{}
+		}
+		tags[tag][value] = true
+	}
+	return tags
+}
+
+// SingleValueTagSets returns the gateway's tag set; regular inbounds carry
+// no tag-shaped identity and are represented by Dataplane labels instead.
+func (d *Dataplane) SingleValueTagSets() []SingleValueTagSet {
+	var sets []SingleValueTagSet
+	if gateway := d.GetNetworking().GetGateway(); gateway != nil {
+		sets = append(sets, gateway.GetTags())
+	}
+	return sets
+}
+
+func (d *Dataplane) IsDelegatedGateway() bool {
+	return d.GetNetworking().GetGateway() != nil &&
+		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_DELEGATED
+}
+
+func (d *Dataplane) IsBuiltinGateway() bool {
+	return d.GetNetworking().GetGateway() != nil &&
+		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_BUILTIN
+}
+
+func (d *Dataplane) GetProxyType() ProxyTypeLabelValues {
+	if d.IsBuiltinGateway() {
+		return GatewayLabel
+	}
+	return SidecarLabel
+}
+
+func (t MultiValueTagSet) String() string {
+	var tags []string
+	for tag := range t {
+		tags = append(tags, fmt.Sprintf("%s=%s", tag, strings.Join(t.Values(tag), ",")))
+	}
+	sort.Strings(tags)
+	return strings.Join(tags, " ")
+}
+
+// TagSelectorRank helps to decide which of 2 selectors is more specific.
+type TagSelectorRank struct {
+	// Number of tags that match by the exact value.
+	ExactMatches int
+	// Number of tags that match by a wildcard ('*').
+	WildcardMatches int
+}
+
+func (r TagSelectorRank) CombinedWith(other TagSelectorRank) TagSelectorRank {
+	return TagSelectorRank{
+		ExactMatches:    r.ExactMatches + other.ExactMatches,
+		WildcardMatches: r.WildcardMatches + other.WildcardMatches,
+	}
+}
+
+func (r TagSelectorRank) CompareTo(other TagSelectorRank) int {
+	thisTotal := r.ExactMatches + r.WildcardMatches
+	otherTotal := other.ExactMatches + other.WildcardMatches
+	if thisTotal == otherTotal {
+		return r.ExactMatches - other.ExactMatches
+	}
+	return thisTotal - otherTotal
+}
+
+// HasZoneProxyListeners returns true when the Networking contains at least one
+// embedded zone proxy listener (ZoneIngress or ZoneEgress type).
+func (n *Dataplane_Networking) HasZoneProxyListeners() bool {
+	for _, l := range n.GetListeners() {
+		if l.Type == Dataplane_Networking_Listener_ZoneIngress || l.Type == Dataplane_Networking_Listener_ZoneEgress {
+			return true
+		}
+	}
+	return false
+}
+
+// IsZoneProxyOnly returns true when the Dataplane has zone proxy listeners but
+// no regular inbounds and no gateway, meaning it acts exclusively as a zone proxy.
+func (n *Dataplane_Networking) IsZoneProxyOnly() bool {
+	return n.HasZoneProxyListeners() && len(n.GetInbound()) == 0 && n.GetGateway() == nil
+}
+
+// GetReadyZoneIngressListeners returns all listeners of type ZoneIngress in Ready state.
+func (n *Dataplane_Networking) GetReadyZoneIngressListeners() []*Dataplane_Networking_Listener {
+	var result []*Dataplane_Networking_Listener
+	for _, l := range n.GetListeners() {
+		if l.Type == Dataplane_Networking_Listener_ZoneIngress && l.State == Dataplane_Networking_Listener_Ready {
+			result = append(result, l)
+		}
+	}
+	return result
+}
+
+// GetReadyZoneEgressListeners returns all listeners of type ZoneEgress in Ready state.
+func (n *Dataplane_Networking) GetReadyZoneEgressListeners() []*Dataplane_Networking_Listener {
+	var result []*Dataplane_Networking_Listener
+	for _, l := range n.GetListeners() {
+		if l.Type == Dataplane_Networking_Listener_ZoneEgress && l.State == Dataplane_Networking_Listener_Ready {
+			result = append(result, l)
+		}
+	}
+	return result
+}

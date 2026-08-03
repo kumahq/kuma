@@ -1,0 +1,28 @@
+---
+metadata:
+  namespace: demo
+  name: example
+spec:
+  clusterIP: 192.168.0.1
+  ports:
+    - protocol: TCP
+      appProtocol: MONGO
+      port: 7000
+      targetPort: 7070
+    - protocol: TCP
+      port: 6000
+      targetPort: metrics
+---
+metadata:
+  namespace: playground
+  name: sample
+spec:
+  clusterIP: 192.168.0.1
+  ports:
+    - protocol: TCP
+      appProtocol: MONGO
+      port: 7001
+      targetPort: 7070
+    - protocol: TCP
+      port: 6001
+      targetPort: metrics

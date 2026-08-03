@@ -1,0 +1,21 @@
+apiVersion: v2
+name: kuma
+description: A Helm chart for the Kuma Control Plane
+type: application
+version: 0.0.0-preview.vlocal-build # this is updated by release pipeline
+appVersion: 0.0.0-preview.vlocal-build # this is updated by release pipeline
+home: https://github.com/kumahq/kuma
+maintainers:
+  - name: Jakub Dyszkiewicz
+    email: jakub.dyszkiewicz@konghq.com
+    url: https://github.com/jakubdyszkiewicz
+  - name: Charly Molter
+    email: charly.molter@konghq.com
+    url: https://github.com/lahabana
+  - name: Mike Beaumont
+    email: michael.beaumont@konghq.com
+    url: https://github.com/michaelbeaumont
+icon: https://kuma.io/assets/images/brand/kuma-logo-new.svg
+keywords:
+  - service mesh
+  - control plane

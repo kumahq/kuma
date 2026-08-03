@@ -1,0 +1,11 @@
+package files_test
+
+import (
+	"testing"
+
+	"github.com/kumahq/kuma/v3/pkg/test"
+)
+
+func Test(t *testing.T) {
+	test.RunSpecs(t, "Files Suite")
+}

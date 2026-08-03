@@ -1,0 +1,1014 @@
+package controllers_test
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	kube_apps "k8s.io/api/apps/v1"
+	kube_batch "k8s.io/api/batch/v1"
+	kube_core "k8s.io/api/core/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
+
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
+)
+
+func Parse[T any](values []string) ([]T, error) {
+	l := make([]T, len(values))
+	for i, value := range values {
+		obj := new(T)
+		if err := yaml.Unmarshal([]byte(value), obj); err != nil {
+			return nil, err
+		}
+		l[i] = *obj
+	}
+	return l, nil
+}
+
+var _ = Describe("PodToDataplane(..)", func() {
+	type testCase struct {
+		pod               string
+		servicesForPod    string
+		otherReplicaSets  string
+		otherJobs         string
+		node              string
+		dataplane         string
+		existingDataplane string
+		nodeLabelsToCopy  []string
+		workloadLabels    []string
+		expectedErr       string
+	}
+	DescribeTable("should convert Pod into a Dataplane YAML version",
+		func(given testCase) {
+			// given
+			// pod
+			pod := &kube_core.Pod{}
+			bytes, err := os.ReadFile(filepath.Join("testdata", given.pod))
+			Expect(err).ToNot(HaveOccurred())
+			err = yaml.Unmarshal(bytes, pod)
+			Expect(err).ToNot(HaveOccurred())
+
+			// services for pod
+			services := []*kube_core.Service{}
+			if given.servicesForPod != "" {
+				bytes, err = os.ReadFile(filepath.Join("testdata", given.servicesForPod))
+				Expect(err).ToNot(HaveOccurred())
+				YAMLs := util_yaml.SplitYAML(string(bytes))
+				services, err = Parse[*kube_core.Service](YAMLs)
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			// node
+			var nodeGetter kube_client.Reader
+			if given.node != "" {
+				bytes, err = os.ReadFile(filepath.Join("testdata", given.node))
+				Expect(err).ToNot(HaveOccurred())
+				nodeGetter = fakeNodeReader(bytes)
+			}
+
+			// other ReplicaSets
+			var replicaSetGetter kube_client.Reader
+			if given.otherReplicaSets != "" {
+				replicaSetGetter = getReplicaSetsReader("testdata", given.otherReplicaSets)
+			}
+
+			var jobGetter kube_client.Reader
+			if given.otherJobs != "" {
+				jobGetter = getJobsReader("testdata", given.otherJobs)
+			}
+
+			// existing dataplane
+			existingDataplane := &mesh_k8s.Dataplane{}
+			if given.existingDataplane != "" {
+				bytes, err := os.ReadFile(filepath.Join("testdata", given.existingDataplane))
+				Expect(err).ToNot(HaveOccurred())
+				err = yaml.Unmarshal(bytes, existingDataplane)
+				Expect(err).ToNot(HaveOccurred())
+			}
+			// mirror production: the controller always names the Dataplane after the Pod
+			// before conversion (see pod_controller.go), which drives kuma.io/display-name
+			existingDataplane.Name = pod.Name
+
+			converter := PodConverter{
+				InboundConverter: InboundConverter{
+					NameExtractor: NameExtractor{
+						ReplicaSetGetter: replicaSetGetter,
+						JobGetter:        jobGetter,
+					},
+					NodeGetter:       nodeGetter,
+					NodeLabelsToCopy: given.nodeLabelsToCopy,
+				},
+				Zone:              "zone-1",
+				ResourceConverter: k8s.NewSimpleConverter(),
+				WorkloadLabels:    given.workloadLabels,
+			}
+
+			mesh := builders.Mesh().
+				Build()
+
+			// when
+			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, services, mesh)
+
+			// then
+			if given.expectedErr != "" {
+				Expect(err).To(MatchError(ContainSubstring(given.expectedErr)))
+				return
+			}
+			Expect(err).ToNot(HaveOccurred())
+
+			actual, err := yaml.Marshal(existingDataplane)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchGoldenYAML("testdata", given.dataplane))
+		},
+		Entry("01.Pod with 2 Services", testCase{
+			pod:            "01.pod.yaml",
+			servicesForPod: "01.services-for-pod.yaml",
+			dataplane:      "01.dataplane.yaml",
+		}),
+		Entry("03. Pod with gateway annotation and 1 service - legacy", testCase{
+			pod:            "03.pod.yaml",
+			servicesForPod: "03.services-for-pod.yaml",
+			dataplane:      "03.dataplane.yaml",
+		}),
+		Entry("04. Pod with direct access to all services", testCase{
+			pod:            "04.pod.yaml",
+			servicesForPod: "04.services-for-pod.yaml",
+			dataplane:      "04.dataplane.yaml",
+		}),
+		Entry("05. Pod with direct access to chosen services", testCase{
+			pod:            "05.pod.yaml",
+			servicesForPod: "05.services-for-pod.yaml",
+			dataplane:      "05.dataplane.yaml",
+		}),
+		Entry("08. Pod with transparent proxy enabled, without direct access servies", testCase{
+			pod:            "08.pod.yaml",
+			servicesForPod: "08.services-for-pod.yaml",
+			dataplane:      "08.dataplane.yaml",
+		}),
+		Entry("09. Pod with Kuma Ingress", testCase{
+			pod:            "09.pod.yaml",
+			servicesForPod: "09.services-for-pod.yaml",
+			dataplane:      "09.dataplane.yaml",
+		}),
+		Entry("10. Pod probes", testCase{
+			pod:            "10.pod.yaml",
+			servicesForPod: "10.services-for-pod.yaml",
+			dataplane:      "10.dataplane.yaml",
+		}),
+		Entry("11. Pod with several containers", testCase{
+			pod:            "11.pod.yaml",
+			servicesForPod: "11.services-for-pod.yaml",
+			dataplane:      "11.dataplane.yaml",
+		}),
+		Entry("12. Pod with kuma-sidecar is not ready", testCase{
+			pod:            "12.pod.yaml",
+			servicesForPod: "12.services-for-pod.yaml",
+			dataplane:      "12.dataplane.yaml",
+		}),
+		Entry("13. Pod without a service", testCase{
+			pod:       "13.pod.yaml",
+			dataplane: "13.dataplane.yaml",
+		}),
+		Entry("14. Gateway pod without a service", testCase{
+			pod:       "14.pod.yaml",
+			dataplane: "14.dataplane.yaml",
+		}),
+		Entry("15. Pod with transparent proxy enabled, IPv6 and without direct access servies", testCase{
+			pod:            "15.pod.yaml",
+			servicesForPod: "15.services-for-pod.yaml",
+			dataplane:      "15.dataplane.yaml",
+		}),
+		Entry("16. Pod with Kuma Egress", testCase{
+			pod:            "16.pod.yaml",
+			servicesForPod: "16.services-for-pod.yaml",
+			dataplane:      "16.dataplane.yaml",
+		}),
+		Entry("18. Gateway with non tcp appProtocol", testCase{
+			pod:            "18.pod.yaml",
+			servicesForPod: "18.services-for-pod.yaml",
+			dataplane:      "18.dataplane.yaml",
+		}),
+		Entry("19. Terminating pod is unhealthy", testCase{
+			pod:            "19.pod.yaml",
+			servicesForPod: "19.services-for-pod.yaml",
+			dataplane:      "19.dataplane.yaml",
+		}),
+		Entry("20. Pod with gateway annotation and 1 service identified by deployment", testCase{
+			pod:              "20.pod.yaml",
+			servicesForPod:   "20.services-for-pod.yaml",
+			otherReplicaSets: "20.replicasets-for-pod.yaml",
+			dataplane:        "20.dataplane.yaml",
+		}),
+		Entry("21. Pod with gateway annotation and 1 service with no replicaset", testCase{
+			pod:            "21.pod.yaml",
+			servicesForPod: "21.services-for-pod.yaml",
+			dataplane:      "21.dataplane.yaml",
+		}),
+		Entry("22. Pod with gateway annotation and 1 service with replicaset but no deployment", testCase{
+			pod:              "22.pod.yaml",
+			servicesForPod:   "22.services-for-pod.yaml",
+			otherReplicaSets: "22.replicasets-for-pod.yaml",
+			dataplane:        "22.dataplane.yaml",
+		}),
+		Entry("23. Pod with ignored listener", testCase{
+			pod:            "23.pod.yaml",
+			servicesForPod: "23.services-for-pod.yaml",
+			dataplane:      "23.dataplane.yaml",
+		}),
+		Entry("24. Pod with transparent proxy enabled, with ipv6 disabled", testCase{
+			pod:            "24.pod.yaml",
+			servicesForPod: "08.services-for-pod.yaml",
+			dataplane:      "24.dataplane.yaml",
+		}),
+		Entry("25. Pod with transparent proxy enabled, with no ip-family-mode and ipv6 disabled", testCase{
+			pod:            "25.pod.yaml",
+			servicesForPod: "08.services-for-pod.yaml",
+			dataplane:      "25.dataplane.yaml",
+		}),
+		Entry("26. Should copy node label to the dataplane labels", testCase{
+			pod:              "26.pod.yaml",
+			node:             "26.node.yaml",
+			dataplane:        "26.dataplane.yaml",
+			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
+		}),
+		Entry("27. Should not copy label to the dataplane if there is no node label", testCase{
+			pod:              "27.pod.yaml",
+			node:             "27.node.yaml",
+			dataplane:        "27.dataplane.yaml",
+			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
+		}),
+		Entry("28. Pod with reachable backend refs", testCase{
+			pod:            "28.pod.yaml",
+			servicesForPod: "28.services-for-pod.yaml",
+			dataplane:      "28.dataplane.yaml",
+		}),
+		Entry("29. Pod with empty reachable backend refs", testCase{
+			pod:            "29.pod.yaml",
+			servicesForPod: "29.services-for-pod.yaml",
+			dataplane:      "29.dataplane.yaml",
+		}),
+		Entry("should create dataplane even if service ports don't match", testCase{
+			pod:            "mismatch-ports.pod.yaml",
+			servicesForPod: "mismatch-ports.services-for-pod.yaml",
+			dataplane:      "mismatch-ports.dataplane.yaml",
+		}),
+		Entry("30. Pod using application probe proxy", testCase{
+			pod:            "30.pod.yaml",
+			servicesForPod: "30.services-for-pod.yaml",
+			dataplane:      "30.dataplane.yaml",
+		}),
+		Entry("Update existing dataplane with pod labels", testCase{
+			pod:               "update-dataplane.pod.yaml",
+			servicesForPod:    "update-dataplane.services-for-pod.yaml",
+			existingDataplane: "update-dataplane.existing-dataplane.yaml",
+			dataplane:         "update-dataplane.dataplane.yaml",
+		}),
+		Entry("Multiple services selecting a single port deduplicates overlapping inbounds", testCase{
+			pod:            "duplicated-inbounds.pod.yaml",
+			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
+			dataplane:      "duplicated-inbounds.dataplane.yaml",
+		}),
+		Entry("Multiple services selecting a single port deduplicates overlapping inbounds when MeshServices mode is non-Exclusive", testCase{
+			pod:            "duplicated-inbounds.pod.yaml",
+			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
+			dataplane:      "duplicated-inbounds.dataplane.yaml",
+		}),
+		Entry("Multiple services selecting a single port collapses tag-free inbounds to one listener", testCase{
+			pod:            "overlapping-inbounds.pod.yaml",
+			servicesForPod: "overlapping-inbounds.services-for-pod.yaml",
+			dataplane:      "overlapping-inbounds.dataplane.yaml",
+		}),
+		Entry("31. Pod with workload labels configured matching pod label", testCase{
+			pod:            "31.pod.yaml",
+			servicesForPod: "31.services-for-pod.yaml",
+			dataplane:      "31.dataplane.yaml",
+			workloadLabels: []string{"app.kubernetes.io/name", "app"},
+		}),
+		Entry("32. Pod with workload labels configured, fallback to service account", testCase{
+			pod:            "32.pod.yaml",
+			servicesForPod: "32.services-for-pod.yaml",
+			dataplane:      "32.dataplane.yaml",
+			workloadLabels: []string{"statefulset.kubernetes.io/pod-name", "app.kubernetes.io/instance"},
+		}),
+		Entry("33. Pod without workload labels configured uses service account", testCase{
+			pod:            "33.pod.yaml",
+			servicesForPod: "33.services-for-pod.yaml",
+			dataplane:      "33.dataplane.yaml",
+		}),
+		Entry("34. Pod with service generates tag-free inbounds", testCase{
+			pod:            "34.pod.yaml",
+			servicesForPod: "34.services-for-pod.yaml",
+			dataplane:      "34.dataplane.yaml",
+		}),
+		Entry("35. Pod without service keeps the fallback tag-free inbound", testCase{
+			pod:       "35.pod.yaml",
+			dataplane: "35.dataplane.yaml",
+		}),
+		Entry("36. Zone-proxy-only Pod with ZoneIngress listener", testCase{
+			pod:            "36.pod.yaml",
+			servicesForPod: "36.services-for-pod.yaml",
+			dataplane:      "36.dataplane.yaml",
+		}),
+		Entry("37. Pod with regular inbound and ZoneEgress listener", testCase{
+			pod:            "37.pod.yaml",
+			servicesForPod: "37.services-for-pod.yaml",
+			dataplane:      "37.dataplane.yaml",
+		}),
+		Entry("38. Zone-proxy-only Pod with ZoneIngress listener, sidecar not ready", testCase{
+			pod:            "38.pod.yaml",
+			servicesForPod: "38.services-for-pod.yaml",
+			dataplane:      "38.dataplane.yaml",
+		}),
+		Entry("39. Zone-proxy-only Pod with both ZoneIngress and ZoneEgress listeners", testCase{
+			pod:            "39.pod.yaml",
+			servicesForPod: "39.services-for-pod.yaml",
+			dataplane:      "39.dataplane.yaml",
+		}),
+		Entry("40. Zone-proxy-only Pod where service port differs from container port", testCase{
+			pod:            "40.pod.yaml",
+			servicesForPod: "40.services-for-pod.yaml",
+			dataplane:      "40.dataplane.yaml",
+		}),
+		Entry("41. Zone-proxy-only Pod with unnamed service port - listener name derived from service", testCase{
+			pod:            "41.pod.yaml",
+			servicesForPod: "41.services-for-pod.yaml",
+			dataplane:      "41.dataplane.yaml",
+		}),
+		Entry("42. Zone-proxy-only Pod with two ingress services on the same port", testCase{
+			pod:            "42.pod.yaml",
+			servicesForPod: "42.services-for-pod.yaml",
+			dataplane:      "42.dataplane.yaml",
+		}),
+		Entry("43. Zone-proxy-only Pod with ingress and egress services on the same port", testCase{
+			pod:            "43.pod.yaml",
+			servicesForPod: "43.services-for-pod.yaml",
+			expectedErr:    "conflicting listener types on port 10001",
+		}),
+		Entry("44. Zone proxy Services with non-Exclusive MeshServices mode creates listeners", testCase{
+			pod:            "44.pod.yaml",
+			servicesForPod: "44.services-for-pod.yaml",
+			dataplane:      "44.dataplane.yaml",
+		}),
+	)
+
+	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
+		func(given testCase) {
+			// given
+			// pod
+			pod := &kube_core.Pod{}
+			bytes, err := os.ReadFile(filepath.Join("testdata", "ingress", given.pod))
+			Expect(err).ToNot(HaveOccurred())
+			err = yaml.Unmarshal(bytes, pod)
+			Expect(err).ToNot(HaveOccurred())
+
+			// services for pod
+			bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.servicesForPod))
+			Expect(err).ToNot(HaveOccurred())
+			YAMLs := util_yaml.SplitYAML(string(bytes))
+			services, err := Parse[*kube_core.Service](YAMLs)
+			Expect(err).ToNot(HaveOccurred())
+
+			// node
+			var nodeGetter kube_client.Reader
+			if given.node != "" {
+				bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.node))
+				Expect(err).ToNot(HaveOccurred())
+				nodeGetter = fakeNodeReader(bytes)
+			}
+
+			converter := PodConverter{
+				NodeGetter:        nodeGetter,
+				ResourceConverter: k8s.NewSimpleConverter(),
+				Zone:              "zone-1",
+				InboundConverter: InboundConverter{
+					NodeGetter: nodeGetter,
+				},
+			}
+
+			// when
+			ingress := &mesh_k8s.ZoneIngress{}
+			if given.existingDataplane != "" {
+				bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.existingDataplane))
+				Expect(err).ToNot(HaveOccurred())
+				err = yaml.Unmarshal(bytes, ingress)
+				Expect(err).ToNot(HaveOccurred())
+			}
+			ingress.Name = pod.Name
+
+			// then
+			err = converter.PodToIngress(context.Background(), ingress, pod, services)
+			Expect(err).ToNot(HaveOccurred())
+
+			actual, err := yaml.Marshal(ingress)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "ingress", given.dataplane)))
+		},
+		Entry("01. Ingress with load balancer service and hostname", testCase{ // AWS use case
+			pod:            "01.pod.yaml",
+			servicesForPod: "01.services-for-pod.yaml",
+			dataplane:      "01.dataplane.yaml",
+		}),
+		Entry("02. Ingress with load balancer and ip", testCase{ // GCP use case
+			pod:            "02.pod.yaml",
+			servicesForPod: "02.services-for-pod.yaml",
+			dataplane:      "02.dataplane.yaml",
+		}),
+		Entry("03. Ingress with load balancer without public ip", testCase{
+			pod:            "03.pod.yaml",
+			servicesForPod: "03.services-for-pod.yaml",
+			dataplane:      "03.dataplane.yaml",
+		}),
+		Entry("04. Ingress with node port external IP", testCase{ // Real deployment use case
+			pod:            "04.pod.yaml",
+			servicesForPod: "04.services-for-pod.yaml",
+			dataplane:      "04.dataplane.yaml",
+			node:           "04.node.yaml",
+		}),
+		Entry("05. Ingress with node port internal IP", testCase{ // KIND / Minikube use case
+			pod:            "05.pod.yaml",
+			servicesForPod: "05.services-for-pod.yaml",
+			dataplane:      "05.dataplane.yaml",
+			node:           "05.node.yaml",
+		}),
+		Entry("06. Ingress with annotations override", testCase{
+			pod:            "06.pod.yaml",
+			servicesForPod: "06.services-for-pod.yaml",
+			dataplane:      "06.dataplane.yaml",
+		}),
+		Entry("Existing ZoneIngress with load balancer and ip should not be updated when no change", testCase{
+			pod:               "ingress-exists.pod.yaml",
+			servicesForPod:    "ingress-exists.services-for-pod.yaml",
+			existingDataplane: "ingress-exists.existing-dataplane.yaml",
+			dataplane:         "ingress-exists.dataplane.yaml",
+		}),
+		Entry("Existing ZoneIngress with load balancer and ip should not be updated when no change", testCase{
+			pod:               "ingress-exists.pod.yaml",
+			servicesForPod:    "ingress-exists.services-for-pod.yaml",
+			existingDataplane: "ingress-exists.existing-dataplane.yaml",
+			dataplane:         "ingress-exists.dataplane.yaml",
+		}),
+		Entry("Existing ZoneIngress should be updated when pod labels changes", testCase{
+			pod:               "ingress-exists-labels.pod.yaml",
+			servicesForPod:    "ingress-exists-labels.services-for-pod.yaml",
+			existingDataplane: "ingress-exists-labels.existing-dataplane.yaml",
+			dataplane:         "ingress-exists-labels.dataplane.yaml",
+		}),
+	)
+
+	DescribeTable("should convert Egress Pod into an Egress Dataplane YAML version",
+		func(given testCase) {
+			// given
+			// pod
+			pod := &kube_core.Pod{}
+			bytes, err := os.ReadFile(filepath.Join("testdata", "egress", given.pod))
+			Expect(err).ToNot(HaveOccurred())
+			err = yaml.Unmarshal(bytes, pod)
+			Expect(err).ToNot(HaveOccurred())
+			ctx := context.Background()
+
+			// services for pod
+			bytes, err = os.ReadFile(filepath.Join("testdata", "egress", given.servicesForPod))
+			Expect(err).ToNot(HaveOccurred())
+			YAMLs := util_yaml.SplitYAML(string(bytes))
+			services, err := Parse[*kube_core.Service](YAMLs)
+			Expect(err).ToNot(HaveOccurred())
+
+			// node
+			var nodeGetter kube_client.Reader
+			if given.node != "" {
+				bytes, err = os.ReadFile(filepath.Join("testdata", "egress", given.node))
+				Expect(err).ToNot(HaveOccurred())
+				nodeGetter = fakeNodeReader(bytes)
+			}
+
+			converter := PodConverter{
+				NodeGetter:        nodeGetter,
+				ResourceConverter: k8s.NewSimpleConverter(),
+				Zone:              "zone-1",
+				InboundConverter: InboundConverter{
+					NodeGetter: nodeGetter,
+				},
+			}
+
+			egress := &mesh_k8s.ZoneEgress{}
+			if given.existingDataplane != "" {
+				bytes, err = os.ReadFile(filepath.Join("testdata", "egress", given.existingDataplane))
+				Expect(err).ToNot(HaveOccurred())
+				err = yaml.Unmarshal(bytes, egress)
+				Expect(err).ToNot(HaveOccurred())
+			}
+			egress.Name = pod.Name
+
+			// when
+			err = converter.PodToEgress(ctx, egress, pod, services)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			actual, err := yaml.Marshal(egress)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "egress", given.dataplane)))
+		},
+		Entry("01. Egress with load balancer service and hostname", testCase{ // AWS use case
+			pod:            "01.pod.yaml",
+			servicesForPod: "01.services-for-pod.yaml",
+			dataplane:      "01.dataplane.yaml",
+		}),
+		Entry("02. Egress with load balancer and ip", testCase{ // GCP use case
+			pod:            "02.pod.yaml",
+			servicesForPod: "02.services-for-pod.yaml",
+			dataplane:      "02.dataplane.yaml",
+		}),
+		Entry("03. Egress with load balancer without public ip", testCase{
+			pod:            "03.pod.yaml",
+			servicesForPod: "03.services-for-pod.yaml",
+			dataplane:      "03.dataplane.yaml",
+		}),
+		Entry("04. Egress with node port external IP", testCase{ // Real deployment use case
+			pod:            "04.pod.yaml",
+			servicesForPod: "04.services-for-pod.yaml",
+			dataplane:      "04.dataplane.yaml",
+			node:           "04.node.yaml",
+		}),
+		Entry("05. Egress with node port internal IP", testCase{ // KIND / Minikube use case
+			pod:            "05.pod.yaml",
+			servicesForPod: "05.services-for-pod.yaml",
+			dataplane:      "05.dataplane.yaml",
+			node:           "05.node.yaml",
+		}),
+		Entry("Existing ZoneEgress should be updated when pod labels changes", testCase{ // KIND / Minikube use case
+			pod:               "egress-exists-labels.pod.yaml",
+			servicesForPod:    "egress-exists-labels.services-for-pod.yaml",
+			dataplane:         "egress-exists-labels.dataplane.yaml",
+			node:              "egress-exists-labels.node.yaml",
+			existingDataplane: "egress-exists-labels.existing-dataplane.yaml",
+		}),
+	)
+})
+
+var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
+	type testCase struct {
+		podLabels      map[string]string
+		svcAnnotations map[string]string
+		appProtocol    *string
+		expected       string
+	}
+
+	DescribeTable("should create a tag-free inbound and preserve the service protocol",
+		func(given testCase) {
+			// given
+			pod := &kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Labels:    given.podLabels,
+				},
+				Spec: kube_core.PodSpec{
+					NodeName: "test-node",
+				},
+			}
+
+			// and
+			svc := &kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "example",
+					Labels: map[string]string{
+						"more": "labels",
+					},
+					Annotations: given.svcAnnotations,
+				},
+				Spec: kube_core.ServiceSpec{
+					Ports: []kube_core.ServicePort{
+						{
+							Name:        "http",
+							Port:        80,
+							AppProtocol: given.appProtocol,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 8080,
+							},
+						},
+					},
+				},
+			}
+
+			// when
+			inbounds := (&InboundConverter{}).InboundInterfacesFor(pod, []*kube_core.Service{svc})
+
+			// expect
+			Expect(inbounds).To(HaveLen(1))
+			Expect(inbounds[0].Port).To(Equal(uint32(8080)))
+			Expect(inbounds[0].Tags).To(Equal(map[string]string{}))
+			Expect(inbounds[0].State).To(Equal(mesh_proto.Dataplane_Networking_Inbound_Ready))
+			Expect(inbounds[0].Health).To(Equal(&mesh_proto.Dataplane_Networking_Inbound_Health{Ready: true}))
+			Expect(inbounds[0].Protocol).To(Equal(given.expected))
+		},
+		Entry("Pod without labels", testCase{
+			podLabels: nil,
+			expected:  "tcp",
+		}),
+		Entry("Pod with labels", testCase{
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "0.1",
+			},
+			expected: "tcp",
+		}),
+		Entry("Pod with `service` label", testCase{
+			podLabels: map[string]string{
+				"kuma.io/service": "something",
+				"app":             "example",
+				"version":         "0.1",
+			},
+			expected: "tcp",
+		}),
+		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and an unknown value", testCase{
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "0.1",
+			},
+			svcAnnotations: map[string]string{
+				"80.service.kuma.io/protocol": "not-yet-supported-protocol",
+			},
+			expected: "not-yet-supported-protocol",
+		}),
+		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and a known value", testCase{
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "0.1",
+			},
+			svcAnnotations: map[string]string{
+				"80.service.kuma.io/protocol": "http",
+			},
+			expected: "http",
+		}),
+		Entry("Service with appProtocol and a known value", testCase{
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "0.1",
+			},
+			appProtocol: pointer.To("http"),
+			expected:    "http",
+		}),
+		Entry("Pod with empty labels", testCase{
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "",
+			},
+			expected: "tcp",
+		}),
+	)
+
+	It("should prefer a matching inbound over an ignored duplicate on the same port", func() {
+		pod := &kube_core.Pod{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Labels: map[string]string{
+					"app":                        "example",
+					"rollouts-pod-template-hash": "active-hash",
+				},
+			},
+			Spec: kube_core.PodSpec{
+				Containers: []kube_core.Container{{
+					Name: "app",
+					Ports: []kube_core.ContainerPort{{
+						Name:          "grpc",
+						ContainerPort: 9000,
+					}},
+				}},
+			},
+			Status: kube_core.PodStatus{
+				ContainerStatuses: []kube_core.ContainerStatus{{
+					Name:  "app",
+					Ready: true,
+				}},
+			},
+		}
+
+		services := []*kube_core.Service{
+			{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "example-preview",
+				},
+				Spec: kube_core.ServiceSpec{
+					Selector: map[string]string{
+						"app":                        "example",
+						"rollouts-pod-template-hash": "preview-hash",
+					},
+					Ports: []kube_core.ServicePort{{
+						Port: 9000,
+						TargetPort: kube_intstr.IntOrString{
+							Type:   kube_intstr.Int,
+							IntVal: 9000,
+						},
+					}},
+				},
+			},
+			{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "example",
+				},
+				Spec: kube_core.ServiceSpec{
+					Selector: map[string]string{
+						"app":                        "example",
+						"rollouts-pod-template-hash": "active-hash",
+					},
+					Ports: []kube_core.ServicePort{{
+						Port: 9000,
+						TargetPort: kube_intstr.IntOrString{
+							Type:   kube_intstr.Int,
+							IntVal: 9000,
+						},
+					}},
+				},
+			},
+		}
+
+		inbounds := (&InboundConverter{}).InboundInterfacesFor(pod, services)
+
+		Expect(inbounds).To(HaveLen(1))
+		Expect(inbounds[0].State).To(Equal(mesh_proto.Dataplane_Networking_Inbound_Ready))
+		Expect(inbounds[0].Health).To(Equal(&mesh_proto.Dataplane_Networking_Inbound_Health{Ready: true}))
+	})
+})
+
+var _ = Describe("PodConverter.GatewayByServiceFor(..)", func() {
+	It("should return an empty delegated gateway tag set", func() {
+		gateway, err := (&PodConverter{}).GatewayByServiceFor(context.Background(), &kube_core.Pod{}, nil)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(gateway).To(Equal(&mesh_proto.Dataplane_Networking_Gateway{
+			Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
+			Tags: map[string]string{},
+		}))
+	})
+})
+
+var _ = Describe("ProtocolTagFor(..)", func() {
+	type testCase struct {
+		appProtocol *string
+		annotations map[string]string
+		expected    string
+	}
+
+	DescribeTable("should infer protocol from `appProtocol` or `<port>.service.kuma.io/protocol` field",
+		func(given testCase) {
+			// given
+			svc := &kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace:   "demo",
+					Name:        "example",
+					Annotations: given.annotations,
+				},
+				Spec: kube_core.ServiceSpec{
+					Ports: []kube_core.ServicePort{
+						{
+							Name: "http",
+							Port: 80,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 8080,
+							},
+							AppProtocol: given.appProtocol,
+						},
+					},
+				},
+			}
+
+			// expect
+			Expect(ProtocolTagFor(svc, &svc.Spec.Ports[0])).To(Equal(given.expected))
+		},
+		Entry("no appProtocol", testCase{
+			appProtocol: nil,
+			expected:    "tcp", // we want Kuma's default behavior to be explicit to a user
+		}),
+		Entry("appProtocol has an empty value", testCase{
+			appProtocol: pointer.To(""),
+			expected:    "tcp", // we want Kuma's default behavior to be explicit to a user
+		}),
+		Entry("no appProtocol but with `<port>.service.kuma.io/protocol` annotation", testCase{
+			appProtocol: nil,
+			annotations: map[string]string{
+				"80.service.kuma.io/protocol": "http",
+			},
+			expected: "http", // we want to support both ways of providing protocol
+		}),
+		Entry("appProtocol has an unknown value", testCase{
+			appProtocol: pointer.To("not-yet-supported-protocol"),
+			expected:    "tcp", // we want Kuma's behavior to be straightforward to a user (appProtocol is not Kuma specific)
+		}),
+		Entry("appProtocol has a lowercase value", testCase{
+			appProtocol: pointer.To("HtTp"),
+			expected:    "http", // we want Kuma's behavior to be straightforward to a user (copy appProtocol lowercase value)
+		}),
+		Entry("appProtocol has a known value: http", testCase{
+			appProtocol: pointer.To("http"),
+			expected:    "http",
+		}),
+		Entry("appProtocol has a known value: tcp", testCase{
+			appProtocol: pointer.To("tcp"),
+			expected:    "tcp",
+		}),
+		Entry("no appProtocol and no `<port>.service.kuma.io/protocol`", testCase{
+			appProtocol: nil,
+			annotations: nil,
+			expected:    "tcp",
+		}),
+	)
+})
+
+var _ = Describe("Serviceless Name for(...)", func() {
+	type testCase struct {
+		pod          string
+		replicaSets  string
+		jobs         string
+		expectedName string
+		expectedKind string
+	}
+	DescribeTable("should infer name based on the resource type",
+		func(given testCase) {
+			// given
+			ctx := context.Background()
+
+			pod := &kube_core.Pod{}
+			bytes, err := os.ReadFile(filepath.Join("testdata", "serviceless", given.pod))
+			Expect(err).ToNot(HaveOccurred())
+			err = yaml.Unmarshal(bytes, pod)
+			Expect(err).ToNot(HaveOccurred())
+
+			var replicaSetGetter kube_client.Reader
+			if given.replicaSets != "" {
+				replicaSetGetter = getReplicaSetsReader("testdata", "serviceless", given.replicaSets)
+			}
+
+			var jobGetter kube_client.Reader
+			if given.jobs != "" {
+				jobGetter = getJobsReader("testdata", "serviceless", given.jobs)
+			}
+
+			nameExtractor := NameExtractor{
+				ReplicaSetGetter: replicaSetGetter,
+				JobGetter:        jobGetter,
+			}
+
+			// when
+			name, kind, err := nameExtractor.Name(ctx, pod)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(name).To(Equal(given.expectedName))
+			Expect(kind).To(Equal(given.expectedKind))
+		},
+		Entry("name from deployment", testCase{
+			pod:          "01.pod.yaml",
+			replicaSets:  "01.replicasets-for-pod.yaml",
+			expectedName: "test-server",
+			expectedKind: "Deployment",
+		}),
+		Entry("name from cronjob", testCase{
+			pod:          "02.pod.yaml",
+			jobs:         "02.job-for-pod.yaml",
+			expectedName: "test-job",
+			expectedKind: "CronJob",
+		}),
+		Entry("name from replicaset", testCase{
+			pod:          "03.pod.yaml",
+			replicaSets:  "03.replicasets-for-pod.yaml",
+			expectedName: "test-rs",
+			expectedKind: "ReplicaSet",
+		}),
+		Entry("name from job", testCase{
+			pod:          "04.pod.yaml",
+			jobs:         "04.job-for-pod.yaml",
+			expectedName: "test-job",
+			expectedKind: "Job",
+		}),
+		Entry("name from pod", testCase{
+			pod:          "05.pod.yaml",
+			expectedName: "test-pod-1",
+			expectedKind: "Pod",
+		}),
+		Entry("name from daemonset", testCase{
+			pod:          "06.pod.yaml",
+			expectedName: "test-ds",
+			expectedKind: "DaemonSet",
+		}),
+	)
+})
+
+type fakeNodeReader string
+
+func (f fakeNodeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
+	err := yaml.Unmarshal([]byte(f), &obj)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (f fakeNodeReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
+	node := kube_core.Node{}
+	err := yaml.Unmarshal([]byte(f), &node)
+	if err != nil {
+		return err
+	}
+	l := list.(*kube_core.NodeList)
+	l.Items = append(l.Items, node)
+	return nil
+}
+
+type fakeReplicaSetReader map[string]string
+
+func newFakeReplicaSetReader(replicaSets []*kube_apps.ReplicaSet) (fakeReplicaSetReader, error) {
+	replicaSetsMap := map[string]string{}
+	for _, rs := range replicaSets {
+		bytes, err := yaml.Marshal(rs)
+		if err != nil {
+			return nil, err
+		}
+		replicaSetsMap[rs.GetNamespace()+"/"+rs.GetName()] = string(bytes)
+	}
+	return replicaSetsMap, nil
+}
+
+type fakeJobReader map[string]string
+
+func newFakeJobReader(jobs []*kube_batch.Job) (fakeJobReader, error) {
+	jobsMap := map[string]string{}
+	for _, job := range jobs {
+		bytes, err := yaml.Marshal(job)
+		if err != nil {
+			return nil, err
+		}
+		jobsMap[job.GetNamespace()+"/"+job.GetName()] = string(bytes)
+	}
+	return jobsMap, nil
+}
+
+var _ kube_client.Reader = fakeReplicaSetReader{}
+
+func (r fakeReplicaSetReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
+	fqName := fmt.Sprintf("%s/%s", key.Namespace, key.Name)
+	data, ok := r[fqName]
+	if !ok {
+		return errors.Errorf("replicaset not found: %s", fqName)
+	}
+	return yaml.Unmarshal([]byte(data), obj)
+}
+
+func (f fakeReplicaSetReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
+	return errors.New("not implemented")
+}
+
+var _ kube_client.Reader = fakeJobReader{}
+
+func (r fakeJobReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
+	fqName := fmt.Sprintf("%s/%s", key.Namespace, key.Name)
+	data, ok := r[fqName]
+	if !ok {
+		return errors.Errorf("job not found: %s", fqName)
+	}
+	return yaml.Unmarshal([]byte(data), obj)
+}
+
+func (f fakeJobReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
+	return errors.New("not implemented")
+}
+
+func getReplicaSetsReader(path ...string) fakeReplicaSetReader {
+	bytes, err := os.ReadFile(filepath.Join(path...))
+	Expect(err).ToNot(HaveOccurred())
+	YAMLs := util_yaml.SplitYAML(string(bytes))
+	rsets, err := Parse[*kube_apps.ReplicaSet](YAMLs)
+	Expect(err).ToNot(HaveOccurred())
+	reader, err := newFakeReplicaSetReader(rsets)
+	Expect(err).ToNot(HaveOccurred())
+	return reader
+}
+
+func getJobsReader(path ...string) fakeJobReader {
+	bytes, err := os.ReadFile(filepath.Join(path...))
+	Expect(err).ToNot(HaveOccurred())
+	YAMLs := util_yaml.SplitYAML(string(bytes))
+	rsets, err := Parse[*kube_batch.Job](YAMLs)
+	Expect(err).ToNot(HaveOccurred())
+	reader, err := newFakeJobReader(rsets)
+	Expect(err).ToNot(HaveOccurred())
+	return reader
+}

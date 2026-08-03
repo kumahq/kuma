@@ -1,0 +1,207 @@
+package mesh
+
+import (
+	"hash/fnv"
+	"net"
+	"slices"
+	"strconv"
+	"strings"
+
+	"github.com/asaskevich/govalidator"
+	"google.golang.org/protobuf/proto"
+
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+)
+
+func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
+	return d.UsesInboundInterface(address, port) || d.UsesOutboundInterface(address, port)
+}
+
+func (d *DataplaneResource) UsesInboundInterface(address net.IP, port uint32) bool {
+	if d == nil {
+		return false
+	}
+	for _, iface := range d.Spec.Networking.GetInboundInterfaces() {
+		// compare against port and IP address of the dataplane
+		if port == iface.DataplanePort && overlap(address, net.ParseIP(iface.DataplaneIP)) {
+			return true
+		}
+		// compare against port and IP address of the application
+		if port == iface.WorkloadPort && overlap(address, net.ParseIP(iface.WorkloadIP)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (d *DataplaneResource) UsesOutboundInterface(address net.IP, port uint32) bool {
+	if d == nil {
+		return false
+	}
+	for _, oface := range d.Spec.Networking.GetOutboundInterfaces() {
+		// compare against port and IP address of the dataplane
+		if port == oface.DataplanePort && overlap(address, net.ParseIP(oface.DataplaneIP)) {
+			return true
+		}
+	}
+	return false
+}
+
+func overlap(address1 net.IP, address2 net.IP) bool {
+	if address1.IsUnspecified() || address2.IsUnspecified() {
+		// wildcard match (either IPv4 address "0.0.0.0" or the IPv6 address "::")
+		return true
+	}
+	// exact match
+	return address1.Equal(address2)
+}
+
+func (d *DataplaneResource) IsIPv6() bool {
+	return d != nil && govalidator.IsIPv6(d.Spec.GetNetworking().GetAddress())
+}
+
+func (d *DataplaneResource) GetAddress() string {
+	if d == nil || d.Spec == nil {
+		return ""
+	}
+
+	return d.Spec.GetNetworking().GetAddress()
+}
+
+func (d *DataplaneResource) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
+	if d == nil {
+		return &tproxy_dp.DataplaneConfig{}
+	}
+
+	if tp := d.Spec.GetNetworking().GetTransparentProxying(); tp != nil {
+		return &tproxy_dp.DataplaneConfig{
+			IPFamilyMode: tproxy_config.IPFamilyModeFromStringer(tp.GetIpFamilyMode()),
+			Redirect: tproxy_dp.DataplaneRedirect{
+				Inbound:  tproxy_dp.DataplaneTrafficFlowFromPortLike(tp.GetRedirectPortInbound()),
+				Outbound: tproxy_dp.DataplaneTrafficFlowFromPortLike(tp.GetRedirectPortOutbound()),
+			},
+		}
+	}
+
+	return &tproxy_dp.DataplaneConfig{}
+}
+
+func (d *DataplaneResource) AdminAddress(defaultAdminPort uint32) string {
+	if d == nil {
+		return ""
+	}
+	ip := d.GetAddress()
+	adminPort := d.AdminPort(defaultAdminPort)
+	return net.JoinHostPort(ip, strconv.FormatUint(uint64(adminPort), 10))
+}
+
+func (d *DataplaneResource) AdminPort(defaultAdminPort uint32) uint32 {
+	if d == nil {
+		return 0
+	}
+	if adminPort := d.Spec.GetNetworking().GetAdmin().GetPort(); adminPort != 0 {
+		return adminPort
+	}
+	return defaultAdminPort
+}
+
+// Hash returns a content-based hash of the Dataplane for consumers that need to
+// observe metadata-only writes via resourceVersion as well as spec and label
+// changes.
+func (d *DataplaneResource) Hash() []byte {
+	return d.hash(true)
+}
+
+// XDSHash returns the Dataplane hash used to gate mesh-wide xDS regeneration.
+// It intentionally excludes meta.GetVersion() (the Kubernetes resourceVersion)
+// so that writes irrelevant to xDS generation - status, annotations,
+// managedFields - don't invalidate the mesh-wide xDS context. Labels are
+// included because they affect policy matching.
+func (d *DataplaneResource) XDSHash() []byte {
+	return d.hash(false)
+}
+
+func (d *DataplaneResource) hash(includeVersion bool) []byte {
+	hasher := fnv.New128a()
+	_, _ = hasher.Write(core_model.HashMetaIdentity(d))
+	if includeVersion {
+		_, _ = hasher.Write([]byte(d.GetMeta().GetVersion()))
+	}
+	core_model.WriteSortedLabels(hasher, d.GetMeta().GetLabels())
+	specBytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(d.Spec)
+	if err == nil {
+		_, _ = hasher.Write(specBytes)
+	} else {
+		// Deterministic marshaling should never fail for a well-formed Dataplane
+		// spec, but fall back to a value that still changes with the spec
+		// instead of silently treating every Dataplane as identical.
+		_, _ = hasher.Write([]byte(d.Spec.String()))
+	}
+	return hasher.Sum(nil)
+}
+
+// InboundIdentifyingName returns a dataplane KRI with the inbound name as
+// section name, falling back to IdentifyingName.
+func (d *DataplaneResource) InboundIdentifyingName(inbound *mesh_proto.Dataplane_Networking_Inbound) string {
+	if portName := inbound.GetName(); portName != "" {
+		id := kri.WithSectionName(kri.FromResourceMeta(d.GetMeta(), DataplaneType), portName)
+		if !id.IsEmpty() {
+			return id.String()
+		}
+	}
+	return d.IdentifyingName()
+}
+
+// IdentifyingName returns the workload label when set, falling back to
+// ServiceUnknown.
+func (d *DataplaneResource) IdentifyingName() string {
+	if workload := d.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
+		return workload
+	}
+	return mesh_proto.ServiceUnknown
+}
+
+// DisplayTags returns the dataplane's resource labels merged with its
+// gateway tags (if any), formatted for CLI/API display (the TAGS column
+// and the `?tag=` filter).
+func (d *DataplaneResource) DisplayTags() mesh_proto.MultiValueTagSet {
+	return DisplayTags(d.Spec, d.GetMeta().GetLabels())
+}
+
+// DisplayTags merges labels with a dataplane's gateway tags (if any) for
+// CLI/API display. Split from the DataplaneResource method so overview
+// endpoints, which carry the Dataplane spec and its labels separately, can
+// call it too.
+func DisplayTags(dataplane *mesh_proto.Dataplane, labels map[string]string) mesh_proto.MultiValueTagSet {
+	tags := mesh_proto.MultiValueTagSet{}
+	for key, value := range labels {
+		tags[key] = map[string]bool{value: true}
+	}
+	for key, value := range dataplane.GetNetworking().GetGateway().GetTags() {
+		if _, ok := tags[key]; !ok {
+			tags[key] = map[string]bool{}
+		}
+		tags[key][value] = true
+	}
+	return tags
+}
+
+// SortDataplanes sorts dataplanes by creation time, then by name.
+// Used by generators to ensure consistent processing order.
+func SortDataplanes(dps []*DataplaneResource) []*DataplaneResource {
+	sorted := slices.Clone(dps)
+	slices.SortFunc(sorted, func(a, b *DataplaneResource) int {
+		if a, b := a.Meta.GetCreationTime(), b.Meta.GetCreationTime(); a.Before(b) {
+			return -1
+		} else if a.After(b) {
+			return 1
+		}
+		return strings.Compare(a.Meta.GetName(), b.Meta.GetName())
+	})
+	return sorted
+}

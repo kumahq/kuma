@@ -1,0 +1,398 @@
+package xds
+
+import (
+	"fmt"
+	"net"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/asaskevich/govalidator"
+	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+)
+
+type APIVersion string
+
+// StreamID represents a stream opened by XDS
+type StreamID = int64
+
+// ZoneEgressInstance holds the resolved bind address, port and workload-identity SAN
+// of a zone egress proxy. SAN is the SPIFFE ID when WorkloadIdentity is
+// enabled: empty for legacy mTLS deployments.
+type ZoneEgressInstance struct {
+	Address string
+	Port    uint32
+	SAN     string
+}
+
+type ProxyId struct {
+	mesh string
+	name string
+}
+
+func (id *ProxyId) String() string {
+	return fmt.Sprintf("%s.%s", id.mesh, id.name)
+}
+
+func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
+	return core_model.ResourceKey{
+		Name: id.name,
+		Mesh: id.mesh,
+	}
+}
+
+// ServiceName is a convenience type alias to clarify the meaning of string value.
+type ServiceName = string
+
+type MeshName = string
+
+// TagSelectorSet is a set of unique TagSelectors.
+type TagSelectorSet []mesh_proto.TagSelector
+
+type ExternalService struct {
+	Protocol                 core_meta.Protocol
+	TLSEnabled               bool
+	FallbackToSystemCa       bool
+	CaCert                   []byte
+	ClientCert               []byte
+	ClientKey                []byte // #nosec G117 -- TLS config field, not hardcoded key
+	AllowRenegotiation       bool
+	SkipHostnameVerification bool
+	ServerName               string
+	SANs                     []SAN
+	MinTlsVersion            *tlsv3.TlsParameters_TlsProtocol
+	MaxTlsVersion            *tlsv3.TlsParameters_TlsProtocol
+	OwnerResource            kri.Identifier
+}
+
+type MatchType string
+
+const (
+	SANMatchExact  MatchType = "Exact"
+	SANMatchPrefix MatchType = "Prefix"
+)
+
+type SAN struct {
+	MatchType MatchType
+	Value     string
+}
+
+type Locality struct {
+	Zone     string
+	SubZone  string
+	Priority uint32
+	Weight   uint32
+}
+
+// Endpoint holds routing-related information about a single endpoint.
+type Endpoint struct {
+	Target         string
+	UnixDomainPath string
+	Port           uint32
+	// Tags is the endpoint's load-balancing identity. It is derived from the
+	// Dataplane's workload/resource labels plus the inbound's protocol
+	// (see BuildEdsEndpointMap), so a single well-known key carries the identity.
+	Tags            map[string]string
+	Weight          uint32
+	Locality        *Locality
+	ExternalService *ExternalService
+}
+
+func (e Endpoint) Address() string {
+	return fmt.Sprintf("%s:%d", e.Target, e.Port)
+}
+
+func (e Endpoint) Protocol() core_meta.Protocol {
+	if e.ExternalService != nil && e.ExternalService.Protocol != "" {
+		return e.ExternalService.Protocol
+	}
+
+	return core_meta.ParseProtocol(e.Tags[mesh_proto.ProtocolTag])
+}
+
+// EndpointList is a list of Endpoints with convenience methods.
+type EndpointList []Endpoint
+
+// EndpointMap holds routing-related information about a set of endpoints grouped by service name.
+type EndpointMap map[ServiceName][]Endpoint
+
+// EgressEndpointGroup holds group-level metadata alongside the actual endpoints for a single
+// external service destination. Protocol and OwnerResource are the same for every endpoint in
+// the group, so they live here rather than being read from endpoints[0].
+type EgressEndpointGroup struct {
+	Protocol      core_meta.Protocol
+	OwnerResource kri.Identifier
+	Endpoints     []Endpoint
+}
+
+// EgressEndpointMap groups endpoints by service name with group-level metadata.
+// Used exclusively for the embedded zone egress path (DataplaneZoneEgressEndpointMap).
+type EgressEndpointMap map[ServiceName]EgressEndpointGroup
+
+// SocketAddressProtocol is the L4 protocol the listener should bind to
+type SocketAddressProtocol int32
+
+const (
+	SocketAddressProtocolTCP SocketAddressProtocol = 0
+	SocketAddressProtocolUDP SocketAddressProtocol = 1
+)
+
+// Proxy contains required data for generating XDS config that is specific to a data plane proxy.
+// The data that is specific for the whole mesh should go into MeshContext.
+type Proxy struct {
+	Id                  ProxyId
+	APIVersion          APIVersion
+	Dataplane           *core_mesh.DataplaneResource
+	Outbounds           xds_types.Outbounds
+	Metadata            *DataplaneMetadata
+	Routing             Routing
+	Policies            MatchedPolicies
+	EnvoyAdminMTLSCerts ServerSideMTLSCerts
+
+	// SecretsTracker allows us to track when a generator references a secret so
+	// we can be sure to include only those secrets later on.
+	SecretsTracker SecretsTracker
+
+	// WorkloadIdentity stores information about identity of the proxy.
+	WorkloadIdentity *WorkloadIdentity
+
+	// RuntimeExtensions a set of extensions to add for custom extensions (.e.g MeshGateway)
+	RuntimeExtensions map[string]any
+	// Zone the zone the proxy is in
+	Zone string
+	// InternalAddresses is a set of address prefixes that are considered internal to the mesh, it will be configured to in Envoy HCM config
+	InternalAddresses []InternalAddress
+	// OtelPipeBackends accumulates unified OTel backends across policy plugins.
+	// Populated during xDS generation, consumed by the generator to write /otel dynconf.
+	OtelPipeBackends *OtelPipeBackends
+}
+
+func (p *Proxy) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
+	return tproxy_dp.GetDataplaneConfig(p.Dataplane, p.Metadata)
+}
+
+type ManagementMode string
+
+const (
+	// When kuma acts as a workload identity provider and SDS server.
+	KumaManagementMode ManagementMode = "kuma"
+	// When there is an external SDS server which provides workload identities.
+	ExternalManagementMode ManagementMode = "external"
+)
+
+type WorkloadIdentity struct {
+	// KRI identifies which MeshIdentity targets this Proxy.
+	KRI kri.Identifier
+	// ManagementMode indicates which system provides the identity for the Proxy.
+	ManagementMode ManagementMode
+	ExpirationTime *time.Time
+	GenerationTime *time.Time
+	// IdentitySourceConfigurer returns a function that configures the identity secret,
+	// including the secret name and whether it’s served by Kuma’s SDS server or an external SDS server.
+	IdentitySourceConfigurer func() bldrs_common.Configurer[tlsv3.SdsSecretConfig]
+	// ExternalValidationSourceConfigurer returns a function that configures the validation secret,
+	// including the secret name and the location of SDS server.
+	ExternalValidationSourceConfigurer func() bldrs_common.Configurer[tlsv3.SdsSecretConfig]
+	// AdditionalResources contains Envoy resources that can be added to the resource set.
+	// It provides a simple way to create provider-specific Envoy resources and propagate them to Envoy.
+	AdditionalResources *ResourceSet
+}
+
+func (c *WorkloadIdentity) CertLifetime() time.Duration {
+	return c.ExpirationTime.Sub(pointer.Deref(c.GenerationTime))
+}
+
+func (i *WorkloadIdentity) ExpiringSoon() bool {
+	return core.Now().After(pointer.Deref(i.GenerationTime).Add(i.CertLifetime() / 5 * 4))
+}
+
+type ServerSideMTLSCerts struct {
+	CaPEM      []byte
+	ServerPair util_tls.KeyPair
+}
+
+type ServerSideTLSCertPaths struct {
+	CertPath string
+	KeyPath  string
+}
+
+type IdentityCertRequest interface {
+	Name() string
+	MeshName() string
+}
+
+type CaRequest interface {
+	MeshName() []string
+	Name() string
+}
+
+// SecretsTracker provides a way to ask for a secret and keeps track of which are
+// used, so that they can later be generated and included in the resources.
+type SecretsTracker interface {
+	RequestIdentityCert() IdentityCertRequest
+	RequestCa(mesh string) CaRequest
+	RequestAllInOneCa() CaRequest
+
+	UsedIdentity() bool
+	UsedCas() map[string]struct{}
+	UsedAllInOne() bool
+}
+
+type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
+
+type Routing struct {
+	OutboundTargets EndpointMap
+}
+
+type CaSecret struct {
+	PemCerts [][]byte
+}
+
+type IdentitySecret struct {
+	PemCerts [][]byte
+	PemKey   []byte
+}
+
+type InternalAddress struct {
+	AddressPrefix string
+	PrefixLen     uint32
+}
+
+var LocalHostAddresses = []InternalAddress{
+	{AddressPrefix: "127.0.0.1", PrefixLen: 32},
+	{AddressPrefix: "::1", PrefixLen: 128},
+}
+
+func InternalAddressToEnvoyCIDRs(ipv6Enabled bool, internalAddresses []InternalAddress) []*envoy_config_core.CidrRange {
+	var cidrRanges []*envoy_config_core.CidrRange
+	for _, internalAddressPool := range internalAddresses {
+		if !ipv6Enabled && govalidator.IsIPv6(internalAddressPool.AddressPrefix) {
+			continue
+		}
+		cidrRanges = append(cidrRanges, &envoy_config_core.CidrRange{
+			AddressPrefix: internalAddressPool.AddressPrefix,
+			PrefixLen:     &wrapperspb.UInt32Value{Value: internalAddressPool.PrefixLen},
+		})
+	}
+	return cidrRanges
+}
+
+func InternalAddressesFromCIDRs(cidrs []string) []InternalAddress {
+	var internalAddresses []InternalAddress
+	for _, cidr := range cidrs {
+		ip, ipNet, _ := net.ParseCIDR(cidr)
+
+		prefixLen, _ := ipNet.Mask.Size()
+		internalAddresses = append(internalAddresses, InternalAddress{
+			AddressPrefix: ip.String(),
+			PrefixLen:     uint32(prefixLen),
+		})
+	}
+	return internalAddresses
+}
+
+func (s TagSelectorSet) Add(n mesh_proto.TagSelector) TagSelectorSet {
+	if slices.ContainsFunc(s, n.Equal) {
+		return s
+	}
+	return append(s, n)
+}
+
+func (s TagSelectorSet) Matches(tags map[string]string) bool {
+	for _, selector := range s {
+		if selector.Matches(tags) {
+			return true
+		}
+	}
+	return false
+}
+
+func (e Endpoint) IsExternalService() bool {
+	return e.ExternalService != nil
+}
+
+func (e Endpoint) IsMeshExternalService() bool {
+	return e.ExternalService != nil && !e.ExternalService.OwnerResource.IsEmpty()
+}
+
+func (e Endpoint) LocalityString() string {
+	if e.Locality == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s:%s:%d", e.Locality.Zone, e.Locality.SubZone, e.Locality.Priority)
+}
+
+func (e Endpoint) HasLocality() bool {
+	return e.Locality != nil
+}
+
+// ContainsTags returns 'true' if for every key presented both in 'tags' and 'Endpoint#Tags'
+// values are equal
+func (e Endpoint) ContainsTags(tags map[string]string) bool {
+	for otherKey, otherValue := range tags {
+		endpointValue, ok := e.Tags[otherKey]
+		if !ok || otherValue != endpointValue {
+			return false
+		}
+	}
+	return true
+}
+
+func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
+	var endpoints EndpointList
+	for _, endpoint := range l {
+		if selector.Matches(endpoint.Tags) {
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+	return endpoints
+}
+
+func BuildProxyId(mesh, name string) *ProxyId {
+	return &ProxyId{
+		name: name,
+		mesh: mesh,
+	}
+}
+
+func ParseProxyIdFromString(id string) (*ProxyId, error) {
+	if id == "" {
+		return nil, errors.Errorf("Envoy ID must not be nil")
+	}
+	parts := strings.SplitN(id, ".", 2)
+	mesh := parts[0]
+	// when proxy is an ingress mesh is empty
+	if len(parts) < 2 {
+		return nil, errors.New("the name should be provided after the dot")
+	}
+	name := parts[1]
+	if name == "" {
+		return nil, errors.New("name must not be empty")
+	}
+	return &ProxyId{
+		mesh: mesh,
+		name: name,
+	}, nil
+}
+
+func FromResourceKey(key core_model.ResourceKey) ProxyId {
+	return ProxyId{
+		mesh: key.Mesh,
+		name: key.Name,
+	}
+}

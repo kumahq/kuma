@@ -1,0 +1,136 @@
+package v1alpha1
+
+import (
+	"math"
+	"slices"
+
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+)
+
+var log = core.Log.WithName("mesh-load-balancing-strategy")
+
+type LocalLbGroup struct {
+	Key    string
+	Value  string
+	Weight uint32
+}
+
+// Structure which hold information about cross zone with zones in the map make it more accessible
+type CrossZoneLbGroup struct {
+	Type     api.ToZoneType
+	Zones    map[string]bool
+	Priority uint32
+}
+
+func GetLocalityGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, podLabels map[string]string, localZone string) ([]LocalLbGroup, []CrossZoneLbGroup) {
+	podLabels = affinityTagPodLabels(podLabels, *conf)
+	if conf.LocalityAwareness == nil {
+		return nil, nil
+	}
+	return getLocalLbGroups(conf, inboundTags, podLabels), getCrossZoneLbGroups(conf, localZone)
+}
+
+func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, podLabels map[string]string) []LocalLbGroup {
+	var localGroups []LocalLbGroup
+	if conf.LocalityAwareness.LocalZone != nil {
+		rulesLen := len(pointer.Deref(conf.LocalityAwareness.LocalZone.AffinityTags))
+		for i, tag := range pointer.Deref(conf.LocalityAwareness.LocalZone.AffinityTags) {
+			values := resolveAffinityValues(inboundTags, podLabels, tag.Key)
+			// when weights are not provided we are generating weights by ourselves
+			// the first rule has the highest priority which is 9 * 10^(number of rules - rules position -1)
+			// that makes that the highest priority locality gets 90% of the traffic and sum of all weights is a
+			// power of 10
+			weight := pointer.DerefOr(tag.Weight, uint32(9*math.Pow10(rulesLen-i-1)))
+			if len(values) != 0 {
+				localGroups = append(localGroups, LocalLbGroup{
+					Key:    tag.Key,
+					Value:  values[0], // we are taking the first value from multiple, because locality tag shouldn't have different values
+					Weight: weight,
+				})
+			}
+		}
+	}
+	return localGroups
+}
+
+func getCrossZoneLbGroups(conf *api.Conf, localZone string) []CrossZoneLbGroup {
+	var crossZoneGroups []CrossZoneLbGroup
+	if conf.LocalityAwareness.CrossZone != nil && len(pointer.Deref(conf.LocalityAwareness.CrossZone.Failover)) > 0 {
+		// iterator starts from 0 while for remote zones we always set priority that favors local zone
+		// we are using priority based on the rule position in the list so we increment it even if it doesn't match
+		// that doesn't affect envoy behavior
+		for priority, rule := range pointer.Deref(conf.LocalityAwareness.CrossZone.Failover) {
+			if !doesRuleApply(rule.From, localZone) {
+				continue
+			}
+			lb := CrossZoneLbGroup{}
+			switch rule.To.Type {
+			case api.Any:
+				lb.Type = api.Any
+				lb.Priority = uint32(priority + 1)
+			case api.AnyExcept:
+				lb.Type = api.AnyExcept
+				zones := map[string]bool{}
+				for _, zone := range pointer.Deref(rule.To.Zones) {
+					zones[zone] = true
+				}
+				lb.Zones = zones
+				lb.Priority = uint32(priority + 1)
+			case api.Only:
+				lb.Type = api.Only
+				zones := map[string]bool{}
+				for _, zone := range pointer.Deref(rule.To.Zones) {
+					zones[zone] = true
+				}
+				lb.Zones = zones
+				lb.Priority = uint32(priority + 1)
+			default:
+				lb.Type = api.None
+			}
+			crossZoneGroups = append(crossZoneGroups, lb)
+		}
+	}
+	return crossZoneGroups
+}
+
+func doesRuleApply(rule *api.FromZone, localZone string) bool {
+	if rule == nil {
+		return true
+	}
+	return slices.Contains(rule.Zones, localZone)
+}
+
+// affinityTagPodLabels returns a filtered copy of labels keeping only keys
+// referenced by AffinityTags in the conf. Unrelated pod labels are excluded
+// to avoid propagating unnecessary data through the load-balancing pipeline.
+func affinityTagPodLabels(labels map[string]string, conf api.Conf) map[string]string {
+	la := conf.LocalityAwareness
+	if la == nil || la.LocalZone == nil || la.LocalZone.AffinityTags == nil {
+		return nil
+	}
+	filtered := make(map[string]string)
+	for _, tag := range *la.LocalZone.AffinityTags {
+		if v, ok := labels[tag.Key]; ok {
+			filtered[tag.Key] = v
+		}
+	}
+	return filtered
+}
+
+// resolveAffinityValues returns all values for an affinity tag key.
+// It prefers inbound tags but falls back to pod labels when tags are absent.
+// Inbounds carry no tags in tag-free mode; pod labels are passed so the
+// endpoint side can fold them into envoy.lb metadata (see topology.endpointIdentity).
+func resolveAffinityValues(inboundTags mesh_proto.MultiValueTagSet, podLabels map[string]string, key string) []string {
+	if values := inboundTags.Values(key); len(values) > 0 {
+		return values
+	}
+	if v, ok := podLabels[key]; ok {
+		log.V(1).Info("affinity tag absent from inbound tags, using pod label fallback", "key", key, "value", v)
+		return []string{v}
+	}
+	return nil
+}

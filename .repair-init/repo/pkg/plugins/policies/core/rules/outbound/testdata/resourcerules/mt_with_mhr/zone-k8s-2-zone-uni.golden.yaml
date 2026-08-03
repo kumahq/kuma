@@ -1,0 +1,34 @@
+kri_mhttpr_mesh-1_zone-k8s_ns-k8s_http-route-1_:
+  Conf:
+  - http:
+      requestTimeout: 19s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-mt-1
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: zone
+        kuma.io/zone: zone-k8s
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-1-fc5844czc47fc6x7
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  OriginByMatches: {}
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      k8s.kuma.io/namespace: ns-k8s
+      kuma.io/display-name: http-route-1
+      kuma.io/mesh: mesh-1
+      kuma.io/origin: zone
+      kuma.io/zone: zone-k8s
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: http-route-1-8x2842vcxc826979
+    NameExtensions: null
+    Version: ""
+  ResourceSectionName: ""

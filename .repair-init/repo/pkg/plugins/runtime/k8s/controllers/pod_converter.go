@@ -1,0 +1,426 @@
+package controllers
+
+import (
+	"context"
+	"fmt"
+	"maps"
+	"reflect"
+
+	"github.com/pkg/errors"
+	kube_core "k8s.io/api/core/v1"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
+
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+)
+
+var converterLog = core.Log.WithName("discovery").WithName("k8s").WithName("pod-to-dataplane-converter")
+
+type PodConverter struct {
+	NodeGetter        kube_client.Reader
+	ResourceConverter k8s_common.Converter
+	InboundConverter  InboundConverter
+	Zone              string
+	SystemNamespace   string
+	Mode              config_core.CpMode
+	WorkloadLabels    []string
+}
+
+func (p *PodConverter) PodToDataplane(
+	ctx context.Context,
+	dataplane *mesh_k8s.Dataplane,
+	pod *kube_core.Pod,
+	services []*kube_core.Service,
+	mesh *core_mesh.MeshResource,
+) error {
+	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
+	previousMesh := dataplane.Mesh
+	dataplane.Mesh = mesh.Meta.GetName()
+	dataplaneProto, err := p.dataplaneFor(ctx, pod, services)
+	if err != nil {
+		return err
+	}
+	currentSpec, err := dataplane.GetSpec()
+	if err != nil {
+		return err
+	}
+	// we need to validate if the labels have changed
+	workloadName := computeWorkloadName(pod.Labels, p.WorkloadLabels, pod.Spec.ServiceAccountName)
+	nodeLabels, err := p.InboundConverter.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
+	if err != nil {
+		return err
+	}
+
+	labels, err := resource_labels.Compute(
+		core_mesh.DataplaneResourceTypeDescriptor,
+		currentSpec,
+		mergeLabels(dataplane.GetLabels(), pod.Labels, nodeLabels),
+		dataplane.Mesh,
+		dataplane.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		resource_labels.WithMode(p.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(p.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+		resource_labels.WithWorkload(workloadName),
+	)
+	if err != nil {
+		return err
+	}
+	if model.Equal(currentSpec, dataplaneProto) && previousMesh == dataplane.Mesh && reflect.DeepEqual(labels, dataplane.GetLabels()) {
+		logger.V(1).Info("resource hasn't changed, skip")
+		return nil
+	}
+	dataplane.SetSpec(dataplaneProto)
+	dataplane.SetLabels(labels)
+	return nil
+}
+
+func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service) error {
+	logger := converterLog.WithValues("ZoneIngress.name", zoneIngress.Name, "Pod.name", pod.Name)
+	// Start with the existing ZoneIngress spec so we won't override available services in Ingress section
+	zoneIngressRes := core_mesh.NewZoneIngressResource()
+	if err := p.ResourceConverter.ToCoreResource(zoneIngress, zoneIngressRes); err != nil {
+		logger.Error(err, "unable to convert ZoneIngress k8s object into core resource")
+		return err
+	}
+
+	if err := p.IngressFor(ctx, zoneIngressRes.Spec, pod, services); err != nil {
+		return err
+	}
+
+	currentSpec, err := zoneIngress.GetSpec()
+	if err != nil {
+		return err
+	}
+	// we need to validate if the labels have changed
+	labels, err := resource_labels.Compute(
+		core_mesh.ZoneIngressResourceTypeDescriptor,
+		currentSpec,
+		mergeLabels(zoneIngress.GetLabels(), pod.Labels),
+		model.NoMesh,
+		zoneIngress.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		resource_labels.WithMode(p.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(p.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+	)
+	if err != nil {
+		return err
+	}
+
+	if model.Equal(currentSpec, zoneIngressRes.Spec) && reflect.DeepEqual(labels, zoneIngress.GetLabels()) {
+		logger.V(1).Info("resource hasn't changed, skip")
+		return nil
+	}
+	zoneIngress.SetSpec(zoneIngressRes.Spec)
+	zoneIngress.SetLabels(labels)
+	return nil
+}
+
+func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.ZoneEgress, pod *kube_core.Pod, services []*kube_core.Service) error {
+	logger := converterLog.WithValues("ZoneEgress.name", zoneEgress.Name, "Pod.name", pod.Name)
+	// Start with the existing ZoneEgress spec
+	zoneEgressRes := core_mesh.NewZoneEgressResource()
+	if err := p.ResourceConverter.ToCoreResource(zoneEgress, zoneEgressRes); err != nil {
+		logger.Error(err, "unable to convert ZoneEgress k8s object into core resource")
+		return err
+	}
+
+	if err := p.EgressFor(ctx, zoneEgressRes.Spec, pod, services); err != nil {
+		return err
+	}
+	currentSpec, err := zoneEgress.GetSpec()
+	if err != nil {
+		return err
+	}
+	// we need to validate if the labels have changed
+	labels, err := resource_labels.Compute(
+		core_mesh.ZoneEgressResourceTypeDescriptor,
+		currentSpec,
+		mergeLabels(zoneEgress.GetLabels(), pod.Labels),
+		model.NoMesh,
+		zoneEgress.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		resource_labels.WithMode(p.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(p.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+	)
+	if err != nil {
+		return err
+	}
+	if model.Equal(currentSpec, zoneEgressRes.Spec) && reflect.DeepEqual(labels, zoneEgress.GetLabels()) {
+		logger.V(1).Info("resource hasn't changed, skip")
+		return nil
+	}
+
+	zoneEgress.SetSpec(zoneEgressRes.Spec)
+	zoneEgress.SetLabels(labels)
+	return nil
+}
+
+func processReachableBackendRefs(refs ReachableBackendRefs) []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef {
+	var result []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef
+
+	for _, ref := range refs.Refs {
+		backendRef := &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
+			Kind:      ref.Kind,
+			Name:      pointer.Deref(ref.Name),
+			Namespace: pointer.Deref(ref.Namespace),
+			Labels:    ref.Labels,
+		}
+
+		if ref.Port != nil {
+			backendRef.Port = util_proto.UInt32(pointer.Deref(ref.Port))
+		}
+
+		result = append(result, backendRef)
+	}
+
+	return result
+}
+
+func (p *PodConverter) dataplaneFor(
+	ctx context.Context,
+	pod *kube_core.Pod,
+	services []*kube_core.Service,
+) (*mesh_proto.Dataplane, error) {
+	dataplane := &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{}}
+	annotations := metadata.Annotations(pod.Annotations)
+
+	var tp mesh_proto.Dataplane_Networking_TransparentProxying
+	var tpConfigInAnnotation bool
+	var tpEnabledInAnnotation bool
+
+	if v, ok := annotations.GetString(metadata.KumaTrafficTransparentProxyConfig); ok && v != "" {
+		tpConfigInAnnotation = true
+	}
+
+	if v, ok, err := annotations.GetEnabled(metadata.KumaTransparentProxyingAnnotation); err != nil {
+		return nil, err
+	} else {
+		tpEnabledInAnnotation = ok && v
+	}
+
+	if tpConfigInAnnotation || tpEnabledInAnnotation {
+		if v, exist := annotations.GetList(metadata.KumaDirectAccess); exist {
+			tp.DirectAccessServices = v
+		}
+
+		if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
+			var refs ReachableBackendRefs
+			if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
+				return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
+			}
+
+			tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
+				Refs: processReachableBackendRefs(refs),
+			}
+		}
+	}
+
+	if tpEnabledInAnnotation {
+		if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation); err != nil {
+			return nil, err
+		} else if !ok {
+			return nil, errors.New("transparent proxying inbound port has to be set in transparent mode")
+		} else {
+			tp.RedirectPortInbound = v
+		}
+
+		if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation); err != nil {
+			return nil, err
+		} else if !ok {
+			return nil, errors.New("transparent proxying outbound port has to be set in transparent mode")
+		} else {
+			tp.RedirectPortOutbound = v
+		}
+
+		if v, _ := annotations.GetStringWithDefault(
+			metadata.IpFamilyModeDualStack,
+			metadata.KumaTransparentProxyingIPFamilyMode,
+		); v != "" {
+			switch v {
+			case metadata.IpFamilyModeDualStack:
+				tp.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
+			case metadata.IpFamilyModeIPv4:
+				tp.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
+			default:
+				return nil, errors.Errorf("invalid ip family mode '%s'", v)
+			}
+		}
+	}
+
+	// Avoid setting an empty TransparentProxying object by checking if any fields are set.
+	// Only assign it if at least one relevant field has a non-zero or non-nil value.
+	if tp.DirectAccessServices != nil ||
+		tp.ReachableBackends != nil ||
+		tp.RedirectPortInbound != 0 ||
+		tp.RedirectPortOutbound != 0 ||
+		tp.IpFamilyMode != 0 {
+		dataplane.Networking.TransparentProxying = &tp
+	}
+
+	dataplane.Networking.Address = pod.Status.PodIP
+
+	gwType, exist := annotations.GetString(metadata.KumaGatewayAnnotation)
+	if exist {
+		switch gwType {
+		case "enabled":
+			gateway, err := p.GatewayByServiceFor(ctx, pod, services)
+			if err != nil {
+				return nil, err
+			}
+			dataplane.Networking.Gateway = gateway
+		case "provided":
+			gateway, err := p.GatewayByDeploymentFor(ctx, pod, services)
+			if err != nil {
+				return nil, err
+			}
+			dataplane.Networking.Gateway = gateway
+		default:
+			return nil, errors.Errorf("invalid delegated gateway type '%s'", gwType)
+		}
+	} else {
+		var regularServices, zoneProxyServices []*kube_core.Service
+		for _, svc := range services {
+			if _, ok := svc.Labels[metadata.KumaZoneProxyTypeLabel]; ok {
+				zoneProxyServices = append(zoneProxyServices, svc)
+			} else {
+				regularServices = append(regularServices, svc)
+			}
+		}
+
+		// Skip inbound generation entirely when the pod is zone-proxy-only
+		// (has zone proxy services but no regular services) to avoid the
+		// serviceless inbound fallback in InboundInterfacesFor.
+		if len(regularServices) > 0 || len(zoneProxyServices) == 0 {
+			dataplane.Networking.Inbound = p.InboundConverter.InboundInterfacesFor(pod, regularServices)
+		}
+
+		// portSvc tracks which service already claimed each address:port to produce
+		// actionable conflict messages instead of generic validator errors.
+		type portEntry struct {
+			svcName string
+			typ     mesh_proto.Dataplane_Networking_Listener_Type
+		}
+		portSvc := map[string]portEntry{}
+		for _, zpSvc := range zoneProxyServices {
+			listeners, lErr := ListenersForService(pod, zpSvc)
+			if lErr != nil {
+				return nil, lErr
+			}
+			for _, l := range listeners {
+				key := fmt.Sprintf("%s:%d", l.Address, l.Port)
+				if existing, ok := portSvc[key]; ok {
+					if existing.typ != l.Type {
+						return nil, errors.Errorf("conflicting listener types on port %d: services %q and %q have different %s labels, please remove one of the Services",
+							l.Port, existing.svcName, zpSvc.Name, metadata.KumaZoneProxyTypeLabel)
+					}
+					converterLog.V(1).Info("duplicate zone proxy services on the same port: ignoring the second service",
+						"service", existing.svcName, "ignoredService", zpSvc.Name, "port", l.Port)
+					continue
+				}
+				portSvc[key] = portEntry{zpSvc.Name, l.Type}
+				dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, l)
+			}
+		}
+
+		// Zone-proxy-only dataplane: no inbounds, no gateway, but has listeners.
+		// Set empty reachable_backends so Envoy generates no outbound cluster config.
+		if len(dataplane.Networking.Inbound) == 0 && dataplane.Networking.Gateway == nil &&
+			len(dataplane.Networking.Listeners) > 0 {
+			if dataplane.Networking.TransparentProxying == nil {
+				dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
+			}
+			if dataplane.Networking.TransparentProxying.ReachableBackends == nil {
+				dataplane.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
+			}
+		}
+	}
+
+	probes, err := ProbesFor(pod)
+	if err != nil {
+		return nil, err
+	}
+	dataplane.Probes = probes
+
+	adminPort, exist, err := annotations.GetUint32(metadata.KumaEnvoyAdminPort)
+	if err != nil {
+		return nil, err
+	}
+	if exist {
+		dataplane.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: adminPort}
+	}
+
+	return dataplane, nil
+}
+
+func (p *PodConverter) GatewayByServiceFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
+	return &mesh_proto.Dataplane_Networking_Gateway{
+		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
+		Tags: map[string]string{},
+	}, nil
+}
+
+func (p *PodConverter) GatewayByDeploymentFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
+	namespace := pod.GetObjectMeta().GetNamespace()
+	deployment, kind, err := p.InboundConverter.NameExtractor.Name(ctx, pod)
+	if err != nil {
+		return nil, err
+	}
+	if kind != "Deployment" {
+		return p.GatewayByServiceFor(ctx, pod, services)
+	}
+	return &mesh_proto.Dataplane_Networking_Gateway{
+		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
+		Tags: map[string]string{"kuma.io/service-name": fmt.Sprintf("%s_%s_svc", deployment, namespace)},
+	}, nil
+}
+
+func mergeLabels(existingLabels map[string]string, labelSets ...map[string]string) map[string]string {
+	mergedLabels := map[string]string{}
+	if existingLabels != nil {
+		mergedLabels = maps.Clone(existingLabels)
+	}
+	for _, labels := range labelSets {
+		maps.Copy(mergedLabels, labels)
+	}
+	return mergedLabels
+}
+
+// computeWorkloadName determines the workload identifier based on a prioritized list of pod labels.
+// It iterates through the configured workloadLabels and returns the first non-empty value found.
+// If no matching labels exist or the list is empty, it falls back to the ServiceAccount name.
+func computeWorkloadName(podLabels map[string]string, workloadLabels []string, serviceAccount string) string {
+	for _, labelKey := range workloadLabels {
+		if value, ok := podLabels[labelKey]; ok && value != "" {
+			return value
+		}
+	}
+	return serviceAccount
+}
+
+type ReachableBackendRefs struct {
+	Refs []*ReachableBackendRef `json:"refs,omitempty"`
+}
+
+type ReachableBackendRef struct {
+	Kind      string            `json:"kind,omitempty"`
+	Name      *string           `json:"name,omitempty"`
+	Namespace *string           `json:"namespace,omitempty"`
+	Port      *uint32           `json:"port,omitempty"`
+	Labels    map[string]string `json:"labels,omitempty"`
+}

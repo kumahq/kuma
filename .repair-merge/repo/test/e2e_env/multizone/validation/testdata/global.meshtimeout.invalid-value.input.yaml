@@ -1,0 +1,13 @@
+type: MeshTimeout
+name: mt-invalid-value
+mesh: multizone-label-validation
+labels:
+  kuma.io/custom: "not valid!!"
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s

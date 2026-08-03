@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Node
+metadata:
+  name: sample-node
+  labels:
+    topology.kubernetes.io/zone: us-2
+status:
+  addresses:
+    - address: 10.128.15.193
+      type: InternalIP
+    - address: 34.72.129.131
+      type: ExternalIP

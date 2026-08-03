@@ -1,0 +1,3 @@
+violations:
+- field: spec.targetRef.sectionName
+  message: can only be used with inbound policies

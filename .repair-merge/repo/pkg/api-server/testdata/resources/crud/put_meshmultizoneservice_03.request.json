@@ -1,0 +1,20 @@
+{
+  "type": "MeshMultiZoneService",
+  "name": "this-is-a-very-long-meshmultizoneservice-name-exceeding-sixty-three",
+  "mesh": "default",
+  "spec": {
+    "selector": {
+      "meshService": {
+        "matchLabels": {
+          "kuma.io/display-name": "long-name-target"
+        }
+      }
+    },
+    "ports": [
+      {
+        "port": 8080,
+        "appProtocol": "http"
+      }
+    ]
+  }
+}

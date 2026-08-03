@@ -1,0 +1,154 @@
+package v1alpha1_test
+
+import (
+	. "github.com/onsi/ginkgo/v2"
+
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
+)
+
+var _ = Describe("validator", func() {
+	DescribeErrorCases(
+		api.NewMeshTCPRouteResource,
+		ErrorCase("spec.targetRef error",
+			validators.Violation{
+				Field:   "spec.targetRef.kind",
+				Message: "value 'BlahBlah' is not supported",
+			}, `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: BlahBlah
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: backend
+`),
+		ErrorCase("spec.to.targetRef error",
+			validators.Violation{
+				Field:   "spec.to[0].targetRef.kind",
+				Message: "value 'Mesh' is not supported",
+			}, `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: Mesh
+`),
+		ErrorCase("invalid backendRefs",
+			validators.Violation{
+				Field:   "spec.to[0].rules[0].default.backendRefs[0].labels",
+				Message: "must be set when kind is MeshServiceSubset",
+			}, `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: backend
+  rules:
+  - default:
+      backendRefs:
+      - kind: MeshServiceSubset
+        tags:
+          version: v1
+`),
+		ErrorCase("missing port in backendRefs",
+			validators.Violation{
+				Field:   "spec.to[0].rules[0].default.backendRefs[0].port",
+				Message: "must be defined with kind MeshMultiZoneService",
+			}, `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: backend
+  rules:
+  - default:
+      backendRefs:
+      - kind: MeshMultiZoneService
+        labels:
+          kuma.io/display-name: test-server
+`),
+	)
+	DescribeValidCases(
+		api.NewMeshTCPRouteResource,
+		Entry("accepts valid resource with to.rules", `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: backend
+  rules:
+  - default:
+      backendRefs:
+      - kind: MeshService
+        labels:
+          kuma.io/display-name: other
+`),
+		Entry("accepts valid resource without to.rules", `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: backend
+`),
+		Entry("MeshService and MeshMultiZoneService", `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: backend
+    sectionName: "8080"
+  rules:
+  - default:
+      backendRefs:
+      - kind: MeshMultiZoneService
+        labels:
+          kuma.io/display-name: other
+        port: 8080
+- targetRef:
+    kind: MeshMultiZoneService
+    labels:
+      kuma.io/display-name: other
+  rules:
+  - default:
+      backendRefs:
+      - kind: MeshService
+        labels:
+          kuma.io/display-name: backend
+        port: 8080
+`),
+	)
+})

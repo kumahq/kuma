@@ -1,0 +1,14 @@
+type: MeshProxyPatch
+name: mpp-cluster-patch
+mesh: envoyconfig-zoneproxies
+labels:
+  kuma.io/effect: shadow
+spec:
+  default:
+    appendModifications:
+      - cluster:
+          operation: Patch
+          match:
+            name: kuma:envoy:admin
+          value: |
+            connectTimeout: 12s

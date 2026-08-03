@@ -1,0 +1,8 @@
+spiffeID:
+  trustDomain: "{{ .Mesh }}.mesh.local"
+  path: "/ns/{{ .Namespace|invalid }}/sa/{{ .ServiceAccount }}"
+provider:
+  type: Bundled
+  bundled:
+    autogenerate:
+      enabled: true

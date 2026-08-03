@@ -1,0 +1,14 @@
+type: MeshTimeout
+name: mt-proxy-type
+mesh: multizone-label-validation
+labels:
+  kuma.io/origin: zone
+  kuma.io/proxy-type: sidecar
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s

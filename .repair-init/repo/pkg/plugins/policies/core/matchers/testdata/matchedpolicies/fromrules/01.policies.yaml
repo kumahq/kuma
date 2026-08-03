@@ -1,0 +1,31 @@
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Dataplane
+    sectionName: v1
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Exact
+              value: spiffe://mesh-1/backend
+    - default:
+        allowWithShadowDeny:
+          - spiffeID:
+              type: Exact
+              value: spiffe://mesh-1/orders
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-2
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        deny:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1

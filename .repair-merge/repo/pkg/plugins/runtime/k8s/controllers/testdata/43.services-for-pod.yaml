@@ -1,0 +1,28 @@
+---
+metadata:
+  namespace: demo
+  name: zone-ingress
+  labels:
+    k8s.kuma.io/zone-proxy-type: ingress
+spec:
+  selector:
+    app: zone-proxy
+  ports:
+    - name: zi-main
+      protocol: TCP
+      port: 10001
+      targetPort: 10001
+---
+metadata:
+  namespace: demo
+  name: zone-egress
+  labels:
+    k8s.kuma.io/zone-proxy-type: egress
+spec:
+  selector:
+    app: zone-proxy
+  ports:
+    - name: ze-main
+      protocol: TCP
+      port: 10001
+      targetPort: 10001

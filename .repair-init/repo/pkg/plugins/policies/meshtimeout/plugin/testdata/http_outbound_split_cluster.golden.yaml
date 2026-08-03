@@ -1,0 +1,9 @@
+connectTimeout: 10s
+name: kri_msvc_default___other-service_10001-c72efb5be46fae6b
+typedExtensionProtocolOptions:
+  envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+    commonHttpProtocolOptions:
+      idleTimeout: 3600s
+      maxConnectionDuration: 600s
+      maxStreamDuration: 600s

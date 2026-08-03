@@ -1,0 +1,48 @@
+{
+  "cluster_name": "backend",
+  "endpoints": [
+    {
+      "lb_endpoints": [
+        {
+          "HostIdentifier": {
+            "Endpoint": {
+              "address": {
+                "Address": {
+                  "SocketAddress": {
+                    "address": "192.168.0.1",
+                    "PortSpecifier": {
+                      "PortValue": 1010
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "load_balancing_weight": {
+            "value": 1
+          }
+        },
+        {
+          "HostIdentifier": {
+            "Endpoint": {
+              "address": {
+                "Address": {
+                  "SocketAddress": {
+                    "address": "192.168.0.2",
+                    "PortSpecifier": {
+                      "PortValue": 1011
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "load_balancing_weight": {
+            "value": 1
+          }
+        }
+      ],
+      "LbConfig": null
+    }
+  ]
+}

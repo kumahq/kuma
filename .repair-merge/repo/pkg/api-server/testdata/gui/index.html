@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  
+  <base href="/gui/" />
+
+  <link rel="icon" href="./favicon.png" />
+  <title>Manager</title>
+
+  <style type="text/css">
+    html:not(.kuma-ready) {
+      background-image: url('kuma-loader-v1.gif');
+      background-position: center center;
+      background-repeat: none;
+      background-repeat: no-repeat;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+
+    html:not(.kuma-ready)::before,
+    html:not(.kuma-ready)::after {
+      position: absolute;
+      left: 50%;
+      margin-left: -125px;
+      margin-top: 170px;
+      display: block;
+      content: '';
+      height: 5px;
+      width: 250px;
+    }
+    html:not(.kuma-ready)::before {
+      background-color: #afb7c5  ;
+    }
+    html:not(.kuma-ready)::after {
+      background-color: #5f9aff  ;
+      animation: 1s ease-out infinite both load;
+    }
+    @keyframes load {
+      from {
+        width: 0;
+      }
+      to {
+        width: 250px;
+      }
+    }
+  </style>
+  <script type="application/json" id="kuma-config">{"apiUrl":"https://foo.bar.com:8080/foo","baseGuiPath":"/gui","version":"0.0.0","product":"Kuma","mode":"zone","environment":"universal","storeType":"memory","apiReadOnly":false}</script>
+  <script type="module" crossorigin src="./assets/index.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index.css">
+</head>
+
+<body>
+  <noscript>
+    <strong>
+      We're sorry but this site doesn't work properly without JavaScript enabled. Please enable it to continue.
+    </strong>
+  </noscript>
+
+  <div id="app"></div>
+</body>
+
+</html>

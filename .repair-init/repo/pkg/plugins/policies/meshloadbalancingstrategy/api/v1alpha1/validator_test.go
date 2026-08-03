@@ -1,0 +1,531 @@
+package v1alpha1_test
+
+import (
+	. "github.com/onsi/ginkgo/v2"
+
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
+)
+
+var _ = Describe("validation", func() {
+	DescribeErrorCases(
+		api.NewMeshLoadBalancingStrategyResource,
+		ErrorCases(
+			"spec errors",
+			[]validators.Violation{
+				{
+					Field:   "spec.targetRef.kind",
+					Message: "value 'MeshGatewayRoute' is not supported",
+				},
+			},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGatewayRoute
+  name: route-1
+to: []
+`),
+		ErrorCases(
+			"spec.to errors",
+			[]validators.Violation{{
+				Field:   "spec.to[0].targetRef.kind",
+				Message: "value 'MeshServiceSubset' is not supported",
+			}, {
+				Field:   "spec.to[1].default.localityAwareness.crossZone",
+				Message: "must not be set: MeshService traffic is local",
+			}},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to: 
+  - targetRef:
+      kind: MeshServiceSubset
+      name: svc-2
+      tags:
+        version: v1
+  - targetRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: real-mesh-service
+      sectionName: http
+    default:
+      localityAwareness:
+        crossZone: {}
+`),
+		ErrorCases(
+			"leastRequest error",
+			[]validators.Violation{{
+				Field:   "spec.to[0].default.loadBalancer.leastRequest.activeRequestBias",
+				Message: "must be greater or equal then: 0",
+			}},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: svc-2
+    default:
+      loadBalancer:
+        type: LeastRequest
+        leastRequest:
+          activeRequestBias: -1
+`),
+		ErrorCases(
+			"empty from in failover",
+			[]validators.Violation{{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[0].from.zones",
+				Message: "must not be empty",
+			}},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-1
+    default:
+      localityAwareness:
+        crossZone:
+          failover:
+            - from:
+                zones: []
+              to: 
+                type: None
+`),
+		ErrorCases(
+			"incorrect weight",
+			[]validators.Violation{
+				{
+					Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags[0].weight",
+					Message: "must be greater than 0",
+				},
+				{
+					Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags[1].key",
+					Message: "must not be empty",
+				},
+			},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: svc-1
+    default:
+      localityAwareness:
+        localZone:
+          affinityTags:
+            - key: k8s/node
+              weight: 0
+            - key: ""
+              weight: 10
+`),
+		ErrorCases(
+			"mixing affinity tags with and without weights",
+			[]validators.Violation{{
+				Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags",
+				Message: "all or none affinity tags should have weight",
+			}},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: svc-1
+    default:
+      localityAwareness:
+        localZone:
+          affinityTags:
+            - key: k8s/node
+              weight: 10
+            - key: k8s/az
+`),
+		ErrorCases(
+			"percentage can't be zero",
+			[]validators.Violation{{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failoverThreshold.percentage",
+				Message: "must be greater than 0",
+			}},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-1
+    default:
+      localityAwareness:
+        crossZone:
+          failoverThreshold:
+            percentage: 0
+`),
+		ErrorCases(
+			"percentage is not a parseable number",
+			[]validators.Violation{{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failoverThreshold.percentage",
+				Message: "string must be a valid number",
+			}},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-1
+    default:
+      localityAwareness:
+        crossZone:
+          failoverThreshold:
+            percentage: "hello"
+`),
+		ErrorCases(
+			"broken failover rules",
+			[]validators.Violation{
+				{
+					Field:   "spec.to[0].default.localityAwareness.crossZone.failover[0].to.zones",
+					Message: "must be empty when type is None",
+				},
+				{
+					Field:   "spec.to[0].default.localityAwareness.crossZone.failover[1].from.zones[1]",
+					Message: "must not be empty",
+				},
+				{
+					Field:   "spec.to[0].default.localityAwareness.crossZone.failover[2].to.zones",
+					Message: "must be empty when type is Any",
+				},
+				{
+					Field:   "spec.to[0].default.localityAwareness.crossZone.failover[3].to.zones",
+					Message: "must not be empty when type is Only",
+				},
+				{
+					Field:   "spec.to[0].default.localityAwareness.crossZone.failover[4].to.zones",
+					Message: "must not be empty when type is Only",
+				},
+				{
+					Field:   "spec.to[0].default.localityAwareness.crossZone.failover[5].to.zones",
+					Message: "must not be empty when type is AnyExcept",
+				},
+				{
+					Field:   "spec.to[0].default.localityAwareness.crossZone.failover[6].to.zones",
+					Message: "must not be empty when type is AnyExcept",
+				},
+			},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-1
+    default:
+      localityAwareness:
+        crossZone:
+          failover:
+            - from:
+                zones: ["zone-1"]
+              to: 
+                type: None
+                zones: ["zone-1"]
+            - from:
+                zones: ["zone-1", ""]
+              to: 
+                type: Any
+            - to:
+                type: Any
+                zones: ["zone-1"]
+            - to:
+                type: Only
+                zones: []
+            - to:
+                type: Only
+            - to:
+                type: AnyExcept
+                zones: []
+            - to:
+                type: AnyExcept
+
+`),
+		ErrorCases(
+			"invalid hashPolicies",
+			[]validators.Violation{
+				{
+					Field:   "spec.to[0].default.hashPolicies[0].header",
+					Message: "must be defined",
+				},
+				{
+					Field:   "spec.to[0].default.hashPolicies[1].cookie",
+					Message: "must be defined",
+				},
+				{
+					Field:   "spec.to[0].default.hashPolicies[2].connection",
+					Message: "must be defined",
+				},
+				{
+					Field:   "spec.to[0].default.hashPolicies[3].queryParameter",
+					Message: "must be defined",
+				},
+				{
+					Field:   "spec.to[0].default.hashPolicies[4].filterState",
+					Message: "must be defined",
+				},
+			},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to: 
+  - targetRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: svc-2
+    default:
+      hashPolicies:
+        - type: Header
+        - type: Cookie
+        - type: SourceIP
+        - type: QueryParameter
+        - type: FilterState
+`),
+		ErrorCases(
+			"MeshHTTPRoute with loadBalancer",
+			[]validators.Violation{
+				{
+					Field:   "spec.to[0].default.loadBalancer",
+					Message: "field is not allowed when targetRef.kind is MeshHTTPRoute, only hashPolicies is supported",
+				},
+			},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to: 
+  - targetRef:
+      kind: MeshHTTPRoute
+      labels:
+        kuma.io/display-name: route-1
+    default:
+      loadBalancer:
+        type: RoundRobin
+      hashPolicies:
+        - type: Header
+          header:
+            name: x-header-name
+`),
+		ErrorCases(
+			"MeshHTTPRoute with localityAwareness",
+			[]validators.Violation{
+				{
+					Field:   "spec.to[0].default.localityAwareness",
+					Message: "field is not allowed when targetRef.kind is MeshHTTPRoute, only hashPolicies is supported",
+				},
+			},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to: 
+  - targetRef:
+      kind: MeshHTTPRoute
+      labels:
+        kuma.io/display-name: route-1
+    default:
+      localityAwareness:
+        disabled: true
+      hashPolicies:
+        - type: Header
+          header:
+            name: x-header-name
+`),
+	)
+
+	DescribeValidCases(
+		api.NewMeshLoadBalancingStrategyResource,
+		Entry(
+			"MeshExternalService on a zone proxy",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: mes-lb
+targetRef:
+  kind: Dataplane
+  labels:
+    kuma.io/listener-zoneegress: enabled
+to:
+  - targetRef:
+      kind: MeshExternalService
+      labels:
+        kuma.io/display-name: httpbin
+    default:
+      loadBalancer:
+        type: RingHash
+        ringHash:
+          minRingSize: 100
+          maxRingSize: 1000
+          hashFunction: MurmurHash2
+`),
+		Entry(
+			"MeshHTTPRoute with only hashPolicies",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to: 
+  - targetRef:
+      kind: MeshHTTPRoute
+      labels:
+        kuma.io/display-name: route-1
+    default:
+      hashPolicies:
+        - type: Header
+          header:
+            name: x-header-name
+        - type: Cookie
+          cookie:
+            name: session_id
+            ttl: 1s
+            path: /absolute-path
+`),
+		Entry(
+			"full spec",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to: 
+  - targetRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: svc-2
+    default:
+      localityAwareness:
+        disabled: true
+      hashPolicies:
+        - type: Cookie
+          cookie:
+            name: cookie-name
+            ttl: 1s
+            path: /absolute-path
+      loadBalancer:
+        type: Maglev
+`),
+		Entry(
+			"full spec leastRequest",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: svc-2
+    default:
+      localityAwareness:
+        disabled: true
+      loadBalancer:
+        type: LeastRequest
+        leastRequest:
+          activeRequestBias: "1.3"
+`),
+		Entry(
+			"full locality awareness spec",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to: 
+  - targetRef:
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-2
+    default:
+      localityAwareness:
+        localZone:
+          affinityTags: 
+            - key: "k8s/node"
+            - key: "k8s/az"
+        crossZone:
+          failover:
+            - from:
+                zones: ["zone-1"]
+              to: 
+                type: Only
+                zones: ["zone-2"]
+            - from:
+                zones: ["zone-3"]
+              to:
+                type: Any
+            - from:
+                zones: ["zone-4"]
+              to:
+                type: AnyExcept
+                zones: ["zone-1"]
+            - to:
+                type: None
+          failoverThreshold:
+            percentage: 70
+`),
+		Entry(
+			"empty 'to' allowed as override to disable inherited rules",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Dataplane
+  labels:
+    app: web
+to: []
+`),
+	)
+})

@@ -1,0 +1,13 @@
+type: MeshTimeout
+name: mt-origin-invalid
+mesh: multizone-label-validation
+labels:
+  kuma.io/origin: bogus
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s

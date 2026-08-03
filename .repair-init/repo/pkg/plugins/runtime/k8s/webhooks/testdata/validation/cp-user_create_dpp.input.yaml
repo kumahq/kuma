@@ -1,0 +1,17 @@
+# user=system:serviceaccount:kuma-system:kuma-control-plane,operation=CREATE
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+mesh: demo
+metadata:
+  namespace: example
+  name: empty
+  creationTimestamp: null
+  annotations:
+    k8s.kuma.io/synced: "true"
+spec:
+  networking:
+    address: 127.0.0.1
+    inbound:
+      - port: 11011
+        tags:
+          kuma.io/service: backend

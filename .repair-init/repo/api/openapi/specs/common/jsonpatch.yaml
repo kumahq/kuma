@@ -1,0 +1,18 @@
+components:
+  schemas:
+    JsonPatchItem:
+      type: object
+      required:
+        - op
+        - path
+        - value
+      properties:
+        op:
+          type: string
+          description: Operation to be performed.
+          enum: [ add, remove, test ]
+        path:
+          type: string
+          description: A JSON Pointer path indicating the part of the document to operate on.
+        value:
+          description: The value to be used within the operations.

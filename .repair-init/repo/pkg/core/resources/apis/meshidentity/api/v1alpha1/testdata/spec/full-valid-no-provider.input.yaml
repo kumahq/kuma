@@ -1,0 +1,7 @@
+selector:
+  dataplane:
+    matchLabels:
+      app: test 
+spiffeID:
+  trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+  path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"

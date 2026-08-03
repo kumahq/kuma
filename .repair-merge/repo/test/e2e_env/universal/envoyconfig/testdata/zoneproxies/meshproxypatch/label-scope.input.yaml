@@ -1,0 +1,37 @@
+type: MeshProxyPatch
+name: mpp-label-egress
+mesh: envoyconfig-zoneproxies
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/listener-zoneegress: enabled
+  default:
+    appendModifications:
+      - cluster:
+          operation: Add
+          value: |
+            name: mpp-egress-only-cluster
+            connectTimeout: 3s
+            type: STATIC
+---
+type: MeshProxyPatch
+name: mpp-label-ingress
+mesh: envoyconfig-zoneproxies
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/listener-zoneingress: enabled
+  default:
+    appendModifications:
+      - cluster:
+          operation: Add
+          value: |
+            name: mpp-ingress-only-cluster
+            connectTimeout: 4s
+            type: STATIC

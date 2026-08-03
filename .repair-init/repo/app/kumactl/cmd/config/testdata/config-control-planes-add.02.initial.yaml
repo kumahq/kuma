@@ -1,0 +1,19 @@
+contexts:
+- controlPlane: test1
+  defaults:
+    mesh: demo
+  name: test1
+- controlPlane: test2
+  defaults:
+    mesh: default
+  name: test2
+controlPlanes:
+- coordinates:
+    apiServer:
+      url: https://test1.internal:5681
+  name: test1
+- coordinates:
+    apiServer:
+      url: https://test2.internal:5681
+  name: test2
+currentContext: test1

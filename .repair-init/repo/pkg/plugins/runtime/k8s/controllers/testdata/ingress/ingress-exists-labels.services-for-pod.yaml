@@ -1,0 +1,15 @@
+---
+metadata:
+  namespace: kuma-system
+  name: kuma-ingress
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 10001
+      targetPort: 10001
+  selector:
+    app: kuma-ingress
+status:
+  loadBalancer:
+    ingress:
+      - ip: 192.168.100.1

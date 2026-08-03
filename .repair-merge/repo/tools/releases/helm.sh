@@ -1,0 +1,226 @@
+#!/usr/bin/env bash
+
+set -e
+
+SCRIPT_DIR="$(dirname -- "${BASH_SOURCE[0]}")"
+source "${SCRIPT_DIR}/../common.sh"
+
+[ -z "$GH_OWNER" ] && GH_OWNER="kumahq"
+[ -z "$GH_REPO" ] && GH_REPO="charts"
+GH_REPO_URL=""
+CHARTS_DIR="./deployments/charts"
+CHARTS_PACKAGE_PATH=".cr-release-packages"
+CHARTS_INDEX_FILE="index.yaml"
+GH_PAGES_BRANCH="gh-pages"
+
+# This updates Chart.yaml with:
+#  appVersion equal to the kuma version
+#  version:
+#    using version.sh logic
+#  dependencies:
+#    dev builds keep the embedded charts/$chart and drop it from
+#    .dependencies to avoid the network. Release builds do the opposite:
+#    they remove the embedded charts/$chart dir, since it's always a stale
+#    vendored copy and cr/helm don't reliably prefer a freshly fetched
+#    dependency over a same-named embedded directory.
+function update_version {
+  local dev=${1}
+  for dir in "${CHARTS_DIR}"/*; do
+    if [ ! -d "${dir}" ]; then
+      continue
+    fi
+
+    # Fail if there are uncommitted changes
+    git diff --exit-code HEAD -- "${dir}"
+
+    local kuma_version
+    kuma_version=$("${SCRIPT_DIR}/version.sh" | cut -d " " -f 1)
+    yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
+    yq -i ".version = \"${kuma_version}\"" "${dir}/Chart.yaml"
+
+    local chart
+    for chart in $(yq e '.dependencies[]?.name' "${dir}/Chart.yaml"); do
+        if [ ! -d "${dir}/charts/${chart}" ]; then
+            continue
+        fi
+        if [ -n "${dev}" ]; then
+          yq -i e "del(.dependencies[] | select(.name == \"${chart}\"))" "${dir}/Chart.yaml"
+        else
+          rm -rf "${dir}/charts/${chart}"
+        fi
+    done
+
+    make helm-docs
+  done
+}
+
+function package {
+  local dev=${1}
+  # First package all the charts
+  for dir in "${CHARTS_DIR}"/*; do
+    if [ ! -d "${dir}" ]; then
+      continue
+    fi
+
+    # Fail if there are uncommitted changes
+    git diff --exit-code HEAD -- "${dir}"
+
+    cr package \
+      --package-path "${CHARTS_PACKAGE_PATH}" \
+      "${dir}"
+
+    # repackage archive to remove potential duplicates
+    local f
+    for f in "${CHARTS_PACKAGE_PATH}"/*.tgz; do
+      local tmpdir
+      tmpdir=$(mktemp --directory)
+
+      tar -xzf "${f}" --directory "${tmpdir}"
+
+      tar -czf "${f}" \
+        --directory "${tmpdir}" \
+        --owner 0 \
+        --group 0 \
+        "$(basename "${dir}")"
+    done
+
+    # Restore files removed above
+    git checkout -- "${dir}"
+  done
+
+  # In release mode (no --dev), every Chart.yaml inside the packaged tgz must
+  # carry a real version. A leftover 0.0.0-preview means helm dep update did
+  # not replace the embedded subchart - the chart would ship with a bogus
+  # helm.sh/chart label.
+  if [ -z "${dev}" ]; then
+    verify_packaged
+  fi
+}
+
+function verify_packaged {
+  local f p v
+  local -a bad
+  for f in "${CHARTS_PACKAGE_PATH}"/*.tgz; do
+    bad=()
+    while read -r p; do
+      v=$(tar -zxOf "${f}" "${p}" | yq .version)
+      if [[ ${v} == 0.0.0-preview* ]]; then
+        bad+=("${p}")
+      fi
+    done < <(tar -tzf "${f}" | grep -E 'Chart\.yaml$')
+    if (( ${#bad[@]} > 0 )); then
+      msg_err "packaged chart ${f} ships placeholder version in: ${bad[*]}. helm dep update did not replace the embedded subchart."
+    fi
+  done
+}
+
+function release {
+  if [ -z "${GH_TOKEN}" ] || [ -z "${GH_USER}" ] || [ -z "${GH_EMAIL}" ]; then
+    msg_err "GH_TOKEN, GH_USER and GH_EMAIL required"
+  fi
+  if [ -n "${GITHUB_APP}" ]; then
+    [ -z "$GH_REPO_URL" ] && GH_REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git"
+  else
+    [ -z "$GH_REPO_URL" ] && GH_REPO_URL="https://${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git"
+  fi
+
+  git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
+
+  local CHART_TAR
+  CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}" -name "*.tgz" -type f | head -n 1)
+  local CHART_FILE
+  CHART_FILE=$(tar -tf "${CHART_TAR}" | grep -E '^[^/]+/Chart\.yaml$' | head -n 1)
+  local CHART_VERSION
+  CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
+
+  # Determine release name template based on git tag
+  # If current commit has a tag starting with 'v', use v-prefixed template
+  local RELEASE_NAME_TEMPLATE="{{ .Name }}-{{ .Version }}"
+  local exactTag
+  exactTag=$(git describe --exact-match --tags 2> /dev/null || echo "")
+  if [[ ${exactTag} =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+    RELEASE_NAME_TEMPLATE="{{ .Name }}-v{{ .Version }}"
+  fi
+
+  pushd "${GH_REPO}"
+
+  # First upload the packaged charts to the release
+  cr upload \
+    --owner "${GH_OWNER}" \
+    --git-repo "${GH_REPO}" \
+    --token "${GH_TOKEN}" \
+    --skip-existing \
+    --release-name-template "${RELEASE_NAME_TEMPLATE}" \
+    --package-path "../${CHARTS_PACKAGE_PATH}"
+
+  # Then build and upload the index file to github pages
+  cr index \
+    --owner "${GH_OWNER}" \
+    --git-repo "${GH_REPO}" \
+    --token "${GH_TOKEN}" \
+    --release-name-template "${RELEASE_NAME_TEMPLATE}" \
+    --package-path "../${CHARTS_PACKAGE_PATH}" \
+    --index-path "${CHARTS_INDEX_FILE}"
+
+  git config user.name "${GH_USER}"
+  git config user.email "${GH_EMAIL}"
+
+  git add "${CHARTS_INDEX_FILE}"
+  git commit -m "ci(helm): publish chart version ${CHART_VERSION}"
+  git push
+
+  popd
+  rm -rf "${GH_REPO}"
+}
+
+
+function usage {
+  echo "Usage: $0 [--package|--release|--update-version [--dev]]"
+  exit 0
+}
+
+
+function main {
+  local op
+  local dev
+
+  while [[ $# -gt 0 ]]; do
+    local flag=$1
+    case $flag in
+      --help)
+        usage
+        ;;
+      --package)
+        op="package"
+        ;;
+      --release)
+        op="release"
+        ;;
+      --update-version)
+        op="update-version"
+        ;;
+      --dev)
+        dev="true"
+        ;;
+      *)
+        usage
+        ;;
+    esac
+    shift
+  done
+
+  case $op in
+    package)
+      package "${dev}"
+      ;;
+    update-version)
+      update_version "${dev}"
+      ;;
+    release)
+      release
+      ;;
+  esac
+}
+
+
+main "$@"

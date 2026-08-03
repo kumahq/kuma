@@ -1,0 +1,36 @@
+type: MeshOpenTelemetryBackend
+name: mm-otel-backend
+mesh: envoyconfig
+labels:
+  kuma.io/display-name: mm-otel-backend
+spec:
+  endpoint:
+    address: otel-collector.observability.svc
+    port: 4317
+---
+type: MeshMetric
+name: mm-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  default:
+    sidecar:
+      includeUnused: true
+      profiles:
+        appendProfiles:
+          - name: Basic
+        exclude:
+          - type: Regex
+            match: envoy_cluster_external_upstream_rq_.*
+        include:
+          - type: Exact
+            match: envoy_cluster_default_total_match_count
+    backends:
+      - type: OpenTelemetry
+        openTelemetry:
+          backendRef:
+            kind: MeshOpenTelemetryBackend
+            labels:
+              kuma.io/display-name: mm-otel-backend
+          refreshInterval: 60s

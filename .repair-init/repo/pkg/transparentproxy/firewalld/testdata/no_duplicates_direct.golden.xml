@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<direct>
+  <chain ipv="ipv4" table="nat" chain="KUMA_INBOUND"></chain>
+  <chain ipv="ipv4" table="nat" chain="KUMA_OUTPUT"></chain>
+  <rule ipv="ipv4" table="nat" chain="KUMA_INBOUND" priority="3">-p tcp --dport 15008 -j RETURN</rule>
+  <rule ipv="ipv4" table="nat" chain="PREROUTING" priority="3">-p tcp -j KUMA_INBOUND</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_INBOUND" priority="3">-p tcp --dport 22 -j RETURN</rule>
+  <rule ipv="ipv4" table="nat" chain="OUTPUT" priority="3">-p tcp -j KUMA_OUTPUT</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_OUTPUT" priority="3">-d 127.0.0.1/32 -j RETURN</rule>
+</direct>

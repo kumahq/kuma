@@ -1,0 +1,73 @@
+resources:
+- name: kri_extsvc_default___externalservice_
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: kri_extsvc_default___externalservice_
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.7
+              portValue: 8007
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http2
+            envoy.transport_socket_match:
+              kuma.io/protocol: http2
+- name: kri_msvc_default___backend-eu_tcp-port
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: kri_msvc_default___backend-eu_tcp-port
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.4
+              portValue: 8004
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: tcp
+            envoy.transport_socket_match:
+              kuma.io/protocol: tcp
+- name: kri_msvc_default___backend-us_http-port
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: kri_msvc_default___backend-us_http-port
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.5
+              portValue: 8005
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+- name: kri_msvc_default___other-backend_http-port
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: kri_msvc_default___other-backend_http-port
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.6
+              portValue: 8006
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+            envoy.transport_socket_match:
+              kuma.io/protocol: http

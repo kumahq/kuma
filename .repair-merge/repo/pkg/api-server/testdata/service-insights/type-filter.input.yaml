@@ -1,0 +1,30 @@
+#/meshes/mesh-1/service-insights?type=gateway_builtin,internal 200
+#/meshes/mesh-1/service-insights?type=random-type 400
+type: Mesh
+name: mesh-1
+---
+type: ServiceInsight
+mesh: mesh-1
+name: all-services-mesh-1
+services:
+  frontend:
+    status: partially_degraded
+    serviceType: internal
+    dataplanes:
+      online: 19
+      offline: 1
+  backend:
+    status: partially_degraded
+    serviceType: external
+  gw:
+    status: partially_degraded
+    serviceType: gateway_builtin
+    dataplanes:
+      online: 19
+      offline: 1
+  kong:
+    status: partially_degraded
+    serviceType: gateway_delegated
+    dataplanes:
+      online: 19
+      offline: 1

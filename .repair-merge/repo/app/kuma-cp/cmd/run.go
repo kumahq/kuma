@@ -1,0 +1,186 @@
+package cmd
+
+import (
+	"time"
+
+	"github.com/spf13/cobra"
+
+	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
+	"github.com/kumahq/kuma/v3/pkg/clusterid"
+	kuma_cmd "github.com/kumahq/kuma/v3/pkg/cmd"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core/bootstrap"
+	meshidentity_status "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/status"
+	meshservice_generate "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/generate"
+	workload_generate "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/generate"
+	"github.com/kumahq/kuma/v3/pkg/defaults"
+	"github.com/kumahq/kuma/v3/pkg/diagnostics"
+	"github.com/kumahq/kuma/v3/pkg/dns"
+	dp_server "github.com/kumahq/kuma/v3/pkg/dp-server"
+	"github.com/kumahq/kuma/v3/pkg/gc"
+	"github.com/kumahq/kuma/v3/pkg/hds"
+	"github.com/kumahq/kuma/v3/pkg/insights"
+	"github.com/kumahq/kuma/v3/pkg/intercp"
+	"github.com/kumahq/kuma/v3/pkg/ipam"
+	kds_global "github.com/kumahq/kuma/v3/pkg/kds/global"
+	kds_zone "github.com/kumahq/kuma/v3/pkg/kds/zone"
+	mads_server "github.com/kumahq/kuma/v3/pkg/mads/server"
+	metrics "github.com/kumahq/kuma/v3/pkg/metrics/components"
+	"github.com/kumahq/kuma/v3/pkg/util/os"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
+	"github.com/kumahq/kuma/v3/pkg/xds"
+)
+
+var runLog = controlPlaneLog.WithName("run")
+
+const gracefulShutdownDuration = 3 * time.Second
+
+// This is the open file limit below which the control plane may not
+// reasonably have enough descriptors to accept all its clients.
+const minOpenFileLimit = 4096
+
+func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
+	args := struct {
+		configPath string
+	}{}
+	cmd := &cobra.Command{
+		Use:   "run",
+		Short: "Launch Control Plane",
+		Long:  `Launch Control Plane.`,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			cfg := kuma_cp.DefaultConfig()
+			err := config.Load(args.configPath, &cfg)
+			if err != nil {
+				runLog.Error(err, "could not load the configuration")
+				return err
+			}
+
+			//nolint:staticcheck
+			if cfg.Mode == config_core.Standalone {
+				runLog.Info(`[WARNING] "standalone" mode is deprecated. Changing it to "zone". Set KUMA_MODE to "zone" as "standalone" will be removed in the future.`)
+				cfg.Mode = config_core.Zone
+			}
+			kuma_cp.PrintDeprecations(&cfg, cmd.OutOrStdout())
+
+			gracefulCtx, ctx, _ := opts.SetupSignalHandler()
+			// this needs to be done before we log the config as bootstrap may change it.
+			rt, err := bootstrap.Bootstrap(gracefulCtx, cfg)
+			if err != nil {
+				runLog.Error(err, "unable to set up Control Plane runtime")
+				return err
+			}
+
+			cfgForDisplay, err := config.ConfigForDisplay(&cfg)
+			if err != nil {
+				runLog.Error(err, "unable to prepare config for display, log config will be empty")
+			}
+			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version, "mode", cfg.Mode, "config", cfgForDisplay)
+			if err := os.RaiseFileLimit(); err != nil {
+				runLog.Error(err, "unable to raise the open file limit")
+			}
+
+			if limit, _ := os.CurrentFileLimit(); limit < minOpenFileLimit {
+				runLog.Info("for better performance, raise the open file limit",
+					"minimum-open-files", minOpenFileLimit)
+			}
+
+			if err := mads_server.SetupServer(rt); err != nil {
+				runLog.Error(err, "unable to set up Monitoring Assignment server")
+				return err
+			}
+			if err := xds.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up XDS")
+				return err
+			}
+			if err := hds.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up HDS")
+				return err
+			}
+			if err := dp_server.SetupServer(rt); err != nil {
+				runLog.Error(err, "unable to set up DP Server")
+				return err
+			}
+			if err := insights.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up Insights resyncer")
+				return err
+			}
+			if err := defaults.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up Defaults")
+				return err
+			}
+			if err := kds_zone.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up Zone KDS")
+				return err
+			}
+			if err := kds_global.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up Global KDS")
+				return err
+			}
+			if err := clusterid.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up clusterID")
+				return err
+			}
+			if err := diagnostics.SetupServer(rt); err != nil {
+				runLog.Error(err, "unable to set up Diagnostics server")
+				return err
+			}
+			if err := api_server.SetupServer(rt); err != nil {
+				runLog.Error(err, "unable to set up API server")
+				return err
+			}
+			if err := metrics.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up Metrics")
+				return err
+			}
+			if err := gc.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up GC")
+				return err
+			}
+			if err := intercp.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up Control Plane Intercommunication")
+				return err
+			}
+			if err := ipam.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up IPAM")
+				return err
+			}
+			if err := meshservice_generate.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up MeshService generator")
+				return err
+			}
+			if err := workload_generate.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up Workload generator")
+				return err
+			}
+			if err := dns.SetupHostnameGenerator(rt); err != nil {
+				runLog.Error(err, "unable to set up hostname generator")
+				return err
+			}
+
+			if err := meshidentity_status.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up MeshIdentity component")
+				return err
+			}
+
+			runLog.Info("starting Control Plane runtime")
+			if err := rt.Start(gracefulCtx.Done()); err != nil {
+				runLog.Error(err, "problem running Control Plane")
+				return err
+			}
+
+			runLog.Info("stopping without error, waiting for all components to stop", "gracefulShutdownDuration", gracefulShutdownDuration)
+			select {
+			case <-ctx.Done():
+				runLog.Info("all components have stopped")
+			case <-time.After(gracefulShutdownDuration):
+				runLog.Info("forcefully stopped")
+			}
+			return nil
+		},
+	}
+	// flags
+	cmd.PersistentFlags().StringVarP(&args.configPath, "config-file", "c", "", "configuration file")
+	return cmd
+}

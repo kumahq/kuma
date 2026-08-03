@@ -1,0 +1,74 @@
+package v3_test
+
+import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/tls"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+)
+
+var _ = Describe("ServerSideStaticMTLS", func() {
+	It("should generate proper Envoy config", func() {
+		// given
+		certs := core_xds.ServerSideMTLSCerts{
+			CaPEM: []byte("caPEM"),
+			ServerPair: tls.KeyPair{
+				CertPEM: []byte("certPEM"),
+				KeyPEM:  []byte("keyPEM"),
+			},
+		}
+		cluster := envoy_common.NewCluster(
+			envoy_common.WithService("localhost:8080"),
+			envoy_common.WithWeight(200),
+		)
+
+		// when
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
+			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "").
+				Configure(ServerSideStaticMTLS(certs)).
+				Configure(TcpProxyDeprecated("localhost:8080", cluster)))).
+			Build()
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		actual, err := util_proto.ToYAML(listener)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(actual).To(MatchYAML(`
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 8080
+            filterChains:
+            - filters:
+              - name: envoy.filters.network.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                  cluster: localhost:8080
+                  statPrefix: localhost_8080
+              transportSocket:
+                name: envoy.transport_sockets.tls
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+                  commonTlsContext:
+                    tlsCertificates:
+                    - certificateChain:
+                        inlineBytes: Y2VydFBFTQ==
+                      privateKey:
+                        inlineBytes: a2V5UEVN
+                    validationContext:
+                      matchTypedSubjectAltNames:
+                      - matcher:
+                          exact: kuma-cp
+                        sanType: DNS
+                      trustedCa:
+                        inlineBytes: Y2FQRU0=
+                  requireClientCertificate: true
+            name: inbound:192.168.0.1:8080
+            trafficDirection: INBOUND
+            enableReusePort: true`))
+	})
+})

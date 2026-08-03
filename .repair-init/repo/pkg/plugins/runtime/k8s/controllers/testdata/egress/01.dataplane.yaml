@@ -1,0 +1,12 @@
+metadata:
+  labels:
+    app: kuma-egress
+    k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: kuma-egress
+    kuma.io/proxy-type: zoneegress
+  name: kuma-egress
+spec:
+  networking:
+    address: 192.168.0.1
+    port: 10001
+  zone: zone-1

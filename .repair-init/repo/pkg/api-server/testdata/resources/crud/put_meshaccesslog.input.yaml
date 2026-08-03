@@ -1,0 +1,4 @@
+#/meshes/default/meshaccesslogs/my-access-log 201 method=PUT
+#/meshes/default/meshaccesslogs/my-access-log 200
+type: Mesh
+name: default

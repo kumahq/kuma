@@ -1,0 +1,27 @@
+# TYPE custom_metrics untyped
+custom_metrics{envoy_cluster_name="access_log_sink"} 11
+custom_metrics{envoy_cluster_name="ads_cluster"} 12
+custom_metrics{envoy_cluster_name="demo-client"} 13
+custom_metrics{envoy_cluster_name="echo-server_kuma-test_svc_8080-0382aaf295add2eb"} 101
+custom_metrics{envoy_cluster_name="echo-server_kuma-test_svc_8080-94bcdea309bceaff"} 102
+custom_metrics{envoy_cluster_name="echo-server_kuma-test_svc_8080-369bce2d30623ffb"} 103
+custom_metrics{envoy_cluster_name="inbound_passthrough_ipv4"} 14
+custom_metrics{envoy_cluster_name="inbound_passthrough_ipv6"} 15
+custom_metrics{envoy_cluster_name="kuma_envoy_admin"} 16
+custom_metrics{envoy_cluster_name="localhost_3000"} 17
+custom_metrics{envoy_cluster_name="outbound_passthrough_ipv4"} 18
+custom_metrics{envoy_cluster_name="outbound_passthrough_ipv6"} 19
+
+# TYPE custom_metrics_2 untyped
+custom_metrics_2{envoy_cluster_name="access_log_sink"} 1
+custom_metrics_2{envoy_cluster_name="ads_cluster"} 2
+custom_metrics_2{envoy_cluster_name="demo-client"} 3
+custom_metrics_2{envoy_cluster_name="echo-server_kuma-test_svc_8080-0382aaf295add2eb"} 201
+custom_metrics_2{envoy_cluster_name="echo-server_kuma-test_svc_8080-94bcdea309bceaff"} 202
+custom_metrics_2{envoy_cluster_name="echo-server_kuma-test_svc_8080-369bce2d30623ffb"} 203
+custom_metrics_2{envoy_cluster_name="inbound_passthrough_ipv4"} 4
+custom_metrics_2{envoy_cluster_name="inbound_passthrough_ipv6"} 5
+custom_metrics_2{envoy_cluster_name="kuma_envoy_admin"} 6
+custom_metrics_2{envoy_cluster_name="localhost_3000"} 7
+custom_metrics_2{envoy_cluster_name="outbound_passthrough_ipv4"} 8
+custom_metrics_2{envoy_cluster_name="outbound_passthrough_ipv6"} 9

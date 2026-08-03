@@ -1,0 +1,27 @@
+{
+  "type": "MeshAccessLog",
+  "name": "my-access-log",
+  "spec": {
+    "to": [
+      {
+        "default": {
+          "backends": [
+            {
+              "file": {
+                "format": {
+                  "plain": "[%START_TIME%] %KUMA_SOURCE_SERVICE% -> %KUMA_DESTINATION_SERVICE%",
+                  "type": "Plain"
+                },
+                "path": "/var/log/mesh_access.log"
+              },
+              "type": "File"
+            }
+          ]
+        },
+        "targetRef": {
+          "kind": "Mesh"
+        }
+      }
+    ]
+  }
+}

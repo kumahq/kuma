@@ -1,0 +1,76 @@
+package uninstall
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy"
+	"github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+)
+
+func newUninstallTransparentProxy() *cobra.Command {
+	cfg := config.DefaultConfig()
+
+	cmd := &cobra.Command{
+		Use:   "transparent-proxy",
+		Short: "Uninstall Transparent Proxy pre-requisites on the host",
+		Long:  "Uninstall Transparent Proxy by restoring the hosts iptables and /etc/resolv.conf",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			resolvConf := filepath.Clean("/etc/resolv.conf")
+			resolvConfBackup := filepath.Clean("/etc/resolv.conf.kuma-backup")
+
+			cfg.RuntimeStdout = cmd.OutOrStdout()
+			cfg.RuntimeStderr = cmd.ErrOrStderr()
+
+			switch {
+			case runtime.GOOS != "linux" && !cfg.DryRun:
+				return errors.New("transparent proxy is supported only on Linux systems")
+			case runtime.GOOS == "linux" && os.Geteuid() != 0 && !cfg.DryRun:
+				return errors.New("you need to have root privileges to run this command")
+			case runtime.GOOS == "linux" && os.Geteuid() != 0 && cfg.DryRun:
+				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] [dry-run]: running this command as a non-root user may lead to unpredictable results")
+			}
+
+			initializedConfig, err := cfg.Initialize(cmd.Context())
+			if err != nil {
+				return errors.Wrap(err, "failed to initialize config")
+			}
+
+			if err := transparentproxy.Cleanup(cmd.Context(), initializedConfig); err != nil {
+				return errors.Wrap(err, "transparent proxy cleanup failed")
+			}
+
+			if _, err := os.Stat(resolvConfBackup); !os.IsNotExist(err) {
+				content, err := os.ReadFile(resolvConfBackup)
+				if err != nil {
+					return errors.Wrap(err, "unable to open "+resolvConfBackup)
+				}
+
+				if !cfg.DryRun {
+					err = os.WriteFile(resolvConf, content, 0o600) //nolint:gosec // G703: path is fixed system config location
+					if err != nil {
+						return errors.Wrap(err, "unable to write "+resolvConf)
+					}
+				}
+
+				fmt.Fprintln(cfg.RuntimeStdout, string(content))
+			}
+
+			if !initializedConfig.DryRun {
+				initializedConfig.Logger.Info("transparent proxy cleanup completed successfully")
+			}
+
+			return nil
+		},
+	}
+
+	cmd.Flags().BoolVar(&cfg.DryRun, "dry-run", cfg.DryRun, "dry run")
+	cmd.Flags().BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "verbose")
+
+	return cmd
+}

@@ -1,0 +1,47 @@
+# TYPE envoy_server_live gauge
+envoy_server_live{} 1
+
+# TYPE envoy_server_memory_allocated gauge
+envoy_server_memory_allocated{} 9217064
+
+# TYPE envoy_server_memory_heap_size gauge
+envoy_server_memory_heap_size{} 14680064
+
+# TYPE envoy_server_memory_physical_size gauge
+envoy_server_memory_physical_size{} 16388166
+
+# TYPE envoy_tcp_downstream_cx_rx_bytes_buffered gauge
+envoy_tcp_downstream_cx_rx_bytes_buffered{envoy_tcp_prefix="demo-client"} 0
+envoy_tcp_downstream_cx_rx_bytes_buffered{envoy_tcp_prefix="inbound_passthrough_ipv4"} 0
+envoy_tcp_downstream_cx_rx_bytes_buffered{envoy_tcp_prefix="inbound_passthrough_ipv6"} 0
+envoy_tcp_downstream_cx_rx_bytes_buffered{envoy_tcp_prefix="localhost_3000"} 0
+envoy_tcp_downstream_cx_rx_bytes_buffered{envoy_tcp_prefix="outbound_passthrough_ipv4"} 0
+envoy_tcp_downstream_cx_rx_bytes_buffered{envoy_tcp_prefix="outbound_passthrough_ipv6"} 0
+
+# TYPE envoy_cluster_assignment_stale counter
+envoy_cluster_assignment_stale{envoy_cluster_name="access_log_sink"} 11
+envoy_cluster_assignment_stale{envoy_cluster_name="ads_cluster"} 12
+envoy_cluster_assignment_stale{envoy_cluster_name="demo-client"} 13
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080-369bce2d30623ffb"} 101
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080-0382aaf295add2eb"} 102
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080-fe04929f294bcdea"} 103
+envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv4"} 14
+envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv6"} 15
+envoy_cluster_assignment_stale{envoy_cluster_name="kuma_envoy_admin"} 16
+envoy_cluster_assignment_stale{envoy_cluster_name="localhost_3000"} 17
+envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv4"} 18
+envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv6"} 19
+
+# TYPE envoy_cluster_assignment_timeout_received counter
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="access_log_sink"} 1
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="ads_cluster"} 2
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="demo-client"} 3
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080-369bce2d30623ffb"} 201
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080-0382aaf295add2eb"} 202
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080-fe04929f294bcdea"} 203
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv4"} 4
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv6"} 5
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="kuma_envoy_admin"} 6
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="localhost_3000"} 7
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv4"} 8
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv6"} 9

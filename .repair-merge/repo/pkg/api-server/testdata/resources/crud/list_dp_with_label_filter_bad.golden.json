@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not retrieve resources",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "/meshes/{mesh}/dataplanes.filter[labelds.k8s.kuma.io/namespace]",
+   "reason": "filters are only supported on labels"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "/meshes/{mesh}/dataplanes.filter[labelds.k8s.kuma.io/namespace]",
+   "message": "filters are only supported on labels"
+  }
+ ]
+}

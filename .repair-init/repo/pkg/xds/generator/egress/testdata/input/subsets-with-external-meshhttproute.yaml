@@ -1,0 +1,62 @@
+type: Mesh
+name: mesh-1
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+---
+type: ZoneEgress
+name: zoneegress-1
+zone: zone-1
+networking:
+  address: 192.168.0.1
+  port: 10002
+---
+type: MeshExternalService
+name: externalservice-2
+mesh: mesh-1
+labels:
+  kuma.io/service: externalservice-2
+  kuma.io/protocol: http
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+  - address: kuma.io
+    port: 80
+---
+type: MeshHTTPRoute
+name: route-1
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: internalservice-1
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: externalservice-2
+      rules:
+        - matches:
+            - path:
+                value: /
+                type: PathPrefix
+          default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                labels:
+                  kuma.io/display-name: externalservice-2
+                weight: 1
+                tags:
+                  version: v1
+              - kind: MeshServiceSubset
+                labels:
+                  kuma.io/display-name: externalservice-2
+                weight: 1
+                tags:
+                  version: v2

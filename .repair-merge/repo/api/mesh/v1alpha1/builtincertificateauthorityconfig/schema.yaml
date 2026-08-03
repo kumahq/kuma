@@ -1,0 +1,16 @@
+components:
+  schemas:
+    BuiltinCertificateAuthorityConfig:
+      properties:
+        caCert:
+          properties:
+            expiration:
+              type: string
+            rsaBits:
+              format: uint32
+              type: integer
+          type: object
+      type: object
+info:
+  x-ref-schema-name: BuiltinCertificateAuthorityConfig
+openapi: 3.1.0

@@ -1,0 +1,13 @@
+type: MeshTimeout
+name: mt-origin-global
+mesh: multizone-label-validation
+labels:
+  kuma.io/origin: global
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s

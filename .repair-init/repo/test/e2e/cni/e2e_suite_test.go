@@ -1,0 +1,20 @@
+package cni_test
+
+import (
+	"testing"
+
+	. "github.com/onsi/ginkgo/v2"
+
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/test/e2e/cni"
+	"github.com/kumahq/kuma/v3/test/framework/report"
+)
+
+func TestE2E(t *testing.T) {
+	test.RunE2ESpecs(t, "E2E CNI Suite")
+}
+
+var (
+	_ = ReportAfterSuite("report suite", report.DumpReport)
+	_ = Describe("Taint controller", Label("job-0"), Label("kind-not-supported"), Label("legacy-k3s-not-supported"), cni.AppDeploymentWithCniAndTaintController)
+)

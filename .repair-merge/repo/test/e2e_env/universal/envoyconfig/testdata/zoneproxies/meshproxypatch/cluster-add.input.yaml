@@ -1,0 +1,16 @@
+type: MeshProxyPatch
+name: mpp-cluster-add
+mesh: envoyconfig-zoneproxies
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Dataplane
+  default:
+    appendModifications:
+      - cluster:
+          operation: Add
+          value: |
+            name: mpp-added-cluster
+            connectTimeout: 7s
+            type: STATIC

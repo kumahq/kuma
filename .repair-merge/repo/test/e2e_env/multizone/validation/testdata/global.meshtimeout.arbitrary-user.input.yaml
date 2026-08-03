@@ -1,0 +1,14 @@
+type: MeshTimeout
+name: mt-arbitrary-user
+mesh: multizone-label-validation
+labels:
+  kuma.io/foo: bar
+  k8s.kuma.io/baz: qux
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s

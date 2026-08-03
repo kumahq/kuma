@@ -1,0 +1,14 @@
+metadata:
+  namespace: kuma-system
+  name: kuma-egress-74c9b794cf-vft7l
+  labels:
+    app: kuma-egress
+    pod-template-hash: 74c9b794cf
+  annotations:
+    kuma.io/egress: enabled
+spec:
+  containers:
+    - ports:
+        - containerPort: 10002
+status:
+  podIP: 10.244.0.8

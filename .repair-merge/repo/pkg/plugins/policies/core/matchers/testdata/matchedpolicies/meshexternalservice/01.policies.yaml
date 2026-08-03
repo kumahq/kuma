@@ -1,0 +1,48 @@
+type: MeshRetry
+mesh: mesh-1
+name: mr-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          numRetries: 3
+---
+type: MeshRetry
+mesh: mesh-1
+name: mr-2
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      version: "v2"
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          numRetries: 4
+          retryOn:
+            - "5xx"
+---
+type: MeshRetry
+mesh: mesh-1
+name: mr-3
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      version: "v1"
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        labels:
+          kuma.io/display-name: mes
+      default:
+        http:
+          numRetries: 5
+          retryOn:
+            - "5xx"

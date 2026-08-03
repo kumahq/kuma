@@ -1,0 +1,4 @@
+NAME     STATUS    LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS   ZONE-CP VERSION   BACKEND
+zone-1   Online    2h                   never              42              13             1.0.0             memory
+zone-2   Offline   never                never              0               0                                
+zone-3   Offline   2h                   never              0               0              1.0.0             

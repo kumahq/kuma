@@ -1,0 +1,59 @@
+resources:
+- name: backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    commonLbConfig:
+      localityWeightedLbConfig: {}
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbPolicy: RANDOM
+    name: backend
+    type: EDS
+- name: payment
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    lbPolicy: RING_HASH
+    loadAssignment:
+      clusterName: payment
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 8080
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                kuma.io/zone: zone-1
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                kuma.io/zone: zone-1
+        locality:
+          zone: zone-1
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.0.2
+                portValue: 8080
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                kuma.io/zone: zone-2
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                kuma.io/zone: zone-2
+        locality:
+          zone: zone-2
+        priority: 1
+    name: payment
+    ringHashLbConfig:
+      hashFunction: MURMUR_HASH_2
+      maximumRingSize: "1000"
+      minimumRingSize: "100"
+    type: STATIC

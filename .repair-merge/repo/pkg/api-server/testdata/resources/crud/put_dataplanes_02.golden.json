@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not process a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "mesh",
+   "reason": "mesh from the URL has to be the same as in body"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "mesh",
+   "message": "mesh from the URL has to be the same as in body"
+  }
+ ]
+}

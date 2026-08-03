@@ -1,0 +1,18 @@
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+metadata:
+  name: example
+  namespace: demo
+  annotations:
+    kuma.io/workload: test-workload
+mesh: default
+---
+apiVersion: workloads.kuma.io/v1alpha1
+kind: Workload
+metadata:
+  name: test-workload
+  namespace: demo
+  labels:
+    kuma.io/mesh: default
+    kuma.io/managed-by: k8s-controller
+spec: {}

@@ -1,0 +1,29 @@
+resources:
+- name: system_meshmetric_prometheus_first-backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: system_meshmetric_prometheus_first-backend
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /tmp/kuma-mh-backend-default.sock
+    name: system_meshmetric_prometheus_first-backend
+    type: STATIC
+- name: system_meshmetric_prometheus_second-backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: system_meshmetric_prometheus_second-backend
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /tmp/kuma-mh-backend-default.sock
+    name: system_meshmetric_prometheus_second-backend
+    type: STATIC

@@ -1,0 +1,19 @@
+{
+  "type": "/std-errors",
+  "status": 400,
+  "title": "Invalid request",
+  "detail": "Resource is not valid",
+  "invalid_parameters": [
+    {
+      "field": "name",
+      "reason": "cannot be empty"
+    }
+  ],
+  "details": "Resource is not valid",
+  "causes": [
+    {
+      "field": "name",
+      "message": "cannot be empty"
+    }
+  ]
+}

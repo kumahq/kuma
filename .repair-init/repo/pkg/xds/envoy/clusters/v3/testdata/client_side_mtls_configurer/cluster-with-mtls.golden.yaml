@@ -1,0 +1,30 @@
+connectTimeout: 5s
+edsClusterConfig:
+  edsConfig:
+    ads: {}
+    resourceApiVersion: V3
+name: testCluster
+transportSocket:
+  name: envoy.transport_sockets.tls
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+    commonTlsContext:
+      alpnProtocols:
+      - kuma
+      combinedValidationContext:
+        defaultValidationContext:
+          matchTypedSubjectAltNames:
+          - matcher:
+              exact: spiffe://default/backend
+            sanType: URI
+        validationContextSdsSecretConfig:
+          name: system_mtls_ca_default
+          sdsConfig:
+            ads: {}
+            resourceApiVersion: V3
+      tlsCertificateSdsSecretConfigs:
+      - name: system_mtls_identity_default
+        sdsConfig:
+          ads: {}
+          resourceApiVersion: V3
+type: EDS

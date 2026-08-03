@@ -1,0 +1,5 @@
+dataplaneConfigurationRefreshInterval: 1s
+dataplaneDeregistrationDelay: 10s
+dataplaneStatusFlushInterval: 10s
+nackBackoff: 5s
+policyMatchingCacheSize: 10000

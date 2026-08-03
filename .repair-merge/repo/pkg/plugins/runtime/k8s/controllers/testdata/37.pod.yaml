@@ -1,0 +1,26 @@
+metadata:
+  namespace: demo
+  name: mixed-proxy
+  labels:
+    app: mixed-proxy
+spec:
+  containers:
+    - name: app
+      ports:
+        - containerPort: 8080
+    - name: zone-egress
+      ports:
+        - containerPort: 10002
+    - name: kuma-sidecar
+status:
+  podIP: 192.168.0.1
+  containerStatuses:
+    - name: app
+      ready: true
+      started: true
+    - name: zone-egress
+      ready: true
+      started: true
+    - name: kuma-sidecar
+      ready: true
+      started: true

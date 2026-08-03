@@ -1,0 +1,6 @@
+root:x:0:
+nobody:x:65534:
+tty:x:5:
+staff:x:50:
+nonroot:x:65532:
+kumactl:x:5678:

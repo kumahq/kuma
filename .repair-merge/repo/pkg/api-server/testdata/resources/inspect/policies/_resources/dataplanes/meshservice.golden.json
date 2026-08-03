@@ -1,0 +1,21 @@
+{
+ "items": [
+  {
+   "labels": {
+    "kuma.io/service": "test-server"
+   },
+   "mesh": "default",
+   "name": "ts-01",
+   "type": "Dataplane"
+  },
+  {
+   "labels": {
+    "kuma.io/service": "test-server"
+   },
+   "mesh": "default",
+   "name": "ts-02",
+   "type": "Dataplane"
+  }
+ ],
+ "total": 2
+}

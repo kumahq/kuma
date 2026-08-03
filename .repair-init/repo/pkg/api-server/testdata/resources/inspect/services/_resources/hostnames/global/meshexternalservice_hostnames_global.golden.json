@@ -1,0 +1,13 @@
+{
+ "items": [
+  {
+   "hostname": "mes-1.extsvc.mesh.local",
+   "zones": [
+    {
+     "name": "mes-1"
+    }
+   ]
+  }
+ ],
+ "total": 1
+}

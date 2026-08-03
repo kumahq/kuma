@@ -1,0 +1,40 @@
+address:
+  socketAddress:
+    address: 127.0.0.1
+    portValue: 27777
+filterChains:
+- filters:
+  - name: envoy.filters.network.http_connection_manager
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+      httpFilters:
+      - name: envoy.filters.http.router
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      internalAddressConfig:
+        cidrRanges:
+        - addressPrefix: 127.0.0.1
+          prefixLen: 32
+      normalizePath: true
+      routeConfig:
+        name: outbound:other-service-http
+        requestHeadersToAdd:
+        - header:
+            key: x-kuma-tags
+            value: '&kuma.io/service=backend&'
+        validateClusters: false
+        virtualHosts:
+        - domains:
+          - '*'
+          name: other-service-http
+          routes:
+          - match: {}
+            route:
+              cluster: other-service-http
+              timeout: 0s
+      statPrefix: other-service-http
+metadata:
+  filterMetadata:
+    io.kuma.tags: {}
+name: outbound:127.0.0.1:27777
+trafficDirection: OUTBOUND

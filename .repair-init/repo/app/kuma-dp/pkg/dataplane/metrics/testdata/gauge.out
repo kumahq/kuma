@@ -1,0 +1,36 @@
+# TYPE envoy_cluster_circuit_breakers_default_cx_open gauge
+envoy_cluster_circuit_breakers_default_cx_open{envoy_cluster_name="access_log_sink"} 1
+envoy_cluster_circuit_breakers_default_cx_open{envoy_cluster_name="ads_cluster"} 2
+envoy_cluster_circuit_breakers_default_cx_open{envoy_cluster_name="demo-client",kuma_io_mesh_traffic="true"} 3
+envoy_cluster_circuit_breakers_default_cx_open{envoy_cluster_name="echo-server_kuma-test_svc_8080",kuma_io_mesh_traffic="true"} 330
+envoy_cluster_circuit_breakers_default_cx_open{envoy_cluster_name="inbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 4
+envoy_cluster_circuit_breakers_default_cx_open{envoy_cluster_name="inbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 5
+envoy_cluster_circuit_breakers_default_cx_open{envoy_cluster_name="kuma_envoy_admin"} 6
+envoy_cluster_circuit_breakers_default_cx_open{envoy_cluster_name="localhost_3000",kuma_io_mesh_traffic="true"} 7
+envoy_cluster_circuit_breakers_default_cx_open{envoy_cluster_name="outbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 8
+envoy_cluster_circuit_breakers_default_cx_open{envoy_cluster_name="outbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 9
+
+# TYPE envoy_cluster_circuit_breakers_default_cx_pool_open gauge
+envoy_cluster_circuit_breakers_default_cx_pool_open{envoy_cluster_name="access_log_sink"} 21
+envoy_cluster_circuit_breakers_default_cx_pool_open{envoy_cluster_name="ads_cluster"} 22
+envoy_cluster_circuit_breakers_default_cx_pool_open{envoy_cluster_name="demo-client",kuma_io_mesh_traffic="true"} 23
+envoy_cluster_circuit_breakers_default_cx_pool_open{envoy_cluster_name="echo-server_kuma-test_svc_8080",kuma_io_mesh_traffic="true"} 630
+envoy_cluster_circuit_breakers_default_cx_pool_open{envoy_cluster_name="inbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 24
+envoy_cluster_circuit_breakers_default_cx_pool_open{envoy_cluster_name="inbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 25
+envoy_cluster_circuit_breakers_default_cx_pool_open{envoy_cluster_name="kuma_envoy_admin"} 26
+envoy_cluster_circuit_breakers_default_cx_pool_open{envoy_cluster_name="localhost_3000",kuma_io_mesh_traffic="true"} 27
+envoy_cluster_circuit_breakers_default_cx_pool_open{envoy_cluster_name="outbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 28
+envoy_cluster_circuit_breakers_default_cx_pool_open{envoy_cluster_name="outbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 29
+
+# TYPE envoy_cluster_circuit_breakers_default_rq_open gauge
+envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="access_log_sink"} 31
+envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="ads_cluster"} 32
+envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="demo-client",kuma_io_mesh_traffic="true"} 33
+envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="echo-server_kuma-test_svc_8080",kuma_io_mesh_traffic="true"} 930
+envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="inbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 34
+envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="inbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 35
+envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="kuma_envoy_admin"} 36
+envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="localhost_3000",kuma_io_mesh_traffic="true"} 37
+envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="outbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 38
+envoy_cluster_circuit_breakers_default_rq_open{envoy_cluster_name="outbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 39
+

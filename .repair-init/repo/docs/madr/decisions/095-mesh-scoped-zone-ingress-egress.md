@@ -1,0 +1,378 @@
+# Mesh Scoped Zone Ingress and Zone Egress
+
+* Status: accepted
+
+Technical Story: https://github.com/Kong/kong-mesh/issues/9028
+
+## Context and Problem Statement
+
+Zone Ingress and Zone Egress are currently global-scoped resources that exist outside of any mesh context. This creates problems for:
+
+1. **Identity** - ZoneIngress/ZoneEgress cannot have a proper mesh-scoped identity, which breaks the intended trust and identity model
+2. **Policies** - Cannot apply mesh-scoped policies to ZoneIngress/ZoneEgress since they don't belong to a mesh
+
+We need to rework the API to make Zone Ingress and Zone Egress mesh-scoped by leveraging the existing Dataplane resource with additional fields.
+
+## Design
+
+### New Schema for Zone Ingress and Zone Egress
+
+It is not possible to keep using ZoneIngress/ZoneEgress resources and change their scope from `global` to `mesh`.
+The main reason is migration. Migration requires the control plane to work with old and new resources at the same time,
+but a resource in Kuma cannot have two scopes:
+
+```go
+var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:                ZoneIngressType,
+	Scope:               model.ScopeGlobal, // or model.ScopeMesh
+}
+```
+
+Introducing new resource kinds like `MeshZoneIngress` and `MeshZoneEgress` is possible but would be excessive.
+The best option is to extend the existing `Dataplane` kind and add fields to hold zone proxy-specific information.
+
+#### Option 1: dedicated `zoneIngress` and `zoneEgress` sections
+
+```yaml
+type: Dataplane
+mesh: default
+name: zone-ingress-1
+spec:
+  networking:
+    zoneIngress:
+      address: 10.0.0.1 # required, address listener binds to
+      port: 10001 # required, port listener binds to
+      name: zi-port # optional, used for policy targeting via sectionName
+    zoneEgress:
+      address: 10.0.0.2 # required
+      port: 10002 # required
+      name: ze-port # optional
+```
+
+##### Pros and Cons
+
+* Bad, because `name` looks awkward—it needs to be unique across `networking.zoneIngress` and `networking.zoneEgress` (and potentially `networking.inbound` if we allow mixing)
+
+#### Option 2: `listeners` array
+
+```yaml
+type: Dataplane
+mesh: default
+name: zone-ingress-1
+spec:
+  networking:
+    listeners:
+      - type: ZoneIngress # required
+        address: 10.0.0.1 # required
+        port: 10001 # required
+        name: zi-port
+        state: Ready
+      - type: ZoneEgress
+        address: 10.0.0.2
+        port: 10002
+        name: ze-port
+        state: Ready
+```
+
+The `state` field (`Ready` or `NotReady`) tracks listener health, consistent with `networking.inbound[].state`.
+Zone proxy listeners are excluded from endpoint discovery when not ready.
+
+The `pod_controller` sets `state` to `NotReady` when:
+- The application container is not ready
+- The `kuma-sidecar` container is not ready
+- The pod is terminating (`DeletionTimestamp` is set)
+
+##### Should we move inbounds to the `listeners` array as well?
+
+This came up several times during the discussions.
+The motivation is clear: once we introduce a generic listeners array, it’s natural to ask why we wouldn't move _all_ listener types there,
+including inbounds.
+
+With the current implementation of inbounds, we're missing 3 more fields in the current `listeners` structure:
+
+* `serviceAddress`
+* `servicePort`
+* `serviceProbes`
+
+These fields are only relevant for inbound listeners, and only on Universal when transparent proxying is disabled.
+
+Supporting `type: Inbound` means answering the question, where do we place these fields?
+
+One option is to add them as optional fields on the listener, and validate that they are only set for `type: Inbound`:
+```
+listeners:
+  - type: Inbound
+    address: 10.0.0.1
+    port: 8080
+    serviceAddress: 127.0.0.1
+    servicePort: 80
+    name: my-http-inbound
+```
+
+Alternatively, we can introduce a proper `oneOf` with discriminator:
+
+```yaml
+listeners:
+  - type: Inbound
+    inbound:
+      address: 10.0.0.1
+      port: 8080
+      serviceAddress: 127.0.0.1
+      servicePort: 80
+  - type: ZoneIngress
+    zoneIngress: {}
+```
+
+A third angle is to question whether `serviceAddress` and `servicePort` belong on a listener at all.
+They configure the upstream Envoy cluster rather than the listener itself,
+so maybe they should live elsewhere.
+For example, we could model them via a route resource (`MeshHTTPRoute` or `MeshTCPRoute`)
+that targets the inbound and forwards traffic to localhost.
+
+One thing is clear about `type: Inbound` is that it's not obvious how to implement it.
+
+Sure, by introducing `type: Inbound` we're gaining 2 things:
+
+* a more consistent API
+* a clearer rule that name must be unique within the `listeners` array, rather than across both `listeners` and `inbounds`.
+
+But at the same time, we would force users to go through another migration.
+This would primarily impact Universal users, for example those running on ECS,
+who keep Dataplane templates in a repository.
+I find it hard to justify that migration cost given the limited practical value.
+
+To sum up, I don’t think moving inbounds under the `listeners` structure is worth it.
+
+##### Pros and Cons
+
+* Good, because `name` semantics are clear—it is obviously unique within the `listeners` array
+* Good, because in the future if we want a cleaner DPP spec, we can deprecate `networking.inbound` and add listeners with `type: Inbound`
+* Good, because we can organically add more listener types in the future if needed (e.g. Passthrough inbound listener for gateway use case)
+
+#### Decision
+
+We choose **Option 2** (`listeners` array).
+
+### Mixing inbound and zone proxy listeners
+
+Initially, we assumed zone proxy listeners would be incompatible with transparent proxying.
+However, testing proved otherwise.
+A [PoC](https://github.com/kumahq/kuma/pull/15619/changes) demonstrated this by modifying Kuma to add a "fake" zone egress listener,
+showing that zone proxy listeners can coexist with regular inbound listeners without conflicts.
+
+**Decision:** We will not restrict this functionality.
+Since there are no technical limitations preventing zone proxy listeners from running alongside regular inbounds,
+imposing artificial constraints would add unnecessary complexity.
+
+### Marking Services as zone proxies
+
+Dataplane resources are generated by [pod_controller.go](https://github.com/kumahq/kuma/blob/0049139023aae3b102495403b6031282f90b565f/pkg/plugins/runtime/k8s/controllers/pod_controller.go), one per pod in the mesh.
+
+**Services define the type of each port**.
+A pod may expose multiple ports,
+but the listener type (inbound vs zone ingress vs zone egress) is determined by the Service
+that selects the pod and exposes that port.
+
+The Service label to use is `k8s.kuma.io/zone-proxy-type: egress | ingress`.
+
+#### Open Questions
+
+* What if multiple `k8s.kuma.io/zone-proxy-type: ingress` services select the same DPP?
+    * A: pod controller emits an error: "DPP can't have more than 1 ZoneIngress listener"
+    * B (Chosen): Allow it, since having multiple Services target the same port is a legitimate use case on Kubernetes.
+
+* What if multiple zone proxy Services of different types select the same port on the DPP?
+    * A (Chosen): pod controller emits an error: "conflicting listener types, please remove one of the Services"
+
+#### Example
+
+This example shows a pod that runs an application alongside zone ingress and zone egress listeners.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app
+  namespace: kuma-demo
+spec:
+  selector:
+    app: my-app
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zone-ingress
+  namespace: kuma-demo
+  labels:
+    k8s.kuma.io/zone-proxy-type: ingress
+spec:
+  selector:
+    app: my-app
+  ports:
+    - port: 10001
+      targetPort: 10001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zone-egress
+  namespace: kuma-demo
+  labels:
+    k8s.kuma.io/zone-proxy-type: egress
+spec:
+  selector:
+    app: my-app
+  ports:
+    - port: 10002
+      targetPort: 10002
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  namespace: kuma-demo
+spec:
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      annotations:
+        kuma.io/sidecar-injection: enabled
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: app
+          image: my-app:latest
+          ports:
+            - containerPort: 8080
+```
+
+This configuration results in the following Dataplane being generated:
+
+```yaml
+type: Dataplane
+mesh: default
+name: my-app-xyz123
+labels:
+  app: my-app
+spec:
+  networking:
+    address: 10.0.0.1
+    inbound:
+      - port: 8080
+    listeners:
+      - type: ZoneIngress
+        address: 10.0.0.1
+        port: 10001
+        name: zi-port
+        state: Ready
+      - type: ZoneEgress
+        address: 10.0.0.1
+        port: 10002
+        name: ze-port
+        state: Ready
+```
+
+### Policy Targeting for Zone Ingress and Zone Egress
+
+In Kuma, a broad `spec.targetRef` is acceptable.
+The policy plugin determines whether the policy actually applies to a matched DPP and ignores it otherwise.
+
+For example, this policy is valid:
+
+```yaml
+spec:
+  targetRef:
+    kind: Dataplane # targets all DPPs in the mesh
+  to:
+    - targetRef:
+        kind: MeshHTTPRoute
+        name: route-1
+      default: $conf # will be ignored on DPPs that don't have `route-1`
+```
+
+The same approach applies to policies targeting zone ingress and zone egress.
+
+```
+spec:
+  targetRef:
+    kind: Dataplane
+   rules:
+     - matches: [] # select specific FilterChain
+       default: # ignored if DPP doesn't have the requested FilterChain
+         deny:
+           - spiffeId:
+               type: Prefix
+               value: "spiffe://default/"
+```
+
+The `targetRef.sectionName` field can be used to select a specific zone egress or zone ingress listener.
+
+For example, to apply a MeshAccessLog policy only to the zone ingress listener named `zi-port`:
+
+```yaml
+type: MeshAccessLog
+mesh: default
+name: zone-ingress-access-log
+spec:
+  targetRef:
+    kind: Dataplane
+    sectionName: zi-port # targets only the zone ingress listener
+  default:
+    backends:
+      - type: File
+        file:
+          path: /tmp/zone-ingress-access.log
+```
+
+#### Labels on Zone Ingress/Egress Dataplanes
+
+Currently, the `kuma.io/proxy-type: sidecar | gateway` label is automatically set on the DPP.
+The only purpose of this label is to let users select proxy types via `spec.targetRef.labels`.
+
+However, in v3 we are removing `gateway`.
+Listeners in the new `listeners` array have a `name` field and can be selected with `spec.targetRef.sectionName`.
+There is no reason to keep the `kuma.io/proxy-type` label and it should be removed in v3; see [#15567](https://github.com/kumahq/kuma/issues/15567).
+
+### Naming Envoy Resources for Zone Proxy Listeners
+
+Zone proxy listeners follow the contextual naming format from [MADR-089](089-naming-envoy-resources-and-stats-from-multiple-kuma-policies.md): `self_<category>_<scope>_<rest>`.
+
+Since zone ingress and zone egress are now listeners on a Dataplane resource, the scope is `dp` (dataplane).
+The category identifies the listener type, and the rest contains the port name.
+
+| Listener Type | Naming Format                        | Example                      |
+|:--------------|:-------------------------------------|:-----------------------------|
+| Zone Ingress  | `self_zoneingress_dp_<port-name>`    | `self_zoneingress_dp_zi-port` |
+| Zone Egress   | `self_zoneegress_dp_<port-name>`     | `self_zoneegress_dp_ze-port`  |
+
+### Syncing Zone Ingress Addresses via MeshService
+
+Out of scope for this MADR. See https://github.com/Kong/kong-mesh/issues/9151.
+
+## Implementation
+
+### Prerequisites
+
+New zone proxy listeners require unified resource naming and `meshServices.mode: Exclusive`.
+Legacy `kuma.io/service` labels and `ExternalService` resources are not supported.
+This constraint enables a cleaner implementation without legacy compatibility code.
+
+### Avoiding excessive Envoy config for zone-proxy-only Dataplanes
+
+Dataplanes with only zone proxy listeners (no inbounds) should not have outbound listeners and clusters generated.
+This should be achieved using existing mechanisms rather than special-casing zone proxies in xDS generation.
+
+The `pod_controller` can set `reachableBackends` to an empty list when the Dataplane has only zone proxy listeners and no inbounds.
+This leverages the existing reachable backends mechanism to naturally produce a minimal Envoy configuration.
+
+## Implications for Kong Mesh
+
+None
+

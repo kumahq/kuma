@@ -1,0 +1,166 @@
+package graceful
+
+import (
+	"context"
+	"io"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gruntwork-io/terratest/modules/k8s"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/v3/pkg/util/channels"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
+)
+
+func Graceful() {
+	if Config.Arch == "arm64" {
+		return // K3D loadbalancer required for this test seems to not work with K3D
+	}
+	if Config.IPV6 {
+		return // K3D cannot handle loadbalancer for IPV6
+	}
+
+	const name = "graceful"
+	const namespace = "graceful"
+	const mesh = "graceful"
+
+	// Front the "graceful" testserver with its own LoadBalancer Service so we
+	// can send requests constantly from outside the cluster while scaling it.
+	// The alternative was to exec to the container, but this introduces a latency of getting into container for every curl
+	lbService := `
+apiVersion: v1
+kind: Service
+metadata:
+  name: graceful-lb
+  namespace: graceful
+spec:
+  type: LoadBalancer
+  selector:
+    app: graceful
+  ports:
+  - name: main
+    port: 8080
+    targetPort: main
+`
+
+	var gwIP string
+
+	httpClient := http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	BeforeAll(func() {
+		err := NewClusterSetup().
+			Install(MeshKubernetes(mesh)).
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(mesh),
+				testserver.WithName(name),
+			)).
+			Install(YamlK8s(lbService)).
+			Setup(kubernetes.Cluster)
+		Expect(err).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			address, err := kubernetes.Cluster.GetLBIngressIP("graceful-lb", namespace)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(address).ToNot(BeEmpty())
+			gwIP = address
+		}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP")
+	})
+
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, mesh, namespace)
+	})
+
+	E2EAfterAll(func() {
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
+	})
+
+	requestThroughLB := func() error {
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+gwIP+":8080", http.NoBody)
+		if err != nil {
+			return err
+		}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			bytes, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+			return errors.Errorf("status code: %d body: %s", resp.StatusCode, string(bytes))
+		}
+		_, err = io.Copy(io.Discard, resp.Body)
+		return err
+	}
+
+	type testCase struct {
+		deploymentName string
+		scaleFn        func(int) error
+	}
+
+	DescribeTable("should not drop a request when scaling up and down",
+		func(given testCase) {
+			// given constant traffic between client and server
+			Eventually(requestThroughLB, "30s", "1s").Should(Succeed())
+			var failedErr error
+			closeCh := make(chan struct{})
+			defer close(closeCh)
+			go func() {
+				for {
+					if channels.IsClosed(closeCh) {
+						return
+					}
+					if err := requestThroughLB(); err != nil {
+						failedErr = err
+						return
+					}
+					// add a slight delay to not overwhelm completely the host running this test and leave more resources to other tests running in parallel.
+					time.Sleep(50 * time.Millisecond)
+				}
+			}()
+
+			// when
+			Expect(given.scaleFn(2)).To(Succeed())
+
+			// then
+			Eventually(func(g Gomega) {
+				g.Expect(WaitNumPods(namespace, 2, given.deploymentName)(kubernetes.Cluster)).To(Succeed())
+				g.Expect(WaitPodsAvailable(namespace, given.deploymentName)(kubernetes.Cluster)).To(Succeed())
+			}, "30s", "1s").Should(Succeed())
+			Expect(failedErr).ToNot(HaveOccurred())
+
+			// when
+			Expect(given.scaleFn(1)).To(Succeed())
+
+			// then
+			Eventually(func(g Gomega) {
+				g.Expect(WaitNumPods(namespace, 1, given.deploymentName)(kubernetes.Cluster)).To(Succeed())
+			}, "60s", "1s").Should(Succeed())
+
+			Expect(failedErr).ToNot(HaveOccurred())
+		},
+		Entry("a service", testCase{
+			deploymentName: name,
+			scaleFn: func(replicas int) error {
+				return k8s.RunKubectlContextE(
+					kubernetes.Cluster.GetTesting(), context.Background(),
+					kubernetes.Cluster.GetKubectlOptions(namespace),
+					"scale", "deployment", name, "--replicas", strconv.Itoa(replicas),
+				)
+			},
+		}),
+	)
+}

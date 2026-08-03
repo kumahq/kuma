@@ -1,0 +1,12 @@
+---
+metadata:
+  namespace: kuma-system
+  name: kuma-ingress
+spec:
+  type: NodePort
+  ports:
+    - port: 10001
+      targetPort: 10001
+      nodePort: 12345
+  selector:
+    app: kuma-ingress

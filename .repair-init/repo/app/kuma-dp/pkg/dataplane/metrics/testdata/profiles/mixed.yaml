@@ -1,0 +1,17 @@
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  sidecar:
+    profiles:
+      appendProfiles:
+        - name: Basic
+      exclude:
+        - type: Regex
+          match: "envoy_cluster_lb_.*"
+      include:
+        - type: Exact
+          match: "envoy_cluster_default_total_match_count"

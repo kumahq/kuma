@@ -1,0 +1,55 @@
+{{- if and .Values.controlPlane.tls.general.certManager.enabled (eq .Values.controlPlane.environment "kubernetes") }}
+{{- /* Only validate CRDs exist when actually installing (lookup returns non-empty), not during template rendering */ -}}
+{{- $lookupResult := (lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "") }}
+{{- if $lookupResult }}
+  {{- $certManagerCRDExists := false }}
+  {{- range $crd := $lookupResult.items }}
+    {{- if eq $crd.metadata.name "certificates.cert-manager.io" }}
+      {{- $certManagerCRDExists = true }}
+    {{- end }}
+  {{- end }}
+  {{- if not $certManagerCRDExists }}
+    {{- fail "cert-manager CRDs not found. Please install cert-manager before enabling controlPlane.tls.general.certManager.enabled" }}
+  {{- end }}
+{{- end }}
+{{- $certName := print (include "kuma.name" .) "-tls-cert" -}}
+{{- $customIssuerName := .Values.controlPlane.tls.general.certManager.issuerRef.name -}}
+{{- $hasCustomIssuer := ne $customIssuerName "" -}}
+{{- $issuerName := ternary $customIssuerName (print (include "kuma.name" .) "-selfsigned-issuer") $hasCustomIssuer -}}
+{{- $issuerKind := default "Issuer" .Values.controlPlane.tls.general.certManager.issuerRef.kind -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $certName }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+spec:
+  isCA: true
+  {{- $dnsNames := .Values.controlPlane.tls.general.certManager.dnsNames }}
+  {{- if not $dnsNames }}
+    {{- fail "controlPlane.tls.general.certManager.dnsNames must not be empty" }}
+  {{- end }}
+  dnsNames:
+    {{- range $dnsNames }}
+    {{- $rendered := tpl . $ }}
+    {{- if eq $rendered "" }}
+      {{- fail "controlPlane.tls.general.certManager.dnsNames must not contain empty strings" }}
+    {{- end }}
+    - {{ $rendered | quote }}
+    {{- end }}
+  issuerRef:
+    kind: {{ $issuerKind }}
+    name: {{ $issuerName }}
+  secretName: {{ $certName }}
+{{- if not $hasCustomIssuer }}
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ $issuerName }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+{{- end }}
+{{- end }}

@@ -1,0 +1,11 @@
+Patches: null
+allowed: true
+status:
+  code: 200
+  metadata: {}
+uid: "12345"
+warnings:
+- MeshService resource 'backend' has no selector, so it matches no data plane proxies.
+  Set 'spec.selector.dataplaneRef' or 'spec.selector.dataplaneLabels'. The 'spec.selector.dataplaneTags'
+  selector was removed, migrate it to 'dataplaneLabels'.
+- 'Invalid MeshService SNI (port "bad.port"): must not contain dots. This is deprecated.'

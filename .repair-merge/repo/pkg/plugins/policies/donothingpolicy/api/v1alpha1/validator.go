@@ -1,0 +1,53 @@
+package v1alpha1
+
+import (
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+)
+
+func (r *DoNothingPolicyResource) validate() error {
+	var verr validators.ValidationError
+	path := validators.RootedAt("spec")
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
+	if len(pointer.Deref(r.Spec.To)) == 0 {
+		verr.AddViolationAt(path.Field("to"), "needs at least one item")
+	}
+	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
+	return verr.OrNil()
+}
+
+func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+	if targetRef == nil {
+		return validators.ValidationError{}
+	}
+	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+		SupportedKinds: []common_api.TargetRefKind{
+			// TODO add supported TargetRef kinds for this policy
+		},
+	})
+	return targetRefErr
+}
+
+func validateTo(to []To) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, toItem := range to {
+		path := validators.RootedAt("to").Index(idx)
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				// TODO add supported TargetRef for 'to' item
+			},
+		}))
+
+		defaultField := path.Field("default")
+		verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
+	}
+	return verr
+}
+
+func validateDefault(_ Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	// TODO add default conf validation
+	return verr
+}

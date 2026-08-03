@@ -1,0 +1,186 @@
+package v1alpha1
+
+import (
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+)
+
+var _ core_plugins.PolicyPlugin = &plugin{}
+
+type plugin struct{}
+
+func (p plugin) Order() int { return api.MeshCircuitBreakerResourceTypeDescriptor.Order }
+
+func NewPlugin() core_plugins.Plugin {
+	return &plugin{}
+}
+
+func (p plugin) MatchedPolicies(
+	dataplane *core_mesh.DataplaneResource,
+	resources xds_context.Resources,
+	opts ...core_plugins.MatchedPoliciesOption,
+) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.MatchedPolicies(api.MeshCircuitBreakerType, dataplane, resources, opts...)
+}
+
+func (p plugin) Apply(
+	rs *core_xds.ResourceSet,
+	ctx xds_context.Context,
+	proxy *core_xds.Proxy,
+) error {
+	applyTrackRemaining(policies_xds.GatherAllClusters(rs))
+
+	clusters := policies_xds.GatherClusters(rs)
+
+	policies, ok := proxy.Policies.Dynamic[api.MeshCircuitBreakerType]
+	if !ok {
+		return nil
+	}
+
+	if err := applyToInbounds(policies.FromRules, clusters.Inbound, proxy.Dataplane); err != nil {
+		return err
+	}
+
+	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds); err != nil {
+		return err
+	}
+
+	if err := applyToRealResources(ctx.Mesh, rs, policies.ToRules.ResourceRules); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func applyTrackRemaining(clusters []*envoy_cluster.Cluster) {
+	for _, cluster := range clusters {
+		plugin_xds.EnsureTrackRemaining(cluster)
+	}
+}
+
+func applyToInbounds(
+	fromRules core_rules.FromRules,
+	inboundClusters map[string]*envoy_cluster.Cluster,
+	dataplane *core_mesh.DataplaneResource,
+) error {
+	for _, inbound := range dataplane.Spec.Networking.GetInbound() {
+		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
+
+		listenerKey := core_rules.InboundListener{
+			Address: iface.DataplaneIP,
+			Port:    iface.DataplanePort,
+		}
+
+		clusterName := naming.MustContextualInboundName(dataplane, iface.InboundName)
+		cluster, ok := inboundClusters[clusterName]
+		if !ok {
+			continue
+		}
+
+		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
+		err := plugin_xds.NewConfigurer(conf).ConfigureCluster(cluster)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func applyToOutbounds(
+	rules core_rules.ToRules,
+	outboundClusters map[string]*envoy_cluster.Cluster,
+	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
+	outbounds xds_types.Outbounds,
+) error {
+	targetedClusters := policies_xds.GatherTargetedClusters(
+		outbounds,
+		outboundSplitClusters,
+		outboundClusters,
+	)
+
+	for cluster, serviceName := range targetedClusters {
+		if err := configure(rules.Rules, subsetutils.KumaServiceTagElement(serviceName), cluster); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func configure(
+	rules core_rules.Rules,
+	element subsetutils.Element,
+	cluster *envoy_cluster.Cluster,
+) error {
+	if computed := rules.Compute(element); computed != nil {
+		return plugin_xds.NewConfigurer(computed.Conf.(api.Conf)).ConfigureCluster(cluster)
+	}
+
+	return nil
+}
+
+func applyToRealResource(
+	meshCtx xds_context.MeshContext,
+	rules outbound.ResourceRules,
+	uri kri.Identifier,
+	resourcesByType core_xds.ResourcesByType,
+) error {
+	conf := rules.Compute(uri, meshCtx.Resources)
+	if conf == nil {
+		return nil
+	}
+
+	for typ, resources := range resourcesByType {
+		if typ == envoy_resource.ClusterType {
+			err := configureClusters(resources, conf.Conf[0].(api.Conf))
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func applyToRealResources(
+	meshCtx xds_context.MeshContext,
+	rs *core_xds.ResourceSet,
+	rules outbound.ResourceRules,
+	filters ...func(*core_xds.Resource) bool,
+) error {
+	for uri, resType := range rs.IndexByOrigin(filters...) {
+		if err := applyToRealResource(meshCtx, rules, uri, resType); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func configureClusters(resources []*core_xds.Resource, conf api.Conf) error {
+	for _, resource := range resources {
+		configurer := plugin_xds.Configurer{
+			Conf: conf,
+		}
+		err := configurer.ConfigureCluster(resource.Resource.(*envoy_cluster.Cluster))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

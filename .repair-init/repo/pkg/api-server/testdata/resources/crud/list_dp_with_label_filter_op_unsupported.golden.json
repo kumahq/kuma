@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not retrieve resources",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "/meshes/{mesh}/dataplanes.filter[labels.k8s.kuma.io/namespace][eq]",
+   "reason": "advanced filters are not supported"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "/meshes/{mesh}/dataplanes.filter[labels.k8s.kuma.io/namespace][eq]",
+   "message": "advanced filters are not supported"
+  }
+ ]
+}

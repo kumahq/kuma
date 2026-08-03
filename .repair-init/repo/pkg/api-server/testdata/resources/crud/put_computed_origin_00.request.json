@@ -1,0 +1,21 @@
+{
+  "type": "MeshExternalService",
+  "mesh": "mesh-1",
+  "name": "ext-svc",
+  "labels": {
+    "kuma.io/origin": "zone"
+  },
+  "spec": {
+    "match": {
+      "type": "HostnameGenerator",
+      "port": 9000,
+      "protocol": "http"
+    },
+    "endpoints": [
+      {
+        "address": "192.168.0.1",
+        "port": 27017
+      }
+    ]
+  }
+}

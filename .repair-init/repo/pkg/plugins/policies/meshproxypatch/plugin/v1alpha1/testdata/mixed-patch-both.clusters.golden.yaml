@@ -1,0 +1,6 @@
+resources:
+- name: extra-cluster
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 7s
+    name: extra-cluster

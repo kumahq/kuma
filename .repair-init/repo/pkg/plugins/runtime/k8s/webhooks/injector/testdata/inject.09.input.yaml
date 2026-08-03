@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    run: busybox
+  annotations:
+    prometheus.metrics.kuma.io/path: /custom-metrics
+    prometheus.metrics.kuma.io/port: "5678"
+spec:
+  volumes:
+  - name: default-token-w7dxf
+    secret:
+      secretName: default-token-w7dxf
+  containers:
+  - name: busybox
+    image: busybox
+    resources: {}
+    volumeMounts:
+    - name: default-token-w7dxf
+      readOnly: true
+      mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"

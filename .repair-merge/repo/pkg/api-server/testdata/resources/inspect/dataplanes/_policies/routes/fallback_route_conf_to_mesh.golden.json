@@ -1,0 +1,19 @@
+{
+ "policies": [
+  {
+   "conf": [
+    {
+     "http": {
+      "streamIdleTimeout": "15s"
+     }
+    }
+   ],
+   "kind": "MeshTimeout",
+   "origins": [
+    {
+     "kri": "kri_mt_default___mt-2_"
+    }
+   ]
+  }
+ ]
+}

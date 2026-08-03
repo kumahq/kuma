@@ -1,0 +1,30 @@
+kri_mhttpr_mesh-1_zone-uni__http-route-1_:
+  Conf:
+  - http:
+      requestTimeout: 19s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mt-1
+        kuma.io/origin: zone
+        kuma.io/zone: zone-uni
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-1
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  OriginByMatches: {}
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: http-route-1
+      kuma.io/origin: zone
+      kuma.io/zone: zone-uni
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: http-route-1
+    NameExtensions: null
+    Version: ""
+  ResourceSectionName: ""

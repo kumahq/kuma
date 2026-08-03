@@ -1,0 +1,242 @@
+package delete_test
+
+import (
+	"bytes"
+	"context"
+	"path/filepath"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/spf13/cobra"
+
+	"github.com/kumahq/kuma/v3/app/kumactl/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/resources"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	memory_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
+)
+
+var _ = Describe("kumactl delete ", func() {
+	Describe("Delete Command", func() {
+		var rootCtx *kumactl_cmd.RootContext
+		var rootCmd *cobra.Command
+		var outbuf *bytes.Buffer
+		var store core_store.ResourceStore
+
+		BeforeEach(func() {
+			// setup
+			rootCtx = kumactl_cmd.DefaultRootContext()
+			rootCtx.Runtime.NewAPIServerClient = func(client util_http.Client) resources.ApiServerClient {
+				return resources.NewStaticApiServiceClient(test.DummyIndexResponse)
+			}
+			rootCtx.Runtime.NewResourceStore = func(util_http.Client) core_store.ResourceStore {
+				return store
+			}
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
+
+			rootCmd = cmd.NewRootCmd(rootCtx)
+
+			// Different versions of cobra might emit errors to stdout
+			// or stderr. It's too fragile to depend on precidely what
+			// it does, and that's not something that needs to be tested
+			// within Kuma anyway. So we just combine all the output
+			// and validate the aggregate.
+			outbuf = &bytes.Buffer{}
+			rootCmd.SetOut(outbuf)
+			rootCmd.SetErr(outbuf)
+		})
+
+		It("should throw an error in case of no args", func() {
+			// given
+			rootCmd.SetArgs([]string{
+				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+				"delete",
+			})
+
+			// when
+			err := rootCmd.Execute()
+
+			// then
+			Expect(err).To(HaveOccurred())
+			// and
+			Expect(err.Error()).To(Equal("accepts 2 arg(s), received 0"))
+			// and
+			Expect(outbuf.String()).To(MatchRegexp(`Error: accepts 2 arg\(s\), received 0`))
+		})
+
+		It("should throw an error in case of unsupported resource type", func() {
+			// given
+			rootCmd.SetArgs([]string{
+				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+				"delete", "some-type", "some-name",
+			})
+
+			// when
+			err := rootCmd.Execute()
+
+			// then
+			Expect(err).To(HaveOccurred())
+			// and
+			Expect(err.Error()).To(ContainSubstring("unknown TYPE: some-type. Allowed values:"))
+			// and
+			Expect(outbuf.String()).To(ContainSubstring("unknown TYPE: some-type. Allowed values:"))
+		})
+
+		Describe("kumactl delete TYPE NAME", func() {
+			type testCase struct {
+				typ             string // TYPE
+				name            string // NAME
+				resource        func() core_model.Resource
+				expectedMessage string // output
+			}
+
+			DescribeTable("should succeed if resource exists",
+				func(given testCase) {
+					key1 := core_model.ResourceKey{Mesh: "demo", Name: given.name}    // resource under test
+					key2 := core_model.ResourceKey{Mesh: "default", Name: given.name} // resource with the same name but in a differrent mesh
+					key3 := core_model.ResourceKey{Mesh: "demo", Name: "example"}     // another resource in the same mesh
+
+					By("creating resources necessary for the test")
+					// setup
+					for _, key := range []core_model.ResourceKey{key1, key2, key3} {
+						// when
+						err := store.Create(context.Background(), given.resource(), core_store.CreateBy(key))
+						// then
+						Expect(err).ToNot(HaveOccurred())
+					}
+
+					By("running delete command")
+					// given
+					rootCmd.SetArgs([]string{
+						"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+						"delete", given.typ, given.name, "--mesh", "demo",
+					})
+
+					// when
+					err := rootCmd.Execute()
+					// then
+					Expect(err).ToNot(HaveOccurred())
+					// and
+					Expect(outbuf.String()).To(Equal(given.expectedMessage))
+
+					By("verifying that resource under test was actually deleted")
+					// when
+					err = store.Get(context.Background(), given.resource(), core_store.GetBy(key1))
+					// then
+					Expect(core_store.IsNotFound(err)).To(BeTrue())
+
+					By("verifying that resource with the same name but in a differrent mesh wasn't affected")
+					// when
+					err = store.Get(context.Background(), given.resource(), core_store.GetBy(key2))
+					// then
+					Expect(err).ToNot(HaveOccurred())
+
+					By("verifying that another resource in the same mesh wasn't affected")
+					// when
+					err = store.Get(context.Background(), given.resource(), core_store.GetBy(key3))
+					// then
+					Expect(err).ToNot(HaveOccurred())
+				},
+				Entry("dataplanes", testCase{
+					typ:             "dataplane",
+					name:            "web",
+					resource:        func() core_model.Resource { return core_mesh.NewDataplaneResource() },
+					expectedMessage: "deleted Dataplane \"web\"\n",
+				}),
+				Entry("secrets", testCase{
+					typ:             "secret",
+					name:            "web",
+					resource:        func() core_model.Resource { return system.NewSecretResource() },
+					expectedMessage: "deleted Secret \"web\"\n",
+				}),
+			)
+
+			DescribeTable("should succeed if resource exists",
+				func(given testCase) {
+					key := core_model.ResourceKey{Name: given.name}
+
+					By("creating resources necessary for the test")
+					// setup
+
+					// when
+					err := store.Create(context.Background(), given.resource(), core_store.CreateBy(key))
+					// then
+					Expect(err).ToNot(HaveOccurred())
+
+					By("running delete command")
+					// given
+					rootCmd.SetArgs([]string{
+						"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+						"delete", given.typ, given.name,
+					})
+
+					// when
+					err = rootCmd.Execute()
+					// then
+					Expect(err).ToNot(HaveOccurred())
+					// and
+					Expect(outbuf.String()).To(Equal(given.expectedMessage))
+
+					By("verifying that resource under test was actually deleted")
+					// when
+					err = store.Get(context.Background(), given.resource(), core_store.GetBy(key))
+					// then
+					Expect(core_store.IsNotFound(err)).To(BeTrue())
+				},
+				Entry("meshes", testCase{
+					typ:             "mesh",
+					name:            "test-mesh",
+					resource:        func() core_model.Resource { return core_mesh.NewMeshResource() },
+					expectedMessage: "deleted Mesh \"test-mesh\"\n",
+				}),
+				Entry("global-secrets", testCase{
+					typ:             "global-secret",
+					name:            "test-secret",
+					resource:        func() core_model.Resource { return system.NewGlobalSecretResource() },
+					expectedMessage: "deleted GlobalSecret \"test-secret\"\n",
+				}),
+				Entry("zones", testCase{
+					typ:             "zone",
+					name:            "eu-north",
+					resource:        func() core_model.Resource { return system.NewZoneResource() },
+					expectedMessage: "deleted Zone \"eu-north\"\n",
+				}),
+			)
+
+			DescribeTable("should fail if resource doesn't exist",
+				func(given testCase) {
+					By("running delete command")
+					// given
+					rootCmd.SetArgs([]string{
+						"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+						"delete", given.typ, given.name,
+					})
+
+					// when
+					err := rootCmd.Execute()
+					// then
+					Expect(err).To(HaveOccurred())
+					// and
+					Expect(outbuf.String()).To(Equal(given.expectedMessage))
+				},
+				Entry("dataplanes", testCase{
+					typ:             "dataplane",
+					name:            "web",
+					resource:        func() core_model.Resource { return core_mesh.NewDataplaneResource() },
+					expectedMessage: "Error: there is no Dataplane with name \"web\"\n",
+				}),
+				Entry("secret", testCase{
+					typ:             "secret",
+					name:            "web",
+					resource:        func() core_model.Resource { return system.NewSecretResource() },
+					expectedMessage: "Error: there is no Secret with name \"web\"\n",
+				}),
+			)
+		})
+	})
+})

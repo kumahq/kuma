@@ -1,0 +1,11 @@
+package catalog_test
+
+import (
+	"testing"
+
+	"github.com/kumahq/kuma/v3/pkg/test"
+)
+
+func TestCatalog(t *testing.T) {
+	test.RunSpecs(t, "Catalog Suite")
+}

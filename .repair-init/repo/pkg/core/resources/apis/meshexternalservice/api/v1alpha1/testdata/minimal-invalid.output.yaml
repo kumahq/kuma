@@ -1,0 +1,3 @@
+violations:
+- field: spec.match.protocol
+  message: '"protocol" must be one of ["tcp", "grpc", "http", "http2"]'

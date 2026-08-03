@@ -1,0 +1,77 @@
+resources:
+- name: inbound
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 80
+    enableReusePort: true
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.set_filter_state
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.set_filter_state.v3.Config
+          onDownstreamTlsHandshake:
+          - factoryKey: envoy.string
+            formatString:
+              textFormatSource:
+                inlineString: '%DOWNSTREAM_PEER_URI_SAN%'
+            objectKey: kuma.mesh_timeout.match.spiffe_id
+            readOnly: true
+            skipIfEmpty: true
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
+          requestHeadersTimeout: 0s
+          routeConfig:
+            name: inbound:backend
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend
+              routes:
+              - match:
+                  filterState:
+                  - key: kuma.mesh_timeout.match.spiffe_id
+                    stringMatch:
+                      exact: spiffe://default/client
+                  prefix: /
+                route:
+                  cluster: backend
+                  idleTimeout: 3s
+                  timeout: 2s
+              - match:
+                  filterState:
+                  - key: kuma.mesh_timeout.match.spiffe_id
+                    stringMatch:
+                      exact: spiffe://default/client-stream
+                  prefix: /
+                route:
+                  cluster: backend
+                  idleTimeout: 4s
+                  timeout: 5s
+              - match:
+                  prefix: /
+                route:
+                  cluster: backend
+                  idleTimeout: 1s
+                  timeout: 5s
+          statPrefix: inbound_127_0_0_1_80
+    name: inbound:127.0.0.1:80
+    trafficDirection: INBOUND

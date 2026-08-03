@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    run: busybox
+  annotations:
+    kuma.io/sidecar-drain-time: "10s"
+    kuma.io/envoy-log-level: "trace"
+    kuma.io/container-patches: container-patch-1
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    resources: {}

@@ -1,0 +1,14 @@
+#/meshes/default/dataplanes/dp-1 200 method=PUT
+#/meshes/default/dataplanes/dp-1 200
+type: Mesh
+name: default
+---
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  address: 10.1.2.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: my-svc

@@ -1,0 +1,14 @@
+type: MeshTrace
+name: mt-datadog
+mesh: envoyconfig-zoneproxies
+labels:
+  kuma.io/effect: shadow
+spec:
+  default:
+    backends:
+      - type: Datadog
+        datadog:
+          url: http://datadog.example.com:8126
+          splitService: true
+    sampling:
+      overall: 100

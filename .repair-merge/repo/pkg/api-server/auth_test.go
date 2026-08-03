@@ -1,0 +1,219 @@
+package api_server_test
+
+import (
+	"context"
+	"fmt"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path"
+	"path/filepath"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
+	"github.com/kumahq/kuma/v3/pkg/config/access"
+	config "github.com/kumahq/kuma/v3/pkg/config/api-server"
+	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/tls"
+	http2 "github.com/kumahq/kuma/v3/pkg/util/http"
+)
+
+var _ = Describe("Auth test", func() {
+	var httpsClient *http.Client
+	var httpsClientWithoutCerts *http.Client
+	var httpPort uint32
+	var httpsPort uint32
+	stop := func() {}
+	var externalIP string
+	var apiServer *api_server.ApiServer
+
+	BeforeEach(func() {
+		externalIP = getExternalIP()
+		Expect(externalIP).ToNot(BeEmpty())
+		certPath, keyPath := createCertsForIP(externalIP)
+		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithConfigMutator(func(cfg *config.ApiServerConfig) {
+			cfg.HTTPS.TlsCertFile = certPath
+			cfg.HTTPS.TlsKeyFile = keyPath
+			cfg.Authn.Type = certs.PluginName
+			cfg.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
+		}).WithAccessConfigMutator(func(cfg *access.AccessConfig) {
+			cfg.Static.ControlPlaneMetadata.Groups = []string{"mesh-system:authenticated"}
+		}))
+
+		cfg := apiServer.Config()
+		httpsPort = cfg.HTTPS.Port
+		httpPort = cfg.HTTP.Port
+
+		// configure https clients
+		httpsClient = &http.Client{}
+		Expect(http2.ConfigureMTLS(
+			httpsClient,
+			certPath,
+			filepath.Join("..", "..", "test", "certs", "client", "client.pem"),
+			filepath.Join("..", "..", "test", "certs", "client", "client.key"),
+			false,
+		)).To(Succeed())
+
+		httpsClientWithoutCerts = &http.Client{}
+		Expect(http2.ConfigureMTLS(httpsClientWithoutCerts, certPath, "", "", false)).To(Succeed())
+
+		// wait for both http and https server
+		Eventually(func(g Gomega) {
+			resp, err := httpsClient.Get(fmt.Sprintf("https://localhost:%d/secrets", httpsPort))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp).To(HaveHTTPStatus(200))
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("http://localhost:%d/secrets", httpPort), http.NoBody)
+			g.Expect(err).ToNot(HaveOccurred())
+			resp, err = http.DefaultClient.Do(req)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp).To(HaveHTTPStatus(200))
+		}, "5s", "100ms").Should(Succeed())
+	})
+
+	AfterEach(func() {
+		stop()
+	})
+
+	It("should be able to access secrets on localhost using HTTP", func() {
+		// when
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/secrets", httpPort))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp).To(HaveHTTPStatus(200))
+	})
+
+	It("should be able to access admin endpoints using client certs and HTTPS", func() {
+		// when - test that client cert authentication works via HTTPS
+		// Using localhost instead of external IP since client cert auth doesn't depend on RemoteAddr
+		resp, err := httpsClient.Get(fmt.Sprintf("https://localhost:%d/secrets", httpsPort))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp).To(HaveHTTPStatus(200))
+	})
+
+	It("should be block an access to admin endpoints from other machine using HTTP", func() {
+		// when - simulate request from external IP by setting RemoteAddr
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(403))
+		Expect(rr.Body.Bytes()).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-non-localhost.golden.json")))
+	})
+
+	It("should be block an access to admin endpoints from other machine using HTTPS without proper client certs", func() {
+		// when - simulate request from external IP without client certs by setting RemoteAddr
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(403))
+		Expect(rr.Body.Bytes()).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-https-bad-creds.golden.json")))
+	})
+
+	It("should block admin access when Origin is a cross-origin domain", func() {
+		// This simulates a browser fetch() from evil.com to localhost:5681.
+		// The browser connects over loopback, but the Origin header reveals a
+		// non-localhost origin.  LocalhostAuthenticator must NOT grant admin.
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Host = fmt.Sprintf("localhost:%d", httpPort)
+		req.Header.Set("Origin", "https://evil.com")
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(403))
+	})
+
+	It("should grant admin when Origin is same-origin localhost (GUI use case)", func() {
+		// Simulates the Kuma GUI: browser on localhost fetching from the same
+		// localhost:port.  Origin matches Host, so admin should be granted.
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Host = fmt.Sprintf("localhost:%d", httpPort)
+		req.Header.Set("Origin", fmt.Sprintf("http://localhost:%d", httpPort))
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(200))
+	})
+
+	It("should block admin when a proxy header is present on a loopback request", func() {
+		// X-Forwarded-For on a loopback-sourced request signals a reverse proxy
+		// laundering remote traffic.  Admin must be denied.
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Host = fmt.Sprintf("localhost:%d", httpPort)
+		req.Header.Set("X-Forwarded-For", "203.0.113.1")
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(403))
+	})
+
+	It("should be able to access config on localhost using HTTP", func() {
+		// when
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/config", httpPort))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp).To(HaveHTTPStatus(200))
+	})
+
+	It("should be block an access to config endpoints from other machine using HTTP", func() {
+		// when - simulate request from external IP by setting RemoteAddr
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/config", http.NoBody)
+		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
+		rr := httptest.NewRecorder()
+		apiServer.Handler().ServeHTTP(rr, req)
+
+		// then
+		Expect(rr.Code).To(Equal(403))
+		Expect(rr.Body.Bytes()).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-config-non-localhost.golden.json")))
+	})
+})
+
+// we need to autogenerate cert dynamically for the external IP so the HTTPS client can validate san
+func createCertsForIP(ip string) (string, string) {
+	keyPair, err := tls.NewSelfSignedCert(tls.ServerCertType, tls.DefaultKeyType, "localhost", ip)
+	Expect(err).ToNot(HaveOccurred())
+	dir, err := os.MkdirTemp("", "temp-certs")
+	Expect(err).ToNot(HaveOccurred())
+	certPath := dir + "/cert.pem"
+	keyPath := dir + "/cert.key"
+	err = os.WriteFile(certPath, keyPair.CertPEM, 0o600)
+	Expect(err).ToNot(HaveOccurred())
+	err = os.WriteFile(keyPath, keyPair.KeyPEM, 0o600)
+	Expect(err).ToNot(HaveOccurred())
+	return certPath, keyPath
+}
+
+// GetLocalIP returns the non loopback local IP of the host. It assumes there is another network interface on the machine aside of loopback
+// We need to use this interface to simulate accessing the server from the remote machine
+func getExternalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok &&
+			!ipnet.IP.IsLoopback() &&
+			ipnet.IP.To4() != nil {
+			return ipnet.IP.String()
+		}
+	}
+	return ""
+}

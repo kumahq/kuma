@@ -1,0 +1,55 @@
+default:
+  labels:
+    - color: 0052cc
+      name: "area/kuma-cp"
+    - color: 0052cc
+      name: "area/kuma-dp"
+    - color: 0052cc
+      name: "area/kumactl"
+    - color: 0052cc
+      name: "area/k8s"
+    - color: 0052cc
+      name: "area/universal"
+    - color: 0052cc
+      name: "area/observability"
+    - color: 0052cc
+      name: "area/dns"
+    - color: 0052cc
+      name: "area/multizone"
+    - color: 0052cc
+      name: "area/api"
+    - color: 0052cc
+      name: "area/policies"
+    - color: 0052cc
+      name: "area/ci-cd"
+    - color: 0052cc
+      name: "area/performance"
+    - color: 0052cc
+      name: "area/installation"
+    - color: 0052cc
+      name: "area/envoy"
+    - color: 0052cc
+      name: "area/adoption"
+      description: "Likely to cause problem to new comers"
+    - color: 0052cc
+      name: "area/gateway"
+      description: "Built-in Kuma gateway support"
+    # CI specific labels
+    - color: 965E20
+      name: "ci/force-publish"
+      description: "PR: push artifacts even if we're on a PR (use very carefully)"
+    - color: 965E20
+      name: "ci/run-build"
+      description: "PR: build the artifacts too"
+    - color: 965E20
+      name: "ci/run-full-matrix"
+      description: "PR: Runs all possible e2e test combination (expensive use carefully)"
+    - color: 965E20
+      name: "ci/skip-test"
+      description: "PR: Don't run unit and e2e tests (maybe this is just a doc change)"
+    - color: 965E20
+      name: "ci/skip-e2e-test"
+      description: "PR: Don't run e2e tests"
+    - color: 965E20
+      name: "ci/auto-merge"
+      description: "PR: Approve and Merge PRs automatically"

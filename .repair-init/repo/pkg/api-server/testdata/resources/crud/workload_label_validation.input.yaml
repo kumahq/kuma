@@ -1,0 +1,8 @@
+# Valid workload label
+#/meshes/default/dataplanes/dp-valid 201 method=PUT
+# Invalid workload label - uppercase
+#/meshes/default/dataplanes/dp-invalid 400 method=PUT
+# Invalid workload label - starts with number
+#/meshes/default/dataplanes/dp-invalid2 400 method=PUT
+type: Mesh
+name: default

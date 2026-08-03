@@ -1,0 +1,38 @@
+{
+  "total": 2,
+  "items": [
+    {
+      "type": "MeshInsight",
+      "name": "default",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "dataplanes": {
+        "total": 100,
+        "online": 90,
+        "offline": 10
+      },
+      "resources": {
+        "MeshTrafficPermission": {
+          "total": 9
+        }
+      }
+    },
+    {
+      "type": "MeshInsight",
+      "name": "mesh-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "dataplanes": {
+        "total": 100,
+        "online": 90,
+        "offline": 10
+      },
+      "resources": {
+        "MeshTrafficPermission": {
+          "total": 90
+        }
+      }
+    }
+  ],
+  "next": null
+}

@@ -1,0 +1,21 @@
+{
+ "policies": [
+  {
+   "conf": [
+    {
+     "connectionTimeout": "2s",
+     "idleTimeout": "20s",
+     "http": {
+      "requestTimeout": "2s"
+     }
+    }
+   ],
+   "kind": "MeshTimeout",
+   "origins": [
+    {
+     "kri": "kri_mt_default___mt-1_"
+    }
+   ]
+  }
+ ]
+}

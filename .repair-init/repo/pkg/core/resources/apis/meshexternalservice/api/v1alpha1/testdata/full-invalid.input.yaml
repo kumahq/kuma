@@ -1,0 +1,22 @@
+match:
+  type: UnknownMatchType
+  port: 0
+  protocol: unknown
+endpoints:
+  - address: 1.1.1.1
+  - address: 1.1.1.2
+    port: 999999
+  - address: example.com
+  - port: 90
+tls:
+  version:
+    min: TLS15
+    max: TLS16
+  verification:
+    serverName: not[]valid
+    mode: Unknown
+    subjectAltNames:
+      - type: Regex
+        value: .*.example.com
+    clientCert:
+      secret: "123"

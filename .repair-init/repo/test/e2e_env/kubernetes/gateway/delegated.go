@@ -1,0 +1,209 @@
+package gateway
+
+import (
+	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	mcb_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	mr_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
+	mt_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/gateway/delegated"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/kic"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/observability"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/otelcollector"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
+)
+
+func Delegated() {
+	config := delegated.Config{
+		Namespace:                   "delegated-gateway-ms",
+		NamespaceOutsideMesh:        "delegated-gateway-outside-mesh-ms",
+		Mesh:                        "delegated-gateway-ms",
+		KicIP:                       "",
+		CpNamespace:                 Config.KumaNamespace,
+		ObservabilityDeploymentName: "observability-delegated-meshtrace-ms",
+		IPV6:                        Config.IPV6,
+	}
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.NamespaceOutsideMesh)
+	})
+
+	contextFor := func(name string, config *delegated.Config, testMatrix map[string]func()) {
+		Context(name, func() {
+			externalNameService := func(serviceName string) string {
+				return fmt.Sprintf(`apiVersion: v1
+kind: Service
+metadata:
+  name: %s
+  namespace: %s
+spec:
+  type: ExternalName
+  externalName: %s.%s.svc.cluster.local`, serviceName, config.Namespace, serviceName, config.NamespaceOutsideMesh)
+			}
+			BeforeAll(func() {
+				mesh := samples.MeshDefaultBuilder().WithName(config.Mesh)
+				err := NewClusterSetup().
+					Install(Yaml(mesh)).
+					Install(MeshIdentityBundledKubernetes(config.Mesh, config.Mesh+"-identity")).
+					// The standalone zone CP runs under the "default" zone name.
+					Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(
+						config.Mesh,
+						fmt.Sprintf("%s.default.mesh.local", config.Mesh),
+					)).
+					Install(YamlK8s(fmt.Sprintf(`
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
+  labels:
+    kuma.io/sidecar-injection: "enabled"
+    kuma.io/mesh: %s
+`, config.Namespace, config.Mesh))).
+					Install(Namespace(config.NamespaceOutsideMesh)).
+					Install(Parallel(
+						zoneproxy.Install(
+							zoneproxy.WithNamespace(config.Namespace),
+							zoneproxy.WithMesh(config.Mesh),
+							zoneproxy.WithEgress(),
+						),
+						democlient.Install(
+							democlient.WithNamespace(config.NamespaceOutsideMesh),
+							democlient.WithService(true),
+						),
+						testserver.Install(
+							testserver.WithMesh(config.Mesh),
+							testserver.WithNamespace(config.Namespace),
+							testserver.WithName("test-server"),
+							testserver.WithStatefulSet(),
+							testserver.WithReplicas(3),
+							testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server"}),
+						),
+						testserver.Install(
+							testserver.WithNamespace(config.NamespaceOutsideMesh),
+							testserver.WithName("external-service"),
+						),
+						testserver.Install(
+							testserver.WithNamespace(config.NamespaceOutsideMesh),
+							testserver.WithName("another-external-service"),
+						),
+						testserver.Install(
+							testserver.WithNamespace(config.NamespaceOutsideMesh),
+							testserver.WithName("external-tcp-service"),
+						),
+						otelcollector.Install(
+							otelcollector.WithNamespace(config.NamespaceOutsideMesh),
+							otelcollector.WithIPv6(Config.IPV6),
+						),
+						observability.Install(
+							config.ObservabilityDeploymentName,
+							observability.WithNamespace(config.NamespaceOutsideMesh),
+						),
+						kic.KongIngressController(
+							kic.WithName(config.Mesh),
+							kic.WithNamespace(config.Namespace),
+							kic.WithMesh(config.Mesh),
+						),
+						kic.KongIngressService(
+							kic.WithName(config.Mesh),
+							kic.WithNamespace(config.Namespace),
+						),
+					)).
+					Install(YamlK8s(externalNameService("external-service"))).
+					Install(YamlK8s(externalNameService("another-external-service"))).
+					Install(YamlK8s(fmt.Sprintf(`
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: %s
+  name: %s-ingress
+  annotations:
+    kubernetes.io/ingress.class: %s
+    konghq.com/strip-path: 'true'
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /test-server
+        pathType: Prefix
+        backend:
+          service:
+            name: test-server
+            port:
+              number: 80
+  - http:
+      paths:
+      - path: /external-service
+        pathType: Prefix
+        backend:
+          service:
+            name: external-service
+            port:
+              number: 80
+  - http:
+      paths:
+      - path: /another-external-service
+        pathType: Prefix
+        backend:
+          service:
+            name: another-external-service
+            port:
+              number: 80`, config.Namespace, config.Mesh, config.Mesh))).
+					Setup(kubernetes.Cluster)
+				Expect(err).ToNot(HaveOccurred())
+
+				kicIP, err := kic.From(kubernetes.Cluster).IP(config.Namespace)
+				Expect(err).ToNot(HaveOccurred())
+
+				config.KicIP = kicIP
+				Expect(DeleteMeshResources(
+					kubernetes.Cluster,
+					config.Mesh,
+					mcb_api.MeshCircuitBreakerResourceTypeDescriptor,
+					mt_api.MeshTimeoutResourceTypeDescriptor,
+					mr_api.MeshRetryResourceTypeDescriptor,
+				)).To(Succeed())
+			})
+
+			E2EAfterAll(func() {
+				Expect(kubernetes.Cluster.TriggerDeleteNamespace(config.Namespace)).
+					To(Succeed())
+				Expect(kubernetes.Cluster.TriggerDeleteNamespace(config.NamespaceOutsideMesh)).
+					To(Succeed())
+				Expect(kubernetes.Cluster.DeleteMesh(config.Mesh)).To(Succeed())
+				Expect(kubernetes.Cluster.DeleteDeployment(config.ObservabilityDeploymentName)).
+					To(Succeed())
+			})
+
+			// If you copy the test case from a non-gateway test or create a new test,
+			// remember the the name of policies needs to be unique.
+			// If they have the same name, one might override the other, causing a flake.
+			for policyName, test := range testMatrix {
+				Context(policyName, test)
+			}
+		})
+	}
+
+	contextFor("delegated", &config, map[string]func(){
+		"MeshCircuitBreaker":        delegated.CircuitBreaker(&config),
+		"MeshProxyPatch":            delegated.MeshProxyPatch(&config),
+		"MeshHealthCheck":           delegated.MeshHealthCheck(&config),
+		"MeshRetry":                 delegated.MeshRetry(&config),
+		"MeshHTTPRoute":             delegated.MeshHTTPRoute(&config),
+		"MeshHTTPRouteMeshService":  delegated.MeshHTTPRouteMeshService(&config),
+		"MeshTimeout":               delegated.MeshTimeout(&config),
+		"MeshMetric":                delegated.MeshMetric(&config),
+		"MeshTrace":                 delegated.MeshTrace(&config),
+		"MeshLoadBalancingStrategy": delegated.MeshLoadBalancingStrategy(&config),
+		"MeshAccessLog":             delegated.MeshAccessLog(&config),
+		"MeshPassthrough":           delegated.MeshPassthrough(&config),
+		// Matcher for from policy doesn't work for delegated gateway https://github.com/kumahq/kuma/issues/12107
+		// "MeshTLS":                   delegated.MeshTLS(&config),
+	})
+}

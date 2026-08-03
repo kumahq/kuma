@@ -1,0 +1,11 @@
+package sync_test
+
+import (
+	"testing"
+
+	"github.com/kumahq/kuma/v3/pkg/test"
+)
+
+func TestSync(t *testing.T) {
+	test.RunSpecs(t, "Sync Suite")
+}

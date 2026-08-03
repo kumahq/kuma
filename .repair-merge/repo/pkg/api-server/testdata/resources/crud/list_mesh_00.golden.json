@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not retrieve resources",
+ "detail": "invalid: invalid offset: strconv.Atoi: parsing \"invalid\": invalid syntax",
+ "details": "invalid: invalid offset: strconv.Atoi: parsing \"invalid\": invalid syntax"
+}

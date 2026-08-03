@@ -1,0 +1,13 @@
+type: MeshTrace
+name: mt-zipkin
+mesh: envoyconfig-zoneproxies
+labels:
+  kuma.io/effect: shadow
+spec:
+  default:
+    backends:
+      - type: Zipkin
+        zipkin:
+          url: http://zipkin.example.com:9411/api/v2/spans
+    sampling:
+      overall: 100

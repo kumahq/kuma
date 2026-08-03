@@ -1,0 +1,7 @@
+{
+  "type": "/std-errors",
+  "status": 400,
+  "title": "Could not issue a token",
+  "detail": "issuing tokens using the control plane is disabled.",
+  "details": "issuing tokens using the control plane is disabled."
+}

@@ -1,0 +1,5 @@
+# TYPE envoy_cluster_external_upstream_rq counter
+envoy_cluster_external_upstream_rq{envoy_response_code="404",envoy_cluster_name="backend_kuma-demo_svc_3001",kuma_io_mesh_traffic="true"} 14
+envoy_cluster_external_upstream_rq{envoy_response_code="200",envoy_cluster_name="backend_kuma-demo_svc_3001",kuma_io_mesh_traffic="true"} 38
+envoy_cluster_external_upstream_rq{envoy_response_code="200",envoy_cluster_name="kuma_envoy_admin"} 255
+

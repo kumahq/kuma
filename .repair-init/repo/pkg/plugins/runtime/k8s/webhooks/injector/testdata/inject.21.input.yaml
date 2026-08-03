@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    run: busybox
+spec:
+  volumes:
+    - name: default-token-w7dxf
+      secret:
+        secretName: default-token-w7dxf
+  containers:
+    - name: busybox
+      image: busybox
+      resources: {}
+      ports:
+        - name: readiness-port
+          containerPort: 3001
+        - name: liveness-port
+          containerPort: 8080
+        - name: startup-port
+          containerPort: 8081
+      readinessProbe:
+        httpGet:
+          path: /metrics
+          port: readiness-port
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      livenessProbe:
+        httpGet:
+          path: /metrics
+          port: liveness-port
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      startupProbe:
+        httpGet:
+          path: /startup
+          port: startup-port
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      volumeMounts:
+        - name: default-token-w7dxf
+          readOnly: true
+          mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"

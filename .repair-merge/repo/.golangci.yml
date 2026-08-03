@@ -1,0 +1,233 @@
+version: "2"
+run:
+  modules-download-mode: readonly
+linters:
+  enable:
+    - bodyclose
+    - depguard
+    - errcheck
+    - forbidigo
+    - ginkgolinter
+    - gocritic
+    - gomodguard
+    - govet
+    - gosec
+    - importas
+    - loggercheck
+    - makezero
+    - misspell
+    - modernize
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - whitespace
+  settings:
+    depguard:
+      rules:
+        DenyGolangProtobuf:
+          files:
+            - $all
+          deny:
+            - pkg: github.com/golang/protobuf
+              desc: github.com/golang/protobuf is deprecated; use google.golang.org/protobuf instead
+        DenyGoogleProtoJson:
+          files:
+            - $all
+          deny:
+            - pkg: google.golang.org/protobuf/encoding/protojson
+              desc: don't use the protojson package, it's incompatible and might cause issues(https://github.com/golang/protobuf/issues/1374); use github.com/golang/protobuf/jsonpb instead
+        DenyControllerRuntimePkgLog:
+          files:
+            - $all
+          deny:
+            - pkg: sigs.k8s.io/controller-runtime/pkg/log$
+              desc: Disallowed due to internal data races caused by cyclic dependencies and global state in controller-runtime. This can lead to long delays (up to 2 minutes) in init containers. Use sigs.k8s.io/controller-runtime instead. See https://github.com/kumahq/kuma/v3/issues/13299
+        pkg-import:
+          list-mode: lax
+          files:
+            - '!**/app/**/*.go'
+            - '!**/pkg/api-server/gui_handler.go'
+          deny:
+            - pkg: github.com/kumahq/kuma/v3/app
+              desc: pkg can't import app
+    forbidigo:
+      forbid:
+        - pattern: '[a-zA-Z_]\w*\.End\('
+          msg: "Use tracing.SafeSpanEnd(span) instead of span.End() to prevent panics during OTel init/shutdown"
+      exclude-godoc-examples: false
+      analyze-types: true
+    gocritic:
+      disabled-checks:
+        - appendAssign
+        - commentedOutCode
+        - deferInLoop
+        - docStub
+        - exposedSyncMutex
+        - filepathJoin
+        - hugeParam
+        - importShadow
+        - paramTypeCombine
+        - rangeValCopy
+        - unnamedResult
+        - whyNoLint
+      enable-all: true
+    gomodguard:
+      blocked:
+        modules:
+          - github.com/go-errors/errors:
+              recommendations:
+                - github.com/pkg/errors
+          - github.com/ghodss/yaml:
+              recommendations:
+                - sigs.k8s.io/yaml
+          - github.com/hashicorp/multierror:
+              recommendations:
+                - errors
+          - golang.org/x/exp/maps:
+              recommendations:
+                - maps
+          - golang.org/x/exp/slices:
+              recommendations:
+                - slices
+          - gopkg.in/yaml.v2:
+              recommendations:
+                - sigs.k8s.io/yaml
+          - gopkg.in/yaml.v3:
+              recommendations:
+                - sigs.k8s.io/yaml
+          - io/ioutil:
+              recommendations:
+                - io
+                - os
+    gosec:
+      excludes:
+        - G104 # Errors unhandled
+        - G115
+        - G301 # Expect directory permissions to be 0750 or less
+    importas:
+      alias:
+        - pkg: github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh
+          alias: core_mesh
+        - pkg: github.com/kumahq/kuma/v3/api/mesh/v1alpha1
+          alias: mesh_proto
+        - pkg: github.com/kumahq/kuma/v3/api/system/v1alpha1
+          alias: system_proto
+        - pkg: github.com/kumahq/kuma/v3/pkg/util/proto
+          alias: util_proto
+        - pkg: github.com/kumahq/kuma/v3/pkg/util/rsa
+          alias: util_rsa
+        - pkg: github.com/kumahq/kuma/v3/pkg/cmd
+          alias: kuma_cmd
+        - pkg: github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s
+          alias: bootstrap_k8s
+        - pkg: github.com/kumahq/kuma/v3/pkg/config/core
+          alias: config_core
+        - pkg: github.com/kumahq/kuma/v3/pkg/core/resources/model
+          alias: core_model
+        - pkg: github.com/kumahq/kuma/v3/api/common/v1alpha1
+          alias: common_api
+        - pkg: github.com/kumahq/kuma/v3/api/openapi/types
+          alias: api_types
+    misspell:
+      locale: US
+      ignore-rules:
+        - cancelled
+    modernize:
+      disable:
+        # Simplify code by using go1.26's new(expr).
+        - newexpr
+        # Suggest replacing omitempty with omitzero for struct fields.
+        - omitzero
+    nolintlint:
+      allow-unused: false
+      require-specific: true
+    nonamedreturns:
+      report-error-in-defer: false
+    revive:
+      max-open-files: 2048
+      rules:
+        - name: var-declaration
+    staticcheck:
+      checks:
+        - all
+        - -ST1003 # Poorly chosen identifier
+        - -ST1016 # Use consistent method receiver names
+        - -SA4011 # Break statement with no effect. Did you mean to break out of an outer loop?
+    usestdlibvars:
+      http-status-code: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - std-error-handling
+    rules:
+      - linters:
+          - staticcheck
+        text: 'SA1019: "github.com/golang/protobuf/jsonpb"'
+      - linters:
+          - staticcheck
+        text: 'SA1019: cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .* is deprecated: use MinResyncInterval instead'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .* is deprecated: use FullResyncInterval instead'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .* is deprecated: use common.WithPolicyAttributes instead'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*.Endpoint is deprecated: use BackendRef instead'
+      - linters:
+          - staticcheck
+        text: 'ST1001: should not use dot imports'
+      - linters:
+          - staticcheck
+        path: 'api/common/v1alpha1/targetref\.go'
+        text: 'SA5008'
+      - linters:
+          - gosec
+        path: '(_test\.go$|^test/)'
+      - linters:
+          - forbidigo
+        path: pkg/core/tracing/span\.go
+        text: 'Use tracing.SafeSpanEnd'
+      - linters:
+          - forbidigo
+        path: pkg/core/tracing/.*_test\.go
+        text: 'Use tracing.SafeSpanEnd'
+    paths:
+      - pkg/transparentproxy/iptables/builder
+    warn-unused: true
+issues:
+  # Fix found issues (if it's supported by the linter).
+  fix: true
+  # Maximum issues count per one linter.
+  # Set to 0 to disable.
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text.
+  # Set to 0 to disable.
+  max-same-issues: 0
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/kumahq/kuma/v3)
+      custom-order: true

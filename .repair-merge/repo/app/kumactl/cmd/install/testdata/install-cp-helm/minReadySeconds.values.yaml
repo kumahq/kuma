@@ -1,0 +1,2 @@
+controlPlane:
+  minReadySeconds: 10

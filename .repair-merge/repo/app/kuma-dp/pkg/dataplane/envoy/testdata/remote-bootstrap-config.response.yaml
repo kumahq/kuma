@@ -1,0 +1,36 @@
+admin:
+  accessLogPath: /dev/null
+  address:
+    socketAddress:
+      address: 127.0.0.1
+      portValue: 9901
+dynamicResources:
+  adsConfig:
+    apiType: GRPC
+    grpcServices:
+      - envoyGrpc:
+          clusterName: ads_cluster
+  cdsConfig:
+    ads: {}
+  ldsConfig:
+    ads: {}
+node:
+  cluster: backend
+  id: dp-1.default.default
+staticResources:
+  clusters:
+    - connectTimeout: 0.250s
+      http2ProtocolOptions: {}
+      loadAssignment:
+        clusterName: ads_cluster
+        endpoints:
+          - lbEndpoints:
+              - endpoint:
+                  address:
+                    socketAddress:
+                      address: localhost
+                      portValue: 5678
+      name: ads_cluster
+      type: STRICT_DNS
+      upstreamConnectionOptions:
+        tcpKeepalive: {}

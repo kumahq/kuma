@@ -1,0 +1,528 @@
+package v1alpha1
+
+import (
+	"bytes"
+	"maps"
+	"slices"
+	"text/template"
+
+	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/pkg/errors"
+
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	bldrs_accesslog "github.com/kumahq/kuma/v3/pkg/envoy/builders/accesslog"
+	. "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	"github.com/kumahq/kuma/v3/pkg/envoy/builders/filter/network/hcm"
+	bldrs_listener "github.com/kumahq/kuma/v3/pkg/envoy/builders/listener"
+	bldrs_matcher "github.com/kumahq/kuma/v3/pkg/envoy/builders/matcher"
+	bldrs_route "github.com/kumahq/kuma/v3/pkg/envoy/builders/route"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/plugin/xds"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/model"
+)
+
+var _ core_plugins.PolicyPlugin = &plugin{}
+
+type plugin struct{}
+
+func (p plugin) Order() int { return api.MeshAccessLogResourceTypeDescriptor.Order }
+
+func NewPlugin() core_plugins.Plugin {
+	return &plugin{}
+}
+
+func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.MatchedPolicies(api.MeshAccessLogType, dataplane, resources, opts...)
+}
+
+func workloadIdentity(proxy *core_xds.Proxy) (string, string) {
+	labels := proxy.Dataplane.GetMeta().GetLabels()
+	zone := labels[mesh_proto.ZoneTag]
+	workloadKRI := ""
+	if wl := labels[k8s_metadata.KumaWorkload]; wl != "" {
+		workloadKRI = kri.Identifier{
+			ResourceType: workload_api.WorkloadType,
+			Mesh:         proxy.Dataplane.GetMeta().GetMesh(),
+			Zone:         zone,
+			Namespace:    labels[mesh_proto.KubeNamespaceTag],
+			Name:         wl,
+		}.String()
+	}
+	return zone, workloadKRI
+}
+
+func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+	policies, ok := proxy.Policies.Dynamic[api.MeshAccessLogType]
+	if !ok {
+		return nil
+	}
+
+	endpoints := &EndpointAccumulator{
+		OtelPipe: &OtelPipeResolver{
+			Resources:        ctx.Mesh.Resources,
+			NodeHostIP:       proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
+			OtelEnvInventory: proxy.Metadata.GetOtelEnvInventory(),
+			Enabled:          proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp),
+			WorkDir:          proxy.Metadata.WorkDir,
+		},
+	}
+
+	listeners := policies_xds.GatherListeners(rs)
+
+	accessLogSocketPath := core_xds.AccessLogSocketName(proxy.Metadata.WorkDir, proxy.Id.ToResourceKey().Name, proxy.Id.ToResourceKey().Mesh)
+
+	zone, workloadKRI := workloadIdentity(proxy)
+
+	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
+		return err
+	}
+	if err := applyToZoneProxyListeners(rs, policies.FromRules, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
+		return err
+	}
+	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, endpoints, accessLogSocketPath, ctx.Mesh, zone, workloadKRI); err != nil {
+		return err
+	}
+	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
+		return err
+	}
+	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
+		return err
+	}
+	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
+	for _, r := range util_slices.Filter(rs.List(), core_xds.HasAssociatedServiceResource) {
+		svcCtx := rctx.
+			WithID(kri.NoSectionName(r.ResourceOrigin)).
+			WithID(r.ResourceOrigin)
+		if err := applyToRealResource(svcCtx, r, proxy, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
+			return err
+		}
+	}
+
+	if err := AddLogBackendConf(*endpoints, rs, proxy); err != nil {
+		return errors.Wrap(err, "unable to add configuration for MeshAccessLog backends")
+	}
+
+	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil && endpoints.OtelPipe != nil {
+		for name, info := range endpoints.OtelPipe.PipeBackends() {
+			plan := policies_xds.BuildSignalRuntimePlan(
+				endpoints.OtelPipe.OtelEnvInventory,
+				info.EnvPolicy,
+				core_xds.OtelSignalLogs,
+				policies_xds.AddResolvedBackendOptions{},
+			)
+			proxy.OtelPipeBackends.AddSignal(name, info, core_xds.OtelSignalLogs, plan)
+		}
+	}
+
+	return nil
+}
+
+func applyToInbounds(
+	rules core_rules.FromRules,
+	inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener,
+	dataplane *core_mesh.DataplaneResource,
+	backends *EndpointAccumulator,
+	accessLogSocketPath string,
+	zone string,
+	workloadKRI string,
+) error {
+	configured := map[core_rules.InboundListener]struct{}{}
+	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
+		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
+
+		listenerKey := core_rules.InboundListener{
+			Address: iface.DataplaneIP,
+			Port:    iface.DataplanePort,
+		}
+		if _, ok := configured[listenerKey]; ok {
+			continue
+		}
+		listener, ok := inboundListeners[listenerKey]
+		if !ok {
+			continue
+		}
+		configured[listenerKey] = struct{}{}
+		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
+		kumaValues := listeners_v3.KumaValues{
+			SourceService:      mesh_proto.ServiceUnknown,
+			SourceIP:           dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
+			DestinationService: dataplane.InboundIdentifyingName(inbound),
+			Mesh:               dataplane.GetMeta().GetMesh(),
+			Zone:               zone,
+			WorkloadKRI:        workloadKRI,
+			TrafficDirection:   envoy.TrafficDirectionInbound,
+		}
+		if err := configureListenerFromRules(rules.InboundRules[listenerKey], listener, backends, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func applyToZoneProxyListeners(
+	rs *core_xds.ResourceSet,
+	rules core_rules.FromRules,
+	dataplane *core_mesh.DataplaneResource,
+	backends *EndpointAccumulator,
+	accessLogSocketPath string,
+	zone string,
+	workloadKRI string,
+) error {
+	for _, res := range rs.Resources(envoy_resource.ListenerType) {
+		if res.Origin != metadata.OriginEgress && res.Origin != metadata.OriginIngress {
+			continue
+		}
+		listener, ok := res.Resource.(*envoy_listener.Listener)
+		if !ok {
+			continue
+		}
+		dpAddress := listener.GetAddress().GetSocketAddress()
+		listenerKey := core_rules.InboundListener{
+			Address: dpAddress.GetAddress(),
+			Port:    dpAddress.GetPortValue(),
+		}
+		inboundRules, ok := rules.InboundRules[listenerKey]
+		if !ok || len(inboundRules) == 0 {
+			continue
+		}
+		kumaValues := listeners_v3.KumaValues{
+			SourceService:      mesh_proto.ServiceUnknown,
+			SourceIP:           dataplane.GetIP(),
+			DestinationService: mesh_proto.ServiceUnknown,
+			Mesh:               dataplane.GetMeta().GetMesh(),
+			Zone:               zone,
+			WorkloadKRI:        workloadKRI,
+			TrafficDirection:   envoy.TrafficDirectionUnspecified,
+		}
+		if err := configureListenerFromRules(inboundRules, listener, backends, DefaultFormat(core_meta.ProtocolTCP), kumaValues, accessLogSocketPath); err != nil {
+			return err
+		}
+		// Without flushing on connect, access logs for TCP connections are populated only when the connection closes.
+		// Extending this to sidecar listeners is tracked in https://github.com/kumahq/kuma/issues/16763.
+		if err := (NewModifier(listener).
+			Configure(bldrs_listener.FlushTCPProxyAccessLogOnConnected()).
+			Modify()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func applyToOutbounds(
+	rules core_rules.ToRules,
+	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
+	outbounds xds_types.Outbounds,
+	dataplane *core_mesh.DataplaneResource,
+	backendsAcc *EndpointAccumulator,
+	accessLogSocketPath string,
+	meshCtx xds_context.MeshContext,
+	zone string,
+	workloadKRI string,
+) error {
+	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
+		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
+
+		listener, ok := outboundListeners[oface]
+		if !ok {
+			continue
+		}
+
+		serviceName := outbound.LegacyOutbound.GetService()
+
+		kumaValues := listeners_v3.KumaValues{
+			SourceService:      dataplane.IdentifyingName(),
+			SourceIP:           dataplane.GetIP(),
+			DestinationService: outbound.LegacyOutbound.GetService(),
+			Mesh:               dataplane.GetMeta().GetMesh(),
+			Zone:               zone,
+			WorkloadKRI:        workloadKRI,
+			TrafficDirection:   envoy.TrafficDirectionOutbound,
+		}
+
+		conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.KumaServiceTagElement(serviceName))
+		if conf == nil {
+			continue
+		}
+
+		protocol := meshCtx.GetServiceProtocol(serviceName)
+		if err := configureListener(*conf, listener, backendsAcc, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func applyToTransparentProxyListeners(
+	policies core_xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+	backends *EndpointAccumulator, path string, zone string, workloadKRI string,
+) error {
+	conf := core_rules.ComputeConf[api.Conf](policies.ToRules.Rules, subsetutils.KumaServiceTagElement(core_meta.PassThroughServiceName))
+	if conf == nil {
+		return nil
+	}
+
+	kumaValues := listeners_v3.KumaValues{
+		SourceService:      dataplane.IdentifyingName(),
+		SourceIP:           dataplane.GetIP(),
+		DestinationService: "external",
+		Mesh:               dataplane.GetMeta().GetMesh(),
+		Zone:               zone,
+		WorkloadKRI:        workloadKRI,
+		TrafficDirection:   envoy.TrafficDirectionOutbound,
+	}
+
+	if ipv4 != nil {
+		if err := configureListener(*conf, ipv4, backends, core_meta.ProtocolTCP, kumaValues, path); err != nil {
+			return err
+		}
+	}
+
+	if ipv6 != nil {
+		return configureListener(*conf, ipv6, backends, core_meta.ProtocolTCP, kumaValues, path)
+	}
+
+	return nil
+}
+
+func applyToDirectAccess(
+	rules core_rules.ToRules, directAccess map[model.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+	backends *EndpointAccumulator, path string, zone string, workloadKRI string,
+) error {
+	conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.KumaServiceTagElement(core_meta.PassThroughServiceName))
+	if conf == nil {
+		return nil
+	}
+
+	for endpoint, listener := range directAccess {
+		kumaValues := listeners_v3.KumaValues{
+			SourceService:      dataplane.IdentifyingName(),
+			SourceIP:           dataplane.GetIP(),
+			DestinationService: generator.DirectAccessEndpointName(endpoint),
+			Mesh:               dataplane.GetMeta().GetMesh(),
+			Zone:               zone,
+			WorkloadKRI:        workloadKRI,
+			TrafficDirection:   envoy.TrafficDirectionOutbound,
+		}
+		return configureListener(*conf, listener, backends, core_meta.ProtocolTCP, kumaValues, path)
+	}
+
+	return nil
+}
+
+func configureListener[T ~string](
+	conf api.Conf,
+	listener *envoy_listener.Listener,
+	backendsAcc *EndpointAccumulator,
+	defaultFormat T,
+	values listeners_v3.KumaValues,
+	accessLogSocketPath string,
+) error {
+	return NewModifier(listener).
+		Configure(bldrs_listener.AccessLogs(
+			util_slices.Map(
+				ResolveBackends(pointer.Deref(conf.Backends), backendsAcc),
+				func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
+					return BaseAccessLogBuilder(b, string(defaultFormat), backendsAcc, values, accessLogSocketPath)
+				}))).
+		Modify()
+}
+
+func configureListenerFromRules(
+	rules []*rules_inbound.Rule,
+	listener *envoy_listener.Listener,
+	backendsAcc *EndpointAccumulator,
+	defaultFormat string,
+	values listeners_v3.KumaValues,
+	accessLogSocketPath string,
+) error {
+	if len(rules) == 0 {
+		return nil
+	}
+	if err := (NewModifier(listener).
+		Configure(bldrs_listener.AccessLogs(BuildAccessLogBuildersFromRules(
+			rules, defaultFormat, backendsAcc, values, accessLogSocketPath,
+		))).
+		Modify()); err != nil {
+		return err
+	}
+	if hasSNIMatch(rules) {
+		return ensureTLSInspector(listener)
+	}
+	return nil
+}
+
+func hasSNIMatch(rules []*rules_inbound.Rule) bool {
+	for _, rule := range rules {
+		if rule.Match != nil && rule.Match.SNI != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func ensureTLSInspector(listener *envoy_listener.Listener) error {
+	for _, lf := range listener.ListenerFilters {
+		if lf.Name == listeners_v3.TlsInspectorName {
+			return nil
+		}
+	}
+	return (&listeners_v3.TLSInspectorConfigurer{}).Configure(listener)
+}
+
+func applyToRealResource(
+	rctx *outbound.ResourceContext[api.Conf],
+	r *core_xds.Resource,
+	proxy *core_xds.Proxy,
+	backendsAcc *EndpointAccumulator,
+	accessLogSocketPath string,
+	zone string,
+	workloadKRI string,
+) error {
+	listener, ok := r.Resource.(*envoy_listener.Listener)
+	if !ok {
+		return nil
+	}
+
+	defaultFormat := DefaultFormat(r.Protocol)
+
+	kumaValues := listeners_v3.KumaValues{
+		SourceService:      proxy.Dataplane.IdentifyingName(),
+		SourceIP:           proxy.Dataplane.GetIP(),
+		DestinationService: r.ResourceOrigin.Name,
+		Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
+		Zone:               zone,
+		WorkloadKRI:        workloadKRI,
+		TrafficDirection:   envoy.TrafficDirectionOutbound,
+	}
+
+	backends := ResolveBackends(pointer.Deref(rctx.Conf().Backends), backendsAcc)
+
+	routesConfs, err := buildRoutesMap(listener, rctx)
+	if err != nil {
+		return err
+	}
+
+	routesIds := slices.SortedStableFunc(maps.Keys(routesConfs), kri.Compare)
+	routesBackends := util_maps.MapValues(routesConfs, func(_ kri.Identifier, conf api.Conf) []ResolvedBackend {
+		return ResolveBackends(pointer.Deref(conf.Backends), backendsAcc)
+	})
+
+	hasAtLeastOneBackend := len(util_slices.Filter(util_maps.AllValues(routesBackends), func(backends []ResolvedBackend) bool {
+		return len(backends) > 0
+	})) > 0
+
+	builderForSharedBackend := func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
+		return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
+			Configure(If(core_meta.IsHTTPBased(r.Protocol), bldrs_accesslog.MetadataFilter(true, bldrs_matcher.NewMetadataBuilder().
+				Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
+				Configure(bldrs_matcher.NullValue())),
+			))
+	}
+
+	builderForRouteBackend := func(routeID kri.Identifier) func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
+		return func(b ResolvedBackend) *Builder[envoy_accesslog.AccessLog] {
+			return BaseAccessLogBuilder(b, defaultFormat, backendsAcc, kumaValues, accessLogSocketPath).
+				Configure(bldrs_accesslog.MetadataFilter(false, bldrs_matcher.NewMetadataBuilder().
+					Configure(bldrs_matcher.Key(namespace, routeMetadataKey)).
+					Configure(bldrs_matcher.ExactValue(routeID.String()))))
+		}
+	}
+
+	return NewModifier(listener).
+		Configure(bldrs_listener.AccessLogs(util_slices.Map(backends, builderForSharedBackend))).
+		Configure(bldrs_listener.Routes(
+			util_maps.MapValues(
+				routesConfs,
+				func(id kri.Identifier, _ api.Conf) Configurer[routev3.Route] {
+					return bldrs_route.Metadata(routeMetadataKey, id.String())
+				}))).
+		Configure(bldrs_listener.AccessLogs(
+			util_slices.FlatMap(
+				routesIds,
+				func(id kri.Identifier) []*Builder[envoy_accesslog.AccessLog] {
+					return util_slices.Map(
+						routesBackends[id],
+						builderForRouteBackend(id),
+					)
+				}))).
+		Configure(If(hasAtLeastOneBackend, bldrs_listener.HCM(hcm.LuaFilterAddFirst(setFilterMetadataAsDynamicLuaFilter(namespace, routeMetadataKey))))).
+		Modify()
+}
+
+func buildRoutesMap(l *envoy_listener.Listener, svcCtx *outbound.ResourceContext[api.Conf]) (map[kri.Identifier]api.Conf, error) {
+	routes := map[kri.Identifier]api.Conf{}
+	if err := bldrs_listener.TraverseRoutes(l, func(route *routev3.Route) {
+		if !kri.IsValid(route.Name) {
+			return
+		}
+
+		id, _ := kri.FromString(route.Name)
+
+		// A MeshAccessLog can target either the specific MeshHTTPRoute rule that
+		// produced this route (id, which under unified naming carries a "rule_N"
+		// section name) or the whole MeshHTTPRoute resource (no section name).
+		// DirectConf only ever looks at the most specific id, so both candidates
+		// have to be checked individually rather than chained through WithID.
+		if conf, isDirect := svcCtx.WithID(id).DirectConf(); isDirect {
+			routes[id] = conf
+		} else if conf, isDirect := svcCtx.WithID(kri.NoSectionName(id)).DirectConf(); isDirect {
+			routes[id] = conf
+		}
+	}); err != nil {
+		return nil, err
+	}
+	return routes, nil
+}
+
+const (
+	routeMetadataKey = "route_kri"
+	namespace        = "kuma.routes"
+)
+
+var luaTemplate = template.Must(template.New("luaFilter").Parse(`function envoy_on_request(handle)
+  local meta = handle:metadata():get("{{ .Key }}")
+  if meta ~= nil then
+    handle:streamInfo():dynamicMetadata():set("{{ .Namespace }}", "{{ .Key }}", meta)
+  end
+end
+`))
+
+// setFilterMetadataAsDynamicLuaFilter returns a Lua filter that takes filter's metadata (set by the route)
+// and set's this as a dynamic metadata (used by the AccessLog filter)
+func setFilterMetadataAsDynamicLuaFilter(namespace, key string) string {
+	var buf bytes.Buffer
+	_ = luaTemplate.Execute(&buf, struct {
+		Namespace string
+		Key       string
+	}{
+		Namespace: namespace,
+		Key:       key,
+	})
+	return buf.String()
+}

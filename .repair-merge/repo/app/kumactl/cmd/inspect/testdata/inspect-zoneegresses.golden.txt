@@ -1,0 +1,4 @@
+NAME           STATUS    LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS   KUMA-DP VERSION   ENVOY VERSION
+zoneegress-1   Online    2h                   never              30              3              1.0.2             1.16.1
+zoneegress-2   Offline   2h                   never              30              3              1.0.2             1.16.1
+zoneegress-3   Online    2h                   never              30              3              1.0.2             1.16.1

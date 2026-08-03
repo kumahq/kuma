@@ -1,0 +1,18 @@
+kind: Pod
+metadata:
+  namespace: demo
+  ownerReferences:
+    - kind: Job
+      name: test-job
+  name: test-job-1
+  labels:
+    app: test-job-1
+    version: "0.1"
+spec:
+  containers:
+    - ports:
+        - containerPort: 7070
+        - containerPort: 6060
+          name: metrics
+status:
+  podIP: 192.168.0.1

@@ -1,0 +1,6 @@
+# TYPE envoy_cluster_upstream_cx_active counter
+envoy_cluster_upstream_cx_active{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_default_total_match_count counter
+envoy_cluster_default_total_match_count{envoy_cluster_name="example"} 1
+

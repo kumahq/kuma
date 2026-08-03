@@ -1,0 +1,19 @@
+{
+  "type": "Dataplane",
+  "mesh": "default",
+  "name": "dp-invalid2",
+  "labels": {
+    "kuma.io/workload": "1workload"
+  },
+  "networking": {
+    "address": "10.1.2.1",
+    "inbound": [
+      {
+        "port": 1234,
+        "tags": {
+          "kuma.io/service": "my-svc"
+        }
+      }
+    ]
+  }
+}

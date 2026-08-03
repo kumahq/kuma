@@ -1,0 +1,11 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/ZoneHealthCheckRequest",
+    "definitions": {
+        "ZoneHealthCheckRequest": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Zone Health Check Request"
+        }
+    }
+}

@@ -1,0 +1,35 @@
+ResourceRules: {}
+Rules:
+- Conf:
+    default:
+      backendRefs:
+      - kind: MeshService
+        labels:
+          kuma.io/display-name: backend-v1
+        weight: 40
+      - kind: MeshService
+        labels:
+          kuma.io/display-name: backend-v2
+        weight: 40
+      - kind: MeshService
+        labels:
+          kuma.io/display-name: backend-v3
+        weight: 20
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mtcpr_default___split-90-10_
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: split-90-10
+    type: MeshTCPRoute
+  - creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mtcpr_default___split-40-40-20_
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: split-40-40-20
+    type: MeshTCPRoute
+  OriginByMatches: {}
+  Subset:
+  - Key: kuma.io/service
+    Not: false
+    Value: backend_kuma-demo_svc_8080

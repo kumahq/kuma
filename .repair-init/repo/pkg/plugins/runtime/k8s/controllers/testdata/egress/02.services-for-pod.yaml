@@ -1,0 +1,15 @@
+---
+metadata:
+  namespace: kuma-system
+  name: kuma-egress
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 10002
+      targetPort: 10002
+  selector:
+    app: kuma-egress
+status:
+  loadBalancer:
+    egress:
+      - ip: 192.168.100.1

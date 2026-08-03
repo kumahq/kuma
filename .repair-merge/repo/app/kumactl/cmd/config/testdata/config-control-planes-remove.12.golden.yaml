@@ -1,0 +1,11 @@
+contexts:
+- controlPlane: other
+  defaults:
+    mesh: demo
+  name: other
+controlPlanes:
+- coordinates:
+    apiServer:
+      url: https://other.internal:5681
+  name: other
+currentContext: other

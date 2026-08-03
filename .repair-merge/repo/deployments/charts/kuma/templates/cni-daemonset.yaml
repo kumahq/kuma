@@ -1,0 +1,109 @@
+{{- if .Values.cni.enabled }}
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: {{ include "kuma.name" . }}-cni-node
+  namespace: {{ .Values.cni.namespace }}
+  annotations:
+    ignore-check.kube-linter.io/run-as-non-root: "The container installs a CNI plugin"
+  labels: {{- include "kuma.cniLabels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+  {{- include "kuma.cniSelectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+      {{- include "kuma.cniSelectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cni-configmap.yaml") . | sha256sum }}
+        {{- range $key, $value := .Values.cni.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      # This, along with the CriticalAddonsOnly toleration below,
+      # marks the pod as a critical add-on, ensuring it gets
+      # priority scheduling and that its resources are reserved
+      # if it ever gets evicted.
+      priorityClassName: system-node-critical
+      {{- with .Values.cni.affinity }}
+      affinity: {{ tpl (toYaml . | nindent 8) $ }}
+      {{- end }}
+      {{- with .Values.cni.nodeSelector }}
+      nodeSelector:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
+      tolerations:
+        # Make sure kuma-cni-node gets scheduled on all nodes.
+        - effect: NoSchedule
+          operator: Exists
+        # Mark the pod as a critical add-on for rescheduling.
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+      {{- with .Values.cni.tolerations }}
+      {{- toYaml . | nindent 8}}
+      {{- end }}
+      serviceAccountName: {{ include "kuma.name" . }}-cni
+      # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
+      # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
+      terminationGracePeriodSeconds: 5
+      restartPolicy: {{ .Values.cni.restartPolicy }}
+      securityContext:
+      {{- toYaml .Values.cni.podSecurityContext | trim | nindent 8 }}
+      containers:
+        - name: install-cni
+          imagePullPolicy: {{ .Values.cni.image.imagePullPolicy }}
+          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
+          readinessProbe:
+            initialDelaySeconds: {{ .Values.cni.delayStartupSeconds }}
+            exec:
+              command:
+                - cat
+                - /tmp/ready
+          command: [ "sh", "-c", "--" ]
+          args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni" ]
+          securityContext:
+          {{- toYaml .Values.cni.containerSecurityContext | trim | nindent 12 }}
+          env:
+            # Name of the CNI config file to create.
+            - name: CNI_CONF_NAME
+              value: "{{ .Values.cni.confName }}"
+            # The CNI network config to install on each node.
+            - name: CNI_NETWORK_CONFIG
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "kuma.name" . }}-cni-config
+                  key: cni_network_config
+            - name: CNI_NET_DIR
+              value: "{{ .Values.cni.netDir }}"
+            # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
+            - name: CHAINED_CNI_PLUGIN
+              value: "{{ .Values.cni.chained }}"
+            - name: CNI_LOG_LEVEL
+              value: "{{ .Values.cni.logLevel }}"
+          resources:
+          {{- toYaml .Values.cni.resources | trim | nindent 12 }}
+          volumeMounts:
+            - mountPath: /host/opt/cni/bin
+              name: cni-bin-dir
+            - mountPath: /host/etc/cni/net.d
+              name: cni-net-dir
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        # Used to install CNI.
+        - name: cni-bin-dir
+          hostPath:
+            path: {{ .Values.cni.binDir }}
+        - name: cni-net-dir
+          hostPath:
+            path: {{ .Values.cni.netDir }}
+        - name: tmp
+          emptyDir: {}
+{{- end }}

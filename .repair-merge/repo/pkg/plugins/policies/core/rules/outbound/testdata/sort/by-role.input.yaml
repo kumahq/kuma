@@ -1,0 +1,47 @@
+# MeshTimeout with targetRef to the real MeshService resource
+type: MeshTimeout
+name: matched-for-rules-bbb
+mesh: mesh-1
+labels:
+  kuma.io/policy-role: consumer
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 111s
+        idleTimeout: 109s
+---
+type: MeshTimeout
+name: matched-for-rules-aaa
+mesh: mesh-1
+labels:
+  kuma.io/policy-role: producer
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 211s
+        http:
+          requestTimeout: 212s
+---
+type: MeshTimeout
+name: matched-for-rules-aaa
+mesh: mesh-1
+labels:
+  kuma.io/policy-role: system
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 11s
+        http:
+          requestTimeout: 12s

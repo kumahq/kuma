@@ -1,0 +1,11 @@
+{
+  "type": "MeshTrafficPermission",
+  "name": "sample",
+  "spec": {
+    "targetRef": {
+      "kind": "MeshService",
+      "sectionName": 2
+    },
+    "rules": [{"default":{"allow":[{"spiffeID":{"type":"Prefix","value":"spiffe://default"}}]}}]
+  }
+}

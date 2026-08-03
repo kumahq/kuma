@@ -1,0 +1,36 @@
+networking:
+  transparentProxying:
+    redirectPortOutbound: 15001
+    redirectPortInbound: 15006
+  address: 192.168.0.1
+  inbound:
+    - port: 80
+      servicePort: 8080
+      tags:
+        kuma.io/service: backend1
+        kuma.io/protocol: http
+    - port: 443
+      servicePort: 8443
+      tags:
+        kuma.io/service: backend2
+    - address: 192.168.0.2
+      port: 80
+      servicePort: 8080
+      tags:
+        kuma.io/service: backend3
+        kuma.io/protocol: http
+    - address: 192.168.0.2
+      port: 443
+      servicePort: 8443
+      tags:
+        kuma.io/service: backend4
+    - address: 127.0.0.1
+      port: 8080
+      servicePort: 1234
+      tags:
+        kuma.io/service: loopback
+    - address: ::1
+      port: 8081
+      servicePort: 12345
+      tags:
+        kuma.io/service: loopbackv6

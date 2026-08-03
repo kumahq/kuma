@@ -1,0 +1,228 @@
+package framework
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net"
+	"strings"
+
+	"github.com/gruntwork-io/terratest/modules/retry"
+	"github.com/gruntwork-io/terratest/modules/testing"
+
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
+	"github.com/kumahq/kuma/v3/test/framework/universal"
+)
+
+var _ ControlPlane = &UniversalControlPlane{}
+
+type UniversalControlPlane struct {
+	t            testing.TestingT
+	mode         core.CpMode
+	name         string
+	kumactl      *kumactl.KumactlOptions
+	verbose      bool
+	cpNetworking *universal.Networking
+	setupKumactl bool
+}
+
+func NewUniversalControlPlane(
+	t testing.TestingT,
+	mode core.CpMode,
+	clusterName string,
+	verbose bool,
+	networking *universal.Networking,
+	apiHeaders []string,
+	setupKumactl bool,
+) (*UniversalControlPlane, error) {
+	name := clusterName + "-" + mode
+	kumactl := NewKumactlOptionsE2E(t, name, verbose)
+	ucp := &UniversalControlPlane{
+		t:            t,
+		mode:         mode,
+		name:         name,
+		kumactl:      kumactl,
+		verbose:      verbose,
+		cpNetworking: networking,
+		setupKumactl: setupKumactl,
+	}
+	// Honor setupKumactl the same way the Kubernetes control plane does
+	// (see k8s_controlplane.go)
+	if setupKumactl {
+		token, err := ucp.retrieveAdminToken()
+		if err != nil {
+			return nil, err
+		}
+
+		if err := kumactl.KumactlConfigControlPlanesAdd(clusterName, ucp.GetAPIServerAddress(), token, apiHeaders); err != nil {
+			return nil, err
+		}
+	}
+	return ucp, nil
+}
+
+func (c *UniversalControlPlane) Networking() *universal.Networking {
+	return c.cpNetworking
+}
+
+func (c *UniversalControlPlane) GetName() string {
+	return c.name
+}
+
+func (c *UniversalControlPlane) Mode() core.CpMode {
+	return c.mode
+}
+
+func (c *UniversalControlPlane) GetKDSInsecureServerAddress() string {
+	return c.getKDSServerAddress(false)
+}
+
+func (c *UniversalControlPlane) GetKDSServerAddress() string {
+	return c.getKDSServerAddress(true)
+}
+
+func (c *UniversalControlPlane) GetXDSServerAddress() string {
+	return net.JoinHostPort(c.cpNetworking.IP, "5678")
+}
+
+func (c *UniversalControlPlane) getKDSServerAddress(secure bool) string {
+	protocol := "grpcs"
+	if !secure {
+		protocol = "grpc"
+	}
+
+	return protocol + "://" + net.JoinHostPort(c.cpNetworking.IP, "5685")
+}
+
+func (c *UniversalControlPlane) GetAPIServerAddress() string {
+	return "http://localhost:" + c.cpNetworking.ApiServerPort
+}
+
+func (c *UniversalControlPlane) GetMetrics() (string, error) {
+	stdout, stderr, err := c.Exec(
+		"curl", "--no-progress-meter",
+		"--fail", "--show-error",
+		"http://localhost:5680/metrics",
+	)
+	if err != nil {
+		return "", err
+	}
+	if stderr != "" {
+		return "", fmt.Errorf("got on stderr: %q", stderr)
+	}
+	return stdout, nil
+}
+
+func (c *UniversalControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
+	panic("not implemented")
+}
+
+func (c *UniversalControlPlane) generateToken(
+	tokenPath string,
+	data string,
+) (string, error) {
+	description := fmt.Sprintf("generating %s token", tokenPath)
+
+	return retry.DoWithRetryContextE(
+		c.t, context.Background(),
+		description,
+		DefaultRetries,
+		DefaultTimeout,
+		func() (string, error) {
+			stdout, stderr, err := c.Exec(
+				"curl", "-s",
+				"--fail", "--show-error",
+				"-H", "\"Content-Type: application/json\"",
+				"--data", data,
+				"http://localhost:5681/tokens"+tokenPath,
+			)
+			if err != nil {
+				return "", err
+			}
+			if stderr != "" {
+				return "", fmt.Errorf("got stderr %q", stderr)
+			}
+			return stdout, nil
+		},
+	)
+}
+
+func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
+	if !c.setupKumactl {
+		return "", nil
+	}
+
+	return retry.DoWithRetryContextE(
+		c.t, context.Background(), "fetching user admin token",
+		DefaultRetries,
+		DefaultTimeout,
+		func() (string, error) {
+			out, stderr, err := c.Exec("curl", "-s", "--fail", "--show-error", "http://localhost:5681/global-secrets/admin-user-token")
+			if err != nil {
+				return "", err
+			}
+			if stderr != "" {
+				return "", fmt.Errorf("got content on stderr: %q", stderr)
+			}
+			return ExtractSecretDataFromResponse(out)
+		},
+	)
+}
+
+func (c *UniversalControlPlane) Exec(cmd ...string) (string, string, error) {
+	return c.cpNetworking.RunCommand(strings.Join(cmd, " "))
+}
+
+func (c *UniversalControlPlane) GenerateDpToken(mesh, service, workload string) (string, error) {
+	tokenData := map[string]any{
+		"mesh": mesh,
+	}
+
+	if service != "" {
+		tokenData["tags"] = map[string][]string{
+			"kuma.io/service": {service},
+		}
+	}
+
+	if workload != "" {
+		tokenData["workload"] = workload
+	}
+
+	dataBytes, err := json.Marshal(tokenData)
+	if err != nil {
+		return "", err
+	}
+
+	// Escape single quotes for shell safety: replace ' with '\''
+	escapedData := strings.ReplaceAll(string(dataBytes), "'", `'\''`)
+	data := fmt.Sprintf("'%s'", escapedData)
+
+	return c.generateToken("/dataplane", data)
+}
+
+func (c *UniversalControlPlane) GenerateZoneToken(
+	zone string,
+	scope []string,
+) (string, error) {
+	scopeJson, err := json.Marshal(scope)
+	if err != nil {
+		return "", err
+	}
+
+	rawData := fmt.Sprintf(`{"zone": %q, "scope": %s}`, zone, scopeJson)
+	// Escape single quotes for shell safety: replace ' with '\''
+	escapedData := strings.ReplaceAll(rawData, "'", `'\''`)
+	data := fmt.Sprintf("'%s'", escapedData)
+
+	return c.generateToken("/zone", data)
+}
+
+func (c *UniversalControlPlane) UpdateObject(
+	typeName string,
+	objectName string,
+	update func(object core_model.Resource) core_model.Resource,
+) error {
+	return c.kumactl.KumactlUpdateObject(typeName, objectName, update)
+}

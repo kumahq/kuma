@@ -1,0 +1,13 @@
+type: MeshTimeout
+name: mt-workload
+mesh: multizone-label-validation
+labels:
+  kuma.io/workload: my-workload
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 5s

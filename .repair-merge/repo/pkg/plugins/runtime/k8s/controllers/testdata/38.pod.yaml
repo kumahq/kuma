@@ -1,0 +1,20 @@
+metadata:
+  namespace: demo
+  name: zone-proxy-notready
+  labels:
+    app: zone-proxy-notready
+spec:
+  containers:
+    - name: zone-proxy
+      ports:
+        - containerPort: 10001
+    - name: kuma-sidecar
+status:
+  podIP: 192.168.0.1
+  containerStatuses:
+    - name: zone-proxy
+      ready: true
+      started: true
+    - name: kuma-sidecar
+      ready: false
+      started: false

@@ -1,0 +1,106 @@
+# 01. policies select the dataplane without collisions
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
+      version: v1
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-2
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-3
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-4
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      version: v1
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-5
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: backend
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-6
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
+      version: v2
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-7
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
+      env: dev
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1

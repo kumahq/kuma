@@ -1,0 +1,7 @@
+match:
+  type: HostnameGenerator
+  port: 80
+  protocol: http
+extension:
+  config:
+    example: true

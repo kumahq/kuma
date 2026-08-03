@@ -1,0 +1,8 @@
+controlPlane:
+  mode: zone
+  zone: east
+  kdsGlobalAddress: "grpcs://foo.com:3456"
+  ingress:
+    enabled: true
+  extraLabels:
+    foo: bar

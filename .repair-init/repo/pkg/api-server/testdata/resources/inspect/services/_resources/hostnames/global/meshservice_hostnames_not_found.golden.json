@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 404,
+ "title": "could not retrieve service",
+ "detail": "Not found",
+ "details": "Not found"
+}

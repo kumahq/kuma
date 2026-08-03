@@ -1,0 +1,6 @@
+targetRef:
+  kind: Dataplane
+  sectionName: test
+to:
+  - targetRef:
+      kind: Mesh

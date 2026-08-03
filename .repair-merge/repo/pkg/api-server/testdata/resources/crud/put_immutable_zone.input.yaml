@@ -1,0 +1,4 @@
+#/meshes/mesh-1/meshexternalservices/ext-svc 201 method=PUT
+#/meshes/mesh-1/meshexternalservices/ext-svc 400 method=PUT
+type: Mesh
+name: mesh-1

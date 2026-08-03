@@ -1,0 +1,9 @@
+schemaVersion: 2.0.0
+
+commandTests:
+- name: "kuma-cp binary should return version"
+  command: kuma-cp
+  args: ["version"]
+
+metadataTest:
+  entrypoint: ["/usr/bin/kuma-cp"]

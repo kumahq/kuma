@@ -1,0 +1,11 @@
+package server_test
+
+import (
+	"testing"
+
+	"github.com/kumahq/kuma/v3/pkg/test"
+)
+
+func TestMADSServer(t *testing.T) {
+	test.RunSpecs(t, "MADS Server Suite")
+}

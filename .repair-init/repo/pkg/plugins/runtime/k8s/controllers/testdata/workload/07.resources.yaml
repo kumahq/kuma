@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+---
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+metadata:
+  name: dataplane-mesh1
+  namespace: demo
+  annotations:
+    kuma.io/workload: multi-mesh-workload
+mesh: mesh1
+---
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+metadata:
+  name: dataplane-mesh2
+  namespace: demo
+  annotations:
+    kuma.io/workload: multi-mesh-workload
+mesh: mesh2

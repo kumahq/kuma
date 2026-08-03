@@ -1,0 +1,34 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/KumaDpVersion",
+    "definitions": {
+        "KumaDpVersion": {
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "description": "Version number of Kuma Dataplane"
+                },
+                "gitTag": {
+                    "type": "string",
+                    "description": "Git tag of Kuma Dataplane version"
+                },
+                "gitCommit": {
+                    "type": "string",
+                    "description": "Git commit of Kuma Dataplane version"
+                },
+                "buildDate": {
+                    "type": "string",
+                    "description": "Build date of Kuma Dataplane version"
+                },
+                "kumaCpCompatible": {
+                    "type": "boolean",
+                    "description": "True iff Kuma DP version is compatible with Kuma CP version"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Kuma Dp Version",
+            "description": "KumaDpVersion describes details of Kuma Dataplane version"
+        }
+    }
+}

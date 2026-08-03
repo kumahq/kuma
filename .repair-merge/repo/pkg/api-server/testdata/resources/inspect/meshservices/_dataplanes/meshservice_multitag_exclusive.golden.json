@@ -1,0 +1,14 @@
+{
+ "items": [
+  {
+   "labels": {
+    "app": "orders",
+    "version": "v2"
+   },
+   "mesh": "default",
+   "name": "orders-v2-01",
+   "type": "Dataplane"
+  }
+ ],
+ "total": 1
+}

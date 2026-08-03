@@ -1,0 +1,25 @@
+rules:
+- conf:
+    mode: Permissive
+  match: null
+  origin:
+    Resource:
+      creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtls_mesh-1___matched-for-rules-mtls-bbbbbb_
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: matched-for-rules-mtls-bbbbbb
+      type: MeshTLS
+    RuleIndex: 0
+- conf:
+    mode: Strict
+  match: null
+  origin:
+    Resource:
+      creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mtls_mesh-1___matched-for-rules-mtls-aaaaaa_
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: matched-for-rules-mtls-aaaaaa
+      type: MeshTLS
+    RuleIndex: 0

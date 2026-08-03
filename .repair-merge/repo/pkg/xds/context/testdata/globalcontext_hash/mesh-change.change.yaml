@@ -1,0 +1,8 @@
+type: Mesh
+name: mesh-2
+conf:
+  mtls:
+    enabledBackend: ca-1
+    backends:
+      type: builtin
+      name: ca-1

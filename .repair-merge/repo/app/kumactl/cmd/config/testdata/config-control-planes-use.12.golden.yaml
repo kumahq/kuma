@@ -1,0 +1,17 @@
+contexts:
+- controlPlane: other
+  defaults:
+    mesh: demo
+  name: other
+- controlPlane: example
+  name: example
+controlPlanes:
+- coordinates:
+    apiServer:
+      url: https://other.internal:5681
+  name: other
+- coordinates:
+    apiServer:
+      url: https://kuma-control-plane.internal:5681
+  name: example
+currentContext: example

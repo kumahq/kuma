@@ -1,0 +1,4 @@
+Kind                    Origins
+MeshTrafficPermission   kri_mtp_default_default__edge-gateway_
+MeshHTTPRoute           kri_mhttproute_default_default__edge-gateway_to-backend
+MeshTimeout             kri_mt_default_default__edge-gateway_

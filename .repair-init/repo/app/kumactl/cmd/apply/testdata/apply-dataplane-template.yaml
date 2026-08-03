@@ -1,0 +1,9 @@
+name: sample
+mesh: default
+type: Dataplane
+networking:
+  address: "{{ address }}"
+  inbound:
+    - port: 80
+      tags:
+        "kuma.io/service": "web"

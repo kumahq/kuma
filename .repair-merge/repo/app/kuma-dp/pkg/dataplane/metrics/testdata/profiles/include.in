@@ -1,0 +1,5 @@
+# TYPE envoy_cluster_external_upstream_rq_xx counter
+envoy_cluster_external_upstream_rq_xx{envoy_cluster_name="example"} 1
+
+# TYPE envoy_rbac_allowed counter
+envoy_rbac_allowed{envoy_cluster_name="example"} 1

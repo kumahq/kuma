@@ -1,0 +1,84 @@
+kri_mhttpr_mesh-1___http-route-1_:
+  Conf:
+  - http:
+      requestTimeout: 20s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mt-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-1
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 1
+  OriginByMatches: {}
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: http-route-1
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: http-route-1
+    NameExtensions: null
+    Version: ""
+  ResourceSectionName: ""
+kri_msvc_mesh-1___backend-v2_:
+  Conf:
+  - connectionTimeout: 5s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mt-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-1
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  OriginByMatches: {}
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: backend-v2
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: backend-v2
+    NameExtensions: null
+    Version: ""
+  ResourceSectionName: ""
+kri_msvc_mesh-1___backend_:
+  Conf:
+  - http:
+      requestTimeout: 15s
+    idleTimeout: 25s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mt-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-1
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 2
+  OriginByMatches: {}
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: backend
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: backend
+    NameExtensions: null
+    Version: ""
+  ResourceSectionName: ""

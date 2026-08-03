@@ -1,0 +1,52 @@
+[![][kuma-logo]][kuma-url]
+
+{{ template "chart.description" . }}
+
+{{ template "chart.typeBadge" . }}{{ template "chart.versionBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+{{ template "chart.homepageLine" . }}
+
+{{ template "chart.valuesSection" . }}
+
+## Custom Resource Definitions
+
+All Kuma CRDs are loaded via the [`crds`](crds) directory. For more detailed information on CRDs and Helm,
+please refer to [the Helm documentation][helm-crd].
+
+## Deleting
+
+As part of [Helm's limitations][helm-crd-limitations], CRDs will not be deleted when the `kuma` chart is deleted and
+must be deleted manually. When a CRD is deleted Kubernetes deletes all resources of that kind as well, so this should
+be done carefully.
+
+To do this with `kubectl` on *nix platforms, run:
+
+```shell
+kubectl get crds | grep kuma.io | tr -s " " | cut -d " " -f1 | xargs kubectl delete crd
+
+# or with jq
+kubectl get crds -o json | jq '.items[].metadata.name | select(.|test(".*kuma\\.io"))' | xargs kubectl delete crd
+```
+
+## Autoscaling
+
+In production, it is advisable to enable Control Plane autoscaling for High Availability. Autoscaling uses the
+`HorizontalPodAutoscaler` resource to add redundancy and scale the CP pods based on CPU utilization, which requires
+the [k8s metrics-server][kube-metrics-server] to be running on the cluster.
+
+## Development
+
+The charts are used internally in `kumactl install`, therefore the following rules apply when developing new chat features:
+ * all templates that start with `pre-` and `post-` are omitted when processing in `kumactl install`
+
+### Installing Metrics Server for Autoscaling
+
+If running on kind, or on a cluster with a similarly self-signed cert, the metrics server must be configured to allow
+insecure kubelet TLS. The make task `kind/deploy/metrics-server` installs this patched version of the server.
+
+
+[kuma-url]: https://kuma.io/
+[kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo-v2.png
+[helm-crd]: https://helm.sh/docs/chart_best_practices/custom_resource_definitions/
+[helm-crd-limitations]: https://helm.sh/docs/topics/charts/#limitations-on-crds
+[kube-metrics-server]: https://github.com/kubernetes-sigs/metrics-server

@@ -1,0 +1,25 @@
+selector:
+  dataplane:
+    matchLabels:
+      app: test 
+spiffeID:
+  trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+  path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+provider:
+  type: Bundled
+  bundled:
+    meshTrustCreation: Disabled
+    insecureAllowSelfSigned: true
+    certificateParameters:
+      expiry: 24h
+    autogenerate:
+      enabled: false
+    ca:
+      certificate:
+        type: InsecureInline
+        insecureInline: 
+          value: "123"
+      privateKey:
+        type: File
+        file: 
+          path: "/tmp/key"

@@ -1,0 +1,64 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/DiscoverySubscriptionStatus",
+    "definitions": {
+        "DiscoverySubscriptionStatus": {
+            "properties": {
+                "last_update_time": {
+                    "type": "string",
+                    "description": "Time when status of a given ADS subscription was most recently updated.",
+                    "format": "date-time"
+                },
+                "total": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DiscoveryServiceStats",
+                    "additionalProperties": true,
+                    "description": "Total defines an aggregate over individual xDS stats."
+                },
+                "cds": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DiscoveryServiceStats",
+                    "additionalProperties": true,
+                    "description": "CDS defines all CDS stats."
+                },
+                "eds": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DiscoveryServiceStats",
+                    "additionalProperties": true,
+                    "description": "EDS defines all EDS stats."
+                },
+                "lds": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DiscoveryServiceStats",
+                    "additionalProperties": true,
+                    "description": "LDS defines all LDS stats."
+                },
+                "rds": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DiscoveryServiceStats",
+                    "additionalProperties": true,
+                    "description": "RDS defines all RDS stats."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Discovery Subscription Status",
+            "description": "DiscoverySubscriptionStatus defines status of an ADS subscription."
+        },
+        "kuma.mesh.v1alpha1.DiscoveryServiceStats": {
+            "properties": {
+                "responses_sent": {
+                    "type": "string",
+                    "description": "Number of xDS responses sent to the Dataplane."
+                },
+                "responses_acknowledged": {
+                    "type": "string",
+                    "description": "Number of xDS responses ACKed by the Dataplane."
+                },
+                "responses_rejected": {
+                    "type": "string",
+                    "description": "Number of xDS responses NACKed by the Dataplane."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Discovery Service Stats",
+            "description": "DiscoveryServiceStats defines all stats over a single xDS service."
+        }
+    }
+}

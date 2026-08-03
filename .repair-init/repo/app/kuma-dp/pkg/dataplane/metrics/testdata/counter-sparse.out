@@ -1,0 +1,24 @@
+# TYPE envoy_cluster_assignment_stale counter
+envoy_cluster_assignment_stale{envoy_cluster_name="access_log_sink"} 11
+envoy_cluster_assignment_stale{envoy_cluster_name="ads_cluster"} 12
+envoy_cluster_assignment_stale{envoy_cluster_name="demo-client",kuma_io_mesh_traffic="true"} 13
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080",kuma_io_mesh_traffic="true"} 411
+envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 14
+envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 15
+envoy_cluster_assignment_stale{envoy_cluster_name="kuma_envoy_admin"} 16
+envoy_cluster_assignment_stale{envoy_cluster_name="localhost_3000",kuma_io_mesh_traffic="true"} 17
+envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 18
+envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 19
+
+# TYPE envoy_cluster_assignment_timeout_received counter
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="access_log_sink"} 1
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="ads_cluster"} 2
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="demo-client",kuma_io_mesh_traffic="true"} 3
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080",kuma_io_mesh_traffic="true"} 606
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 4
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 5
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="kuma_envoy_admin"} 6
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="localhost_3000",kuma_io_mesh_traffic="true"} 7
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 8
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 9
+

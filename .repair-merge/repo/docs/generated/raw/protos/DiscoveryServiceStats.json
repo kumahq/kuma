@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/DiscoveryServiceStats",
+    "definitions": {
+        "DiscoveryServiceStats": {
+            "properties": {
+                "responses_sent": {
+                    "type": "string",
+                    "description": "Number of xDS responses sent to the Dataplane."
+                },
+                "responses_acknowledged": {
+                    "type": "string",
+                    "description": "Number of xDS responses ACKed by the Dataplane."
+                },
+                "responses_rejected": {
+                    "type": "string",
+                    "description": "Number of xDS responses NACKed by the Dataplane."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Discovery Service Stats",
+            "description": "DiscoveryServiceStats defines all stats over a single xDS service."
+        }
+    }
+}

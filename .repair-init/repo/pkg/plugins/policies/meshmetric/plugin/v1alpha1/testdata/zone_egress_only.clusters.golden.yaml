@@ -1,0 +1,15 @@
+resources:
+- name: system_meshmetric_prometheus_default-backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: system_meshmetric_prometheus_default-backend
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /tmp/kuma-mh-zone-egress-1-default.sock
+    name: system_meshmetric_prometheus_default-backend
+    type: STATIC

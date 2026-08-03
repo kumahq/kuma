@@ -1,0 +1,24 @@
+type: MeshTimeout
+name: mt-zone-proxy
+mesh: envoyconfig-zoneproxies
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/listener-zoneegress: enabled
+  rules:
+    - matches:
+        - sni:
+            type: Exact
+            value: sni.extsvc.envoyconfig-zoneproxies.kuma-3.mes-zone-proxy.80
+      default:
+        connectionTimeout: 7s
+        idleTimeout: 13s
+        http:
+          requestTimeout: 2s
+          streamIdleTimeout: 4s
+          requestHeadersTimeout: 5s
+          maxStreamDuration: 30s
+          maxConnectionDuration: 40s

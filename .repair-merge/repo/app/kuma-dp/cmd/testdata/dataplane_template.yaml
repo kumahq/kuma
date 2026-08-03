@@ -1,0 +1,17 @@
+type: Dataplane
+mesh: default
+name: {{ name }}
+networking:
+  address: {{ address }}
+  inbound:
+    - port: 11011
+      servicePort: 11012
+      tags:
+        kuma.io/service: backend
+        kuma.io/protocol: http
+  outbound:
+    - port: 33033
+      tags:
+        kuma.io/service: redis
+  admin:
+    port: 9901

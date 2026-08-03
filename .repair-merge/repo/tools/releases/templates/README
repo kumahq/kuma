@@ -1,0 +1,65 @@
+Welcome to Kuma!
+
+===============================================================================
+
+This folder contains your download of Kuma:
+
+├── NOTICE
+├── README
+├── bin
+│   ├── envoy
+│   ├── kuma-cp
+│   ├── kuma-dp
+│   └── kumactl
+└── conf
+    └── kuma-cp.conf.yml
+
+===============================================================================
+
+To get started with Kuma you can take a look at the official documentation:
+
+* Documentation: https://kuma.io/docs
+* Slack Chat: https://kuma.io/community
+
+DEPLOYMENTS:
+
+Kuma supports both single-zone and multi-zone deployments. To learn more:
+
+* Single-Zone: https://kuma.io/docs/latest/deployments/stand-alone
+* Multi-Zone: https://kuma.io/docs/latest/deployments/multi-zone
+
+GETTING STARTED:
+
+To get started and read the quickstart, follow the instructions for your
+distribution at: https://kuma.io/install
+
+While we support different installation methods for both Kubernetes, VMs and
+other containerized environments, you can also follow these simple commands to
+get up and running quickly:
+
+KUBERNETES (Standalone):
+
+If you are installing Kuma on Kubernetes, run the following command:
+
+$ kumactl install control-plane | kubectl apply -f -
+
+UNIVERSAL (Standalone):
+
+If you are installing Kuma on other platforms (including VMs or other
+containerized environments), just run:
+
+$ kuma-cp run
+
+In Universal mode Kuma runs with the in-memory backend by default.
+To use Postgres instead please read the docs:
+
+* https://kuma.io/docs/latest/documentation/backends/
+
+NEXT STEPS:
+
+You can now explore the Kuma GUI on `http://localhost:5681/gui`!
+
+Finally, you can start using Kuma by apply traffic policies to any service
+running in your system:
+
+* https://kuma.io/policies/

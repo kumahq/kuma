@@ -1,0 +1,40 @@
+{
+ "routes": [
+  {
+   "kind": "MeshHTTPRoute",
+   "origins": [
+    {
+     "kri": "kri_mhttpr_default___the-http-route-1_"
+    },
+    {
+     "kri": "kri_mhttpr_default___the-http-route_"
+    }
+   ],
+   "rules": [
+    {
+     "conf": {
+      "backendRefs": [
+       {
+        "kind": "MeshService",
+        "labels": {
+         "kuma.io/display-name": "test-server-1"
+        },
+        "weight": 1,
+        "port": 80
+       }
+      ]
+     },
+     "kri": "kri_mhttpr_default___the-http-route_",
+     "matches": [
+      {
+       "path": {
+        "value": "/api",
+        "type": "PathPrefix"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
