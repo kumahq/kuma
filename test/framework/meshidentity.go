@@ -9,11 +9,13 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/kds/hash"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 // MeshIdentityBundled installs a MeshIdentity backed by a self-signed,
@@ -44,6 +46,68 @@ spec:
       autogenerate:
         enabled: true
 `, name, mesh))
+}
+
+// MeshIdentitySpiffeIDOnly installs a MeshIdentity with no provider. The control
+// plane reports such an identity as PartiallyReady - "SpiffeID providing only
+// mode" - so it hands no certificate to any proxy, yet every MeshService its
+// selector matches already publishes the SPIFFE ID under spec.identities.
+//
+// Install it before MeshIdentityBundled of the same name whenever a suite must
+// not drop a request while mTLS is switched on: a proxy starts requiring mTLS
+// the moment it receives its certificate, but the SAN it validates the peer
+// against comes from the MeshService status, which a separate reconciler
+// publishes on its own interval. Going straight to Bundled leaves a window in
+// which the client already speaks mTLS while still expecting the legacy
+// spiffe://{mesh}/{service} SAN, and every request in it fails SAN
+// verification.
+func MeshIdentitySpiffeIDOnly(mesh string, name string) InstallFunc {
+	return YamlUniversal(fmt.Sprintf(`
+type: MeshIdentity
+name: %s
+mesh: %s
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+`, name, mesh))
+}
+
+// WaitForMeshServiceSpiffeIDs blocks until each named MeshService publishes at
+// least one SpiffeID identity. Pair it with MeshIdentitySpiffeIDOnly: once this
+// returns, the clients of those services validate the peer against the SPIFFE
+// ID the MeshIdentity will issue, so handing out certificates no longer breaks
+// in-flight requests.
+func WaitForMeshServiceSpiffeIDs(cluster Cluster, mesh string, services ...string) error {
+	for _, service := range services {
+		_, err := retry.DoWithRetryContextE(
+			cluster.GetTesting(), context.Background(),
+			"wait for SpiffeID identity on MeshService "+service,
+			DefaultRetries, DefaultTimeout,
+			func() (string, error) {
+				out, err := cluster.GetKumactlOptions().
+					RunKumactlAndGetOutput("get", "meshservice", service, "-m", mesh, "-ojson")
+				if err != nil {
+					return "", err
+				}
+				res, err := rest.JSON.Unmarshal([]byte(out), meshservice_api.MeshServiceResourceTypeDescriptor)
+				if err != nil {
+					return "", err
+				}
+				for _, identity := range pointer.Deref(res.GetSpec().(*meshservice_api.MeshService).Identities) {
+					if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
+						return "", nil
+					}
+				}
+				return "", errors.Errorf("MeshService %s has no SpiffeID identity yet", service)
+			})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // MeshIdentityBundledKubernetes is the Kubernetes counterpart of

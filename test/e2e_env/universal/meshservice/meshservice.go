@@ -129,6 +129,10 @@ spec:
 `, meshName)
 		err := universal.Cluster.Install(YamlUniversal(permissive))
 		Expect(err).ToNot(HaveOccurred())
+		// Publish the SPIFFE IDs while the mesh is still plaintext, so the
+		// client already validates against them once the certificates arrive.
+		Expect(universal.Cluster.Install(MeshIdentitySpiffeIDOnly(meshName, identityName))).To(Succeed())
+		Expect(WaitForMeshServiceSpiffeIDs(universal.Cluster, meshName, "backend")).To(Succeed())
 		err = universal.Cluster.Install(MeshIdentityBundled(meshName, identityName))
 
 		// then traffic went over mTLS with no errors
