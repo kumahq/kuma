@@ -38,19 +38,15 @@ func NewUniversalAuthenticator(deps Deps) (auth.Authenticator, error) {
 	if err != nil {
 		return nil, err
 	}
-	zoneTokenValidator, err := builtin.NewZoneTokenValidator(deps.ReadOnlyResourceManager, config.IsFederatedZoneCP(), config.Store.Type, config.DpServer.Authn.ZoneProxy.ZoneToken.Validator)
-	if err != nil {
-		return nil, err
-	}
 
-	return universal_auth.NewAuthenticator(dataplaneValidator, zoneTokenValidator, deps.ReadOnlyResourceManager, config.Environment, config.Multizone.Zone.Name), nil
+	return universal_auth.NewAuthenticator(dataplaneValidator, deps.ReadOnlyResourceManager, config.Environment), nil
 }
 
 func DefaultAuthenticator(deps Deps, typ string) (auth.Authenticator, error) {
 	switch typ {
 	case dp_server.DpServerAuthServiceAccountToken:
 		return NewKubeAuthenticator(deps)
-	case dp_server.DpServerAuthDpToken, dp_server.DpServerAuthZoneToken:
+	case dp_server.DpServerAuthDpToken:
 		return NewUniversalAuthenticator(deps)
 	case dp_server.DpServerAuthNone:
 		return universal_auth.NewNoopAuthenticator(), nil

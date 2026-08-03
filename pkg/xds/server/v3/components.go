@@ -35,7 +35,7 @@ func RegisterXDS(
 ) error {
 	xdsContext := NewXdsContext()
 
-	authenticator := rt.XDS().PerProxyTypeAuthenticator()
+	authenticator := rt.XDS().Authenticator
 	authCallbacks := auth.NewCallbacks(rt.ReadOnlyResourceManager(), authenticator, auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in DataplaneLifecycle callback
 	workloadLabelValidator := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewWorkloadLabelValidator(rt.ReadOnlyResourceManager(), rt.Config().Environment))
 

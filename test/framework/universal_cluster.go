@@ -316,35 +316,6 @@ func (c *UniversalCluster) CreateDP(app *UniversalApp, name string, mesh string,
 	return app.dpApp.Start()
 }
 
-func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, name, ip, dpyaml, token string, builtindns bool) error {
-	err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, builtindns, "ingress", 0, nil, false, "")
-	if err != nil {
-		return err
-	}
-
-	c.networking[Config.ZoneIngressApp] = app.universalNetworking
-
-	c.createEnvoyTunnel(Config.ZoneIngressApp)
-	return app.dpApp.Start()
-}
-
-func (c *UniversalCluster) CreateZoneEgress(
-	app *UniversalApp,
-	name, ip, dpYAML, token string,
-	builtinDNS bool,
-) error {
-	err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpYAML, builtinDNS, "egress", app.concurrency, nil, false, "")
-	if err != nil {
-		return err
-	}
-
-	egressApp := c.GetApp(AppEgress)
-	c.networking[Config.ZoneEgressApp] = egressApp.universalNetworking
-
-	c.createEnvoyTunnel(Config.ZoneEgressApp)
-	return app.dpApp.Start()
-}
-
 // CreateDataplaneProxy starts kuma-dp for an app registered as a regular
 // Dataplane. The dpyaml must be a Dataplane resource manifest that may include
 // a listeners section. envs is optional kuma-dp environment overrides; pass
@@ -625,16 +596,9 @@ func (c *UniversalCluster) DeleteDeployment(name string) error {
 }
 
 func (c *UniversalCluster) GetUniversalNetworkingState() universal.NetworkingState {
-	out := universal.NetworkingState{
+	return universal.NetworkingState{
 		KumaCp: *c.controlplane.Networking(),
 	}
-	if ingressState := c.networking[Config.ZoneIngressApp]; ingressState != nil {
-		out.ZoneIngress = *ingressState //nolint:govet
-	}
-	if egressState := c.networking[Config.ZoneEgressApp]; egressState != nil {
-		out.ZoneEgress = *egressState //nolint:govet
-	}
-	return out //nolint:govet
 }
 
 func (c *UniversalCluster) AddNetworking(networking *universal.Networking, name string) error {

@@ -199,6 +199,30 @@ non-gateway services, `MeshInsight.services`, or the `_rules` `toRules` field
 to use `MeshService`/`MeshExternalService` status and `_rules`
 `toResourceRules` instead.
 
+### Zone proxies authenticate with a dataplane token
+
+A zone proxy is now a `Dataplane` with zone proxy listeners, so the DP server
+authenticates it exactly like any other data plane proxy. The separate zone
+proxy authenticator is gone: every proxy is authenticated with the method
+configured under `dpServer.authn.dpProxy` (`serviceAccountToken` on Kubernetes,
+`dpToken` on Universal), and zone tokens are no longer validated.
+
+`dpServer.authn.zoneProxy.type` and
+`dpServer.authn.zoneProxy.zoneToken.validator` no longer affect
+authentication. `dpServer.authn.zoneProxy.type` still controls whether the
+bootstrap server requires a token from the legacy `ingress`/`egress` proxy
+types.
+
+**Action required**
+
+On Universal, issue a dataplane token for each zone proxy
+(`kumactl generate dataplane-token --mesh <mesh> --name <zone-proxy-dp>`)
+instead of a zone token, and pass it to `kuma-dp` with `--dataplane-token-file`.
+Tokens generated with `kumactl generate zone-token` are no longer accepted by
+the DP server. If you relied on `dpServer.authn.zoneProxy.type: none` to let
+zone proxies connect without a token while data plane proxies used `dpToken`,
+zone proxies now need a dataplane token too.
+
 ### `dataplaneTags` removed from the `MeshService` selector
 
 `spec.selector.dataplaneTags` matched data plane proxies by their inbound tags.

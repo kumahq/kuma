@@ -67,22 +67,7 @@ type ListenerConfig struct {
 	Port int
 }
 
-// ZoneIngressTemplateData represents zone ingress template data
-type ZoneIngressTemplateData struct {
-	Name              string
-	AdvertisedAddress string
-	AdvertisedPort    int
-	Port              int
-}
-
-// ZoneEgressTemplateData represents zone egress template data
-type ZoneEgressTemplateData struct {
-	Name string
-	Port int
-}
-
-var (
-	dataplaneTemplate = template.Must(template.New("dataplane").Parse(`
+var dataplaneTemplate = template.Must(template.New("dataplane").Parse(`
 type: Dataplane
 mesh: {{ .Mesh }}
 name: {{ "{{ name }}" }}
@@ -144,21 +129,6 @@ networking:
 {{- if .AppendConfig }}
 {{ .AppendConfig }}
 {{- end }}`))
-	zoneIngressTemplate = template.Must(template.New("zoneingress").Parse(`
-type: ZoneIngress
-name: {{ .Name }}
-networking:
-  address: {{ "{{ address }}" }}
-  advertisedAddress: {{ .AdvertisedAddress }}
-  advertisedPort: {{ .AdvertisedPort }}
-  port: {{ .Port }}`))
-	zoneEgressTemplate = template.Must(template.New("zoneegress").Parse(`
-type: ZoneEgress
-name: egress
-networking:
-  address: {{ "{{ address }}" }}
-  port: {{ .Port }}`))
-)
 
 // RenderDataplaneTemplate renders a dataplane template with the given data.
 // When Listeners is set, renders a zone proxy dataplane with a listeners block
@@ -184,24 +154,6 @@ func RenderDataplaneTemplate(data DataplaneTemplateData) (string, error) {
 	var buf bytes.Buffer
 	if err := dataplaneTemplate.Execute(&buf, data); err != nil {
 		return "", errors.Wrap(err, "failed to execute dataplane template")
-	}
-	return buf.String(), nil
-}
-
-// RenderZoneIngressTemplate renders a zone ingress template with the given data
-func RenderZoneIngressTemplate(data ZoneIngressTemplateData) (string, error) {
-	var buf bytes.Buffer
-	if err := zoneIngressTemplate.Execute(&buf, data); err != nil {
-		return "", errors.Wrap(err, "failed to execute zone ingress template")
-	}
-	return buf.String(), nil
-}
-
-// RenderZoneEgressTemplate renders a zone egress template with the given data
-func RenderZoneEgressTemplate(data ZoneEgressTemplateData) (string, error) {
-	var buf bytes.Buffer
-	if err := zoneEgressTemplate.Execute(&buf, data); err != nil {
-		return "", errors.Wrap(err, "failed to execute zone egress template")
 	}
 	return buf.String(), nil
 }

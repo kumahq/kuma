@@ -19,8 +19,6 @@ const (
 
 	DefaultRetries = 30
 	DefaultTimeout = 3 * time.Second
-
-	UniversalZoneIngressPort = 30686
 )
 
 const (
