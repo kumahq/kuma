@@ -27,7 +27,8 @@ labels:
 spec:
   selector:
     dataplaneLabels:
-      kuma.io/service: test-server
+      matchLabels:
+        kuma.io/service: test-server
   ports:
   - port: 80
     targetPort: 80

@@ -71,7 +71,8 @@ spec:
     appProtocol: http
   selector:
     dataplaneLabels:
-      app: test-server
+      matchLabels:
+        app: test-server
 `, meshName)
 		Expect(universal.Cluster.Install(YamlUniversal(otherTLDGenerator))).To(Succeed())
 		Expect(universal.Cluster.Install(YamlUniversal(service))).To(Succeed())
