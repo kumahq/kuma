@@ -1,4 +1,0 @@
-circuitBreakers:
-  thresholds:
-  - trackRemaining: true
-name: kri_extsvc_default___example_9000

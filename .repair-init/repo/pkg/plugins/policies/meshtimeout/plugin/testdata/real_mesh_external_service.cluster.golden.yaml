@@ -1,9 +1,0 @@
-connectTimeout: 10s
-name: kri_extsvc_default_zone-1_backend-ns_backend_10001
-typedExtensionProtocolOptions:
-  envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-    commonHttpProtocolOptions:
-      idleTimeout: 3600s
-      maxConnectionDuration: 1080s
-      maxStreamDuration: 420s

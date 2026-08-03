@@ -1,7 +1,0 @@
-{
- "type": "/std-errors",
- "status": 404,
- "title": "Could not execute admin operation",
- "detail": "Not found",
- "details": "Not found"
-}

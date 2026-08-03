@@ -1,5 +1,0 @@
-#/meshes/default/meshexternalservices/mes-tcp 201 method=PUT
-#/meshes/default/meshexternalservices/mes-tcp 200
-#/meshes/default/meshexternalservices/mes.http 201 method=PUT
-type: Mesh
-name: default

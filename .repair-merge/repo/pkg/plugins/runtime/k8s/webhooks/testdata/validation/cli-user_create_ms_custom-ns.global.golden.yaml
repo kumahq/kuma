@@ -1,8 +1,0 @@
-Patches: null
-allowed: false
-status:
-  code: 403
-  message: on Global CP the policy can be created only in the system namespace:kuma-system
-  metadata: {}
-  reason: Forbidden
-uid: "12345"

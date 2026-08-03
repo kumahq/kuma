@@ -1,5 +1,0 @@
-cni:
-  enabled: true
-  tolerations:
-    - effect: NoSchedule
-      operator: Exists

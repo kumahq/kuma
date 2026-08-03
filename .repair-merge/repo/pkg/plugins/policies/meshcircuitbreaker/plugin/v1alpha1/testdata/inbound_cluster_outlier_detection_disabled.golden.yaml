@@ -1,4 +1,0 @@
-circuitBreakers:
-  thresholds:
-  - trackRemaining: true
-name: self_inbound_dp_80

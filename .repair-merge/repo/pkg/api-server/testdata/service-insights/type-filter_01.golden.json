@@ -1,7 +1,0 @@
-{
- "type": "/std-errors",
- "status": 400,
- "title": "Bad Request",
- "detail": "bad request: unsupported service type",
- "details": "bad request: unsupported service type"
-}

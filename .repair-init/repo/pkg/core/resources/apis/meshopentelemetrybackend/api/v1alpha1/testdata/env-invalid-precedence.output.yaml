@@ -1,3 +1,0 @@
-violations:
-- field: spec.env.precedence
-  message: '"precedence" must be one of ["ExplicitFirst", "EnvFirst"]'

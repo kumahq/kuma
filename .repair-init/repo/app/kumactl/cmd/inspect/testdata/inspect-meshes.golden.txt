@@ -1,3 +1,0 @@
-MESH      DATAPLANES
-default   90/100
-mesh-1    90/100

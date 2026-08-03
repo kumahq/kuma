@@ -1,3 +1,0 @@
-#/meshes/default/dataplanes?filter[labelds.k8s.kuma.io/namespace]=ns1 400
-type: Mesh
-name: default

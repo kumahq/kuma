@@ -1,6 +1,0 @@
-trustDomain: "default.zone-1.mesh.locallllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll"
-caBundles:
-  - type: Pem
-    pem: 
-      value: adfadfafadf
-  - type: Pem

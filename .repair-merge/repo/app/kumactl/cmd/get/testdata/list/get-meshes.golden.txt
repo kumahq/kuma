@@ -1,3 +1,0 @@
-NAME    mTLS                AGE
-mesh1   builtin/builtin-1   292y
-mesh2   off                 292y

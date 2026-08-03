@@ -1,2 +1,0 @@
-MESH      NAME
-default   example

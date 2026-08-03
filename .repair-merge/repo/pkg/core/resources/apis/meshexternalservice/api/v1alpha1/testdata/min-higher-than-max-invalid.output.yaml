@@ -1,3 +1,0 @@
-violations:
-- field: spec.tls.version.min
-  message: min version must be lower than max

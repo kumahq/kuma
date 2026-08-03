@@ -1,3 +1,0 @@
-*
-!build/artifacts-linux-amd64/envoy/*
-!build/artifacts-linux-arm64/envoy/*

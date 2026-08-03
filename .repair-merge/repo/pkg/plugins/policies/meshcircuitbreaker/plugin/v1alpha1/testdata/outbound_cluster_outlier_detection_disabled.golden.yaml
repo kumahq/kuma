@@ -1,4 +1,0 @@
-circuitBreakers:
-  thresholds:
-  - trackRemaining: true
-name: kri_msvc_default___second-service_80

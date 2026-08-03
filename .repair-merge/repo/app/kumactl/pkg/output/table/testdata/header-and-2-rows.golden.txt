@@ -1,3 +1,0 @@
-MESH         NAME
-default      example
-playground   demo

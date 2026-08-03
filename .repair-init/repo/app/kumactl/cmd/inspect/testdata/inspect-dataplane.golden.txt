@@ -1,3 +1,0 @@
-Kind                    Origins
-MeshTrafficPermission   kri_mtp_default_default__web-frontend_
-MeshTimeout             kri_mt_default_default__web-frontend_,kri_mt_default_default__gateway_

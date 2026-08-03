@@ -1,3 +1,0 @@
-violations:
-- field: name
-  message: must not be longer than 63 characters

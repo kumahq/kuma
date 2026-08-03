@@ -1,3 +1,0 @@
-violations:
-- field: spec.protocol
-  message: '"protocol" must be one of ["grpc", "http"]'

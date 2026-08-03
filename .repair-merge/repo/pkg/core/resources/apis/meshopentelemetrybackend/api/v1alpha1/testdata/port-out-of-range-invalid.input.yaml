@@ -1,3 +1,0 @@
-endpoint:
-  address: otel-collector.observability
-  port: 70000

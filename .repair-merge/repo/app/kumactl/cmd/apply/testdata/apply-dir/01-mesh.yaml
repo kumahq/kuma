@@ -1,5 +1,0 @@
-name: sample
-type: Mesh
-mtls:
-  ca:
-    builtin:

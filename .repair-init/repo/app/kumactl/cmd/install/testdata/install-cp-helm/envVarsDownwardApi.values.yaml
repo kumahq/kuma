@@ -1,6 +1,0 @@
-controlPlane:
-  envVarEntries:
-    - name: MY_NODE_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: spec.nodeName

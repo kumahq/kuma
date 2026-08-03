@@ -1,3 +1,0 @@
-ACTIVE   NAME    ADDRESS
-*        test1   https://test1.internal:5681
-         test2   https://test2.internal:5681

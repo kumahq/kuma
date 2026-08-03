@@ -1,7 +1,0 @@
-{
- "type": "/std-errors",
- "status": 400,
- "title": "Bad Request",
- "detail": "invalid Dataplane object: \"invalid character ',' looking for beginning of object key string\"",
- "details": "invalid Dataplane object: \"invalid character ',' looking for beginning of object key string\""
-}

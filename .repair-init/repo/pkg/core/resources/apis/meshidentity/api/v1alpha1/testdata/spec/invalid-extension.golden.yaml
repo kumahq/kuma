@@ -1,3 +1,0 @@
-violations:
-- field: spec.provider.extension.name
-  message: extension name needs to be defined

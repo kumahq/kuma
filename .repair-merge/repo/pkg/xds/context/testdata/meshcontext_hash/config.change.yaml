@@ -1,4 +1,0 @@
-type: Config
-mesh: mesh-1
-name: my-config
-config: "sometext"

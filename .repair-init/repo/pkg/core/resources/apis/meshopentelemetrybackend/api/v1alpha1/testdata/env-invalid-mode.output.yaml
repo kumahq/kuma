@@ -1,3 +1,0 @@
-violations:
-- field: spec.env.mode
-  message: '"mode" must be one of ["Disabled", "Optional", "Required"]'

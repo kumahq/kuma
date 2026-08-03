@@ -1,5 +1,0 @@
-endpoint:
-  address: otel-collector.observability
-  port: 4318
-  path: /v1/custom
-protocol: http

@@ -1,2 +1,0 @@
-MESH      NAME          TAGS                   ADDRESS     AGE
-default   dataplane-1   kuma.io/mesh=default   127.0.0.1   292y

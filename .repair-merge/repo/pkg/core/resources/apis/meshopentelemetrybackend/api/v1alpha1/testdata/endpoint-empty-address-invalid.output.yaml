@@ -1,3 +1,0 @@
-violations:
-- field: spec.endpoint.address
-  message: must not be empty
