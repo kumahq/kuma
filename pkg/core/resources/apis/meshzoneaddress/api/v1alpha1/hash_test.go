@@ -1,61 +1,65 @@
 package v1alpha1_test
 
 import (
-	"bytes"
-	"testing"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
-	api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
+	meshzoneaddress_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 )
 
-func meshZoneAddress(version string, address string, port int32) *api.MeshZoneAddressResource {
-	return &api.MeshZoneAddressResource{
+func meshZoneAddress(version string, address string, port int32) *meshzoneaddress_api.MeshZoneAddressResource {
+	return &meshzoneaddress_api.MeshZoneAddressResource{
 		Meta: &test_model.ResourceMeta{
 			Mesh:    "default",
 			Name:    "zone-proxy-east",
 			Version: version,
 		},
-		Spec: &api.MeshZoneAddress{
+		Spec: &meshzoneaddress_api.MeshZoneAddress{
 			Address: address,
 			Port:    port,
 		},
 	}
 }
 
-func TestMeshZoneAddressHashTracksResolvedAddress(t *testing.T) {
-	first := meshZoneAddress("1", "10.0.0.1", 10001)
-	sameContent := meshZoneAddress("1", "10.0.0.1", 10001)
-	rotatedIP := meshZoneAddress("1", "10.0.0.2", 10001)
-	changedPort := meshZoneAddress("1", "10.0.0.1", 10002)
+var _ = Describe("Hash", func() {
+	It("should be stable for identical resources", func() {
+		Expect(meshZoneAddress("1", "10.0.0.1", 10001).Hash()).
+			To(Equal(meshZoneAddress("1", "10.0.0.1", 10001).Hash()))
+	})
 
-	if !bytes.Equal(first.Hash(), sameContent.Hash()) {
-		t.Fatal("expected MeshZoneAddress Hash to be stable for identical resources")
-	}
 	// the mesh context stores the address after DNS resolution, so a load balancer
 	// hostname keeps the same resourceVersion while resolving to a new IP
-	if bytes.Equal(first.Hash(), rotatedIP.Hash()) {
-		t.Fatal("expected MeshZoneAddress Hash to change when the address changes")
-	}
-	if bytes.Equal(first.Hash(), changedPort.Hash()) {
-		t.Fatal("expected MeshZoneAddress Hash to change when the port changes")
-	}
-}
+	It("should change when the address changes", func() {
+		Expect(meshZoneAddress("1", "10.0.0.1", 10001).Hash()).
+			ToNot(Equal(meshZoneAddress("1", "10.0.0.2", 10001).Hash()))
+	})
 
-func TestMeshZoneAddressHashTracksVersion(t *testing.T) {
-	first := meshZoneAddress("1", "10.0.0.1", 10001)
-	newVersion := meshZoneAddress("2", "10.0.0.1", 10001)
+	It("should change when the port changes", func() {
+		Expect(meshZoneAddress("1", "10.0.0.1", 10001).Hash()).
+			ToNot(Equal(meshZoneAddress("1", "10.0.0.1", 10002).Hash()))
+	})
 
-	if bytes.Equal(first.Hash(), newVersion.Hash()) {
-		t.Fatal("expected MeshZoneAddress Hash to change when the version changes")
-	}
-}
+	It("should change when the version changes", func() {
+		Expect(meshZoneAddress("1", "10.0.0.1", 10001).Hash()).
+			ToNot(Equal(meshZoneAddress("2", "10.0.0.1", 10001).Hash()))
+	})
 
-func TestMeshZoneAddressHashHandlesNilSpec(t *testing.T) {
-	withNilSpec := &api.MeshZoneAddressResource{
-		Meta: &test_model.ResourceMeta{Mesh: "default", Name: "zone-proxy-east"},
-	}
+	It("should not collide when the address and port boundary shifts", func() {
+		Expect(meshZoneAddress("1", "10.0.0.1", 23).Hash()).
+			ToNot(Equal(meshZoneAddress("1", "10.0.0.12", 3).Hash()))
+	})
 
-	if len(withNilSpec.Hash()) == 0 {
-		t.Fatal("expected MeshZoneAddress Hash to be computed for a nil spec")
-	}
-}
+	It("should not collide for an IPv6 address ending in digits", func() {
+		Expect(meshZoneAddress("1", "fd00::1", 23).Hash()).
+			ToNot(Equal(meshZoneAddress("1", "fd00::12", 3).Hash()))
+	})
+
+	It("should be computed for a nil spec", func() {
+		withNilSpec := &meshzoneaddress_api.MeshZoneAddressResource{
+			Meta: &test_model.ResourceMeta{Mesh: "default", Name: "zone-proxy-east"},
+		}
+
+		Expect(withNilSpec.Hash()).ToNot(BeEmpty())
+	})
+})

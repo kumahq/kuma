@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"hash/fnv"
+	"net"
 	"strconv"
 
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -16,8 +17,10 @@ func (m *MeshZoneAddressResource) Hash() []byte {
 	hasher := fnv.New128a()
 	_, _ = hasher.Write(core_model.HashMeta(m))
 	if m.Spec != nil {
-		_, _ = hasher.Write([]byte(m.Spec.Address))
-		_, _ = hasher.Write([]byte(strconv.Itoa(int(m.Spec.Port))))
+		// address and port are joined instead of written back to back so that
+		// distinct pairs can't serialize to the same bytes, e.g. ("10.0.0.1", 23)
+		// and ("10.0.0.12", 3)
+		_, _ = hasher.Write([]byte(net.JoinHostPort(m.Spec.Address, strconv.Itoa(int(m.Spec.Port)))))
 	}
 	return hasher.Sum(nil)
 }
