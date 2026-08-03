@@ -228,7 +228,7 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 
 	var injectedInitContainer *kube_core.Container
 
-	tpCfgBase, err := i.getTransparentProxyConfigMap(ctx, i.cfg.TransparentProxyConfigMapName, i.systemNamespace, logger)
+	tpCfgBase, err := i.getTransparentProxyConfigMap(ctx, i.cfg.TransparentProxyConfigMapName, i.systemNamespace)
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve transparent proxy configuration")
 	}
@@ -407,43 +407,28 @@ func (i *KumaInjector) getTransparentProxyConfigMap(
 	ctx context.Context,
 	name string,
 	namespace string,
-	logger logr.Logger,
 ) (tproxy_config.Config, error) {
-	var err error
-	defer func() {
-		if err != nil {
-			logger.V(1).Info(
-				"[WARNING]: unable to retrieve transparent proxy configuration from ConfigMap; applying default configuration",
-				"configMapName", name,
-				"configMapNamespace", namespace,
-				"error", err,
-			)
-		}
-	}()
-
-	cfg := tproxy_config.DefaultConfig()
-	loader := core_config.NewLoader(&cfg)
 	namespacedName := kube_types.NamespacedName{Name: name, Namespace: namespace}
 
 	var cm kube_core.ConfigMap
 	if err := i.client.Get(ctx, namespacedName, &cm); err != nil {
-		return tproxy_config.Config{}, err
+		return tproxy_config.Config{}, errors.Wrapf(err, "unable to get transparent proxy ConfigMap '%s/%s'", namespace, name)
 	}
 
-	if c := cm.Data[tproxy_consts.KubernetesConfigMapDataKey]; c != "" {
-		if err := loader.LoadBytes([]byte(c)); err != nil {
-			return tproxy_config.Config{}, err
-		}
-
-		return cfg, nil
+	c := cm.Data[tproxy_consts.KubernetesConfigMapDataKey]
+	if c == "" {
+		return tproxy_config.Config{}, errors.Errorf(
+			"key '%s' is missing or empty in transparent proxy ConfigMap '%s/%s'",
+			tproxy_consts.KubernetesConfigMapDataKey, namespace, name,
+		)
 	}
 
-	err = errors.Errorf(
-		"key '%s' is missing or empty",
-		tproxy_consts.KubernetesConfigMapDataKey,
-	)
+	cfg := tproxy_config.DefaultConfig()
+	if err := core_config.NewLoader(&cfg).LoadBytes([]byte(c)); err != nil {
+		return tproxy_config.Config{}, errors.Wrapf(err, "unable to load transparent proxy configuration from ConfigMap '%s/%s'", namespace, name)
+	}
 
-	return tproxy_config.Config{}, err
+	return cfg, nil
 }
 
 // applyCustomPatches applies the block of patches to the given container and returns a new,
