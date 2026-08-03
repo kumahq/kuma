@@ -17,6 +17,7 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
@@ -271,6 +272,7 @@ var _ = Describe("TrafficRoute", func() {
 			meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource
 			meshMultiZoneService []*meshmzservice_api.MeshMultiZoneServiceResource
 			zoneIngresses        []*core_mesh.ZoneIngressResource
+			meshZoneAddresses    []*meshzoneaddress_api.MeshZoneAddressResource
 			zoneEgresses         []*core_mesh.ZoneEgressResource
 			zoneEgressAddresses  []core_xds.ZoneEgressInstance
 			mesh                 *core_mesh.MeshResource
@@ -286,7 +288,7 @@ var _ = Describe("TrafficRoute", func() {
 						egressAddresses = append(egressAddresses, core_xds.ZoneEgressInstance{Address: n.GetAddress(), Port: n.GetPort()})
 					}
 				}
-				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, nil, given.zoneEgresses, dataSourceLoader, given.mesh.MTLSEnabled(), egressAddresses)
+				endpoints := BuildEdsEndpointMap(context.Background(), given.mesh, "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.zoneIngresses, given.meshZoneAddresses, given.zoneEgresses, dataSourceLoader, given.mesh.MTLSEnabled(), egressAddresses)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
@@ -961,12 +963,18 @@ var _ = Describe("TrafficRoute", func() {
 				expected: core_xds.EndpointMap{},
 			}),
 			Entry("uses MeshMultiZoneService", testCase{
-				zoneIngresses: []*core_mesh.ZoneIngressResource{
-					builders.ZoneIngress().
-						WithZone("east").
-						WithAdvertisedAddress("192.168.0.100").
-						WithAdvertisedPort(12345).
-						Build(),
+				meshZoneAddresses: []*meshzoneaddress_api.MeshZoneAddressResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:   defaultMeshName,
+							Name:   "mza-east",
+							Labels: map[string]string{mesh_proto.ZoneTag: "east"},
+						},
+						Spec: &meshzoneaddress_api.MeshZoneAddress{
+							Address: "192.168.0.100",
+							Port:    12345,
+						},
+					},
 				},
 				dataplanes: []*core_mesh.DataplaneResource{
 					samples.DataplaneBackend(),

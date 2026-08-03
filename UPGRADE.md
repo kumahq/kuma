@@ -693,6 +693,34 @@ If any `MeshTrace` policy still sets `openTelemetry.endpoint`, create a
 the policy to reference it via `openTelemetry.backendRef` before upgrading.
 Policies that still set `openTelemetry.endpoint` will fail validation.
 
+### Cross-zone `MeshService` routing requires `MeshZoneAddress`
+
+The publicly reachable address of a remote zone proxy is now taken solely from
+the `MeshZoneAddress` resource. The control plane no longer falls back to the
+`advertisedAddress`/`advertisedPort` of a `ZoneIngress` when building endpoints
+for `MeshService` and `MeshMultiZoneService` destinations in other zones.
+
+On Kubernetes, `MeshZoneAddress` is created automatically by the control plane
+for every `Service` labeled `k8s.kuma.io/zone-proxy-type: ingress`. On
+Universal, it is authored by the user.
+
+**Action required**
+
+On Universal zones, create one `MeshZoneAddress` per mesh pointing at the
+public address and port of that zone's ingress listener before upgrading:
+
+```yaml
+type: MeshZoneAddress
+name: zone-proxy-ingress
+mesh: default
+spec:
+  address: 10.0.0.1
+  port: 10001
+```
+
+Zones without a `MeshZoneAddress` are not reachable cross-zone: their
+`MeshService` destinations get no endpoints in other zones.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.

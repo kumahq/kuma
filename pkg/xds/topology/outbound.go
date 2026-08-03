@@ -162,7 +162,7 @@ func BuildEdsEndpointMap(
 
 	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight, localZone, meshServiceDestinations)
 
-	fillRemoteMeshServices(outbound, meshServices, zoneIngresses, meshZoneAddresses, mesh, localZone, mtlsEnabled)
+	fillRemoteMeshServices(outbound, meshServices, meshZoneAddresses, mesh, localZone, mtlsEnabled)
 
 	fillExternalServicesOutboundsThroughEgress(ctx, outbound, meshExternalServices, egressAddresses, mesh, localZone, loader)
 
@@ -209,7 +209,6 @@ func fillMeshMultiZoneServices(
 func fillRemoteMeshServices(
 	outbound core_xds.EndpointMap,
 	services []*meshservice_api.MeshServiceResource,
-	zoneIngress []*core_mesh.ZoneIngressResource,
 	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
 	mesh *core_mesh.MeshResource,
 	localZone string,
@@ -222,8 +221,9 @@ func fillRemoteMeshServices(
 	// introduction of MeshIdentity doesn't requires mTLS on mesh
 	zoneToEndpoints := map[string][]core_xds.Endpoint{}
 
-	// MeshZoneAddress (mesh-scoped zone proxies) takes priority over legacy
-	// ZoneIngress for any zone that has at least one MeshZoneAddress.
+	// MeshZoneAddress is the only source of publicly reachable coordinates of a
+	// remote zone proxy. On Kubernetes it's reconciled from the zone ingress
+	// Service, on Universal it's authored by the user.
 	mzaInstances := map[string]struct{}{}
 	for _, mza := range meshZoneAddresses {
 		zone := mza.GetMeta().GetLabels()[mesh_proto.ZoneTag]
@@ -241,46 +241,6 @@ func fillRemoteMeshServices(
 			Tags:     nil,
 			Weight:   1,
 			Locality: GetLocality(localZone, &zone, mesh.LocalityAwareLbEnabled()),
-		})
-	}
-
-	// Fall back to legacy ZoneIngress for zones without a MeshZoneAddress.
-	ziInstances := map[string]struct{}{}
-	for _, zi := range zoneIngress {
-		if !zi.IsRemoteIngress(localZone) {
-			continue
-		}
-		if _, hasEndpoints := zoneToEndpoints[zi.Spec.Zone]; hasEndpoints {
-			continue
-		}
-
-		if !zi.HasPublicAddress() {
-			// Zone Ingress is not reachable yet from other clusters.
-			// This may happen when Ingress Service is pending waiting on
-			// External IP on Kubernetes.
-			continue
-		}
-
-		ziAddress := zi.Spec.GetNetworking().GetAdvertisedAddress()
-		ziPort := zi.Spec.GetNetworking().GetAdvertisedPort()
-		ziCoordinates := buildCoordinates(ziAddress, ziPort)
-
-		if _, ok := ziInstances[ziCoordinates]; ok {
-			// many Ingress instances can be placed in front of one load
-			// balancer (all instances can have the same public address and
-			// port).
-			// In this case we only need one Instance avoiding creating
-			// unnecessary duplicated endpoints
-			continue
-		}
-		ziInstances[ziCoordinates] = struct{}{}
-
-		zoneToEndpoints[zi.Spec.Zone] = append(zoneToEndpoints[zi.Spec.Zone], core_xds.Endpoint{
-			Target:   ziAddress,
-			Port:     ziPort,
-			Tags:     nil,
-			Weight:   1,
-			Locality: GetLocality(localZone, &zi.Spec.Zone, mesh.LocalityAwareLbEnabled()),
 		})
 	}
 
