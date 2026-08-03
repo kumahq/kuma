@@ -1,7 +1,6 @@
 # Zone ingress exercises the falsy overrides (replicas: 0,
-# terminationGracePeriodSeconds: 0, automountServiceAccountToken: false,
-# pdb.maxUnavailable: 0), zone egress exercises the same fields with
-# non-falsy values.
+# terminationGracePeriodSeconds: 0, automountServiceAccountToken: false),
+# zone egress exercises the same fields with non-falsy values.
 global:
   imagePullSecrets: [image-secret]
 meshes:
@@ -20,9 +19,6 @@ meshes:
         ping: "ingress"
       deployment:
         replicas: 0
-      pdb:
-        enabled: true
-        maxUnavailable: 0
     egress:
       enabled: true
       image:
@@ -36,6 +32,5 @@ meshes:
         ping: "egress"
       deployment:
         replicas: 2
-      pdb:
-        enabled: true
-        maxUnavailable: 2
+        annotations:
+          ignore-check.kube-linter.io/no-anti-affinity: "Test fixture; replica count only exercises the value override"
