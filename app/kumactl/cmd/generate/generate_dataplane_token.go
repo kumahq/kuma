@@ -48,6 +48,10 @@ $ kumactl generate dataplane-token --mesh demo --workload backend --valid-for 24
 `,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if ctx.args.proxyType != "" && mesh_proto.ProxyType(ctx.args.proxyType) != mesh_proto.DataplaneProxyType {
+				return errors.Errorf("%s is not a valid proxy type", ctx.args.proxyType)
+			}
+
 			client, err := pctx.CurrentDataplaneTokenClient()
 			if err != nil {
 				return errors.Wrap(err, "failed to create dataplane token client")
