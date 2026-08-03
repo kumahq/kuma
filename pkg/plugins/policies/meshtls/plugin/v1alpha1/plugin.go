@@ -326,22 +326,17 @@ func configureInboundPassthroughListener(
 	}
 	statPrefix := inboundName
 	switch tlsMode {
-	case api.ModeStrict:
+	case api.ModeStrict, api.ModePermissive:
+		// only a sidecar that opted into strict inbound ports may restrict the
+		// passthrough to the declared inbounds, and only in strict mode
+		useStrictInboundPorts := tlsMode == api.ModeStrict &&
+			proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts)
 		return generator.CreateInboundPassthroughListener(
 			proxy,
 			inboundName,
 			address,
 			tpCfg.Redirect.Inbound.Port.Uint32(),
-			true,
-			statPrefix,
-		)
-	case api.ModePermissive:
-		return generator.CreateInboundPassthroughListener(
-			proxy,
-			inboundName,
-			address,
-			tpCfg.Redirect.Inbound.Port.Uint32(),
-			false,
+			useStrictInboundPorts,
 			statPrefix,
 		)
 	}
@@ -468,13 +463,19 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 				bldrs_tls.NewCommonTlsContext().
 					Configure(bldrs_common.IfNotNil(conf.TlsCiphers, bldrs_tls.CipherSuites)).
 					Configure(bldrs_common.IfNotNil(conf.TlsVersion, func(version common_tls.Version) bldrs_common.Configurer[envoy_tls.CommonTlsContext] {
-						if version.Max != nil {
-							return bldrs_tls.TlsMaxVersion(version.Max)
+						return func(c *envoy_tls.CommonTlsContext) error {
+							if version.Min != nil {
+								if err := bldrs_tls.TlsMinVersion(version.Min)(c); err != nil {
+									return err
+								}
+							}
+							if version.Max != nil {
+								if err := bldrs_tls.TlsMaxVersion(version.Max)(c); err != nil {
+									return err
+								}
+							}
+							return nil
 						}
-						if version.Min != nil {
-							return bldrs_tls.TlsMinVersion(version.Min)
-						}
-						return nil
 					})).
 					Configure(
 						bldrs_tls.CombinedCertificateValidationContext(
