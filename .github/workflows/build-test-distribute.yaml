@@ -126,7 +126,7 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
         with:
-          version: 2026.7.7
+          version: 2026.7.11
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Cache Go build
@@ -220,7 +220,7 @@ jobs:
             go-build-${{ runner.os }}-
       - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
         with:
-          version: 2026.7.7
+          version: 2026.7.11
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
