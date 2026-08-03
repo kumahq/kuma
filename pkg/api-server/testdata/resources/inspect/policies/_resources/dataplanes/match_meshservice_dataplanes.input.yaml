@@ -10,11 +10,12 @@ spec:
     kind: Dataplane
     labels:
       kuma.io/service: foo
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://default
 ---
 type: Dataplane
 name: dp-1

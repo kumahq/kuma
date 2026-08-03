@@ -92,47 +92,57 @@ var _ = Describe("Unmarshal ResourceList", func() {
             "spec": {
                 "targetRef": {
                     "kind": "MeshService",
-                    "name": "backend"
+                    "labels": {
+                        "kuma.io/display-name": "backend"
+                    }
                 },
-                "from": [
+                "rules": [
                     {
-                        "targetRef": {
-                            "kind": "Mesh"
-                        },
                         "default": {
-                            "action": "Allow"
+                            "allow": [
+                                {
+                                    "spiffeID": {
+                                        "type": "Exact",
+                                        "value": "spiffe://mesh/sa/allowed"
+                                    }
+                                }
+                            ]
                         }
                     },
                     {
-                        "targetRef": {
-                            "kind": "MeshSubset",
-                            "tags": {
-                                "kuma.io/zone": "us-east"
-                            }
-                        },
                         "default": {
-                            "action": "Deny"
+                            "deny": [
+                                {
+                                    "spiffeID": {
+                                        "type": "Prefix",
+                                        "value": "spiffe://zone-us-east"
+                                    }
+                                }
+                            ]
                         }
                     },
                     {
-                        "targetRef": {
-                            "kind": "MeshService",
-                            "name": "backend"
-                        },
                         "default": {
-                            "action": "AllowWithShadowDeny"
+                            "allowWithShadowDeny": [
+                                {
+                                    "spiffeID": {
+                                        "type": "Exact",
+                                        "value": "spiffe://mesh/sa/backend"
+                                    }
+                                }
+                            ]
                         }
                     },
                     {
-                        "targetRef": {
-                            "kind": "MeshServiceSubset",
-                            "name": "backend",
-                            "tags": {
-                                "version": "v1"
-                            }
-                        },
                         "default": {
-                            "action": "Deny"
+                            "deny": [
+                                {
+                                    "sni": {
+                                        "type": "Exact",
+                                        "value": "backend.svc"
+                                    }
+                                }
+                            ]
                         }
                     }
                 ]
@@ -146,16 +156,17 @@ var _ = Describe("Unmarshal ResourceList", func() {
                 "targetRef": {
                     "kind": "Mesh"
                 },
-                "from": [
+                "rules": [
                     {
-                        "targetRef": {
-                            "kind": "MeshSubset",
-                            "tags": {
-                                "kuma.io/zone": "us-east"
-                            }
-                        },
                         "default": {
-                            "action": "Deny"
+                            "deny": [
+                                {
+                                    "spiffeID": {
+                                        "type": "Prefix",
+                                        "value": "spiffe://zone-us-east"
+                                    }
+                                }
+                            ]
                         }
                     }
                 ]
@@ -186,30 +197,39 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				Name: "mtp1",
 			}))
 			Expect(rs.Items[0].GetSpec()).To(Equal(&policies_api.MeshTrafficPermission{
-				TargetRef: &common_api.TargetRef{Kind: "MeshService", Name: pointer.To("backend")},
-				From: &[]policies_api.From{
+				TargetRef: &common_api.TargetRef{
+					Kind: "MeshService",
+					Labels: pointer.To(map[string]string{
+						mesh_proto.DisplayName: "backend",
+					}),
+				},
+				Rules: &[]policies_api.Rule{
 					{
-						TargetRef: common_api.TargetRef{Kind: "Mesh"},
-						Default: policies_api.Conf{
-							Action: pointer.To[policies_api.Action]("Allow"),
+						Default: policies_api.RuleConf{
+							Allow: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh/sa/allowed"}},
+							},
 						},
 					},
 					{
-						TargetRef: common_api.TargetRef{Kind: "MeshSubset", Tags: &map[string]string{"kuma.io/zone": "us-east"}},
-						Default: policies_api.Conf{
-							Action: pointer.To[policies_api.Action]("Deny"),
+						Default: policies_api.RuleConf{
+							Deny: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.PrefixMatchType, Value: "spiffe://zone-us-east"}},
+							},
 						},
 					},
 					{
-						TargetRef: common_api.TargetRef{Kind: "MeshService", Name: pointer.To("backend")},
-						Default: policies_api.Conf{
-							Action: pointer.To[policies_api.Action]("AllowWithShadowDeny"),
+						Default: policies_api.RuleConf{
+							AllowWithShadowDeny: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.ExactMatchType, Value: "spiffe://mesh/sa/backend"}},
+							},
 						},
 					},
 					{
-						TargetRef: common_api.TargetRef{Kind: "MeshServiceSubset", Name: pointer.To("backend"), Tags: &map[string]string{"version": "v1"}},
-						Default: policies_api.Conf{
-							Action: pointer.To[policies_api.Action]("Deny"),
+						Default: policies_api.RuleConf{
+							Deny: &[]common_api.Match{
+								{SNI: &common_api.SNIMatch{Type: common_api.SNIExactMatchType, Value: "backend.svc"}},
+							},
 						},
 					},
 				},
@@ -221,11 +241,12 @@ var _ = Describe("Unmarshal ResourceList", func() {
 			}))
 			Expect(rs.Items[1].GetSpec()).To(Equal(&policies_api.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: &[]policies_api.From{
+				Rules: &[]policies_api.Rule{
 					{
-						TargetRef: common_api.TargetRef{Kind: "MeshSubset", Tags: &map[string]string{"kuma.io/zone": "us-east"}},
-						Default: policies_api.Conf{
-							Action: pointer.To[policies_api.Action]("Deny"),
+						Default: policies_api.RuleConf{
+							Deny: &[]common_api.Match{
+								{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.PrefixMatchType, Value: "spiffe://zone-us-east"}},
+							},
 						},
 					},
 				},

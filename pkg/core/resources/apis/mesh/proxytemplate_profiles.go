@@ -5,5 +5,5 @@ const (
 )
 
 // AvailableProfiles is populated by generator.RegisterProfile for every
-// registered ProxyTemplate profile (default-proxy, ingress-proxy, egress-proxy).
+// registered ProxyTemplate profile (default-proxy).
 var AvailableProfiles = map[string]struct{}{}

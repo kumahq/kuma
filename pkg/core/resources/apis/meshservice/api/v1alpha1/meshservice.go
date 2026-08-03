@@ -10,7 +10,6 @@ import (
 )
 
 type Selector struct {
-	DataplaneTags   *map[string]string        `json:"dataplaneTags,omitempty"`
 	DataplaneRef    *DataplaneRef             `json:"dataplaneRef,omitempty"`
 	DataplaneLabels *common_api.LabelSelector `json:"dataplaneLabels,omitempty"`
 }

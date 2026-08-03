@@ -35,7 +35,7 @@ func Inspect() {
 					"--mesh", meshName)
 			g.Expect(err).ToNot(HaveOccurred())
 
-			g.Expect(output).To(ContainSubstring(`"name": "kuma:envoy:admin"`))
+			g.Expect(output).To(ContainSubstring(`"name": "system_envoy_admin"`))
 			g.Expect(output).To(ContainSubstring(`"name": "outbound:127.0.0.1:4000"`))
 			g.Expect(output).To(ContainSubstring(`"name": "outbound:127.0.0.1:4001"`))
 			g.Expect(output).To(ContainSubstring(`"name": "outbound:127.0.0.1:5000"`))
@@ -60,7 +60,7 @@ func Inspect() {
 					"--mesh", meshName)
 			g.Expect(err).ToNot(HaveOccurred())
 
-			g.Expect(output).To(ContainSubstring(`kuma:envoy:admin::`))
+			g.Expect(output).To(ContainSubstring(`system_envoy_admin::`))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

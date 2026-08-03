@@ -10,9 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -42,8 +40,6 @@ func GenerateClusters(
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
-
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		protocol := meshCtx.GetServiceProtocol(serviceName)
@@ -63,7 +59,10 @@ func GenerateClusters(
 					continue
 				}
 				if proxy.WorkloadIdentity != nil {
-					kriID := service.BackendRef().Resource()
+					// The destination advertises its SNI from the resolved port
+					// name, so normalize a numeric backend-ref section (named port
+					// targeted by number) to the port name before deriving the KRI SNI.
+					kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
 					if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
 						continue
 					}
@@ -89,7 +88,6 @@ func GenerateClusters(
 						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
 							proxy.SecretsTracker,
-							unifiedNaming,
 							meshCtx.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							true,
@@ -115,7 +113,7 @@ func GenerateClusters(
 						if otherMesh.GetMeta().GetName() == upstreamMeshName {
 							edsClusterBuilder.Configure(
 								envoy_clusters.CrossMeshClientSideMTLS(
-									proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
+									proxy.SecretsTracker, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
 								),
 							)
 							break
@@ -137,36 +135,20 @@ func GenerateClusters(
 							tlsReady = !isLocalMeshService || ms.Status.TLS.Status == meshservice_api.TLSReady
 							protocol = port.GetProtocol()
 						}
-						zone := realResourceRef.Resource.Zone
-						isMZMS := common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshMultiZoneService
-						// Local MeshService traffic stays sidecar-to-sidecar and never traverses a zone proxy,
-						// so ZonesWithMeshScopedProxy (a remote-zone capability check) doesn't apply.
-						// When the consuming proxy has WorkloadIdentity, always use the new KRI-based SNI for local MeshServices.
-						// MeshMultiZoneService is always zone=="" (global resource) but aggregates MeshServices
-						// across zones into a single cluster. Each remote zone is reachable either through a new
-						// mesh-scoped zone proxy (matches the KRI SNI) or only through a legacy ZoneIngress (matches
-						// the hash-based SNI), so a single cluster-wide SNI can't satisfy a mix. We keep the KRI SNI
-						// as the default and add a per-zone transport socket match with the hash-based SNI for every
-						// remote zone that only has a legacy ZoneIngress.
-						var useKRISni bool
-						var legacyZones []string
-						if isMZMS {
-							endpoints := meshCtx.EndpointMap[destinationname.ResolveLegacyFromDestination(dest, port)]
-							var hasDefaultSNIEndpoint bool
-							legacyZones, hasDefaultSNIEndpoint = classifyMZMSEndpointZones(endpoints, meshCtx.ZonesWithMeshScopedProxy)
-							// Keep KRI SNI as the default unless every endpoint is reachable only
-							// through a legacy ZoneIngress, in which case fall back to the hash-based SNI.
-							useKRISni = len(legacyZones) == 0 || hasDefaultSNIEndpoint
-						} else {
-							useKRISni = zone == "" || isLocalMeshService || meshCtx.ZonesWithMeshScopedProxy[zone]
-						}
-						kriSNI := useKRISni && proxy.WorkloadIdentity != nil
+						// Every zone is reachable through a mesh-scoped zone proxy, which
+						// matches the KRI SNI, so a proxy with WorkloadIdentity always uses it.
+						kriSNI := proxy.WorkloadIdentity != nil
 						var sni string
 						if kriSNI {
-							if errs := core_sni.ValidateKRI(realResourceRef.Resource); len(errs) > 0 {
+							// The destination advertises its SNI from the resolved
+							// port name, so normalize a numeric backend-ref section
+							// (named port targeted by number) to the port name
+							// before deriving the KRI SNI.
+							kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
+							if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
 								continue
 							}
-							sni = core_sni.FromKRI(realResourceRef.Resource)
+							sni = core_sni.FromKRI(kriID)
 						} else {
 							sni = SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 						}
@@ -177,22 +159,10 @@ func GenerateClusters(
 							if err != nil {
 								return nil, err
 							}
-							var zoneMatches map[string]*envoy_tls.UpstreamTlsContext
-							if kriSNI && len(legacyZones) > 0 {
-								legacyCtx, err := UpstreamTLSContext(proxy, SniForBackendRef(realResourceRef, dest, port, systemNamespace), sans)
-								if err != nil {
-									return nil, err
-								}
-								zoneMatches = make(map[string]*envoy_tls.UpstreamTlsContext, len(legacyZones))
-								for _, lz := range legacyZones {
-									zoneMatches[lz] = legacyCtx
-								}
-							}
-							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContextWithZoneMatches(upstreamCtx, zoneMatches))
+							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 						} else {
 							edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 								proxy.SecretsTracker,
-								unifiedNaming,
 								meshCtx.Resource,
 								tlsReady,
 								sni,
@@ -201,7 +171,7 @@ func GenerateClusters(
 							))
 						}
 					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
+						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
 					}
 				}
 			}
@@ -346,24 +316,4 @@ func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
 		return endpoints[0].IsMeshExternalService()
 	}
 	return false
-}
-
-// classifyMZMSEndpointZones partitions a MeshMultiZoneService cluster's
-// endpoints by the SNI format their zone expects. It returns the sorted,
-// deduplicated set of remote zones reachable only through a legacy ZoneIngress
-// (Locality.Zone set and absent from zonesWithProxy, matching the hash-based
-// SNI), and whether any endpoint expects the default KRI-based SNI: endpoints
-// without locality (local zone, sidecar-to-sidecar) or in a zone served by a
-// new-style mesh-scoped zone proxy (MeshZoneAddress).
-func classifyMZMSEndpointZones(endpoints []core_xds.Endpoint, zonesWithProxy map[string]bool) ([]string, bool) {
-	seen := map[string]struct{}{}
-	hasDefaultSNIEndpoint := false
-	for _, ep := range endpoints {
-		if ep.Locality == nil || ep.Locality.Zone == "" || zonesWithProxy[ep.Locality.Zone] {
-			hasDefaultSNIEndpoint = true
-			continue
-		}
-		seen[ep.Locality.Zone] = struct{}{}
-	}
-	return util_maps.SortedKeys(seen), hasDefaultSNIEndpoint
 }

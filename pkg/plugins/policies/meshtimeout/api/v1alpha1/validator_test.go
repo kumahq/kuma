@@ -30,7 +30,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: 10s
       idleTimeout: 1h
@@ -45,7 +46,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: 10s
       idleTimeout: 1h
@@ -60,7 +62,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       http:
         requestTimeout: 1s`),
@@ -70,7 +73,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       http:
         requestTimeout: 1s
@@ -87,7 +91,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshHTTPRoute
-      name: http-route-1
+      labels:
+        kuma.io/display-name: http-route-1
     default:
       http:
         requestTimeout: 1s`),
@@ -117,18 +122,6 @@ rules:
       http:
         requestTimeout: 1s
         streamIdleTimeout: 2s`),
-			Entry("inbound rules and outbound to together", `
-targetRef:
-  kind: Mesh
-rules:
-  - default:
-      connectionTimeout: 10s
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      connectionTimeout: 10s`),
 		)
 
 		type testCase struct {
@@ -202,7 +195,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend`,
+      labels:
+        kuma.io/display-name: web-backend`,
 				expected: `
 violations:
   - field: spec.to[0].default
@@ -215,7 +209,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       idleTimeout: -1s`,
 				expected: `
@@ -230,7 +225,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: -1s
       http:
@@ -249,7 +245,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       http: {}`,
 				expected: `
@@ -262,7 +259,8 @@ violations:
 to:
   - targetRef:
       kind: MeshHTTPRoute
-      name: http-route-1
+      labels:
+        kuma.io/display-name: http-route-1
       sectionName: some-section
     default:
       http:
@@ -280,7 +278,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: 10s
       idleTimeout: 1h
@@ -304,23 +303,42 @@ violations:
   - field: spec.to[0].default.http.maxConnectionDuration
     message: can't be specified when top-level TargetRef is referencing MeshHTTPRoute`,
 			}),
-			Entry("to TargetRef using labels and name for MeshExternalService", testCase{
+			Entry("to TargetRef using labels and sectionName for MeshExternalService", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
 to:
   - targetRef:
       kind: MeshExternalService
-      name: web-backend
       labels:
         kuma.io/display-name: web-backend
+      sectionName: web-backend
     default:
       connectionTimeout: 10s
       idleTimeout: 1h`,
 				expected: `
 violations:
-  - field: spec.to[0].targetRef.labels
-    message: either labels or name must be specified`,
+  - field: spec.to[0].targetRef.sectionName
+    message: must not be set with kind MeshExternalService`,
+			}),
+			Entry("when rules is defined, to cannot be defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      connectionTimeout: 10s
+to:
+  - targetRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: web-backend
+    default:
+      connectionTimeout: 10s`,
+				expected: `
+violations:
+  - field: spec
+    message: fields 'to' must be empty when 'rules' is defined`,
 			}),
 			Entry("rules with empty spec", testCase{
 				inputYaml: `

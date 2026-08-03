@@ -19,7 +19,6 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().DpServer.Authn.EnableReloadableTokens,
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
-		rt.Config().Experimental.InboundTagsDisabled,
 		rt.Config().BootstrapServer.Params.EnvoyAdminUnixSocket,
 	)
 	if err != nil {

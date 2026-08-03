@@ -130,6 +130,10 @@ spec:
   endpoints:
     - address: 127.0.0.1
       port: 80
+      priority: 1
+    - address: 127.0.0.1
+      port: 81
+      priority: 2
 `, zoneProxyMeshName)
 
 	meshIdentityYAML := fmt.Sprintf(`
@@ -167,12 +171,14 @@ spec:
 		Install(YamlUniversal(meshExternalService)).
 		Install(YamlUniversal(meshIdentityYAML)).
 		Install(zoneproxy.Install(
+			zoneproxy.WithName("zone-proxy"),
 			zoneproxy.WithMesh(zoneProxyMeshName),
 			zoneproxy.WithIngressPort(11001),
 			zoneproxy.WithWorkload(zoneProxyIngressDP),
 			zoneproxy.WithDpEnvs(dppEnvs),
 		)).
 		Install(zoneproxy.Install(
+			zoneproxy.WithName("zone-proxy"),
 			zoneproxy.WithMesh(zoneProxyMeshName),
 			zoneproxy.WithEgressPort(11002),
 			zoneproxy.WithWorkload(zoneProxyEgressDP),

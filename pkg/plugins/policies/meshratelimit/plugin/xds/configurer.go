@@ -250,7 +250,7 @@ func ConfigureMatchedRoutesOnFilterChain(filterChain *envoy_listener.FilterChain
 			}
 		}
 		return ConfigureMatchedRoutes(hcm.GetRouteConfig(), effectiveRules)
-	}); err != nil {
+	}); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 		return err
 	}
 

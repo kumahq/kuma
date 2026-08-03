@@ -6,8 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v3/pkg/core"
-	"github.com/kumahq/kuma/v3/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -38,57 +36,6 @@ func createIdentitySecretResource(name string, identity *core_xds.IdentitySecret
 	}
 }
 
-// GenerateForZoneEgress generates whatever secrets were referenced in the
-// zone egress config generation.
-func (g Generator) GenerateForZoneEgress(
-	ctx context.Context,
-	xdsCtx xds_context.Context,
-	proxy *core_xds.Proxy,
-	secretsTracker core_xds.SecretsTracker,
-	mesh *core_mesh.MeshResource,
-) (*core_xds.ResourceSet, error) {
-	if !mesh.MTLSEnabled() {
-		return nil, nil
-	}
-
-	zoneEgress := proxy.ZoneEgressProxy.ZoneEgressResource
-	log := generatorLogger.WithValues("ZoneEgress", zoneEgress.GetMeta().GetName())
-
-	identity, ca, err := xdsCtx.ControlPlane.Secrets.GetForZoneEgress(ctx, zoneEgress, mesh)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate ZoneEgress secrets")
-	}
-
-	rs := core_xds.NewResourceSet()
-	meshName := mesh.GetMeta().GetName()
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, mesh)
-	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
-
-	if secretsTracker.UsedIdentity() {
-		log.V(1).Info("added identity", "mesh", meshName)
-
-		identitySecretName := getName(
-			system_names.AsSystemName("mtls_identity_"+meshName),
-			secretsTracker.RequestIdentityCert().Name(),
-		)
-
-		rs.Add(createIdentitySecretResource(identitySecretName, identity))
-	}
-
-	if _, ok := secretsTracker.UsedCas()[meshName]; ok {
-		log.V(1).Info("added mesh CA resources", "mesh", meshName)
-
-		name := getName(
-			system_names.AsSystemName("mtls_ca_"+meshName),
-			secretsTracker.RequestCa(meshName).Name(),
-		)
-
-		rs.Add(createCaSecretResource(name, ca))
-	}
-
-	return rs, nil
-}
-
 // Generate uses the SecretsTracker on Proxy and
 // generates whatever secrets were used in the config generation.
 func (g Generator) Generate(
@@ -111,8 +58,6 @@ func (g Generator) Generate(
 		return resources, nil
 	}
 
-	getNameOrDefault := system_names.GetNameOrDefault(unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource))
-
 	usedIdentity := proxy.SecretsTracker.UsedIdentity()
 	usedCAs := proxy.SecretsTracker.UsedCas()
 	usedAllInOne := proxy.SecretsTracker.UsedAllInOne()
@@ -125,17 +70,11 @@ func (g Generator) Generate(
 			return nil, errors.Wrap(err, "failed to generate all in one CA")
 		}
 
-		caSecretName := getNameOrDefault(
-			system_names.AsSystemName("mtls_ca_all_meshes"),
-			proxy.SecretsTracker.RequestAllInOneCa().Name(),
-		)
+		caSecretName := system_names.AsSystemName("mtls_ca_all_meshes")
 		if len(xdsCtx.Mesh.CAsByTrustDomain) == 0 {
 			resources.Add(createCaSecretResource(caSecretName, allInOneCa))
 		}
-		identitySecretName := getNameOrDefault(
-			system_names.AsSystemName("mtls_identity_"+proxy.SecretsTracker.RequestIdentityCert().MeshName()),
-			proxy.SecretsTracker.RequestIdentityCert().Name(),
-		)
+		identitySecretName := system_names.AsSystemName("mtls_identity_" + proxy.SecretsTracker.RequestIdentityCert().MeshName())
 		resources.Add(createIdentitySecretResource(identitySecretName, identity))
 		log.V(1).Info("added all in one CA resources")
 	}
@@ -152,10 +91,7 @@ func (g Generator) Generate(
 			return nil, errors.Wrap(err, "failed to generate dataplane identity cert and CAs")
 		}
 
-		identitySecretName := getNameOrDefault(
-			system_names.AsSystemName("mtls_identity_"+proxy.SecretsTracker.RequestIdentityCert().MeshName()),
-			proxy.SecretsTracker.RequestIdentityCert().Name(),
-		)
+		identitySecretName := system_names.AsSystemName("mtls_identity_" + proxy.SecretsTracker.RequestIdentityCert().MeshName())
 		resources.Add(createIdentitySecretResource(identitySecretName, identity))
 
 		var addedCas []string
@@ -164,10 +100,7 @@ func (g Generator) Generate(
 			if len(xdsCtx.Mesh.CAsByTrustDomain) > 0 {
 				break
 			}
-			identityName := getNameOrDefault(
-				system_names.AsSystemName("mtls_ca_"+mesh),
-				proxy.SecretsTracker.RequestCa(mesh).Name(),
-			)
+			identityName := system_names.AsSystemName("mtls_ca_" + mesh)
 			if ca, ok := generatedMeshCAs[mesh]; ok {
 				resources.Add(createCaSecretResource(identityName, ca))
 			} else {

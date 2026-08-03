@@ -34,8 +34,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 
 		return &model.Proxy{
 			Metadata: &model.DataplaneMetadata{Features: map[string]bool{
-				types.FeatureUnifiedResourceNaming: true,
-				types.FeatureStrictInboundPorts:    true,
+				types.FeatureStrictInboundPorts: true,
 			}},
 			Id: *model.BuildProxyId("", "side-car"),
 			Dataplane: &core_mesh.DataplaneResource{
@@ -81,17 +80,6 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 						Spec: &mesh_proto.Mesh{
 							Mtls: mtls,
-							Logging: &mesh_proto.Logging{
-								Backends: []*mesh_proto.LoggingBackend{
-									{
-										Name: "file",
-										Type: mesh_proto.LoggingFileType,
-										Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
-											Path: "/var/log",
-										}),
-									},
-								},
-							},
 						},
 					},
 				},
@@ -187,54 +175,30 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			},
 			expected: "04.envoy.golden.yaml",
 		}),
-		Entry("transparent_proxying=true,unified_naming=true", testCase{
-			proxy: &model.Proxy{
-				Metadata: &model.DataplaneMetadata{Features: map[string]bool{types.FeatureUnifiedResourceNaming: true}},
-				Id:       *model.BuildProxyId("", "side-car"),
-				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Version: "v1",
-					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
-								RedirectPortOutbound: 15001,
-								RedirectPortInbound:  15006,
-							},
-						},
-					},
-				},
-				APIVersion:        envoy_common.APIV3,
-				InternalAddresses: DummyInternalAddresses,
-			},
-			expected: "05.envoy.golden.yaml",
-		}),
-		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict", testCase{
+		Entry("transparent_proxying=true,inbound_filter,strict", testCase{
 			proxy:    strictInboundPortsProxy([]uint32{8080}),
 			tlsMode:  mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
 			expected: "06.envoy.golden.yaml",
 		}),
-		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,permissive", testCase{
+		Entry("transparent_proxying=true,inbound_filter,permissive", testCase{
 			proxy:    strictInboundPortsProxy([]uint32{8080, 9000}),
 			tlsMode:  mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
 			expected: "07.envoy.golden.yaml",
 		}),
-		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,no tls", testCase{
+		Entry("transparent_proxying=true,inbound_filter,no tls", testCase{
 			proxy:    strictInboundPortsProxy([]uint32{8080}),
 			tlsMode:  mesh_proto.CertificateAuthorityBackend_PERMISSIVE.Enum(),
 			expected: "08.envoy.golden.yaml",
 		}),
-		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict,duplicate_ports", testCase{
+		Entry("transparent_proxying=true,inbound_filter,strict,duplicate_ports", testCase{
 			proxy:    strictInboundPortsProxy([]uint32{8080, 8080}),
 			tlsMode:  mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
 			expected: "10.envoy.golden.yaml",
 		}),
-		Entry("transparent_proxying=true,unified_naming=true,inbound_filter,strict,gateway", testCase{
+		Entry("transparent_proxying=true,inbound_filter,strict,gateway", testCase{
 			proxy: &model.Proxy{
 				Metadata: &model.DataplaneMetadata{Features: map[string]bool{
-					types.FeatureUnifiedResourceNaming: true,
-					types.FeatureStrictInboundPorts:    true,
+					types.FeatureStrictInboundPorts: true,
 				}},
 				Id: *model.BuildProxyId("", "side-car"),
 				Dataplane: &core_mesh.DataplaneResource{

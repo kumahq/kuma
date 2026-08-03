@@ -129,9 +129,8 @@ func (s *storeCounter) countMeshScopedResources(ctx context.Context, resourceCou
 		return err
 	}
 	for _, meshInsight := range insights.Items {
-		resourceCount[string(mesh.DataplaneType)] += meshInsight.Spec.GetDataplanes().GetTotal()
-		for policy, stats := range meshInsight.Spec.GetPolicies() {
-			resourceCount[policy] += stats.GetTotal()
+		for resType, stats := range meshInsight.Spec.GetResources() {
+			resourceCount[resType] += stats.GetTotal()
 		}
 	}
 	return nil

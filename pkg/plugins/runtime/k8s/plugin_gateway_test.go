@@ -15,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 )
 
-func TestCleanupLegacyGatewayClassFinalizers(t *testing.T) {
+func TestRemoveGatewayClassFinalizers(t *testing.T) {
 	scheme, err := bootstrap_k8s.NewScheme()
 	require.NoError(t, err)
 
@@ -42,7 +42,7 @@ func TestCleanupLegacyGatewayClassFinalizers(t *testing.T) {
 		WithObjects(kumaClass, otherClass).
 		Build()
 
-	require.NoError(t, cleanupLegacyGatewayClassFinalizers(context.Background(), client, client))
+	require.NoError(t, removeGatewayClassFinalizers(context.Background(), client, client))
 
 	var updatedKumaClass gatewayapi.GatewayClass
 	require.NoError(t, client.Get(context.Background(), kube_client.ObjectKeyFromObject(kumaClass), &updatedKumaClass))

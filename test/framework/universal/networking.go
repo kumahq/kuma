@@ -22,9 +22,7 @@ import (
 )
 
 type NetworkingState struct {
-	ZoneEgress  Networking `json:"zoneEgress"`
-	ZoneIngress Networking `json:"zoneIngress"`
-	KumaCp      Networking `json:"kumaCp"`
+	KumaCp Networking `json:"kumaCp"`
 }
 
 type Networking struct {

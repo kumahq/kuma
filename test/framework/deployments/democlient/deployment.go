@@ -13,6 +13,7 @@ type DeploymentOpts struct {
 	WaitingToBeReady bool
 	Service          bool
 	PodAnnotations   map[string]string
+	PodLabels        map[string]string
 	NodeSelector     map[string]string
 }
 
@@ -55,6 +56,12 @@ func WithoutWaitingToBeReady() DeploymentOptsFn {
 func WithPodAnnotations(annotations map[string]string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.PodAnnotations = annotations
+	}
+}
+
+func WithPodLabels(labels map[string]string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.PodLabels = labels
 	}
 }
 

@@ -5,8 +5,6 @@ mtls:
   backends:
     - name: ca-1
       type: builtin
-routing:
-  zoneEgress: true
 ---
 type: ZoneEgress
 name: zoneegress-1
@@ -26,7 +24,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: service-in-zone-2
+        labels:
+          kuma.io/display-name: service-in-zone-2
       rules:
         - matches:
             - path:
@@ -35,12 +34,14 @@ spec:
           default:
             backendRefs:
               - kind: MeshServiceSubset
-                name: service-in-zone-2
+                labels:
+                  kuma.io/display-name: service-in-zone-2
                 weight: 1
                 tags:
                   version: v1
               - kind: MeshServiceSubset
-                name: service-in-zone-2
+                labels:
+                  kuma.io/display-name: service-in-zone-2
                 weight: 1
                 tags:
                   version: v2

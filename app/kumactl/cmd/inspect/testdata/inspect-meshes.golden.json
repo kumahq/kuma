@@ -11,7 +11,7 @@
         "online": 90,
         "offline": 10
       },
-      "policies": {
+      "resources": {
         "MeshTrafficPermission": {
           "total": 9
         }
@@ -27,7 +27,7 @@
         "online": 90,
         "offline": 10
       },
-      "policies": {
+      "resources": {
         "MeshTrafficPermission": {
           "total": 90
         }

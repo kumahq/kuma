@@ -1,5 +1,5 @@
 resources:
-- name: outbound:127.0.0.1:10001
+- name: kri_msvc_default___backend_test-port
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -26,65 +26,77 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: default_backend___msvc_80
+              name: kri_msvc_default___backend_test-port
               routes:
               - match:
                   path: /v1
-                name: kri_mhttpr_default___test-origin_
+                name: kri_mhttpr_default___test-origin_rule_0
                 route:
-                  cluster: backend
+                  cluster: kri_msvc_default___backend_test-port
                   timeout: 0s
               - match:
                   prefix: /v1/
-                name: kri_mhttpr_default___test-origin_
+                name: kri_mhttpr_default___test-origin_rule_0
                 route:
-                  cluster: backend
+                  cluster: kri_msvc_default___backend_test-port
                   timeout: 0s
               - match:
                   path: /v2
-                name: kri_mhttpr_default___test-origin_
+                name: kri_mhttpr_default___test-origin_rule_0
                 route:
-                  cluster: backend-c72efb5be46fae6b
+                  cluster: kri_msvc_default___backend-us_test-port
                   timeout: 0s
               - match:
                   prefix: /v2/
-                name: kri_mhttpr_default___test-origin_
+                name: kri_mhttpr_default___test-origin_rule_0
                 route:
-                  cluster: backend-c72efb5be46fae6b
+                  cluster: kri_msvc_default___backend-us_test-port
                   timeout: 0s
               - match:
                   path: /v3
-                name: kri_mhttpr_default___test-origin_
+                name: kri_mhttpr_default___test-origin_rule_0
                 route:
-                  cluster: backend-c72efb5be46fae6b
+                  cluster: kri_msvc_default___backend-us_test-port
                   timeout: 0s
               - match:
                   prefix: /v3/
-                name: kri_mhttpr_default___test-origin_
+                name: kri_mhttpr_default___test-origin_rule_0
                 route:
-                  cluster: backend-c72efb5be46fae6b
+                  cluster: kri_msvc_default___backend-us_test-port
                   timeout: 0s
               - match:
                   path: /v4
-                name: kri_mhttpr_default___test-origin_
+                name: kri_mhttpr_default___test-origin_rule_0
                 route:
-                  cluster: default_backend___msvc_80
+                  cluster: kri_msvc_default___backend_test-port
                   timeout: 0s
               - match:
                   prefix: /v4/
-                name: kri_mhttpr_default___test-origin_
+                name: kri_mhttpr_default___test-origin_rule_0
                 route:
-                  cluster: default_backend___msvc_80
+                  cluster: kri_msvc_default___backend_test-port
+                  timeout: 0s
+              - match:
+                  prefix: /
+                  queryParameters:
+                  - name: v1
+                    stringMatch:
+                      exact: "true"
+                name: kri_mhttpr_default___test-origin_rule_0
+                route:
+                  cluster: kri_msvc_default___backend_test-port
                   timeout: 0s
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
-                  cluster: default_backend___msvc_80
+                  cluster: kri_msvc_default___backend_test-port
                   timeout: 0s
-          statPrefix: default_backend___msvc_80
+          statPrefix: kri_msvc_default___backend_test-port
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
-    name: outbound:127.0.0.1:10001
+        io.kuma.tags:
+          kuma.io/unified-name: kri_msvc_default___backend_test-port
+    name: kri_msvc_default___backend_test-port
+    statPrefix: kri_msvc_default___backend_test-port
     trafficDirection: OUTBOUND

@@ -11,8 +11,6 @@ import (
 	policies_generator "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/generator"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/core"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/egress"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	generator_secrets "github.com/kumahq/kuma/v3/pkg/xds/generator/secrets"
 	"github.com/kumahq/kuma/v3/pkg/xds/template"
 )
@@ -52,7 +50,6 @@ func (s *ProxyTemplateProfileSource) Generate(ctx context.Context, rs *model.Res
 func NewDefaultProxyProfile() core.ResourceGenerator {
 	return core.CompositeResourceGenerator{
 		AdminProxyGenerator{},
-		PrometheusEndpointGenerator{},
 		TransparentProxyGenerator{},
 		InboundProxyGenerator{},
 		DirectAccessProxyGenerator{},
@@ -62,16 +59,6 @@ func NewDefaultProxyProfile() core.ResourceGenerator {
 		policies_generator.NewGenerator(),
 		generator_secrets.Generator{},
 		core_generator.NewGenerator(),
-	}
-}
-
-func NewEgressProxyProfile() core.ResourceGenerator {
-	return core.CompositeResourceGenerator{
-		AdminProxyGenerator{},
-		egress.Generator{
-			SecretGenerator: &generator_secrets.Generator{},
-			PolicyGenerator: policies_generator.NewGenerator(),
-		},
 	}
 }
 
@@ -90,8 +77,6 @@ var predefinedProfiles = make(map[string]core.ResourceGenerator)
 
 func init() {
 	RegisterProfile(core_mesh.ProfileDefaultProxy, NewDefaultProxyProfile())
-	RegisterProfile(metadata.ProxyTemplateProfileIngressProxy, core.CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
-	RegisterProfile(metadata.ProxyTemplateProfileEgressProxy, NewEgressProxyProfile())
 }
 
 func RegisterProfile(profileName string, generator core.ResourceGenerator) {

@@ -15,7 +15,6 @@ import (
 
 func ClientSideMTLS(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	mesh *core_mesh.MeshResource,
 	upstreamService string,
 	upstreamTLSReady bool,
@@ -24,21 +23,19 @@ func ClientSideMTLS(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
-			UpstreamMesh:          mesh,
-			UpstreamService:       upstreamService,
-			LocalMesh:             mesh,
-			Tags:                  tags,
-			UpstreamTLSReady:      upstreamTLSReady,
-			UseMeshTrust:          useMeshTrust,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  upstreamService,
+			LocalMesh:        mesh,
+			Tags:             tags,
+			UpstreamTLSReady: upstreamTLSReady,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }
 
 func ClientSideMTLSCustomSNI(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	mesh *core_mesh.MeshResource,
 	upstreamService string,
 	upstreamTLSReady bool,
@@ -47,22 +44,20 @@ func ClientSideMTLSCustomSNI(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
-			UpstreamMesh:          mesh,
-			UpstreamService:       upstreamService,
-			LocalMesh:             mesh,
-			Tags:                  nil,
-			UpstreamTLSReady:      upstreamTLSReady,
-			SNI:                   sni,
-			UseMeshTrust:          useMeshTrust,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  upstreamService,
+			LocalMesh:        mesh,
+			Tags:             nil,
+			UpstreamTLSReady: upstreamTLSReady,
+			SNI:              sni,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }
 
 func ClientSideMultiIdentitiesMTLS(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	mesh *core_mesh.MeshResource,
 	upstreamTLSReady bool,
 	sni string,
@@ -71,23 +66,21 @@ func ClientSideMultiIdentitiesMTLS(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
-			UpstreamMesh:          mesh,
-			UpstreamService:       "*",
-			LocalMesh:             mesh,
-			SNI:                   sni,
-			Tags:                  nil,
-			UpstreamTLSReady:      upstreamTLSReady,
-			VerifyIdentities:      identities,
-			UseMeshTrust:          useMeshTrust,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  "*",
+			LocalMesh:        mesh,
+			SNI:              sni,
+			Tags:             nil,
+			UpstreamTLSReady: upstreamTLSReady,
+			VerifyIdentities: identities,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }
 
 func CrossMeshClientSideMTLS(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	localMesh *core_mesh.MeshResource,
 	upstreamMesh *core_mesh.MeshResource,
 	upstreamService string,
@@ -96,13 +89,12 @@ func CrossMeshClientSideMTLS(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
-			UpstreamMesh:          upstreamMesh,
-			UpstreamService:       upstreamService,
-			LocalMesh:             localMesh,
-			Tags:                  tags,
-			UpstreamTLSReady:      upstreamTLSReady,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     upstreamMesh,
+			UpstreamService:  upstreamService,
+			LocalMesh:        localMesh,
+			Tags:             tags,
+			UpstreamTLSReady: upstreamTLSReady,
 		})
 	})
 }
@@ -275,20 +267,6 @@ func UpstreamTLSContext(config *envoy_tls.UpstreamTlsContext) ClusterBuilderOpt 
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.UpstreamTLSContextConfigure{
 			Config: config,
-		})
-	})
-}
-
-// UpstreamTLSContextWithZoneMatches configures a cluster-wide default
-// UpstreamTlsContext plus per-zone overrides added as transport_socket_match
-// entries keyed on the kuma.io/zone endpoint metadata. It is used for
-// MeshMultiZoneService clusters whose endpoints span zones with different SNI
-// expectations (new mesh-scoped zone proxy vs. legacy ZoneIngress).
-func UpstreamTLSContextWithZoneMatches(config *envoy_tls.UpstreamTlsContext, zoneMatches map[string]*envoy_tls.UpstreamTlsContext) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.UpstreamTLSContextConfigure{
-			Config:      config,
-			ZoneMatches: zoneMatches,
 		})
 	})
 }

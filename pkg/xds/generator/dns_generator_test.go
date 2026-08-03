@@ -115,19 +115,6 @@ var _ = Describe("DNSGenerator", func() {
 			},
 			dpMesh: "default",
 		}),
-		Entry("05. DNS using proxy with unified naming", testCase{
-			dataplaneFile: "5-dataplane.input.yaml",
-			expected:      "5-envoy-config.golden.yaml",
-			features: map[string]bool{
-				"feature-unified-resource-naming": true,
-			},
-			dpLabels: map[string]string{
-				"kuma.io/workload":      "backend",
-				"k8s.kuma.io/namespace": "test-ns",
-				"kuma.io/zone":          "zone-1",
-			},
-			dpMesh: "default",
-		}),
 		Entry("06. DNS enabled with unified naming", testCase{
 			dataplaneFile: "6-dataplane.input.yaml",
 			expected:      "6-envoy-config.golden.yaml",

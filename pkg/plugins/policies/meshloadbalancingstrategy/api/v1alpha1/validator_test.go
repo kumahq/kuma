@@ -51,155 +51,12 @@ to:
         version: v1
   - targetRef:
       kind: MeshService
-      name: real-mesh-service
+      labels:
+        kuma.io/display-name: real-mesh-service
       sectionName: http
     default:
       localityAwareness:
         crossZone: {}
-`),
-		ErrorCases(
-			"ringHash error",
-			[]validators.Violation{
-				{
-					Field:   "spec.to[0].default.loadBalancer.ringHash.hashPolicies[0].header",
-					Message: "must be defined",
-				},
-				{
-					Field:   "spec.to[0].default.loadBalancer.ringHash.hashPolicies[1].cookie",
-					Message: "must be defined",
-				},
-				{
-					Field:   "spec.to[0].default.loadBalancer.ringHash.hashPolicies[2].connection",
-					Message: "must be defined",
-				},
-				{
-					Field:   "spec.to[0].default.loadBalancer.ringHash.hashPolicies[3].queryParameter",
-					Message: "must be defined",
-				},
-				{
-					Field:   "spec.to[0].default.loadBalancer.ringHash.hashPolicies[4].filterState",
-					Message: "must be defined",
-				},
-			},
-			`
-type: MeshLoadBalancingStrategy
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: Mesh
-to: 
-  - targetRef:
-      kind: MeshService
-      name: svc-2
-    default:
-      loadBalancer:
-        type: RingHash
-        ringHash:
-          hashPolicies:
-            - type: Header
-            - type: Cookie
-            - type: Connection
-            - type: QueryParameter
-            - type: FilterState
-`),
-		ErrorCases(
-			"ringHash cookie error",
-			[]validators.Violation{{
-				Field:   "spec.to[0].default.loadBalancer.ringHash.hashPolicies[0].cookie.path",
-				Message: "must be an absolute path",
-			}},
-			`
-type: MeshLoadBalancingStrategy
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: Mesh
-to: 
-  - targetRef:
-      kind: MeshService
-      name: svc-2
-    default:
-      loadBalancer:
-        type: RingHash
-        ringHash:
-          hashPolicies:
-            - type: Cookie
-              cookie:
-                name: cookie-name
-                ttl: 1s
-                path: relative-path
-`),
-		ErrorCases(
-			"maglev error",
-			[]validators.Violation{
-				{
-					Field:   "spec.to[0].default.loadBalancer.maglev.hashPolicies[0].header",
-					Message: "must be defined",
-				},
-				{
-					Field:   "spec.to[0].default.loadBalancer.maglev.hashPolicies[1].cookie",
-					Message: "must be defined",
-				},
-				{
-					Field:   "spec.to[0].default.loadBalancer.maglev.hashPolicies[2].connection",
-					Message: "must be defined",
-				},
-				{
-					Field:   "spec.to[0].default.loadBalancer.maglev.hashPolicies[3].queryParameter",
-					Message: "must be defined",
-				},
-				{
-					Field:   "spec.to[0].default.loadBalancer.maglev.hashPolicies[4].filterState",
-					Message: "must be defined",
-				},
-			},
-			`
-type: MeshLoadBalancingStrategy
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: Mesh
-to: 
-  - targetRef:
-      kind: MeshService
-      name: svc-2
-    default:
-      loadBalancer:
-        type: Maglev
-        maglev:
-          hashPolicies:
-            - type: Header
-            - type: Cookie
-            - type: SourceIP
-            - type: QueryParameter
-            - type: FilterState
-`),
-		ErrorCases(
-			"maglev cookie error",
-			[]validators.Violation{{
-				Field:   "spec.to[0].default.loadBalancer.maglev.hashPolicies[0].cookie.path",
-				Message: "must be an absolute path",
-			}},
-			`
-type: MeshLoadBalancingStrategy
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: Mesh
-to: 
-  - targetRef:
-      kind: MeshService
-      name: svc-2
-    default:
-      loadBalancer:
-        type: Maglev
-        maglev:
-          hashPolicies:
-            - type: Cookie
-              cookie:
-                name: cookie-name
-                ttl: 1s
-                path: relative-path
 `),
 		ErrorCases(
 			"leastRequest error",
@@ -216,7 +73,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: svc-2
+      labels:
+        kuma.io/display-name: svc-2
     default:
       loadBalancer:
         type: LeastRequest
@@ -237,8 +95,9 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
-      name: svc-1
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-1
     default:
       localityAwareness:
         crossZone:
@@ -269,7 +128,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: svc-1
+      labels:
+        kuma.io/display-name: svc-1
     default:
       localityAwareness:
         localZone:
@@ -294,7 +154,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: svc-1
+      labels:
+        kuma.io/display-name: svc-1
     default:
       localityAwareness:
         localZone:
@@ -317,8 +178,9 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
-      name: svc-1
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-1
     default:
       localityAwareness:
         crossZone:
@@ -339,8 +201,9 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
-      name: svc-1
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-1
     default:
       localityAwareness:
         crossZone:
@@ -387,8 +250,9 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: MeshService
-      name: svc-1
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-1
     default:
       localityAwareness:
         crossZone:
@@ -450,7 +314,8 @@ targetRef:
 to: 
   - targetRef:
       kind: MeshService
-      name: svc-2
+      labels:
+        kuma.io/display-name: svc-2
     default:
       hashPolicies:
         - type: Header
@@ -458,46 +323,6 @@ to:
         - type: SourceIP
         - type: QueryParameter
         - type: FilterState
-`),
-		ErrorCases(
-			"mixing hash policies in root conf and lb conf",
-			[]validators.Violation{
-				{
-					Field:   "spec.to[0].default.loadBalancer.ringHash.hashPolicies",
-					Message: "hashPolicies already specified in the root level",
-				},
-				{
-					Field:   "spec.to[0].default.loadBalancer.maglev.hashPolicies",
-					Message: "hashPolicies already specified in the root level",
-				},
-			},
-			`
-type: MeshLoadBalancingStrategy
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: Mesh
-to: 
-  - targetRef:
-      kind: MeshService
-      name: svc-2
-    default:
-      hashPolicies:
-        - type: Header
-          header:
-            name: x-header-name
-      loadBalancer:
-        type: Maglev
-        maglev:
-          hashPolicies:
-            - type: Cookie
-              cookie:
-                name: session_id
-        ringHash:
-          hashPolicies:
-            - type: Cookie
-              cookie:
-                name: session_id
 `),
 		ErrorCases(
 			"MeshHTTPRoute with loadBalancer",
@@ -516,7 +341,8 @@ targetRef:
 to: 
   - targetRef:
       kind: MeshHTTPRoute
-      name: route-1
+      labels:
+        kuma.io/display-name: route-1
     default:
       loadBalancer:
         type: RoundRobin
@@ -542,7 +368,8 @@ targetRef:
 to: 
   - targetRef:
       kind: MeshHTTPRoute
-      name: route-1
+      labels:
+        kuma.io/display-name: route-1
     default:
       localityAwareness:
         disabled: true
@@ -556,6 +383,29 @@ to:
 	DescribeValidCases(
 		api.NewMeshLoadBalancingStrategyResource,
 		Entry(
+			"MeshExternalService on a zone proxy",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: mes-lb
+targetRef:
+  kind: Dataplane
+  labels:
+    kuma.io/listener-zoneegress: enabled
+to:
+  - targetRef:
+      kind: MeshExternalService
+      labels:
+        kuma.io/display-name: httpbin
+    default:
+      loadBalancer:
+        type: RingHash
+        ringHash:
+          minRingSize: 100
+          maxRingSize: 1000
+          hashFunction: MurmurHash2
+`),
+		Entry(
 			"MeshHTTPRoute with only hashPolicies",
 			`
 type: MeshLoadBalancingStrategy
@@ -566,7 +416,8 @@ targetRef:
 to: 
   - targetRef:
       kind: MeshHTTPRoute
-      name: route-1
+      labels:
+        kuma.io/display-name: route-1
     default:
       hashPolicies:
         - type: Header
@@ -589,7 +440,8 @@ targetRef:
 to: 
   - targetRef:
       kind: MeshService
-      name: svc-2
+      labels:
+        kuma.io/display-name: svc-2
     default:
       localityAwareness:
         disabled: true
@@ -613,7 +465,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: svc-2
+      labels:
+        kuma.io/display-name: svc-2
     default:
       localityAwareness:
         disabled: true
@@ -632,8 +485,9 @@ targetRef:
   kind: Mesh
 to: 
   - targetRef:
-      kind: MeshService
-      name: svc-2
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: svc-2
     default:
       localityAwareness:
         localZone:

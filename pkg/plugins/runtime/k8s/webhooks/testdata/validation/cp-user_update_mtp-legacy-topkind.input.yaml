@@ -10,12 +10,12 @@ spec:
   targetRef:
     kind: MeshService
     name: backend
-  from:
-    - targetRef:
-        kind: MeshService
-        name: frontend
-      default:
-        action: Deny
+  rules:
+    - default:
+        deny:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://default/frontend
 ---
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
@@ -28,9 +28,9 @@ spec:
   targetRef:
     kind: MeshService
     name: backend
-  from:
-    - targetRef:
-        kind: MeshService
-        name: frontend
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://default/frontend

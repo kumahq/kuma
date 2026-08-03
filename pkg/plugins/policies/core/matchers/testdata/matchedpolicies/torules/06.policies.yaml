@@ -10,7 +10,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         http:
           requestTimeout: 1s
@@ -28,7 +29,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         http:
           streamIdleTimeout: 3s
@@ -47,7 +49,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       default:
         http:
           requestTimeout: 3s

@@ -32,7 +32,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 					Online:  90,
 					Offline: 10,
 				},
-				Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{
+				Resources: map[string]*mesh_proto.MeshInsight_ResourceStat{
 					"MeshTrafficPermission": {Total: 9},
 				},
 			},
@@ -45,7 +45,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 					Online:  90,
 					Offline: 10,
 				},
-				Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{
+				Resources: map[string]*mesh_proto.MeshInsight_ResourceStat{
 					"MeshTrafficPermission": {Total: 90},
 				},
 			},
