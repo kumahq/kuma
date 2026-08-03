@@ -68,7 +68,7 @@ jobs:
           key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             go-build-${{ runner.os }}-
-      - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
+      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           version: 2026.7.7
       - id: annotate-image-tag
@@ -144,7 +144,7 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
+      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           version: 2026.7.7
       - id: image_meta
@@ -281,7 +281,7 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
+      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
           version: 2026.7.7
       - name: package-helm-chart
