@@ -6,6 +6,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
@@ -52,16 +53,8 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 			routes: envoy_common.Routes{
 				{
 					Clusters: []envoy_common.Cluster{
-						envoy_common.NewCluster(
-							envoy_common.WithName("backend-0"),
-							envoy_common.WithWeight(20),
-							envoy_common.WithTags(map[string]string{"version": "v1"}),
-						),
-						envoy_common.NewCluster(
-							envoy_common.WithName("backend-1"),
-							envoy_common.WithWeight(80),
-							envoy_common.WithTags(map[string]string{"version": "v2"}),
-						),
+						plugins_xds.NewClusterBuilder().WithName("backend-0").WithTags(map[string]string{"version": "v1"}).Build(),
+						plugins_xds.NewClusterBuilder().WithName("backend-1").WithTags(map[string]string{"version": "v2"}).Build(),
 					},
 				},
 			},
@@ -103,9 +96,9 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                           weightedClusters:
                             clusters:
                             - name: backend-0
-                              weight: 20
+                              weight: 1
                             - name: backend-1
-                              weight: 80
+                              weight: 1
                   statPrefix: "127_0_0_1_18080"
                   internalAddressConfig:
                     cidrRanges:
@@ -194,11 +187,7 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 						},
 					},
 					Clusters: []envoy_common.Cluster{
-						envoy_common.NewCluster(
-							envoy_common.WithName("backend-0"),
-							envoy_common.WithWeight(20),
-							envoy_common.WithTags(map[string]string{"version": "v1"}),
-						),
+						plugins_xds.NewClusterBuilder().WithName("backend-0").WithTags(map[string]string{"version": "v1"}).Build(),
 					},
 				},
 			},

@@ -21,6 +21,7 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	plugin_v1alpha1 "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/plugin/v1alpha1"
@@ -449,10 +450,7 @@ func tcpListener(port uint32) envoy_common.NamedResource {
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 			Configure(TcpProxyDeprecated(
 				fmt.Sprintf("outbound:127.0.0.1:%d", port),
-				envoy_common.NewCluster(
-					envoy_common.WithService("backend"),
-					envoy_common.WithWeight(100),
-				),
+				plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 			)),
 		)).
 		MustBuild()

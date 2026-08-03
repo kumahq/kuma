@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s/xds/hooks/metadata"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
@@ -48,7 +49,7 @@ func (h ApiServerBypass) Modify(resources *core_xds.ResourceSet, ctx xds_context
 	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, h.Address, h.Port, core_xds.SocketAddressProtocolTCP).
 		WithOverwriteName(name).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.TcpProxyDeprecated(name, envoy_common.NewCluster(envoy_common.WithService(name)))))).
+			Configure(envoy_listeners.TcpProxyDeprecated(name, plugins_xds.NewClusterBuilder().WithService(name).Build())))).
 		Configure(envoy_listeners.NoBindToPort()).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()

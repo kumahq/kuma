@@ -10,6 +10,7 @@ import (
 	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
@@ -78,7 +79,7 @@ func CreateOutboundPassthroughListener(
 		WithOverwriteName(listenerName).
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName)))))).
+			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, plugins_xds.NewClusterBuilder().WithService(listenerName).Build())))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {
@@ -136,17 +137,17 @@ func CreateInboundPassthroughListener(
 			// if service doesn't have any port we don't need to expose listener
 			if inbound.Port == mesh_proto.TCPPortReserved {
 				inboundListenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-					Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(naming.ContextualNoDestinationClusterName("inbound"))))).
+					Configure(envoy_listeners.TcpProxyDeprecated(listenerName, plugins_xds.NewClusterBuilder().WithService(naming.ContextualNoDestinationClusterName("inbound")).Build())).
 					Configure(envoy_listeners.MatchDestiantionPort(inbound.Port))))
 			} else {
 				inboundListenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-					Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName)))).
+					Configure(envoy_listeners.TcpProxyDeprecated(listenerName, plugins_xds.NewClusterBuilder().WithService(listenerName).Build())).
 					Configure(envoy_listeners.MatchDestiantionPort(inbound.Port))))
 			}
 		}
 	} else {
 		inboundListenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName))))))
+			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, plugins_xds.NewClusterBuilder().WithService(listenerName).Build()))))
 	}
 
 	listener, err := inboundListenerBuilder.Build()

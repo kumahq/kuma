@@ -246,10 +246,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 									envoy_names.GetInboundRouteName("eds-cluster"),
 									"eds-cluster",
 									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("eds-cluster"),
-											envoy_common.WithWeight(100),
-										)},
+										Clusters: []envoy_common.Cluster{xds.NewClusterBuilder().WithService("eds-cluster").Build()},
 									}},
 								),
 							),
@@ -262,10 +259,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								envoy_names.GetInboundRouteName("static-cluster"),
 								"static-cluster",
 								envoy_common.Routes{{
-									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-										envoy_common.WithService("static-cluster"),
-										envoy_common.WithWeight(100),
-									)},
+									Clusters: []envoy_common.Cluster{xds.NewClusterBuilder().WithService("static-cluster").Build()},
 								}},
 							),
 						),
@@ -385,10 +379,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 									envoy_names.GetInboundRouteName("eds-cluster"),
 									"eds-cluster",
 									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("eds-cluster"),
-											envoy_common.WithWeight(100),
-										)},
+										Clusters: []envoy_common.Cluster{xds.NewClusterBuilder().WithService("eds-cluster").Build()},
 									}},
 								),
 							),
@@ -401,10 +392,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								envoy_names.GetInboundRouteName("static-cluster"),
 								"static-cluster",
 								envoy_common.Routes{{
-									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-										envoy_common.WithService("static-cluster"),
-										envoy_common.WithWeight(100),
-									)},
+									Clusters: []envoy_common.Cluster{xds.NewClusterBuilder().WithService("static-cluster").Build()},
 								}},
 							),
 						),
@@ -1165,14 +1153,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 									"backend",
 									envoy_common.Routes{{
 										Clusters: []envoy_common.Cluster{
-											envoy_common.NewCluster(
-												envoy_common.WithService("backend-bb38a94289f18fb9"),
-												envoy_common.WithWeight(90),
-											),
-											envoy_common.NewCluster(
-												envoy_common.WithService("backend-c72efb5be46fae6b"),
-												envoy_common.WithWeight(10),
-											),
+											xds.NewClusterBuilder().WithService("backend-bb38a94289f18fb9").Build(),
+											xds.NewClusterBuilder().WithService("backend-c72efb5be46fae6b").Build(),
 										},
 									}},
 									map[string]map[string]bool{
@@ -1610,10 +1592,7 @@ func paymentsListener() envoy_common.NamedResource {
 					envoy_names.GetOutboundRouteName("backend"),
 					"backend",
 					envoy_common.Routes{{
-						Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-							envoy_common.WithService("payment"),
-							envoy_common.WithWeight(100),
-						)},
+						Clusters: []envoy_common.Cluster{xds.NewClusterBuilder().WithService("payment").Build()},
 					}},
 					map[string]map[string]bool{
 						"kuma.io/service": {
@@ -1634,10 +1613,7 @@ func backendListener() envoy_common.NamedResource {
 					envoy_names.GetOutboundRouteName("backend"),
 					"backend",
 					envoy_common.Routes{{
-						Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-							envoy_common.WithService("backend"),
-							envoy_common.WithWeight(100),
-						)},
+						Clusters: []envoy_common.Cluster{xds.NewClusterBuilder().WithService("backend").Build()},
 					}},
 					map[string]map[string]bool{
 						"kuma.io/service": {
