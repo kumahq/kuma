@@ -39,7 +39,7 @@ function update_version {
     yq -i ".version = \"${kuma_version}\"" "${dir}/Chart.yaml"
 
     local chart
-    for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
+    for chart in $(yq e '.dependencies[]?.name' "${dir}/Chart.yaml"); do
         if [ ! -d "${dir}/charts/${chart}" ]; then
             continue
         fi
