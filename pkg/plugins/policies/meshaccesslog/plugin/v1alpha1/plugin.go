@@ -289,7 +289,7 @@ func applyToTransparentProxyListeners(
 
 	kumaValues := listeners_v3.KumaValues{
 		SourceService:      dataplane.IdentifyingName(),
-		SourceIP:           dataplane.GetIP(),
+		SourceIP:           dataplane.GetAddress(),
 		DestinationService: "external",
 		Mesh:               dataplane.GetMeta().GetMesh(),
 		Zone:               zone,
