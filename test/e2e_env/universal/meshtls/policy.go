@@ -65,7 +65,13 @@ spec:
 	})
 
 	E2EAfterEach(func() {
-		// every case starts from the default strict mode
+		// Every case starts from the default strict mode. Each one names its
+		// MeshTLS differently on purpose: the mesh hash the control plane uses
+		// to decide whether to regenerate a proxy's config covers a resource's
+		// name and version but not its spec, and the universal store hands a
+		// re-created resource version 1 again. Reusing one name across cases
+		// therefore lets a later spec hash the same as an earlier one, and the
+		// proxy keeps serving the earlier config.
 		items, err := universal.Cluster.GetKumactlOptions().KumactlList("meshtlses", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		for _, item := range items {
@@ -82,7 +88,7 @@ spec:
 		policy := fmt.Sprintf(`
 type: MeshTLS
 mesh: %s
-name: mesh-tls-policy
+name: mesh-tls-dpp-permissive
 spec:
   targetRef:
     kind: Dataplane
@@ -176,7 +182,7 @@ spec:
 		policy := fmt.Sprintf(`
 type: MeshTLS
 mesh: %s
-name: mesh-tls-policy
+name: mesh-tls-dpp-strict
 spec:
   targetRef:
     kind: Dataplane
@@ -275,7 +281,7 @@ spec:
 		policy := fmt.Sprintf(`
 type: MeshTLS
 mesh: %s
-name: mesh-tls-policy
+name: mesh-tls-version-13
 spec:
   targetRef:
     kind: Mesh
@@ -332,7 +338,7 @@ spec:
 		policy := fmt.Sprintf(`
 type: MeshTLS
 mesh: %s
-name: mesh-tls-policy
+name: mesh-tls-version-12-ciphers
 spec:
   targetRef:
     kind: Mesh
