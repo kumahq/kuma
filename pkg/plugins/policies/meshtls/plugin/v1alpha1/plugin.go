@@ -365,7 +365,7 @@ func configureListener(
 	if listenerTags == nil {
 		listenerTags = map[string]string{}
 	}
-	if protocol := inbound.GetProtocolFallback(); protocol != "" {
+	if protocol := inbound.GetProtocol(); protocol != "" {
 		listenerTags[mesh_proto.ProtocolTag] = protocol
 	}
 
@@ -380,7 +380,7 @@ func configureListener(
 		return nil, err
 	}
 
-	protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
+	protocol := core_meta.ParseProtocol(inbound.GetProtocol())
 	cluster := policies_xds.NewClusterBuilder().WithName(clusterName).Build()
 	routes := generator.GenerateRoutes(proxy, iface, cluster)
 	ciphers := pointer.Deref(conf.TlsCiphers)

@@ -50,9 +50,6 @@ func GenerateClusters(
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 			if meshCtx.IsExternalService(serviceName) {
-				if !isMeshExternalService(meshCtx.EndpointMap[serviceName]) {
-					continue
-				}
 				realResourceRef := service.BackendRef().RealResourceBackendRef()
 				dest, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
 				if !ok {
@@ -108,71 +105,58 @@ func GenerateClusters(
 					Configure(envoy_clusters.EdsCluster()).
 					Configure(envoy_clusters.Http2())
 
-				if upstreamMeshName := cluster.Mesh(); upstreamMeshName != "" {
-					for _, otherMesh := range meshCtx.Resources.Meshes().Items {
-						if otherMesh.GetMeta().GetName() == upstreamMeshName {
-							edsClusterBuilder.Configure(
-								envoy_clusters.CrossMeshClientSideMTLS(
-									proxy.SecretsTracker, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
-								),
-							)
-							break
-						}
+				if realResourceRef := service.BackendRef().RealResourceBackendRef(); realResourceRef != nil {
+					dest, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
+					if !ok {
+						continue
 					}
-				} else {
-					if realResourceRef := service.BackendRef().RealResourceBackendRef(); realResourceRef != nil {
-						dest, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
-						if !ok {
+					tlsReady = true // tls readiness is only relevant for MeshService
+					isLocalMeshService := false
+					if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
+						ms := dest.(*meshservice_api.MeshServiceResource)
+						// we only check TLS status for local service
+						// services that are synced can be accessed only with TLS through the zone proxy
+						isLocalMeshService = ms.IsLocalMeshService()
+						tlsReady = !isLocalMeshService || ms.Status.TLS.Status == meshservice_api.TLSReady
+						protocol = port.GetProtocol()
+					}
+					// Every zone is reachable through a mesh-scoped zone proxy, which
+					// matches the KRI SNI, so a proxy with WorkloadIdentity always uses it.
+					kriSNI := proxy.WorkloadIdentity != nil
+					var sni string
+					if kriSNI {
+						// The destination advertises its SNI from the resolved
+						// port name, so normalize a numeric backend-ref section
+						// (named port targeted by number) to the port name
+						// before deriving the KRI SNI.
+						kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
+						if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
 							continue
 						}
-						tlsReady = true // tls readiness is only relevant for MeshService
-						isLocalMeshService := false
-						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
-							ms := dest.(*meshservice_api.MeshServiceResource)
-							// we only check TLS status for local service
-							// services that are synced can be accessed only with TLS through ZoneIngress
-							isLocalMeshService = ms.IsLocalMeshService()
-							tlsReady = !isLocalMeshService || ms.Status.TLS.Status == meshservice_api.TLSReady
-							protocol = port.GetProtocol()
-						}
-						// Every zone is reachable through a mesh-scoped zone proxy, which
-						// matches the KRI SNI, so a proxy with WorkloadIdentity always uses it.
-						kriSNI := proxy.WorkloadIdentity != nil
-						var sni string
-						if kriSNI {
-							// The destination advertises its SNI from the resolved
-							// port name, so normalize a numeric backend-ref section
-							// (named port targeted by number) to the port name
-							// before deriving the KRI SNI.
-							kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
-							if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
-								continue
-							}
-							sni = core_sni.FromKRI(kriID)
-						} else {
-							sni = SniForBackendRef(realResourceRef, dest, port, systemNamespace)
-						}
-						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
-						if proxy.WorkloadIdentity != nil {
-							sans := Identities(realResourceRef, meshCtx, true)
-							upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
-							if err != nil {
-								return nil, err
-							}
-							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
-						} else {
-							edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
-								proxy.SecretsTracker,
-								meshCtx.Resource,
-								tlsReady,
-								sni,
-								Identities(realResourceRef, meshCtx, false),
-								len(meshCtx.CAsByTrustDomain) > 0,
-							))
-						}
+						sni = core_sni.FromKRI(kriID)
 					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
+						sni = SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 					}
+					// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
+					if proxy.WorkloadIdentity != nil {
+						sans := Identities(realResourceRef, meshCtx, true)
+						upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
+						if err != nil {
+							return nil, err
+						}
+						edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
+					} else {
+						edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
+							proxy.SecretsTracker,
+							meshCtx.Resource,
+							tlsReady,
+							sni,
+							Identities(realResourceRef, meshCtx, false),
+							len(meshCtx.CAsByTrustDomain) > 0,
+						))
+					}
+				} else {
+					edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
 				}
 			}
 
@@ -309,11 +293,4 @@ func Identities(
 		return result[i] < result[j]
 	})
 	return result
-}
-
-func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
-	if len(endpoints) > 0 {
-		return endpoints[0].IsMeshExternalService()
-	}
-	return false
 }

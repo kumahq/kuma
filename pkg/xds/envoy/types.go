@@ -19,7 +19,6 @@ type Cluster interface {
 	Service() string
 	Name() string
 	SNI() string
-	Mesh() string
 	Tags() tags.Tags
 	Hash() string
 	IsExternalService() bool
@@ -38,7 +37,6 @@ type ClusterImpl struct {
 	name              string
 	weight            uint32
 	tags              tags.Tags
-	mesh              string
 	isExternalService bool
 }
 
@@ -48,18 +46,11 @@ func (c *ClusterImpl) Weight() uint32  { return c.weight }
 func (c *ClusterImpl) Tags() tags.Tags { return c.tags }
 func (c *ClusterImpl) SNI() string     { return "" }
 
-// Mesh returns a non-empty string only if the cluster is in a different mesh
-// from the context.
-func (c *ClusterImpl) Mesh() string            { return c.mesh }
 func (c *ClusterImpl) IsExternalService() bool { return c.isExternalService }
 func (c *ClusterImpl) Hash() string            { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
 
 func (c *ClusterImpl) SetName(name string) {
 	c.name = name
-}
-
-func (c *ClusterImpl) SetMesh(mesh string) {
-	c.mesh = mesh
 }
 
 type NewClusterOpt interface {

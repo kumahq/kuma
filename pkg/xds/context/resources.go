@@ -17,7 +17,6 @@ import (
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	meshfaultinjection_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
@@ -46,13 +45,11 @@ func (rm ResourceMap) Hash() []byte {
 
 type Resources struct {
 	MeshLocalResources ResourceMap
-	CrossMeshResources map[xds.MeshName]ResourceMap
 }
 
 func NewResources() Resources {
 	return Resources{
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{},
-		CrossMeshResources: map[xds.MeshName]ResourceMap{},
 	}
 }
 
@@ -71,10 +68,6 @@ func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.
 
 func (r Resources) ServiceInsights() *core_mesh.ServiceInsightResourceList {
 	return r.ListOrEmpty(core_mesh.ServiceInsightType).(*core_mesh.ServiceInsightResourceList)
-}
-
-func (r Resources) ZoneEgresses() *core_mesh.ZoneEgressResourceList {
-	return r.ListOrEmpty(core_mesh.ZoneEgressType).(*core_mesh.ZoneEgressResourceList)
 }
 
 func (r Resources) Dataplanes() *core_mesh.DataplaneResourceList {

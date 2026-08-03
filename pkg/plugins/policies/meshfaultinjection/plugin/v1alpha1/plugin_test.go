@@ -75,14 +75,14 @@ var _ = Describe("MeshFaultInjection", func() {
 						WithAddress("127.0.0.1").
 						AddInbound(
 							builders.Inbound().
-								WithTags(map[string]string{mesh_proto.ProtocolTag: "http"}).
+								WithProtocol("http").
 								WithAddress("127.0.0.1").
 								WithPort(17777).
 								WithService("backend"),
 						).
 						AddInbound(
 							builders.Inbound().
-								WithTags(map[string]string{mesh_proto.ProtocolTag: "tcp"}).
+								WithProtocol("tcp").
 								WithAddress("127.0.0.1").
 								WithPort(17778).
 								WithService("frontend"),

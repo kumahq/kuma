@@ -79,26 +79,6 @@ func ClientSideMultiIdentitiesMTLS(
 	})
 }
 
-func CrossMeshClientSideMTLS(
-	tracker core_xds.SecretsTracker,
-	localMesh *core_mesh.MeshResource,
-	upstreamMesh *core_mesh.MeshResource,
-	upstreamService string,
-	upstreamTLSReady bool,
-	tags []envoy_tags.Tags,
-) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:   tracker,
-			UpstreamMesh:     upstreamMesh,
-			UpstreamService:  upstreamService,
-			LocalMesh:        localMesh,
-			Tags:             tags,
-			UpstreamTLSReady: upstreamTLSReady,
-		})
-	})
-}
-
 // UnknownDestinationClientSideMTLS configures cluster with mTLS for a mesh but without extensive destination verification (only Mesh is verified)
 func UnknownDestinationClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, useMeshTrust bool) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {

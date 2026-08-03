@@ -20,49 +20,31 @@ func GenerateEndpoints(
 	resources := core_xds.NewResourceSet()
 
 	for _, serviceName := range services.Sorted() {
-		// When no zone egress is present in a mesh Endpoints for ExternalServices
-		// are specified in load assignment in DNS Cluster.
-		// We are not allowed to add endpoints with DNS names through EDS.
 		service := services[serviceName]
 		meshCtx := ctx.Mesh
 
-		internalService := !ctx.Mesh.IsExternalService(serviceName)
-		meshExternalService := isMeshExternalService(meshCtx.EndpointMap[serviceName])
-		externalServiceThroughEgress := ctx.Mesh.IsExternalService(serviceName) &&
-			!meshExternalService &&
-			meshCtx.Resource.MTLSEnabled() &&
-			len(meshCtx.ZoneEgresses) > 0
-		if internalService || meshExternalService || externalServiceThroughEgress {
-			for _, cluster := range service.Clusters() {
-				// A cluster pinned to another mesh through the kuma.io/mesh tag sourced
-				// its endpoints from the legacy ZoneIngress, so it now has none.
-				var endpoints core_xds.EndpointMap
-				if cluster.Mesh() == "" {
-					endpoints = meshCtx.EndpointMap
-				}
-
-				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(
-					user.Ctx(context.TODO(), user.ControlPlane),
-					proxy.Dataplane.GetMeta().GetMesh(),
-					meshCtx.Hash,
-					cluster,
-					proxy.APIVersion,
-					endpoints,
+		for _, cluster := range service.Clusters() {
+			loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(
+				user.Ctx(context.TODO(), user.ControlPlane),
+				proxy.Dataplane.GetMeta().GetMesh(),
+				meshCtx.Hash,
+				cluster,
+				proxy.APIVersion,
+				meshCtx.EndpointMap,
+			)
+			if err != nil {
+				return nil, errors.Wrapf(err,
+					"could not get ClusterLoadAssignment for %s",
+					serviceName,
 				)
-				if err != nil {
-					return nil, errors.Wrapf(err,
-						"could not get ClusterLoadAssignment for %s",
-						serviceName,
-					)
-				}
-
-				resources.Add(&core_xds.Resource{
-					Name:           cluster.Name(),
-					Origin:         metadata.OriginOutbound,
-					Resource:       loadAssignment,
-					ResourceOrigin: service.BackendRef().Resource(),
-				})
 			}
+
+			resources.Add(&core_xds.Resource{
+				Name:           cluster.Name(),
+				Origin:         metadata.OriginOutbound,
+				Resource:       loadAssignment,
+				ResourceOrigin: service.BackendRef().Resource(),
+			})
 		}
 	}
 

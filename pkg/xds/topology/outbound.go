@@ -28,52 +28,22 @@ import (
 
 var outboundLog = core.Log.WithName("xds").WithName("outbound")
 
-// BuildDataplaneEgressEndpointMap builds endpoints only for MeshExternalServices reachable from the dataplane.
-// Used for embedded egress listeners in a Dataplane resource.
-// Always uses unified (KRI) naming as this is new infrastructure that only supports Exclusive MeshServices mode.
-func BuildDataplaneZoneEgressEndpointMap(
-	ctx context.Context,
-	mesh *core_mesh.MeshResource,
-	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
-	loader datasource.Loader,
-) core_xds.EgressEndpointMap {
-	tmp := core_xds.EndpointMap{}
-	for _, mes := range meshExternalServices {
-		if err := createMeshExternalServiceEndpoint(ctx, tmp, mes, mesh, loader, true); err != nil {
-			outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
-		}
-	}
-	result := core_xds.EgressEndpointMap{}
-	for name, endpoints := range tmp {
-		group := core_xds.EgressEndpointGroup{Endpoints: endpoints}
-		if len(endpoints) > 0 && endpoints[0].ExternalService != nil {
-			group.Protocol = endpoints[0].ExternalService.Protocol
-			group.OwnerResource = endpoints[0].ExternalService.OwnerResource
-		}
-		result[name] = group
-	}
-	return result
-}
+// A Dataplane gets one endpoint map per listener kind it exposes, because the same
+// destination resolves to different endpoints depending on who is routing to it:
+//
+//   - BuildDataplaneEndpointMap      - a regular proxy's outbounds
+//   - BuildDataplaneZoneIngressEndpointMap - an embedded zone ingress, terminating traffic
+//     from other zones and forwarding it to local workloads
+//   - BuildDataplaneZoneEgressEndpointMap  - an embedded zone egress, terminating traffic
+//     from the local zone and forwarding it outside the mesh
+//
+// Every destination is backed by a real resource (MeshService, MeshMultiZoneService,
+// MeshExternalService); kuma.io/service is not a source of endpoints.
 
-// BuildDataplaneZoneIngressEndpointMap builds endpoints only for local MeshServices and MeshMultiZoneServices.
-// Used for embedded zone ingress listeners in a Dataplane resource.
-func BuildDataplaneZoneIngressEndpointMap(
-	mesh *core_mesh.MeshResource,
-	meshServices []*meshservice_api.MeshServiceResource,
-	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
-	dataplanes []*core_mesh.DataplaneResource,
-) core_xds.EndpointMap {
-	outbound := core_xds.EndpointMap{}
-	meshServicesByKri := make(map[kri.Identifier]*meshservice_api.MeshServiceResource, len(meshServices))
-	for _, ms := range meshServices {
-		meshServicesByKri[kri.From(ms)] = ms
-	}
-	fillLocalMeshServices(outbound, meshServices, dataplanes)
-	fillMeshMultiZoneServices(outbound, meshServicesByKri, meshMultiZoneServices)
-	return outbound
-}
-
-func BuildEdsEndpointMap(
+// BuildDataplaneEndpointMap builds the endpoints a regular Dataplane routes to: local and
+// remote MeshServices, MeshMultiZoneServices, and MeshExternalServices reached through a
+// zone egress.
+func BuildDataplaneEndpointMap(
 	ctx context.Context,
 	localZone string,
 	meshServices []*meshservice_api.MeshServiceResource,
@@ -87,36 +57,68 @@ func BuildEdsEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	meshServicesByKri := make(map[kri.Identifier]*meshservice_api.MeshServiceResource, len(meshServices))
-	for _, ms := range meshServices {
-		meshServicesByKri[kri.From(ms)] = ms
-	}
-
 	fillLocalMeshServices(outbound, meshServices, dataplanes)
-	// we want to prefer endpoints build by MeshService
-	// this way we can for example stop cross-zone traffic by default using kuma.io/service
-	meshServiceDestinations := map[core_xds.ServiceName]struct{}{}
-	for name := range outbound {
-		meshServiceDestinations[name] = struct{}{}
-	}
-
-	fillDataplaneOutbounds(outbound, dataplanes, meshServiceDestinations)
-
 	fillRemoteMeshServices(outbound, meshServices, meshZoneAddresses, localZone, mtlsEnabled)
-
-	fillExternalServicesOutboundsThroughEgress(ctx, outbound, meshExternalServices, egressAddresses, loader)
-
-	// it has to be last because it reuses endpoints for other cases
-	fillMeshMultiZoneServices(outbound, meshServicesByKri, meshMultiZoneServices)
+	fillMeshExternalServicesOnDataplane(ctx, outbound, meshExternalServices, egressAddresses, loader)
+	// has to be last, it republishes the endpoints the fillers above produced
+	fillMeshMultiZoneServices(outbound, meshServices, meshMultiZoneServices)
 
 	return outbound
 }
 
+// BuildDataplaneZoneIngressEndpointMap builds the endpoints an embedded zone ingress listener
+// forwards to: local MeshServices and the MeshMultiZoneServices covering them. A zone ingress
+// only ever terminates traffic destined for its own zone, so remote and external destinations
+// are absent by design.
+func BuildDataplaneZoneIngressEndpointMap(
+	meshServices []*meshservice_api.MeshServiceResource,
+	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
+	dataplanes []*core_mesh.DataplaneResource,
+) core_xds.EndpointMap {
+	outbound := core_xds.EndpointMap{}
+
+	fillLocalMeshServices(outbound, meshServices, dataplanes)
+	// has to be last, it republishes the endpoints the filler above produced
+	fillMeshMultiZoneServices(outbound, meshServices, meshMultiZoneServices)
+
+	return outbound
+}
+
+// BuildDataplaneZoneEgressEndpointMap builds the endpoints an embedded zone egress listener
+// forwards to: the real addresses of every MeshExternalService. This is the far side of the
+// hop that BuildDataplaneEndpointMap points at the egress itself.
+//
+// The result carries per-destination protocol and owner alongside the endpoints, which the
+// egress listener needs to pick a filter chain. Always uses unified (KRI) naming, as this is
+// new infrastructure that only supports Exclusive MeshServices mode.
+func BuildDataplaneZoneEgressEndpointMap(
+	ctx context.Context,
+	mesh *core_mesh.MeshResource,
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
+	loader datasource.Loader,
+) core_xds.EgressEndpointMap {
+	outbound := core_xds.EgressEndpointMap{}
+	fillMeshExternalServicesOnEgress(ctx, outbound, meshExternalServices, mesh, loader)
+	return outbound
+}
+
+// fillMeshMultiZoneServices publishes, under each MeshMultiZoneService destination, the
+// endpoints already built for the MeshServices it matched. It reuses what the other fillers
+// produced, so it must run after them.
 func fillMeshMultiZoneServices(
 	outbound core_xds.EndpointMap,
-	meshServicesByName map[kri.Identifier]*meshservice_api.MeshServiceResource,
+	meshServices []*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 ) {
+	if len(meshMultiZoneServices) == 0 {
+		return
+	}
+
+	meshServicesByName := make(map[kri.Identifier]*meshservice_api.MeshServiceResource, len(meshServices))
+	for _, ms := range meshServices {
+		meshServicesByName[kri.From(ms)] = ms
+	}
+
 	for _, mzSvc := range meshMultiZoneServices {
 		for _, matchedMs := range mzSvc.Status.MeshServices {
 			ri := kri.Identifier{
@@ -221,59 +223,6 @@ func fillRemoteMeshServices(
 	}
 }
 
-type MeshServiceIdentity struct {
-	Resource   *meshservice_api.MeshServiceResource
-	Identities map[string]struct{}
-}
-
-// fillDataplaneOutbounds adds one endpoint per healthy inbound of every local
-// Dataplane, keyed by the legacy kuma.io/service. All endpoints get the same
-// weight, so instances of a service load balance fairly between each other.
-func fillDataplaneOutbounds(
-	outbound core_xds.EndpointMap,
-	dataplanes []*core_mesh.DataplaneResource,
-	meshServiceDestinations map[core_xds.ServiceName]struct{},
-) {
-	for _, dataplane := range dataplanes {
-		dpSpec := dataplane.Spec
-		dpNetworking := dpSpec.GetNetworking()
-
-		for _, inbound := range dpNetworking.GetHealthyInbounds() {
-			inboundTags := endpointIdentity(dataplane, inbound)
-			// This map is keyed by the legacy kuma.io/service, so the inbound's
-			// own service tag has to win over the Dataplane's kuma.io/service
-			// label: a Dataplane provisioned before the move to labels declares
-			// its service only per inbound, and may expose several of them.
-			serviceName := inbound.GetServiceFallback(inboundTags[mesh_proto.ServiceTag])
-			inboundInterface := dpNetworking.ToInboundInterface(inbound)
-			inboundAddress := inboundInterface.DataplaneAdvertisedIP
-			inboundPort := inboundInterface.DataplanePort
-
-			// A dataplane that declares no service at all (neither an inbound
-			// tag nor a kuma.io/service label) has no legacy identity to
-			// publish; it relies on MeshService for outbound discovery instead.
-			if serviceName == "" {
-				continue
-			}
-			inboundTags[mesh_proto.ServiceTag] = serviceName
-
-			if _, ok := meshServiceDestinations[serviceName]; ok {
-				continue
-			}
-
-			// TODO(yskopets): do we need to dedup?
-			// TODO(yskopets): sort ?
-			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-				Target:   inboundAddress,
-				Port:     inboundPort,
-				Tags:     inboundTags,
-				Weight:   1,
-				Locality: GetLocality(getZone(inboundTags)),
-			})
-		}
-	}
-}
-
 // endpointIdentity returns the tags that make up an endpoint's load-balancing
 // identity, sourced from the Dataplane's own resource labels. The inbound's
 // protocol is carried alongside them because service-level protocol inference
@@ -284,12 +233,14 @@ func endpointIdentity(dataplane *core_mesh.DataplaneResource, inbound *mesh_prot
 	if tags == nil {
 		tags = map[string]string{}
 	}
-	if protocol := inbound.GetProtocolFallback(); protocol != "" {
+	if protocol := inbound.GetProtocol(); protocol != "" {
 		tags[mesh_proto.ProtocolTag] = protocol
 	}
 	return tags
 }
 
+// fillLocalMeshServices adds one endpoint per healthy inbound backing a MeshService of this
+// zone, pointing straight at the workload.
 func fillLocalMeshServices(
 	outbound core_xds.EndpointMap,
 	meshServices []*meshservice_api.MeshServiceResource,
@@ -331,55 +282,6 @@ func buildCoordinates(address string, port uint32) string {
 		address,
 		strconv.FormatUint(uint64(port), 10),
 	)
-}
-
-func createMeshExternalServiceEndpoint(
-	ctx context.Context,
-	outbounds core_xds.EndpointMap,
-	mes *meshexternalservice_api.MeshExternalServiceResource,
-	mesh *core_mesh.MeshResource,
-	loader datasource.Loader,
-	unifiedNaming bool,
-) error {
-	es := &core_xds.ExternalService{
-		Protocol:      mes.Spec.Match.Protocol,
-		OwnerResource: kri.From(mes),
-	}
-	tags := maps.Clone(mes.Meta.GetLabels())
-	if tags == nil {
-		tags = map[string]string{}
-	}
-	meshName := mesh.GetMeta().GetName()
-	tls := mes.Spec.Tls
-	if tls != nil && tls.Enabled {
-		err := setTlsConfiguration(ctx, tls, es, meshName, loader)
-		if err != nil {
-			return err
-		}
-	}
-
-	// if all ip make it static - it's done in endpoint_cluster_configurer
-	for i, endpoint := range pointer.Deref(mes.Spec.Endpoints) {
-		if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) && tls != nil && tls.Enabled {
-			es.ServerName = endpoint.Address
-		}
-		priority := pointer.DerefOr(endpoint.Priority, 0)
-		locality := &core_xds.Locality{
-			Priority: priority,
-			SubZone:  "priority-" + strconv.Itoa(int(priority)),
-		}
-		outboundEndpoint := &core_xds.Endpoint{
-			Target:          endpoint.Address,
-			Port:            uint32(endpoint.Port),
-			Weight:          1,
-			ExternalService: es,
-			Tags:            tags,
-			Locality:        locality,
-		}
-		name := destinationname.MustResolve(unifiedNaming, mes, mes.Spec.Match)
-		outbounds[name] = append(outbounds[name], *outboundEndpoint)
-	}
-	return nil
 }
 
 func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, es *core_xds.ExternalService, meshName string, loader datasource.Loader) error {
@@ -449,7 +351,11 @@ func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, 
 	return nil
 }
 
-func fillExternalServicesOutboundsThroughEgress(
+// fillMeshExternalServicesOnDataplane points every MeshExternalService destination at the zone
+// egress instances rather than at the external address itself: a regular proxy always takes the
+// egress hop, and the egress resolves the real endpoints (see fillMeshExternalServicesOnEgress).
+// With no egress instances the destination is left without endpoints.
+func fillMeshExternalServicesOnDataplane(
 	ctx context.Context,
 	outbound core_xds.EndpointMap,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
@@ -488,6 +394,68 @@ func fillExternalServicesOutboundsThroughEgress(
 
 			outbound[serviceName] = append(outbound[serviceName], endpoint)
 		}
+	}
+}
+
+// fillMeshExternalServicesOnEgress resolves every MeshExternalService to its real endpoints,
+// one per entry in spec.endpoints. This is the egress's own view of the destination; a
+// MeshExternalService whose TLS config cannot be loaded is logged and skipped so one bad
+// resource does not drop the whole map.
+func fillMeshExternalServicesOnEgress(
+	ctx context.Context,
+	outbound core_xds.EgressEndpointMap,
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
+	mesh *core_mesh.MeshResource,
+	loader datasource.Loader,
+) {
+	for _, mes := range meshExternalServices {
+		es := &core_xds.ExternalService{
+			Protocol:      mes.Spec.Match.Protocol,
+			OwnerResource: kri.From(mes),
+		}
+		tags := maps.Clone(mes.Meta.GetLabels())
+		if tags == nil {
+			tags = map[string]string{}
+		}
+		tls := mes.Spec.Tls
+		if tls != nil && tls.Enabled {
+			if err := setTlsConfiguration(ctx, tls, es, mesh.GetMeta().GetName(), loader); err != nil {
+				outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+				continue
+			}
+		}
+
+		// if all ip make it static - it's done in endpoint_cluster_configurer
+		var endpoints []core_xds.Endpoint
+		for i, endpoint := range pointer.Deref(mes.Spec.Endpoints) {
+			if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) && tls != nil && tls.Enabled {
+				es.ServerName = endpoint.Address
+			}
+			priority := pointer.DerefOr(endpoint.Priority, 0)
+			endpoints = append(endpoints, core_xds.Endpoint{
+				Target:          endpoint.Address,
+				Port:            uint32(endpoint.Port),
+				Weight:          1,
+				ExternalService: es,
+				Tags:            tags,
+				Locality: &core_xds.Locality{
+					Priority: priority,
+					SubZone:  "priority-" + strconv.Itoa(int(priority)),
+				},
+			})
+		}
+		if len(endpoints) == 0 {
+			continue
+		}
+
+		// Always unified (KRI) naming: the embedded egress is new infrastructure that only
+		// supports Exclusive MeshServices mode.
+		serviceName := destinationname.MustResolve(true, mes, mes.Spec.Match)
+		group := outbound[serviceName]
+		group.Protocol = es.Protocol
+		group.OwnerResource = es.OwnerResource
+		group.Endpoints = append(group.Endpoints, endpoints...)
+		outbound[serviceName] = group
 	}
 }
 

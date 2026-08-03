@@ -266,15 +266,15 @@ var _ = Describe("Dataplane_Networking", func() {
 })
 
 var _ = Describe("Dataplane_Networking_Inbound", func() {
-	Describe("GetProtocolFallback()", func() {
+	Describe("GetProtocol()", func() {
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
 			expected string
 		}
 
-		DescribeTable("should return protocol from field, falling back to the tag",
+		DescribeTable("should return the protocol field, ignoring the legacy tag",
 			func(given testCase) {
-				Expect(given.inbound.GetProtocolFallback()).To(Equal(given.expected))
+				Expect(given.inbound.GetProtocol()).To(Equal(given.expected))
 			},
 			Entry("inbound is `nil`", testCase{
 				inbound:  nil,
@@ -290,11 +290,11 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 				},
 				expected: "grpc",
 			}),
-			Entry("legacy inbound carries the protocol only as a tag", testCase{
+			Entry("the kuma.io/protocol tag is not a source of protocol", testCase{
 				inbound: &Dataplane_Networking_Inbound{
 					Tags: map[string]string{ProtocolTag: "http"},
 				},
-				expected: "http",
+				expected: "",
 			}),
 			Entry("protocol field wins over the tag", testCase{
 				inbound: &Dataplane_Networking_Inbound{

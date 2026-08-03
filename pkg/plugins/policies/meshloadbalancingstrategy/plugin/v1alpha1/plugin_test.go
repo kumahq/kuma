@@ -1846,7 +1846,7 @@ func createEndpointWith(zone string, ip string, extraTags map[string]string) cor
 
 // createEndpointWithLabels models an endpoint whose workload labels are
 // folded into the endpoint tags at topology build time (see
-// BuildEdsEndpointMap), so they live under the same envoy.lb key as the
+// BuildDataplaneEndpointMap), so they live under the same envoy.lb key as the
 // system tags.
 func createEndpointWithLabels(ip string, labels map[string]string) core_xds.Endpoint {
 	return *xds_builders.Endpoint().

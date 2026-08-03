@@ -183,15 +183,8 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 			casByTrustDomain[meshName] = append(casByTrustDomain[meshName], ca)
 		}
 	}
-	zoneEgresses := resources.ZoneEgresses().Items
 	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
-	if len(zoneEgressList) == 0 {
-		// Do not mix legacy zone egresses with dataplane listeners in one pool because
-		// they may carry different TLS identities and break SAN validation.
-		// Fallback to legacy only when no dataplane-based instances were resolved.
-		zoneEgressList = resolveLegacyZoneEgresses(zoneEgresses)
-	}
-	endpointMap := xds_topology.BuildEdsEndpointMap(
+	endpointMap := xds_topology.BuildDataplaneEndpointMap(
 		ctx,
 		m.zone,
 		meshServices,
@@ -205,7 +198,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	)
 
 	dpZoneIngressEndpointMap := xds_topology.BuildDataplaneZoneIngressEndpointMap(
-		mesh,
 		meshServices,
 		meshMultiZoneServices,
 		dataplanes,
@@ -471,11 +463,6 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	for _, resType := range managedTypes {
 		_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
 	}
-
-	for _, m := range maps.SortedKeys(resources.CrossMeshResources) {
-		_, _ = hasher.Write([]byte(m))
-		_, _ = hasher.Write(resources.CrossMeshResources[m].Hash())
-	}
 	return hasher.Sum(nil)
 }
 
@@ -505,15 +492,6 @@ func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalCont
 	for _, resType := range managedTypes {
 		if affectsPolicyMatching(resType) {
 			_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
-		}
-	}
-	for _, meshName := range maps.SortedKeys(resources.CrossMeshResources) {
-		_, _ = hasher.Write([]byte(meshName))
-		crossMesh := resources.CrossMeshResources[meshName]
-		for _, resType := range maps.SortedKeys(crossMesh) {
-			if affectsPolicyMatching(resType) {
-				_, _ = hasher.Write(resourceListXDSHash(crossMesh[resType]))
-			}
 		}
 	}
 	return hasher.Sum(nil)
@@ -583,15 +561,6 @@ func resolveZoneEgresses(
 		}
 	}
 	return dpEgresses
-}
-
-func resolveLegacyZoneEgresses(zoneEgresses []*core_mesh.ZoneEgressResource) []xds.ZoneEgressInstance {
-	var legacyEgresses []xds.ZoneEgressInstance
-	for _, ze := range zoneEgresses {
-		n := ze.Spec.GetNetworking()
-		legacyEgresses = append(legacyEgresses, xds.ZoneEgressInstance{Address: n.GetAddress(), Port: n.GetPort()})
-	}
-	return legacyEgresses
 }
 
 func getCAsByTrustDomain(trusts []*meshtrust_api.MeshTrustResource) map[string][]PEMBytes {

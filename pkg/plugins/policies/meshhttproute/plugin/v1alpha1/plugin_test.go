@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -868,8 +869,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
-			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, zoneEgressDataplane())
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -929,8 +929,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			}
 
-			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, zoneEgressDataplane())
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -964,8 +963,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
-			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, zoneEgressDataplane())
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -1002,8 +1000,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
-			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, zoneEgressDataplane())
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -1060,8 +1057,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
-			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, zoneEgressDataplane())
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -1121,13 +1117,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService(&meshExtSvc, xds_types.FeatureUnifiedResourceNaming)
-			egress := builders.ZoneEgress().WithPort(10002).Build()
-
 			mc := meshContextWithResources(
 				builders.Mesh(),
 				dp.Build(),
 				&meshExtSvc,
-				egress,
+				zoneEgressDataplane(),
 			)
 
 			return outboundsTestCase{
@@ -2995,6 +2989,23 @@ var _ = Describe("MeshHTTPRoute", func() {
 		}()),
 	)
 })
+
+// zoneEgressDataplane is a Dataplane exposing an embedded zone egress listener, which is
+// how MeshExternalServices become reachable through an egress.
+func zoneEgressDataplane() *core_mesh.DataplaneResource {
+	return builders.Dataplane().
+		WithName("zone-egress-01").
+		WithAddress("127.0.0.1").
+		With(func(d *core_mesh.DataplaneResource) {
+			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
+				Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+				Address: "127.0.0.1",
+				Port:    10002,
+				Name:    "ze-port",
+				State:   mesh_proto.Dataplane_Networking_Listener_Ready,
+			}}
+		}).Build()
+}
 
 func meshContextWithResources(
 	meshBuilder *builders.MeshBuilder,
