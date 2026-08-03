@@ -182,18 +182,23 @@ jobs:
           skip_cis_scan: false
         # TODO in the future we may want to have prerelease images and use `regctl image copy` to move them to their final location
       # Gates the push, not the build: a wrong version must never reach the registry.
-      - name: Assert version matches tag
-        if: ${{ github.ref_type == 'tag' }}
+      # kuma-cni has no version subcommand (a CNI plugin binary, not a CLI), so
+      # there's nothing to assert for it.
+      - name: Assert built binary reports tag version
+        if: ${{ github.ref_type == 'tag' && matrix.image != 'kuma-cni' }}
         env:
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          expected="${TAG_NAME#v}"
-          actual="$(make build/info/version)"
-          if [ "${actual}" != "${expected}" ]; then
-            echo "::error title=Version mismatch::build reports version '${actual}', expected tag version '${expected}'"
-            exit 1
-          fi
-          echo "build correctly reports tag version '${actual}'"
+          case "${{ matrix.image }}" in
+            kuma-init) binary=kumactl ;;
+            kuma-universal) binary=kuma-cp ;;
+            *) binary="${{ matrix.image }}" ;;
+          esac
+          for arch in $(make -s docker/info/enabled-arches); do
+            make check/binary-version \
+              BINARY_PATH="build/artifacts-linux-${arch}/${binary}/${binary}" \
+              EXPECTED_VERSION="${TAG_NAME#v}"
+          done
       - name: publish images
         id: release_images
         env:
