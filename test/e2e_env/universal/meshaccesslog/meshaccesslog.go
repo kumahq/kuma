@@ -32,8 +32,9 @@ labels:
   kuma.io/env: universal
 spec:
   selector:
-    dataplaneTags:
-      kuma.io/service: test-server
+    dataplaneLabels:
+      matchLabels:
+        kuma.io/service: test-server
   ports:
   - port: 80
     targetPort: 80
@@ -270,7 +271,8 @@ spec:
          default:
            backendRefs:
              - kind: MeshService
-               name: test-server
+               labels:
+                 kuma.io/display-name: test-server
                port: 80
 `, meshName))(universal.Cluster)).To(Succeed())
 
@@ -292,7 +294,8 @@ spec:
          default:
            backendRefs:
              - kind: MeshService
-               name: test-server
+               labels:
+                 kuma.io/display-name: test-server
                port: 80
 `, meshName))(universal.Cluster)).To(Succeed())
 

@@ -2,6 +2,7 @@ package builders
 
 import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
@@ -28,30 +29,41 @@ func TargetRefDataplaneLabels(kv ...string) common_api.TargetRef {
 func TargetRefDataplaneName(name string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: common_api.Dataplane,
-		Name: &name,
+		Labels: pointer.To(map[string]string{
+			mesh_proto.DisplayName: name,
+		}),
 	}
 }
 
 func TargetRefService(name string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: common_api.MeshService,
-		Name: &name,
+		Labels: pointer.To(map[string]string{
+			mesh_proto.DisplayName: name,
+		}),
 	}
 }
 
 func TargetRefServiceSubset(name string, kv ...string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: common_api.LegacyMeshServiceSubsetKind(),
-		Name: &name,
+		Labels: pointer.To(map[string]string{
+			mesh_proto.DisplayName: name,
+		}),
 		Tags: pointer.To(TagsKVToMap(kv)),
 	}
 }
 
 func TargetRefMeshService(name, namespace, sectionName string) common_api.TargetRef {
+	labels := map[string]string{
+		mesh_proto.DisplayName: name,
+	}
+	if namespace != "" {
+		labels[mesh_proto.KubeNamespaceTag] = namespace
+	}
 	return common_api.TargetRef{
 		Kind:        common_api.MeshService,
-		Name:        &name,
-		Namespace:   pointer.To(namespace),
+		Labels:      pointer.To(labels),
 		SectionName: pointer.To(sectionName),
 	}
 }
@@ -74,6 +86,8 @@ func TargetRefMeshHTTPRouteLabels(labels map[string]string) common_api.TargetRef
 func TargetRefMeshExternalService(name string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: common_api.MeshExternalService,
-		Name: &name,
+		Labels: pointer.To(map[string]string{
+			mesh_proto.DisplayName: name,
+		}),
 	}
 }

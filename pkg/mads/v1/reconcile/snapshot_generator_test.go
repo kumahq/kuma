@@ -24,6 +24,7 @@ import (
 	// to match custom policy resource type like you need to register them manually in tests
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
@@ -328,7 +329,7 @@ var _ = Describe("snapshotGenerator", func() {
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-01").
 						WithServices("backend-01").
 						WithAddress("192.168.0.1").
-						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-01"}).
+						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-01", metadata.KumaWorkload: "backend-01"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-02").
@@ -396,17 +397,19 @@ var _ = Describe("snapshotGenerator", func() {
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-01").
 						WithServices("backend-01").
 						WithAddress("192.168.0.1").
+						WithLabels(map[string]string{metadata.KumaWorkload: "backend-01"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-02").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-02").
 						WithAddress("192.168.0.2").
-						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-02"}).
+						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-02", metadata.KumaWorkload: "backend-02"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-03").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-03").
 						WithAddress("192.168.0.3").
+						WithLabels(map[string]string{metadata.KumaWorkload: "backend-03"}).
 						Build(),
 				},
 				meshMetrics: []*v1alpha1.MeshMetricResource{
@@ -517,17 +520,19 @@ var _ = Describe("snapshotGenerator", func() {
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-01").
 						WithServices("backend-01").
 						WithAddress("192.168.0.1").
+						WithLabels(map[string]string{metadata.KumaWorkload: "backend-01"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-02").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-02").
 						WithAddress("192.168.0.2").
-						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-02"}).
+						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-02", metadata.KumaWorkload: "backend-02"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-03").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend-03").
 						WithAddress("192.168.0.3").
+						WithLabels(map[string]string{metadata.KumaWorkload: "backend-03"}).
 						Build(),
 				},
 				meshMetrics: []*v1alpha1.MeshMetricResource{

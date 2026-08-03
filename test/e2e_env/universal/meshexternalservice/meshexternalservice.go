@@ -416,7 +416,8 @@ spec:
           default:
             backendRefs:
               - kind: MeshExternalService
-                name: mes-http-2-route
+                labels:
+                  kuma.io/display-name: mes-http-2-route
                 weight: 100
 `, meshNameNoDefaults)
 			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
@@ -502,7 +503,8 @@ spec:
         - default:
             backendRefs:
               - kind: MeshExternalService
-                name: mes-tcp-2-route
+                labels:
+                  kuma.io/display-name: mes-tcp-2-route
 `, meshNameNoDefaults)
 			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
 			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService2))).To(Succeed())

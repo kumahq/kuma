@@ -44,8 +44,13 @@ func (d *DataplaneBuilder) Build() *core_mesh.DataplaneResource {
 	return d.res
 }
 
-func (d *DataplaneBuilder) Create(s store.ResourceStore) error {
-	return s.Create(context.Background(), d.Build(), store.CreateBy(d.Key()))
+func (d *DataplaneBuilder) Create(s store.ResourceStore, moreOpts ...store.CreateOptionsFunc) error {
+	opts := []store.CreateOptionsFunc{store.CreateBy(d.Key())}
+	opts = append(opts, moreOpts...)
+	if ls := d.res.GetMeta().GetLabels(); len(ls) > 0 {
+		opts = append(opts, store.CreateWithLabels(ls))
+	}
+	return s.Create(context.Background(), d.Build(), opts...)
 }
 
 func (d *DataplaneBuilder) Key() core_model.ResourceKey {

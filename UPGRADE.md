@@ -223,6 +223,47 @@ the DP server. If you relied on `dpServer.authn.zoneProxy.type: none` to let
 zone proxies connect without a token while data plane proxies used `dpToken`,
 zone proxies now need a dataplane token too.
 
+### `dataplaneTags` removed from the `MeshService` selector
+
+`spec.selector.dataplaneTags` matched data plane proxies by their inbound tags.
+The field has been removed; `MeshService` selects proxies by
+`spec.selector.dataplaneRef` or `spec.selector.dataplaneLabels` only.
+
+**Warning**: un-migrated selectors are silently dropped during deserialization.
+An affected `MeshService` keeps its name and ports but matches zero data plane
+proxies, so it stops producing endpoints and its status goes `Unavailable`.
+The control plane returns a warning for any `MeshService` left without a
+selector, but only when the resource is next created or updated.
+
+**Action required**
+
+Migrate any `MeshService` using `dataplaneTags` to `dataplaneLabels` before
+upgrading. Audit with:
+
+```bash
+kubectl get meshservices -A -o yaml | grep -B5 'dataplaneTags:'
+kumactl get meshservices -o yaml --all-meshes | grep -B5 'dataplaneTags:'
+```
+
+```yaml
+# Before (removed)
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+
+# After
+spec:
+  selector:
+    dataplaneLabels:
+      matchLabels:
+        app: redis
+```
+
+Inbound tags are no longer an identity source, so the replacement labels must
+exist on the `Dataplane` resource itself. On Kubernetes those come from the Pod
+labels; on Universal, set them under `labels` in the `Dataplane` resource.
+
 ### CoreDNS removed from the data plane
 
 The bundled CoreDNS binary has been removed. The data plane now always uses the in-process embedded DNS proxy (previously the default on Kubernetes and opt-in on Universal). CoreDNS and the Envoy DNS filter are no longer used, and the `coredns` binary is no longer shipped in the release tarball or the `kuma-dp` image.

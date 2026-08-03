@@ -139,9 +139,9 @@ func dataplaneOverviewsTable(now time.Time) printers.Table {
 			}
 
 			return []string{
-				meta.GetMesh(),                       // MESH
-				meta.GetName(),                       // NAME,
-				dataplane.TagSet().String(),          // TAGS
+				meta.GetMesh(), // MESH
+				meta.GetName(), // NAME,
+				core_mesh.DisplayTags(dataplane, meta.GetLabels()).String(), // TAGS
 				status.String(),                      // STATUS
 				table.Ago(lastConnected, now),        // LAST CONNECTED AGO
 				table.Ago(lastUpdated, now),          // LAST UPDATED AGO

@@ -49,12 +49,14 @@ spec:
           default:
             backendRefs:
               - kind: MeshServiceSubset
-                name: externalservice-2
+                labels:
+                  kuma.io/display-name: externalservice-2
                 weight: 1
                 tags:
                   version: v1
               - kind: MeshServiceSubset
-                name: externalservice-2
+                labels:
+                  kuma.io/display-name: externalservice-2
                 weight: 1
                 tags:
                   version: v2

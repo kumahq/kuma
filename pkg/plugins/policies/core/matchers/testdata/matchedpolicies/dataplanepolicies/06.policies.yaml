@@ -36,5 +36,6 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: test-server_multizone-meshtimeout-ns_svc_80
+                labels:
+                  kuma.io/display-name: test-server_multizone-meshtimeout-ns_svc_80
                 weight: 1

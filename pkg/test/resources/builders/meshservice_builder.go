@@ -67,17 +67,6 @@ func (m *MeshServiceBuilder) WithDataplaneRefNameSelector(name string) *MeshServ
 	return m
 }
 
-func (m *MeshServiceBuilder) WithDataplaneTagsSelector(selector map[string]string) *MeshServiceBuilder {
-	m.res.Spec.Selector = v1alpha1.Selector{
-		DataplaneTags: &selector,
-	}
-	return m
-}
-
-func (m *MeshServiceBuilder) WithDataplaneTagsSelectorKV(selectorKV ...string) *MeshServiceBuilder {
-	return m.WithDataplaneTagsSelector(TagsKVToMap(selectorKV))
-}
-
 func (m *MeshServiceBuilder) WithDataplaneLabelsSelector(selector map[string]string) *MeshServiceBuilder {
 	m.res.Spec.Selector = v1alpha1.Selector{
 		DataplaneLabels: &common_api.LabelSelector{
@@ -85,6 +74,10 @@ func (m *MeshServiceBuilder) WithDataplaneLabelsSelector(selector map[string]str
 		},
 	}
 	return m
+}
+
+func (m *MeshServiceBuilder) WithDataplaneLabelsSelectorKV(selectorKV ...string) *MeshServiceBuilder {
+	return m.WithDataplaneLabelsSelector(TagsKVToMap(selectorKV))
 }
 
 func (m *MeshServiceBuilder) AddIntPort(port, target int32, protocol core_meta.Protocol) *MeshServiceBuilder {

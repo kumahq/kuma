@@ -142,7 +142,7 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/service: backend4
+          kuma.io/unified-name: self_inbound_dp_443
     name: self_inbound_dp_443
     statPrefix: self_inbound_dp_443
     trafficDirection: INBOUND
@@ -308,7 +308,6 @@ resources:
       filterMetadata:
         io.kuma.tags:
           kuma.io/protocol: http
-          kuma.io/service: backend3
     name: self_inbound_dp_80
     statPrefix: self_inbound_dp_80
     trafficDirection: INBOUND
@@ -380,7 +379,7 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/service: loopback
+          kuma.io/unified-name: self_inbound_dp_8080
     name: self_inbound_dp_8080
     statPrefix: self_inbound_dp_8080
     trafficDirection: INBOUND
@@ -452,7 +451,7 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/service: loopbackv6
+          kuma.io/unified-name: self_inbound_dp_8081
     name: self_inbound_dp_8081
     statPrefix: self_inbound_dp_8081
     trafficDirection: INBOUND

@@ -18,7 +18,8 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: backend
+                labels:
+                  kuma.io/display-name: backend
                 weight: 100
 ---
 type: MeshHTTPRoute
@@ -40,7 +41,8 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: backend-admin
+                labels:
+                  kuma.io/display-name: backend-admin
                 weight: 100
 ---
 type: MeshTimeout

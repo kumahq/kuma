@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -72,8 +73,8 @@ func TestBackendRefReferencesRealObject(t *testing.T) {
 		"mesh service by name is real": {
 			ref: BackendRef{
 				TargetRef: TargetRef{
-					Kind: MeshService,
-					Name: pointer.To("backend"),
+					Kind:   MeshService,
+					Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
 				},
 			},
 			expected: true,
@@ -81,8 +82,8 @@ func TestBackendRefReferencesRealObject(t *testing.T) {
 		"mesh external service is real": {
 			ref: BackendRef{
 				TargetRef: TargetRef{
-					Kind: MeshExternalService,
-					Name: pointer.To("payments"),
+					Kind:   MeshExternalService,
+					Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "payments"}),
 				},
 			},
 			expected: true,
@@ -90,8 +91,8 @@ func TestBackendRefReferencesRealObject(t *testing.T) {
 		"mesh multizone service is real": {
 			ref: BackendRef{
 				TargetRef: TargetRef{
-					Kind: MeshMultiZoneService,
-					Name: pointer.To("global-backend"),
+					Kind:   MeshMultiZoneService,
+					Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "global-backend"}),
 				},
 			},
 			expected: true,
@@ -99,8 +100,8 @@ func TestBackendRefReferencesRealObject(t *testing.T) {
 		"legacy mesh service subset is not real": {
 			ref: BackendRef{
 				TargetRef: TargetRef{
-					Kind: LegacyMeshServiceSubsetKind(),
-					Name: pointer.To("backend"),
+					Kind:   LegacyMeshServiceSubsetKind(),
+					Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
 				},
 			},
 			expected: false,
@@ -122,22 +123,25 @@ func TestBackendRefReferencesRealObject(t *testing.T) {
 	}
 }
 
-func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T) {
+func TestBackendRefRealResourceSelectorDefaultsNamespaceForLabels(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		ref            BackendRef
-		defaultNs      string
+		defaultNS      string
 		expectedLabels map[string]string
 	}{
 		"MeshService": {
 			ref: BackendRef{
 				TargetRef: TargetRef{
 					Kind: MeshService,
-					Name: pointer.To("backend"),
+					Labels: pointer.To(map[string]string{
+						mesh_proto.DisplayName:      "backend",
+						mesh_proto.KubeNamespaceTag: "team-a",
+					}),
 				},
 			},
-			defaultNs: "team-a",
+			defaultNS: "ignored",
 			expectedLabels: map[string]string{
 				mesh_proto.DisplayName:      "backend",
 				mesh_proto.KubeNamespaceTag: "team-a",
@@ -147,10 +151,13 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T
 			ref: BackendRef{
 				TargetRef: TargetRef{
 					Kind: MeshExternalService,
-					Name: pointer.To("payments"),
+					Labels: pointer.To(map[string]string{
+						mesh_proto.DisplayName:      "payments",
+						mesh_proto.KubeNamespaceTag: "team-a",
+					}),
 				},
 			},
-			defaultNs: "team-a",
+			defaultNS: "ignored",
 			expectedLabels: map[string]string{
 				mesh_proto.DisplayName:      "payments",
 				mesh_proto.KubeNamespaceTag: "team-a",
@@ -160,54 +167,47 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T
 			ref: BackendRef{
 				TargetRef: TargetRef{
 					Kind: MeshMultiZoneService,
-					Name: pointer.To("global-backend"),
+					Labels: pointer.To(map[string]string{
+						mesh_proto.DisplayName:      "global-backend",
+						mesh_proto.KubeNamespaceTag: "team-a",
+					}),
 				},
 			},
-			defaultNs: "team-a",
+			defaultNS: "ignored",
 			expectedLabels: map[string]string{
 				mesh_proto.DisplayName:      "global-backend",
 				mesh_proto.KubeNamespaceTag: "team-a",
 			},
 		},
-		"explicit namespace wins": {
-			ref: BackendRef{
-				TargetRef: TargetRef{
-					Kind:      MeshExternalService,
-					Name:      pointer.To("payments"),
-					Namespace: pointer.To("team-b"),
-				},
-			},
-			defaultNs: "team-a",
-			expectedLabels: map[string]string{
-				mesh_proto.DisplayName:      "payments",
-				mesh_proto.KubeNamespaceTag: "team-b",
-			},
-		},
-		"MeshService explicit namespace wins over legacy-looking name": {
-			ref: BackendRef{
-				TargetRef: TargetRef{
-					Kind:      MeshService,
-					Name:      pointer.To("backend_prod_svc"),
-					Namespace: pointer.To("explicit-ns"),
-				},
-			},
-			defaultNs: "team-a",
-			expectedLabels: map[string]string{
-				mesh_proto.DisplayName:      "backend_prod_svc",
-				mesh_proto.KubeNamespaceTag: "explicit-ns",
-			},
-		},
-		"MeshService unported svc-suffixed name is literal": {
+		"MeshService injects default namespace when only display-name is set": {
 			ref: BackendRef{
 				TargetRef: TargetRef{
 					Kind: MeshService,
-					Name: pointer.To("foo_bar_svc"),
+					Labels: pointer.To(map[string]string{
+						mesh_proto.DisplayName: "backend",
+					}),
 				},
 			},
-			defaultNs: "team-a",
+			defaultNS: "team-a",
+			expectedLabels: map[string]string{
+				mesh_proto.DisplayName:      "backend",
+				mesh_proto.KubeNamespaceTag: "team-a",
+			},
+		},
+		"MeshService labels are cloned": {
+			ref: BackendRef{
+				TargetRef: TargetRef{
+					Kind: MeshService,
+					Labels: pointer.To(map[string]string{
+						mesh_proto.DisplayName:      "foo_bar_svc",
+						mesh_proto.KubeNamespaceTag: "explicit-ns",
+					}),
+				},
+			},
+			defaultNS: "ignored",
 			expectedLabels: map[string]string{
 				mesh_proto.DisplayName:      "foo_bar_svc",
-				mesh_proto.KubeNamespaceTag: "team-a",
+				mesh_proto.KubeNamespaceTag: "explicit-ns",
 			},
 		},
 	}
@@ -216,7 +216,7 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForNameRefs(t *testing.T
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			labels, sectionName, ok := tt.ref.RealResourceSelector(tt.defaultNs)
+			labels, sectionName, ok := tt.ref.RealResourceSelector(tt.defaultNS)
 			if !ok {
 				t.Fatal("RealResourceSelector() returned ok=false")
 			}
@@ -236,7 +236,7 @@ func TestBackendRefRealResourceSelectorKeepsExplicitSectionNameOverPort(t *testi
 	ref := BackendRef{
 		TargetRef: TargetRef{
 			Kind:        MeshService,
-			Name:        pointer.To("backend"),
+			Labels:      pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
 			SectionName: pointer.To("http"),
 		},
 		Port: pointer.To(uint32(80)),
@@ -251,45 +251,79 @@ func TestBackendRefRealResourceSelectorKeepsExplicitSectionNameOverPort(t *testi
 	}
 }
 
-func TestBackendRefRealResourceSelectorTreatsPlainUnderscoreMeshServiceNamesAsNames(t *testing.T) {
+func TestBackendRefRealResourceSelectorRejectsRealRefsWithoutLabels(t *testing.T) {
 	t.Parallel()
 
 	ref := BackendRef{
 		TargetRef: TargetRef{
-			Kind:      MeshService,
-			Name:      pointer.To("web_app_prod"),
-			Namespace: pointer.To("team-a"),
+			Kind: MeshService,
 		},
 	}
 
-	labels, sectionName, ok := ref.RealResourceSelector("default")
-	if !ok {
-		t.Fatal("RealResourceSelector() returned ok=false")
+	if _, _, ok := ref.RealResourceSelector("default"); ok {
+		t.Fatal("RealResourceSelector() returned ok=true, want false")
 	}
-	if sectionName != "" {
-		t.Fatalf("RealResourceSelector() sectionName = %q, want empty", sectionName)
+}
+
+func TestTargetRefUnmarshalIgnoresLegacyNameNamespaceFields(t *testing.T) {
+	t.Parallel()
+
+	var ref TargetRef
+	err := json.Unmarshal([]byte(`{
+		"kind": "MeshService",
+		"name": "backend",
+		"namespace": "team-a",
+		"sectionName": "http"
+	}`), &ref)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	expectedLabels := map[string]string{
-		mesh_proto.DisplayName:      "web_app_prod",
-		mesh_proto.KubeNamespaceTag: "team-a",
+	if ref.Labels != nil {
+		t.Fatalf("labels = %v, want nil", pointer.Deref(ref.Labels))
 	}
-	if !reflect.DeepEqual(labels, expectedLabels) {
-		t.Fatalf("RealResourceSelector() labels = %v, want %v", labels, expectedLabels)
+	if pointer.Deref(ref.SectionName) != "http" {
+		t.Fatalf("sectionName = %q, want http", pointer.Deref(ref.SectionName))
+	}
+}
+
+func TestBackendRefUnmarshalIgnoresLegacyNameAndKeepsBackendFields(t *testing.T) {
+	t.Parallel()
+
+	var ref BackendRef
+	err := json.Unmarshal([]byte(`{
+		"kind": "MeshService",
+		"name": "backend",
+		"weight": 7,
+		"port": 8080
+	}`), &ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if ref.Labels != nil {
+		t.Fatalf("labels = %v, want nil", pointer.Deref(ref.Labels))
+	}
+	if _, _, ok := ref.RealResourceSelector("kuma-demo"); ok {
+		t.Fatal("RealResourceSelector() returned ok=true, want false")
+	}
+	if pointer.Deref(ref.Weight) != 7 {
+		t.Fatalf("weight = %d, want 7", pointer.Deref(ref.Weight))
+	}
+	if pointer.Deref(ref.Port) != 8080 {
+		t.Fatalf("port = %d, want 8080", pointer.Deref(ref.Port))
 	}
 }
 
 func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
 	t.Parallel()
 
-	t.Run("real backend refs ignore name and mesh when labels match", func(t *testing.T) {
+	t.Run("real backend refs ignore label ordering when labels match", func(t *testing.T) {
 		t.Parallel()
 
 		a := BackendRef{
 			TargetRef: TargetRef{
 				Kind:   MeshService,
-				Name:   pointer.To("backend-a"),
-				Mesh:   pointer.To("mesh-a"),
 				Labels: &map[string]string{mesh_proto.DisplayName: "backend", mesh_proto.KubeNamespaceTag: "kuma-demo"},
 			},
 			Port: pointer.To(uint32(8080)),
@@ -297,8 +331,6 @@ func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
 		b := BackendRef{
 			TargetRef: TargetRef{
 				Kind:   MeshService,
-				Name:   pointer.To("backend-b"),
-				Mesh:   pointer.To("mesh-b"),
 				Labels: &map[string]string{mesh_proto.KubeNamespaceTag: "kuma-demo", mesh_proto.DisplayName: "backend"},
 			},
 			Port: pointer.To(uint32(8080)),
@@ -309,20 +341,22 @@ func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
 		}
 	})
 
-	t.Run("legacy mesh service name forms keep derived port distinctions", func(t *testing.T) {
+	t.Run("legacy backend refs hash service identity from labels", func(t *testing.T) {
 		t.Parallel()
 
 		base := BackendRef{
 			TargetRef: TargetRef{
-				Kind: MeshService,
-				Name: pointer.To("backend_kuma-demo_svc_8080"),
+				Kind:   LegacyMeshServiceSubsetKind(),
+				Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
 			},
+			Port: pointer.To(uint32(8080)),
 		}
 		otherPort := BackendRef{
 			TargetRef: TargetRef{
-				Kind: MeshService,
-				Name: pointer.To("backend_kuma-demo_svc_9090"),
+				Kind:   LegacyMeshServiceSubsetKind(),
+				Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
 			},
+			Port: pointer.To(uint32(9090)),
 		}
 
 		if base.Hash() == otherPort.Hash() {

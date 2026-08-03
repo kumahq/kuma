@@ -11,6 +11,11 @@ on:
   workflow_run:
     workflows: ["build-test-distribute"]
     types: [completed]
+    # cuts the dominant noise source: every master/release-* push completion
+    # otherwise creates a (skipped) run before the guard job's `if` even
+    # evaluates. Tags aren't filterable here (GitHub doesn't expose tag
+    # matching for workflow_run), so tag-shape validation still lives in guard.
+    branches-ignore: ["master", "release-*"]
   workflow_dispatch:
     inputs:
       version:
@@ -127,17 +132,17 @@ jobs:
     steps:
       - name: "Trigger downstream smoke test"
         env:
-          # smoke.yaml only triggers on pull_request/push/schedule/workflow_dispatch
-          # (no repository_dispatch), so this must be a workflow_dispatch run, not
-          # a repository_dispatch event. Needs a Kong org admin to provision a
-          # cross-org (kumahq -> Kong) token with `actions:write` on the target
-          # repo; no existing kumahq secret has that scope.
-          GH_TOKEN: ${{ secrets.KONG_MESH_SMOKE_DISPATCH_TOKEN }}
-          SMOKE_OWNER: ${{ secrets.NOTIFY_OWNER }}
-          SMOKE_REPO: ${{ secrets.KONG_MESH_SMOKE_REPO }}
-          # branch smoke.yaml lives on downstream; overridable via repo var if
-          # the default branch is renamed or moved to a maintenance branch.
-          SMOKE_REF: ${{ vars.KONG_MESH_SMOKE_REF || 'main' }}
+          # smoke.yaml has no repository_dispatch trigger and cross-org
+          # workflow_dispatch needs a PAT with actions:write on the target repo
+          # that nobody's provisioned (see PR history). Reuse the
+          # repository_dispatch path pr-merged.yaml already proves works
+          # cross-org (NOTIFY_BOT_PAT_TOKEN/NOTIFY_OWNER) instead: kong-mesh-smoke
+          # listens for KUMA_SMOKE_TEST via dispatch-kuma-smoke.yaml and forwards
+          # to smoke.yaml with the default GITHUB_TOKEN (same-repo, no cross-org
+          # auth needed on that side).
+          GH_TOKEN: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
+          NOTIFY_OWNER: ${{ secrets.NOTIFY_OWNER }}
+          SMOKE_REPO: kong-mesh-smoke
           PRODUCT_VERSION: ${{ needs.guard.outputs.product_version }}
         run: |
           set -euo pipefail
@@ -146,17 +151,22 @@ jobs:
             */kong-mesh) PRODUCT_NAME=kong-mesh ;;
             *)           PRODUCT_NAME=kuma ;;
           esac
-          gh workflow run smoke.yaml \
-            --repo "${SMOKE_OWNER}/${SMOKE_REPO}" \
-            --ref "${SMOKE_REF}" \
-            --field product_name="${PRODUCT_NAME}" \
-            --field product_version="${PRODUCT_VERSION}" \
-            --field k8s_provider_k3d=true \
-            --field k8s_provider_gke=true \
-            --field k8s_provider_eks=true \
-            --field uni_provider_gcp=true \
-            --field uni_provider_aws=true \
-            --field run_tf_provider_tests=false
+          jq -n \
+            --arg product_name "${PRODUCT_NAME}" \
+            --arg product_version "${PRODUCT_VERSION}" \
+            '{
+              event_type: "KUMA_SMOKE_TEST",
+              client_payload: {
+                product_name: $product_name,
+                product_version: $product_version,
+                k8s_provider_k3d: true,
+                k8s_provider_gke: true,
+                k8s_provider_eks: true,
+                uni_provider_gcp: true,
+                uni_provider_aws: true,
+                run_tf_provider_tests: false
+              }
+            }' | gh api "repos/${NOTIFY_OWNER}/${SMOKE_REPO}/dispatches" --input -
 
   verify:
     needs: guard

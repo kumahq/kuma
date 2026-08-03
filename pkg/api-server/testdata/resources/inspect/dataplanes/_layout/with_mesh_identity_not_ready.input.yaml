@@ -13,6 +13,7 @@ networking:
   inbound:
     - port: 8080
       name: main-port
+      protocol: http
       tags:
         kuma.io/service: foo
         kuma.io/protocol: http

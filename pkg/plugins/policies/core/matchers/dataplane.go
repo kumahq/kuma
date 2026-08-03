@@ -223,8 +223,15 @@ func isSelectedByLabels(dpp *core_mesh.DataplaneResource, ref common_api.TargetR
 	}
 
 	for label, value := range pointer.Deref(ref.Labels) {
-		if dpp.GetMeta().GetLabels()[label] != value {
-			return false
+		switch label {
+		case mesh_proto.DisplayName:
+			if core_model.GetDisplayName(dpp.GetMeta()) != value {
+				return false
+			}
+		default:
+			if dpp.GetMeta().GetLabels()[label] != value {
+				return false
+			}
 		}
 	}
 	return true

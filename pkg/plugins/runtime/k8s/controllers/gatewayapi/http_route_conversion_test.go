@@ -53,7 +53,11 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(condition).To(BeNil())
 		Expect(targetRef).To(Equal(common_api.TargetRef{
 			Kind: common_api.MeshService,
-			Name: pointer.To("backend_kuma-demo_svc_80"),
+			Labels: pointer.To(map[string]string{
+				mesh_proto.DisplayName:      "backend",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			}),
+			SectionName: pointer.To("80"),
 		}))
 	})
 })

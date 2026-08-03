@@ -8,7 +8,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
-	github.com/bakito/go-log-logr-adapter v0.0.3-0.20260720125501-ea51ed66dcc4
+	github.com/bakito/go-log-logr-adapter v0.0.3-0.20260727213026-f0426b322018
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/containernetworking/cni v1.3.0
 	github.com/containernetworking/plugins v1.9.1
@@ -77,8 +77,8 @@ require (
 	golang.org/x/text v0.40.0
 	golang.org/x/tools v0.48.0
 	gonum.org/v1/gonum v0.17.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260724162435-b2f20204f0df
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260724162435-b2f20204f0df
+	google.golang.org/genproto/googleapis/api v0.0.0-20260729162451-8efbd57d26e0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260729162451-8efbd57d26e0
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -270,7 +270,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
-	golang.org/x/exp v0.0.0-20260718201538-764159d718ef
+	golang.org/x/exp v0.0.0-20260727155853-b88d891fe743
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect

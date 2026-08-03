@@ -62,15 +62,15 @@ var _ = Describe("Authentication flow", func() {
 		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("demo"), "demo")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
-		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"))
+		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"), core_store.CreateWithLabels(map[string]string{"team": "web", "env": "prod"}))
 		Expect(err).ToNot(HaveOccurred())
 
 		dpResWithWorkload = *samples.DataplaneWebBuilder().
 			WithName("dp-with-workload").
-			WithLabels(map[string]string{metadata.KumaWorkload: "backend"}).
+			WithLabels(map[string]string{metadata.KumaWorkload: "backend", "team": "web"}).
 			AddInboundOfService("web-api").
 			Build()
-		err = resStore.Create(ctx, &dpResWithWorkload, core_store.CreateByKey("dp-with-workload", "default"), core_store.CreateWithLabels(map[string]string{metadata.KumaWorkload: "backend"}))
+		err = resStore.Create(ctx, &dpResWithWorkload, core_store.CreateByKey("dp-with-workload", "default"), core_store.CreateWithLabels(map[string]string{metadata.KumaWorkload: "backend", "team": "web"}))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -110,9 +110,8 @@ var _ = Describe("Authentication flow", func() {
 			id: builtin_issuer.DataplaneIdentity{
 				Mesh: "default",
 				Tags: map[string]map[string]bool{
-					"kuma.io/service": {
-						"web":     true,
-						"web-api": true,
+					"team": {
+						"web": true,
 					},
 				},
 			},
@@ -124,6 +123,23 @@ var _ = Describe("Authentication flow", func() {
 				Workload: "backend",
 			},
 			dpRes: &dpResWithWorkload,
+		}),
+		Entry("should auth with a legacy token bound to the service tags declared in the dataplane spec", testCase{
+			// dpRes declares kuma.io/service only on its inbounds (via
+			// AddInboundOfService), not as a label, so this pins
+			// `kumactl generate dataplane-token --tag` staying usable
+			// against a Dataplane that has not migrated that tag to a
+			// label, even though xDS identity generation is labels-only.
+			id: builtin_issuer.DataplaneIdentity{
+				Mesh: "default",
+				Tags: map[string]map[string]bool{
+					"kuma.io/service": {
+						"web":     true,
+						"web-api": true,
+					},
+				},
+			},
+			dpRes: &dpRes,
 		}),
 	)
 
@@ -162,7 +178,7 @@ var _ = Describe("Authentication flow", func() {
 			id: builtin_issuer.DataplaneIdentity{
 				Mesh: "default",
 				Tags: map[string]map[string]bool{
-					"kuma.io/service": {
+					"team": {
 						"backend": true,
 					},
 				},
@@ -182,18 +198,20 @@ var _ = Describe("Authentication flow", func() {
 			dpRes: &dpRes,
 			err:   `dataplane has no tag "kuma.io/zone" required by the token`,
 		}),
-		Entry("on token with missing one tag value", testCase{
+		Entry("on token bound to multiple tags where one does not match", testCase{
 			id: builtin_issuer.DataplaneIdentity{
 				Mesh: "default",
 				Tags: map[string]map[string]bool{
-					"kuma.io/service": {
+					"team": {
 						"web": true,
-						// "web-api": true valid token should have also web-api
+					},
+					"env": {
+						"staging": true,
 					},
 				},
 			},
 			dpRes: &dpRes,
-			err:   `which is not allowed with this token. Allowed values in token are ["web"]`, // web and web-api order is not stable
+			err:   `which is not allowed with this token. Allowed values in token are ["staging"]`,
 		}),
 		Entry("on token with different workload", testCase{
 			id: builtin_issuer.DataplaneIdentity{
@@ -226,9 +244,8 @@ var _ = Describe("Authentication flow", func() {
 			token, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
 				Mesh: "default",
 				Tags: map[string]map[string]bool{
-					"kuma.io/service": {
-						"web":     true,
-						"web-api": true,
+					"team": {
+						"web": true,
 					},
 				},
 			}, 24*time.Hour)

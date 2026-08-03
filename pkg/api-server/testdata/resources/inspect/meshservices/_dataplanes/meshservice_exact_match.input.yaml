@@ -10,9 +10,10 @@ labels:
   kuma.io/zone: zone1
 spec:
   selector:
-    dataplaneTags:
-      app: echo-server
-      k8s.kuma.io/namespace: default
+    dataplaneLabels:
+      matchLabels:
+        app: echo-server
+        k8s.kuma.io/namespace: default
   ports:
     - port: 80
       targetPort: 8080
@@ -26,9 +27,10 @@ labels:
   kuma.io/zone: zone1
 spec:
   selector:
-    dataplaneTags:
-      app: echo-server-2
-      k8s.kuma.io/namespace: default
+    dataplaneLabels:
+      matchLabels:
+        app: echo-server-2
+        k8s.kuma.io/namespace: default
   ports:
     - port: 80
       targetPort: 8080
@@ -39,6 +41,8 @@ name: echo-server-dp-01
 mesh: default
 labels:
   kuma.io/zone: zone1
+  app: echo-server
+  k8s.kuma.io/namespace: default
 networking:
   address: 10.0.0.1
   inbound:
@@ -53,6 +57,8 @@ name: echo-server-dp-02
 mesh: default
 labels:
   kuma.io/zone: zone1
+  app: echo-server
+  k8s.kuma.io/namespace: default
 networking:
   address: 10.0.0.2
   inbound:
@@ -67,6 +73,8 @@ name: echo-server-2-dp-01
 mesh: default
 labels:
   kuma.io/zone: zone1
+  app: echo-server-2
+  k8s.kuma.io/namespace: default
 networking:
   address: 10.0.0.3
   inbound:
@@ -81,6 +89,8 @@ name: echo-server-2-dp-02
 mesh: default
 labels:
   kuma.io/zone: zone1
+  app: echo-server-2
+  k8s.kuma.io/namespace: default
 networking:
   address: 10.0.0.4
   inbound:

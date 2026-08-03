@@ -79,7 +79,9 @@ var _ = Describe("prepareRoutes", func() {
 											BackendRef: common_api.BackendRef{
 												TargetRef: common_api.TargetRef{
 													Kind: common_api.MeshService,
-													Name: pointer.To("payments"),
+													Labels: pointer.To(map[string]string{
+														mesh_proto.DisplayName: "payments",
+													}),
 												},
 												Port: pointer.To(uint32(8080)),
 											},

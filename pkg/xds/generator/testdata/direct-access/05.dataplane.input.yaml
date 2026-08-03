@@ -1,0 +1,13 @@
+type: Dataplane
+name: web-1
+mesh: default
+labels:
+  kuma.io/service: web
+networking:
+  address: 192.168.0.1
+  inbound:
+    - port: 1234
+  transparentProxying:
+    redirectPortOutbound: 15001
+    redirectPortInbound: 15006
+    directAccessServices: ["backend"]
