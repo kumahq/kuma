@@ -16304,10 +16304,6 @@ components:
                     name:
                       type: string
                   type: object
-                dataplaneTags:
-                  additionalProperties:
-                    type: string
-                  type: object
               type: object
             state:
               default: Unavailable

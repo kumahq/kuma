@@ -38,7 +38,7 @@ resources:
                 grpcService:
                   envoyGrpc:
                     clusterName: system_meshtrace_otel_otel-collector
-                serviceName: backend
+                serviceName: unknown
             spawnUpstreamSpan: false
     name: inbound:192.168.0.1:17777
     trafficDirection: INBOUND
@@ -85,7 +85,7 @@ resources:
                 grpcService:
                   envoyGrpc:
                     clusterName: system_meshtrace_otel_otel-collector
-                serviceName: backend
+                serviceName: unknown
             spawnUpstreamSpan: false
       name: mes-http
     name: self_zoneegress_dp_ze-port

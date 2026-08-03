@@ -653,8 +653,6 @@ type ControlPlane interface {
 	GetXDSServerAddress() string
 	GetAPIServerAddress() string
 	GenerateDpToken(mesh, serviceName, workload string) (string, error)
-	GenerateZoneIngressToken(zone string) (string, error)
-	GenerateZoneEgressToken(zone string) (string, error)
 	GenerateZoneToken(zone string, scope []string) (string, error)
 	Exec(cmd ...string) (string, string, error)
 }

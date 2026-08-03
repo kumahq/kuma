@@ -667,8 +667,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 				Spec: &meshservice_api.MeshService{
 					Selector: meshservice_api.Selector{
-						DataplaneTags: &map[string]string{
-							mesh_proto.ServiceTag: "backend",
+						DataplaneLabels: &common_api.LabelSelector{
+							MatchLabels: &map[string]string{
+								mesh_proto.ServiceTag: "backend",
+							},
 						},
 					},
 					Ports: []meshservice_api.Port{{
@@ -995,8 +997,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 				Spec: &meshservice_api.MeshService{
 					Selector: meshservice_api.Selector{
-						DataplaneTags: &map[string]string{
-							mesh_proto.ServiceTag: "backend",
+						DataplaneLabels: &common_api.LabelSelector{
+							MatchLabels: &map[string]string{
+								mesh_proto.ServiceTag: "backend",
+							},
 						},
 					},
 					Ports: []meshservice_api.Port{{

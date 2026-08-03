@@ -61,7 +61,7 @@
     "metadata": {
      "filterMetadata": {
       "io.kuma.tags": {
-       "kuma.io/service": "foo"
+       "kuma.io/unified-name": "self_inbound_dp_8080"
       }
      }
     },

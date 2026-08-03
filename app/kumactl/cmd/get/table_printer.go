@@ -23,7 +23,7 @@ var CustomTablePrinters = map[model.ResourceType]RowPrinter{
 			return []string{
 				dataplane.Meta.GetMesh(),         // MESH
 				dataplane.Meta.GetName(),         // NAME,
-				dataplane.Spec.TagSet().String(), // TAGS
+				dataplane.DisplayTags().String(), // TAGS
 				address,                          // ADDRESS
 				table.TimeSince(dataplane.Meta.GetModificationTime(), rootTime), // AGE
 			}

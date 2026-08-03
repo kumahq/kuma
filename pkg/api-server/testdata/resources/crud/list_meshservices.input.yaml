@@ -7,8 +7,9 @@ name: redis-1
 mesh: default
 spec:
   selector:
-    dataplaneTags:
-      app: redis
+    dataplaneLabels:
+      matchLabels:
+        app: redis
   ports:
     - port: 6379
       targetPort: 6379
@@ -22,8 +23,9 @@ name: redis-2
 mesh: default
 spec:
   selector:
-    dataplaneTags:
-      app: redis
+    dataplaneLabels:
+      matchLabels:
+        app: redis
   ports:
     - port: 6379
       targetPort: 6379
