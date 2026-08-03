@@ -32,7 +32,7 @@ labels:
   kuma.io/env: universal
 spec:
   selector:
-    dataplaneTags:
+    dataplaneLabels:
       kuma.io/service: test-server
   ports:
   - port: 80

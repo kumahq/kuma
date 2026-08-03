@@ -54,7 +54,7 @@ labels:
   test-name: backend
 spec:
   selector:
-    dataplaneTags:
+    dataplaneLabels:
       kuma.io/service: test-server
   ports:
   - port: 80
@@ -77,7 +77,7 @@ labels:
   test-name: backend
 spec:
   selector:
-    dataplaneTags:
+    dataplaneLabels:
       kuma.io/service: test-server
   ports:
   - port: 80
@@ -97,7 +97,7 @@ metadata:
     kuma.io/mesh: meshservice
 spec:
   selector:
-    dataplaneTags:
+    dataplaneLabels:
       kuma.io/service: some-service
   ports:
   - port: 80
