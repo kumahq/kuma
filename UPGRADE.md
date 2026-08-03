@@ -16,6 +16,31 @@ Policies that select real resources through `spec.targetRef` or `spec.to[].targe
 
 Migrate any policy that still selects those resources by `name` and/or `namespace` to use `labels` instead before upgrading. `sectionName` remains supported for `Dataplane` inbound selection and `MeshService` port selection.
 
+### Transparent proxy configured only through the ConfigMap
+
+The legacy annotation-based transparent proxy injection path has been removed.
+The sidecar injector now always builds the transparent proxy configuration from
+the ConfigMap in the `kuma-system` namespace (merged with pod annotations) and
+delivers it through the `traffic.kuma.io/transparent-proxy-config` annotation and
+mounted files. This was previously an opt-in feature gated by
+`transparentProxy.configMap.enabled`.
+
+**Action required**
+
+No action is required for Helm or `kumactl` installs — the control plane always
+creates the base ConfigMap and points the injector at it. The
+`transparentProxy.configMap.enabled` Helm value has been removed; remove it from
+any custom values files (leaving it set is harmless but has no effect).
+
+The per-pod `kuma.io/transparent-proxying-*` annotations are no longer produced
+by injection. Pods are reconfigured automatically on their next restart after the
+upgrade.
+
+**Warning**: this format is not understood by data plane proxies older than the
+control plane. To downgrade, first roll back the control plane and then restart
+all workloads so their init and sidecar containers fall back to the previous
+configuration.
+
 ### `from` removed from `MeshTLS`
 
 The deprecated `from` field has been removed from the `MeshTLS` policy. Use the `rules` field instead.

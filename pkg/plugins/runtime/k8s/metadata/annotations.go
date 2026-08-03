@@ -142,6 +142,14 @@ var PodAnnotationDeprecations = []Deprecation{
 	NewReplaceByDeprecation("kuma.io/builtindns", KumaBuiltinDNS, true),
 	NewReplaceByDeprecation("kuma.io/builtindnsport", KumaBuiltinDNSPort, true),
 	NewReplaceByDeprecation("kuma.io/transparent-proxying-reachable-services", KumaReachableBackends, true),
+	{
+		Key:     KumaTransparentProxyingInboundPortAnnotation,
+		Message: "'kuma.io/transparent-proxying-inbound-port' is no longer supported and will be ignored, configure the redirect inbound port through the transparent proxy ConfigMap instead",
+	},
+	{
+		Key:     KumaTransparentProxyingOutboundPortAnnotation,
+		Message: "'kuma.io/transparent-proxying-outbound-port' is no longer supported and will be ignored, configure the redirect outbound port through the transparent proxy ConfigMap instead",
+	},
 	NewDeprecation(KumaVirtualProbesAnnotation, false),
 	NewReplaceByDeprecation(KumaVirtualProbesPortAnnotation, KumaApplicationProbeProxyPortAnnotation, false),
 	{

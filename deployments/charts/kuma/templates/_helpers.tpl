@@ -282,10 +282,8 @@ env:
   value: {{ .Values.dataPlane.validationContainer.resources.limits.cpu | default "0" | quote }}
 - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_MEMORY
   value: {{ .Values.dataPlane.validationContainer.resources.limits.memory | default "50M" | quote }}
-{{- if .Values.transparentProxy.configMap.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
   value: {{ include "kuma.transparentProxyConfigMapName" . | quote }}
-{{- end }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
   value: /var/run/secrets/kuma.io/tls-cert/ca.crt
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION

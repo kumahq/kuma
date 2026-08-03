@@ -201,20 +201,8 @@ func (p *PodConverter) dataplaneFor(
 	annotations := metadata.Annotations(pod.Annotations)
 
 	var tp mesh_proto.Dataplane_Networking_TransparentProxying
-	var tpConfigInAnnotation bool
-	var tpEnabledInAnnotation bool
 
 	if v, ok := annotations.GetString(metadata.KumaTrafficTransparentProxyConfig); ok && v != "" {
-		tpConfigInAnnotation = true
-	}
-
-	if v, ok, err := annotations.GetEnabled(metadata.KumaTransparentProxyingAnnotation); err != nil {
-		return nil, err
-	} else {
-		tpEnabledInAnnotation = ok && v
-	}
-
-	if tpConfigInAnnotation || tpEnabledInAnnotation {
 		if v, exist := annotations.GetList(metadata.KumaDirectAccess); exist {
 			tp.DirectAccessServices = v
 		}
@@ -231,45 +219,10 @@ func (p *PodConverter) dataplaneFor(
 		}
 	}
 
-	if tpEnabledInAnnotation {
-		if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation); err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, errors.New("transparent proxying inbound port has to be set in transparent mode")
-		} else {
-			tp.RedirectPortInbound = v
-		}
-
-		if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation); err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, errors.New("transparent proxying outbound port has to be set in transparent mode")
-		} else {
-			tp.RedirectPortOutbound = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			metadata.IpFamilyModeDualStack,
-			metadata.KumaTransparentProxyingIPFamilyMode,
-		); v != "" {
-			switch v {
-			case metadata.IpFamilyModeDualStack:
-				tp.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
-			case metadata.IpFamilyModeIPv4:
-				tp.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
-			default:
-				return nil, errors.Errorf("invalid ip family mode '%s'", v)
-			}
-		}
-	}
-
 	// Avoid setting an empty TransparentProxying object by checking if any fields are set.
 	// Only assign it if at least one relevant field has a non-zero or non-nil value.
 	if tp.DirectAccessServices != nil ||
-		tp.ReachableBackends != nil ||
-		tp.RedirectPortInbound != 0 ||
-		tp.RedirectPortOutbound != 0 ||
-		tp.IpFamilyMode != 0 {
+		tp.ReachableBackends != nil {
 		dataplane.Networking.TransparentProxying = &tp
 	}
 

@@ -280,7 +280,6 @@ A Helm chart for the Kuma Control Plane
 | hooks.ttlSecondsAfterFinished | int | `0` | TTL in seconds for hook Jobs after they finish. Set to null to disable automatic TTL-based deletion (recommended when using ArgoCD, which needs to read job status before deletion). |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
 | hooks.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for crd/webhook/ns |
-| transparentProxy.configMap.enabled | bool | `false` | If true, enables the use of a ConfigMap to manage transparent proxy configuration instead of directly configuring it within the Kuma system |
 | transparentProxy.configMap.name | string | `"kuma-transparent-proxy-config"` | The name of the ConfigMap used to store the transparent proxy configuration |
 | transparentProxy.configMap.config.kumaDPUser | string | `"5678"` | The username or UID of the user that will run kuma-dp. If not provided, the system will use the default UID ("5678") or the default username ("kuma-dp") |
 | transparentProxy.configMap.config.ipFamilyMode | string | `"dualstack"` | The IP family mode used for configuring traffic redirection in the transparent proxy Supports "dualstack" (for both IPv4 and IPv6) and "ipv4" modes |
