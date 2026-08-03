@@ -37,12 +37,12 @@ func NewAuthenticator(
 // universalAuthenticator defines authentication for Dataplane Tokens
 // All fields in token are optional, so we only validate data that is available in token. This way you can pick your level of security.
 // Generate token for mesh+name for maximum security.
-// Generate token for mesh+tags(ex. kuma.io/service) so you can reuse the token for many instances of the same service.
+// Generate token for mesh+tags (matched against Dataplane labels, e.g. kuma.io/workload)
+// so you can reuse the token for many dataplanes.
 // Generate token for mesh if you trust the scope of the mesh.
 //
-// If you generate token bound to tags all tags values have to match the dataplane, so for example if you have a Dataplane
-// with inbounds: 1) kuma.io/service:web 2) kuma.io/service:web-api, you need token for both values kuma.io/service=web,web-api
-// Dataplane also needs to have all tags defined in the token
+// If you generate token bound to tags, the Dataplane needs to have all the tags defined in
+// the token, and every value it declares for a tag has to be allowed by the token.
 type universalAuthenticator struct {
 	dataplaneValidator builtin_issuer.Validator
 	zoneValidator      zone.Validator
@@ -78,7 +78,7 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 	if dpIdentity.Mesh != "" && dataplane.Meta.GetMesh() != dpIdentity.Mesh {
 		return errors.Errorf("proxy mesh from requestor: %s is different than in token: %s", dataplane.Meta.GetMesh(), dpIdentity.Mesh)
 	}
-	if err := validateTags(dpIdentity.Tags, dataplane.Spec.TagSet()); err != nil {
+	if err := validateTags(dpIdentity.Tags, dataplane); err != nil {
 		return err
 	}
 	if err := u.validateWorkload(ctx, dpIdentity.Workload, dataplane); err != nil {
@@ -130,10 +130,27 @@ func (u *universalAuthenticator) authZoneEntity(
 	return nil
 }
 
-func validateTags(tokenTags mesh_proto.MultiValueTagSet, dpTags mesh_proto.MultiValueTagSet) error {
+// validateTags checks a tag-bound token against the dataplane's labels or,
+// for a Dataplane that has not migrated off tag-based provisioning, the tags
+// it still declares on its inbounds. `kumactl generate dataplane-token --tag`
+// stays usable against such a Dataplane even though xDS identity generation
+// itself is labels-only (see Dataplane.TagSet). Every value the dataplane
+// declares for a tag must be allowed by the token, so widening the lookup
+// never widens what a token grants.
+func validateTags(tokenTags mesh_proto.MultiValueTagSet, dataplane *core_mesh.DataplaneResource) error {
+	dpLabels := dataplane.Meta.GetLabels()
+
 	for tagName, allowedValues := range tokenTags {
-		dpValues, exist := dpTags[tagName]
-		if !exist {
+		dpValues := map[string]bool{}
+		if labelValue, exist := dpLabels[tagName]; exist {
+			dpValues[labelValue] = true
+		}
+		for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
+			if value, exist := inbound.GetTags()[tagName]; exist {
+				dpValues[value] = true
+			}
+		}
+		if len(dpValues) == 0 {
 			return errors.Errorf("dataplane has no tag %q required by the token", tagName)
 		}
 		for value := range dpValues {

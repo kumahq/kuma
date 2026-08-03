@@ -32,10 +32,7 @@ spec:
     name: some-port
     port: 16739
     targetPort: target-port-from-container
-  selector:
-    dataplaneTags:
-      app: redis
-      k8s.kuma.io/namespace: kuma-demo
+  selector: {}
   state: Unavailable
 status:
   addresses:
@@ -74,10 +71,7 @@ spec:
     name: some-port
     port: 16739
     targetPort: target-port-from-container
-  selector:
-    dataplaneTags:
-      app: redis
-      k8s.kuma.io/namespace: kuma-demo
+  selector: {}
   state: Unavailable
 status:
   addresses:

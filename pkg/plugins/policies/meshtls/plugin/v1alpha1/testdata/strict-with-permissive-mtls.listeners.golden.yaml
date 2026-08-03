@@ -51,7 +51,7 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/service: backend
+          kuma.io/unified-name: self_inbound_dp_17777
     name: self_inbound_dp_17777
     statPrefix: self_inbound_dp_17777
     trafficDirection: INBOUND
@@ -107,7 +107,7 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/service: frontend
+          kuma.io/unified-name: self_inbound_dp_17778
     name: self_inbound_dp_17778
     statPrefix: self_inbound_dp_17778
     trafficDirection: INBOUND

@@ -179,7 +179,7 @@ var _ = Describe("DataplaneOverview", func() {
 				},
 				status: Offline,
 				errReasons: []string{
-					"inbound[port=0,svc=] is not ready",
+					"inbound[port=0] is not ready",
 				},
 			}),
 			Entry("online when proxy is disconnected and is a gateway", testCase{
@@ -228,7 +228,7 @@ var _ = Describe("DataplaneOverview", func() {
 				},
 				status: PartiallyDegraded,
 				errReasons: []string{
-					"inbound[port=0,svc=] is not ready",
+					"inbound[port=0] is not ready",
 				},
 			}),
 			Entry("online when zone proxy listeners ready and no inbounds", testCase{
@@ -287,7 +287,7 @@ var _ = Describe("DataplaneOverview", func() {
 				},
 				status: PartiallyDegraded,
 				errReasons: []string{
-					"inbound[port=0,svc=] is not ready",
+					"inbound[port=0] is not ready",
 				},
 			}),
 			Entry("partially degraded when zone listeners ready but all inbounds are not ready", testCase{
@@ -319,7 +319,7 @@ var _ = Describe("DataplaneOverview", func() {
 				},
 				status: PartiallyDegraded,
 				errReasons: []string{
-					"inbound[port=0,svc=] is not ready",
+					"inbound[port=0] is not ready",
 				},
 			}),
 			Entry("offline when zone listener not ready and all inbounds not ready", testCase{
@@ -352,7 +352,7 @@ var _ = Describe("DataplaneOverview", func() {
 				},
 				status: Offline,
 				errReasons: []string{
-					"inbound[port=0,svc=] is not ready",
+					"inbound[port=0] is not ready",
 					"listener[port=10001,type=ZoneIngress] is not ready",
 				},
 			}),

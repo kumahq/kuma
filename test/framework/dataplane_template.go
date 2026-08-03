@@ -2,6 +2,7 @@ package framework
 
 import (
 	"bytes"
+	"maps"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -88,7 +89,7 @@ name: {{ "{{ name }}" }}
 {{- if .Labels }}
 labels:
 {{- range $key, $value := .Labels }}
-  {{ $key }}: {{ $value }}
+  {{ $key }}: "{{ $value }}"
 {{- end }}
 {{- end }}
 networking:
@@ -121,18 +122,6 @@ networking:
       kuma.io/service: {{ .ServiceName }}
 {{- if .Protocol }}
       kuma.io/protocol: {{ .Protocol }}
-{{- end }}
-{{- if .Team }}
-      team: {{ .Team }}
-{{- end }}
-{{- if .Version }}
-      version: {{ .Version }}
-{{- end }}
-{{- if .Instance }}
-      instance: '{{ .Instance }}'
-{{- end }}
-{{- range $key, $value := .AdditionalTags }}
-      {{ $key }}: {{ $value }}
 {{- end }}
 {{- if .Outbounds }}
   outbound:
@@ -173,8 +162,25 @@ networking:
 
 // RenderDataplaneTemplate renders a dataplane template with the given data.
 // When Listeners is set, renders a zone proxy dataplane with a listeners block
-// instead of inbound/outbound.
+// instead of inbound/outbound. Team/Version/Instance/AdditionalTags are
+// rendered as Dataplane labels rather than inbound tags: endpoint
+// load-balancing identity (envoy.lb metadata) is now sourced solely from
+// Dataplane labels, not inbound tags (see pkg/xds/topology/outbound.go).
 func RenderDataplaneTemplate(data DataplaneTemplateData) (string, error) {
+	labels := make(map[string]string, len(data.Labels)+len(data.AdditionalTags)+2)
+	maps.Copy(labels, data.Labels)
+	maps.Copy(labels, data.AdditionalTags)
+	if data.Team != "" {
+		labels["team"] = data.Team
+	}
+	if data.Version != "" {
+		labels["version"] = data.Version
+	}
+	if data.Instance != "" {
+		labels["instance"] = data.Instance
+	}
+	data.Labels = labels
+
 	var buf bytes.Buffer
 	if err := dataplaneTemplate.Execute(&buf, data); err != nil {
 		return "", errors.Wrap(err, "failed to execute dataplane template")

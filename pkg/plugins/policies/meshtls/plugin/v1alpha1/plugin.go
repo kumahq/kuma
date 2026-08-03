@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"maps"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -359,11 +361,19 @@ func configureListener(
 	statPrefix := inboundContextualID
 	clusterName := inboundContextualID
 
+	listenerTags := maps.Clone(proxy.Dataplane.GetMeta().GetLabels())
+	if listenerTags == nil {
+		listenerTags = map[string]string{}
+	}
+	if protocol := inbound.GetProtocolFallback(); protocol != "" {
+		listenerTags[mesh_proto.ProtocolTag] = protocol
+	}
+
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.InboundListener(iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.TransparentProxying(proxy)).
-		Configure(envoy_listeners.TagsMetadata(generator.InboundListenerTags(inbound.GetTags(), inboundContextualID)))
+		Configure(envoy_listeners.TagsMetadata(generator.InboundListenerTags(listenerTags, inboundContextualID)))
 
 	downstreamCtx, err := downstreamTLSContext(xdsCtx, proxy, conf)
 	if err != nil {

@@ -11,7 +11,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_policy "github.com/kumahq/kuma/v3/pkg/core/policy"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -279,12 +278,4 @@ func RegexOR(r ...string) string {
 		return r[0]
 	}
 	return fmt.Sprintf("(%s)", strings.Join(r, "|"))
-}
-
-func MatchSourceRegex(policy core_policy.ConnectionPolicy) string {
-	var selectorRegexs []string
-	for _, selector := range policy.Sources() {
-		selectorRegexs = append(selectorRegexs, MatchingRegex(selector.Match))
-	}
-	return RegexOR(selectorRegexs...)
 }

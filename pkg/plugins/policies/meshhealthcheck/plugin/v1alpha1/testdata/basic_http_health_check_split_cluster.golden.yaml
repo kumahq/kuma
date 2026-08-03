@@ -20,7 +20,7 @@ healthChecks:
     requestHeadersToAdd:
     - header:
         key: x-kuma-tags
-        value: '&kuma.io/service=backend&'
+        value: '&kuma.io/workload=backend&'
     - header:
         key: x-some-header
         value: value

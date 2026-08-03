@@ -61,7 +61,7 @@ var _ = Describe("Updater", func() {
 
 	ms1Builder := samples.MeshServiceBackendBuilder().
 		WithName("backend").
-		WithDataplaneTagsSelectorKV("app", "backend").
+		WithDataplaneLabelsSelectorKV("app", "backend").
 		WithLabels(map[string]string{
 			mesh_proto.DisplayName: "backend",
 			mesh_proto.ZoneTag:     "east",
@@ -69,7 +69,7 @@ var _ = Describe("Updater", func() {
 
 	ms2Builder := samples.MeshServiceBackendBuilder().
 		WithName("backend-syncedhash").
-		WithDataplaneTagsSelectorKV("app", "backend").
+		WithDataplaneLabelsSelectorKV("app", "backend").
 		WithLabels(map[string]string{
 			mesh_proto.DisplayName: "backend",
 			mesh_proto.ZoneTag:     "west",

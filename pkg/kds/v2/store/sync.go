@@ -475,10 +475,10 @@ func GlobalSyncCallback(
 				}
 			}
 
-			// In-spec zone tags feed downstream logic too (ZoneIngress
-			// AvailableServices -> cross-zone endpoint locality, Dataplane
-			// inbound/gateway tags -> global service inventory), so pin them
-			// alongside the top-level Spec.Zone.
+			// In-spec zone tags are pinned to the connecting zone's client-id
+			// alongside the top-level Spec.Zone, independent of whether xDS
+			// generation still reads them: a zone must not be able to plant a
+			// spoofed kuma.io/zone claim into any synced resource field.
 			clientID := upstream.ControlPlaneId
 			switch upstream.Type {
 			case core_mesh.ZoneIngressType:
@@ -499,11 +499,7 @@ func GlobalSyncCallback(
 			case core_mesh.DataplaneType:
 				for _, dp := range upstream.AddedResources.(*core_mesh.DataplaneResourceList).Items {
 					var rejected []string
-					networking := dp.Spec.GetNetworking()
-					for _, inbound := range networking.GetInbound() {
-						rejected = pinZoneTag(inbound.GetTags(), clientID, rejected)
-					}
-					rejected = pinZoneTag(networking.GetGateway().GetTags(), clientID, rejected)
+					rejected = pinZoneTag(dp.Spec.GetNetworking().GetGateway().GetTags(), clientID, rejected)
 					recordZoneRewrite(rewrites, upstream.Type, dp.GetMeta(), clientID, rejected)
 				}
 			}
