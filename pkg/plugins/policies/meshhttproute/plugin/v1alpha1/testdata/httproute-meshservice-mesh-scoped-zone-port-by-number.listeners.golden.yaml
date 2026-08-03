@@ -1,5 +1,5 @@
 resources:
-- name: kri_msvc_default_remote-zone__backend_test-port
+- name: outbound:10.0.0.1:80
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -26,31 +26,30 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: kri_msvc_default_remote-zone__backend_test-port
+              name: default_backend__remote-zone_msvc_80
               routes:
               - match:
                   path: /with-retry
-                name: kri_mhttpr_default___test-origin_rule_0
+                name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: kri_msvc_default_remote-zone__backend_80
+                  cluster: default_backend__remote-zone_msvc_80
                   timeout: 0s
               - match:
                   prefix: /with-retry/
-                name: kri_mhttpr_default___test-origin_rule_0
+                name: kri_mhttpr_default___test-origin_
                 route:
-                  cluster: kri_msvc_default_remote-zone__backend_80
+                  cluster: default_backend__remote-zone_msvc_80
                   timeout: 0s
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
-                  cluster: kri_msvc_default_remote-zone__backend_test-port
+                  cluster: default_backend__remote-zone_msvc_80
                   timeout: 0s
-          statPrefix: kri_msvc_default_remote-zone__backend_test-port
+          statPrefix: default_backend__remote-zone_msvc_80
     metadata:
       filterMetadata:
         io.kuma.tags:
           kuma.io/unified-name: kri_msvc_default_remote-zone__backend_test-port
-    name: kri_msvc_default_remote-zone__backend_test-port
-    statPrefix: kri_msvc_default_remote-zone__backend_test-port
+    name: outbound:10.0.0.1:80
     trafficDirection: OUTBOUND

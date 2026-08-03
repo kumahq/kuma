@@ -54,7 +54,6 @@ func GenerateClusters(
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 			if meshCtx.IsExternalService(serviceName) {
-<<<<<<< HEAD
 				switch {
 				case isMeshExternalService(meshCtx.EndpointMap[serviceName]):
 					realResourceRef := service.BackendRef().RealResourceBackendRef()
@@ -63,10 +62,8 @@ func GenerateClusters(
 						continue
 					}
 					if proxy.WorkloadIdentity != nil {
-						kriID := service.BackendRef().Resource()
-						if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
-							continue
-						}
+						// Zone proxies key the SNI by port name, a backendRef may use the number.
+						kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
 						sni := core_sni.FromKRI(kriID)
 						// we only want to route when are mesh-scoped zone egresses
 						if len(meshCtx.ZoneEgresses) == 0 {
@@ -96,31 +93,6 @@ func GenerateClusters(
 								sni,
 								false,
 							))
-=======
-				if !isMeshExternalService(meshCtx.EndpointMap[serviceName]) {
-					continue
-				}
-				realResourceRef := service.BackendRef().RealResourceBackendRef()
-				dest, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
-				if !ok {
-					continue
-				}
-				if proxy.WorkloadIdentity != nil {
-					// Zone proxies key the SNI by port name, a backendRef may use the number.
-					kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
-					sni := core_sni.FromKRI(kriID)
-					// we only want to route when are mesh-scoped zone egresses
-					if len(meshCtx.ZoneEgresses) == 0 {
-						continue
-					}
-					egressSANs := meshCtx.ZoneEgressSANs()
-					if len(egressSANs) == 0 {
-						continue
-					}
-					upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
-					if err != nil {
-						return nil, err
->>>>>>> 878bb3dcb4 (fix(xds): build cross-zone SNI from port name (#17739))
 					}
 				case meshCtx.Resource.ZoneEgressEnabled():
 					// path for old ExternalService
