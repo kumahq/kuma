@@ -305,7 +305,7 @@ func (c *UniversalCluster) DeleteNamespace(string, ...NamespaceDeleteHookFunc) e
 func (c *UniversalCluster) CreateDP(app *UniversalApp, name string, mesh string, ip string, dpyaml string, envs map[string]string, token string, builtindns bool, concurrency int, transparent bool, dpVersion string) error {
 	cpIp := c.controlplane.Networking().IP
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	err := app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, "", concurrency, envs, transparent, dpVersion)
+	err := app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, concurrency, envs, transparent, dpVersion)
 	if err != nil {
 		return err
 	}
@@ -321,7 +321,7 @@ func (c *UniversalCluster) CreateDP(app *UniversalApp, name string, mesh string,
 // a listeners section. envs is optional kuma-dp environment overrides; pass
 // nil to use defaults.
 func (c *UniversalCluster) CreateDataplaneProxy(app *UniversalApp, name, ip, dpyaml, token string, envs map[string]string) error {
-	if err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, false, "", 0, envs, false, ""); err != nil {
+	if err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, false, 0, envs, false, ""); err != nil {
 		return err
 	}
 	c.mutex.Lock()

@@ -264,27 +264,15 @@ func (d *DataplaneLifecycle) proxyConnectedToAnotherCP(
 }
 
 func proxyResource(pt mesh_proto.ProxyType) core_model.Resource {
-	switch pt {
-	case mesh_proto.DataplaneProxyType:
-		return core_mesh.NewDataplaneResource()
-	case mesh_proto.IngressProxyType:
-		return core_mesh.NewZoneIngressResource()
-	case mesh_proto.EgressProxyType:
-		return core_mesh.NewZoneEgressResource()
-	default:
+	if pt != mesh_proto.DataplaneProxyType {
 		return nil
 	}
+	return core_mesh.NewDataplaneResource()
 }
 
 func proxyInsight(pt mesh_proto.ProxyType) core_model.Resource {
-	switch pt {
-	case mesh_proto.DataplaneProxyType:
-		return core_mesh.NewDataplaneInsightResource()
-	case mesh_proto.IngressProxyType:
-		return core_mesh.NewZoneIngressInsightResource()
-	case mesh_proto.EgressProxyType:
-		return core_mesh.NewZoneEgressInsightResource()
-	default:
+	if pt != mesh_proto.DataplaneProxyType {
 		return nil
 	}
+	return core_mesh.NewDataplaneInsightResource()
 }

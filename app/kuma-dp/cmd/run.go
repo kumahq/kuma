@@ -137,14 +137,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			runLog.Info("starting Data Plane", "version", kuma_version.Build.Version, "config", cfgForDisplay)
 
-			// Map the resource types that are acceptable depending on the value of the `--proxy-type` flag.
-			proxyTypeMap := map[string]model.ResourceType{
-				string(mesh_proto.DataplaneProxyType): mesh.DataplaneType,
-				string(mesh_proto.IngressProxyType):   mesh.ZoneIngressType,
-				string(mesh_proto.EgressProxyType):    mesh.ZoneEgressType,
-			}
-
-			if _, ok := proxyTypeMap[cfg.Dataplane.ProxyType]; !ok {
+			if cfg.Dataplane.ProxyType != string(mesh_proto.DataplaneProxyType) {
 				return errors.Errorf("invalid proxy type %q", cfg.Dataplane.ProxyType)
 			}
 
@@ -160,9 +153,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			if proxyResource != nil {
-				if resType := proxyTypeMap[cfg.Dataplane.ProxyType]; resType != proxyResource.Descriptor().Name {
+				if proxyResource.Descriptor().Name != mesh.DataplaneType {
 					return errors.Errorf("invalid proxy resource type %q, expected %s",
-						proxyResource.Descriptor().Name, resType)
+						proxyResource.Descriptor().Name, mesh.DataplaneType)
 				}
 
 				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {
@@ -344,7 +337,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			var dnsConfigReady <-chan struct{}
-			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
+			if cfg.DNS.Enabled {
 				portStr := strconv.Itoa(int(cfg.DNS.ProxyPort))
 				addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, portStr)
 				runLog.Info("Running with embedded DNS proxy", "port", cfg.DNS.ProxyPort, "addresses", addresses)
@@ -474,7 +467,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	}
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Name, "name", cfg.Dataplane.Name, "Name of the Dataplane")
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
-	cmd.PersistentFlags().StringVar(&cfg.Dataplane.ProxyType, "proxy-type", "dataplane", `type of the Dataplane ("dataplane", "ingress")`)
+	cmd.PersistentFlags().StringVar(&cfg.Dataplane.ProxyType, "proxy-type", "dataplane", `type of the Dataplane ("dataplane")`)
 	cmd.PersistentFlags().DurationVar(&cfg.Dataplane.DrainTime.Duration, "drain-time", cfg.Dataplane.DrainTime.Duration, `drain time for Envoy connections on Kuma DP shutdown`)
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.URL, "cp-address", cfg.ControlPlane.URL, "URL of the Control Plane Dataplane Server. Example: https://localhost:5678")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCertFile, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")

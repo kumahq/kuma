@@ -54,7 +54,6 @@ type DataplaneWatchdog struct {
 
 	// state of watchdog
 	lastHash       string // last Mesh hash that was used to **successfully** generate Reconcile Envoy config
-	dpType         mesh_proto.ProxyType
 	envoyAdminMTLS *core_xds.ServerSideMTLSCerts
 	dpAddress      string
 	xdsMeta        *core_xds.DataplaneMetadata
@@ -75,31 +74,17 @@ func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, meta *core_xds.Dat
 }
 
 func (d *DataplaneWatchdog) Sync(ctx context.Context) (SyncResult, error) {
-	if d.dpType == "" {
-		d.dpType = d.xdsMeta.GetProxyType()
-	}
-	switch d.dpType {
-	case mesh_proto.DataplaneProxyType:
-		return d.syncDataplane(ctx)
-	default:
-		// It might be a case that dp type is not yet inferred because there is no Dataplane definition yet.
-		return SyncResult{}, nil
-	}
+	return d.syncDataplane(ctx)
 }
 
 func (d *DataplaneWatchdog) Cleanup() error {
 	proxyID := core_xds.FromResourceKey(d.key)
-	switch d.dpType {
-	case mesh_proto.DataplaneProxyType:
-		d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key)
-		d.EnvoyCpCtx.IdentityManager.Cleanup(d.key)
-		d.lastOtelStatus = nil
-		d.otelStatusSynced = false
-		d.OtelStatusCache.Set(d.key, nil)
-		return d.DataplaneReconciler.Clear(&proxyID)
-	default:
-		return nil
-	}
+	d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key)
+	d.EnvoyCpCtx.IdentityManager.Cleanup(d.key)
+	d.lastOtelStatus = nil
+	d.otelStatusSynced = false
+	d.OtelStatusCache.Set(d.key, nil)
+	return d.DataplaneReconciler.Clear(&proxyID)
 }
 
 // syncDataplane syncs state of the Dataplane.
