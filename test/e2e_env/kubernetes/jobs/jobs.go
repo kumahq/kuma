@@ -1,6 +1,8 @@
 package jobs
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -54,12 +56,17 @@ func Jobs() {
 	Context("mTLS", func() {
 		const namespace = "jobs-mtls"
 		const mesh = "jobs-mtls"
+		const identityName = "jobs-mtls-identity"
+
+		// The standalone zone CP runs under the "default" zone name.
+		trustDomain := fmt.Sprintf("%s.default.mesh.local", mesh)
 
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(MTLSMeshKubernetes(mesh)).
-				Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
+				Install(MeshKubernetes(mesh)).
+				Install(MeshIdentityBundledKubernetes(mesh, identityName)).
+				Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(mesh, trustDomain)).
 				Install(testserver.Install(
 					testserver.WithNamespace(namespace),
 					testserver.WithMesh(mesh),

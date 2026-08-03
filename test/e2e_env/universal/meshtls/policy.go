@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
@@ -17,15 +16,32 @@ func Policy() {
 	var testServerContainerName string
 	var testServer2ContainerName string
 	meshName := "mesh-tls"
+	identityName := "mesh-tls-identity"
 	testServerName := "mesh-tls-test-server"
 	testServer2Name := "mesh-tls-test-server-2"
+
+	// Mesh-wide permissive mode, the baseline the Strict case starts from.
+	meshPermissive := fmt.Sprintf(`
+type: MeshTLS
+mesh: %s
+name: mesh-tls-mesh-default
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        mode: Permissive`, meshName)
 
 	BeforeAll(func() {
 		testServerContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), testServerName)
 		testServer2ContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), testServer2Name)
 		Expect(NewClusterSetup().
-			Install(ResourceUniversal(samples.MeshMTLSBuilder().WithName(meshName).Build())).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(MeshUniversal(meshName)).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				meshName,
+				MeshIdentityTrustDomain(meshName, universal.Cluster),
+			)).
 			Install(TestServerUniversal(
 				testServerName, meshName,
 				WithArgs([]string{"echo", "--instance", "test-server"}),
@@ -48,6 +64,15 @@ func Policy() {
 		DebugUniversal(universal.Cluster, meshName)
 	})
 
+	E2EAfterEach(func() {
+		// every case starts from the default strict mode
+		items, err := universal.Cluster.GetKumactlOptions().KumactlList("meshtlses", meshName)
+		Expect(err).ToNot(HaveOccurred())
+		for _, item := range items {
+			Expect(universal.Cluster.GetKumactlOptions().KumactlDelete("meshtls", item, meshName)).To(Succeed())
+		}
+	})
+
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
@@ -66,11 +91,7 @@ spec:
   rules:
     - default:
         mode: Permissive`, meshName, testServerName)
-		// when
-		// default strict mode on mesh
-		Expect(universal.Cluster.Install(
-			ResourceUniversal(samples.MeshMTLSBuilder().WithName(meshName).Build()),
-		)).To(Succeed())
+		// given the mesh in its default strict mode
 
 		// then
 		// can access test-server from service in the mesh
@@ -165,10 +186,8 @@ spec:
     - default:
         mode: Strict`, meshName, testServerName)
 		// when
-		// default strict mode on mesh
-		Expect(universal.Cluster.Install(
-			ResourceUniversal(samples.MeshMTLSBuilder().WithPermissiveMTLSBackends().WithName(meshName).Build()),
-		)).To(Succeed())
+		// permissive mode on the whole mesh
+		Expect(universal.Cluster.Install(YamlUniversal(meshPermissive))).To(Succeed())
 
 		// then
 		// can access test-server from service in the mesh
@@ -265,11 +284,7 @@ spec:
         tlsVersion:
           min: TLS13
           max: TLS13`, meshName)
-		// when
-		// default strict mode on mesh
-		Expect(universal.Cluster.Install(
-			ResourceUniversal(samples.MeshMTLSBuilder().WithName(meshName).Build()),
-		)).To(Succeed())
+		// given the mesh in its default strict mode
 
 		// then
 		// can access test-server from service in the mesh
@@ -328,11 +343,7 @@ spec:
           max: TLS12
         tlsCiphers:
         - "ECDHE-RSA-AES256-GCM-SHA384"`, meshName)
-		// when
-		// default strict mode on mesh
-		Expect(universal.Cluster.Install(
-			ResourceUniversal(samples.MeshMTLSBuilder().WithName(meshName).Build()),
-		)).To(Succeed())
+		// given the mesh in its default strict mode
 
 		// then
 		// can access test-server from service in the mesh
