@@ -2,6 +2,8 @@
  "items": [
   {
    "labels": {
+    "app": "echo-server",
+    "k8s.kuma.io/namespace": "default",
     "kuma.io/zone": "zone1"
    },
    "mesh": "default",
@@ -10,6 +12,8 @@
   },
   {
    "labels": {
+    "app": "echo-server",
+    "k8s.kuma.io/namespace": "default",
     "kuma.io/zone": "zone1"
    },
    "mesh": "default",

@@ -1,22 +1,3 @@
-DATAPLANE:
-  TrafficTrace
-    backends-eu
-
-INBOUND 127.0.0.1:10010:10011(backend):
-  TrafficPermission
-    allow-all-default
-
-OUTBOUND 127.0.0.1:10006(gateway):
-  Timeout
-    timeout-all-default
-  TrafficRoute
-    route-all-default
-
-SERVICE gateway:
-  CircuitBreaker
-    circuit-breaker-all-default
-  HealthCheck
-    gateway-to-backend
-  Retry
-    retry-all-default
-
+Kind                    Origins
+MeshTrafficPermission   kri_mtp_default_default__web-frontend_
+MeshTimeout             kri_mt_default_default__web-frontend_,kri_mt_default_default__gateway_

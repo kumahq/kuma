@@ -94,8 +94,8 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 			ms := samples.MeshServiceBackendBuilder().
 				WithLabels(map[string]string{mesh_proto.ZoneTag: cpZone}).
 				Build()
-			// LegacyServiceName for default/backend/zone=east/port=80: default_backend__east_msvc_80
-			const legacySvcName = "default_backend__east_msvc_80"
+			// endpoint map key for default/backend/zone=east/port=80: default_backend__east_msvc_80
+			const endpointMapKey = "default_backend__east_msvc_80"
 
 			dp := samples.DataplaneBackendBuilder().
 				With(func(r *core_mesh.DataplaneResource) {
@@ -125,7 +125,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 				meshContext: xds_context.MeshContext{
 					Resource: builders.Mesh().WithName("default").Build(),
 					DataplaneZoneIngressEndpointMap: core_xds.EndpointMap{
-						legacySvcName: []core_xds.Endpoint{
+						endpointMapKey: []core_xds.Endpoint{
 							{
 								Target: "192.168.0.1",
 								Port:   2521,
@@ -149,8 +149,8 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 			ms := samples.MeshServiceBackendBuilder().
 				WithLabels(map[string]string{mesh_proto.ZoneTag: cpZone}).
 				Build()
-			// LegacyServiceName for default/backend/zone=east/port=80: default_backend__east_msvc_80
-			const legacySvcName = "default_backend__east_msvc_80"
+			// endpoint map key for default/backend/zone=east/port=80: default_backend__east_msvc_80
+			const endpointMapKey = "default_backend__east_msvc_80"
 
 			dp := samples.DataplaneBackendBuilder().
 				With(func(r *core_mesh.DataplaneResource) {
@@ -180,7 +180,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 				meshContext: xds_context.MeshContext{
 					Resource: builders.Mesh().WithName("default").Build(),
 					DataplaneZoneIngressEndpointMap: core_xds.EndpointMap{
-						legacySvcName: []core_xds.Endpoint{
+						endpointMapKey: []core_xds.Endpoint{
 							{
 								Target: "192.168.0.1",
 								Port:   2521,
@@ -272,10 +272,10 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 				AddIntPort(80, core_meta.ProtocolHTTP).
 				Build()
 
-			// LegacyServiceName used as endpoint map key: default_global-svc___mzsvc_80
+			// endpoint map key: default_global-svc___mzsvc_80
 			// Cluster name (unified naming): kri_mzsvc_default___global-svc_80
 			// Filter chain SNI: sni.mzsvc.default.global-svc.80
-			const legacyMZSSvcName = "default_global-svc___mzsvc_80"
+			const mzsEndpointMapKey = "default_global-svc___mzsvc_80"
 
 			dp := samples.DataplaneBackendBuilder().
 				With(func(r *core_mesh.DataplaneResource) {
@@ -305,7 +305,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 				meshContext: xds_context.MeshContext{
 					Resource: builders.Mesh().WithName("default").Build(),
 					DataplaneZoneIngressEndpointMap: core_xds.EndpointMap{
-						legacyMZSSvcName: []core_xds.Endpoint{
+						mzsEndpointMapKey: []core_xds.Endpoint{
 							{
 								Target: "192.168.0.1",
 								Port:   8080,

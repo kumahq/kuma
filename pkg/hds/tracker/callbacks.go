@@ -180,7 +180,8 @@ func (t *tracker) OnEndpointHealthResponse(streamID xds.StreamID, resp *envoy_se
 		status := clusterHealth.LocalityEndpointsHealth[0].EndpointsHealth[0].HealthStatus
 		health := status == envoy_core.HealthStatus_HEALTHY || status == envoy_core.HealthStatus_UNKNOWN
 
-		// TODO(unified-resource-naming): adjust when legacy naming is removed
+		// Accept both cluster name formats: pre-unified naming for older dataplanes
+		// and during rolling updates, unified naming for current dataplanes.
 		if clusterHealth.ClusterName == names.GetEnvoyAdminClusterName() || clusterHealth.ClusterName == system_names.SystemResourceNameEnvoyAdmin {
 			envoyHealth = health
 		} else {

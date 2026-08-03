@@ -100,7 +100,10 @@ check: format lint check/rbac ## Dev: Run code checks (go fmt, go vet, ...)
 .PHONY: check/rbac
 check/rbac:
 	@BASE=$$(git merge-base HEAD origin/master); \
-	RBAC_CHANGED=$$(git --no-pager diff $$BASE --name-only -- deployments/ | xargs grep -E 'kind: (Role|RoleBinding|ClusterRole|ClusterRoleBinding)' || true); \
+	RBAC_CHANGED=$$(for f in $$(git --no-pager diff $$BASE --name-only -- deployments/); do \
+		{ cat "$$f" 2>/dev/null; git --no-pager show "$$BASE:$$f" 2>/dev/null; } \
+			| grep -qE 'kind: (Role|RoleBinding|ClusterRole|ClusterRoleBinding)' && echo true && break; \
+	done); \
 	UPGRADE_CHANGED=$$(git --no-pager diff $$BASE --quiet UPGRADE.md; [ $$? -ne 0 ] && echo true || echo ""); \
 	if [ -n "$$RBAC_CHANGED" ] && [ -z "$$UPGRADE_CHANGED" ]; then \
 		echo "Detected RBAC changes, but UPGRADE.md was not updated. Please document the change in UPGRADE.md."; \

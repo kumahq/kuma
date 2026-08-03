@@ -57,16 +57,6 @@ Create chart name and version as used by the chart label.
 {{ printf "%s" (default $defaultSvcName .Values.controlPlane.service.name) }}
 {{- end }}
 
-{{- define "kuma.ingress.serviceName" -}}
-{{- $defaultSvcName := printf "%s-ingress" (include "kuma.name" .) -}}
-{{ printf "%s" (default $defaultSvcName .Values.ingress.service.name) }}
-{{- end }}
-
-{{- define "kuma.egress.serviceName" -}}
-{{- $defaultSvcName := printf "%s-egress" (include "kuma.name" .) -}}
-{{ printf "%s" (default $defaultSvcName .Values.egress.service.name) }}
-{{- end }}
-
 {{/*
 Common labels
 */}}
@@ -113,28 +103,6 @@ control plane deployment annotations
 {{- range $key, $value := $.Values.controlPlane.deploymentAnnotations }}
 {{ $key | quote }}: {{ $value | quote }}
 {{- end }}
-{{- end }}
-
-{{/*
-ingress labels
-*/}}
-{{- define "kuma.ingressLabels" -}}
-app: {{ include "kuma.name" . }}-ingress
-{{- range $key, $value := .Values.ingress.extraLabels }}
-{{ $key | quote }}: {{ $value | quote }}
-{{- end }}
-{{ include "kuma.labels" . }}
-{{- end }}
-
-{{/*
-egress labels
-*/}}
-{{- define "kuma.egressLabels" -}}
-app: {{ include "kuma.name" . }}-egress
-{{ range $key, $value := .Values.egress.extraLabels }}
-{{ $key | quote }}: {{ $value | quote }}
-{{ end }}
-{{- include "kuma.labels" . }}
 {{- end }}
 
 {{/*
@@ -314,10 +282,6 @@ env:
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
   value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
-{{- if .Values.experimental.inboundTagsDisabled }}
-- name: KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
-  value: "true"
-{{- end }}
 - name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
   value: {{ .Values.experimental.envoyAdminUnixSocket | quote }}
 {{- if and .Values.cni.enabled .Values.cni.taintController.enabled }}
@@ -345,15 +309,6 @@ env:
 {{- end }}
 
 {{- define "kuma.universal.defaultEnv" -}}
-{{ if eq .Values.controlPlane.mode "zone" }}
-  {{ if .Values.ingress.enabled }}
-    {{ fail "Can't have ingress.enabled when running controlPlane.mode=='universal'" }}
-  {{ end }}
-  {{ if .Values.egress.enabled }}
-    {{ fail "Can't have egress.enabled when running controlPlane.mode=='universal'" }}
-  {{ end }}
-{{ end }}
-
 env:
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}

@@ -27,11 +27,13 @@ docs/generated/raw: docs/generated/raw/rbac.yaml
 	mkdir -p $@/crds
 	for f in $$(find deployments/charts -name '*.yaml' | grep '/crds/'); do command cp $$f $@/crds/; done
 
+ifneq ($(strip $(DOCS_PROTOS)),)
 	mkdir -p $@/protos
 	$(PROTOC) \
 		--jsonschema_out=$@/protos \
 		--plugin=protoc-gen-jsonschema=$(PROTOC_GEN_JSONSCHEMA) \
 		$(DOCS_PROTOS)
+endif
 
 .PHONY: docs/generated/raw/rbac.yaml
 docs/generated/raw/rbac.yaml:

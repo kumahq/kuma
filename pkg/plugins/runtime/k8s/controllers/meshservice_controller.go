@@ -56,9 +56,8 @@ const (
 type MeshServiceReconciler struct {
 	kube_client.Client
 	kube_event.EventRecorder
-	Log                 logr.Logger
-	Scheme              *kube_runtime.Scheme
-	InboundTagsDisabled bool
+	Log    logr.Logger
+	Scheme *kube_runtime.Scheme
 }
 
 func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -336,26 +335,15 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshs
 		}
 	}
 	ms.Labels[metadata.HeadlessService] = "false"
-	if r.InboundTagsDisabled {
-		matchLabels := maps.Clone(svc.Spec.Selector)
-		if matchLabels == nil {
-			matchLabels = map[string]string{}
-		}
-		matchLabels[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
-		ms.Spec.Selector = meshservice_api.Selector{
-			DataplaneLabels: &common_api.LabelSelector{
-				MatchLabels: &matchLabels,
-			},
-		}
-	} else {
-		dpTags := maps.Clone(svc.Spec.Selector)
-		if dpTags == nil {
-			dpTags = map[string]string{}
-		}
-		dpTags[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
-		ms.Spec.Selector = meshservice_api.Selector{
-			DataplaneTags: &dpTags,
-		}
+	matchLabels := maps.Clone(svc.Spec.Selector)
+	if matchLabels == nil {
+		matchLabels = map[string]string{}
+	}
+	matchLabels[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
+	ms.Spec.Selector = meshservice_api.Selector{
+		DataplaneLabels: &common_api.LabelSelector{
+			MatchLabels: &matchLabels,
+		},
 	}
 
 	ms.Status.VIPs = []meshservice_api.VIP{

@@ -27,42 +27,11 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			Entry("full example", `
 targetRef:
   kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionLimits:
-        maxConnections: 12
-        maxConnectionPools: 12
-        maxPendingRequests: 92
-        maxRetries: 8
-        maxRequests: 128
-      outlierDetection:
-        disabled: false
-        interval: 11s
-        baseEjectionTime: 38s
-        maxEjectionPercent: 22
-        splitExternalAndLocalErrors: true
-        detectors:
-          totalFailures:
-            consecutive: 10
-          gatewayFailures:
-            consecutive: 10
-          localOriginFailures:
-            consecutive: 10
-          successRate:
-            minimumHosts: 5
-            requestVolume: 10
-            standardDeviationFactor: "1.9"
-          failurePercentage:
-            requestVolume: 10
-            minimumHosts: 5
-            threshold: 31
-          healthyPanicThreshold: 60
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits:
         maxConnections: 2
@@ -125,7 +94,8 @@ to:
           healthyPanicThreshold: 80
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits:
         maxConnections: 22
@@ -191,7 +161,8 @@ to:
             threshold: 85
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits:
         maxConnections: 22
@@ -226,7 +197,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits: { }`),
 			Entry("with MeshMultiZoneService", `
@@ -235,7 +207,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshMultiZoneService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits: { }`),
 			Entry("with MeshExternalService", `
@@ -244,7 +217,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: external
+      labels:
+        kuma.io/display-name: external
     default:
       connectionLimits: { }`),
 			Entry("top level Dataplane to MeshExternalService", `
@@ -253,7 +227,21 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: external
+      labels:
+        kuma.io/display-name: external
+    default:
+      connectionLimits: { }`),
+			Entry("inbound rules and outbound to together", `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      connectionLimits: { }
+to:
+  - targetRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits: { }`),
 		)
@@ -279,7 +267,7 @@ to:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty 'from' and 'to' array", testCase{
+			Entry("empty 'to' array", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
@@ -287,57 +275,7 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from', 'to' or 'rules' has to be defined`,
-			}),
-			Entry("unsupported kind in from selector", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-from:
-  - targetRef:
-      kind: MeshGatewayRoute
-    default:
-      connectionLimits: { }`,
-				expected: `
-violations:
-  - field: spec.from[0].targetRef.kind
-    message: value 'MeshGatewayRoute' is not supported`,
-			}),
-			Entry("from mixed with rules", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionLimits: { }
-rules:
-  - default:
-      connectionLimits: { }`,
-				expected: `
-violations:
-  - field: spec
-    message: fields 'to' and 'from' must be empty when 'rules' is defined`,
-			}),
-			Entry("to mixed with rules", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-to:
-  - targetRef:
-      kind: MeshServiceSubset
-    default:
-      connectionLimits: { }
-rules:
-  - default:
-      connectionLimits: { }`,
-				expected: `
-violations:
-- field: spec
-  message: fields 'to' and 'from' must be empty when 'rules' is defined
-- field: spec.to[0].targetRef.kind
-  message: value 'MeshServiceSubset' is not supported`,
+    message: at least one of 'to' or 'rules' has to be defined`,
 			}),
 			Entry("unsupported kind in to selector", testCase{
 				inputYaml: `
@@ -377,7 +315,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend`,
+      labels:
+        kuma.io/display-name: web-backend`,
 				expected: `
 violations:
   - field: spec.to[0].default
@@ -390,7 +329,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits:
         maxConnections: 0
@@ -418,7 +358,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         interval: 0s
@@ -470,7 +411,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         maxEjectionPercent: 101
@@ -494,7 +436,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         detectors:
@@ -515,7 +458,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         maxEjectionPercent: 100`,
@@ -531,7 +475,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         maxEjectionPercent: 100
@@ -548,7 +493,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         detectors:

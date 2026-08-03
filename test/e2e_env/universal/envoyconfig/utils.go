@@ -65,7 +65,9 @@ func getConfig(mesh, dpp string) string {
 		// pin what's actually sent, so an op about only the byte count is
 		// pure noise.
 		return item.Op == api_common.Test ||
-			strings.HasSuffix(item.Path, "maxDirectResponseBodySizeBytes")
+			strings.HasSuffix(item.Path, "maxDirectResponseBodySizeBytes") ||
+			strings.HasSuffix(item.Path, "Listener/_kuma:dynamicconfig") ||
+			strings.HasSuffix(item.Path, "Listener/system_dynamicconfig")
 	}))
 	// Zero maxDirectResponseBodySizeBytes nested inside wholesale listener add
 	// values: the byte count re-derives from the body the golden already pins.
@@ -214,7 +216,12 @@ func redactSpiffeTrustBundles(jsonStr string) string {
 	return string(out)
 }
 
-var dynamicConfigJsonPatch = []byte(`[{ "op": "remove", "path": "/xds/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig" }]`)
+// The dynamic config listener is named "_kuma:dynamicconfig" with legacy
+// naming or "system_dynamicconfig" with unified resource naming.
+var dynamicConfigJsonPatch = []byte(`[
+	{ "op": "remove", "path": "/xds/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig" },
+	{ "op": "remove", "path": "/xds/type.googleapis.com~1envoy.config.listener.v3.Listener/system_dynamicconfig" }
+]`)
 
 // We can remove dynamic config as this contains dns config which changes in multiple places making it hard to mask
 func redactKumaDynamicConfig(jsonStr string) string {

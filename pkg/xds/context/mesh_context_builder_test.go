@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
@@ -16,6 +17,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test"
@@ -391,7 +394,35 @@ status:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(ctx3.Hash).ToNot(Equal(ctx2.Hash), "VIP allocation must invalidate the mesh context")
 	})
+
+	It("returns an error instead of panicking when listing resources fails", func() {
+		// given a mesh exists but listing any other resource fails (e.g. DB connection lost)
+		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())
+		builder := xds_context.NewMeshContextBuilder(
+			&failingListManager{ReadOnlyResourceManager: resourceStore},
+			xds_server.MeshResourceTypes(),
+			lookupIPFunc,
+			"zone-1",
+			nil,
+		)
+
+		// when building the base mesh context
+		_, err := builder.BuildBaseMeshContextIfChanged(context.Background(), "default", nil)
+
+		// then the error is surfaced rather than causing a nil-pointer panic
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("failed to build base mesh context"))
+	})
 })
+
+// failingListManager delegates Get to a real manager but fails every List, simulating a store error.
+type failingListManager struct {
+	manager.ReadOnlyResourceManager
+}
+
+func (f *failingListManager) List(context.Context, core_model.ResourceList, ...store.ListOptionsFunc) error {
+	return errors.New("store unavailable")
+}
 
 var _ = Describe("ServicesInformation", func() {
 	lookupIPFunc := func(s string) ([]net.IP, error) {
@@ -424,7 +455,7 @@ var _ = Describe("ServicesInformation", func() {
 		msBuilder := builders.MeshService().
 			WithMesh(meshName).
 			WithName("backend").
-			WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "backend").
+			WithDataplaneLabelsSelectorKV(mesh_proto.ServiceTag, "backend").
 			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
 			WithTLSStatus(meshservice_api.TLSReady)
 		Expect(msBuilder.Create(resourceStore)).To(Succeed())
@@ -521,7 +552,7 @@ var _ = Describe("ServicesInformation", func() {
 		msBuilder := builders.MeshService().
 			WithMesh(meshName).
 			WithName("backend").
-			WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "backend").
+			WithDataplaneLabelsSelectorKV(mesh_proto.ServiceTag, "backend").
 			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
 			WithTLSStatus(meshservice_api.TLSReady)
 		Expect(msBuilder.Create(resourceStore)).To(Succeed())

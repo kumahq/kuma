@@ -337,7 +337,7 @@ var _ = Describe("Insight Persistence", func() {
 		}).Should(Succeed())
 	})
 
-	It("should count dataplane secrets and mesh service as a resource but not as policy", func() {
+	It("should count dataplane secrets and mesh service as a resource", func() {
 		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -358,8 +358,6 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(insight.Spec.Resources[string(system.SecretType)].Total).To(Equal(uint32(1)))
 		Expect(insight.Spec.Resources[string(meshservice_api.MeshServiceType)].Total).To(Equal(uint32(1)))
 
-		Expect(insight.Spec.Policies[string(core_mesh.DataplaneType)]).To(BeNil())
-		Expect(insight.Spec.Policies[string(system.SecretType)]).To(BeNil())
 		Expect(insight.Spec.Dataplanes.Total).To(Equal(uint32(1)))
 	})
 

@@ -4,8 +4,8 @@
   "spec": {
     "targetRef": {
       "kind": "MeshService",
-      "name": 2
+      "sectionName": 2
     },
-    "from": [{"targetRef":{"kind":"Mesh"}}]
+    "rules": [{"default":{"allow":[{"spiffeID":{"type":"Prefix","value":"spiffe://default"}}]}}]
   }
 }

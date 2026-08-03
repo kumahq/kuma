@@ -8,7 +8,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -25,10 +24,7 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
-var (
-	_   core_plugins.EgressPolicyPlugin = &plugin{}
-	log                                 = core.Log.WithName("MeshRateLimit")
-)
+var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -42,14 +38,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshRateLimitType, dataplane, resources, opts...)
 }
 
-func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.EgressMatchedPolicies(api.MeshRateLimitType, tags, resources, opts...)
-}
-
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	if proxy.ZoneEgressProxy != nil {
-		return applyToEgress(rs, proxy)
-	}
 	if proxy.Dataplane == nil {
 		return nil
 	}
@@ -191,17 +180,6 @@ func effectiveZoneProxyFilterChainConf(
 	}
 
 	return mergeRateLimitConfs(confs...)
-}
-
-func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	listeners := xds.GatherListeners(rs)
-	if listeners.Egress == nil {
-		log.V(1).Info("skip applying MeshRateLimit, Egress has no listener",
-			"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
-		)
-		return nil
-	}
-	return nil
 }
 
 func hasCatchAllInboundRule(rules []*rules_inbound.Rule) bool {

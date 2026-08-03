@@ -29,7 +29,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/reachablebackends"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/resilience"
 	multizone_sync "github.com/kumahq/kuma/v3/test/e2e_env/multizone/sync"
-	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/unifiednaming"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/validation"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/zonedisable"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -59,7 +58,6 @@ var (
 	_ = Describe("MeshTCPRoute", Label("job-3"), meshtcproute.Test, Ordered)
 	_ = Describe("InboundPassthrough", Label("job-3"), inbound_communication.InboundPassthrough, Ordered)
 	_ = Describe("InboundPassthroughDisabled", Label("job-3"), inbound_communication.InboundPassthroughDisabled, Ordered)
-	_ = Describe("Connectivity", Label("job-1"), connectivity.Connectivity, Ordered)
 	_ = Describe("Connectivity Gateway IPV6 CNI V2", Label("job-1"), connectivity.GatewayIPV6CNIV2, Ordered)
 	_ = Describe("Sync", Label("job-1"), multizone_sync.Sync, Ordered)
 	_ = Describe("MeshTrafficPermission", Label("job-3"), meshtrafficpermission.MeshTrafficPermission, Ordered)
@@ -72,21 +70,16 @@ var (
 	_ = Describe("Defaults", Label("job-3"), defaults.Defaults, Ordered)
 	_ = Describe("MeshService Sync", Label("job-1"), meshservice.Sync, Ordered)
 	_ = Describe("MeshService Connectivity", Label("job-1"), meshservice.Connectivity, Ordered)
-	_ = Describe("MeshService Migration", Label("job-1"), meshservice.Migration, Ordered)
 	_ = Describe("Targeting real MeshService in policies", Label("job-1"), meshservice.MeshServiceTargeting, Ordered)
 	_ = Describe("MeshMultiZoneService Connectivity", Label("job-2"), meshmultizoneservice.Connectivity, Ordered)
 	_ = Describe("MeshMultiZoneService MeshLbStrategy", Label("job-0"), localityawarelb.MeshMzService, Ordered)
-	_ = Describe("Available services", Label("job-1"), connectivity.AvailableServices, Ordered)
 	_ = Describe("ReachableBackends", Label("job-1"), reachablebackends.ReachableBackends, Ordered)
 	_ = Describe("Producer Policy Flow", Label("job-2"), producer.ProducerPolicyFlow, Ordered)
 	_ = Describe("MeshServiceReachableBackends", Label("job-1"), reachablebackends.MeshServicesWithReachableBackendsOption, Ordered)
 	_ = Describe("MeshTLS", Label("job-3"), meshtls.MeshTLS, Ordered)
 	_ = Describe("MeshIdentity", Label("job-0"), meshidentity.Identity, Ordered)
-	_ = Describe("Unified Resource Naming", Label("job-3"), unifiednaming.UnifiedNaming, Ordered)
-	_ = Describe("MeshIdentity Migration", Label("job-0"), meshidentity.Migration, Ordered)
 	_ = Describe("CNI Configuration", Label("job-3"), Label("kind-not-supported"), cni.ExcludeOutboundPort, Ordered)
 	_ = Describe("MeshProxy", Label("job-2"), meshproxy.Connectivity, Ordered)
-	_ = Describe("MeshProxy Migration", Label("job-2"), meshproxy.Migration, Ordered)
 	_ = Describe("MeshMetric on Zone Proxy", Label("job-3"), meshmetric.ZoneProxy, Ordered)
 	_ = Describe("Resource Label Validation", Label("job-3"), Label("golden-files-e2e"), validation.ResourceValidation, Ordered)
 )

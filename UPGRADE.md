@@ -8,6 +8,51 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Real-resource policy selection now uses `labels` only
+
+Policies that select real resources through `spec.targetRef` or `spec.to[].targetRef` now resolve those targets by `labels` only. This applies to `Dataplane`, `MeshService`, `MeshExternalService`, `MeshMultiZoneService`, and `MeshHTTPRoute`.
+
+**Action required**
+
+Migrate any policy that still selects those resources by `name` and/or `namespace` to use `labels` instead before upgrading. `sectionName` remains supported for `Dataplane` inbound selection and `MeshService` port selection.
+
+### `from` removed from `MeshTLS`
+
+The deprecated `from` field has been removed from the `MeshTLS` policy. Use the `rules` field instead.
+
+**Action required**
+
+Migrate any `MeshTLS` resources using `from` to use `rules` before upgrading.
+
+**Warning**: Un-migrated `from` configurations are silently ignored after upgrade — the `from` field no longer exists in the schema and the data is discarded during deserialization. The impact depends on your CA backend configuration:
+- **CA backend mode `PERMISSIVE`**: workloads fall back to permissive TLS when you intended strict
+- **CA backend mode `STRICT` or workload has identity**: workloads default to strict mTLS, potentially breaking connectivity if the `from` policy was intentionally permissive
+
+Before upgrading, audit your cluster for affected resources:
+```bash
+kubectl get meshtls -A -o yaml | grep -B5 'from:'
+```
+
+```yaml
+# Before (deprecated)
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        mode: Strict
+
+# After
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        mode: Strict
+```
+
 ### Legacy `ExternalService` resource removed
 
 The legacy `ExternalService` resource has been removed. Its CRD, API
@@ -52,6 +97,34 @@ regardless of what the mesh's former `meshServices.mode` was set to.
 None. A `Mesh` spec that still sets `meshServices` continues to apply
 successfully; the field is silently ignored by the control plane.
 
+### `routing.zoneEgress` removed from the `Mesh` schema
+
+The `routing.zoneEgress` boolean has been removed from the `Mesh` resource
+spec. Cross-zone and `MeshExternalService` traffic now uses ZoneEgress based on
+actual zone egress topology plus mTLS, rather than an explicit mesh-level
+toggle.
+
+**Action required**
+
+Remove any `routing.zoneEgress` entries from stored `Mesh` resources and
+manifests before upgrading. After the upgrade, that field no longer exists in
+the schema and is ignored during deserialization.
+
+### `routing.defaultForbidMeshExternalServiceAccess` removed from the `Mesh` schema
+
+The `routing.defaultForbidMeshExternalServiceAccess` boolean has been removed
+from the `Mesh` resource spec. Zone egress no longer reads a mesh-level toggle
+to block `MeshExternalService` traffic by default.
+
+**Action required**
+
+Remove any `routing.defaultForbidMeshExternalServiceAccess` entries from stored
+`Mesh` resources and manifests before upgrading. After the upgrade, that field
+no longer exists in the schema and is ignored during deserialization. Use
+`MeshTrafficPermission` to express explicit access control for
+`MeshExternalService` traffic instead of relying on the removed mesh-wide
+default-deny toggle.
+
 ### MeshService mode no longer disables zone proxy listeners, inspect endpoints, or MeshIdentity initialization
 
 The control plane now generates mesh-scoped zone proxy listeners and serves
@@ -76,6 +149,62 @@ Also update any automation that expected the `MeshServicesDisabled`
 `MeshIdentity` status reason or treated inspect `_layout` as unavailable
 outside `Exclusive` mode.
 
+### Standalone `ZoneIngress`/`ZoneEgress` proxies no longer receive Envoy config
+
+The control plane no longer generates xDS configuration for data plane proxies
+started as standalone zone proxies, i.e. `kuma-dp run --proxy-type=ingress|egress`
+on Universal and the `ingress.enabled` / `egress.enabled` Helm deployments on
+Kubernetes. Cross-zone traffic is now served by mesh-scoped zone proxies, which
+are regular `Dataplane` resources.
+
+Such a proxy still connects, registers its `ZoneIngress`/`ZoneEgress` resource,
+and reports an insight, but it receives no listeners, clusters, or endpoints.
+Envoy keeps whatever configuration it already had until it restarts, at which
+point it starts with an empty configuration and drops all cross-zone traffic.
+The control plane logs
+`xDS generation for legacy ZoneIngress/ZoneEgress dataplanes is no longer supported`
+once per connected legacy proxy.
+
+**Action required**
+
+Migrate to mesh-scoped zone proxies **before** upgrading the zone control plane.
+On Kubernetes deploy them through `meshes[].ingress.enabled` /
+`meshes[].egress.enabled`. On Universal, replace
+`kuma-dp run --proxy-type=ingress|egress` with a regular `Dataplane` that
+declares `networking.listeners` of type `ZoneIngress`/`ZoneEgress`. Upgrading the
+control plane first blackholes cross-zone traffic as soon as the legacy zone
+proxy Pods restart.
+
+### Legacy `ingress`/`egress` Helm values and `kumactl install` flags removed
+
+The chart no longer renders standalone `ZoneIngress`/`ZoneEgress` Deployments.
+The top-level `ingress` and `egress` value blocks are gone, along with the
+Deployment, Service, HorizontalPodAutoscaler, PodDisruptionBudget and RBAC
+templates they drove. `kumactl install control-plane` lost the matching flags:
+`--ingress-enabled`, `--ingress-drain-time`, `--ingress-use-node-port`,
+`--ingress-node-selector`, `--egress-enabled`, `--egress-drain-time`,
+`--egress-service-type` and `--egress-node-selector`. `controlPlane.ingress.*`
+is unrelated and still configures the Kubernetes Ingress for the control plane
+GUI and API.
+
+Helm does not reject unknown values, so an upgrade with `ingress.enabled=true`
+left in your values file succeeds without any warning. Because the templates are
+gone, the upgrade deletes the legacy zone proxy Deployment, Service,
+HorizontalPodAutoscaler, PodDisruptionBudget and RBAC objects that the previous
+release owned, which drops all cross-zone traffic still flowing through them.
+
+**Action required**
+
+Complete the migration described in the previous section, then drop the
+top-level `ingress` and `egress` blocks from your values files and the removed
+flags from any `kumactl install control-plane` invocation.
+
+Most legacy settings map onto `meshes[].ingress` / `meshes[].egress`. These have
+no equivalent there: `podAnnotations`, `annotations`, `logLevel`, `drainTime`,
+`lifecycle`, `livenessProbe`, `readinessProbe`, `startupProbe`, `dns.policy`,
+`dns.config`, `service.enabled` and `service.nodePort`. Drain time and probes
+are now control-plane-wide sidecar injector settings.
+
 ### ServiceInsight, MeshInsight, and inspect `_rules` no longer report kuma.io/service based data
 
 With `meshServices.mode` always `Exclusive`, `kuma.io/service`-tagged services and
@@ -98,6 +227,71 @@ Update any automation or dashboards that read `ServiceInsight.services` for
 non-gateway services, `MeshInsight.services`, or the `_rules` `toRules` field
 to use `MeshService`/`MeshExternalService` status and `_rules`
 `toResourceRules` instead.
+
+### Zone proxies authenticate with a dataplane token
+
+A zone proxy is now a `Dataplane` with zone proxy listeners, so the DP server
+authenticates it exactly like any other data plane proxy. The separate zone
+proxy authenticator is gone: every proxy is authenticated with the method
+configured under `dpServer.authn.dpProxy` (`serviceAccountToken` on Kubernetes,
+`dpToken` on Universal), and zone tokens are no longer validated.
+
+`dpServer.authn.zoneProxy.type` and
+`dpServer.authn.zoneProxy.zoneToken.validator` no longer affect
+authentication. `dpServer.authn.zoneProxy.type` still controls whether the
+bootstrap server requires a token from the legacy `ingress`/`egress` proxy
+types.
+
+**Action required**
+
+On Universal, issue a dataplane token for each zone proxy
+(`kumactl generate dataplane-token --mesh <mesh> --name <zone-proxy-dp>`)
+instead of a zone token, and pass it to `kuma-dp` with `--dataplane-token-file`.
+Tokens generated with `kumactl generate zone-token` are no longer accepted by
+the DP server. If you relied on `dpServer.authn.zoneProxy.type: none` to let
+zone proxies connect without a token while data plane proxies used `dpToken`,
+zone proxies now need a dataplane token too.
+
+### `dataplaneTags` removed from the `MeshService` selector
+
+`spec.selector.dataplaneTags` matched data plane proxies by their inbound tags.
+The field has been removed; `MeshService` selects proxies by
+`spec.selector.dataplaneRef` or `spec.selector.dataplaneLabels` only.
+
+**Warning**: un-migrated selectors are silently dropped during deserialization.
+An affected `MeshService` keeps its name and ports but matches zero data plane
+proxies, so it stops producing endpoints and its status goes `Unavailable`.
+The control plane returns a warning for any `MeshService` left without a
+selector, but only when the resource is next created or updated.
+
+**Action required**
+
+Migrate any `MeshService` using `dataplaneTags` to `dataplaneLabels` before
+upgrading. Audit with:
+
+```bash
+kubectl get meshservices -A -o yaml | grep -B5 'dataplaneTags:'
+kumactl get meshservices -o yaml --all-meshes | grep -B5 'dataplaneTags:'
+```
+
+```yaml
+# Before (removed)
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+
+# After
+spec:
+  selector:
+    dataplaneLabels:
+      matchLabels:
+        app: redis
+```
+
+Inbound tags are no longer an identity source, so the replacement labels must
+exist on the `Dataplane` resource itself. On Kubernetes those come from the Pod
+labels; on Universal, set them under `labels` in the `Dataplane` resource.
 
 ### CoreDNS removed from the data plane
 
@@ -315,6 +509,99 @@ spec:
         idleTimeout: 1h
 ```
 
+### `from` removed from `MeshCircuitBreaker`
+
+The deprecated `spec.from` array has been removed from `MeshCircuitBreaker`.
+Circuit breaking for incoming traffic is now configured exclusively through
+`spec.rules`. `spec.from` is silently dropped on create/update: if
+`spec.rules` or `spec.to` is also set, the resource is accepted but `from` has
+no effect on inbound configuration; if `from` was the only field set, the
+resulting spec has neither `to` nor `rules`, so the request is rejected by
+validation.
+
+**Action required**
+
+Before upgrading, migrate every `MeshCircuitBreaker` that uses `spec.from` to
+`spec.rules`. A `from` entry targeting `kind: Mesh` (all clients) maps to a
+single catch-all rule:
+
+```yaml
+# before
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionLimits:
+          maxConnections: 1024
+# after
+spec:
+  rules:
+    - default:
+        connectionLimits:
+          maxConnections: 1024
+```
+
+### `from` removed from `MeshAccessLog`
+
+The deprecated `spec.from` array has been removed from `MeshAccessLog`. Access logging for incoming traffic is now configured exclusively through `spec.rules`. `spec.from` is silently dropped on create/update: if `spec.rules` or `spec.to` is also set, the resource is accepted but `from` has no effect on inbound configuration; if `from` was the only field set, the resulting spec has neither `to` nor `rules`, so the request is rejected by validation.
+
+**Action required**
+
+Before upgrading, migrate every `MeshAccessLog` that uses `spec.from` to `spec.rules`. A `from` entry targeting `kind: Mesh` (all clients) maps to a single catch-all rule:
+
+```yaml
+# before
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: File
+            file:
+              path: /tmp/access.log
+# after
+spec:
+  rules:
+    - default:
+        backends:
+          - type: File
+            file:
+              path: /tmp/access.log
+```
+
+### `from` removed from `MeshRateLimit`
+
+The deprecated `spec.from` array has been removed from `MeshRateLimit`. Rate limiting for incoming traffic is now configured exclusively through `spec.rules`. `spec.from` is silently dropped on create/update: if `spec.rules` or `spec.to` is also set, the resource is accepted but `from` has no effect on inbound configuration; if `from` was the only field set, the resulting spec has neither `to` nor `rules`, so the request is rejected by validation.
+
+**Action required**
+
+Before upgrading, migrate every `MeshRateLimit` that uses `spec.from` to `spec.rules`. A `from` entry targeting `kind: Mesh` (all clients) maps to a single catch-all rule:
+
+```yaml
+# before
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        local:
+          http:
+            requestRate:
+              num: 100
+              interval: 10s
+# after
+spec:
+  rules:
+    - default:
+        local:
+          http:
+            requestRate:
+              num: 100
+              interval: 10s
+```
+
 ### Auto reachable services removed
 
 The experimental auto reachable services feature has been removed. The control
@@ -332,13 +619,31 @@ Remove the setting above from your control plane config. Setting
 `KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES` no longer has any effect in Kuma
 3.0.0.
 
-To trim the outbound clusters a proxy receives, configure reachable services or
-reachable backends explicitly on the `Dataplane` (the
-`kuma.io/transparent-proxying-reachable-services` and `kuma.io/reachable-backends`
-annotations on Kubernetes). Traffic that is not permitted by a
-`MeshTrafficPermission` is still denied at the proxy; it is simply no longer
-pruned from the proxy configuration.
+To trim the outbound clusters a proxy receives, configure reachable backends
+explicitly on the `Dataplane` (the `kuma.io/reachable-backends` annotation on
+Kubernetes). Traffic that is not permitted by a `MeshTrafficPermission` is
+still denied at the proxy; it is simply no longer pruned from the proxy
+configuration.
 
+### `reachableServices` / `kuma.io/transparent-proxying-reachable-services` removed
+
+The legacy `kuma.io/service`-based reachable services mechanism has been
+removed in favor of `reachableBackends` (`kuma.io/reachable-backends` on
+Kubernetes), which targets `MeshService`/`MeshExternalService`/
+`MeshMultiZoneService` resources instead of the `kuma.io/service` tag.
+
+The following have been removed:
+
+- `Dataplane.spec.networking.transparentProxying.reachableServices`
+- The `kuma.io/transparent-proxying-reachable-services` annotation on
+  Kubernetes.
+
+**Action required**
+
+Migrate any usage of the annotation or field above to `reachableBackends` /
+`kuma.io/reachable-backends`, referencing the target `MeshService`,
+`MeshExternalService`, or `MeshMultiZoneService` by name/namespace/port
+instead of the `kuma.io/service` tag value.
 
 ### `kumactl install observability` removed
 
@@ -679,6 +984,36 @@ If any `MeshMetric` policy still sets `openTelemetry.endpoint`, create a
 the policy to reference it via `openTelemetry.backendRef` before upgrading.
 Policies that still set `openTelemetry.endpoint` will fail validation.
 
+### `MeshAccessLog` OpenTelemetry backend no longer accepts an inline `endpoint`
+
+The deprecated `default.backends[].openTelemetry.endpoint` /
+`rules[].default.backends[].openTelemetry.endpoint` field has been removed
+from the `MeshAccessLog` policy. `backendRef`, pointing at a
+`MeshOpenTelemetryBackend` resource, is now the only way to configure an
+OpenTelemetry access log backend.
+
+**Action required**
+
+If any `MeshAccessLog` policy still sets `openTelemetry.endpoint`, create a
+`MeshOpenTelemetryBackend` resource with the equivalent endpoint and update
+the policy to reference it via `openTelemetry.backendRef` before upgrading.
+Policies that still set `openTelemetry.endpoint` will fail validation.
+
+### `MeshLoadBalancingStrategy` load-balancer-specific `hashPolicies` removed
+
+The deprecated `spec.to[].default.loadBalancer.ringHash.hashPolicies` and
+`spec.to[].default.loadBalancer.maglev.hashPolicies` fields have been
+removed. `spec.to[].default.hashPolicies` is now the only place to configure
+hash policies.
+
+**Action required**
+
+Move any `hashPolicies` still configured under `loadBalancer.ringHash` or
+`loadBalancer.maglev` to `spec.to[].default.hashPolicies` before upgrading.
+After upgrading, policies that still set the removed nested fields may be
+rejected by validation or have those fields pruned by the API server, and they
+no longer affect the generated Envoy config.
+
 ### `MeshTrace` OpenTelemetry backend no longer accepts an inline `endpoint`
 
 The deprecated `default.backends[].openTelemetry.endpoint` field has been
@@ -692,6 +1027,137 @@ If any `MeshTrace` policy still sets `openTelemetry.endpoint`, create a
 `MeshOpenTelemetryBackend` resource with the equivalent endpoint and update
 the policy to reference it via `openTelemetry.backendRef` before upgrading.
 Policies that still set `openTelemetry.endpoint` will fail validation.
+
+### `Mesh.spec.tracing` removed
+
+The inline `tracing` field (and its `Tracing`/`TracingBackend`/
+`DatadogTracingBackendConfig`/`ZipkinTracingBackendConfig` types) has been
+removed from the `Mesh` resource spec. The `MeshTrace` policy has been the GA
+replacement for configuring tracing and is unaffected by this change.
+
+**Action required**
+
+Migrate any `Mesh` resources that still configure `spec.tracing` to a
+`MeshTrace` policy before upgrading. A `Mesh` spec that still sets `tracing`
+continues to apply successfully; the field is silently ignored by the control
+plane.
+
+### `Mesh.spec.routing.localityAwareLoadBalancing` removed
+
+The inline `routing.localityAwareLoadBalancing` field has been removed from
+the `Mesh` resource spec. The `MeshLoadBalancingStrategy` policy has been the
+GA replacement for configuring locality-aware load balancing and is
+unaffected by this change.
+
+**Action required**
+
+Migrate any `Mesh` resources that still configure
+`spec.routing.localityAwareLoadBalancing` to a `MeshLoadBalancingStrategy`
+policy before upgrading. A `Mesh` spec that still sets
+`routing.localityAwareLoadBalancing` continues to apply successfully; the
+field is silently ignored by the control plane.
+
+### `Mesh.spec.logging` removed
+
+The inline `logging` field (and its `Logging`/`LoggingBackend`/
+`FileLoggingBackendConfig`/`TcpLoggingBackendConfig` types) has been removed
+from the `Mesh` resource spec. The `MeshAccessLog` policy has been the GA
+replacement for configuring access logging and is unaffected by this change.
+
+**Action required**
+
+Migrate any `Mesh` resources that still configure `spec.logging` to a
+`MeshAccessLog` policy before upgrading. A `Mesh` spec that still sets
+`logging` continues to apply successfully; the field is silently ignored by
+the control plane.
+
+### Per-zone MeshExternalService routing removed
+
+A `MeshExternalService` labeled with `kuma.io/zone` is no longer restricted to
+being reached only from that zone via a routing path through the remote
+zone's ingress and egress. It is now reachable directly through the local
+zone egress from every zone, the same as an unlabeled `MeshExternalService`.
+
+**Action required**
+
+None for typical usage; existing `kuma.io/zone` labels on `MeshExternalService`
+resources are no longer used to gate reachability and can be removed. If you
+relied on the label to force all traffic through a specific zone's egress
+(for example, because only that zone has network-level access to the
+external endpoint), that forwarding no longer happens: every zone's local
+egress now dials the external endpoint directly, so make sure each zone's
+network path to the endpoint is in place before upgrading.
+
+### `MeshInsight.policies` removed in favor of `resources`
+
+The deprecated `policies` field (a map of policy type to a `total` count) has
+been removed from `MeshInsight`. The `resources` field, which reports a
+`total` count for every resource type (policies included), has been the
+replacement since it was introduced and is unaffected by this change.
+
+**Action required**
+
+Update any automation or dashboards that read `MeshInsight.policies` (via the
+REST API or `kumactl inspect meshes`) to read the equivalent entry from
+`MeshInsight.resources` instead, keyed by the same resource type name.
+
+### `Mesh.spec.networking.outbound.passthrough` removed
+
+The inline `networking.outbound.passthrough` field has been removed from the
+`Mesh` resource spec. The `MeshPassthrough` policy is the replacement for
+controlling the default outbound passthrough cluster and is unaffected by
+this change. After upgrading, the control plane always behaves as if
+`passthrough` was `true` (its previous default) unless a `MeshPassthrough`
+policy says otherwise.
+
+**Action required**
+
+Migrate any `Mesh` resources that still set `networking.outbound.passthrough`
+to `false` to a `MeshPassthrough` policy with `targetRef.kind: Mesh` and
+`default.passthroughMode: None` before upgrading. A `Mesh` spec that still
+sets `networking.outbound.passthrough` continues to apply successfully; the
+field is silently ignored by the control plane.
+
+### `MeshTrafficPermission.spec.from` removed
+
+The `from` field (and its legacy client-targetRef-based `Allow`/`Deny`/
+`AllowWithShadowDeny` matching) has been removed from the
+`MeshTrafficPermission` resource spec. The `rules` field, which matches
+clients by `MeshIdentity` (`spiffeID`) or SNI instead of by dataplane tag
+subsets, is now the only supported way to configure traffic permissions and
+is unaffected by this change. A `MeshTrafficPermission` must now define at
+least one entry in `rules`; a spec with only `from` (or with neither `from`
+nor `rules`) fails validation with `policy must define rules`.
+
+**Action required**
+
+Migrate any `MeshTrafficPermission` resources that still configure `from` to
+use `rules` with `MeshIdentity` (`spiffeID`) matches before upgrading.
+Dataplane proxies still on legacy mTLS (no `MeshIdentity`/SPIFFE identity)
+that are matched only by a `from`-based `MeshTrafficPermission` will
+default-deny once that policy is migrated or removed, unless a `rules`-based
+policy is added to allow the same traffic.
+
+### Legacy dataplane inspect rules endpoint removed
+
+The legacy `GET /meshes/{mesh}/dataplanes/{dataplane}/rules` endpoint has
+been removed.
+
+**Action required**
+
+Use `GET /meshes/{mesh}/dataplanes/{name}/_policies` instead (or the
+per-inbound/outbound scoped variants — see below).
+
+`kumactl inspect dataplane --type=policies` now calls
+`GET /meshes/{mesh}/dataplanes/{name}/_policies` (and the
+`_inbounds/{inbound_kri}/_policies`, `_outbounds/{outbound_kri}/_policies`,
+and `_outbounds/{outbound_kri}/_routes/{route_kri}/_policies` variants for
+per-inbound/outbound scoping) and requires no changes to invocation. The
+underlying `GET /meshes/{mesh}/dataplanes/{dataplane}/policies` HTTP
+endpoint it used to call is still registered — the vendored GUI bundle
+(`app/kuma-ui`) still calls it directly and is re-vendored on its own
+release cadence — but it is deprecated; new integrations should call
+`_policies` instead.
 
 ### Cross-zone `MeshService` routing requires `MeshZoneAddress`
 
@@ -1334,18 +1800,20 @@ KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS="system:serviceaccount:kuma-system:kuma-co
 
 This is already configured by default via Helm template with `KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS`.
 
-### MeshTrust spec.origin Field Deprecated
+### MeshTrust spec.origin Field Removed
 
-The `spec.origin` field in MeshTrust resources has been moved to `status.origin`.
+The `spec.origin` field in MeshTrust resources has been removed. The origin is
+now reported through `status.origin`.
 
 **What changed:**
-- `spec.origin` is now deprecated and will be removed in a future release
+- `spec.origin` is no longer part of the MeshTrust API or Kubernetes CRD schema
+- Manifests and API requests that still set `spec.origin` can be rejected as unknown-field input
 - The field is automatically populated in `status.origin` by the MeshIdentity status updater
-- Setting `spec.origin` continues to work but emits a deprecation warning
 
 **Action required:**
 
-No immediate action required, but update any automation or tooling that references `spec.origin` to use `status.origin` instead.
+Before upgrading, remove `spec.origin` from MeshTrust manifests and update any
+automation or tooling that reads it to use `status.origin` instead.
 
 **Example:**
 

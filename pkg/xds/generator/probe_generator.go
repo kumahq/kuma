@@ -7,13 +7,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
 	envoy_virtual_hosts "github.com/kumahq/kuma/v3/pkg/xds/envoy/virtualhosts"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
@@ -33,7 +31,6 @@ func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, x
 		return nil, nil
 	}
 
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
 	virtualHostBuilder := envoy_virtual_hosts.NewVirtualHostBuilder(proxy.APIVersion, "probe")
 
 	inboundNameByPort := map[uint32]string{}
@@ -51,10 +48,7 @@ func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, x
 			return nil, err
 		}
 		if inboundName, ok := inboundNameByPort[endpoint.InboundPort]; ok {
-			localClusterName := names.GetLocalClusterName(endpoint.InboundPort)
-			if unifiedNaming {
-				localClusterName = naming.MustContextualInboundName(proxy.Dataplane, inboundName)
-			}
+			localClusterName := naming.MustContextualInboundName(proxy.Dataplane, inboundName)
 			virtualHostBuilder.Configure(
 				envoy_virtual_hosts.Route(matchURL.Path, newURL.Path, localClusterName, true))
 		} else {

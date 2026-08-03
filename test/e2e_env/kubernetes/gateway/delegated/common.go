@@ -8,5 +8,4 @@ type Config struct {
 	CpNamespace                 string
 	ObservabilityDeploymentName string
 	IPV6                        bool
-	UseEgress                   bool
 }

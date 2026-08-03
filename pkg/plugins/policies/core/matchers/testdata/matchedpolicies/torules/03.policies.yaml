@@ -7,7 +7,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -35,7 +36,8 @@ name: mtp-2
 spec:
   targetRef:
     kind: MeshService
-    name: web
+    labels:
+      kuma.io/display-name: web
   to:
     - targetRef:
         kind: Mesh
@@ -51,7 +53,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         http:
           requestTimeout: 2s

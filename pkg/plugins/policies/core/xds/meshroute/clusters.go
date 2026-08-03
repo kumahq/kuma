@@ -10,7 +10,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -42,8 +41,6 @@ func GenerateClusters(
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
-
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		protocol := meshCtx.GetServiceProtocol(serviceName)
@@ -63,7 +60,10 @@ func GenerateClusters(
 					continue
 				}
 				if proxy.WorkloadIdentity != nil {
-					kriID := service.BackendRef().Resource()
+					// The destination advertises its SNI from the resolved port
+					// name, so normalize a numeric backend-ref section (named port
+					// targeted by number) to the port name before deriving the KRI SNI.
+					kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
 					if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
 						continue
 					}
@@ -89,7 +89,6 @@ func GenerateClusters(
 						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
 							proxy.SecretsTracker,
-							unifiedNaming,
 							meshCtx.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							true,
@@ -115,7 +114,7 @@ func GenerateClusters(
 						if otherMesh.GetMeta().GetName() == upstreamMeshName {
 							edsClusterBuilder.Configure(
 								envoy_clusters.CrossMeshClientSideMTLS(
-									proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
+									proxy.SecretsTracker, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
 								),
 							)
 							break
@@ -163,10 +162,15 @@ func GenerateClusters(
 						kriSNI := useKRISni && proxy.WorkloadIdentity != nil
 						var sni string
 						if kriSNI {
-							if errs := core_sni.ValidateKRI(realResourceRef.Resource); len(errs) > 0 {
+							// The destination advertises its SNI from the resolved
+							// port name, so normalize a numeric backend-ref section
+							// (named port targeted by number) to the port name
+							// before deriving the KRI SNI.
+							kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
+							if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
 								continue
 							}
-							sni = core_sni.FromKRI(realResourceRef.Resource)
+							sni = core_sni.FromKRI(kriID)
 						} else {
 							sni = SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 						}
@@ -192,7 +196,6 @@ func GenerateClusters(
 						} else {
 							edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 								proxy.SecretsTracker,
-								unifiedNaming,
 								meshCtx.Resource,
 								tlsReady,
 								sni,
@@ -201,7 +204,7 @@ func GenerateClusters(
 							))
 						}
 					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, unifiedNaming, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
+						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
 					}
 				}
 			}
@@ -362,7 +365,7 @@ func classifyMZMSEndpointZones(endpoints []core_xds.Endpoint, zonesWithProxy map
 	for _, ep := range endpoints {
 		// local endpoints are sidecar-to-sidecar and never traverse a zone proxy,
 		// so the zone proxy capability of the local zone doesn't apply to them.
-		if ep.IsReachableFromZone(localZone) || zonesWithProxy[ep.Locality.Zone] {
+		if ep.Locality == nil || ep.Locality.Zone == "" || ep.Locality.Zone == localZone || zonesWithProxy[ep.Locality.Zone] {
 			hasDefaultSNIEndpoint = true
 			continue
 		}

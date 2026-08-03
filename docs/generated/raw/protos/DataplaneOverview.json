@@ -25,11 +25,6 @@
                     "additionalProperties": true,
                     "description": "Networking describes inbound and outbound interfaces of the data plane proxy."
                 },
-                "metrics": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MetricsBackend",
-                    "additionalProperties": true,
-                    "description": "Configuration for metrics that should be collected and exposed by the data plane proxy. Settings defined here will override their respective defaults defined at a Mesh level."
-                },
                 "probes": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Probes",
                     "additionalProperties": true,
@@ -372,13 +367,6 @@
                     "type": "array",
                     "description": "List of services that will be accessed directly via IP:PORT Use `*` to indicate direct access to every service in the Mesh. Using `*` to directly access every service is a resource-intensive operation, use it only if needed."
                 },
-                "reachable_services": {
-                    "items": {
-                        "type": "string"
-                    },
-                    "type": "array",
-                    "description": "List of reachable services (represented by the value of `kuma.io/service`) via transparent proxying. Setting an explicit list can dramatically improve the performance of the mesh. If not specified, all services in the mesh are reachable."
-                },
                 "ip_family_mode": {
                     "enum": [
                         "UnSpecified",
@@ -415,7 +403,7 @@
             "properties": {
                 "kind": {
                     "type": "string",
-                    "description": "Type of the backend: MeshService or MeshExternalService  +required"
+                    "description": "Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService  +required"
                 },
                 "name": {
                     "type": "string",
@@ -784,27 +772,6 @@
             "type": "object",
             "title": "Kuma Dp Version",
             "description": "KumaDpVersion describes details of Kuma Dataplane version"
-        },
-        "kuma.mesh.v1alpha1.MetricsBackend": {
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "Name of the backend, can be then used in Mesh.metrics.enabledBackend"
-                },
-                "type": {
-                    "type": "string",
-                    "description": "Type of the backend (Kuma ships with 'prometheus')"
-                },
-                "conf": {
-                    "additionalProperties": true,
-                    "type": "object",
-                    "description": "Configuration of the backend"
-                }
-            },
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Metrics Backend",
-            "description": "MetricsBackend defines metric backends"
         },
         "kuma.mesh.v1alpha1.Version": {
             "properties": {

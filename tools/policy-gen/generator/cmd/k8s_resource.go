@@ -125,7 +125,6 @@ import (
 {{- end }}
 {{- if .IsPolicy }} 
 // +kubebuilder:printcolumn:name="TargetRef Kind",type="string",JSONPath=".spec.targetRef.kind"
-// +kubebuilder:printcolumn:name="TargetRef Name",type="string",JSONPath=".spec.targetRef.name"
 {{- end }}
 type {{.Name}} struct {
 	metav1.TypeMeta   {{ $tk }}json:",inline"{{ $tk }}

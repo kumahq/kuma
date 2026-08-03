@@ -30,13 +30,6 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	if proxy.ZoneEgressProxy != nil {
-		// MeshFaultInjection no longer supports targeting the legacy ExternalService resource via
-		// 'from' on zone egress. MeshExternalService fault injection on zone egress is applied
-		// through the Dataplane path below using rules-based SNI matches (applyToZoneProxyListener).
-		return nil
-	}
-
 	if proxy.Dataplane == nil {
 		return nil
 	}

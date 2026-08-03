@@ -34,15 +34,15 @@ items:
   spec:
     targetRef:
       kind: Mesh
-      proxyTypes:
-      - Gateway
     to:
     - default:
         http:
           requestTimeout: 4s
       targetRef:
         kind: MeshService
-        name: api-play-000_microservice-mesh_svc_8080
+        labels:
+          k8s.kuma.io/namespace: microservice-mesh
+          kuma.io/display-name: api-play-000
   type: MeshTimeout
 - creationTime: "0001-01-01T00:00:00Z"
   kri: kri_mt_default_my-zone_kong-mesh-system_timeout-3_
@@ -66,7 +66,9 @@ items:
           requestTimeout: 2s
       targetRef:
         kind: MeshService
-        name: api-play-003_microservice-mesh_svc_8080
+        labels:
+          k8s.kuma.io/namespace: microservice-mesh
+          kuma.io/display-name: api-play-003
   type: MeshTimeout
 - creationTime: "0001-01-01T00:00:00Z"
   kri: kri_mt_default_my-zone_kong-mesh-system_timeout-4_
@@ -90,7 +92,9 @@ items:
           requestTimeout: 2s
       targetRef:
         kind: MeshService
-        name: api-play-002_microservice-mesh_svc_8080
+        labels:
+          k8s.kuma.io/namespace: microservice-mesh
+          kuma.io/display-name: api-play-002
   type: MeshTimeout
 next: null
 total: 4

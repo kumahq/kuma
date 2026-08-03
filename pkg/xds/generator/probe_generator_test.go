@@ -10,7 +10,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -24,7 +23,6 @@ var _ = Describe("ProbeGenerator", func() {
 		dataplane            string
 		expected             string
 		appProbeProxyEnabled bool
-		unifiedNaming        bool
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -44,7 +42,6 @@ var _ = Describe("ProbeGenerator", func() {
 				Metadata: &core_xds.DataplaneMetadata{
 					AppProbeProxyEnabled: given.appProbeProxyEnabled,
 					IPv6Enabled:          true,
-					Features:             map[string]bool{xds_types.FeatureUnifiedResourceNaming: given.unifiedNaming},
 				},
 				APIVersion: envoy_common.APIV3,
 				// internal addresses are set to "localhost" addresses to the "probe" listener
@@ -122,21 +119,6 @@ var _ = Describe("ProbeGenerator", func() {
                 path: /8080/healthz/probe?param1=value1&param2=value2
 `,
 			expected: "04.envoy.golden.yaml",
-		}),
-		Entry("base probes with unified naming", testCase{
-			dataplane: `
-            networking:
-              inbound:
-              - port: 8080
-            probes:
-              port: 9000
-              endpoints:
-              - inboundPort: 8080
-                inboundPath: /healthz/probe
-                path: /8080/healthz/probe
-`,
-			unifiedNaming: true,
-			expected:      "06.envoy.golden.yaml",
 		}),
 		Entry("skip probes listener with application probe proxy enabled ", testCase{
 			dataplane: `

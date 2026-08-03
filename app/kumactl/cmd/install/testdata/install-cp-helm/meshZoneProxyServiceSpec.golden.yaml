@@ -621,6 +621,8 @@ spec:
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-dp:0.0.1"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
+              value: "true"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: "kuma-system"
             - name: KUMA_STORE_TYPE
@@ -732,6 +734,13 @@ spec:
         kuma.io/sidecar-injection: enabled
         k8s.kuma.io/zone-proxy-type: ingress
     spec:
+      resources: 
+        limits:
+          cpu: 500m
+          memory: 256Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
       securityContext:
         runAsUser: 5678
         runAsGroup: 5678
@@ -792,6 +801,13 @@ spec:
         kuma.io/sidecar-injection: enabled
         k8s.kuma.io/zone-proxy-type: egress
     spec:
+      resources: 
+        limits:
+          cpu: 200m
+          memory: 128Mi
+        requests:
+          cpu: 50m
+          memory: 64Mi
       securityContext:
         runAsUser: 5678
         runAsGroup: 5678

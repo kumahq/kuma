@@ -26,8 +26,9 @@ labels:
   kuma.io/env: universal
 spec:
   selector:
-    dataplaneTags:
-      kuma.io/service: test-server
+    dataplaneLabels:
+      matchLabels:
+        kuma.io/service: test-server
   ports:
   - port: 80
     targetPort: 80
@@ -107,7 +108,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         http:
           numRetries: 5
@@ -180,7 +182,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         http:
           numRetries: 5
@@ -231,7 +234,8 @@ name: mesh-fault-injecton
 spec:
   targetRef:
     kind: MeshService
-    name: test-server
+    labels:
+      kuma.io/display-name: test-server
   rules:
     - default:
         http:
@@ -246,7 +250,8 @@ name: meshretry-policy
 spec:
   targetRef:
     kind: MeshHTTPRoute
-    name: http-route-1
+    labels:
+      kuma.io/display-name: http-route-1
   to:
     - targetRef:
         kind: Mesh
@@ -263,11 +268,13 @@ name: http-route-1
 spec:
   targetRef:
     kind: MeshService
-    name: demo-client
+    labels:
+      kuma.io/display-name: demo-client
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:

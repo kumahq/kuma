@@ -1,28 +1,4 @@
-ResourceRules:
-  kri_extsvc_mesh-1___mes_:
-    Conf:
-    - http:
-        numRetries: 5
-        retryOn:
-        - 5xx
-    Origin:
-    - Resource:
-        creationTime: "0001-01-01T00:00:00Z"
-        kri: kri_mr_mesh-1___mr-3_
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mr-3
-        type: MeshRetry
-      RuleIndex: 0
-    OriginByMatches: {}
-    Resource:
-      creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_extsvc_mesh-1___mes_
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mes
-      type: MeshExternalService
-    ResourceSectionName: ""
+ResourceRules: {}
 Rules:
 - Conf:
     http:

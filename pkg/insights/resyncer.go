@@ -424,8 +424,8 @@ func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tena
 
 func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status, backend string, addressPort string) {
 	if svcName == "" {
-		// When KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED is set, inbounds carry no
-		// kuma.io/service tag, so there is no service to track here.
+		// Inbounds carry no kuma.io/service tag in tag-free mode, so
+		// there is no service to track here.
 		return
 	}
 	if _, ok := insight.Services[svcName]; !ok {
@@ -551,7 +551,6 @@ func (r *resyncer) createOrUpdateMeshInsight(
 			GatewayBuiltin:   &mesh_proto.MeshInsight_DataplaneStat{},
 			GatewayDelegated: &mesh_proto.MeshInsight_DataplaneStat{},
 		},
-		Policies:  map[string]*mesh_proto.MeshInsight_PolicyStat{},
 		Resources: map[string]*mesh_proto.MeshInsight_ResourceStat{},
 		DpVersions: &mesh_proto.MeshInsight_DpVersions{
 			KumaDp: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
@@ -624,9 +623,6 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		for k, v := range oldInsight.Resources {
 			insight.Resources[k] = proto.Clone(v).(*mesh_proto.MeshInsight_ResourceStat)
 		}
-		for k, v := range oldInsight.Policies {
-			insight.Policies[k] = proto.Clone(v).(*mesh_proto.MeshInsight_PolicyStat)
-		}
 		if proto.Equal(oldInsight, &mesh_proto.MeshInsight{}) {
 			// insight was not yet computed, need to update all
 			for _, typ := range r.allResourceTypes {
@@ -662,16 +658,9 @@ func (r *resyncer) createOrUpdateMeshInsight(
 				insight.Resources[string(typ)] = &mesh_proto.MeshInsight_ResourceStat{
 					Total: uint32(count),
 				}
-				if desc.IsPolicy {
-					// backwards compatibility
-					insight.Policies[string(typ)] = &mesh_proto.MeshInsight_PolicyStat{
-						Total: uint32(count),
-					}
-				}
 			}
 			if count == 0 {
 				delete(insight.Resources, string(typ))
-				delete(insight.Policies, string(typ))
 			}
 		}
 

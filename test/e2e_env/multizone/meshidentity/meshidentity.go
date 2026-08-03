@@ -17,12 +17,21 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Identity() {
 	namespace := "meshidentity"
 	meshName := "meshidentity"
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
@@ -75,6 +84,7 @@ spec:
 					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-zone-1"),
 				),
 				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 
@@ -87,6 +97,7 @@ spec:
 					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-zone-2"),
 				),
 				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 
@@ -94,6 +105,7 @@ spec:
 			Install(Parallel(
 				DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithWorkload("demo-client")),
 				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server-zone-4"}), WithWorkload("test-server")),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 

@@ -47,54 +47,6 @@ components:
   schemas:
     MeshItem:
       properties:
-        constraints:
-          description: Constraints that applies to the mesh and its entities
-          properties:
-            dataplaneProxy:
-              description: |-
-                DataplaneProxyMembership defines a set of requirements for data plane
-                proxies to be a member of the mesh.
-              properties:
-                requirements:
-                  description: |-
-                    Requirements defines a set of requirements that data plane proxies must
-                    fulfill in order to join the mesh. A data plane proxy must fulfill at
-                    least one requirement in order to join the mesh. Empty list of allowed
-                    requirements means that any proxy that is not explicitly denied can join.
-                  items:
-                    description: Rules defines a set of rules for data plane proxies
-                      to be member of the mesh.
-                    properties:
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: |-
-                          Tags defines set of required tags. You can specify '*' in value to
-                          require non empty value of tag
-                        type: object
-                    type: object
-                  type: array
-                restrictions:
-                  description: |-
-                    Restrictions defines a set of restrictions that data plane proxies cannot
-                    fulfill in order to join the mesh. A data plane proxy cannot fulfill any
-                    requirement in order to join the mesh.
-                    Restrictions takes precedence over requirements.
-                  items:
-                    description: Rules defines a set of rules for data plane proxies
-                      to be member of the mesh.
-                    properties:
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: |-
-                          Tags defines set of required tags. You can specify '*' in value to
-                          require non empty value of tag
-                        type: object
-                    type: object
-                  type: array
-              type: object
-          type: object
         creationTime:
           description: Time at which the resource was created
           format: date-time
@@ -107,70 +59,6 @@ components:
         labels:
           additionalProperties:
             type: string
-          type: object
-        logging:
-          description: |-
-            Logging settings.
-            +optional
-          properties:
-            backends:
-              description: List of available logging backends
-              items:
-                description: LoggingBackend defines logging backend available to mesh.
-                properties:
-                  conf:
-                    oneOf:
-                    - $ref: /specs/protoresources/fileloggingbackendconfig/schema.yaml#/components/schemas/FileLoggingBackendConfig
-                    - $ref: /specs/protoresources/tcploggingbackendconfig/schema.yaml#/components/schemas/TcpLoggingBackendConfig
-                    type: object
-                  format:
-                    description: |-
-                      Format of access logs. Placeholders available on
-                      https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-                    type: string
-                  name:
-                    description: |-
-                      Name of the backend, can be then used in Mesh.logging.defaultBackend or in
-                      TrafficLogging
-                    type: string
-                  type:
-                    description: Type of the backend (Kuma ships with 'tcp' and 'file')
-                    type: string
-                type: object
-              type: array
-            defaultBackend:
-              description: Name of the default backend
-              type: string
-          type: object
-        metrics:
-          description: |-
-            Configuration for metrics collected and exposed by dataplanes.
-
-            Settings defined here become defaults for every dataplane in a given Mesh.
-            Additionally, it is also possible to further customize this configuration
-            for each dataplane individually using Dataplane resource.
-            +optional
-          properties:
-            backends:
-              description: List of available Metrics backends
-              items:
-                description: MetricsBackend defines metric backends
-                properties:
-                  conf:
-                    oneOf:
-                    - $ref: /specs/protoresources/prometheusmetricsbackendconfig/schema.yaml#/components/schemas/PrometheusMetricsBackendConfig
-                    type: object
-                  name:
-                    description: Name of the backend, can be then used in Mesh.metrics.enabledBackend
-                    type: string
-                  type:
-                    description: Type of the backend (Kuma ships with 'prometheus')
-                    type: string
-                type: object
-              type: array
-            enabledBackend:
-              description: Name of the enabled backend
-              type: string
           type: object
         modificationTime:
           description: Time at which the resource was updated
@@ -253,33 +141,9 @@ components:
           type: object
         name:
           type: string
-        networking:
-          description: Networking settings of the mesh
-          properties:
-            outbound:
-              description: Outbound settings
-              properties:
-                passthrough:
-                  description: Control the passthrough cluster
-                  type: boolean
-              type: object
-          type: object
         routing:
           description: Routing settings of the mesh
-          properties:
-            defaultForbidMeshExternalServiceAccess:
-              description: |-
-                If true, blocks traffic to MeshExternalServices.
-                Default: false
-              type: boolean
-            localityAwareLoadBalancing:
-              description: Enable the Locality Aware Load Balancing
-              type: boolean
-            zoneEgress:
-              description: |-
-                Enable routing traffic to services in other zone or external services
-                through ZoneEgress. Default: false
-              type: boolean
+          properties: {}
           type: object
         skipCreatingInitialPolicies:
           description: |-
@@ -289,38 +153,6 @@ components:
           items:
             type: string
           type: array
-        tracing:
-          description: |-
-            Tracing settings.
-            +optional
-          properties:
-            backends:
-              description: List of available tracing backends
-              items:
-                description: TracingBackend defines tracing backend available to mesh.
-                properties:
-                  conf:
-                    oneOf:
-                    - $ref: /specs/protoresources/datadogtracingbackendconfig/schema.yaml#/components/schemas/DatadogTracingBackendConfig
-                    - $ref: /specs/protoresources/zipkintracingbackendconfig/schema.yaml#/components/schemas/ZipkinTracingBackendConfig
-                    type: object
-                  name:
-                    description: Name of the backend, can be then used in Mesh.tracing.defaultBackend
-                    type: string
-                  sampling:
-                    description: |-
-                      Percentage of traces that will be sent to the backend (range 0.0 - 100.0).
-                      Empty value defaults to 100.0%
-                    type: number
-                  type:
-                    description: Type of the backend (Kuma ships with 'zipkin')
-                    type: string
-                type: object
-              type: array
-            defaultBackend:
-              description: Name of the default backend
-              type: string
-          type: object
         type:
           type: string
       required:

@@ -10,13 +10,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func TestPlugin() {
 	meshName := "meshaccesslog"
+	identityName := "mal-identity"
 	var externalServiceDockerName string
 	var tcpSinkDockerName string
 
@@ -29,8 +32,9 @@ labels:
   kuma.io/env: universal
 spec:
   selector:
-    dataplaneTags:
-      kuma.io/service: test-server
+    dataplaneLabels:
+      matchLabels:
+        kuma.io/service: test-server
   ports:
   - port: 80
     targetPort: 80
@@ -42,7 +46,8 @@ spec:
 		externalServiceDockerName = fmt.Sprintf("%s_%s-%s", universal.Cluster.Name(), meshName, "test-server")
 		tcpSinkDockerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshName, AppModeTcpSink)
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
+			Install(Yaml(builders.Mesh().WithName(meshName))).
+			Install(MeshIdentityBundled(meshName, identityName)).
 			Install(
 				TestServerUniversal(
 					"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName), WithLabels(map[string]string{"kuma.io/service": "test-server"}),
@@ -59,8 +64,22 @@ spec:
       matchLabels:
         kuma.io/origin: zone
         kuma.io/env: universal`)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				meshName,
+				MeshIdentityTrustDomain(meshName, universal.Cluster),
+			)).
+			Install(zoneproxy.Install(
+				zoneproxy.WithMesh(meshName),
+				zoneproxy.WithEgress(),
+			)).
 			Setup(universal.Cluster)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			out, err := universal.Cluster.GetKumactlOptions().
+				RunKumactlAndGetOutput("get", "meshidentity", "-m", meshName, identityName, "-o", "json")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).To(ContainSubstring("Successfully initialized"))
+		}, "30s", "1s").Should(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -139,7 +158,8 @@ spec:
  to:
    - targetRef:
        kind: MeshService
-       name: test-server
+       labels:
+         kuma.io/display-name: test-server
      default:
        backends:
        - type: Tcp
@@ -172,7 +192,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
         sectionName: main-port
       default:
         backends:
@@ -207,7 +228,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         backends:
           - type: Tcp
@@ -239,7 +261,8 @@ spec:
  to:
    - targetRef:
        kind: MeshService
-       name: test-server
+       labels:
+         kuma.io/display-name: test-server
      rules:
        - matches:
            - path:
@@ -248,7 +271,8 @@ spec:
          default:
            backendRefs:
              - kind: MeshService
-               name: test-server
+               labels:
+                 kuma.io/display-name: test-server
                port: 80
 `, meshName))(universal.Cluster)).To(Succeed())
 
@@ -260,7 +284,8 @@ spec:
  to:
    - targetRef:
        kind: MeshService
-       name: test-server
+       labels:
+         kuma.io/display-name: test-server
      rules:
        - matches:
            - path:
@@ -269,7 +294,8 @@ spec:
          default:
            backendRefs:
              - kind: MeshService
-               name: test-server
+               labels:
+                 kuma.io/display-name: test-server
                port: 80
 `, meshName))(universal.Cluster)).To(Succeed())
 
@@ -281,7 +307,8 @@ spec:
  to:
    - targetRef:
        kind: MeshHTTPRoute
-       name: to-test-server-route-1
+       labels:
+         kuma.io/display-name: to-test-server-route-1
      default:
        backends:
          - type: Tcp
@@ -345,7 +372,8 @@ spec:
  to:
    - targetRef:
        kind: MeshService
-       name: test-server
+       labels:
+         kuma.io/display-name: test-server
      default:
        backends:
        - type: Tcp
@@ -466,7 +494,8 @@ spec:
  to:
    - targetRef:
        kind: MeshExternalService
-       name: ext-service
+       labels:
+         kuma.io/display-name: ext-service
      default:
        backends:
        - type: Tcp

@@ -2,6 +2,7 @@ package status
 
 import (
 	"context"
+	"maps"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -58,7 +59,9 @@ var _ = Describe("Updater", func() {
 	It("should add identity to status of service", func() {
 		// when
 		Expect(samples.MeshServiceBackendBuilder().Create(resManager)).To(Succeed())
-		Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
+		Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().Build(), store.CreateByKey("dp-1", model.DefaultMesh), store.CreateWithLabels(map[string]string{
+			metadata.KumaWorkload: "backend",
+		}))).To(Succeed())
 		Expect(samples.DataplaneWebBuilder().Create(resManager)).To(Succeed()) // identity of web should not be added
 
 		// then
@@ -90,6 +93,7 @@ var _ = Describe("Updater", func() {
 			metadata.KumaServiceAccount: "default",
 			mesh_proto.KubeNamespaceTag: "my-ns",
 			"app":                       "test",
+			metadata.KumaWorkload:       "backend",
 		}))).To(Succeed())
 
 		// then
@@ -128,6 +132,7 @@ var _ = Describe("Updater", func() {
 			metadata.KumaServiceAccount: "default",
 			mesh_proto.KubeNamespaceTag: "my-ns",
 			"app":                       "test",
+			metadata.KumaWorkload:       "backend",
 		}))).To(Succeed())
 
 		// then
@@ -149,6 +154,35 @@ var _ = Describe("Updater", func() {
 					Value: "spiffe://another-mesh-domain.east.mesh.local/my/domain/test",
 				},
 			))
+		}, "10s", "100ms").Should(Succeed())
+	})
+
+	It("should derive identity from the workload label when inbound tags are absent", func() {
+		// when
+		Expect(builders.MeshService().
+			WithName("backend").
+			WithDataplaneLabelsSelector(map[string]string{
+				metadata.KumaWorkload: "backend",
+			}).
+			AddIntPort(int32(builders.FirstInboundPort), int32(builders.FirstInboundPort), "http").
+			Create(resManager)).To(Succeed())
+		taglessDpp := samples.DataplaneBackendBuilder().Build()
+		taglessDpp.Spec.Networking.Inbound[0].Tags = map[string]string{}
+		Expect(resManager.Create(context.TODO(), taglessDpp, store.CreateByKey("dp-1", model.DefaultMesh), store.CreateWithLabels(map[string]string{
+			metadata.KumaWorkload: "backend",
+		}))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			ms := meshservice_api.NewMeshServiceResource()
+			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
+				{
+					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+					Value: "backend",
+				},
+			}))
 		}, "10s", "100ms").Should(Succeed())
 	})
 
@@ -198,7 +232,12 @@ var _ = Describe("Updater", func() {
 			for _, mt := range given.meshTrusts {
 				Expect(resManager.Create(context.TODO(), mt, store.CreateByKey(mt.Meta.GetName(), "test"))).To(Succeed())
 			}
-			Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().WithMesh("test").Build(), store.CreateByKey("dp-1", "test"), store.CreateWithLabels(given.dppLabels))).To(Succeed())
+			// dp-1 always carries the workload label so it keeps matching
+			// MeshServiceBackendBuilder's (labels-only) selector; dppLabels
+			// layers on the MeshIdentity-selection labels each entry varies.
+			dppLabels := map[string]string{metadata.KumaWorkload: "backend"}
+			maps.Copy(dppLabels, given.dppLabels)
+			Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().WithMesh("test").Build(), store.CreateByKey("dp-1", "test"), store.CreateWithLabels(dppLabels))).To(Succeed())
 			if !given.dpInsightMissing {
 				Expect(samples.DataplaneInsightBackendBuilder().
 					WithMesh("test").
@@ -405,24 +444,27 @@ var _ = Describe("Updater", func() {
 		}),
 		Entry("should count healthy DPPs and use MeshService.ports[].targetPort to select DP inbound", dpProxiesTestCase{
 			meshService: samples.MeshServiceBackendBuilder().
-				WithDataplaneTagsSelectorKV("app", "backend").
+				WithDataplaneLabelsSelectorKV("app", "backend").
 				AddIntPort(int32(builders.FirstInboundServicePort+1), int32(builders.FirstInboundPort+1), core_meta.ProtocolHTTP),
 			dpps: []*builders.DataplaneBuilder{
 				builders.Dataplane().
 					WithName("dp-all-inbounds-healthy").
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy", "app": "backend"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api", "app": "backend"}),
+					WithLabels(map[string]string{"app": "backend"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api"}),
 				builders.Dataplane().
 					WithName("dp-one-inbounds-healthy").
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy", "app": "backend"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api", "app": "backend"}).
+					WithLabels(map[string]string{"app": "backend"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api"}).
 					With(func(resource *core_mesh.DataplaneResource) {
 						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 					}),
 				builders.Dataplane().
 					WithName("dp-no-inbounds-healthy").
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy", "app": "backend"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api", "app": "backend"}).
+					WithLabels(map[string]string{"app": "backend"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api"}).
 					With(func(resource *core_mesh.DataplaneResource) {
 						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 						resource.Spec.Networking.Inbound[1].State = mesh_proto.Dataplane_Networking_Inbound_NotReady

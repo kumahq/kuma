@@ -5,8 +5,6 @@ mtls:
   backends:
     - name: ca-1
       type: builtin
-routing:
-  zoneEgress: true
 ---
 type: ZoneEgress
 name: zoneegress-1
@@ -26,7 +24,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: non-existent
+        labels:
+          kuma.io/display-name: non-existent
       rules:
         - matches:
             - path:
@@ -35,7 +34,8 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: non-existent
+                labels:
+                  kuma.io/display-name: non-existent
 ---
 type: ZoneIngress
 name: zone-2-zoneingress-1

@@ -207,20 +207,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		mtlsEnabled(mesh, resources.MeshIdentities()),
 		zoneEgressList,
 	)
-	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(
-		ctx,
-		mesh,
-		m.zone,
-		meshServices,
-		meshMultiZoneServices,
-		meshExternalServices,
-		dataplanes,
-		zoneEgresses,
-		zoneEgressList,
-		loader,
-		mtlsEnabled(mesh, resources.MeshIdentities()),
-	)
-
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
 	for _, otherMesh := range resources.OtherMeshes(meshName).Items {
 		crossMeshEndpointMap[otherMesh.GetMeta().GetName()] = xds_topology.BuildCrossMeshEndpointMap(
@@ -234,7 +220,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	dpZoneIngressEndpointMap := xds_topology.BuildDataplaneZoneIngressEndpointMap(
 		mesh,
-		m.zone,
 		meshServices,
 		meshMultiZoneServices,
 		dataplanes,
@@ -261,7 +246,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		BaseMeshContext:                 baseMeshContext,
 		DataplanesByName:                dataplanesByName,
 		EndpointMap:                     endpointMap,
-		IngressEndpointMap:              ingressEndpointMap,
 		CrossMeshEndpoints:              crossMeshEndpointMap,
 		VIPDomains:                      domains,
 		VIPOutbounds:                    outbounds,
@@ -321,14 +305,17 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		switch {
 		case desc.IsDestination:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to build base mesh context")
+			}
 			destinations = append(destinations, rmap[t].GetItems())
 		case desc.IsPolicy:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to build base mesh context")
+			}
 		default:
 			// DO nothing we're not interested in this type
-		}
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to build base mesh context")
 		}
 	}
 	newHash := rmap.Hash()
