@@ -1,6 +1,8 @@
 package meshservice
 
 import (
+	"slices"
+
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -38,7 +40,7 @@ func MatchDataplanesWithMeshServices(
 		case ms.Spec.Selector.DataplaneRef != nil:
 			result[ms] = matchByRef(ms, dppsByName)
 		case ms.Spec.Selector.DataplaneTags != nil:
-			result[ms] = matchByTags(ms, dppsByNameByTag)
+			result[ms] = matchByTags(ms, dppsByNameByTag, dppsByMesh)
 		case ms.Spec.Selector.DataplaneLabels != nil:
 			result[ms] = matchByLabels(ms, dppsByMesh)
 		default:
@@ -139,11 +141,19 @@ func matchByRef(
 func matchByTags(
 	ms *meshservice_api.MeshServiceResource,
 	dppsByNameByTag DppsByNameByTag,
+	dppsByMesh map[string][]*core_mesh.DataplaneResource,
 ) []*core_mesh.DataplaneResource {
+	tags := pointer.Deref(ms.Spec.Selector.DataplaneTags)
+	// An empty selector is a match-all selector. Keep this in sync with MatchesDataplane,
+	// which delegates to TagSelector.Matches, and with an empty dataplaneLabels selector.
+	if len(tags) == 0 {
+		return slices.Clone(dppsByMesh[ms.GetMeta().GetMesh()])
+	}
+
 	// For every tag key/value pair of MeshService's selector, find the set of DPPs matched by that pair.
 	// Then take the smallest set of all sets.
 	var shortestDppMap map[string]*core_mesh.DataplaneResource
-	for tagName, tagValue := range pointer.Deref(ms.Spec.Selector.DataplaneTags) {
+	for tagName, tagValue := range tags {
 		tagsKey := dppsByNameByTagKey{
 			mesh:     ms.GetMeta().GetMesh(),
 			tagName:  tagName,
@@ -164,7 +174,7 @@ func matchByTags(
 	var dpps []*core_mesh.DataplaneResource
 	for _, dppName := range maps.SortedKeys(shortestDppMap) {
 		dpp := shortestDppMap[dppName]
-		if dpp.Spec.Matches(pointer.Deref(ms.Spec.Selector.DataplaneTags)) {
+		if dpp.Spec.Matches(tags) {
 			dpps = append(dpps, dpp)
 		}
 	}

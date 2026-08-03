@@ -291,6 +291,11 @@ func fillDataplaneOutbounds(
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
 			inboundTags := endpointIdentity(inbound.GetTags(), dataplane)
 			serviceName := inboundTags[mesh_proto.ServiceTag]
+			// Tag-free inbounds are valid, but they have no legacy service name to
+			// be published under. They are reachable through MeshService instead.
+			if serviceName == "" {
+				continue
+			}
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
 			inboundPort := inboundInterface.DataplanePort

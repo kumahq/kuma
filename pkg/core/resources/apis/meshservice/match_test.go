@@ -138,6 +138,56 @@ var _ = Describe("MatchDataplanesWithMeshServices", func() {
 				{Mesh: "default", Name: "demo-app"}: {},
 			},
 		}),
+		Entry("empty dataplaneTags matches all dataplanes in mesh", testCase{
+			dpps: []*core_mesh.DataplaneResource{
+				builders.Dataplane().
+					WithName("redis-01").
+					WithInboundOfTags("kuma.io/service", "redis").
+					Build(),
+				builders.Dataplane().
+					WithName("demo-app-01").
+					WithInboundOfTags("kuma.io/service", "demo-app").
+					Build(),
+				builders.Dataplane().
+					WithName("redis-02").
+					WithMesh("mesh-other").
+					WithInboundOfTags("kuma.io/service", "redis").
+					Build(),
+			},
+			meshServices: []*meshservice_api.MeshServiceResource{
+				builders.MeshService().
+					WithName("all").
+					WithDataplaneTagsSelector(map[string]string{}).
+					Build(),
+			},
+			expectedSummary: map[model.ResourceKey][]model.ResourceKey{
+				{Mesh: "default", Name: "all"}: {
+					{Mesh: "default", Name: "redis-01"},
+					{Mesh: "default", Name: "demo-app-01"},
+				},
+			},
+		}),
+		Entry("empty dataplaneTags does not match unhealthy inbounds", testCase{
+			matchOnlyHealthy: true,
+			dpps: []*core_mesh.DataplaneResource{
+				builders.Dataplane().
+					WithName("redis-01").
+					WithInboundOfTags("kuma.io/service", "redis").
+					With(func(resource *core_mesh.DataplaneResource) {
+						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
+					}).
+					Build(),
+			},
+			meshServices: []*meshservice_api.MeshServiceResource{
+				builders.MeshService().
+					WithName("all").
+					WithDataplaneTagsSelector(map[string]string{}).
+					Build(),
+			},
+			expectedSummary: map[model.ResourceKey][]model.ResourceKey{
+				{Mesh: "default", Name: "all"}: {},
+			},
+		}),
 		Entry("should not match unhealthy inbound matched by tags", testCase{
 			matchOnlyHealthy: true,
 			dpps: []*core_mesh.DataplaneResource{
