@@ -34,10 +34,10 @@ func GenerateEndpoints(
 			len(meshCtx.ZoneEgresses) > 0
 		if internalService || meshExternalService || externalServiceThroughEgress {
 			for _, cluster := range service.Clusters() {
+				// A cluster pinned to another mesh through the kuma.io/mesh tag sourced
+				// its endpoints from the legacy ZoneIngress, so it now has none.
 				var endpoints core_xds.EndpointMap
-				if cluster.Mesh() != "" {
-					endpoints = meshCtx.CrossMeshEndpoints[cluster.Mesh()]
-				} else {
+				if cluster.Mesh() == "" {
 					endpoints = meshCtx.EndpointMap
 				}
 

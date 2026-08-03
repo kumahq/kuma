@@ -183,7 +183,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 			casByTrustDomain[meshName] = append(casByTrustDomain[meshName], ca)
 		}
 	}
-	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
 	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
 	if len(zoneEgressList) == 0 {
@@ -194,29 +193,16 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}
 	endpointMap := xds_topology.BuildEdsEndpointMap(
 		ctx,
-		mesh,
 		m.zone,
 		meshServices,
 		meshMultiZoneServices,
 		meshExternalServices,
 		dataplanes,
-		zoneIngresses,
 		resources.MeshZoneAddresses().Items,
-		zoneEgresses,
 		loader,
 		mtlsEnabled(mesh, resources.MeshIdentities()),
 		zoneEgressList,
 	)
-	crossMeshEndpointMap := map[string]xds.EndpointMap{}
-	for _, otherMesh := range resources.OtherMeshes(meshName).Items {
-		crossMeshEndpointMap[otherMesh.GetMeta().GetName()] = xds_topology.BuildCrossMeshEndpointMap(
-			mesh,
-			otherMesh,
-			m.zone,
-			zoneIngresses,
-			zoneEgresses,
-		)
-	}
 
 	dpZoneIngressEndpointMap := xds_topology.BuildDataplaneZoneIngressEndpointMap(
 		mesh,
@@ -239,7 +225,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		BaseMeshContext:                 baseMeshContext,
 		DataplanesByName:                dataplanesByName,
 		EndpointMap:                     endpointMap,
-		CrossMeshEndpoints:              crossMeshEndpointMap,
 		VIPDomains:                      domains,
 		VIPOutbounds:                    outbounds,
 		ServicesInformation:             m.generateServicesInformation(mesh, meshServices, endpointMap),
@@ -357,7 +342,7 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {
 		return nil, err
 	}
-	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType && resType != meshzoneaddress_api.MeshZoneAddressType {
+	if resType != core_mesh.DataplaneType && resType != meshzoneaddress_api.MeshZoneAddressType {
 		// No post processing stuff so return the list as is
 		return list, nil
 	}
@@ -375,18 +360,6 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 				return nil, nil
 			}
 			return resolvedMeshZoneAddress, nil
-		case core_mesh.ZoneIngressType:
-			zi, ok := resource.(*core_mesh.ZoneIngressResource)
-			if !ok {
-				return nil, errors.New("entry is not a zoneIngress this shouldn't happen")
-			}
-
-			resolvedZoneIngress, err := xds_topology.ResolveZoneIngressPublicAddress(m.ipFunc, zi)
-			if err != nil {
-				l.Error(err, "failed to resolve zoneIngress's domain name, ignoring zoneIngress", "name", zi.GetMeta().GetName())
-				return nil, nil
-			}
-			return resolvedZoneIngress, nil
 		case core_mesh.DataplaneType:
 			list, err = modifyAllEntries(list, func(resource core_model.Resource) (core_model.Resource, error) {
 				dp, ok := resource.(*core_mesh.DataplaneResource)

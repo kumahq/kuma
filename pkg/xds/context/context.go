@@ -86,7 +86,6 @@ type MeshContext struct {
 	Resources           Resources
 	DataplanesByName    map[string]*core_mesh.DataplaneResource
 	EndpointMap         xds.EndpointMap
-	CrossMeshEndpoints  map[xds.MeshName]xds.EndpointMap
 	VIPDomains          []xds_types.VIPDomains
 	VIPOutbounds        xds_types.Outbounds
 	ServicesInformation map[string]*ServiceInformation
@@ -195,13 +194,6 @@ func (m AggregatedMeshContexts) AllDataplanes() []*core_mesh.DataplaneResource {
 func (m AggregatedMeshContexts) ZoneEgresses() []*core_mesh.ZoneEgressResource {
 	for _, meshCtx := range m.MeshContextsByName {
 		return meshCtx.Resources.ZoneEgresses().Items // all mesh contexts has the same list
-	}
-	return nil
-}
-
-func (m AggregatedMeshContexts) ZoneIngresses() []*core_mesh.ZoneIngressResource {
-	for _, meshCtx := range m.MeshContextsByName {
-		return meshCtx.Resources.ZoneIngresses().Items // all mesh contexts has the same list
 	}
 	return nil
 }

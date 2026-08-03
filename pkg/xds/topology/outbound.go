@@ -75,15 +75,12 @@ func BuildDataplaneZoneIngressEndpointMap(
 
 func BuildEdsEndpointMap(
 	ctx context.Context,
-	mesh *core_mesh.MeshResource,
 	localZone string,
 	meshServices []*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
-	zoneIngresses []*core_mesh.ZoneIngressResource,
 	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
-	zoneEgresses []*core_mesh.ZoneEgressResource,
 	loader datasource.Loader,
 	mtlsEnabled bool,
 	egressAddresses []core_xds.ZoneEgressInstance,
@@ -103,13 +100,7 @@ func BuildEdsEndpointMap(
 		meshServiceDestinations[name] = struct{}{}
 	}
 
-	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.MTLSEnabled() && len(zoneEgresses) > 0, meshServiceDestinations)
-	endpointWeight := uint32(1)
-	if ingressInstances > 0 {
-		endpointWeight = ingressInstances
-	}
-
-	fillDataplaneOutbounds(outbound, dataplanes, endpointWeight, meshServiceDestinations)
+	fillDataplaneOutbounds(outbound, dataplanes, meshServiceDestinations)
 
 	fillRemoteMeshServices(outbound, meshServices, meshZoneAddresses, localZone, mtlsEnabled)
 
@@ -235,30 +226,12 @@ type MeshServiceIdentity struct {
 	Identities map[string]struct{}
 }
 
-// endpointWeight defines default weight for in-cluster endpoint.
-// Examples of having service "backend":
-//  1. Single-zone deployment, 2 instances in one cluster (zone1)
-//     All endpoints have to have the same weight (ex. 1) to achieve fair loadbalancing.
-//     Endpoints:
-//     * backend-zone1-1 - weight: 1
-//     * backend-zone1-2 - weight: 1
-//  2. Multi-zone deployment, 2 instances in "zone1" (local zone), 3 instances in "zone2" (remote zone) with 1 Ingress instance
-//     Endpoints:
-//     * backend-zone1-1 - weight: 1
-//     * backend-zone1-2 - weight: 1
-//     * ingress-zone2-1 - weight: 3 (all remote endpoints are aggregated to one Ingress, it needs to have weight of instances in other cluster)
-//  3. Multi-zone deployment, 2 instances in "zone1" (local zone), 2 instances in "zone2" (remote zone) with 1 Ingress instance
-//     Many instances of Ingress will forward the traffic to the same endpoints in "zone2" so we need to lower the weights.
-//     Since weights are integers, we cannot put fractional on ingress endpoints weights, we need to adjust "default" weight for local zone
-//     Endpoints:
-//     * backend-zone1-1 - weight: 2
-//     * backend-zone1-2 - weight: 2
-//     * ingress-zone2-1 - weight: 3
-//     * ingress-zone2-2 - weight: 3
+// fillDataplaneOutbounds adds one endpoint per healthy inbound of every local
+// Dataplane, keyed by the legacy kuma.io/service. All endpoints get the same
+// weight, so instances of a service load balance fairly between each other.
 func fillDataplaneOutbounds(
 	outbound core_xds.EndpointMap,
 	dataplanes []*core_mesh.DataplaneResource,
-	endpointWeight uint32,
 	meshServiceDestinations map[core_xds.ServiceName]struct{},
 ) {
 	for _, dataplane := range dataplanes {
@@ -294,7 +267,7 @@ func fillDataplaneOutbounds(
 				Target:   inboundAddress,
 				Port:     inboundPort,
 				Tags:     inboundTags,
-				Weight:   endpointWeight,
+				Weight:   1,
 				Locality: GetLocality(getZone(inboundTags)),
 			})
 		}
@@ -353,160 +326,11 @@ func fillLocalMeshServices(
 	}
 }
 
-func BuildCrossMeshEndpointMap(
-	mesh *core_mesh.MeshResource,
-	otherMesh *core_mesh.MeshResource,
-	localZone string,
-	zoneIngresses []*core_mesh.ZoneIngressResource,
-	zoneEgresses []*core_mesh.ZoneEgressResource,
-) core_xds.EndpointMap {
-	outbound := core_xds.EndpointMap{}
-
-	fillIngressOutbounds(
-		outbound,
-		zoneIngresses,
-		zoneEgresses,
-		localZone,
-		mesh,
-		otherMesh,
-		mesh.MTLSEnabled() && len(zoneEgresses) > 0,
-		map[core_xds.ServiceName]struct{}{},
-	)
-
-	return outbound
-}
-
 func buildCoordinates(address string, port uint32) string {
 	return net.JoinHostPort(
 		address,
 		strconv.FormatUint(uint64(port), 10),
 	)
-}
-
-func fillIngressOutbounds(
-	outbound core_xds.EndpointMap,
-	zoneIngresses []*core_mesh.ZoneIngressResource,
-	zoneEgresses []*core_mesh.ZoneEgressResource,
-	localZone string,
-	mesh *core_mesh.MeshResource,
-	otherMesh *core_mesh.MeshResource, // otherMesh is set if we are looking for specific crossmesh connections
-	routeThroughZoneEgress bool,
-	meshServiceDestinations map[core_xds.ServiceName]struct{},
-) uint32 {
-	ziInstances := map[string]struct{}{}
-
-	for _, zi := range zoneIngresses {
-		if !zi.IsRemoteIngress(localZone) {
-			continue
-		}
-
-		if !mesh.MTLSEnabled() {
-			// Ingress routes the request by TLS SNI, therefore for cross
-			// cluster communication MTLS is required.
-			// We ignore Ingress from endpoints if MTLS is disabled, otherwise
-			// we would fail anyway.
-			continue
-		}
-
-		if !zi.HasPublicAddress() {
-			// Zone Ingress is not reachable yet from other clusters.
-			// This may happen when Ingress Service is pending waiting on
-			// External IP on Kubernetes.
-			continue
-		}
-
-		ziNetworking := zi.Spec.GetNetworking()
-		ziAddress := ziNetworking.GetAdvertisedAddress()
-		ziPort := ziNetworking.GetAdvertisedPort()
-		ziCoordinates := buildCoordinates(ziAddress, ziPort)
-
-		if _, ok := ziInstances[ziCoordinates]; ok {
-			// many Ingress instances can be placed in front of one load
-			// balancer (all instances can have the same public address and
-			// port).
-			// In this case we only need one Instance avoiding creating
-			// unnecessary duplicated endpoints
-			continue
-		}
-
-		if len(zi.Spec.GetAvailableServices()) > 0 {
-			// Consider squashing instances only if available services are reconciled.
-			// This is necessary to perform graceful join of new instances of ZoneIngress.
-			// When a new instance of ZoneIngress is up, it's immediately synced to all zones.
-			// Only after a short period of time (first XDS reconciliation) it will be updated with AvailableServices.
-			// If we just take any instance, we may choose an instance without AvailableServices as a representation
-			// of all ZoneIngress instances behind one load balancer.
-			ziInstances[ziCoordinates] = struct{}{}
-		}
-
-		for _, service := range zi.Spec.GetAvailableServices() {
-			relevantMesh := mesh
-			if otherMesh != nil {
-				relevantMesh = otherMesh
-			}
-
-			if service.Mesh != relevantMesh.GetMeta().GetName() {
-				continue
-			}
-			if _, hasMeshTag := service.Tags[mesh_proto.MeshTag]; otherMesh != nil && !hasMeshTag {
-				// If the mesh tag is set, we assume the service should be available
-				// crossMesh but only if we're looking for this other mesh
-				continue
-			}
-
-			// deep copy map to not modify tags in BuildRemoteEndpointMap
-			serviceTags := maps.Clone(service.GetTags())
-			serviceName := serviceTags[mesh_proto.ServiceTag]
-			serviceInstances := service.GetInstances()
-			locality := GetLocality(getZone(serviceTags))
-
-			if _, ok := meshServiceDestinations[serviceName]; ok {
-				continue
-			}
-
-			// TODO (bartsmykla): We have to check if it will be ok in a situation
-			//  where we have few zone ingresses with the same services, as
-			//  with zone egresses we will generate endpoints with the same
-			//  targets and ports (zone egress ones), which envoy probably will
-			//  ignore
-			// If zone egresses present, we want to pass the traffic:
-			// dp -> zone egress -> zone ingress -> dp
-			if routeThroughZoneEgress {
-				for _, ze := range zoneEgresses {
-					zeNetworking := ze.Spec.GetNetworking()
-					zeAddress := zeNetworking.GetAddress()
-					zePort := zeNetworking.GetPort()
-
-					endpoint := core_xds.Endpoint{
-						Target:   zeAddress,
-						Port:     zePort,
-						Tags:     serviceTags,
-						Weight:   1,
-						Locality: locality,
-					}
-					// this is necessary for correct spiffe generation for dp when
-					// traffic is routed: egress -> ingress -> egress
-					if service.ExternalService {
-						endpoint.ExternalService = &core_xds.ExternalService{}
-					}
-
-					outbound[serviceName] = append(outbound[serviceName], endpoint)
-				}
-			} else {
-				endpoint := core_xds.Endpoint{
-					Target:   ziAddress,
-					Port:     ziPort,
-					Tags:     serviceTags,
-					Weight:   serviceInstances,
-					Locality: locality,
-				}
-
-				outbound[serviceName] = append(outbound[serviceName], endpoint)
-			}
-		}
-	}
-
-	return uint32(len(ziInstances))
 }
 
 func createMeshExternalServiceEndpoint(

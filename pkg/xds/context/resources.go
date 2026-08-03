@@ -73,10 +73,6 @@ func (r Resources) ServiceInsights() *core_mesh.ServiceInsightResourceList {
 	return r.ListOrEmpty(core_mesh.ServiceInsightType).(*core_mesh.ServiceInsightResourceList)
 }
 
-func (r Resources) ZoneIngresses() *core_mesh.ZoneIngressResourceList {
-	return r.ListOrEmpty(core_mesh.ZoneIngressType).(*core_mesh.ZoneIngressResourceList)
-}
-
 func (r Resources) ZoneEgresses() *core_mesh.ZoneEgressResourceList {
 	return r.ListOrEmpty(core_mesh.ZoneEgressType).(*core_mesh.ZoneEgressResourceList)
 }
