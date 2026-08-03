@@ -43,40 +43,7 @@ env:
   GITHUB_TOKEN: ${{ github.token }}
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
-  assert-tag-version:
-    # Tag check lives on the steps, not the job, so this job always reports
-    # success/failure and never "skipped". That lets build-binaries and
-    # build-images depend on it with a plain `needs:` and GitHub's default
-    # job-status semantics, which correctly cascade to digest-images and
-    # publish-helm further down the chain and correctly stop on cancellation.
-    timeout-minutes: 30
-    runs-on: ${{ vars.RUNS_ON_RELEASE_2_9_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
-    steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
-        if: ${{ github.ref_type == 'tag' }}
-        with:
-          fetch-depth: 0
-      - name: Cache Go build
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: ${{ github.ref_type == 'tag' }}
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            go-build-${{ runner.os }}-
-      - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
-        if: ${{ github.ref_type == 'tag' }}
-        with:
-          # protoc-gen-go-grpc@1.1.0 fails to resolve on mise 2026.7.17+ (jdx/mise#11469); pin until this branch moves past that version.
-          version: 2026.7.16
-      - name: Assert built binary reports tag version
-        if: ${{ github.ref_type == 'tag' }}
-        run: |
-          make build/assert-tag-version
   build-binaries:
-    needs: [assert-tag-version]
     timeout-minutes: 40
     runs-on: ${{ vars.RUNS_ON_RELEASE_2_9_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
@@ -88,14 +55,38 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           fetch-depth: 0
+      # `check` and `build_check` run before this job and already saved this key for
+      # this exact go.sum. Restore-only: the publish jobs would otherwise each write
+      # a multi-GB cross-compile cache and evict everyone else from the repo budget.
+      - name: Restore Go cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-build-${{ runner.os }}-
       - uses: jdx/mise-action@e3d7b8d67a7958d1207f6ed871e83b1ea780e7b0 # v3.3.1
         with:
           # protoc-gen-go-grpc@1.1.0 fails to resolve on mise 2026.7.17+ (jdx/mise#11469); pin until this branch moves past that version.
           version: 2026.7.16
+      - id: annotate-image-tag
+        name: Image tag
+        run: |
+          echo "::notice title=Image tag::$(make build/info/version)"
       - run: |
-          make build
-      - run: |
-          make -j build/distributions
+          make -j"$(nproc)" build/distributions
+      # Gates publishing, not building: a wrong version must never reach Pulp or
+      # Cloudsmith, but there is no reason to hold the build back for it. Asserting
+      # the binary against the tag also covers this checkout computing the version
+      # wrong, since that is where the binary got stamped from.
+      - name: Assert built binary reports tag version
+        if: ${{ github.ref_type == 'tag' }}
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          make check/binary-version EXPECTED_VERSION="${TAG_NAME#v}"
       - id: inspect-binary-output
         run: |
           for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
@@ -126,7 +117,6 @@ jobs:
         run: |
           make publish/pulp
   build-images:
-    needs: [assert-tag-version]
     # pining to this version until https://github.com/actions/runner-images/issues/10636#issuecomment-2397720931 has a better solution
     runs-on: ${{ vars.RUNS_ON_RELEASE_2_9_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-22.04' }}
     permissions:
@@ -141,6 +131,15 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           fetch-depth: 0
+      - name: Restore Go cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-build-${{ runner.os }}-
       - name: Install dependencies for cross builds
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
@@ -179,6 +178,24 @@ jobs:
           upload-sbom-release-assets: true
           skip_cis_scan: true
         # TODO in the future we may want to have prerelease images and use `regctl image copy` to move them to their final location
+      # Gates the push, not the build: a wrong version must never reach the registry.
+      # kuma-cni has no version subcommand (a CNI plugin binary, not a CLI), so
+      # there's nothing to assert for it.
+      - name: Assert built binary reports tag version
+        if: ${{ github.ref_type == 'tag' && matrix.image != 'kuma-cni' }}
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          case "${{ matrix.image }}" in
+            kuma-init) binary=kumactl ;;
+            kuma-universal) binary=kuma-cp ;;
+            *) binary="${{ matrix.image }}" ;;
+          esac
+          for arch in $(make -s docker/info/enabled-arches); do
+            make check/binary-version \
+              BINARY_PATH="build/artifacts-linux-${arch}/${binary}/${binary}" \
+              EXPECTED_VERSION="${TAG_NAME#v}"
+          done
       - name: publish images
         id: release_images
         env:
