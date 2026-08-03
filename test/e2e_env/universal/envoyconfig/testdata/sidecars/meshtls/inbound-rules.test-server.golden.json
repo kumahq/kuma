@@ -29,7 +29,8 @@
         "cipherSuites": [
           "ECDHE-ECDSA-AES256-GCM-SHA384"
         ],
-        "tlsMaximumProtocolVersion": "TLSv1_3"
+        "tlsMaximumProtocolVersion": "TLSv1_3",
+        "tlsMinimumProtocolVersion": "TLSv1_3"
       }
     }
   ],
@@ -782,7 +783,8 @@
                     "cipherSuites": [
                       "ECDHE-ECDSA-AES256-GCM-SHA384"
                     ],
-                    "tlsMaximumProtocolVersion": "TLSv1_3"
+                    "tlsMaximumProtocolVersion": "TLSv1_3",
+                    "tlsMinimumProtocolVersion": "TLSv1_3"
                   }
                 },
                 "requireClientCertificate": true
