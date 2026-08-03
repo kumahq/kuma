@@ -162,9 +162,11 @@ resources.
 `.ProxyType "ingress" is not supported` on startup. The control plane no longer
 generates a bootstrap for those proxy types, no longer registers or deregisters
 their `ZoneIngress`/`ZoneEgress` resources, and no longer writes
-`ZoneIngressInsight`/`ZoneEgressInsight` from an xDS stream. `kumactl generate
-dataplane-token --proxy-type ingress|egress` is rejected, and tokens previously
-issued with a `type: ingress|egress` claim can no longer be used.
+`ZoneIngressInsight`/`ZoneEgressInsight` from an xDS stream. A pre-upgrade zone
+proxy that reconnects has its xDS stream rejected with `unsupported proxy type
+"ingress"`. `kumactl generate dataplane-token --proxy-type ingress|egress` is
+rejected, and tokens previously issued with a `type: ingress|egress` claim can no
+longer be used.
 
 **Action required**
 
