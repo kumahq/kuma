@@ -56,7 +56,7 @@ spec:
   selector:
     dataplaneLabels:
       matchLabels:
-        kuma.io/service: test-server
+        kuma.io/workload: test-server
   ports:
   - port: 80
     targetPort: 80
@@ -80,7 +80,7 @@ spec:
   selector:
     dataplaneLabels:
       matchLabels:
-        kuma.io/service: test-server
+        kuma.io/workload: test-server
   ports:
   - port: 80
     targetPort: 80
@@ -101,7 +101,7 @@ spec:
   selector:
     dataplaneLabels:
       matchLabels:
-        kuma.io/service: some-service
+        kuma.io/workload: some-service
   ports:
   - port: 80
     targetPort: 80
