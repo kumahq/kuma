@@ -1141,18 +1141,39 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
-			Entry("remote MeshService without Zone Ingress public address is not included", testCase{
+			Entry("remote MeshService without a MeshZoneAddress is not included", testCase{
 				zoneIngresses: []*core_mesh.ZoneIngressResource{
 					builders.ZoneIngress().
 						WithZone("east").
-						// No AdvertisedAddress/AdvertisedPort - simulates pending external IP
+						WithAdvertisedAddress("192.168.0.100").
+						WithAdvertisedPort(12345).
 						Build(),
 				},
 				meshServices: []*meshservice_api.MeshServiceResource{
 					samples.MeshServiceSyncedBackend(), // remote MeshService from "east" zone
 				},
 				mesh: defaultMeshWithMTLS,
-				// No endpoints should be generated because Zone Ingress has no public address
+				// ZoneIngress is not a source of MeshService endpoints, only MeshZoneAddress is
+				expected: core_xds.EndpointMap{},
+			}),
+			Entry("remote MeshService with a MeshZoneAddress of another zone is not included", testCase{
+				meshZoneAddresses: []*meshzoneaddress_api.MeshZoneAddressResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh:   defaultMeshName,
+							Name:   "mza-north",
+							Labels: map[string]string{mesh_proto.ZoneTag: "north"},
+						},
+						Spec: &meshzoneaddress_api.MeshZoneAddress{
+							Address: "192.168.0.100",
+							Port:    12345,
+						},
+					},
+				},
+				meshServices: []*meshservice_api.MeshServiceResource{
+					samples.MeshServiceSyncedBackend(), // remote MeshService from "east" zone
+				},
+				mesh:     defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{},
 			}),
 		)

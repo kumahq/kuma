@@ -6,6 +6,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test"
 )
 
-func TestPlugin(t *testing.T) {
+func TestMeshZoneAddress(t *testing.T) {
 	test.RunSpecs(t, "MeshZoneAddress")
 }

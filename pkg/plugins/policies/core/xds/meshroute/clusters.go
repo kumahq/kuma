@@ -153,7 +153,7 @@ func GenerateClusters(
 						if isMZMS {
 							endpoints := meshCtx.EndpointMap[destinationname.ResolveLegacyFromDestination(dest, port)]
 							var hasDefaultSNIEndpoint bool
-							legacyZones, hasDefaultSNIEndpoint = classifyMZMSEndpointZones(endpoints, meshCtx.ZonesWithMeshScopedProxy)
+							legacyZones, hasDefaultSNIEndpoint = classifyMZMSEndpointZones(endpoints, meshCtx.ZonesWithMeshScopedProxy, proxy.Zone)
 							// Keep KRI SNI as the default unless every endpoint is reachable only
 							// through a legacy ZoneIngress, in which case fall back to the hash-based SNI.
 							useKRISni = len(legacyZones) == 0 || hasDefaultSNIEndpoint
@@ -353,13 +353,16 @@ func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
 // deduplicated set of remote zones reachable only through a legacy ZoneIngress
 // (Locality.Zone set and absent from zonesWithProxy, matching the hash-based
 // SNI), and whether any endpoint expects the default KRI-based SNI: endpoints
-// without locality (local zone, sidecar-to-sidecar) or in a zone served by a
-// new-style mesh-scoped zone proxy (MeshZoneAddress).
-func classifyMZMSEndpointZones(endpoints []core_xds.Endpoint, zonesWithProxy map[string]bool) ([]string, bool) {
+// reachable without traversing a zone proxy (no locality, or the local zone,
+// i.e. sidecar-to-sidecar) or in a zone served by a new-style mesh-scoped zone
+// proxy (MeshZoneAddress).
+func classifyMZMSEndpointZones(endpoints []core_xds.Endpoint, zonesWithProxy map[string]bool, localZone string) ([]string, bool) {
 	seen := map[string]struct{}{}
 	hasDefaultSNIEndpoint := false
 	for _, ep := range endpoints {
-		if ep.Locality == nil || ep.Locality.Zone == "" || zonesWithProxy[ep.Locality.Zone] {
+		// local endpoints are sidecar-to-sidecar and never traverse a zone proxy,
+		// so the zone proxy capability of the local zone doesn't apply to them.
+		if ep.IsReachableFromZone(localZone) || zonesWithProxy[ep.Locality.Zone] {
 			hasDefaultSNIEndpoint = true
 			continue
 		}

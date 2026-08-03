@@ -224,17 +224,24 @@ func fillRemoteMeshServices(
 	// MeshZoneAddress is the only source of publicly reachable coordinates of a
 	// remote zone proxy. On Kubernetes it's reconciled from the zone ingress
 	// Service, on Universal it's authored by the user.
-	mzaInstances := map[string]struct{}{}
+	type zoneCoordinates struct {
+		zone        string
+		coordinates string
+	}
+	mzaInstances := map[zoneCoordinates]struct{}{}
 	for _, mza := range meshZoneAddresses {
 		zone := mza.GetMeta().GetLabels()[mesh_proto.ZoneTag]
 		if zone == "" || zone == localZone {
 			continue
 		}
-		coordinates := buildCoordinates(mza.Spec.Address, uint32(mza.Spec.Port))
-		if _, ok := mzaInstances[coordinates]; ok {
+		// many zone proxy instances can be placed behind one load balancer, in
+		// which case they share a public address and port. Deduplicate per zone
+		// to avoid unnecessary duplicated endpoints, but never across zones.
+		key := zoneCoordinates{zone: zone, coordinates: buildCoordinates(mza.Spec.Address, uint32(mza.Spec.Port))}
+		if _, ok := mzaInstances[key]; ok {
 			continue
 		}
-		mzaInstances[coordinates] = struct{}{}
+		mzaInstances[key] = struct{}{}
 		zoneToEndpoints[zone] = append(zoneToEndpoints[zone], core_xds.Endpoint{
 			Target:   mza.Spec.Address,
 			Port:     uint32(mza.Spec.Port),
@@ -244,11 +251,20 @@ func fillRemoteMeshServices(
 		})
 	}
 
+	unreachableZones := map[string]struct{}{}
 	for _, ms := range services {
 		if ms.IsLocalMeshService() {
 			continue
 		}
 		msZone := ms.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+		if len(zoneToEndpoints[msZone]) == 0 {
+			if _, reported := unreachableZones[msZone]; !reported {
+				unreachableZones[msZone] = struct{}{}
+				outboundLog.Info("no MeshZoneAddress found for zone, MeshService destinations in that zone get no endpoints",
+					"zone", msZone, "mesh", ms.GetMeta().GetMesh())
+			}
+			continue
+		}
 		for _, port := range ms.Spec.Ports {
 			serviceName := destinationname.MustResolve(false, ms, port)
 			for _, endpoint := range zoneToEndpoints[msZone] {

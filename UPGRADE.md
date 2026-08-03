@@ -700,26 +700,32 @@ the `MeshZoneAddress` resource. The control plane no longer falls back to the
 `advertisedAddress`/`advertisedPort` of a `ZoneIngress` when building endpoints
 for `MeshService` and `MeshMultiZoneService` destinations in other zones.
 
-On Kubernetes, `MeshZoneAddress` is created automatically by the control plane
-for every `Service` labeled `k8s.kuma.io/zone-proxy-type: ingress`. On
-Universal, it is authored by the user.
+`MeshZoneAddress` is created automatically by the control plane only for a `Service` labeled `k8s.kuma.io/zone-proxy-type: ingress`, which is rendered by the mesh-scoped zone proxy chart (`meshes[].ingress.enabled`). A zone running the standalone `ZoneIngress` deployment (`ingress.enabled`) gets no `MeshZoneAddress`, on Kubernetes as well as on Universal.
+
+`MeshZoneAddress` is mesh-scoped: every mesh whose services are consumed from another zone needs its own resource in the zone that serves them.
 
 **Action required**
 
-On Universal zones, create one `MeshZoneAddress` per mesh pointing at the
-public address and port of that zone's ingress listener before upgrading:
+`MeshZoneAddress` does not exist before 3.0.0, so it cannot be created ahead of the upgrade. Create it immediately after upgrading the zone control plane — cross-zone `MeshService` and `MeshMultiZoneService` traffic to that zone is down until the resource exists and has propagated over KDS.
+
+On Kubernetes, migrate the zone to a mesh-scoped zone proxy (`meshes[].ingress.enabled=true`) and the control plane reconciles `MeshZoneAddress` from its `Service`.
+
+On Universal, and on Kubernetes zones staying on the standalone `ZoneIngress`, author one `MeshZoneAddress` per mesh on the zone control plane, pointing at the public address and port of that zone's ingress listener:
 
 ```yaml
 type: MeshZoneAddress
 name: zone-proxy-ingress
 mesh: default
+labels:
+  kuma.io/origin: zone
 spec:
   address: 10.0.0.1
   port: 10001
 ```
 
-Zones without a `MeshZoneAddress` are not reachable cross-zone: their
-`MeshService` destinations get no endpoints in other zones.
+`kuma.io/origin: zone` is required on a zone control plane federated to a global control plane. `kuma.io/zone` is stamped by the control plane and must not be set by hand. `spec.address` accepts an IP or a DNS name; a DNS name is resolved by the control plane.
+
+Zones without a `MeshZoneAddress` are not reachable cross-zone: their `MeshService` destinations get no endpoints in other zones. The control plane logs `no MeshZoneAddress found for zone` when this happens.
 
 ## Upgrade to `2.13.7`
 
