@@ -11,6 +11,11 @@ on:
   workflow_run:
     workflows: ["build-test-distribute"]
     types: [completed]
+    # cuts the dominant noise source: every master/release-* push completion
+    # otherwise creates a (skipped) run before the guard job's `if` even
+    # evaluates. Tags aren't filterable here (GitHub doesn't expose tag
+    # matching for workflow_run), so tag-shape validation still lives in guard.
+    branches-ignore: ["master", "release-*"]
   workflow_dispatch:
     inputs:
       version:
