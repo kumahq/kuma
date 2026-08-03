@@ -8,6 +8,16 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `advertisedAddress` removed from `Dataplane` networking
+
+The `networking.advertisedAddress` field has been removed from the `Dataplane` resource. Proxies behind NAT or a private network (e.g. Docker) that relied on it to advertise a routable address to other proxies must now be reachable directly via `networking.address`.
+
+**Action required**
+
+Ensure every Universal `Dataplane` is reachable by other proxies on `networking.address` before upgrading.
+
+**Warning**: `networking.advertisedAddress` is silently dropped on deserialization — protos are unmarshalled with `AllowUnknownFields`, so the field is simply ignored rather than rejected. Dataplanes still submitting it will fall back to `networking.address` for xDS endpoints, Envoy admin mTLS SANs, and `kumactl get dataplanes` output, which may break connectivity for proxies that are not reachable on `networking.address`.
+
 ### Real-resource policy selection now uses `labels` only
 
 Policies that select real resources through `spec.targetRef` or `spec.to[].targetRef` now resolve those targets by `labels` only. This applies to `Dataplane`, `MeshService`, `MeshExternalService`, `MeshMultiZoneService`, and `MeshHTTPRoute`.
