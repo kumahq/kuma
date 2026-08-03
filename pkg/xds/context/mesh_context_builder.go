@@ -231,13 +231,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		loader,
 	)
 
-	zonesWithMeshScopedProxy := map[string]bool{}
-	for _, mza := range resources.MeshZoneAddresses().Items {
-		if zone := core_model.ZoneOfResource(mza); zone != "" {
-			zonesWithMeshScopedProxy[zone] = true
-		}
-	}
-
 	return &MeshContext{
 		Hash:                            newHash,
 		PolicyMatchingHash:              policyMatchingHash,
@@ -255,7 +248,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		ZoneEgresses:                    zoneEgressList,
 		DataplaneZoneIngressEndpointMap: dpZoneIngressEndpointMap,
 		DataplaneZoneEgressEndpointMap:  dpZoneEgressEndpointMap,
-		ZonesWithMeshScopedProxy:        zonesWithMeshScopedProxy,
 	}, nil
 }
 

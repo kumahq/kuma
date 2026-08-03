@@ -439,9 +439,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithMeshBuilder(builders.Mesh().WithBuiltinMTLSBackend("builtin").WithEnabledMTLSBackend("builtin")).
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
-					With(func(ctx *xds_context.Context) {
-						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"remote-zone": true}
-					}).
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(builders.Dataplane().
@@ -515,9 +512,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithEndpointMap(outboundTargets).
 					AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 					WithResources(resources).
-					With(func(ctx *xds_context.Context) {
-						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"remote-zone": true}
-					}).
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(dpBuilder).
@@ -608,7 +602,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 					AddExternalService(mesServiceName).
 					AddServiceProtocol(mesServiceName, core_meta.ProtocolHTTP).
 					With(func(ctx *xds_context.Context) {
-						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"remote-zone": true}
 						ctx.Mesh.ZoneEgresses = []core_xds.ZoneEgressInstance{
 							{Address: "10.0.0.1", Port: 10002, SAN: "spiffe://default/zone-egress"},
 						}
@@ -749,9 +742,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithMeshContext(mc).
-					With(func(ctx *xds_context.Context) {
-						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"local": true}
-					}).
 					Build(),
 				proxy: proxy,
 			}
