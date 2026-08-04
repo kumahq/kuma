@@ -118,8 +118,8 @@ spec:
 		// inbounds never spend a moment in strict mode.
 		permissive := fmt.Sprintf(`
 type: MeshTLS
-name: permissive
-mesh: %s
+name: permissive-%[1]s
+mesh: %[1]s
 spec:
   targetRef:
     kind: Mesh
@@ -129,10 +129,11 @@ spec:
 `, meshName)
 		err := universal.Cluster.Install(YamlUniversal(permissive))
 		Expect(err).ToNot(HaveOccurred())
-		// Publish the SPIFFE IDs while the mesh is still plaintext, so the
-		// client already validates against them once the certificates arrive.
-		Expect(universal.Cluster.Install(MeshIdentitySpiffeIDOnly(meshName, identityName))).To(Succeed())
-		Expect(WaitForMeshServiceSpiffeIDs(universal.Cluster, meshName, "backend")).To(Succeed())
+		// Mint the CA and hand the trust bundle to every proxy while the
+		// identity still selects none of them, so widening the selector has
+		// nothing left to do but issue the certificates.
+		Expect(universal.Cluster.Install(MeshIdentityBundledUnselected(meshName, identityName))).To(Succeed())
+		Expect(WaitForMeshIdentityReady(universal.Cluster, meshName, identityName)).To(Succeed())
 		err = universal.Cluster.Install(MeshIdentityBundled(meshName, identityName))
 
 		// then traffic went over mTLS with no errors
@@ -148,7 +149,7 @@ spec:
 
 		// when switch to strict mTLS, which is the default once the permissive
 		// MeshTLS is gone
-		err = universal.Cluster.GetKumactlOptions().KumactlDelete("meshtls", "permissive", meshName)
+		err = universal.Cluster.GetKumactlOptions().KumactlDelete("meshtls", fmt.Sprintf("permissive-%s", meshName), meshName)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
