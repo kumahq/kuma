@@ -73,12 +73,10 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.ZoneTag: "eu"},
 								Port:        8080,
 								ServicePort: 18080,
 							},
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "frontend", mesh_proto.ZoneTag: "eu"},
 								Port:        7070,
 								ServicePort: 17070,
 							},
@@ -105,7 +103,6 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.2",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
 								Port:        6379,
 								ServicePort: 16379,
 							},
@@ -124,7 +121,6 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.4",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
 								Port:        6379,
 								ServicePort: 36379,
 							},
@@ -143,7 +139,6 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.5",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.ZoneTag: "eu"},
 								Port:        9200,
 								ServicePort: 49200,
 							},
@@ -162,7 +157,6 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.6",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.ZoneTag: "us"},
 								Port:        9200,
 								ServicePort: 59200,
 							},
@@ -261,7 +255,6 @@ var _ = Describe("TrafficRoute", func() {
 								// Inbound tags other than kuma.io/service are
 								// set but must not appear in the endpoint's Tags
 								// or affect its Locality.
-								Tags:        map[string]string{mesh_proto.ZoneTag: "ignored-zone", "version": "ignored"},
 								Port:        8080,
 								ServicePort: 18080,
 							},
@@ -306,12 +299,10 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "backend"},
 								Port:        8080,
 								ServicePort: 18080,
 							},
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "backend-api"},
 								Port:        9090,
 								ServicePort: 19090,
 							},
@@ -358,7 +349,6 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "backend"},
 								Port:        8080,
 								ServicePort: 18080,
 							},
@@ -524,7 +514,6 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -647,7 +636,6 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -711,7 +699,6 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -764,7 +751,6 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -779,7 +765,6 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
 										Port:        6379,
 										ServicePort: 16379,
 										Health:      &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false},
@@ -831,7 +816,6 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis_svc_6379", "version": "v1"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -846,12 +830,10 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
 										Port:        80,
 										ServicePort: 18080,
 									},
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8001", "app": "kong"},
 										Port:        8001,
 										ServicePort: 18001,
 									},

@@ -255,9 +255,7 @@ type InboundBuilder struct {
 
 func Inbound() *InboundBuilder {
 	return &InboundBuilder{
-		res: &mesh_proto.Dataplane_Networking_Inbound{
-			Tags: map[string]string{},
-		},
+		res: &mesh_proto.Dataplane_Networking_Inbound{},
 	}
 }
 
@@ -282,12 +280,21 @@ func (b *InboundBuilder) WithServicePort(port uint32) *InboundBuilder {
 }
 
 func (b *InboundBuilder) WithTags(tags map[string]string) *InboundBuilder {
-	maps.Copy(b.res.Tags, tags)
+	if service, ok := tags[mesh_proto.ServiceTag]; ok {
+		b.WithService(service)
+	}
+	if protocol, ok := tags[mesh_proto.ProtocolTag]; ok {
+		b.res.Protocol = protocol
+	}
 	return b
 }
 
 func (b *InboundBuilder) WithService(name string) *InboundBuilder {
-	b.WithTags(map[string]string{mesh_proto.ServiceTag: name})
+	return b
+}
+
+func (b *InboundBuilder) WithProtocol(protocol string) *InboundBuilder {
+	b.res.Protocol = protocol
 	return b
 }
 

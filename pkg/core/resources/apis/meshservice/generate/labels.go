@@ -75,7 +75,7 @@ func extractPropagatedKeys(labels map[string]string) func(string) bool {
 }
 
 // dpContribution computes the non-system labels for an auto-generated
-// MeshService from a single DataplaneResource and its inbounds.
+// MeshService from a single DataplaneResource.
 // It never mutates its inputs and always returns a non-nil map.
 func dpContribution(
 	dp *core_mesh.DataplaneResource,
@@ -111,53 +111,9 @@ func dpContribution(
 		)
 	}
 
-	// Step 1: cross-inbound consensus on non-reserved tags.
-	type tagEntry struct {
-		value string
-		seen  bool
-		drop  bool
-	}
-	consensus := map[string]*tagEntry{}
-	for _, ib := range inbounds {
-		for k, v := range ib.GetTags() {
-			if mesh_proto.IsReservedLabelKey(k) {
-				continue
-			}
-			e, ok := consensus[k]
-			if !ok {
-				consensus[k] = &tagEntry{value: v, seen: true}
-				continue
-			}
-			if e.value != v {
-				e.drop = true
-			}
-		}
-	}
+	_ = inbounds
 
-	// Step 2: validate and write consensus values.
-	for k, e := range consensus {
-		if e.drop {
-			drop("inbound_conflict", k)
-			continue
-		}
-		if allowSet != nil {
-			if _, ok := allowSet[k]; !ok {
-				debugDrop("not_allowed", k)
-				continue
-			}
-		}
-		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
-			drop("invalid", k)
-			continue
-		}
-		if errs := validation.IsValidLabelValue(e.value); len(errs) > 0 {
-			drop("invalid", k)
-			continue
-		}
-		out[k] = e.value
-	}
-
-	// Step 3: DP resource labels overlay — runs same validation pipeline.
+	// Validate and write DP resource labels.
 	for k, v := range dp.GetMeta().GetLabels() {
 		if mesh_proto.IsReservedLabelKey(k) {
 			continue
