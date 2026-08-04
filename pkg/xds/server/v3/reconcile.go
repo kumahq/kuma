@@ -22,7 +22,6 @@ import (
 	xds_hooks "github.com/kumahq/kuma/v3/pkg/xds/hooks"
 	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
 	xds_sync "github.com/kumahq/kuma/v3/pkg/xds/sync"
-	xds_template "github.com/kumahq/kuma/v3/pkg/xds/template"
 )
 
 var reconcileLog = core.Log.WithName("xds").WithName("reconcile")
@@ -314,16 +313,11 @@ type snapshotGenerator interface {
 }
 
 type TemplateSnapshotGenerator struct {
-	ProxyTemplateResolver xds_template.ProxyTemplateResolver
-	ResourceSetHooks      []xds_hooks.ResourceSetHook
+	ResourceSetHooks []xds_hooks.ResourceSetHook
 }
 
 func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error) {
-	template := s.ProxyTemplateResolver.GetTemplate(proxy)
-
-	gen := generator.ProxyTemplateGenerator{ProxyTemplate: template}
-
-	rs, err := gen.Generate(ctx, xdsCtx, proxy)
+	rs, err := generator.NewDefaultProxyProfile().Generate(ctx, model.NewResourceSet(), xdsCtx, proxy)
 	if err != nil {
 		return nil, err
 	}
