@@ -33,6 +33,9 @@ resources:
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
+            tlsParams:
+              tlsMaximumProtocolVersion: TLSv1_3
+              tlsMinimumProtocolVersion: TLSv1_3
           requireClientCertificate: true
     metadata:
       filterMetadata:
@@ -75,6 +78,9 @@ resources:
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
+            tlsParams:
+              tlsMaximumProtocolVersion: TLSv1_3
+              tlsMinimumProtocolVersion: TLSv1_3
           requireClientCertificate: true
     metadata:
       filterMetadata:
