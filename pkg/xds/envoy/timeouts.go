@@ -5,9 +5,12 @@ import (
 )
 
 // Timeouts carries the timeouts applied to a cluster and its filter chain.
-// A zero value means the timeout is left unset.
+// Only Connect treats zero as "not set", see ConnectOrDefault. The idle
+// timeouts are always written, so a zero value reaches Envoy as an explicit
+// `0s`, which disables that timeout rather than leaving it at Envoy's default.
 type Timeouts struct {
-	// Connect is the time to establish a connection to the upstream.
+	// Connect is the time to establish a connection to the upstream. Zero
+	// falls back to the default passed to ConnectOrDefault.
 	Connect time.Duration
 	// TcpIdle is the period without bytes sent or received on either the
 	// upstream or the downstream connection.
