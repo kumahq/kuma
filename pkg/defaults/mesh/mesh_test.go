@@ -212,7 +212,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			// CP version stored them before sidecar/gateway defaults were merged
 			gatewayRules := meshtimeout.NewMeshTimeoutResource()
 			gatewayRules.Spec = &meshtimeout.MeshTimeout{
-				TargetRef: &common_api.TargetRef{Kind: common_api.Mesh},
+				TargetRef: &common_api.TopLevelTargetRef{Kind: common_api.Mesh},
 				Rules: &[]meshtimeout.Rule{
 					{Default: meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Minute}}},
 				},
@@ -222,10 +222,10 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 
 			gatewayTo := meshtimeout.NewMeshTimeoutResource()
 			gatewayTo.Spec = &meshtimeout.MeshTimeout{
-				TargetRef: &common_api.TargetRef{Kind: common_api.Mesh},
+				TargetRef: &common_api.TopLevelTargetRef{Kind: common_api.Mesh},
 				To: &[]meshtimeout.To{
 					{
-						TargetRef: common_api.TargetRef{Kind: common_api.Mesh},
+						TargetRef: common_api.OutboundTargetRef{Kind: common_api.Mesh},
 						Default:   meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Minute}},
 					},
 				},

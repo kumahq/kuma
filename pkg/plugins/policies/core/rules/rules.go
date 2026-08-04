@@ -345,7 +345,7 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 						// selector that doesn't carry kuma.io/display-name has
 						// no legacy equivalent; fail loudly rather than emitting
 						// an empty selector that silently matches nothing.
-						service := serviceTagValue(mhrRules.TargetRef)
+						service := serviceTagValue(mhrRules.TargetRef.ToTargetRef())
 						if service == "" {
 							return nil, errors.Errorf("can't resolve %s targetRef to a service: kuma.io/display-name label is required", mhrRules.TargetRef.Kind)
 						}

@@ -62,12 +62,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -87,8 +81,8 @@ spec:
                     additionalProperties:
                       type: string
                     description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
+                      Tags used to select a subset of proxies by tags. Not applicable to the
+                      kinds supported by this field (`Mesh`, `Dataplane`).
                     type: object
                 required:
                 - kind
@@ -541,13 +535,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -566,8 +557,8 @@ spec:
                           additionalProperties:
                             type: string
                           description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
+                            Tags used to select a subset of proxies by tags. Not applicable to the
+                            kinds supported by this field.
                           type: object
                       required:
                       - kind

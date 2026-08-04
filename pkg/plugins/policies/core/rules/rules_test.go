@@ -1325,7 +1325,7 @@ var _ = Describe("buildToListWithRoutes", func() {
 			},
 			Spec: &v1alpha1.MeshHTTPRoute{
 				To: &[]v1alpha1.To{{
-					TargetRef: common_api.TargetRef{
+					TargetRef: common_api.OutboundTargetRef{
 						Kind:   common_api.MeshService,
 						Labels: pointer.To(map[string]string{mesh_proto.DisplayName: backend}),
 					},
@@ -1393,7 +1393,7 @@ var _ = Describe("buildToListWithRoutes", func() {
 			},
 			Spec: &v1alpha1.MeshHTTPRoute{
 				To: &[]v1alpha1.To{{
-					TargetRef: common_api.TargetRef{
+					TargetRef: common_api.OutboundTargetRef{
 						Kind:   common_api.MeshService,
 						Labels: pointer.To(map[string]string{"env": "dev"}),
 					},
