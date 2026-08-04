@@ -509,8 +509,10 @@ spec:
 		Expect(dataplanes[0].Spec.GetNetworking().GetAddress()).To(Equal("192.168.0.10"))
 
 		// and so is the endpoint Envoy EDS gets, since it only accepts IPs
-		Expect(meshCtx.EndpointMap["backend"]).To(HaveLen(1))
-		Expect(meshCtx.EndpointMap["backend"][0].Target).To(Equal("192.168.0.10"))
+		meshService := meshCtx.Resources.MeshServices().Items[0]
+		endpoints := meshCtx.EndpointMap[destinationname.MustResolve(false, meshService, meshService.Spec.Ports[0])]
+		Expect(endpoints).To(HaveLen(1))
+		Expect(endpoints[0].Target).To(Equal("192.168.0.10"))
 	})
 
 	It("returns an error instead of panicking when listing resources fails", func() {
