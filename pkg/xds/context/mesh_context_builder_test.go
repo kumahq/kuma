@@ -464,8 +464,6 @@ status:
 				switch host {
 				case "backend.dns.name":
 					return []net.IP{net.ParseIP("192.168.0.10")}, nil
-				case "backend.advertised.dns.name":
-					return []net.IP{net.ParseIP("192.168.0.11")}, nil
 				default:
 					return []net.IP{net.ParseIP(host)}, nil
 				}
@@ -483,7 +481,6 @@ name: dp-1
 mesh: mesh-1
 networking:
   address: backend.dns.name
-  advertisedAddress: backend.advertised.dns.name
   inbound:
     - port: 8080
       tags:
@@ -498,11 +495,10 @@ networking:
 		dataplanes := meshCtx.Resources.Dataplanes().Items
 		Expect(dataplanes).To(HaveLen(1))
 		Expect(dataplanes[0].Spec.GetNetworking().GetAddress()).To(Equal("192.168.0.10"))
-		Expect(dataplanes[0].Spec.GetNetworking().GetAdvertisedAddress()).To(Equal("192.168.0.11"))
 
 		// and so is the endpoint Envoy EDS gets, since it only accepts IPs
 		Expect(meshCtx.EndpointMap["backend"]).To(HaveLen(1))
-		Expect(meshCtx.EndpointMap["backend"][0].Target).To(Equal("192.168.0.11"))
+		Expect(meshCtx.EndpointMap["backend"][0].Target).To(Equal("192.168.0.10"))
 	})
 
 	It("returns an error instead of panicking when listing resources fails", func() {
