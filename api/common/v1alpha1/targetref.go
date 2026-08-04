@@ -130,9 +130,6 @@ type TopLevelTargetRef struct {
 	// Kind of the referenced resource
 	// +kubebuilder:validation:Enum=Mesh;Dataplane
 	Kind TopLevelTargetRefKind `json:"kind"`
-	// Tags used to select a subset of proxies by tags. Not applicable to the
-	// kinds supported by this field (`Mesh`, `Dataplane`).
-	Tags *map[string]string `json:"tags,omitempty"`
 	// Labels are used to select referenced real resources and to carry legacy
 	// service identity when a common TargetRef must still target old
 	// service-tag based paths.
@@ -153,7 +150,6 @@ func (t *TopLevelTargetRef) ToTargetRef() TargetRef {
 	return TargetRef{
 		UsesSyntacticSugar: t.UsesSyntacticSugar,
 		Kind:               t.Kind,
-		Tags:               t.Tags,
 		Labels:             t.Labels,
 		SectionName:        t.SectionName,
 	}
@@ -170,9 +166,6 @@ type OutboundTargetRef struct {
 	// Kind of the referenced resource
 	// +kubebuilder:validation:Enum=Mesh;MeshService;MeshExternalService;MeshMultiZoneService;MeshHTTPRoute
 	Kind OutboundTargetRefKind `json:"kind"`
-	// Tags used to select a subset of proxies by tags. Not applicable to the
-	// kinds supported by this field.
-	Tags *map[string]string `json:"tags,omitempty"`
 	// Labels are used to select referenced real resources and to carry legacy
 	// service identity when a common TargetRef must still target old
 	// service-tag based paths.
@@ -187,7 +180,6 @@ type OutboundTargetRef struct {
 func (t OutboundTargetRef) ToTargetRef() TargetRef {
 	return TargetRef{
 		Kind:        t.Kind,
-		Tags:        t.Tags,
 		Labels:      t.Labels,
 		SectionName: t.SectionName,
 	}
