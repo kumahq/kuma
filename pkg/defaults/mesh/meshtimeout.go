@@ -4,11 +4,10 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
 // defaultMeshTimeoutResource and defaultMeshTimeoutToResource are kept as
@@ -88,19 +87,13 @@ var defaultMeshTimeoutToResource = func() model.Resource {
 // in the store. It's used directly in InboundProxyGenerator. In the future, it could be replaced
 // with a new InboundTimeout policy. The main idea around these values is to have them either
 // bigger than outbound side timeouts or disabled.
-var DefaultInboundTimeout = func() *mesh_proto.Timeout_Conf {
+var DefaultInboundTimeout = func() envoy_common.Timeouts {
 	const factor = 2
 
-	return &mesh_proto.Timeout_Conf{
-		ConnectTimeout: util_proto.Duration(factor * policies_defaults.DefaultConnectTimeout),
-		Tcp: &mesh_proto.Timeout_Conf_Tcp{
-			IdleTimeout: util_proto.Duration(factor * policies_defaults.DefaultIdleTimeout),
-		},
-		Http: &mesh_proto.Timeout_Conf_Http{
-			RequestTimeout:    util_proto.Duration(0),
-			IdleTimeout:       util_proto.Duration(factor * policies_defaults.DefaultIdleTimeout),
-			StreamIdleTimeout: util_proto.Duration(factor * policies_defaults.DefaultStreamIdleTimeout),
-			MaxStreamDuration: util_proto.Duration(0),
-		},
+	return envoy_common.Timeouts{
+		Connect:        factor * policies_defaults.DefaultConnectTimeout,
+		TcpIdle:        factor * policies_defaults.DefaultIdleTimeout,
+		HttpIdle:       factor * policies_defaults.DefaultIdleTimeout,
+		HttpStreamIdle: factor * policies_defaults.DefaultStreamIdleTimeout,
 	}
 }

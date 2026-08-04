@@ -35,13 +35,15 @@ resources:
               routes:
               - match:
                   prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
+                  timeout: 0s
                   weightedClusters:
                     clusters:
                     - name: backend-bb38a94289f18fb9
-                      weight: 1
+                      weight: 90
                     - name: backend-c72efb5be46fae6b
-                      weight: 1
+                      weight: 10
           statPrefix: "127_0_0_1_27777"
     name: outbound:127.0.0.1:27777
     trafficDirection: OUTBOUND
@@ -68,7 +70,7 @@ resources:
             - addressPrefix: ::1
               prefixLen: 128
           routeConfig:
-            name: outbound:backend
+            name: outbound:payment
             requestHeadersToAdd:
             - header:
                 key: x-kuma-tags
@@ -77,10 +79,11 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: backend
+              name: payment
               routes:
               - match:
                   prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
                   cluster: payment
                   hashPolicy:
@@ -89,6 +92,7 @@ resources:
                     terminal: true
                   - connectionProperties:
                       sourceIp: true
+                  timeout: 0s
           statPrefix: "127_0_0_1_27778"
     name: outbound:127.0.0.1:27778
     trafficDirection: OUTBOUND

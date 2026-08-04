@@ -376,8 +376,6 @@ func configureListener(
 	}
 
 	protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
-	cluster := policies_xds.NewClusterBuilder().WithName(clusterName).Build()
-	routes := generator.GenerateRoutes(proxy, iface, cluster)
 	ciphers := pointer.Deref(conf.TlsCiphers)
 
 	filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {
@@ -388,7 +386,6 @@ func configureListener(
 			clusterName,
 			xdsCtx,
 			iface,
-			&routes,
 			conf.TlsVersion,
 			ciphers,
 		)

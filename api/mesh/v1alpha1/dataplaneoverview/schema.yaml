@@ -271,12 +271,8 @@ components:
                           type: string
                         description: |-
                           Tags of consumed data plane proxies.
-                          `kuma.io/service` tag is required.
-                          These tags can then be referenced in `destinations` section of policies
-                          like TrafficRoute or in `to` section in policies like MeshAccessLog. It
-                          is recommended to only use `kuma.io/service`. If you need to consume
-                          specific data plane proxy of a service (for example: `version=v2`) the
-                          better practice is to use TrafficRoute.
+                          These tags can then be referenced in `to` section in policies like
+                          MeshAccessLog.
                         type: object
                     type: object
                   type: array
