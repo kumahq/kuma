@@ -481,7 +481,7 @@ func (m *meshContextBuilder) resolveTLSReadiness(
 
 	for _, ms := range meshServices {
 		for _, port := range ms.Spec.Ports {
-			svc := destinationname.MustResolve(false, ms, port)
+			svc := destinationname.ResolveLegacyFromDestination(ms, port)
 			serviceInfo := getServiceInformation(servicesInformation, svc)
 			serviceInfo.TLSReadiness = ms.Status.TLS.Status == meshservice_api.TLSReady
 			servicesInformation[svc] = serviceInfo

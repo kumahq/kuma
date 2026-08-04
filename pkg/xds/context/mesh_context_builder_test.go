@@ -633,12 +633,12 @@ var _ = Describe("ServicesInformation", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then the MeshService-backed service is TLS ready
-		msKey := destinationname.MustResolve(false, ms, ms.Spec.Ports[0])
+		msKey := destinationname.ResolveLegacyFromDestination(ms, ms.Spec.Ports[0])
 		Expect(mc.ServicesInformation[msKey]).ToNot(BeNil())
 		Expect(mc.ServicesInformation[msKey].TLSReadiness).To(BeTrue())
 
 		// and the external service is unconditionally TLS ready
-		esKey := destinationname.MustResolve(false, externalService, externalService.Spec.Match)
+		esKey := destinationname.ResolveLegacyFromDestination(externalService, externalService.Spec.Match)
 		Expect(mc.ServicesInformation[esKey]).ToNot(BeNil())
 		Expect(mc.ServicesInformation[esKey].IsExternalService).To(BeTrue())
 		Expect(mc.ServicesInformation[esKey].TLSReadiness).To(BeTrue())
@@ -668,7 +668,7 @@ var _ = Describe("ServicesInformation", func() {
 		mc, err := meshContextBuilder.Build(context.Background(), meshName)
 		Expect(err).ToNot(HaveOccurred())
 
-		msKey := destinationname.MustResolve(false, ms, ms.Spec.Ports[0])
+		msKey := destinationname.ResolveLegacyFromDestination(ms, ms.Spec.Ports[0])
 		info, found := mc.ServicesInformation[msKey]
 		if found {
 			Expect(info.TLSReadiness).To(BeFalse())

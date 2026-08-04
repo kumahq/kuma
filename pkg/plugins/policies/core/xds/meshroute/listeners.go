@@ -68,12 +68,11 @@ type DestinationService struct {
 	KumaServiceTagValue string
 }
 
-// ConditionallyResolveKRIWithFallback returns the identifier for this DestinationService.
-// If provided condition is met and the Outbound has an associated real resource,
-// the identifier is derived from that resource (KRI). Otherwise, the given fallback
-// is returned
-func (ds *DestinationService) ConditionallyResolveKRIWithFallback(condition bool, fallback string) string {
-	if condition && ds.Outbound != nil {
+// ResolveKRIWithFallback returns the identifier for this DestinationService.
+// If the Outbound has an associated real resource, the identifier is derived
+// from that resource (KRI). Otherwise, the given fallback is returned.
+func (ds *DestinationService) ResolveKRIWithFallback(fallback string) string {
+	if ds.Outbound != nil {
 		if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
 			return id.String()
 		}
@@ -184,7 +183,7 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 			DestinationService{
 				Outbound:            outbound,
 				Protocol:            protocol,
-				KumaServiceTagValue: destinationname.MustResolve(false, svc, port),
+				KumaServiceTagValue: destinationname.ResolveLegacyFromDestination(svc, port),
 			},
 		)
 	}
@@ -273,7 +272,7 @@ func handleRealResources(
 		ref.Resource = kri.WithSectionName(ref.Resource, port.GetName())
 	}
 
-	service := destinationname.MustResolve(false, dest, port)
+	service := destinationname.ResolveLegacyFromDestination(dest, port)
 
 	clusterName := ref.Resource.String()
 

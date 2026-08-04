@@ -30,7 +30,7 @@ var outboundLog = core.Log.WithName("xds").WithName("outbound")
 
 // BuildDataplaneEgressEndpointMap builds endpoints only for MeshExternalServices reachable from the dataplane.
 // Used for embedded egress listeners in a Dataplane resource.
-// Always uses unified (KRI) naming as this is new infrastructure that only supports Exclusive MeshServices mode.
+// Uses KRI naming as this is new infrastructure that only supports Exclusive MeshServices mode.
 func BuildDataplaneZoneEgressEndpointMap(
 	ctx context.Context,
 	mesh *core_mesh.MeshResource,
@@ -39,7 +39,7 @@ func BuildDataplaneZoneEgressEndpointMap(
 ) core_xds.EgressEndpointMap {
 	tmp := core_xds.EndpointMap{}
 	for _, mes := range meshExternalServices {
-		if err := createMeshExternalServiceEndpoint(ctx, tmp, mes, mesh, loader, true); err != nil {
+		if err := createMeshExternalServiceEndpoint(ctx, tmp, mes, mesh, loader); err != nil {
 			outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
 		}
 	}
@@ -146,9 +146,9 @@ func fillMeshMultiZoneServices(
 				continue
 			}
 			for _, port := range mzSvc.Spec.Ports {
-				serviceName := destinationname.MustResolve(false, mzSvc, port)
+				serviceName := destinationname.ResolveLegacyFromDestination(mzSvc, port)
 
-				existingEndpoints := outbound[destinationname.MustResolve(false, ms, port)]
+				existingEndpoints := outbound[destinationname.ResolveLegacyFromDestination(ms, port)]
 				outbound[serviceName] = append(outbound[serviceName], existingEndpoints...)
 			}
 		}
@@ -213,7 +213,7 @@ func fillRemoteMeshServices(
 			continue
 		}
 		for _, port := range ms.Spec.Ports {
-			serviceName := destinationname.MustResolve(false, ms, port)
+			serviceName := destinationname.ResolveLegacyFromDestination(ms, port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
 				ep := endpoint
 				ep.Locality = &core_xds.Locality{
@@ -337,7 +337,7 @@ func fillLocalMeshServices(
 					}
 
 					inboundTags := endpointIdentity(dpp, inbound)
-					serviceName := destinationname.MustResolve(false, meshSvc, port)
+					serviceName := destinationname.ResolveLegacyFromDestination(meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
 					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
@@ -515,7 +515,6 @@ func createMeshExternalServiceEndpoint(
 	mes *meshexternalservice_api.MeshExternalServiceResource,
 	mesh *core_mesh.MeshResource,
 	loader datasource.Loader,
-	unifiedNaming bool,
 ) error {
 	es := &core_xds.ExternalService{
 		Protocol:      mes.Spec.Match.Protocol,
@@ -552,7 +551,7 @@ func createMeshExternalServiceEndpoint(
 			Tags:            tags,
 			Locality:        locality,
 		}
-		name := destinationname.MustResolve(unifiedNaming, mes, mes.Spec.Match)
+		name := destinationname.MustResolve(mes, mes.Spec.Match)
 		outbounds[name] = append(outbounds[name], *outboundEndpoint)
 	}
 	return nil
@@ -635,7 +634,7 @@ func fillExternalServicesOutboundsThroughEgress(
 	for _, mes := range meshExternalServices {
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
-		serviceName := destinationname.MustResolve(false, mes, mes.Spec.Match)
+		serviceName := destinationname.ResolveLegacyFromDestination(mes, mes.Spec.Match)
 		locality := GetLocality(nil)
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
