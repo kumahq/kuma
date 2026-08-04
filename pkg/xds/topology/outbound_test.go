@@ -171,10 +171,9 @@ var _ = Describe("TrafficRoute", func() {
 			// when
 			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
 
-			// "backend" carries no kuma.io/service label, so both of its
-			// inbounds are keyed by the legacy per-inbound tag; only the
-			// remaining tags come from labels, which it has none of.
-			Expect(targets).To(HaveLen(4))
+			// "backend" carries no kuma.io/service label, so once inbound tags
+			// are removed it no longer contributes legacy service endpoints.
+			Expect(targets).To(HaveLen(2))
 			// and
 			Expect(targets).To(HaveKeyWithValue("redis", []core_xds.Endpoint{
 				{
@@ -212,22 +211,6 @@ var _ = Describe("TrafficRoute", func() {
 					Locality: &core_xds.Locality{
 						Zone: "us",
 					},
-					Weight: 1,
-				},
-			}))
-			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
-				{
-					Target: "192.168.0.1",
-					Port:   8080,
-					Tags:   map[string]string{mesh_proto.ServiceTag: "backend"},
-					Weight: 1,
-				},
-			}))
-			Expect(targets).To(HaveKeyWithValue("frontend", []core_xds.Endpoint{
-				{
-					Target: "192.168.0.1",
-					Port:   7070,
-					Tags:   map[string]string{mesh_proto.ServiceTag: "frontend"},
 					Weight: 1,
 				},
 			}))
@@ -286,9 +269,9 @@ var _ = Describe("TrafficRoute", func() {
 			}))
 		})
 
-		It("should key endpoints by the legacy inbound service tag", func() {
-			// given - a dataplane provisioned before the move to labels: it has
-			// no kuma.io/service label and exposes two services on its inbounds
+		It("should not publish legacy endpoints when no dataplane service label exists", func() {
+			// given - without inbound tags, a dataplane with no kuma.io/service
+			// label has no legacy service identity to publish
 			dp := &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
 					Mesh: "default",
@@ -315,29 +298,13 @@ var _ = Describe("TrafficRoute", func() {
 			// when
 			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
 
-			// then - each inbound is published under the service it declares
-			Expect(targets).To(HaveLen(2))
-			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
-				{
-					Target: "192.168.0.1",
-					Port:   8080,
-					Tags:   map[string]string{mesh_proto.ServiceTag: "backend"},
-					Weight: 1,
-				},
-			}))
-			Expect(targets).To(HaveKeyWithValue("backend-api", []core_xds.Endpoint{
-				{
-					Target: "192.168.0.1",
-					Port:   9090,
-					Tags:   map[string]string{mesh_proto.ServiceTag: "backend-api"},
-					Weight: 1,
-				},
-			}))
+			// then
+			Expect(targets).To(BeEmpty())
 		})
 
-		It("should prefer the inbound service tag over the dataplane service label", func() {
-			// given - a dataplane whose label names one service while the
-			// inbound still declares another
+		It("should key endpoints by the dataplane service label", func() {
+			// given - once inbound tags are removed, the dataplane label is the
+			// legacy service identity source
 			dp := &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
 					Mesh:   "default",
@@ -363,11 +330,11 @@ var _ = Describe("TrafficRoute", func() {
 
 			// then
 			Expect(targets).To(HaveLen(1))
-			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
+			Expect(targets).To(HaveKeyWithValue("labeled", []core_xds.Endpoint{
 				{
 					Target: "192.168.0.1",
 					Port:   8080,
-					Tags:   map[string]string{mesh_proto.ServiceTag: "backend"},
+					Tags:   map[string]string{mesh_proto.ServiceTag: "labeled"},
 					Weight: 1,
 				},
 			}))
@@ -917,26 +884,6 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					// the kong dataplane carries no kuma.io/service label, so
-					// its legacy entries are keyed by the per-inbound tag
-					"kong_kong-system_svc_80": []core_xds.Endpoint{
-						{
-							Target:   "192.168.0.2",
-							Port:     80,
-							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
-							Locality: nil,
-							Weight:   1,
-						},
-					},
-					"kong_kong-system_svc_8001": []core_xds.Endpoint{
-						{
-							Target:   "192.168.0.2",
-							Port:     8001,
-							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8001", "app": "kong"},
-							Locality: nil,
-							Weight:   1,
-						},
-					},
 				},
 			}),
 			Entry("uses MeshExternalService with egress", testCase{
@@ -1193,19 +1140,6 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					// DataplaneBackend() has no kuma.io/service label, so its
-					// legacy entry is keyed by the inbound's service tag
-					"backend": []core_xds.Endpoint{
-						{
-							Target: "192.168.0.1",
-							Port:   80,
-							Tags: map[string]string{
-								"kuma.io/workload": "backend",
-								"kuma.io/service":  "backend",
-							},
-							Weight: 1,
-						},
-					},
 					"default_backend___msvc_80": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
