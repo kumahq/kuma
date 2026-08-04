@@ -184,21 +184,24 @@ Also update any automation that expected the `MeshServicesDisabled`
 `MeshIdentity` status reason or treated inspect `_layout` as unavailable
 outside `Exclusive` mode.
 
-### Standalone `ZoneIngress`/`ZoneEgress` proxies no longer receive Envoy config
+### Standalone `ZoneIngress`/`ZoneEgress` proxies are no longer supported
 
-The control plane no longer generates xDS configuration for data plane proxies
-started as standalone zone proxies, i.e. `kuma-dp run --proxy-type=ingress|egress`
-on Universal and the `ingress.enabled` / `egress.enabled` Helm deployments on
-Kubernetes. Cross-zone traffic is now served by mesh-scoped zone proxies, which
-are regular `Dataplane` resources.
+The control plane no longer serves data plane proxies started as standalone zone
+proxies, i.e. `kuma-dp run --proxy-type=ingress|egress` on Universal and the
+`ingress.enabled` / `egress.enabled` Helm deployments on Kubernetes. Cross-zone
+traffic is now served by mesh-scoped zone proxies, which are regular `Dataplane`
+resources.
 
-Such a proxy still connects, registers its `ZoneIngress`/`ZoneEgress` resource,
-and reports an insight, but it receives no listeners, clusters, or endpoints.
-Envoy keeps whatever configuration it already had until it restarts, at which
-point it starts with an empty configuration and drops all cross-zone traffic.
-The control plane logs
-`xDS generation for legacy ZoneIngress/ZoneEgress dataplanes is no longer supported`
-once per connected legacy proxy.
+`dataplane` is the only accepted value of `--proxy-type` (and of the
+`KUMA_DATAPLANE_PROXY_TYPE` environment variable); `kuma-dp` exits with
+`.ProxyType "ingress" is not supported` on startup. The control plane no longer
+generates a bootstrap for those proxy types, no longer registers or deregisters
+their `ZoneIngress`/`ZoneEgress` resources, and no longer writes
+`ZoneIngressInsight`/`ZoneEgressInsight` from an xDS stream. A pre-upgrade zone
+proxy that reconnects has its xDS stream rejected with `unsupported proxy type
+"ingress"`. `kumactl generate dataplane-token --proxy-type ingress|egress` is
+rejected, and tokens previously issued with a `type: ingress|egress` claim can no
+longer be used.
 
 **Action required**
 
@@ -206,9 +209,9 @@ Migrate to mesh-scoped zone proxies **before** upgrading the zone control plane.
 On Kubernetes deploy them through `meshes[].ingress.enabled` /
 `meshes[].egress.enabled`. On Universal, replace
 `kuma-dp run --proxy-type=ingress|egress` with a regular `Dataplane` that
-declares `networking.listeners` of type `ZoneIngress`/`ZoneEgress`. Upgrading the
-control plane first blackholes cross-zone traffic as soon as the legacy zone
-proxy Pods restart.
+declares `networking.listeners` of type `ZoneIngress`/`ZoneEgress`, and reissue
+its token without `--proxy-type`. Upgrading the control plane first blackholes
+cross-zone traffic as soon as the legacy zone proxy Pods restart.
 
 ### Legacy `ingress`/`egress` Helm values and `kumactl install` flags removed
 
@@ -272,10 +275,7 @@ configured under `dpServer.authn.dpProxy` (`serviceAccountToken` on Kubernetes,
 `dpToken` on Universal), and zone tokens are no longer validated.
 
 `dpServer.authn.zoneProxy.type` and
-`dpServer.authn.zoneProxy.zoneToken.validator` no longer affect
-authentication. `dpServer.authn.zoneProxy.type` still controls whether the
-bootstrap server requires a token from the legacy `ingress`/`egress` proxy
-types.
+`dpServer.authn.zoneProxy.zoneToken.validator` no longer affect anything.
 
 **Action required**
 

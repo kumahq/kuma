@@ -40,9 +40,6 @@ $ kumactl generate dataplane-token --mesh demo --name demo-01 --valid-for 24h
 Generate token bound by mesh
 $ kumactl generate dataplane-token --mesh demo --valid-for 24h
 
-Generate Ingress token
-$ kumactl generate dataplane-token --type ingress --valid-for 24h
-
 Generate token bound by tag
 $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api --valid-for 24h
 
@@ -51,6 +48,10 @@ $ kumactl generate dataplane-token --mesh demo --workload backend --valid-for 24
 `,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if ctx.args.proxyType != "" && mesh_proto.ProxyType(ctx.args.proxyType) != mesh_proto.DataplaneProxyType {
+				return errors.Errorf("%s is not a valid proxy type", ctx.args.proxyType)
+			}
+
 			client, err := pctx.CurrentDataplaneTokenClient()
 			if err != nil {
 				return errors.Wrap(err, "failed to create dataplane token client")
@@ -97,9 +98,9 @@ $ kumactl generate dataplane-token --mesh demo --workload backend --valid-for 24
 	}
 	cmd.Flags().StringVar(&ctx.args.name, "name", "", "name of the Dataplane")
 	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
-	cmd.Flags().StringVar(&ctx.args.proxyType, "type", "", `type of the Dataplane ("dataplane", "ingress")`)
+	cmd.Flags().StringVar(&ctx.args.proxyType, "type", "", `type of the Dataplane ("dataplane")`)
 	_ = cmd.Flags().MarkDeprecated("type", "please use --proxy-type instead")
-	cmd.Flags().StringVar(&ctx.args.proxyType, "proxy-type", "", `type of the Dataplane ("dataplane", "ingress")`)
+	cmd.Flags().StringVar(&ctx.args.proxyType, "proxy-type", "", `type of the Dataplane ("dataplane")`)
 	cmd.Flags().StringToStringVar(&ctx.args.tags, "tag", nil, "required tag values for dataplane (split values by comma to provide multiple values)")
 	cmd.Flags().StringVar(&ctx.args.workload, "workload", "", "required workload label value for dataplane")
 	cmd.Flags().DurationVar(&ctx.args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h")`)
