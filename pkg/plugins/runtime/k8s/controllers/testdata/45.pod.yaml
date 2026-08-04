@@ -1,0 +1,26 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+    version: "0.1"
+  annotations:
+    # Simulates a pod injected by an older control plane during an upgrade:
+    # it carries the user's outbound annotations but not the injector's
+    # traffic.kuma.io/transparent-proxy-config annotation. Both must still be
+    # honored so the regenerated Dataplane doesn't drop them until restart.
+    kuma.io/direct-access-services: "test-app_playground_svc_80,test-app_playground_svc_443"
+    kuma.io/reachable-backends: |
+      refs:
+      - kind: MeshService
+        name: demo-app
+        namespace: kuma-demo
+        port: 5000
+spec:
+  containers:
+    - ports:
+        - containerPort: 7070
+        - containerPort: 6060
+          name: metrics
+status:
+  podIP: 192.168.0.1

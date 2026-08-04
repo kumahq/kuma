@@ -17,4 +17,12 @@ spec:
       port: 8080
       protocol: tcp
     transparentProxying:
-      reachableBackends: {}
+      directAccessServices:
+      - test-app_playground_svc_80
+      - test-app_playground_svc_443
+      reachableBackends:
+        refs:
+        - kind: MeshService
+          name: demo-app
+          namespace: kuma-demo
+          port: 5000
