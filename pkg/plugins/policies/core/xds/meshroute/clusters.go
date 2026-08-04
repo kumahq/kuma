@@ -157,9 +157,11 @@ func GenerateClusters(
 							// A proxy receives its own identity independently of
 							// the destination's, so requiring mTLS before the
 							// destination reports it can serve TLS drops every
-							// request sent in between. MeshService only ever
-							// moves to Ready, so this cannot flip back to
-							// plaintext once the destination is up.
+							// request sent in between. Ready is sticky for as
+							// long as the mesh keeps mTLS or any MeshIdentity,
+							// and only resets once both are gone - which is
+							// exactly when the destination stops terminating
+							// TLS and plaintext becomes correct again.
 							if tlsReady {
 								sans := Identities(realResourceRef, meshCtx, true)
 								upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
