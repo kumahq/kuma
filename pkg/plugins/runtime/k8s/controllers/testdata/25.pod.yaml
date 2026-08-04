@@ -6,10 +6,13 @@ metadata:
     version: "0.1"
   annotations:
     kuma.io/direct-access-services: ""
-    kuma.io/transparent-proxying: "enabled"
-    kuma.io/transparent-proxying-inbound-port: 15006
-    kuma.io/transparent-proxying-outbound-port: 15001
-    kuma.io/transparent-proxying-ip-family-mode: "ipv4"
+    traffic.kuma.io/transparent-proxy-config: |
+      ipFamilyMode: ipv4
+      redirect:
+        inbound:
+          port: 15006
+        outbound:
+          port: 15001
 spec:
   containers:
     - ports:

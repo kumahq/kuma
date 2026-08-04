@@ -8,6 +8,16 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `advertisedAddress` removed from `Dataplane` networking
+
+The `networking.advertisedAddress` field has been removed from the `Dataplane` resource. Proxies behind NAT or a private network (e.g. Docker) that relied on it to advertise a routable address to other proxies must now be reachable directly via `networking.address`.
+
+**Action required**
+
+Ensure every Universal `Dataplane` is reachable by other proxies on `networking.address` before upgrading.
+
+**Warning**: `networking.advertisedAddress` is silently dropped on deserialization — protos are unmarshalled with `AllowUnknownFields`, so the field is simply ignored rather than rejected. Dataplanes still submitting it will fall back to `networking.address` for xDS endpoints, Envoy admin mTLS SANs, and `kumactl get dataplanes` output, which may break connectivity for proxies that are not reachable on `networking.address`.
+
 ### Real-resource policy selection now uses `labels` only
 
 Policies that select real resources through `spec.targetRef` or `spec.to[].targetRef` now resolve those targets by `labels` only. This applies to `Dataplane`, `MeshService`, `MeshExternalService`, `MeshMultiZoneService`, and `MeshHTTPRoute`.
@@ -15,6 +25,31 @@ Policies that select real resources through `spec.targetRef` or `spec.to[].targe
 **Action required**
 
 Migrate any policy that still selects those resources by `name` and/or `namespace` to use `labels` instead before upgrading. `sectionName` remains supported for `Dataplane` inbound selection and `MeshService` port selection.
+
+### Transparent proxy configured only through the ConfigMap
+
+The legacy annotation-based transparent proxy injection path has been removed.
+The sidecar injector now always builds the transparent proxy configuration from
+the ConfigMap in the `kuma-system` namespace (merged with pod annotations) and
+delivers it through the `traffic.kuma.io/transparent-proxy-config` annotation and
+mounted files. This was previously an opt-in feature gated by
+`transparentProxy.configMap.enabled`.
+
+**Action required**
+
+No action is required for Helm or `kumactl` installs — the control plane always
+creates the base ConfigMap and points the injector at it. The
+`transparentProxy.configMap.enabled` Helm value has been removed; remove it from
+any custom values files (leaving it set is harmless but has no effect).
+
+The per-pod `kuma.io/transparent-proxying-*` annotations are no longer produced
+by injection. Pods are reconfigured automatically on their next restart after the
+upgrade.
+
+**Warning**: this format is not understood by data plane proxies older than the
+control plane. To downgrade, first roll back the control plane and then restart
+all workloads so their init and sidecar containers fall back to the previous
+configuration.
 
 ### `from` removed from `MeshTLS`
 
@@ -149,21 +184,24 @@ Also update any automation that expected the `MeshServicesDisabled`
 `MeshIdentity` status reason or treated inspect `_layout` as unavailable
 outside `Exclusive` mode.
 
-### Standalone `ZoneIngress`/`ZoneEgress` proxies no longer receive Envoy config
+### Standalone `ZoneIngress`/`ZoneEgress` proxies are no longer supported
 
-The control plane no longer generates xDS configuration for data plane proxies
-started as standalone zone proxies, i.e. `kuma-dp run --proxy-type=ingress|egress`
-on Universal and the `ingress.enabled` / `egress.enabled` Helm deployments on
-Kubernetes. Cross-zone traffic is now served by mesh-scoped zone proxies, which
-are regular `Dataplane` resources.
+The control plane no longer serves data plane proxies started as standalone zone
+proxies, i.e. `kuma-dp run --proxy-type=ingress|egress` on Universal and the
+`ingress.enabled` / `egress.enabled` Helm deployments on Kubernetes. Cross-zone
+traffic is now served by mesh-scoped zone proxies, which are regular `Dataplane`
+resources.
 
-Such a proxy still connects, registers its `ZoneIngress`/`ZoneEgress` resource,
-and reports an insight, but it receives no listeners, clusters, or endpoints.
-Envoy keeps whatever configuration it already had until it restarts, at which
-point it starts with an empty configuration and drops all cross-zone traffic.
-The control plane logs
-`xDS generation for legacy ZoneIngress/ZoneEgress dataplanes is no longer supported`
-once per connected legacy proxy.
+`dataplane` is the only accepted value of `--proxy-type` (and of the
+`KUMA_DATAPLANE_PROXY_TYPE` environment variable); `kuma-dp` exits with
+`.ProxyType "ingress" is not supported` on startup. The control plane no longer
+generates a bootstrap for those proxy types, no longer registers or deregisters
+their `ZoneIngress`/`ZoneEgress` resources, and no longer writes
+`ZoneIngressInsight`/`ZoneEgressInsight` from an xDS stream. A pre-upgrade zone
+proxy that reconnects has its xDS stream rejected with `unsupported proxy type
+"ingress"`. `kumactl generate dataplane-token --proxy-type ingress|egress` is
+rejected, and tokens previously issued with a `type: ingress|egress` claim can no
+longer be used.
 
 **Action required**
 
@@ -171,9 +209,9 @@ Migrate to mesh-scoped zone proxies **before** upgrading the zone control plane.
 On Kubernetes deploy them through `meshes[].ingress.enabled` /
 `meshes[].egress.enabled`. On Universal, replace
 `kuma-dp run --proxy-type=ingress|egress` with a regular `Dataplane` that
-declares `networking.listeners` of type `ZoneIngress`/`ZoneEgress`. Upgrading the
-control plane first blackholes cross-zone traffic as soon as the legacy zone
-proxy Pods restart.
+declares `networking.listeners` of type `ZoneIngress`/`ZoneEgress`, and reissue
+its token without `--proxy-type`. Upgrading the control plane first blackholes
+cross-zone traffic as soon as the legacy zone proxy Pods restart.
 
 ### Legacy `ingress`/`egress` Helm values and `kumactl install` flags removed
 
@@ -237,10 +275,7 @@ configured under `dpServer.authn.dpProxy` (`serviceAccountToken` on Kubernetes,
 `dpToken` on Universal), and zone tokens are no longer validated.
 
 `dpServer.authn.zoneProxy.type` and
-`dpServer.authn.zoneProxy.zoneToken.validator` no longer affect
-authentication. `dpServer.authn.zoneProxy.type` still controls whether the
-bootstrap server requires a token from the legacy `ingress`/`egress` proxy
-types.
+`dpServer.authn.zoneProxy.zoneToken.validator` no longer affect anything.
 
 **Action required**
 
