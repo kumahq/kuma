@@ -132,11 +132,15 @@ func (d *DataplaneBuilder) AddInboundOfTags(tags ...string) *DataplaneBuilder {
 	return d.AddInboundOfTagsMap(TagsKVToMap(tags))
 }
 
+// AddInboundOfTagsMap promotes a kuma.io/protocol tag to the inbound's Protocol field, which
+// is the only place production code reads the protocol from. Callers may keep passing it as a
+// tag; the tag itself stays put, since policies still match on it.
 func (d *DataplaneBuilder) AddInboundOfTagsMap(tags map[string]string) *DataplaneBuilder {
 	return d.AddInbound(
 		Inbound().
 			WithPort(FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound))).
 			WithServicePort(FirstInboundServicePort + uint32(len(d.res.Spec.Networking.Inbound))).
+			WithProtocol(tags[mesh_proto.ProtocolTag]).
 			WithTags(tags),
 	)
 }
@@ -283,6 +287,11 @@ func (b *InboundBuilder) WithServicePort(port uint32) *InboundBuilder {
 
 func (b *InboundBuilder) WithTags(tags map[string]string) *InboundBuilder {
 	maps.Copy(b.res.Tags, tags)
+	return b
+}
+
+func (b *InboundBuilder) WithProtocol(protocol string) *InboundBuilder {
+	b.res.Protocol = protocol
 	return b
 }
 

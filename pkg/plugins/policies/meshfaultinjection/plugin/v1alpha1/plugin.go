@@ -56,7 +56,7 @@ func applyToInbounds(
 ) error {
 	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
 		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
-		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
+		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
 
 		listenerKey := core_rules.InboundListener{
 			Address: iface.DataplaneIP,
