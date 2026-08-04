@@ -137,7 +137,7 @@ type Dataplane struct {
 	Mesh string `json:"mesh,omitempty" envconfig:"kuma_dataplane_mesh"`
 	// Dataplane name.
 	Name string `json:"name,omitempty" envconfig:"kuma_dataplane_name"`
-	// ProxyType defines mode which should be used, supported values: 'dataplane', 'ingress', 'egress'
+	// ProxyType defines mode which should be used, supported values: 'dataplane'
 	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
@@ -169,11 +169,6 @@ func (d *Dataplane) PostProcess() error {
 	}
 
 	return nil
-}
-
-func (d *Dataplane) IsZoneProxy() bool {
-	return d.ProxyType == string(mesh_proto.IngressProxyType) ||
-		d.ProxyType == string(mesh_proto.EgressProxyType)
 }
 
 func validateMeshOrName[V ~string](typ string, value V) error {
@@ -338,19 +333,11 @@ var _ config.Config = &Dataplane{}
 
 func (d *Dataplane) Validate() error {
 	var errs error
-	proxyType := mesh_proto.ProxyType(d.ProxyType)
-	switch proxyType {
-	case mesh_proto.DataplaneProxyType, mesh_proto.IngressProxyType, mesh_proto.EgressProxyType:
-	default:
-		if err := proxyType.IsValid(); err != nil {
-			errs = multierr.Append(errs, errors.Wrap(err, ".ProxyType is not valid"))
-		} else {
-			// Not all Dataplane types are allowed to be set directly in config.
-			errs = multierr.Append(errs, errors.Errorf(".ProxyType %q is not supported", proxyType))
-		}
+	if proxyType := mesh_proto.ProxyType(d.ProxyType); proxyType != mesh_proto.DataplaneProxyType {
+		errs = multierr.Append(errs, errors.Errorf(".ProxyType %q is not supported", proxyType))
 	}
 
-	if d.Mesh == "" && proxyType != mesh_proto.IngressProxyType && proxyType != mesh_proto.EgressProxyType {
+	if d.Mesh == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Mesh must be non-empty"))
 	}
 

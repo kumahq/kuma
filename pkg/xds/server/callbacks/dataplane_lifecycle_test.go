@@ -122,6 +122,60 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(core_store.IsNotFound(err)).To(BeTrue())
 	})
 
+	DescribeTable("should reject a legacy zone proxy instead of registering it", func(proxyType string, resource string) {
+		// given a proxy connecting with a legacy proxy type
+		req := envoy_sd.DeltaDiscoveryRequest{
+			Node: &envoy_core.Node{
+				Id: ".proxy-01",
+				Metadata: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"dataplane.proxyType": {
+							Kind: &structpb.Value_StringValue{StringValue: proxyType},
+						},
+						"dataplane.resource": {
+							Kind: &structpb.Value_StringValue{StringValue: resource},
+						},
+					},
+				},
+			},
+		}
+		const streamId = 123
+		ctx := metadata.NewIncomingContext(context.Background(), map[string][]string{
+			"authorization": {"token"},
+		})
+		Expect(callbacks.OnDeltaStreamOpen(ctx, streamId, "")).To(Succeed())
+
+		// when
+		err := callbacks.OnStreamDeltaRequest(streamId, &req)
+
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf(`unsupported proxy type %q`, proxyType)))
+	},
+		Entry("ingress", "ingress", `
+            {
+              "type": "ZoneIngress",
+              "name": "proxy-01",
+              "networking": {
+                "address": "127.0.0.1",
+                "port": 10001,
+                "advertisedAddress": "192.168.0.1",
+                "advertisedPort": 10001
+              }
+            }
+            `),
+		Entry("egress", "egress", `
+            {
+              "type": "ZoneEgress",
+              "name": "proxy-01",
+              "networking": {
+                "address": "127.0.0.1",
+                "port": 10002
+              }
+            }
+            `),
+	)
+
 	It("should not override extisting DP with different service", func() {
 		// given already created DP
 		dp := &core_mesh.DataplaneResource{
