@@ -27,6 +27,7 @@ import (
 
 var _ = Describe("Injector", func() {
 	systemNamespace := "kuma-system"
+	tproxyConfigMapName := "kuma-transparent-proxy-config"
 
 	caCertPath := filepath.Join(
 		"..", "..", "..", "..", "..", "..",
@@ -42,6 +43,20 @@ var _ = Describe("Injector", func() {
 
 	BeforeAll(func() {
 		err := k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: systemNamespace}})
+		Expect(err).ToNot(HaveOccurred())
+
+		// The transparent proxy ConfigMap is the single source of the base
+		// transparent proxy config. It mirrors the config shipped by the Helm
+		// chart in the kuma-system namespace.
+		err = k8sClient.Create(context.Background(), &kube_core.ConfigMap{
+			ObjectMeta: kube_meta.ObjectMeta{Name: tproxyConfigMapName, Namespace: systemNamespace},
+			Data: map[string]string{
+				"config.yaml": `
+kumaDPUser: "5678"
+ipFamilyMode: dualstack
+`,
+			},
+		})
 		Expect(err).ToNot(HaveOccurred())
 
 		cPatch := `
@@ -98,6 +113,7 @@ spec:
 				var cfg conf.Injector
 				Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 				cfg.CaCertFile = caCertPath
+				cfg.TransparentProxyConfigMapName = tproxyConfigMapName
 				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -847,6 +863,7 @@ spec:
 		var cfg conf.Injector
 		Expect(config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
 		cfg.CaCertFile = caCertPath
+		cfg.TransparentProxyConfigMapName = tproxyConfigMapName
 		injector, err := inject.New(
 			cfg,
 			"http://kuma-control-plane.kuma-system:5681",
@@ -909,6 +926,7 @@ metadata:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
+			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
 			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -1015,6 +1033,7 @@ metadata:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
+			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
 			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -1092,6 +1111,7 @@ metadata:
 			var cfg conf.Injector
 			ExpectWithOffset(1, config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
+			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
 
 			inj, err := inject.New(
 				cfg,

@@ -670,7 +670,7 @@ var _ = Describe("MeshAccessLog", func() {
 								HttpInboundRoute(
 									envoy_names.GetInboundRouteName("backend"),
 									"backend",
-									envoy_common.NewCluster(envoy_common.WithService("backend")),
+									xds.NewClusterBuilder().WithService("backend").Build(),
 								),
 							),
 					)).MustBuild(),
@@ -716,7 +716,7 @@ var _ = Describe("MeshAccessLog", func() {
 								HttpInboundRoute(
 									envoy_names.GetInboundRouteName("backend"),
 									"backend",
-									envoy_common.NewCluster(envoy_common.WithService("backend")),
+									xds.NewClusterBuilder().WithService("backend").Build(),
 								),
 							),
 					)).MustBuild(),
@@ -771,7 +771,7 @@ var _ = Describe("MeshAccessLog", func() {
 								HttpInboundRoute(
 									envoy_names.GetInboundRouteName("backend"),
 									"backend",
-									envoy_common.NewCluster(envoy_common.WithService("backend")),
+									xds.NewClusterBuilder().WithService("backend").Build(),
 								),
 							),
 					)).MustBuild(),
@@ -899,7 +899,7 @@ var _ = Describe("MeshAccessLog", func() {
 								HttpInboundRoute(
 									envoy_names.GetInboundRouteName("backend"),
 									"backend",
-									envoy_common.NewCluster(envoy_common.WithService("backend")),
+									xds.NewClusterBuilder().WithService("backend").Build(),
 								),
 							),
 					)).MustBuild(),
@@ -943,7 +943,7 @@ var _ = Describe("MeshAccessLog", func() {
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
 							Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
-							Configure(TcpProxyDeprecated("aws-aurora", envoy_common.NewCluster(envoy_common.WithService("aws-aurora")))),
+							Configure(TcpProxyDeprecated("aws-aurora", xds.NewClusterBuilder().WithService("aws-aurora").Build())),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
@@ -975,7 +975,7 @@ var _ = Describe("MeshAccessLog", func() {
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
 							Configure(MatchServerNames("inbound-backend{mesh=default}")).
-							Configure(TcpProxyDeprecated("backend", envoy_common.NewCluster(envoy_common.WithService("backend")))),
+							Configure(TcpProxyDeprecated("backend", xds.NewClusterBuilder().WithService("backend").Build())),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{

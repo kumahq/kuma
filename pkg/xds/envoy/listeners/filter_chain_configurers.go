@@ -114,18 +114,12 @@ func DownstreamTlsContext(downstreamTlsContext *envoy_tls.DownstreamTlsContext) 
 func TcpProxyDeprecated(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	var splits []envoy_common.Split
 	for _, cluster := range clusters {
-		sa := &splitAdapter{
+		splits = append(splits, &splitAdapter{
 			clusterName:        cluster.Name(),
 			lbMetadata:         cluster.Tags(),
 			hasExternalService: cluster.IsExternalService(),
 			weight:             1,
-		}
-
-		if c, ok := cluster.(*envoy_common.ClusterImpl); ok {
-			sa.weight = c.Weight()
-		}
-
-		splits = append(splits, sa)
+		})
 	}
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
 		StatsName:   statsName,
@@ -137,18 +131,12 @@ func TcpProxyDeprecated(statsName string, clusters ...envoy_common.Cluster) Filt
 func TcpProxyDeprecatedWithMetadata(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	var splits []envoy_common.Split
 	for _, cluster := range clusters {
-		sa := &splitAdapter{
+		splits = append(splits, &splitAdapter{
 			clusterName:        cluster.Name(),
 			lbMetadata:         cluster.Tags(),
 			hasExternalService: cluster.IsExternalService(),
 			weight:             1,
-		}
-
-		if c, ok := cluster.(*envoy_common.ClusterImpl); ok {
-			sa.weight = c.Weight()
-		}
-
-		splits = append(splits, sa)
+		})
 	}
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
 		StatsName:   statsName,

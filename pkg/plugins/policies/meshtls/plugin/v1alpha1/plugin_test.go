@@ -24,6 +24,7 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -289,7 +290,7 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 						listeners.HttpInboundRoute(
 							envoy_names.GetInboundRouteName("backend"),
 							"backend",
-							envoy_common.NewCluster(envoy_common.WithService("backend")),
+							plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 						),
 					),
 				)).MustBuild(),
@@ -299,7 +300,7 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 			Origin: metadata.OriginInbound,
 			Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
+					Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", plugins_xds.NewClusterBuilder().WithName("frontend").Build())),
 				)).MustBuild(),
 		},
 		{

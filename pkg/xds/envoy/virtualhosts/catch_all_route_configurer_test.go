@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_virtual_hosts "github.com/kumahq/kuma/v3/pkg/xds/envoy/virtualhosts"
 )
 
@@ -15,7 +15,7 @@ var _ = Describe("CatchAllRouteConfigurer", func() {
 		// when
 		virtualHost := &envoy_config_route_v3.VirtualHost{}
 		err := envoy_virtual_hosts.CatchAllRouteConfigurer{
-			Cluster: envoy_common.NewCluster(envoy_common.WithName("backend")),
+			Cluster: plugins_xds.NewClusterBuilder().WithName("backend").Build(),
 		}.Configure(virtualHost)
 		// then
 		Expect(err).ToNot(HaveOccurred())

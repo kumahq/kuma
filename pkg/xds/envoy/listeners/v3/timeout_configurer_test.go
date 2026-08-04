@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/defaults/mesh"
 	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
@@ -40,7 +41,7 @@ var _ = Describe("TimeoutConfigurer", func() {
 			// given
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(TcpProxyDeprecated("localhost:8080", envoy_common.NewCluster(envoy_common.WithName("backend")))).
+					Configure(TcpProxyDeprecated("localhost:8080", plugins_xds.NewClusterBuilder().WithName("backend").Build())).
 					Configure(Timeout(given.timeout, core_meta.ProtocolTCP)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -249,7 +250,7 @@ trafficDirection: OUTBOUND`,
 		// given
 		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP, true).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-				Configure(TcpProxyDeprecated("localhost:8080", envoy_common.NewCluster(envoy_common.WithName("backend")))).
+				Configure(TcpProxyDeprecated("localhost:8080", plugins_xds.NewClusterBuilder().WithName("backend").Build())).
 				Configure(Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolTCP)))).
 			Build()
 		Expect(err).ToNot(HaveOccurred())

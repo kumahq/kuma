@@ -8,6 +8,16 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `advertisedAddress` removed from `Dataplane` networking
+
+The `networking.advertisedAddress` field has been removed from the `Dataplane` resource. Proxies behind NAT or a private network (e.g. Docker) that relied on it to advertise a routable address to other proxies must now be reachable directly via `networking.address`.
+
+**Action required**
+
+Ensure every Universal `Dataplane` is reachable by other proxies on `networking.address` before upgrading.
+
+**Warning**: `networking.advertisedAddress` is silently dropped on deserialization — protos are unmarshalled with `AllowUnknownFields`, so the field is simply ignored rather than rejected. Dataplanes still submitting it will fall back to `networking.address` for xDS endpoints, Envoy admin mTLS SANs, and `kumactl get dataplanes` output, which may break connectivity for proxies that are not reachable on `networking.address`.
+
 ### Real-resource policy selection now uses `labels` only
 
 Policies that select real resources through `spec.targetRef` or `spec.to[].targetRef` now resolve those targets by `labels` only. This applies to `Dataplane`, `MeshService`, `MeshExternalService`, `MeshMultiZoneService`, and `MeshHTTPRoute`.
@@ -15,6 +25,31 @@ Policies that select real resources through `spec.targetRef` or `spec.to[].targe
 **Action required**
 
 Migrate any policy that still selects those resources by `name` and/or `namespace` to use `labels` instead before upgrading. `sectionName` remains supported for `Dataplane` inbound selection and `MeshService` port selection.
+
+### Transparent proxy configured only through the ConfigMap
+
+The legacy annotation-based transparent proxy injection path has been removed.
+The sidecar injector now always builds the transparent proxy configuration from
+the ConfigMap in the `kuma-system` namespace (merged with pod annotations) and
+delivers it through the `traffic.kuma.io/transparent-proxy-config` annotation and
+mounted files. This was previously an opt-in feature gated by
+`transparentProxy.configMap.enabled`.
+
+**Action required**
+
+No action is required for Helm or `kumactl` installs — the control plane always
+creates the base ConfigMap and points the injector at it. The
+`transparentProxy.configMap.enabled` Helm value has been removed; remove it from
+any custom values files (leaving it set is harmless but has no effect).
+
+The per-pod `kuma.io/transparent-proxying-*` annotations are no longer produced
+by injection. Pods are reconfigured automatically on their next restart after the
+upgrade.
+
+**Warning**: this format is not understood by data plane proxies older than the
+control plane. To downgrade, first roll back the control plane and then restart
+all workloads so their init and sidecar containers fall back to the previous
+configuration.
 
 ### `from` removed from `MeshTLS`
 
@@ -1158,6 +1193,38 @@ endpoint it used to call is still registered — the vendored GUI bundle
 (`app/kuma-ui`) still calls it directly and is re-vendored on its own
 release cadence — but it is deprecated; new integrations should call
 `_policies` instead.
+
+### Cross-zone `MeshService` routing requires `MeshZoneAddress`
+
+The publicly reachable address of a remote zone proxy is now taken solely from
+the `MeshZoneAddress` resource. The control plane no longer falls back to the
+`advertisedAddress`/`advertisedPort` of a `ZoneIngress` when building endpoints
+for `MeshService` and `MeshMultiZoneService` destinations in other zones.
+
+On Kubernetes, the control plane creates `MeshZoneAddress` automatically for every mesh-scoped zone proxy `Service` (`meshes[].ingress.enabled=true`), which carries the `k8s.kuma.io/zone-proxy-type: ingress` label. On Universal it is authored by the user.
+
+`MeshZoneAddress` is mesh-scoped: every mesh whose services are consumed from another zone needs its own resource in the zone that serves them.
+
+**Action required**
+
+`MeshZoneAddress` does not exist before 3.0.0, so it cannot be created ahead of the upgrade. Create it immediately after upgrading the zone control plane — cross-zone `MeshService` and `MeshMultiZoneService` traffic to that zone is down until the resource exists and has propagated over KDS.
+
+On Universal, author one `MeshZoneAddress` per mesh on the zone control plane, pointing at the public address and port of that zone's ingress listener:
+
+```yaml
+type: MeshZoneAddress
+name: zone-proxy-ingress
+mesh: default
+labels:
+  kuma.io/origin: zone
+spec:
+  address: 10.0.0.1
+  port: 10001
+```
+
+`kuma.io/origin: zone` is required on a zone control plane federated to a global control plane. `kuma.io/zone` is stamped by the control plane; if you set it explicitly it must match the local zone name. `spec.address` accepts an IP or a DNS name; a DNS name is resolved by the control plane.
+
+Zones without a `MeshZoneAddress` are not reachable cross-zone: their `MeshService` destinations get no endpoints in other zones. The control plane logs `no MeshZoneAddress found for zone` when this happens.
 
 ## Upgrade to `2.13.7`
 

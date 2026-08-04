@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/plugin/v1alpha1"
@@ -193,10 +194,7 @@ var _ = Describe("MeshTimeout", func() {
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TcpProxyDeprecated(
 								secondServiceIdentifier.String(),
-								envoy_common.NewCluster(
-									envoy_common.WithService("backend"),
-									envoy_common.WithWeight(100),
-								),
+								plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 							)),
 						)).
 						MustBuild(),
@@ -1025,7 +1023,7 @@ func httpInboundListenerWith() envoy_common.NamedResource {
 		HttpInboundRoute(
 			envoy_names.GetInboundRouteName("backend"),
 			"backend",
-			envoy_common.NewCluster(envoy_common.WithService("backend")),
+			plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 		))
 }
 
@@ -1063,10 +1061,7 @@ func zoneEgressListenerResource() core_xds.Resource {
 				Configure(MatchServerNames("sni.extsvc.default.zone-1.redis.6379")).
 				Configure(TcpProxyDeprecated(
 					"mes-tcp",
-					envoy_common.NewCluster(
-						envoy_common.WithService("mes-tcp"),
-						envoy_common.WithWeight(100),
-					),
+					plugins_xds.NewClusterBuilder().WithService("mes-tcp").Build(),
 				)),
 			)).MustBuild(),
 	}
