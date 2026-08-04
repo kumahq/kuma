@@ -6320,15 +6320,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -6571,15 +6562,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Not
-                          applicable to the
-
-                          kinds supported by this field.
-                        type: object
                     required:
                       - kind
                     type: object
@@ -7208,15 +7190,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -7731,15 +7704,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Not
-                          applicable to the
-
-                          kinds supported by this field.
-                        type: object
                     required:
                       - kind
                     type: object
@@ -7994,15 +7958,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -8150,15 +8105,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Not
-                          applicable to the
-
-                          kinds supported by this field.
-                        type: object
                     required:
                       - kind
                     type: object
@@ -8266,15 +8212,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -8830,15 +8767,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Not
-                          applicable to the
-
-                          kinds supported by this field.
-                        type: object
                     required:
                       - kind
                     type: object
@@ -8937,15 +8865,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -9268,15 +9187,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Not
-                          applicable to the
-
-                          kinds supported by this field.
-                        type: object
                     required:
                       - kind
                     type: object
@@ -9377,15 +9287,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -9851,15 +9752,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Not
-                          applicable to the
-
-                          kinds supported by this field.
-                        type: object
                     required:
                       - kind
                     type: object
@@ -10174,15 +10066,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -10390,15 +10273,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -11063,15 +10937,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -11360,15 +11225,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -11553,15 +11409,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Not
-                          applicable to the
-
-                          kinds supported by this field.
-                        type: object
                     required:
                       - kind
                     type: object
@@ -11659,15 +11506,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -12146,15 +11984,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Not
-                          applicable to the
-
-                          kinds supported by this field.
-                        type: object
                     required:
                       - kind
                     type: object
@@ -12261,15 +12090,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -12399,15 +12219,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Not
-                          applicable to the
-
-                          kinds supported by this field.
-                        type: object
                     required:
                       - kind
                     type: object
@@ -12572,15 +12383,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -12818,15 +12620,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -12957,15 +12750,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Not
-                          applicable to the
-
-                          kinds supported by this field.
-                        type: object
                     required:
                       - kind
                     type: object
@@ -13301,15 +13085,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
@@ -13633,15 +13408,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Not
-                    applicable to the
-
-                    kinds supported by this field (`Mesh`, `Dataplane`).
-                  type: object
               required:
                 - kind
               type: object
