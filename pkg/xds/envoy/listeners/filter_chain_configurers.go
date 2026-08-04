@@ -8,7 +8,6 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
 	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -168,29 +167,15 @@ func HttpDynamicRoute(name string) FilterChainBuilderOpt {
 	})
 }
 
-func HttpInboundRoutes(routeConfigName string, virtualHostName string, routes envoy_common.Routes) FilterChainBuilderOpt {
+func HttpInboundRoute(routeConfigName string, virtualHostName string, cluster envoy_common.Cluster) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.HttpInboundRouteConfigurer{
 		RouteConfigName: routeConfigName,
 		VirtualHostName: virtualHostName,
-		Routes:          routes,
+		Cluster:         cluster,
 	})
 }
 
-func HttpOutboundRoute(
-	routeConfigName string,
-	virtualHostName string,
-	routes envoy_common.Routes,
-	dpTags mesh_proto.MultiValueTagSet,
-) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{
-		RouteConfigName: routeConfigName,
-		VirtualHostName: virtualHostName,
-		Routes:          routes,
-		DpTags:          dpTags,
-	})
-}
-
-func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_meta.Protocol) FilterChainBuilderOpt {
+func Timeout(timeout envoy_common.Timeouts, protocol core_meta.Protocol) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.TimeoutConfigurer{
 		Conf:     timeout,
 		Protocol: protocol,
