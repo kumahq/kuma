@@ -175,7 +175,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 		proxy.WorkloadIdentity = d.workloadIdentity
 	}
 	networking := proxy.Dataplane.Spec.Networking
-	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.Address, networking.AdvertisedAddress)
+	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.Address)
 	if err != nil {
 		return SyncResult{}, errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}
@@ -236,7 +236,7 @@ func hashMeshIdentity(identity *meshidentity_api.MeshIdentityResource) []byte {
 	return hasher.Sum(nil)
 }
 
-func (d *DataplaneWatchdog) getEnvoyAdminMTLS(ctx context.Context, address string, advertisedAddress string) (core_xds.ServerSideMTLSCerts, error) {
+func (d *DataplaneWatchdog) getEnvoyAdminMTLS(ctx context.Context, address string) (core_xds.ServerSideMTLSCerts, error) {
 	if d.envoyAdminMTLS == nil || d.dpAddress != address {
 		ca, err := envoy_admin_tls.LoadCA(ctx, d.ResManager)
 		if err != nil {
@@ -246,11 +246,7 @@ func (d *DataplaneWatchdog) getEnvoyAdminMTLS(ctx context.Context, address strin
 		if err != nil {
 			return core_xds.ServerSideMTLSCerts{}, err
 		}
-		ips := []string{address}
-		if advertisedAddress != "" && advertisedAddress != address {
-			ips = append(ips, advertisedAddress)
-		}
-		serverPair, err := envoy_admin_tls.GenerateServerCert(ca, ips...)
+		serverPair, err := envoy_admin_tls.GenerateServerCert(ca, address)
 		if err != nil {
 			return core_xds.ServerSideMTLSCerts{}, errors.Wrap(err, "could not generate server certificate")
 		}

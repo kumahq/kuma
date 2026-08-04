@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_virtual_hosts "github.com/kumahq/kuma/v3/pkg/xds/envoy/virtualhosts"
@@ -38,7 +39,7 @@ var _ = Describe("RoutesConfigurer", func() {
 		Entry("routes without timeouts", testCase{
 			configureRouteTimeout: true,
 			routes: []envoy_common.Route{
-				envoy_common.NewRouteFromCluster(envoy_common.NewCluster(envoy_common.WithName("backend"))),
+				envoy_common.NewRouteFromCluster(plugins_xds.NewClusterBuilder().WithName("backend").Build()),
 			},
 			expected: `
 routes:
@@ -51,7 +52,7 @@ routes:
 		Entry("routes without configured request timeout", testCase{
 			configureRouteTimeout: false,
 			routes: []envoy_common.Route{
-				envoy_common.NewRouteFromCluster(envoy_common.NewCluster(envoy_common.WithName("backend"))),
+				envoy_common.NewRouteFromCluster(plugins_xds.NewClusterBuilder().WithName("backend").Build()),
 			},
 			expected: `
 routes:
@@ -60,18 +61,12 @@ routes:
     route:
       cluster: backend`,
 		}),
-		Entry("weighted routes with timeouts", testCase{
+		Entry("routes with multiple clusters and timeouts", testCase{
 			configureRouteTimeout: true,
 			routes: []envoy_common.Route{
 				envoy_common.NewRoute(
-					envoy_common.WithCluster(envoy_common.NewCluster(
-						envoy_common.WithName("backend-1"),
-						envoy_common.WithWeight(20),
-					)),
-					envoy_common.WithCluster(envoy_common.NewCluster(
-						envoy_common.WithName("backend-2"),
-						envoy_common.WithWeight(80),
-					)),
+					envoy_common.WithCluster(plugins_xds.NewClusterBuilder().WithName("backend-1").Build()),
+					envoy_common.WithCluster(plugins_xds.NewClusterBuilder().WithName("backend-2").Build()),
 				),
 			},
 			expected: `
@@ -83,22 +78,16 @@ routes:
       weightedClusters:
         clusters:
           - name: backend-1
-            weight: 20
+            weight: 1
           - name: backend-2
-            weight: 80`,
+            weight: 1`,
 		}),
-		Entry("weighted routes without configured request timeout", testCase{
+		Entry("routes with multiple clusters without configured request timeout", testCase{
 			configureRouteTimeout: false,
 			routes: []envoy_common.Route{
 				envoy_common.NewRoute(
-					envoy_common.WithCluster(envoy_common.NewCluster(
-						envoy_common.WithName("backend-1"),
-						envoy_common.WithWeight(20),
-					)),
-					envoy_common.WithCluster(envoy_common.NewCluster(
-						envoy_common.WithName("backend-2"),
-						envoy_common.WithWeight(80),
-					)),
+					envoy_common.WithCluster(plugins_xds.NewClusterBuilder().WithName("backend-1").Build()),
+					envoy_common.WithCluster(plugins_xds.NewClusterBuilder().WithName("backend-2").Build()),
 				),
 			},
 			expected: `
@@ -109,9 +98,9 @@ routes:
       weightedClusters:
         clusters:
           - name: backend-1
-            weight: 20
+            weight: 1
           - name: backend-2
-            weight: 80`,
+            weight: 1`,
 		}),
 		Entry("routes without any clusters", testCase{
 			configureRouteTimeout: true,

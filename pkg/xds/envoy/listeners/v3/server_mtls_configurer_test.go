@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -46,10 +47,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-				envoy_common.WithService("localhost:8080"),
-				envoy_common.WithWeight(200),
-			)},
+			clusters:        []envoy_common.Cluster{plugins_xds.NewClusterBuilder().WithService("localhost:8080").Build()},
 			mesh: &core_mesh.MeshResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "default",
@@ -108,10 +106,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-				envoy_common.WithService("localhost:8080"),
-				envoy_common.WithWeight(200),
-			)},
+			clusters:        []envoy_common.Cluster{plugins_xds.NewClusterBuilder().WithService("localhost:8080").Build()},
 			mesh: &core_mesh.MeshResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "default",

@@ -176,16 +176,10 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *m
 	default:
 		var weightedClusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight
 		for _, cluster := range clusters {
-			cw := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
+			weightedClusters = append(weightedClusters, &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 				Name:   cluster.Name(),
 				Weight: util_proto.UInt32(1),
-			}
-
-			if c, ok := cluster.(*envoy_common.ClusterImpl); ok {
-				cw.Weight = util_proto.UInt32(c.Weight())
-			}
-
-			weightedClusters = append(weightedClusters, cw)
+			})
 		}
 		routeAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_WeightedClusters{
 			WeightedClusters: &envoy_config_route_v3.WeightedCluster{
