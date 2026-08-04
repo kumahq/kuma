@@ -19,7 +19,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 		listenerPort     uint32
 		statsName        string
 		service          string
-		routes           envoy_common.Routes
+		cluster          envoy_common.Cluster
 		expected         string
 	}
 
@@ -29,7 +29,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager(given.statsName, true, nil, true)).
-					Configure(HttpInboundRoutes(envoy_names.GetInboundRouteName(given.service), given.service, given.routes)))).
+					Configure(HttpInboundRoute(envoy_names.GetInboundRouteName(given.service), given.service, given.cluster)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -45,7 +45,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
 			service:         "backend",
-			routes:          envoy_common.Routes{envoy_common.NewRouteFromCluster(plugins_xds.NewClusterBuilder().WithService("localhost:8080").Build())},
+			cluster:         plugins_xds.NewClusterBuilder().WithService("localhost:8080").Build(),
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND

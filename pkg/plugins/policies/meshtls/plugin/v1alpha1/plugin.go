@@ -388,7 +388,6 @@ func configureListener(
 			clusterName,
 			xdsCtx,
 			iface,
-			&routes,
 			conf.TlsVersion,
 			ciphers,
 		)

@@ -1020,12 +1020,10 @@ func httpListenerWithSeveralMeshHTTPRoutes(service string, meshHTTPRoute kri.Ide
 func httpInboundListenerWith() envoy_common.NamedResource {
 	return createListener(
 		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP, true),
-		HttpInboundRoutes(
+		HttpInboundRoute(
 			envoy_names.GetInboundRouteName("backend"),
 			"backend",
-			envoy_common.Routes{{
-				Clusters: []envoy_common.Cluster{plugins_xds.NewClusterBuilder().WithService("backend").Build()},
-			}},
+			plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 		))
 }
 

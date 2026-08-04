@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/defaults/mesh"
@@ -17,48 +16,22 @@ import (
 )
 
 var _ = Describe("TimeoutConfigurer", func() {
-	userTimeout := &mesh_proto.Timeout_Conf{
-		ConnectTimeout: util_proto.Duration(100 * time.Second),
-		Tcp: &mesh_proto.Timeout_Conf_Tcp{
-			IdleTimeout: util_proto.Duration(101 * time.Second),
-		},
-		Http: &mesh_proto.Timeout_Conf_Http{
-			RequestTimeout:    util_proto.Duration(102 * time.Second),
-			IdleTimeout:       util_proto.Duration(103 * time.Second),
-			StreamIdleTimeout: util_proto.Duration(104 * time.Second),
-			MaxStreamDuration: util_proto.Duration(105 * time.Second),
-		},
+	userTimeout := envoy.Timeouts{
+		Connect:        100 * time.Second,
+		TcpIdle:        101 * time.Second,
+		HttpIdle:       103 * time.Second,
+		HttpStreamIdle: 104 * time.Second,
 	}
 
-	userTimeoutOldFormat := &mesh_proto.Timeout_Conf{
-		ConnectTimeout: util_proto.Duration(100 * time.Second),
-		Tcp: &mesh_proto.Timeout_Conf_Tcp{
-			IdleTimeout: util_proto.Duration(101 * time.Second),
-		},
-		Http: &mesh_proto.Timeout_Conf_Http{
-			RequestTimeout: util_proto.Duration(102 * time.Second),
-			IdleTimeout:    util_proto.Duration(103 * time.Second),
-		},
-		Grpc: &mesh_proto.Timeout_Conf_Grpc{
-			StreamIdleTimeout: util_proto.Duration(104 * time.Second),
-			MaxStreamDuration: util_proto.Duration(105 * time.Second),
-		},
-	}
-
-	timeoutConf := &mesh_proto.Timeout_Conf{
-		ConnectTimeout: util_proto.Duration(policies_defaults.DefaultConnectTimeout),
-		Tcp: &mesh_proto.Timeout_Conf_Tcp{
-			IdleTimeout: util_proto.Duration(policies_defaults.DefaultIdleTimeout),
-		},
-		Http: &mesh_proto.Timeout_Conf_Http{
-			IdleTimeout:       util_proto.Duration(policies_defaults.DefaultIdleTimeout),
-			RequestTimeout:    util_proto.Duration(policies_defaults.DefaultRequestTimeout),
-			StreamIdleTimeout: util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout),
-		},
+	timeoutConf := envoy.Timeouts{
+		Connect:        policies_defaults.DefaultConnectTimeout,
+		TcpIdle:        policies_defaults.DefaultIdleTimeout,
+		HttpIdle:       policies_defaults.DefaultIdleTimeout,
+		HttpStreamIdle: policies_defaults.DefaultStreamIdleTimeout,
 	}
 
 	type testCase struct {
-		timeout  *mesh_proto.Timeout_Conf
+		timeout  envoy.Timeouts
 		expected string
 	}
 
@@ -92,8 +65,7 @@ typedExtensionProtocolOptions:
   envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
     commonHttpProtocolOptions:
-      idleTimeout: 103s
-      maxStreamDuration: 105s`,
+      idleTimeout: 103s`,
 		}),
 		Entry("default timeout", testCase{
 			timeout: timeoutConf,
@@ -110,22 +82,6 @@ typedExtensionProtocolOptions:
     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
     commonHttpProtocolOptions:
       idleTimeout: 3600s`,
-		}),
-		Entry("user's timeout old format (with grpc)", testCase{
-			timeout: userTimeoutOldFormat,
-			expected: `
-connectTimeout: 100s
-edsClusterConfig:
-  edsConfig:
-    ads: {}
-    resourceApiVersion: V3
-name: backend
-type: EDS
-typedExtensionProtocolOptions:
-  envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-    commonHttpProtocolOptions:
-      idleTimeout: 103s`,
 		}),
 	)
 
@@ -159,8 +115,7 @@ typedExtensionProtocolOptions:
   envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
     commonHttpProtocolOptions:
-      idleTimeout: 103s
-      maxStreamDuration: 105s`,
+      idleTimeout: 103s`,
 		}),
 		Entry("default timeout", testCase{
 			timeout: timeoutConf,
@@ -177,23 +132,6 @@ typedExtensionProtocolOptions:
     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
     commonHttpProtocolOptions:
       idleTimeout: 3600s`,
-		}),
-		Entry("user's timeout old format (with grpc)", testCase{
-			timeout: userTimeoutOldFormat,
-			expected: `
-connectTimeout: 100s
-edsClusterConfig:
-  edsConfig:
-    ads: {}
-    resourceApiVersion: V3
-name: backend
-type: EDS
-typedExtensionProtocolOptions:
-  envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-    commonHttpProtocolOptions:
-      idleTimeout: 103s
-      maxStreamDuration: 105s`,
 		}),
 	)
 

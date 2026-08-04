@@ -11,7 +11,7 @@ import (
 type HttpInboundRouteConfigurer struct {
 	RouteConfigName string
 	VirtualHostName string
-	Routes          envoy_common.Routes
+	Cluster         envoy_common.Cluster
 }
 
 var _ FilterChainConfigurer = &HttpInboundRouteConfigurer{}
@@ -22,7 +22,7 @@ func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.Filte
 			Configure(envoy_routes.CommonRouteConfiguration()).
 			Configure(envoy_routes.ResetTagsHeader()).
 			Configure(envoy_routes.VirtualHost(envoy_virtual_hosts.NewVirtualHostBuilder(envoy_common.APIV3, c.VirtualHostName).
-				Configure(envoy_virtual_hosts.Routes(c.Routes)))),
+				Configure(envoy_virtual_hosts.CatchAllRoute(c.Cluster)))),
 	}
 
 	return static.Configure(filterChain)

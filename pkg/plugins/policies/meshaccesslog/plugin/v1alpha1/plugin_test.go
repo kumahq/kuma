@@ -665,14 +665,10 @@ var _ = Describe("MeshAccessLog", func() {
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
-								HttpInboundRoutes(
+								HttpInboundRoute(
 									envoy_names.GetInboundRouteName("backend"),
 									"backend",
-									envoy_common.Routes{
-										{
-											Clusters: []envoy_common.Cluster{xds.NewClusterBuilder().WithService("backend").Build()},
-										},
-									},
+									xds.NewClusterBuilder().WithService("backend").Build(),
 								),
 							),
 					)).MustBuild(),
@@ -715,14 +711,10 @@ var _ = Describe("MeshAccessLog", func() {
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
-								HttpInboundRoutes(
+								HttpInboundRoute(
 									envoy_names.GetInboundRouteName("backend"),
 									"backend",
-									envoy_common.Routes{
-										{
-											Clusters: []envoy_common.Cluster{xds.NewClusterBuilder().WithService("backend").Build()},
-										},
-									},
+									xds.NewClusterBuilder().WithService("backend").Build(),
 								),
 							),
 					)).MustBuild(),
@@ -772,14 +764,10 @@ var _ = Describe("MeshAccessLog", func() {
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
-								HttpInboundRoutes(
+								HttpInboundRoute(
 									envoy_names.GetInboundRouteName("backend"),
 									"backend",
-									envoy_common.Routes{
-										{
-											Clusters: []envoy_common.Cluster{xds.NewClusterBuilder().WithService("backend").Build()},
-										},
-									},
+									xds.NewClusterBuilder().WithService("backend").Build(),
 								),
 							),
 					)).MustBuild(),
@@ -904,14 +892,10 @@ var _ = Describe("MeshAccessLog", func() {
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
-								HttpInboundRoutes(
+								HttpInboundRoute(
 									envoy_names.GetInboundRouteName("backend"),
 									"backend",
-									envoy_common.Routes{
-										{
-											Clusters: []envoy_common.Cluster{xds.NewClusterBuilder().WithService("backend").Build()},
-										},
-									},
+									xds.NewClusterBuilder().WithService("backend").Build(),
 								),
 							),
 					)).MustBuild(),
