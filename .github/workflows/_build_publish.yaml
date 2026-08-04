@@ -102,27 +102,17 @@ jobs:
             ./build/distributions/out/*.sha256
             !./build/distributions/out/*.tar.gz.sha256
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
-      # cloudsmith-cli-action v3 dropped the oidc-token output (the CLI now
-      # exchanges OIDC lazily instead), so exchange the GitHub OIDC token for
-      # a Cloudsmith one directly against the same endpoint the CLI uses.
-      - name: Get Cloudsmith OIDC token
-        id: cloudsmith_token
-        env:
-          CLOUDSMITH_SERVICE_SLUG: ${{ contains(inputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
-        run: |
-          id_token=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://github.com/${GITHUB_REPOSITORY_OWNER}" | jq -r '.value')
-          token=$(curl -sSf -X POST "https://api.cloudsmith.io/openid/kong/" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n --arg oidc_token "$id_token" --arg service_slug "$CLOUDSMITH_SERVICE_SLUG" '{oidc_token:$oidc_token, service_slug:$service_slug}')" \
-            | jq -r '.token')
-          echo "::add-mask::$token"
-          echo "oidc-token=$token" >> "$GITHUB_OUTPUT"
+      # The cloudsmith CLI bundled in the pulp release image authenticates
+      # lazily via OIDC when it sees CLOUDSMITH_ORG/CLOUDSMITH_SERVICE_SLUG
+      # and the GitHub Actions ID-token env vars, so there is no token to
+      # mint here; mk/distribution.mk forwards them into the container.
       - name: publish binaries
         env:
           PULP_USERNAME: ${{ vars.PULP_USERNAME }}
           PULP_PASSWORD: ${{ secrets.PULP_PASSWORD }}
-          CLOUDSMITH_API_KEY: ${{ steps.cloudsmith_token.outputs.oidc-token }}
+          CLOUDSMITH_ORG: kong
+          CLOUDSMITH_SERVICE_SLUG: ${{ contains(inputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
+          CLOUDSMITH_OIDC_AUDIENCE: https://github.com/${{ github.repository_owner }}
         run: |
           make publish/pulp
   build-images:
