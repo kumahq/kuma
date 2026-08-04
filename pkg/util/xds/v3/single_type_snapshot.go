@@ -125,18 +125,25 @@ func (s *SingleTypeSnapshot) ConstructVersionMap() error {
 }
 
 // SingleTypeSnapshotEqual checks value equality of 2 snapshots that contain a single type.
-// This will panic if there is more than 1 type in the snapshot, it assumes the snapshots are equivalent
+// Snapshots that aren't a *SingleTypeSnapshot are always reported as different, so the
+// caller replaces them with the new one.
 func SingleTypeSnapshotEqual(newSnap, oldSnap envoy_cache.ResourceSnapshot) bool {
-	var typeURL string
-	if stsnap, ok := newSnap.(*SingleTypeSnapshot); ok {
-		typeURL = stsnap.TypeUrl
+	snap, ok := newSnap.(*SingleTypeSnapshot)
+	if !ok {
+		return false
 	}
-	if typeURL == "" {
-		panic("couldn't extract type from snapshot is this not a SingleTypeSnapshot?")
+	return snap.Equal(oldSnap)
+}
+
+// Equal checks value equality against another snapshot, comparing the resources
+// of this snapshot's single type.
+func (s *SingleTypeSnapshot) Equal(other envoy_cache.ResourceSnapshot) bool {
+	if other == nil {
+		return false
 	}
 	// For now there's a single resourceType so the diff is easy
-	newResources := newSnap.GetResources(typeURL)
-	oldResources := oldSnap.GetResources(typeURL)
+	newResources := s.GetResources(s.TypeUrl)
+	oldResources := other.GetResources(s.TypeUrl)
 	if len(newResources) != len(oldResources) {
 		return false
 	}
