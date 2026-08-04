@@ -10,12 +10,23 @@ import (
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func MeshServicesWithReachableBackendsOption() {
 	meshName := "mesh-service-reachable-backends"
 	namespace := "mesh-service-reachable-backends"
+	identityName := "mesh-service-reachable-backends-identity"
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
+
 	reachableBackends := `
       refs:
       - kind: MeshService
@@ -29,13 +40,6 @@ func MeshServicesWithReachableBackendsOption() {
 	mesh := fmt.Sprintf(`
 type: Mesh
 name: "%s"
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-routing:
-  zoneEgress: true
 `, meshName)
 
 	disableDefaultPassthrough := fmt.Sprintf(`
@@ -49,12 +53,16 @@ spec:
     passthroughMode: None
 `, meshName)
 
+	var zones []Cluster
+
 	BeforeAll(func() {
+		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2}
 		// Global
 		err := NewClusterSetup().
 			Install(YamlUniversal(mesh)).
 			Install(YamlUniversal(disableDefaultPassthrough)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -80,6 +88,7 @@ spec:
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
 				),
+				zoneIngress(),
 			)).
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -101,14 +110,19 @@ spec:
 
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName("other-zone-test-server"),
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(meshName),
-				testserver.WithEchoArgs("echo", "--instance", "other-zone-test-server"),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("other-zone-test-server"),
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(meshName),
+					testserver.WithEchoArgs("echo", "--instance", "other-zone-test-server"),
+				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

@@ -16,21 +16,18 @@ var CustomTablePrinters = map[model.ResourceType]RowPrinter{
 		Headers: []string{"MESH", "NAME", "TAGS", "ADDRESS", "AGE"},
 		RowFn: func(rootTime time.Time, item model.Resource) []string {
 			dataplane := item.(*mesh.DataplaneResource)
-			address := dataplane.Spec.GetNetworking().GetAdvertisedAddress()
-			if address == "" {
-				address = dataplane.Spec.GetNetworking().GetAddress()
-			}
+			address := dataplane.Spec.GetNetworking().GetAddress()
 			return []string{
 				dataplane.Meta.GetMesh(),         // MESH
 				dataplane.Meta.GetName(),         // NAME,
-				dataplane.Spec.TagSet().String(), // TAGS
+				dataplane.DisplayTags().String(), // TAGS
 				address,                          // ADDRESS
 				table.TimeSince(dataplane.Meta.GetModificationTime(), rootTime), // AGE
 			}
 		},
 	},
 	model.ScopeMesh: {
-		Headers: []string{"NAME", "mTLS", "ZONEEGRESS", "AGE"},
+		Headers: []string{"NAME", "mTLS", "AGE"},
 		RowFn: func(rootTime time.Time, item model.Resource) []string {
 			mesh := item.(*mesh.MeshResource)
 
@@ -39,15 +36,9 @@ var CustomTablePrinters = map[model.ResourceType]RowPrinter{
 				backend := mesh.GetEnabledCertificateAuthorityBackend()
 				mtls = fmt.Sprintf("%s/%s", backend.Type, backend.Name)
 			}
-
-			zoneEgress := "off"
-			if mesh.Spec.GetRouting().GetZoneEgress() {
-				zoneEgress = "on"
-			}
 			return []string{
 				mesh.GetMeta().GetName(), // NAME
 				mtls,                     // mTLS
-				zoneEgress,               // ZONEEGRESS
 				table.TimeSince(mesh.GetMeta().GetModificationTime(), rootTime), // AGE
 			}
 		},

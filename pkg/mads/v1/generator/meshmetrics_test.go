@@ -10,6 +10,7 @@ import (
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	. "github.com/kumahq/kuma/v3/pkg/mads/v1/generator"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -17,8 +18,9 @@ import (
 var _ = Describe("Generate()", func() {
 	dataplane := &core_mesh.DataplaneResource{
 		Meta: &test_model.ResourceMeta{
-			Name: "backend-01",
-			Mesh: "demo",
+			Name:   "backend-01",
+			Mesh:   "demo",
+			Labels: map[string]string{metadata.KumaWorkload: "backend"},
 		},
 		Spec: &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
@@ -54,7 +56,7 @@ var _ = Describe("Generate()", func() {
 		}
 
 		// when
-		resources, err := Generate(meshMetricToDataplane, DefaultKumaClientId, false)
+		resources, err := Generate(meshMetricToDataplane, DefaultKumaClientId)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -81,7 +83,7 @@ var _ = Describe("Generate()", func() {
 		}
 
 		// when
-		resources, err := Generate(meshMetricToDataplane, DefaultKumaClientId, false)
+		resources, err := Generate(meshMetricToDataplane, DefaultKumaClientId)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -99,7 +101,7 @@ var _ = Describe("Generate()", func() {
 		}
 
 		// when
-		resources, err := Generate(meshMetricToDataplane, DefaultKumaClientId, false)
+		resources, err := Generate(meshMetricToDataplane, DefaultKumaClientId)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

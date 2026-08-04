@@ -71,16 +71,10 @@ func (a AttachmentList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func BuildAttachments(matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.Dataplane_Networking) Attachments {
 	attachments := Attachments{}
 
-	serviceByInbound := map[mesh_proto.InboundInterface]string{}
-	for _, iface := range networking.GetInbound() {
-		serviceByInbound[networking.ToInboundInterface(iface)] = iface.GetService()
-	}
-
 	for inbound, policies := range getInboundMatchedPolicies(matchedPolicies) {
 		attachment := Attachment{
-			Type:    Inbound,
-			Name:    inbound.String(),
-			Service: serviceByInbound[inbound],
+			Type: Inbound,
+			Name: inbound.String(),
 		}
 		attachments[attachment] = append(attachments[attachment], policies...)
 	}

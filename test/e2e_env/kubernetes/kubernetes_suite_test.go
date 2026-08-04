@@ -33,7 +33,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshtimeout"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/meshtrafficpermission"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/observability"
-	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/reachableservices"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/workload"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
@@ -66,7 +65,6 @@ var (
 	_ = Describe("MeshTrace Zone Proxy", Label("job-3"), observability.ZoneProxyPluginTest, Ordered)
 	_ = Describe("Inspect", Label("job-3"), inspect.Inspect, Ordered)
 	_ = Describe("K8S API Bypass", Label("job-3"), k8s_api_bypass.K8sApiBypass, Ordered)
-	_ = Describe("Reachable Services", Label("job-1"), reachableservices.ReachableServices, Ordered)
 	_ = Describe("Defaults", Label("job-3"), defaults.Defaults, Ordered)
 	_ = Describe("Mesh External Services", Label("job-2"), meshexternalservices.MeshExternalServices, Ordered)
 	_ = Describe("ExternalName Services", Label("job-3"), externalname_services.ExternalNameServices, Ordered)

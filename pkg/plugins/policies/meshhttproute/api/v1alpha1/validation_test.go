@@ -67,7 +67,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: backend
+    labels:
+      kuma.io/display-name: backend
 `),
 		ErrorCases("incorrect path match value",
 			[]validators.Violation{{
@@ -88,7 +89,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -114,7 +116,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - queryParams:
@@ -150,7 +153,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - default:
         filters:
@@ -184,7 +188,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - default:
         filters:
@@ -224,7 +229,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -259,7 +265,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - headers:
@@ -272,7 +279,7 @@ to:
 `),
 		ErrorCases("invalid backendRefs",
 			[]validators.Violation{{
-				Field:   `spec.to[0].rules[0].default.backendRefs[0].name`,
+				Field:   `spec.to[0].rules[0].default.backendRefs[0].labels`,
 				Message: "must be set when kind is MeshServiceSubset",
 			}}, `
 type: MeshHTTPRoute
@@ -283,7 +290,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -309,7 +317,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -318,7 +327,8 @@ to:
       default:
         backendRefs:
           - kind: MeshMultiZoneService
-            name: test-server
+            labels:
+              kuma.io/display-name: test-server
 `),
 		ErrorCases("hostnames and hostname to backend rewrite not allowed with services",
 			[]validators.Violation{{
@@ -336,7 +346,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: backend
+    labels:
+      kuma.io/display-name: backend
   hostnames:
     - backend.com
   rules:
@@ -351,11 +362,12 @@ to:
               hostToBackendHostname: true
         backendRefs:
           - kind: MeshService
-            name: backend
+            labels:
+              kuma.io/display-name: backend
 `),
 		ErrorCases("invalid backendRef in requestMirror",
 			[]validators.Violation{{
-				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.name`,
+				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.labels`,
 				Message: "must be set when kind is MeshServiceSubset",
 			}}, `
 type: MeshHTTPRoute
@@ -366,7 +378,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -380,6 +393,35 @@ to:
                 kind: MeshServiceSubset
                 tags:
                   version: v1
+`),
+		ErrorCases("missing port in requestMirror backendRef",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.port`,
+				Message: "must be defined with kind MeshMultiZoneService",
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: frontend
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshMultiZoneService
+                labels:
+                  kuma.io/display-name: test-server
 `),
 		ErrorCases("invalid hostnames",
 			[]validators.Violation{
@@ -472,7 +514,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -544,11 +587,13 @@ mesh: mesh-1
 name: route-1
 targetRef:
   kind: MeshGateway
-  name: edge
+  labels:
+    kuma.io/display-name: edge
 to:
 - targetRef:
     kind: MeshService
-    name: backend
+    labels:
+      kuma.io/display-name: backend
   rules:
     - matches:
       - path:
@@ -557,7 +602,8 @@ to:
       default:
         backendRefs:
           - kind: MeshService
-            name: backend
+            labels:
+              kuma.io/display-name: backend
 `),
 	)
 	DescribeValidCases(
@@ -579,7 +625,8 @@ targetRef:
 to:
 - targetRef:
     kind: MeshService
-    name: frontend
+    labels:
+      kuma.io/display-name: frontend
   rules:
     - matches:
       - path:
@@ -597,6 +644,58 @@ to:
               path:
                 type: ReplacePrefixMatch
                 replacePrefixMatch: /other
+`),
+		Entry("requestMirror to real resources", `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: frontend
+  rules:
+    - matches:
+      - path:
+          value: /v1
+          type: PathPrefix
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshService
+                labels:
+                  kuma.io/display-name: backend
+                port: 8080
+    - matches:
+      - path:
+          value: /v2
+          type: PathPrefix
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshMultiZoneService
+                labels:
+                  kuma.io/display-name: backend
+                port: 8080
+    - matches:
+      - path:
+          value: /v3
+          type: PathPrefix
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshExternalService
+                labels:
+                  kuma.io/display-name: example
+                port: 8080
 `),
 		Entry("MeshService and MeshMultiZoneService", `
 type: MeshHTTPRoute

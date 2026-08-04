@@ -143,5 +143,9 @@ var _ = Describe("InboundProxyGenerator", func() {
 			dataplaneFile: "10-dataplane.input.yaml",
 			expected:      "10-envoy-config.golden.yaml",
 		}),
+		Entry("11. inbound with no tags, listener tags filled with self-reference", testCase{
+			dataplaneFile: "11-dataplane.input.yaml",
+			expected:      "11-envoy-config.golden.yaml",
+		}),
 	)
 })

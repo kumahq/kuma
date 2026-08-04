@@ -55,10 +55,6 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-timeout-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
 
-			// and default Gateway's MeshTimeout for the mesh exists
-			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-gateways-timeout-all-default", model.DefaultMesh))
-			Expect(err).ToNot(HaveOccurred())
-
 			// and default MeshCircuitBreaker for the mesh exists
 			err = resManager.Get(context.Background(), meshcircuitbreaker.NewMeshCircuitBreakerResource(), core_store.GetByKey("mesh-circuit-breaker-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
@@ -78,8 +74,6 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(err).ToNot(HaveOccurred())
 			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-timeout-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
-			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-gateways-timeout-all-default", model.DefaultMesh))
-			Expect(err).ToNot(HaveOccurred())
 			err = resManager.Get(context.Background(), meshcircuitbreaker.NewMeshCircuitBreakerResource(), core_store.GetByKey("mesh-circuit-breaker-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
 			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
@@ -97,10 +91,6 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 
 			// and default MeshTimeout for the mesh doesn't exists
 			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-timeout-all-default", model.DefaultMesh))
-			Expect(core_store.IsNotFound(err)).To(BeTrue())
-
-			// and default Gateway's MeshTimeout for the mesh doesn't exists
-			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-gateways-timeout-all-default", model.DefaultMesh))
 			Expect(core_store.IsNotFound(err)).To(BeTrue())
 
 			// and default MeshCircuitBreaker for the mesh doesn't exists
@@ -123,10 +113,6 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 
 			// and default MeshTimeout for the mesh doesn't exists
 			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-timeout-all-default", model.DefaultMesh))
-			Expect(core_store.IsNotFound(err)).To(BeTrue())
-
-			// and default Gateway's MeshTimeout for the mesh doesn't exists
-			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-gateways-timeout-all-default", model.DefaultMesh))
 			Expect(core_store.IsNotFound(err)).To(BeTrue())
 
 			// and default MeshCircuitBreaker for the mesh does exists
@@ -183,9 +169,6 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			legacy.Spec = &meshtimeout.MeshTimeout{
 				TargetRef: &common_api.TopLevelTargetRef{
 					Kind: common_api.Mesh,
-					ProxyTypes: &[]common_api.TargetRefProxyType{
-						common_api.Sidecar,
-					},
 				},
 				Rules: &[]meshtimeout.Rule{
 					{Default: meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Hour}}},
@@ -211,6 +194,8 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			migrated := meshtimeout.NewMeshTimeoutResource()
 			err = resManager.Get(context.Background(), migrated, core_store.GetByKey("mesh-timeout-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
+			Expect(migrated.Spec.TargetRef).ToNot(BeNil())
+			Expect(migrated.Spec.TargetRef.Kind).To(Equal(common_api.Mesh))
 			Expect(migrated.Spec.To).To(BeNil())
 			Expect(migrated.Spec.Rules).ToNot(BeNil())
 
@@ -220,6 +205,47 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(toResource.Spec.To).ToNot(BeNil())
 			Expect(toResource.Spec.Rules).To(BeNil())
+		})
+
+		It("should delete legacy gateway-specific default MeshTimeout resources", func() {
+			// given gateway-specific default MeshTimeout resources, as an older
+			// CP version stored them before sidecar/gateway defaults were merged
+			gatewayRules := meshtimeout.NewMeshTimeoutResource()
+			gatewayRules.Spec = &meshtimeout.MeshTimeout{
+				TargetRef: &common_api.TargetRef{Kind: common_api.Mesh},
+				Rules: &[]meshtimeout.Rule{
+					{Default: meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Minute}}},
+				},
+			}
+			err := rawStore.Create(context.Background(), gatewayRules, core_store.CreateByKey("mesh-gateways-timeout-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			gatewayTo := meshtimeout.NewMeshTimeoutResource()
+			gatewayTo.Spec = &meshtimeout.MeshTimeout{
+				TargetRef: &common_api.TargetRef{Kind: common_api.Mesh},
+				To: &[]meshtimeout.To{
+					{
+						TargetRef: common_api.TargetRef{Kind: common_api.Mesh},
+						Default:   meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Minute}},
+					},
+				},
+			}
+			err = rawStore.Create(context.Background(), gatewayTo, core_store.CreateByKey("mesh-gateways-timeout-to-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when EnsureDefaultMeshResources runs
+			err = mesh.EnsureDefaultMeshResources(context.Background(), resManager, defaultMesh, []string{}, context.Background(), false, "", config_core.Zone, "zone-1", false)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then the legacy gateway-specific defaults are gone
+			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-gateways-timeout-all-default", model.DefaultMesh))
+			Expect(core_store.IsNotFound(err)).To(BeTrue())
+			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-gateways-timeout-to-all-default", model.DefaultMesh))
+			Expect(core_store.IsNotFound(err)).To(BeTrue())
+
+			// and the single mesh-wide default still exists
+			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-timeout-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should not recreate a default policy deleted by an operator", func() {

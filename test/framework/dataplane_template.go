@@ -2,7 +2,7 @@ package framework
 
 import (
 	"bytes"
-	"strings"
+	"maps"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -55,7 +55,6 @@ type OutboundConfig struct {
 type TransparentProxyConfig struct {
 	RedirectPortInbound  string
 	RedirectPortOutbound string
-	ReachableServices    []string
 	// ReachableBackends is the raw YAML body rendered under
 	// networking.transparentProxying.reachableBackends (e.g. a `refs:` list).
 	ReachableBackends string
@@ -68,31 +67,14 @@ type ListenerConfig struct {
 	Port int
 }
 
-// ZoneIngressTemplateData represents zone ingress template data
-type ZoneIngressTemplateData struct {
-	Name              string
-	AdvertisedAddress string
-	AdvertisedPort    int
-	Port              int
-}
-
-// ZoneEgressTemplateData represents zone egress template data
-type ZoneEgressTemplateData struct {
-	Name string
-	Port int
-}
-
-var (
-	dataplaneTemplate = template.Must(template.New("dataplane").Funcs(template.FuncMap{
-		"joinStrings": strings.Join,
-	}).Parse(`
+var dataplaneTemplate = template.Must(template.New("dataplane").Parse(`
 type: Dataplane
 mesh: {{ .Mesh }}
 name: {{ "{{ name }}" }}
 {{- if .Labels }}
 labels:
 {{- range $key, $value := .Labels }}
-  {{ $key }}: {{ $value }}
+  {{ $key }}: "{{ $value }}"
 {{- end }}
 {{- end }}
 networking:
@@ -118,22 +100,13 @@ networking:
     serviceProbe:
       tcp: {}
 {{- end }}
+{{- if .Protocol }}
+    protocol: {{ .Protocol }}
+{{- end }}
     tags:
       kuma.io/service: {{ .ServiceName }}
 {{- if .Protocol }}
       kuma.io/protocol: {{ .Protocol }}
-{{- end }}
-{{- if .Team }}
-      team: {{ .Team }}
-{{- end }}
-{{- if .Version }}
-      version: {{ .Version }}
-{{- end }}
-{{- if .Instance }}
-      instance: '{{ .Instance }}'
-{{- end }}
-{{- range $key, $value := .AdditionalTags }}
-      {{ $key }}: {{ $value }}
 {{- end }}
 {{- if .Outbounds }}
   outbound:
@@ -147,9 +120,6 @@ networking:
   transparentProxying:
     redirectPortInbound: {{ .TransparentProxy.RedirectPortInbound }}
     redirectPortOutbound: {{ .TransparentProxy.RedirectPortOutbound }}
-{{- if .TransparentProxy.ReachableServices }}
-    reachableServices: [{{ joinStrings .TransparentProxy.ReachableServices "," }}]
-{{- end }}
 {{- if .TransparentProxy.ReachableBackends }}
     reachableBackends:
 {{ .TransparentProxy.ReachableBackends }}
@@ -159,47 +129,31 @@ networking:
 {{- if .AppendConfig }}
 {{ .AppendConfig }}
 {{- end }}`))
-	zoneIngressTemplate = template.Must(template.New("zoneingress").Parse(`
-type: ZoneIngress
-name: {{ .Name }}
-networking:
-  address: {{ "{{ address }}" }}
-  advertisedAddress: {{ .AdvertisedAddress }}
-  advertisedPort: {{ .AdvertisedPort }}
-  port: {{ .Port }}`))
-	zoneEgressTemplate = template.Must(template.New("zoneegress").Parse(`
-type: ZoneEgress
-name: egress
-networking:
-  address: {{ "{{ address }}" }}
-  port: {{ .Port }}`))
-)
 
 // RenderDataplaneTemplate renders a dataplane template with the given data.
 // When Listeners is set, renders a zone proxy dataplane with a listeners block
-// instead of inbound/outbound.
+// instead of inbound/outbound. Team/Version/Instance/AdditionalTags are
+// rendered as Dataplane labels rather than inbound tags: endpoint
+// load-balancing identity (envoy.lb metadata) is now sourced solely from
+// Dataplane labels, not inbound tags (see pkg/xds/topology/outbound.go).
 func RenderDataplaneTemplate(data DataplaneTemplateData) (string, error) {
+	labels := make(map[string]string, len(data.Labels)+len(data.AdditionalTags)+2)
+	maps.Copy(labels, data.Labels)
+	maps.Copy(labels, data.AdditionalTags)
+	if data.Team != "" {
+		labels["team"] = data.Team
+	}
+	if data.Version != "" {
+		labels["version"] = data.Version
+	}
+	if data.Instance != "" {
+		labels["instance"] = data.Instance
+	}
+	data.Labels = labels
+
 	var buf bytes.Buffer
 	if err := dataplaneTemplate.Execute(&buf, data); err != nil {
 		return "", errors.Wrap(err, "failed to execute dataplane template")
-	}
-	return buf.String(), nil
-}
-
-// RenderZoneIngressTemplate renders a zone ingress template with the given data
-func RenderZoneIngressTemplate(data ZoneIngressTemplateData) (string, error) {
-	var buf bytes.Buffer
-	if err := zoneIngressTemplate.Execute(&buf, data); err != nil {
-		return "", errors.Wrap(err, "failed to execute zone ingress template")
-	}
-	return buf.String(), nil
-}
-
-// RenderZoneEgressTemplate renders a zone egress template with the given data
-func RenderZoneEgressTemplate(data ZoneEgressTemplateData) (string, error) {
-	var buf bytes.Buffer
-	if err := zoneEgressTemplate.Execute(&buf, data); err != nil {
-		return "", errors.Wrap(err, "failed to execute zone egress template")
 	}
 	return buf.String(), nil
 }

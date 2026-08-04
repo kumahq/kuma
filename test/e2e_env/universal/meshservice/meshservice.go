@@ -70,8 +70,9 @@ spec:
     targetPort: 80
     appProtocol: http
   selector:
-    dataplaneTags:
-      app: test-server
+    dataplaneLabels:
+      matchLabels:
+        app: test-server
 `, meshName)
 		Expect(universal.Cluster.Install(YamlUniversal(otherTLDGenerator))).To(Succeed())
 		Expect(universal.Cluster.Install(YamlUniversal(service))).To(Succeed())

@@ -21,8 +21,10 @@
  "spec": {
   "state": "Unavailable",
   "selector": {
-   "dataplaneTags": {
-    "app": "httpbin"
+   "dataplaneLabels": {
+    "matchLabels": {
+     "app": "httpbin"
+    }
    }
   },
   "ports": [

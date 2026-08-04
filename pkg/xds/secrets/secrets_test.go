@@ -69,8 +69,9 @@ var _ = Describe("Secrets", Ordered, func() {
 	newDataplane := func() *core_mesh.DataplaneResource {
 		return &core_mesh.DataplaneResource{
 			Meta: &model.ResourceMeta{
-				Mesh: "default",
-				Name: "dp1",
+				Mesh:   "default",
+				Name:   "dp1",
+				Labels: map[string]string{"kuma.io/workload": "web"},
 			},
 			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
@@ -79,26 +80,8 @@ var _ = Describe("Secrets", Ordered, func() {
 						{
 							Port:        8080,
 							ServicePort: 8081,
-							Tags: map[string]string{
-								"kuma.io/service": "web",
-							},
 						},
 					},
-				},
-			},
-		}
-	}
-
-	newZoneEgress := func() *core_mesh.ZoneEgressResource {
-		return &core_mesh.ZoneEgressResource{
-			Meta: &model.ResourceMeta{
-				Mesh: "default",
-				Name: "ze-1",
-			},
-			Spec: &mesh_proto.ZoneEgress{
-				Networking: &mesh_proto.ZoneEgress_Networking{
-					Address: "192.168.0.1",
-					Port:    10002,
 				},
 			},
 		}
@@ -247,10 +230,10 @@ var _ = Describe("Secrets", Ordered, func() {
 				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-2").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 			})
 
-			It("when dp tags has changed", func() {
+			It("when workload label has changed", func() {
 				// given
 				dataplane := newDataplane()
-				dataplane.Spec.Networking.Inbound[0].Tags["kuma.io/service"] = "web2"
+				dataplane.Meta.(*model.ResourceMeta).Labels["kuma.io/workload"] = "web2"
 
 				// when
 				_, _, err := secrets.GetForDataPlane(context.Background(), dataplane, newMesh("default"), nil)
@@ -300,22 +283,21 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(secrets.Info(mesh_proto.DataplaneProxyType, core_model.MetaToResourceKey(newDataplane().Meta))).To(BeNil())
 		})
 
-		Context("when inbound tags are disabled", func() {
-			newTaglessDataplane := func(labels map[string]string) *core_mesh.DataplaneResource {
+		Context("mTLS identity from the kuma.io/workload label", func() {
+			newLabeledDataplane := func(labels map[string]string) *core_mesh.DataplaneResource {
 				dp := newDataplane()
-				dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
 				dp.Meta.(*model.ResourceMeta).Labels = labels
 				return dp
 			}
 
-			It("should fall back to the kuma.io/workload label for identity", func() {
-				// given a dataplane with no inbound tags but a workload label
-				dataplane := newTaglessDataplane(map[string]string{"kuma.io/workload": "web"})
+			It("should derive identity from the kuma.io/workload label", func() {
+				// given a dataplane with a workload label
+				dataplane := newLabeledDataplane(map[string]string{"kuma.io/workload": "web"})
 
 				// when
 				identity, ca, err := secrets.GetForDataPlane(context.Background(), dataplane, newMesh("default"), nil)
 
-				// then a cert is still generated, keyed off the workload label
+				// then a cert is generated, keyed off the workload label
 				Expect(err).ToNot(HaveOccurred())
 				Expect(identity.PemCerts).ToNot(BeEmpty())
 				Expect(ca).To(HaveLen(1))
@@ -328,9 +310,9 @@ var _ = Describe("Secrets", Ordered, func() {
 				}))
 			})
 
-			It("should error rather than issue a cert with no SAN when the workload label is also missing", func() {
-				// given a dataplane with neither inbound tags nor a workload label
-				dataplane := newTaglessDataplane(nil)
+			It("should error rather than issue a cert with no SAN when the workload label is missing", func() {
+				// given a dataplane with no workload label
+				dataplane := newLabeledDataplane(nil)
 
 				// when
 				_, _, err := secrets.GetForDataPlane(context.Background(), dataplane, newMesh("default"), nil)
@@ -339,22 +321,22 @@ var _ = Describe("Secrets", Ordered, func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("GetAllInOne should fall back to the kuma.io/workload label for identity", func() {
-				// given a dataplane with no inbound tags but a workload label
-				dataplane := newTaglessDataplane(map[string]string{"kuma.io/workload": "web"})
+			It("GetAllInOne should derive identity from the kuma.io/workload label", func() {
+				// given a dataplane with a workload label
+				dataplane := newLabeledDataplane(map[string]string{"kuma.io/workload": "web"})
 
 				// when
 				identity, ca, err := secrets.GetAllInOne(context.Background(), newMesh("default"), dataplane, nil)
 
-				// then a cert is still generated, keyed off the workload label
+				// then a cert is generated, keyed off the workload label
 				Expect(err).ToNot(HaveOccurred())
 				Expect(identity.PemCerts).ToNot(BeEmpty())
 				Expect(ca.PemCerts).ToNot(BeEmpty())
 			})
 
-			It("GetAllInOne should error rather than issue a cert with no SAN when the workload label is also missing", func() {
-				// given a dataplane with neither inbound tags nor a workload label
-				dataplane := newTaglessDataplane(nil)
+			It("GetAllInOne should error rather than issue a cert with no SAN when the workload label is missing", func() {
+				// given a dataplane with no workload label
+				dataplane := newLabeledDataplane(nil)
 
 				// when
 				_, _, err := secrets.GetAllInOne(context.Background(), newMesh("default"), dataplane, nil)
@@ -362,109 +344,6 @@ var _ = Describe("Secrets", Ordered, func() {
 				// then
 				Expect(err).To(HaveOccurred())
 			})
-		})
-	})
-
-	Context("zone egress", func() {
-		It("should generate cert and emit statistic and info", func() {
-			// when
-			identity, ca, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
-
-			// then certs are generated
-			Expect(err).ToNot(HaveOccurred())
-			Expect(identity.PemCerts).ToNot(BeEmpty())
-			Expect(identity.PemKey).ToNot(BeEmpty())
-			Expect(ca.PemCerts).ToNot(BeEmpty())
-
-			// and info is stored
-			info := secrets.Info(mesh_proto.EgressProxyType, core_model.MetaToResourceKey(newZoneEgress().Meta))
-			Expect(info.Generation).To(Equal(now))
-			Expect(info.Expiration.Unix()).To(Equal(now.Add(1 * time.Hour).Unix()))
-			Expect(info.OwnMesh.MTLS.EnabledBackend).To(Equal("ca-1"))
-			Expect(info.Tags).To(Equal(mesh_proto.MultiValueTagSet{
-				"kuma.io/service": map[string]bool{
-					mesh_proto.ZoneEgressServiceName: true,
-				},
-			}))
-
-			// and metric is published
-			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
-			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
-		})
-
-		It("should not regenerate certs if nothing has changed", func() {
-			// given
-			identity, ca, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			newIdentity, newCa, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(identity).To(Equal(newIdentity))
-			Expect(ca).To(Equal(newCa))
-			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
-			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
-		})
-
-		Context("should regenerate certificate", func() {
-			BeforeEach(func() {
-				_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("when mTLS settings has changed", func() {
-				// given
-				mesh := newMesh("default")
-				mesh.Spec.Mtls.EnabledBackend = "ca-2"
-
-				// when
-				_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), mesh)
-
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
-				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-2").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
-			})
-
-			It("when cert is expiring", func() {
-				// given
-				now = now.Add(48*time.Minute + 1*time.Millisecond) // 4/5 of 60 minutes
-
-				// when
-				_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
-
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
-				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(2)))
-			})
-
-			It("when cert was cleaned up", func() {
-				// given
-				secrets.Cleanup(mesh_proto.EgressProxyType, core_model.MetaToResourceKey(newZoneEgress().Meta))
-
-				// when
-				_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
-
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
-				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetHistogram().GetSampleCount()).To(Equal(uint64(2)))
-			})
-		})
-
-		It("should cleanup certs", func() {
-			// given
-			_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			secrets.Cleanup(mesh_proto.EgressProxyType, core_model.MetaToResourceKey(newZoneEgress().Meta))
-
-			// then
-			Expect(secrets.Info(mesh_proto.EgressProxyType, core_model.MetaToResourceKey(newZoneEgress().Meta))).To(BeNil())
 		})
 	})
 

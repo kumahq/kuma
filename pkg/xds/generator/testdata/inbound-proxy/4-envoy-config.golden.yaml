@@ -86,7 +86,7 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/service: backend4
+          kuma.io/unified-name: self_inbound_dp_443
     name: self_inbound_dp_443
     statPrefix: self_inbound_dp_443
     trafficDirection: INBOUND
@@ -164,7 +164,6 @@ resources:
       filterMetadata:
         io.kuma.tags:
           kuma.io/protocol: http
-          kuma.io/service: backend3
     name: self_inbound_dp_80
     statPrefix: self_inbound_dp_80
     trafficDirection: INBOUND

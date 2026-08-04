@@ -32,12 +32,11 @@ type ConnectionInfo struct {
 // ControlPlaneContext contains shared global data and components that are required for generating XDS
 // This data is the same regardless of a data plane proxy and mesh we are generating the data for.
 type ControlPlaneContext struct {
-	CLACache            envoy.CLACache
-	Secrets             secrets.Secrets
-	IdentityManager     providers.IdentityProviderManager
-	Zone                string
-	SystemNamespace     string
-	InboundTagsDisabled bool
+	CLACache        envoy.CLACache
+	Secrets         secrets.Secrets
+	IdentityManager providers.IdentityProviderManager
+	Zone            string
+	SystemNamespace string
 }
 
 // GlobalContext holds resources that are Global
@@ -87,7 +86,6 @@ type MeshContext struct {
 	Resources           Resources
 	DataplanesByName    map[string]*core_mesh.DataplaneResource
 	EndpointMap         xds.EndpointMap
-	IngressEndpointMap  xds.EndpointMap
 	CrossMeshEndpoints  map[xds.MeshName]xds.EndpointMap
 	VIPDomains          []xds_types.VIPDomains
 	VIPOutbounds        xds_types.Outbounds
@@ -105,10 +103,6 @@ type MeshContext struct {
 	// DataplaneZoneEgressEndpointMap is the shared endpoint map for embedded zone egress
 	// listeners; built once per MeshContext and reused across all Dataplanes.
 	DataplaneZoneEgressEndpointMap xds.EgressEndpointMap
-	// ZonesWithMeshScopedProxy is the set of zones that have at least one
-	// MeshZoneAddress, meaning their zone ingress uses the new mesh-scoped zone proxy.
-	// Clusters targeting services in these zones must use the KRI-derived SNI format (MADR 101).
-	ZonesWithMeshScopedProxy map[string]bool
 }
 
 type ServiceInformation struct {

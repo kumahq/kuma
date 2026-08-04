@@ -11,11 +11,10 @@ func (r *DoNothingPolicyResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	if len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
-		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
+	if len(pointer.Deref(r.Spec.To)) == 0 {
+		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
 	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
-	verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
 	return verr.OrNil()
 }
 
@@ -29,20 +28,6 @@ func validateTop(targetRef *common_api.TopLevelTargetRef) validators.ValidationE
 		},
 	})
 	return targetRefErr
-}
-
-func validateFrom(from []From) validators.ValidationError {
-	var verr validators.ValidationError
-	for idx, fromItem := range from {
-		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				// TODO add supported TargetRef for 'from' item
-			},
-		}))
-		verr.AddErrorAt(path.Field("default"), validateDefault(fromItem.Default))
-	}
-	return verr
 }
 
 func validateTo(to []To) validators.ValidationError {

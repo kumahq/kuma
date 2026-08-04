@@ -1,5 +1,5 @@
 resources:
-- name: outbound:passthrough:ipv4
+- name: self_transparentproxy_passthrough_outbound_ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -137,9 +137,9 @@ resources:
     - name: envoy.filters.listener.http_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.http_inspector.v3.HttpInspector
-    name: outbound:passthrough:ipv4
+    name: self_transparentproxy_passthrough_outbound_ipv4
     trafficDirection: OUTBOUND
-- name: outbound:passthrough:ipv6
+- name: self_transparentproxy_passthrough_outbound_ipv6
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -277,5 +277,5 @@ resources:
     - name: envoy.filters.listener.http_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.http_inspector.v3.HttpInspector
-    name: outbound:passthrough:ipv6
+    name: self_transparentproxy_passthrough_outbound_ipv6
     trafficDirection: OUTBOUND

@@ -2,11 +2,14 @@
 type: MeshHTTPRoute
 name: http-route-1
 mesh: mesh-1
+labels:
+  kuma.io/display-name: http-route-1
 spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend
+        labels:
+          kuma.io/display-name: backend
       rules:
         - matches:
             - path:
@@ -15,10 +18,12 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: backend
+                labels:
+                  kuma.io/display-name: backend
                 weight: 90
               - kind: MeshService
-                name: backend-v1
+                labels:
+                  kuma.io/display-name: backend-v1
                 weight: 10
 ---
 type: MeshTimeout
@@ -28,7 +33,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: http-route-1
+        labels:
+          kuma.io/display-name: http-route-1
       default:
         http:
           requestTimeout: 19s
@@ -36,6 +42,8 @@ spec:
 type: MeshService
 name: backend
 mesh: mesh-1
+labels:
+  kuma.io/display-name: backend
 spec:
   selector:
     dataplaneTags:

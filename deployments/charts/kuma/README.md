@@ -134,117 +134,42 @@ A Helm chart for the Kuma Control Plane
 | dataPlane.initContainer | object | `{"resources":{"limits":{"cpu":"0","memory":"50M"},"requests":{"cpu":"20m","memory":"20M"}}}` | Resource limits and requests for the kuma-init container. Set cpu limit to "0" to disable the CPU limit (default). |
 | dataPlane.validationContainer | object | `{"resources":{"limits":{"cpu":"0","memory":"50M"},"requests":{"cpu":"20m","memory":"20M"}}}` | Resource limits and requests for the kuma-validation init container. Set cpu limit to "0" to disable the CPU limit (default). |
 | dataPlane.sidecarContainer | object | `{"resources":{"limits":{"cpu":"0","memory":"512Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}}` | Resource limits and requests for the kuma-sidecar container. Set cpu limit to "0" to disable the CPU limit (default). |
-| dataPlane.features.unifiedResourceNaming | bool | `true` | Enables automatic injection of the unified naming for Envoy resources and stats feature flag. When set to true, it sets the environment variable KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED=true in the control plane, which causes the sidecar injector to add KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true to each injected kuma-sidecar container. It also adds the same KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true environment variable to all ZoneIngress and ZoneEgress deployments. This option only automates setting the required flags and does not enable or disable the feature itself. You can still opt in manually by setting KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true in ZoneIngress or ZoneEgress deployments, or in regular data plane proxies using a ContainerPatch |
-| ingress.enabled | bool | `false` | If true, it deploys Ingress for cross cluster communication |
-| ingress.extraLabels | object | `{}` | Labels to add to resources, in addition to default labels |
-| ingress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
-| ingress.replicas | int | `1` | Number of replicas of the Ingress. Ignored when autoscaling is enabled. |
-| ingress.logLevel | string | `"info"` | Log level for ingress (available values: off|info|debug) |
-| ingress.restartPolicy | string | `"Always"` | Pod restart policy for the ingress pods |
-| ingress.resources | object | `{"limits":{"cpu":"1000m","memory":"512Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}` | Define the resources to allocate to mesh ingress |
-| ingress.livenessProbe | object | `{"enabled":true,"failureThreshold":12,"initialDelaySeconds":60,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Liveness probe settings for the Ingress proxy |
-| ingress.livenessProbe.enabled | bool | `true` | Whether to enable the liveness probe. |
-| ingress.readinessProbe | object | `{"enabled":true,"failureThreshold":12,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Readiness probe settings for the Ingress proxy |
-| ingress.readinessProbe.enabled | bool | `true` | Whether to enable the readiness probe. |
-| ingress.startupProbe | object | `{"enabled":false,"failureThreshold":60,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Startup probe settings for the Ingress proxy |
-| ingress.startupProbe.enabled | bool | `false` | Whether to enable the startup probe. |
-| ingress.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
-| ingress.terminationGracePeriodSeconds | int | `40` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
-| ingress.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
-| ingress.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
-| ingress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
-| ingress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | Target metrics for the HPA to scale on |
-| ingress.service.enabled | bool | `true` | Whether to create a Service resource. |
-| ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
-| ingress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
-| ingress.service.loadBalancerSourceRanges | list | `[]` | A list of CIDRs or IPs for the cloud-provider load balancer to allow access from. |
-| ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
-| ingress.service.port | int | `10001` | Port on which Ingress is exposed |
-| ingress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
-| ingress.annotations | object | `{}` | Additional pod annotations (deprecated favor `podAnnotations`) |
-| ingress.podAnnotations | object | `{}` | Additional pod annotations |
-| ingress.deploymentAnnotations | object | `{}` | Annotations to add to the Deployment resource. |
-| ingress.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
-| ingress.tolerations | list | `[]` | Tolerations for the Ingress pods |
-| ingress.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
-| ingress.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
-| ingress.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["kuma-ingress"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Ingress pods This is rendered as a template, so you can reference other helm variables or includes. |
-| ingress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Mesh Ingress pods. This is rendered as a template, so you can use variables to generate match labels. |
-| ingress.priorityClassName | string | `""` | Priority Class Name of the ingress |
-| ingress.podSecurityContext | object | `{"runAsGroup":5678,"runAsNonRoot":true,"runAsUser":5678}` | Security context at the pod level for ingress |
-| ingress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for ingress |
-| ingress.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
-| ingress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
-| ingress.dns | object | `{"config":{"nameservers":[],"searches":[]},"policy":""}` | DNS configuration for the ingress pod. This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy). |
-| ingress.dns.policy | string | `""` | Defines how DNS resolution is configured for that Pod. |
-| ingress.dns.config | object | `{"nameservers":[],"searches":[]}` | Optional dns configuration, required when policy is 'None' |
-| ingress.dns.config.nameservers | list | `[]` | A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified. |
-| ingress.dns.config.searches | list | `[]` | A list of DNS search domains for hostname lookup in the Pod. |
-| egress.enabled | bool | `false` | If true, it deploys Egress for cross cluster communication |
-| egress.extraLabels | object | `{}` | Labels to add to resources, in addition to the default labels. |
-| egress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
-| egress.replicas | int | `1` | Number of replicas of the Egress. Ignored when autoscaling is enabled. |
-| egress.logLevel | string | `"info"` | Log level for egress (available values: off|info|debug) |
-| egress.restartPolicy | string | `"Always"` | Pod restart policy for the egress pods |
-| egress.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
-| egress.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
-| egress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
-| egress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | Target metrics for the HPA to scale on |
-| egress.resources.requests.cpu | string | `"50m"` |  |
-| egress.resources.requests.memory | string | `"64Mi"` |  |
-| egress.resources.limits.cpu | string | `"1000m"` |  |
-| egress.resources.limits.memory | string | `"512Mi"` |  |
-| egress.livenessProbe | object | `{"enabled":true,"failureThreshold":12,"initialDelaySeconds":60,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Liveness probe settings for the Egress proxy |
-| egress.livenessProbe.enabled | bool | `true` | Whether to enable the liveness probe. |
-| egress.readinessProbe | object | `{"enabled":true,"failureThreshold":12,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Readiness probe settings for the Egress proxy |
-| egress.readinessProbe.enabled | bool | `true` | Whether to enable the readiness probe. |
-| egress.startupProbe | object | `{"enabled":false,"failureThreshold":60,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3}` | Startup probe settings for the Egress proxy |
-| egress.startupProbe.enabled | bool | `false` | Whether to enable the startup probe. |
-| egress.service.enabled | bool | `true` | Whether to create the service object |
-| egress.service.type | string | `"ClusterIP"` | Service type of the Egress |
-| egress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
-| egress.service.annotations | object | `{}` | Additional annotations to put on the Egress service |
-| egress.service.port | int | `10002` | Port on which Egress is exposed |
-| egress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
-| egress.annotations | object | `{}` | Additional pod annotations (deprecated favor `podAnnotations`) |
-| egress.podAnnotations | object | `{}` | Additional pod annotations |
-| egress.deploymentAnnotations | object | `{}` | Annotations to add to the Deployment resource. |
-| egress.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the Egress pods |
-| egress.tolerations | list | `[]` | Tolerations for the Egress pods |
-| egress.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
-| egress.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
-| egress.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["kuma-egress"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Egress pods. This is rendered as a template, so you can reference other helm variables or includes. |
-| egress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Egress pods. This is rendered as a template, so you can use variables to generate match labels. |
-| egress.priorityClassName | string | `""` | Priority Class Name of the egress |
-| egress.podSecurityContext | object | `{"runAsGroup":5678,"runAsNonRoot":true,"runAsUser":5678}` | Security context at the pod level for egress |
-| egress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for egress |
-| egress.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
-| egress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
-| egress.dns | object | `{"config":{"nameservers":[],"searches":[]},"policy":""}` | DNS configuration for the egress pod. This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy). |
-| egress.dns.policy | string | `""` | Defines how DNS resolution is configured for that Pod. |
-| egress.dns.config | object | `{"nameservers":[],"searches":[]}` | Optional dns configuration, required when policy is 'None' |
-| egress.dns.config.nameservers | list | `[]` | A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified. |
-| egress.dns.config.searches | list | `[]` | A list of DNS search domains for hostname lookup in the Pod. |
+| dataPlane.features.unifiedResourceNaming | bool | `true` | Enables automatic injection of the unified naming for Envoy resources and stats feature flag. When set to true, it sets the environment variable KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED=true in the control plane, which causes the sidecar injector to add KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true to each injected kuma-sidecar container. This option only automates setting the required flags and does not enable or disable the feature itself. You can still opt in manually by setting KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true in data plane proxies using a ContainerPatch |
 | zoneProxyImage.registry | string | `"registry.k8s.io"` | The pause image registry |
 | zoneProxyImage.repository | string | `"pause"` | The pause image repository |
 | zoneProxyImage.tag | string | `"3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"` | The pause image tag |
+| meshZoneProxyDefaults.ingress.replicas | int | `1` | Default number of replicas for zone ingress. Ignored when hpa.enabled is true. |
+| meshZoneProxyDefaults.ingress.restartPolicy | string | `"Always"` | Default pod restart policy for zone ingress. |
+| meshZoneProxyDefaults.ingress.terminationGracePeriodSeconds | int | `40` | Default number of seconds to wait before force killing the zone ingress pod. |
+| meshZoneProxyDefaults.ingress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for zone ingress. Optionally set to false |
+| meshZoneProxyDefaults.ingress.imagePullPolicy | string | `"IfNotPresent"` | Default image pull policy for the zone ingress pause container. |
 | meshZoneProxyDefaults.ingress.service.type | string | `"LoadBalancer"` | Default Service type for zone ingress. |
 | meshZoneProxyDefaults.ingress.service.port | int | `10001` | Default port for zone ingress Service. |
 | meshZoneProxyDefaults.ingress.service.targetPort | int | `10001` | Container port the zone ingress listens on. Do not change unless the zone proxy binary is reconfigured. |
+| meshZoneProxyDefaults.egress.replicas | int | `1` | Default number of replicas for zone egress. Ignored when hpa.enabled is true. |
+| meshZoneProxyDefaults.egress.restartPolicy | string | `"Always"` | Default pod restart policy for zone egress. |
+| meshZoneProxyDefaults.egress.terminationGracePeriodSeconds | int | `40` | Default number of seconds to wait before force killing the zone egress pod. |
+| meshZoneProxyDefaults.egress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for zone egress. Optionally set to false |
+| meshZoneProxyDefaults.egress.imagePullPolicy | string | `"IfNotPresent"` | Default image pull policy for the zone egress pause container. |
 | meshZoneProxyDefaults.egress.service.type | string | `"ClusterIP"` | Default Service type for zone egress. |
 | meshZoneProxyDefaults.egress.service.port | int | `10002` | Default port for zone egress Service. |
 | meshZoneProxyDefaults.egress.service.targetPort | int | `10002` | Container port the zone egress listens on. Do not change unless the zone proxy binary is reconfigured. |
 | meshes[0].name | string | `"default"` | The mesh must already exist or be created separately; this Helm chart will not create it. |
 | meshes[0].ingress.enabled | bool | `false` | Deploy a zone ingress for this mesh. |
 | meshes[0].ingress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
+| meshes[0].ingress.restartPolicy | string | `nil` | Per-mesh override for pod restart policy. Falls back to meshZoneProxyDefaults.ingress.restartPolicy when unset. |
+| meshes[0].ingress.terminationGracePeriodSeconds | int | `nil` | Per-mesh override for the pod termination grace period. Falls back to meshZoneProxyDefaults.ingress.terminationGracePeriodSeconds when unset. |
+| meshes[0].ingress.automountServiceAccountToken | bool | `nil` | Per-mesh override for automountServiceAccountToken. Falls back to meshZoneProxyDefaults.ingress.automountServiceAccountToken when unset. |
+| meshes[0].ingress.imagePullPolicy | string | `nil` | Per-mesh override for the pause container image pull policy. Falls back to meshZoneProxyDefaults.ingress.imagePullPolicy when unset. |
+| meshes[0].ingress.serviceAccountAnnotations | object | `{}` | Annotations to add to the zone ingress Service Account. |
 | meshes[0].ingress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride) |
 | meshes[0].ingress.service.type | string | `nil` | Per-mesh override for Service type. Falls back to meshZoneProxyDefaults.ingress.service.type when unset. |
 | meshes[0].ingress.service.port | int | `nil` | Per-mesh override for Service port. Falls back to meshZoneProxyDefaults.ingress.service.port when unset. |
 | meshes[0].ingress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].ingress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
 | meshes[0].ingress.service.labels | object | `{}` | Labels to add to the Service resource. |
-| meshes[0].ingress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":1}` | Deployment-level settings. |
-| meshes[0].ingress.deployment.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
+| meshes[0].ingress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":null}` | Deployment-level settings. |
+| meshes[0].ingress.deployment.replicas | int | `nil` | Number of replicas. Ignored when hpa.enabled is true. Falls back to meshZoneProxyDefaults.<role>.replicas when unset. |
 | meshes[0].ingress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].ingress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
 | meshes[0].ingress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
@@ -252,14 +177,19 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.pdb | object | `{"enabled":false,"maxUnavailable":1}` | Pod Disruption Budget settings. |
 | meshes[0].egress.enabled | bool | `false` | Deploy a zone egress for this mesh. |
 | meshes[0].egress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
+| meshes[0].egress.restartPolicy | string | `nil` | Per-mesh override for pod restart policy. Falls back to meshZoneProxyDefaults.egress.restartPolicy when unset. |
+| meshes[0].egress.terminationGracePeriodSeconds | int | `nil` | Per-mesh override for the pod termination grace period. Falls back to meshZoneProxyDefaults.egress.terminationGracePeriodSeconds when unset. |
+| meshes[0].egress.automountServiceAccountToken | bool | `nil` | Per-mesh override for automountServiceAccountToken. Falls back to meshZoneProxyDefaults.egress.automountServiceAccountToken when unset. |
+| meshes[0].egress.imagePullPolicy | string | `nil` | Per-mesh override for the pause container image pull policy. Falls back to meshZoneProxyDefaults.egress.imagePullPolicy when unset. |
+| meshes[0].egress.serviceAccountAnnotations | object | `{}` | Annotations to add to the zone egress Service Account. |
 | meshes[0].egress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride) |
 | meshes[0].egress.service.type | string | `nil` | Per-mesh override for Service type. Falls back to meshZoneProxyDefaults.egress.service.type when unset. |
 | meshes[0].egress.service.port | int | `nil` | Per-mesh override for Service port. Falls back to meshZoneProxyDefaults.egress.service.port when unset. |
 | meshes[0].egress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].egress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
 | meshes[0].egress.service.labels | object | `{}` | Labels to add to the Service resource. |
-| meshes[0].egress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":1}` | Deployment-level settings. |
-| meshes[0].egress.deployment.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
+| meshes[0].egress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":null}` | Deployment-level settings. |
+| meshes[0].egress.deployment.replicas | int | `nil` | Number of replicas. Ignored when hpa.enabled is true. Falls back to meshZoneProxyDefaults.<role>.replicas when unset. |
 | meshes[0].egress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].egress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
 | meshes[0].egress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
@@ -319,7 +249,6 @@ A Helm chart for the Kuma Control Plane
 | transparentProxy.configMap.config.dropInvalidPackets | bool | `false` | Drops invalid packets to avoid connection resets in high-throughput scenarios |
 | transparentProxy.configMap.config.storeFirewalld | bool | `false` | Enables firewalld support to store iptables rules |
 | transparentProxy.configMap.config.verbose | bool | `false` | Enables verbose mode with longer argument/flag names and additional comments |
-| experimental.inboundTagsDisabled | bool | `false` | If true, inbound tags are not generated for dataplanes. Used with label-based MeshService matching. |
 | experimental.envoyAdminUnixSocket | bool | `true` | If true, Envoy admin API binds to a Unix domain socket instead of TCP. |
 | postgres.port | string | `"5432"` | Postgres port, password should be provided as a secret reference in "controlPlane.secrets" with the Env value "KUMA_STORE_POSTGRES_PASSWORD". Example: controlPlane:   secrets:     - Secret: postgres-postgresql       Key: postgresql-password       Env: KUMA_STORE_POSTGRES_PASSWORD |
 | postgres.tls.mode | string | `"disable"` | Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull" |

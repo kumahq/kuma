@@ -4,8 +4,10 @@
   "mesh": "default",
   "spec": {
     "selector": {
-      "dataplaneTags": {
-        "app": "redis"
+      "dataplaneLabels": {
+        "matchLabels": {
+          "app": "redis"
+        }
       }
     },
     "ports": [

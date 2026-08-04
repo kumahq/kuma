@@ -50,15 +50,8 @@ message Mesh {
   // Routing settings of the mesh
   Routing routing = 6;
 
-  // Constraints to apply to the mesh and its entities
-  message Constraints {
-    // DataplaneProxyMembership defines a set of requirements for data plane
-    // proxies to be a member of the mesh.
-    DataplaneProxyConstraints dataplaneProxy = 1;
-  }
-
-  // Constraints that applies to the mesh and its entities
-  Constraints constraints = 7;
+  reserved 7;
+  reserved "constraints";
 
   // List of policies to skip creating by default when the mesh is created.
   // e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all
@@ -66,27 +59,6 @@ message Mesh {
   repeated string skipCreatingInitialPolicies = 8;
 
   reserved 9; // formerly meshServices
-
-  message DataplaneProxyConstraints {
-    // Rules defines a set of rules for data plane proxies to be member of the
-    // mesh.
-    message Rules {
-      // Tags defines set of required tags. You can specify '*' in value to
-      // require non empty value of tag
-      map<string, string> tags = 1;
-    }
-
-    // Requirements defines a set of requirements that data plane proxies must
-    // fulfill in order to join the mesh. A data plane proxy must fulfill at
-    // least one requirement in order to join the mesh. Empty list of allowed
-    // requirements means that any proxy that is not explicitly denied can join.
-    repeated Rules requirements = 1;
-    // Restrictions defines a set of restrictions that data plane proxies cannot
-    // fulfill in order to join the mesh. A data plane proxy cannot fulfill any
-    // requirement in order to join the mesh.
-    // Restrictions takes precedence over requirements.
-    repeated Rules restrictions = 2;
-  }
 }
 
 // CertificateAuthorityBackend defines Certificate Authority backend
@@ -148,11 +120,9 @@ message Routing {
   reserved 1;
   reserved "localityAwareLoadBalancing";
 
-  // Enable routing traffic to services in other zone or external services
-  // through ZoneEgress. Default: false
-  bool zoneEgress = 2;
+  reserved 2;
+  reserved "zoneEgress";
 
-  // If true, blocks traffic to MeshExternalServices.
-  // Default: false
-  bool defaultForbidMeshExternalServiceAccess = 3;
+  reserved 3;
+  reserved "defaultForbidMeshExternalServiceAccess";
 }

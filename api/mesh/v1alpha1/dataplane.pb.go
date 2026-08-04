@@ -365,14 +365,6 @@ type Dataplane_Networking struct {
 	// other data plane proxies in the same network. This can also be a
 	// hostname, in which case the control plane will periodically resolve it.
 	Address string `protobuf:"bytes,5,opt,name=address,proto3" json:"address,omitempty"`
-	// In some situations, a data plane proxy resides in a private network (e.g.
-	// Docker) and is not reachable via `address` to other data plane proxies.
-	// `advertisedAddress` is configured with a routable address for such data
-	// plane proxy so that other proxies in the mesh can connect to it over
-	// `advertisedAddress` and not via address.
-	//
-	// Envoy still binds to the `address`, not `advertisedAddress`.
-	AdvertisedAddress string `protobuf:"bytes,7,opt,name=advertisedAddress,proto3" json:"advertisedAddress,omitempty"`
 	// Gateway describes a configuration of the gateway of the data plane proxy.
 	Gateway *Dataplane_Networking_Gateway `protobuf:"bytes,3,opt,name=gateway,proto3" json:"gateway,omitempty"`
 	// Inbound describes a list of inbound interfaces of the data plane proxy.
@@ -436,13 +428,6 @@ func (*Dataplane_Networking) Descriptor() ([]byte, []int) {
 func (x *Dataplane_Networking) GetAddress() string {
 	if x != nil {
 		return x.Address
-	}
-	return ""
-}
-
-func (x *Dataplane_Networking) GetAdvertisedAddress() string {
-	if x != nil {
-		return x.AdvertisedAddress
 	}
 	return ""
 }
@@ -867,11 +852,6 @@ type Dataplane_Networking_TransparentProxying struct {
 	// Using `*` to directly access every service is a resource-intensive
 	// operation, use it only if needed.
 	DirectAccessServices []string `protobuf:"bytes,3,rep,name=direct_access_services,json=directAccessServices,proto3" json:"direct_access_services,omitempty"`
-	// List of reachable services (represented by the value of
-	// `kuma.io/service`) via transparent proxying. Setting an explicit list
-	// can dramatically improve the performance of the mesh. If not specified,
-	// all services in the mesh are reachable.
-	ReachableServices []string `protobuf:"bytes,5,rep,name=reachable_services,json=reachableServices,proto3" json:"reachable_services,omitempty"`
 	// The IP family mode to enable for. Can be "IPv4" or "DualStack".
 	IpFamilyMode Dataplane_Networking_TransparentProxying_IpFamilyMode `protobuf:"varint,6,opt,name=ip_family_mode,json=ipFamilyMode,proto3,enum=kuma.mesh.v1alpha1.Dataplane_Networking_TransparentProxying_IpFamilyMode" json:"ip_family_mode,omitempty"`
 	// Reachable backend via transparent proxy when running with
@@ -930,13 +910,6 @@ func (x *Dataplane_Networking_TransparentProxying) GetRedirectPortOutbound() uin
 func (x *Dataplane_Networking_TransparentProxying) GetDirectAccessServices() []string {
 	if x != nil {
 		return x.DirectAccessServices
-	}
-	return nil
-}
-
-func (x *Dataplane_Networking_TransparentProxying) GetReachableServices() []string {
-	if x != nil {
-		return x.ReachableServices
 	}
 	return nil
 }
@@ -1286,7 +1259,7 @@ func (x *Dataplane_Networking_Outbound_BackendRef) GetLabels() map[string]string
 
 type Dataplane_Networking_TransparentProxying_ReachableBackendRef struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Type of the backend: MeshService or MeshExternalService
+	// Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService
 	//
 	//	+required
 	Kind string `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
@@ -1488,16 +1461,15 @@ var File_api_mesh_v1alpha1_dataplane_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\n" +
-	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17validate/validate.proto\"\x84&\n" +
+	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17validate/validate.proto\"\xc7%\n" +
 	"\tDataplane\x12H\n" +
 	"\n" +
 	"networking\x18\x01 \x01(\v2(.kuma.mesh.v1alpha1.Dataplane.NetworkingR\n" +
 	"networking\x12<\n" +
-	"\x06probes\x18\x03 \x01(\v2$.kuma.mesh.v1alpha1.Dataplane.ProbesR\x06probes\x1a\xbe\x1d\n" +
+	"\x06probes\x18\x03 \x01(\v2$.kuma.mesh.v1alpha1.Dataplane.ProbesR\x06probes\x1a\x81\x1d\n" +
 	"\n" +
 	"Networking\x12\x18\n" +
-	"\aaddress\x18\x05 \x01(\tR\aaddress\x12,\n" +
-	"\x11advertisedAddress\x18\a \x01(\tR\x11advertisedAddress\x12J\n" +
+	"\aaddress\x18\x05 \x01(\tR\aaddress\x12J\n" +
 	"\agateway\x18\x03 \x01(\v20.kuma.mesh.v1alpha1.Dataplane.Networking.GatewayR\agateway\x12J\n" +
 	"\ainbound\x18\x01 \x03(\v20.kuma.mesh.v1alpha1.Dataplane.Networking.InboundR\ainbound\x12M\n" +
 	"\boutbound\x18\x02 \x03(\v21.kuma.mesh.v1alpha1.Dataplane.Networking.OutboundR\boutbound\x12o\n" +
@@ -1559,12 +1531,11 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\")\n" +
 	"\vGatewayType\x12\r\n" +
 	"\tDELEGATED\x10\x00\x12\v\n" +
-	"\aBUILTIN\x10\x01\x1a\x8a\b\n" +
+	"\aBUILTIN\x10\x01\x1a\xf5\a\n" +
 	"\x13TransparentProxying\x12=\n" +
 	"\x15redirect_port_inbound\x18\x01 \x01(\rB\t\xfaB\x06*\x04\x18\xff\xff\x03R\x13redirectPortInbound\x12?\n" +
 	"\x16redirect_port_outbound\x18\x02 \x01(\rB\t\xfaB\x06*\x04\x18\xff\xff\x03R\x14redirectPortOutbound\x124\n" +
-	"\x16direct_access_services\x18\x03 \x03(\tR\x14directAccessServices\x12-\n" +
-	"\x12reachable_services\x18\x05 \x03(\tR\x11reachableServices\x12o\n" +
+	"\x16direct_access_services\x18\x03 \x03(\tR\x14directAccessServices\x12o\n" +
 	"\x0eip_family_mode\x18\x06 \x01(\x0e2I.kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.IpFamilyModeR\fipFamilyMode\x12}\n" +
 	"\x12reachable_backends\x18\a \x01(\v2N.kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendsR\x11reachableBackends\x1a\xbe\x02\n" +
 	"\x13ReachableBackendRef\x12\x12\n" +
@@ -1582,7 +1553,7 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\vUnSpecified\x10\x00\x12\r\n" +
 	"\tDualStack\x10\x01\x12\b\n" +
 	"\x04IPv4\x10\x02\x12\b\n" +
-	"\x04IPv6\x10\x03J\x04\b\x04\x10\x05R\x18redirect_port_inbound_v6\x1a\xc3\x02\n" +
+	"\x04IPv6\x10\x03J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06R\x18redirect_port_inbound_v6R\x12reachable_services\x1a\xc3\x02\n" +
 	"\bListener\x12J\n" +
 	"\x04type\x18\x01 \x01(\x0e26.kuma.mesh.v1alpha1.Dataplane.Networking.Listener.TypeR\x04type\x12\x18\n" +
 	"\aaddress\x18\x02 \x01(\tR\aaddress\x12\x12\n" +
@@ -1596,7 +1567,7 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"ZoneEgress\x10\x02\" \n" +
 	"\x05State\x12\t\n" +
 	"\x05Ready\x10\x00\x12\f\n" +
-	"\bNotReady\x10\x01J\x04\b\x06\x10\a\x1a\xcf\x01\n" +
+	"\bNotReady\x10\x01J\x04\b\x06\x10\aJ\x04\b\a\x10\b\x1a\xcf\x01\n" +
 	"\x06Probes\x12\x12\n" +
 	"\x04port\x18\x01 \x01(\rR\x04port\x12K\n" +
 	"\tendpoints\x18\x02 \x03(\v2-.kuma.mesh.v1alpha1.Dataplane.Probes.EndpointR\tendpoints\x1ad\n" +

@@ -5,8 +5,7 @@ labels:
   kuma.io/effect: shadow
 spec:
   targetRef:
-    kind: Mesh
-    proxyTypes: [Sidecar]
+    kind: Dataplane
   rules:
     - default:
         local:

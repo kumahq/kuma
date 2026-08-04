@@ -4,7 +4,6 @@ name: mtp-1
 spec:
   targetRef:
     kind: Dataplane
-    name: dp-1
     sectionName: v1
   rules:
     - default:

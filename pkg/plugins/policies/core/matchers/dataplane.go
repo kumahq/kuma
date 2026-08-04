@@ -8,14 +8,13 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
@@ -155,14 +154,11 @@ func DppSelectedByPolicy(
 	}
 	switch ref.Kind {
 	case common_api.Mesh:
-		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
-			inbounds := allInboundListeners(dpp)
-			inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
-			return inbounds, dpp.Spec.IsDelegatedGateway(), nil
-		}
-		return []core_rules.InboundListener{}, false, nil
+		inbounds := allInboundListeners(dpp)
+		inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
+		return inbounds, dpp.Spec.IsDelegatedGateway(), nil
 	case common_api.Dataplane:
-		if allDataplanesSelected(ref) || isSelectedByResourceIdentifier(dpp, ref, meta) || isSelectedByLabels(dpp, ref) {
+		if allDataplanesSelected(ref) || isSelectedByLabels(dpp, ref) {
 			inboundInterfaces := dpp.Spec.GetNetworking().InboundsSelectedBySectionName(pointer.Deref(ref.SectionName))
 			inbounds := util_slices.Map(inboundInterfaces, func(i mesh_proto.InboundInterface) core_rules.InboundListener {
 				return core_rules.InboundListener{Address: i.DataplaneIP, Port: i.DataplanePort}
@@ -182,18 +178,42 @@ func DppSelectedByPolicy(
 		}
 		return []core_rules.InboundListener{}, false, nil
 	case common_api.MeshHTTPRoute:
-		mhr := resolveMeshHTTPRouteRef(meta, pointer.Deref(ref.Name), referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
-		if mhr == nil {
-			return nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with name '%s'", pointer.Deref(ref.Name))
+		mhrs := resolveMeshHTTPRouteRef(meta, ref, referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
+		if len(mhrs) == 0 {
+			return nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with labels %v", pointer.Deref(ref.Labels))
 		}
-		return DppSelectedByPolicy(mhr.Meta, mhr.Spec.TargetRef.ToTargetRef(), dpp, referencableResources)
+
+		var inbounds []core_rules.InboundListener
+		seen := map[core_rules.InboundListener]struct{}{}
+		var delegatedGatewaySelected bool
+		for _, mhr := range mhrs {
+			selectedInbounds, delegatedGateway, err := DppSelectedByPolicy(
+				mhr.Meta,
+				mhr.Spec.TargetRef.ToTargetRef(),
+				dpp,
+				referencableResources,
+			)
+			if err != nil {
+				return nil, false, err
+			}
+			delegatedGatewaySelected = delegatedGatewaySelected || delegatedGateway
+			for _, inbound := range selectedInbounds {
+				if _, ok := seen[inbound]; ok {
+					continue
+				}
+				seen[inbound] = struct{}{}
+				inbounds = append(inbounds, inbound)
+			}
+		}
+
+		return inbounds, delegatedGatewaySelected, nil
 	default:
 		return nil, false, fmt.Errorf("unsupported targetRef kind '%s'", ref.Kind)
 	}
 }
 
 func allDataplanesSelected(ref common_api.TargetRef) bool {
-	return pointer.Deref(ref.Name) == "" && pointer.Deref(ref.Namespace) == "" && pointer.Deref(ref.Labels) == nil
+	return ref.Labels == nil
 }
 
 // TODO this is common functionality with selecting MeshService by labels, we should refactor this and extract to some common function
@@ -203,18 +223,18 @@ func isSelectedByLabels(dpp *core_mesh.DataplaneResource, ref common_api.TargetR
 	}
 
 	for label, value := range pointer.Deref(ref.Labels) {
-		if dpp.GetMeta().GetLabels()[label] != value {
-			return false
+		switch label {
+		case mesh_proto.DisplayName:
+			if core_model.GetDisplayName(dpp.GetMeta()) != value {
+				return false
+			}
+		default:
+			if dpp.GetMeta().GetLabels()[label] != value {
+				return false
+			}
 		}
 	}
 	return true
-}
-
-func isSelectedByResourceIdentifier(dpp *core_mesh.DataplaneResource, ref common_api.TargetRef, meta core_model.ResourceMeta) bool {
-	if pointer.Deref(ref.Name) == "" {
-		return false
-	}
-	return kri.From(dpp) == resolve.TargetRefToKRI(kri.FromResourceMeta(meta, core_model.ResourceType(ref.Kind)), ref)
 }
 
 func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
@@ -254,24 +274,43 @@ func dppSelectedByZone(policyMeta core_model.ResourceMeta, dpp *core_mesh.Datapl
 	}
 }
 
-func resolveMeshHTTPRouteRef(refMeta core_model.ResourceMeta, refName string, mhrs core_model.ResourceList) *meshhttproute_api.MeshHTTPRouteResource {
+func resolveMeshHTTPRouteRef(policyMeta core_model.ResourceMeta, ref common_api.TargetRef, mhrs core_model.ResourceList) []*meshhttproute_api.MeshHTTPRouteResource {
+	if len(pointer.Deref(ref.Labels)) == 0 {
+		return nil
+	}
+
+	refLabels := subsetutils.NewSubset(pointer.Deref(ref.Labels))
+	var matches []*meshhttproute_api.MeshHTTPRouteResource
 	for _, item := range mhrs.GetItems() {
-		if core_model.IsReferenced(refMeta, refName, item.GetMeta()) {
-			return item.(*meshhttproute_api.MeshHTTPRouteResource)
+		routeLabels := subsetutils.NewSubset(item.GetMeta().GetLabels())
+		if !refLabels.IsSubset(routeLabels) {
+			continue
 		}
+		// A label subset can match routes that share the same labels
+		// (e.g. kuma.io/display-name) across namespaces. Namespaced
+		// policies must only expand routes from their own namespace,
+		// otherwise route-derived config leaks across namespaces.
+		if !policySelectsResourceByNamespace(policyMeta, item.GetMeta()) {
+			continue
+		}
+		matches = append(matches, item.(*meshhttproute_api.MeshHTTPRouteResource))
 	}
-	return nil
+	return matches
 }
 
-func resolveDataplaneProxyType(dpp *core_mesh.DataplaneResource) common_api.TargetRefProxyType {
-	if dpp.Spec.GetNetworking().GetGateway() != nil {
-		return common_api.Gateway
+// policySelectsResourceByNamespace reports whether a policy may reference a
+// resource living in the given namespace. Consumer and workload-owner policies
+// are namespaced, so they can only reference resources from their own
+// namespace; producer/system policies are namespace-agnostic. Mirrors the
+// equivalent check applied when building To rules.
+func policySelectsResourceByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) bool {
+	switch core_model.PolicyRole(policyMeta) {
+	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
+		ns, ok := policyMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
+		return ok && ns == resourceMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
+	default:
+		return true
 	}
-	return common_api.Sidecar
-}
-
-func isSupportedProxyType(supportedTypes []common_api.TargetRefProxyType, dppType common_api.TargetRefProxyType) bool {
-	return len(supportedTypes) == 0 || slices.Contains(supportedTypes, dppType)
 }
 
 // allInboundListeners returns every inbound of the dataplane as an InboundListener

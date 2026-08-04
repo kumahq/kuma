@@ -3,7 +3,6 @@ package testserver
 import (
 	"fmt"
 	"maps"
-	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -259,9 +258,6 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 		},
 	}
 	spec.Spec.InitContainers = append(spec.Spec.InitContainers, k.opts.initContainersToAdd...)
-	if len(k.opts.ReachableServices) > 0 {
-		spec.Annotations["kuma.io/transparent-proxying-reachable-services"] = strings.Join(k.opts.ReachableServices, ",")
-	}
 	if k.opts.ReachableBackends != "" {
 		spec.Annotations["kuma.io/reachable-backends"] = k.opts.ReachableBackends
 	}

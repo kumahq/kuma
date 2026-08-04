@@ -68,11 +68,12 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 		}
 		// Mesh deletion doesn't cascade to Dataplanes (mesh_manager only deletes
 		// the Mesh itself), so an orphaned Dataplane can still reach HDS. Fall
-		// back to the legacy admin cluster name instead of failing the snapshot.
+		// back to the pre-unified admin cluster name instead of failing the snapshot.
 		meshFound = false
 	}
 
-	// TODO(unified-resource-naming): adjust when legacy naming is removed
+	// Both cluster name formats must be accepted during rolling updates and for
+	// orphaned dataplanes whose mesh has been deleted.
 	md := xds.DataplaneMetadataFromXdsMetadata(node.Metadata)
 	unifiedNamingEnabled := meshFound && unified_naming.Enabled(md, meshResource)
 	clusterName := names.GetEnvoyAdminClusterName()

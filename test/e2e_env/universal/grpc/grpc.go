@@ -82,7 +82,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -91,10 +92,12 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: test-server
+                labels:
+                  kuma.io/display-name: test-server
                 weight: 50
               - kind: MeshService
-                name: second-test-server
+                labels:
+                  kuma.io/display-name: second-test-server
                 weight: 50
 `
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())

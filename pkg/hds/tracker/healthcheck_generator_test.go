@@ -195,10 +195,10 @@ networking:
 				},
 			},
 		}),
-		Entry("should keep legacy admin cluster name for an orphaned dataplane whose mesh was deleted", testCase{
+		Entry("should use pre-unified admin cluster name for an orphaned dataplane whose mesh was deleted", testCase{
 			// Mesh deletion doesn't cascade to Dataplanes, so HDS can still see an
-			// orphaned dataplane after its mesh is gone. It must fall back to the
-			// legacy admin cluster name instead of failing the snapshot.
+			// orphaned dataplane after its mesh is gone. It must use the pre-unified
+			// admin cluster name instead of failing the snapshot.
 			goldenFile: "hds.1.golden.yaml",
 			deleteMesh: true,
 			dataplane: `

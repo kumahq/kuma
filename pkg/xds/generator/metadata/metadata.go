@@ -56,11 +56,6 @@ const (
 )
 
 const (
-	ProxyTemplateProfileEgressProxy  = "egress-proxy"
-	ProxyTemplateProfileIngressProxy = "ingress-proxy"
-)
-
-const (
 	ProbeListenerName    = "probe:listener"
 	ProbeRouteConfigName = "probe:route_configuration"
 )

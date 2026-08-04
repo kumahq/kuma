@@ -91,7 +91,8 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: test-server_%[2]s_svc_80
+      labels:
+        kuma.io/display-name: test-server
     rules: 
     - default:
         backendRefs:

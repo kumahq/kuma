@@ -5,22 +5,14 @@
  "detail": "Resource is not valid",
  "invalid_parameters": [
   {
-   "field": "spec.targetRef.kind",
-   "reason": "in body should be one of [Mesh Dataplane]"
-  },
-  {
-   "field": "spec.targetRef.name",
+   "field": "spec.targetRef.sectionName",
    "reason": "in body must be of type string: \"number\""
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
-   "field": "spec.targetRef.kind",
-   "message": "in body should be one of [Mesh Dataplane]"
-  },
-  {
-   "field": "spec.targetRef.name",
+   "field": "spec.targetRef.sectionName",
    "message": "in body must be of type string: \"number\""
   }
  ]

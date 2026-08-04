@@ -12,12 +12,13 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	meshtimeout "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/api"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v3/test/framework/versions"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 )
 
 // UpgradingZoneWithHelmChart exercises upgrading a Kubernetes Zone from an old
@@ -89,9 +90,15 @@ func UpgradingZoneWithHelmChart() {
 					WithHelmReleaseName(releaseName),
 					WithHelmChartVersion(version),
 					WithGlobalAddress(globalCP.GetKDSServerAddress()),
-					WithHelmOpt("ingress.enabled", "true"),
+					WithHelmOpt("meshes[0].name", "default"),
+					WithHelmOpt("meshes[0].ingress.enabled", "true"),
+					// The chart defaults the ingress Service to LoadBalancer,
+					// which never gets an address on k3d.
+					WithHelmOpt("meshes[0].ingress.service.type", "NodePort"),
 					WithoutHelmOpt("global.image.tag"),
 				)).
+				Install(WaitNumPods(Config.KumaNamespace, 1, meshZoneIngressApp)).
+				Install(WaitPodsAvailable(Config.KumaNamespace, meshZoneIngressApp)).
 				Setup(zoneK8s)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -112,7 +119,7 @@ spec:
 
 			Eventually(func(g Gomega) (int, error) {
 				return NumberOfResources(zoneK8s, meshtimeout.MeshTimeoutResourceTypeDescriptor)
-			}, "30s", "1s").Should(Equal(5), "meshtimeouts are not synced to zone")
+			}, "30s", "1s").Should(Equal(3), "meshtimeouts are not synced to zone")
 
 			By("Sync DPPs from Zone to Global")
 			err = NewClusterSetup().
@@ -120,41 +127,46 @@ spec:
 				Install(testserver.Install(testserver.WithNamespace(namespace))).Setup(zoneK8s)
 			Expect(err).ToNot(HaveOccurred())
 
+			// The zone's own mesh zone ingress is a Dataplane too, so it counts
+			// alongside the test server.
 			Eventually(func(g Gomega) (int, error) {
 				return NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
-			}, "30s", "1s").Should(Equal(1), "dpp should be synced to global")
+			}, "30s", "1s").Should(Equal(2), "dpps should be synced to global")
 
 			By("deploy a new universal zone with latest version")
 			err = NewClusterSetup().
 				Install(Kuma(core.Zone, WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))).
-				Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
+				// A mesh zone proxy is a Dataplane in the default mesh, so the
+				// mesh has to reach this zone over KDS before deploying it.
+				Install(func(c Cluster) error {
+					return WaitForMesh("default", []Cluster{c})
+				}).
+				Install(zoneproxy.Install(
+					zoneproxy.WithMesh("default"),
+					zoneproxy.WithIngress(),
+				)).
 				Setup(zoneUniversal)
 			Expect(err).ToNot(HaveOccurred())
 
-			// kumactl on zone CPs older than 2.11.0 exposes /zone-ingresses, renamed to
-			// /zoneingresses afterwards; query the old path directly to avoid the mismatch.
-			if versions.IsVersionLessThan(version, "2.11.0") {
-				Eventually(func(g Gomega) (int, error) {
-					return NumberOfResourcesByPath(zoneK8s, "/zone-ingresses")
-				}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
-			} else {
-				Eventually(func(g Gomega) (int, error) {
-					return NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
-				}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
-			}
+			// Mesh zone ingresses publish a MeshZoneAddress instead of a
+			// ZoneIngress, and global mirrors each zone's onto the others, so
+			// every cluster ends up seeing both.
+			Eventually(func(g Gomega) (int, error) {
+				return NumberOfResources(zoneK8s, meshzoneaddress_api.MeshZoneAddressResourceTypeDescriptor)
+			}, "60s", "1s").Should(Equal(2), "have remote and local mesh zone ingress")
 
 			// Scale down ingress before upgrading so the pod never runs against a
 			// mixed-version CP: an old replica could hand it enable_reuse_port=false,
 			// then the upgraded CP flips it to true, which Envoy rejects indefinitely.
 			By("scale down zone ingress before upgrade")
-			Expect(zoneK8s.(*K8sCluster).StopZoneIngress()).To(Succeed())
+			Expect(zoneK8s.(*K8sCluster).ScaleApp(Config.KumaNamespace, meshZoneIngressApp, 0)).To(Succeed())
 
 			By("upgrade Zone")
 			err = zoneK8s.(*K8sCluster).UpgradeKuma(core.Zone,
 				WithHelmReleaseName(releaseName),
 				WithHelmChartPath(Config.HelmChartPath),
 				ClearNoHelmOpts(),
-				WithHelmOpt("ingress.replicas", "0"),
+				WithHelmOpt("meshes[0].ingress.deployment.replicas", "0"),
 			)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -174,23 +186,36 @@ spec:
 			}, "60s", "1s").Should(Succeed())
 
 			By("start zone ingress after upgrade")
-			Expect(zoneK8s.(*K8sCluster).StartZoneIngress()).To(Succeed())
+			Expect(zoneK8s.(*K8sCluster).ScaleApp(Config.KumaNamespace, meshZoneIngressApp, 1)).To(Succeed())
 
-			// The old ingress pod can remain visible to global for up to ~40s after the
+			// The scaled-down ingress drops its MeshZoneAddress, and global can
+			// keep the old pod's Dataplane visible for up to ~40s after the
 			// upgrade (K8s graceful termination plus CP deregistration delay).
 			Eventually(func(g Gomega) {
-				zoneIngressesGlobal, err := NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
+				addressesGlobal, err := NumberOfResources(global, meshzoneaddress_api.MeshZoneAddressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(zoneIngressesGlobal).To(Equal(2))
+				g.Expect(addressesGlobal).To(Equal(2))
 			}, "3m", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				zoneIngressesK8sZone, err := NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
+				addressesK8sZone, err := NumberOfResources(zoneK8s, meshzoneaddress_api.MeshZoneAddressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(zoneIngressesK8sZone).To(Equal(2))
-				zoneIngressesUniversalZone, err := NumberOfResources(zoneUniversal, mesh.ZoneIngressResourceTypeDescriptor)
+				g.Expect(addressesK8sZone).To(Equal(2))
+				addressesUniversalZone, err := NumberOfResources(zoneUniversal, meshzoneaddress_api.MeshZoneAddressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(zoneIngressesUniversalZone).To(Equal(2))
+				g.Expect(addressesUniversalZone).To(Equal(2))
+			}, "3m", "1s").Should(Succeed())
+
+			// Restarting the ingress replaces its Dataplane, and the one from
+			// before the upgrade stays visible for a while, so wait for the
+			// counts to settle before asserting they stay put.
+			Eventually(func(g Gomega) {
+				dppsK8sZone, err := NumberOfResources(zoneK8s, mesh.DataplaneResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(dppsK8sZone).To(Equal(2))
+				dppsGlobal, err := NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(dppsGlobal).To(Equal(3))
 			}, "3m", "1s").Should(Succeed())
 
 			Consistently(func(g Gomega) {
@@ -200,25 +225,25 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				policiesUniversalZone, err := NumberOfResources(zoneUniversal, meshtimeout.MeshTimeoutResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(policiesGlobal).To(And(Equal(policiesUniversalZone), Equal(policiesK8sZone), Equal(5)))
+				g.Expect(policiesGlobal).To(And(Equal(policiesUniversalZone), Equal(policiesK8sZone), Equal(3)))
 
-				dppsGlobal, err := NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
-				g.Expect(err).ToNot(HaveOccurred())
 				dppsK8sZone, err := NumberOfResources(zoneK8s, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(dppsGlobal).To(And(Equal(dppsK8sZone), Equal(1)))
-				// Dpps don't get copied to other zones
+				g.Expect(dppsK8sZone).To(Equal(2))
 				dppsUniversalZone, err := NumberOfResources(zoneUniversal, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(dppsUniversalZone).To(Equal(0))
+				g.Expect(dppsUniversalZone).To(Equal(1))
+				dppsGlobal, err := NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(dppsGlobal).To(Equal(3))
 
-				zoneIngressesGlobal, err := NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
+				addressesGlobal, err := NumberOfResources(global, meshzoneaddress_api.MeshZoneAddressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				zoneIngressesK8sZone, err := NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
+				addressesK8sZone, err := NumberOfResources(zoneK8s, meshzoneaddress_api.MeshZoneAddressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				zoneIngressesUniversalZone, err := NumberOfResources(zoneUniversal, mesh.ZoneIngressResourceTypeDescriptor)
+				addressesUniversalZone, err := NumberOfResources(zoneUniversal, meshzoneaddress_api.MeshZoneAddressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(zoneIngressesGlobal).To(And(Equal(2), Equal(zoneIngressesUniversalZone), Equal(zoneIngressesK8sZone)))
+				g.Expect(addressesGlobal).To(And(Equal(2), Equal(addressesUniversalZone), Equal(addressesK8sZone)))
 			}, "30s", "1s").Should(Succeed())
 		},
 		EntryDescription("from version: %s"),

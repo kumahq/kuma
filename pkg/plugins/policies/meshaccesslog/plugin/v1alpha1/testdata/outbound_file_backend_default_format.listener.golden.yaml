@@ -14,12 +14,14 @@ filterChains:
           logFormat:
             textFormatSource:
               inlineString: |
-                [%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-service-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                [%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(unknown)->%UPSTREAM_HOST%(other-meshservice-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
           path: /tmp/log
-      cluster: other-service-tcp
-      statPrefix: other-service-tcp
+      cluster: kri_msvc_default_zone-1_other-ns_other-meshservice-tcp_37777
+      statPrefix: kri_msvc_default_zone-1_other-ns_other-meshservice-tcp_37777
 metadata:
   filterMetadata:
-    io.kuma.tags: {}
-name: outbound:127.0.0.1:37777
+    io.kuma.tags:
+      kuma.io/unified-name: kri_msvc_default_zone-1_other-ns_other-meshservice-tcp_37777
+name: kri_msvc_default_zone-1_other-ns_other-meshservice-tcp_37777
+statPrefix: kri_msvc_default_zone-1_other-ns_other-meshservice-tcp_37777
 trafficDirection: OUTBOUND

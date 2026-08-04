@@ -74,8 +74,9 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
-        namespace: %s
+        labels:
+          kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: %s
       rules:
         - matches:
             - path:
@@ -91,8 +92,9 @@ spec:
                     replaceFullPath: /new-path
             backendRefs:
               - kind: MeshService
-                name: test-server
-                namespace: %s
+                labels:
+                  kuma.io/display-name: test-server
+                  k8s.kuma.io/namespace: %s
                 port: 80
                 weight: 1
 `, namespace, meshName, namespace, namespace))(kubernetes.Cluster)).To(Succeed())
@@ -122,8 +124,9 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
-        namespace: %s
+        labels:
+          kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: %s
       rules:
         - matches:
             - path:
@@ -138,8 +141,9 @@ spec:
                     replacePrefixMatch: /hello/
             backendRefs:
               - kind: MeshService
-                name: test-server
-                namespace: %s
+                labels:
+                  kuma.io/display-name: test-server
+                  k8s.kuma.io/namespace: %s
                 port: 80
                 weight: 1
 `, namespace, meshName, namespace, namespace))(kubernetes.Cluster)).To(Succeed())

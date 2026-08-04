@@ -33,7 +33,7 @@
       "value": {
         "directResponse": {
           "body": {
-            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"kuma.proxy_role\":\"sidecar\",\"mesh\":\"envoyconfig\",\"zone\":\"kuma-3\"}}}}"
+            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"kuma.proxy_role\":\"sidecar\",\"kuma.workload\":\"demo-client\",\"mesh\":\"envoyconfig\",\"zone\":\"kuma-3\"}}}}"
           },
           "status": 200
         },
@@ -45,7 +45,7 @@
           {
             "header": {
               "key": "Etag",
-              "value": "488091e93561c5f7db20e1725a60d460bf639f2174ea998eebde915da2cf30e8"
+              "value": "ff9cae2090371f81c8ff9843c6b40fad6f62c0b43e032e228d733e1009c1b6c5"
             }
           }
         ]
@@ -63,7 +63,7 @@
             {
               "name": "If-None-Match",
               "stringMatch": {
-                "exact": "488091e93561c5f7db20e1725a60d460bf639f2174ea998eebde915da2cf30e8"
+                "exact": "ff9cae2090371f81c8ff9843c6b40fad6f62c0b43e032e228d733e1009c1b6c5"
               }
             }
           ],
@@ -498,20 +498,24 @@
                 "metadata": {
                   "filterMetadata": {
                     "envoy.lb": {
-                      "kuma.io/zone": "kuma-3",
-                      "team": "client-owners"
-                    },
-                    "envoy.transport_socket_match": {
-                      "kuma.io/zone": "kuma-3",
-                      "team": "client-owners"
-                    },
-                    "io.kuma.labels": {
                       "kuma.io/display-name": "demo-client",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
                       "kuma.io/proxy-type": "sidecar",
-                      "kuma.io/zone": "kuma-3"
+                      "kuma.io/workload": "demo-client",
+                      "kuma.io/zone": "kuma-3",
+                      "team": "client-owners"
+                    },
+                    "envoy.transport_socket_match": {
+                      "kuma.io/display-name": "demo-client",
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig",
+                      "kuma.io/origin": "zone",
+                      "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/workload": "demo-client",
+                      "kuma.io/zone": "kuma-3",
+                      "team": "client-owners"
                     }
                   }
                 }
@@ -542,25 +546,29 @@
                   "filterMetadata": {
                     "envoy.lb": {
                       "instance": "1",
+                      "kuma.io/display-name": "test-server",
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig",
+                      "kuma.io/origin": "zone",
                       "kuma.io/protocol": "http",
+                      "kuma.io/proxy-type": "sidecar",
+                      "kuma.io/workload": "test-server",
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
                       "version": "v1"
                     },
                     "envoy.transport_socket_match": {
                       "instance": "1",
-                      "kuma.io/protocol": "http",
-                      "kuma.io/zone": "kuma-3",
-                      "team": "server-owners",
-                      "version": "v1"
-                    },
-                    "io.kuma.labels": {
                       "kuma.io/display-name": "test-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
+                      "kuma.io/protocol": "http",
                       "kuma.io/proxy-type": "sidecar",
-                      "kuma.io/zone": "kuma-3"
+                      "kuma.io/workload": "test-server",
+                      "kuma.io/zone": "kuma-3",
+                      "team": "server-owners",
+                      "version": "v1"
                     }
                   }
                 }
@@ -599,7 +607,9 @@
         ],
         "metadata": {
           "filterMetadata": {
-            "io.kuma.tags": {}
+            "io.kuma.tags": {
+              "kuma.io/unified-name": "kri_msvc_envoyconfig_kuma-3__demo-client_3000"
+            }
           }
         },
         "name": "kri_msvc_envoyconfig_kuma-3__demo-client_3000",
@@ -687,7 +697,9 @@
         ],
         "metadata": {
           "filterMetadata": {
-            "io.kuma.tags": {}
+            "io.kuma.tags": {
+              "kuma.io/unified-name": "kri_msvc_envoyconfig_kuma-3__test-server_80"
+            }
           }
         },
         "name": "kri_msvc_envoyconfig_kuma-3__test-server_80",
@@ -805,7 +817,12 @@
         "metadata": {
           "filterMetadata": {
             "io.kuma.tags": {
-              "kuma.io/service": "demo-client",
+              "kuma.io/display-name": "demo-client",
+              "kuma.io/env": "universal",
+              "kuma.io/mesh": "envoyconfig",
+              "kuma.io/origin": "zone",
+              "kuma.io/proxy-type": "sidecar",
+              "kuma.io/workload": "demo-client",
               "kuma.io/zone": "kuma-3",
               "team": "client-owners"
             }

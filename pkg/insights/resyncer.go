@@ -424,8 +424,8 @@ func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tena
 
 func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status, backend string, addressPort string) {
 	if svcName == "" {
-		// When KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED is set, inbounds carry no
-		// kuma.io/service tag, so there is no service to track here.
+		// Inbounds carry no kuma.io/service tag in tag-free mode, so
+		// there is no service to track here.
 		return
 	}
 	if _, ok := insight.Services[svcName]; !ok {

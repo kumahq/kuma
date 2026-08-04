@@ -64,7 +64,6 @@ func gatherAllListeners(listeners Listeners) []*envoy_listener.Listener {
 	for _, listener := range listeners.Outbound {
 		add(listener)
 	}
-	add(listeners.Egress)
 	for _, listener := range listeners.ZoneIngress {
 		add(listener)
 	}

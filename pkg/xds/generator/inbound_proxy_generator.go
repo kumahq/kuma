@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	"maps"
 
 	"github.com/pkg/errors"
 
@@ -77,11 +78,19 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		inboundListenerName := unifiedName
 		statPrefix := unifiedName
 
+		listenerTags := maps.Clone(proxy.Dataplane.GetMeta().GetLabels())
+		if listenerTags == nil {
+			listenerTags = map[string]string{}
+		}
+		if protocol := iface.GetProtocolFallback(); protocol != "" {
+			listenerTags[mesh_proto.ProtocolTag] = protocol
+		}
+
 		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, inboundListenerName).
 			Configure(envoy_listeners.InboundListener(endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 			Configure(envoy_listeners.StatPrefix(statPrefix)).
 			Configure(envoy_listeners.TransparentProxying(proxy)).
-			Configure(envoy_listeners.TagsMetadata(iface.GetTags()))
+			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(listenerTags, unifiedName)))
 
 		switch xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
 		case mesh_proto.CertificateAuthorityBackend_STRICT:
@@ -161,10 +170,21 @@ func FilterChainBuilder(
 	}
 	if serverSideMTLS {
 		filterChainBuilder.
-			Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, tlsVersion, ciphers, true, len(xdsCtx.Mesh.CAsByTrustDomain) > 0))
+			Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, tlsVersion, ciphers, len(xdsCtx.Mesh.CAsByTrustDomain) > 0))
 	}
 	return filterChainBuilder.
 		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+}
+
+// InboundListenerTags keeps the inbound's own tags, or when they are empty
+// falls back to the contextual name (self_inbound_dp_<sectionName>) under
+// kuma.io/unified-name so the listener stays selectable. The name carries no
+// Dataplane identity, so it survives Pod churn that a Dataplane KRI would not.
+func InboundListenerTags(tags map[string]string, contextualName string) map[string]string {
+	if len(tags) > 0 {
+		return tags
+	}
+	return map[string]string{mesh_proto.UnifiedNameTag: contextualName}
 }
 
 func GenerateRoutes(proxy *core_xds.Proxy, endpoint mesh_proto.InboundInterface, cluster envoy_common.Cluster) envoy_common.Routes {

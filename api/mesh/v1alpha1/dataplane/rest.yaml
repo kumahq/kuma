@@ -94,16 +94,6 @@ components:
                   description: Port on which Envoy Admin API server will be listening
                   type: integer
               type: object
-            advertisedAddress:
-              description: |-
-                In some situations, a data plane proxy resides in a private network (e.g.
-                Docker) and is not reachable via `address` to other data plane proxies.
-                `advertisedAddress` is configured with a routable address for such data
-                plane proxy so that other proxies in the mesh can connect to it over
-                `advertisedAddress` and not via address.
-
-                Envoy still binds to the `address`, not `advertisedAddress`.
-              type: string
             gateway:
               description: Gateway describes a configuration of the gateway of the
                 data plane proxy.
@@ -385,7 +375,8 @@ components:
                       items:
                         properties:
                           kind:
-                            description: "Type of the backend: MeshService or MeshExternalService\n\n\t+required"
+                            description: "Type of the backend: MeshService, MeshExternalService
+                              or MeshMultiZoneService\n\n\t+required"
                             type: string
                           labels:
                             additionalProperties:
@@ -405,15 +396,6 @@ components:
                         type: object
                       type: array
                   type: object
-                reachableServices:
-                  description: |-
-                    List of reachable services (represented by the value of
-                    `kuma.io/service`) via transparent proxying. Setting an explicit list
-                    can dramatically improve the performance of the mesh. If not specified,
-                    all services in the mesh are reachable.
-                  items:
-                    type: string
-                  type: array
                 redirectPortInbound:
                   description: Port on which all inbound traffic is being transparently
                     redirected.

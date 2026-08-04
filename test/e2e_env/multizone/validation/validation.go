@@ -93,7 +93,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         connectionTimeout: 5s
 `, mtName, mesh, origin)
@@ -114,7 +115,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         connectionTimeout: 5s
 `, mtName, Config.KumaNamespace, mesh)

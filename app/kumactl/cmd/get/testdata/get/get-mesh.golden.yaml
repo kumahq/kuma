@@ -8,5 +8,3 @@ mtls:
   - name: builtin-1
     type: builtin
   enabledBackend: builtin-1
-routing:
-  zoneEgress: true

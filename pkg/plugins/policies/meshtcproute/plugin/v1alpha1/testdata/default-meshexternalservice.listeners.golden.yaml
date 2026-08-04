@@ -1,5 +1,5 @@
 resources:
-- name: outbound:10.20.20.1:9090
+- name: kri_extsvc_default___example_
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -12,13 +12,15 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: kri_extsvc_default___example_
-          statPrefix: default_example___extsvc_9090
+          statPrefix: kri_extsvc_default___example_
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
-    name: outbound:10.20.20.1:9090
+        io.kuma.tags:
+          kuma.io/unified-name: kri_extsvc_default___example_
+    name: kri_extsvc_default___example_
+    statPrefix: kri_extsvc_default___example_
     trafficDirection: OUTBOUND
-- name: outbound:127.0.0.1:10001
+- name: kri_msvc_default___backend_tcp-port
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -30,11 +32,12 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: backend
-          statPrefix: backend
+          cluster: kri_msvc_default___backend_tcp-port
+          statPrefix: kri_msvc_default___backend_tcp-port
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/service: backend
-    name: outbound:127.0.0.1:10001
+          kuma.io/unified-name: kri_msvc_default___backend_tcp-port
+    name: kri_msvc_default___backend_tcp-port
+    statPrefix: kri_msvc_default___backend_tcp-port
     trafficDirection: OUTBOUND
