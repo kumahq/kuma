@@ -1,0 +1,7 @@
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      tlsVersion:
+        min: TLS13
+        max: TLS13

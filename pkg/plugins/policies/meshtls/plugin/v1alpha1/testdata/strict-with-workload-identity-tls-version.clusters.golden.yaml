@@ -1,0 +1,5 @@
+resources:
+- name: kri_msvc_default_zone-1_backend-ns_outgoing_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    name: kri_msvc_default_zone-1_backend-ns_outgoing_80

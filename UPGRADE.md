@@ -88,6 +88,16 @@ spec:
         mode: Strict
 ```
 
+### `healthyPanicThreshold` removed from `MeshHealthCheck`
+
+The deprecated `to[].default.healthyPanicThreshold` field has been removed from the `MeshHealthCheck` policy. Use `to[].default.outlierDetection.healthyPanicThreshold` on the `MeshCircuitBreaker` policy instead.
+
+**Action required**
+
+Migrate any `MeshHealthCheck` resources using `to[].default.healthyPanicThreshold` to a `MeshCircuitBreaker` policy with `to[].default.outlierDetection.healthyPanicThreshold` before upgrading.
+
+**Warning**: Un-migrated `healthyPanicThreshold` settings are silently dropped after upgrade — the field no longer exists in the schema, so it is pruned by CRD validation on Kubernetes and discarded during deserialization on Universal. Affected clusters fall back to Envoy's default panic threshold of 50%.
+
 ### Legacy `ExternalService` resource removed
 
 The legacy `ExternalService` resource has been removed. Its CRD, API
@@ -184,21 +194,24 @@ Also update any automation that expected the `MeshServicesDisabled`
 `MeshIdentity` status reason or treated inspect `_layout` as unavailable
 outside `Exclusive` mode.
 
-### Standalone `ZoneIngress`/`ZoneEgress` proxies no longer receive Envoy config
+### Standalone `ZoneIngress`/`ZoneEgress` proxies are no longer supported
 
-The control plane no longer generates xDS configuration for data plane proxies
-started as standalone zone proxies, i.e. `kuma-dp run --proxy-type=ingress|egress`
-on Universal and the `ingress.enabled` / `egress.enabled` Helm deployments on
-Kubernetes. Cross-zone traffic is now served by mesh-scoped zone proxies, which
-are regular `Dataplane` resources.
+The control plane no longer serves data plane proxies started as standalone zone
+proxies, i.e. `kuma-dp run --proxy-type=ingress|egress` on Universal and the
+`ingress.enabled` / `egress.enabled` Helm deployments on Kubernetes. Cross-zone
+traffic is now served by mesh-scoped zone proxies, which are regular `Dataplane`
+resources.
 
-Such a proxy still connects, registers its `ZoneIngress`/`ZoneEgress` resource,
-and reports an insight, but it receives no listeners, clusters, or endpoints.
-Envoy keeps whatever configuration it already had until it restarts, at which
-point it starts with an empty configuration and drops all cross-zone traffic.
-The control plane logs
-`xDS generation for legacy ZoneIngress/ZoneEgress dataplanes is no longer supported`
-once per connected legacy proxy.
+`dataplane` is the only accepted value of `--proxy-type` (and of the
+`KUMA_DATAPLANE_PROXY_TYPE` environment variable); `kuma-dp` exits with
+`.ProxyType "ingress" is not supported` on startup. The control plane no longer
+generates a bootstrap for those proxy types, no longer registers or deregisters
+their `ZoneIngress`/`ZoneEgress` resources, and no longer writes
+`ZoneIngressInsight`/`ZoneEgressInsight` from an xDS stream. A pre-upgrade zone
+proxy that reconnects has its xDS stream rejected with `unsupported proxy type
+"ingress"`. `kumactl generate dataplane-token --proxy-type ingress|egress` is
+rejected, and tokens previously issued with a `type: ingress|egress` claim can no
+longer be used.
 
 **Action required**
 
@@ -206,9 +219,9 @@ Migrate to mesh-scoped zone proxies **before** upgrading the zone control plane.
 On Kubernetes deploy them through `meshes[].ingress.enabled` /
 `meshes[].egress.enabled`. On Universal, replace
 `kuma-dp run --proxy-type=ingress|egress` with a regular `Dataplane` that
-declares `networking.listeners` of type `ZoneIngress`/`ZoneEgress`. Upgrading the
-control plane first blackholes cross-zone traffic as soon as the legacy zone
-proxy Pods restart.
+declares `networking.listeners` of type `ZoneIngress`/`ZoneEgress`, and reissue
+its token without `--proxy-type`. Upgrading the control plane first blackholes
+cross-zone traffic as soon as the legacy zone proxy Pods restart.
 
 ### Legacy `ingress`/`egress` Helm values and `kumactl install` flags removed
 
@@ -272,10 +285,7 @@ configured under `dpServer.authn.dpProxy` (`serviceAccountToken` on Kubernetes,
 `dpToken` on Universal), and zone tokens are no longer validated.
 
 `dpServer.authn.zoneProxy.type` and
-`dpServer.authn.zoneProxy.zoneToken.validator` no longer affect
-authentication. `dpServer.authn.zoneProxy.type` still controls whether the
-bootstrap server requires a token from the legacy `ingress`/`egress` proxy
-types.
+`dpServer.authn.zoneProxy.zoneToken.validator` no longer affect anything.
 
 **Action required**
 
@@ -930,9 +940,10 @@ For every one of these types: the REST API endpoints (including the generic
 subcommands, KDS sync, and `MeshInsight`/`ServiceInsight` policy counters are
 gone, and the corresponding CRD is no longer installed on Kubernetes.
 
-The `ProxyTemplate` proto message and its default-profile machinery
-(`ProxyTemplateResolver`, profile imports) are unaffected — only the
-user-facing `ProxyTemplate` resource, API, and CRD are removed.
+The `ProxyTemplate` proto message and the template/profile indirection it fed
+(`ProxyTemplateResolver`, profile imports, `RegisterProfile`) are gone as well.
+The control plane now always generates the standard Envoy configuration for
+every data plane proxy.
 
 **Action required**
 
@@ -940,6 +951,21 @@ Delete any remaining resources of these types before upgrading — the control
 plane no longer accepts create/update requests for them, and stored resources
 of a removed type are not migrated. Remove any automation, dashboards, or
 kumactl scripts that reference these resource types, REST paths, or CRDs.
+
+### Legacy policy resources dropped from control plane RBAC and webhooks
+
+The control plane `ClusterRole` no longer grants access to the legacy policy
+CRDs removed above (`proxytemplates`, `ratelimits`, `trafficpermissions`,
+`trafficroutes`, `timeouts`, `retries`, `circuitbreakers`, `virtualoutbounds`,
+`faultinjections`, `healthchecks`, `trafficlogs`, `traffictraces`), and the
+`kuma.io` validating and owner-reference admission webhooks no longer register
+rules for them. Those CRDs are no longer installed, so the rules matched
+nothing.
+
+**Action required**
+
+None. If you copied the Kuma `ClusterRole` or webhook configuration into your
+own manifests, drop the same resource names from your copy.
 
 ### Built-in gateway API and CRDs removed
 
@@ -2158,7 +2184,7 @@ Migrate any remaining `FaultInjection` resources to `MeshFaultInjection` before 
 
 #### Deprecation of `healthyPanicThreshold` for `MeshHealthCheck`
 
-The `healthyPanicThreshold` field in the `MeshHealthCheck` policy is deprecated and will be removed in a future release. It has been moved to the `MeshCircuitBreaker` policy.
+The `healthyPanicThreshold` field in the `MeshHealthCheck` policy is deprecated in favor of the `MeshCircuitBreaker` policy. It has since been removed — see [`healthyPanicThreshold` removed from `MeshHealthCheck`](#healthypanicthreshold-removed-from-meshhealthcheck).
 
 ### Changes on revoking dataplane tokens
 
