@@ -273,7 +273,7 @@ func fillDataplaneOutbounds(
 			// its service only per inbound, and may expose several of them.
 			serviceName := inbound.GetServiceFallback(inboundTags[mesh_proto.ServiceTag])
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
-			inboundAddress := inboundInterface.DataplaneAdvertisedIP
+			inboundAddress := inboundInterface.DataplaneIP
 			inboundPort := inboundInterface.DataplanePort
 
 			// A dataplane that declares no service at all (neither an inbound
@@ -341,7 +341,7 @@ func fillLocalMeshServices(
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
 					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-						Target:   inboundInterface.DataplaneAdvertisedIP,
+						Target:   inboundInterface.DataplaneIP,
 						Port:     inboundInterface.DataplanePort,
 						Tags:     inboundTags,
 						Weight:   1,

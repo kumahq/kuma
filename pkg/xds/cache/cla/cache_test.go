@@ -9,6 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/cla"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -41,10 +42,10 @@ var _ = Describe("ClusterLoadAssignment CachedRetriever", func() {
 				},
 			},
 		}
-		cla1, err := claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3, endpointMap)
+		cla1, err := claCache.GetCLA(context.Background(), "mesh-0", "", plugins_xds.NewClusterBuilder().WithService("backend").Build(), envoy_common.APIV3, endpointMap)
 		Expect(err).ToNot(HaveOccurred())
 
-		cla2, err := claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3, endpointMap)
+		cla2, err := claCache.GetCLA(context.Background(), "mesh-0", "", plugins_xds.NewClusterBuilder().WithService("backend").Build(), envoy_common.APIV3, endpointMap)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(cla1).To(BeIdenticalTo(cla2))
@@ -68,7 +69,7 @@ var _ = Describe("ClusterLoadAssignment CachedRetriever", func() {
 		}
 
 		// when
-		clusterBackend := envoy_common.NewCluster(envoy_common.WithService("backend"))
+		clusterBackend := plugins_xds.NewClusterBuilder().WithService("backend").Build()
 		claBackend, err := claCache.GetCLA(context.Background(), "mesh-0", "", clusterBackend, envoy_common.APIV3, endpointMap)
 
 		// then
@@ -77,7 +78,7 @@ var _ = Describe("ClusterLoadAssignment CachedRetriever", func() {
 		Expect(claBackend).To(matchers.MatchProto(expectedCla))
 
 		// when
-		clusterWeb := envoy_common.NewCluster(envoy_common.WithService("web"))
+		clusterWeb := plugins_xds.NewClusterBuilder().WithService("web").Build()
 		claWeb, err := claCache.GetCLA(context.Background(), "mesh-0", "", clusterWeb, envoy_common.APIV3, endpointMap)
 
 		// then
@@ -108,10 +109,7 @@ var _ = Describe("ClusterLoadAssignment CachedRetriever", func() {
 		}
 
 		// when
-		clusterV1 := envoy_common.NewCluster(
-			envoy_common.WithService("backend"),
-			envoy_common.WithTags(tags.Tags{}.WithTags("version", "v1")),
-		)
+		clusterV1 := plugins_xds.NewClusterBuilder().WithService("backend").WithTags(tags.Tags{}.WithTags("version", "v1")).Build()
 		claV1, err := claCache.GetCLA(context.Background(), "mesh-0", "", clusterV1, envoy_common.APIV3, endpointMap)
 
 		// then
@@ -120,10 +118,7 @@ var _ = Describe("ClusterLoadAssignment CachedRetriever", func() {
 		Expect(claV1).To(matchers.MatchProto(expectedCla))
 
 		// when
-		clusterV2 := envoy_common.NewCluster(
-			envoy_common.WithService("backend"),
-			envoy_common.WithTags(tags.Tags{}.WithTags("version", "v2")),
-		)
+		clusterV2 := plugins_xds.NewClusterBuilder().WithService("backend").WithTags(tags.Tags{}.WithTags("version", "v2")).Build()
 		claV2, err := claCache.GetCLA(context.Background(), "mesh-0", "", clusterV2, envoy_common.APIV3, endpointMap)
 
 		// then

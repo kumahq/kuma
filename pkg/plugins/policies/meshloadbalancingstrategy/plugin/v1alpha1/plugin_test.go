@@ -915,29 +915,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:27777", false, nil, true)).
-							Configure(
-								HttpOutboundRoute(
-									envoy_names.GetOutboundRouteName("backend"),
-									"backend",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{
-											envoy_common.NewCluster(
-												envoy_common.WithService("backend-bb38a94289f18fb9"),
-												envoy_common.WithWeight(90),
-											),
-											envoy_common.NewCluster(
-												envoy_common.WithService("backend-c72efb5be46fae6b"),
-												envoy_common.WithWeight(10),
-											),
-										},
-									}},
-									map[string]map[string]bool{
-										"kuma.io/service": {
-											"backend": true,
-										},
-									},
-								),
-							),
+							Configure(AddFilterChainConfigurer(outboundRoute(
+								"backend",
+								xds.NewSplitBuilder().WithClusterName("backend-bb38a94289f18fb9").WithWeight(90).Build(),
+								xds.NewSplitBuilder().WithClusterName("backend-c72efb5be46fae6b").WithWeight(10).Build(),
+							))),
 						)).MustBuild(),
 				},
 				{
@@ -1868,27 +1850,35 @@ func paymentsAndBackendRouting() *xds_builders.RoutingBuilder {
 		)
 }
 
+// outboundRoute mirrors the single catch-all route that
+// meshhttproute_plugin.GenerateOutboundListener produces for an outbound.
+func outboundRoute(service string, splits ...envoy_common.Split) *meshhttproute_xds.HttpOutboundRouteConfigurer {
+	match := meshhttproute_api.Match{
+		Path: &meshhttproute_api.PathMatch{
+			Type:  meshhttproute_api.PathPrefix,
+			Value: "/",
+		},
+	}
+	return &meshhttproute_xds.HttpOutboundRouteConfigurer{
+		RouteConfigName: envoy_names.GetOutboundRouteName(service),
+		VirtualHostName: service,
+		Routes: []meshhttproute_xds.OutboundRoute{{
+			Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{match})),
+			Match: match,
+			Split: splits,
+		}},
+		DpTags: mesh_proto.MultiValueTagSet{"kuma.io/service": {service: true}},
+	}
+}
+
 func paymentsListener() envoy_common.NamedResource {
 	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 			Configure(HttpConnectionManager("127.0.0.1:27778", false, nil, true)).
-			Configure(
-				HttpOutboundRoute(
-					envoy_names.GetOutboundRouteName("backend"),
-					"backend",
-					envoy_common.Routes{{
-						Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-							envoy_common.WithService("payment"),
-							envoy_common.WithWeight(100),
-						)},
-					}},
-					map[string]map[string]bool{
-						"kuma.io/service": {
-							"payment": true,
-						},
-					},
-				),
-			),
+			Configure(AddFilterChainConfigurer(outboundRoute(
+				"payment",
+				xds.NewSplitBuilder().WithClusterName("payment").WithWeight(100).Build(),
+			))),
 		)).MustBuild()
 }
 
@@ -1896,23 +1886,10 @@ func backendListener() envoy_common.NamedResource {
 	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 			Configure(HttpConnectionManager("127.0.0.1:27777", false, nil, true)).
-			Configure(
-				HttpOutboundRoute(
-					envoy_names.GetOutboundRouteName("backend"),
-					"backend",
-					envoy_common.Routes{{
-						Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-							envoy_common.WithService("backend"),
-							envoy_common.WithWeight(100),
-						)},
-					}},
-					map[string]map[string]bool{
-						"kuma.io/service": {
-							"backend": true,
-						},
-					},
-				),
-			),
+			Configure(AddFilterChainConfigurer(outboundRoute(
+				"backend",
+				xds.NewSplitBuilder().WithClusterName("backend").WithWeight(100).Build(),
+			))),
 		)).MustBuild()
 }
 

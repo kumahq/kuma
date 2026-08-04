@@ -32,6 +32,64 @@ data:
     #
     # see conf/kuma-cp.conf.yml for available settings
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kuma-transparent-proxy-config
+  namespace: kuma-system
+  labels:
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+data:
+  config.yaml: |
+    comments:
+      disabled: false
+    dropInvalidPackets: false
+    ipFamilyMode: dualstack
+    iptablesExecutables:
+      ip6tables: ""
+      ip6tables-restore: ""
+      ip6tables-save: ""
+      iptables: ""
+      iptables-restore: ""
+      iptables-save: ""
+    kumaDPUser: "5678"
+    log:
+      enabled: false
+    redirect:
+      dns:
+        captureAll: true
+        enabled: true
+        port: 15053
+        resolvConfigPath: /etc/resolv.conf
+        skipConntrackZoneSplit: false
+      inbound:
+        enabled: true
+        excludePorts: []
+        excludePortsForIPs: []
+        excludePortsForUIDs: []
+        includePorts: []
+        insertRedirectInsteadOfAppend: false
+        port: 15006
+      outbound:
+        enabled: true
+        excludePorts: []
+        excludePortsForIPs: []
+        excludePortsForUIDs: []
+        includePorts: []
+        insertRedirectInsteadOfAppend: false
+        port: 15001
+      vnet:
+        networks: []
+    retry:
+      maxRetries: 4
+      sleepBetweenRetries: 2s
+    storeFirewalld: false
+    verbose: false
+    wait: 5
+    waitInterval: 0
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -429,7 +487,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
+        checksum/config: 1fa6f39d97a8aad47eff6f6670269d3333a30c2e107b0a9d14b2aa23e0f3bf24
         checksum/tls-secrets: 01c5dbaaff5e871deac824962de1b2f22ea141c03c2e5f3d8eb7dac089831a3a
       labels: 
         app: kuma-control-plane
@@ -539,6 +597,8 @@ spec:
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-dp:0.0.1"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
+              value: "kuma-transparent-proxy-config"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
               value: "true"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE

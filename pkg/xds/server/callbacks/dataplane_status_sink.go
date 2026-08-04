@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/events"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
@@ -58,21 +57,9 @@ func NewDataplaneInsightSink(
 	eventFactory events.ListenerFactory,
 	roResManager manager.ReadOnlyResourceManager,
 ) DataplaneInsightSink {
-	metadata := core_xds.DataplaneMetadataFromXdsMetadata(xdsMetadata)
-
-	var dpType core_model.ResourceType
-	// If the dataplane was started with a resource YAML, then it will be serialized in
-	// the node metadata and we would know the underlying type directly. Since that
-	// is optional, we can't depend on it here, so we map from the proxy type, which is
-	// guaranteed.
-	switch metadata.GetProxyType() {
-	case mesh_proto.IngressProxyType:
-		dpType = core_mesh.ZoneIngressType
-	case mesh_proto.DataplaneProxyType:
-		dpType = core_mesh.DataplaneType
-	case mesh_proto.EgressProxyType:
-		dpType = core_mesh.ZoneEgressType
-	}
+	// Dataplane is the only proxy type that can connect to the control plane,
+	// so the insight always belongs to a Dataplane.
+	dpType := core_mesh.DataplaneType
 
 	return &dataplaneInsightSink{
 		flushTicker:      newTicker,
@@ -267,18 +254,6 @@ func (s *dataplaneInsightStore) Upsert(
 	otel *mesh_proto.DataplaneInsight_OpenTelemetry,
 ) error {
 	switch dataplaneType {
-	case core_mesh.ZoneIngressType:
-		return manager.Upsert(ctx, s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) error {
-			insight := resource.(*core_mesh.ZoneIngressInsightResource)
-			insight.Spec.Metadata = xdsMetadata
-			return insight.Spec.UpdateSubscription(subscription)
-		})
-	case core_mesh.ZoneEgressType:
-		return manager.Upsert(ctx, s.resManager, dataplaneID, core_mesh.NewZoneEgressInsightResource(), func(resource core_model.Resource) error {
-			insight := resource.(*core_mesh.ZoneEgressInsightResource)
-			insight.Spec.Metadata = xdsMetadata
-			return insight.Spec.UpdateSubscription(subscription)
-		})
 	case core_mesh.DataplaneType:
 		return manager.Upsert(ctx, s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) error {
 			insight := resource.(*core_mesh.DataplaneInsightResource)

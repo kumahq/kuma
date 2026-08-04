@@ -371,13 +371,11 @@ jobs:
         with:
           oidc-namespace: kong
           oidc-service-slug: ${{ contains(needs.check.outputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
-          oidc-auth-only: true
       - name: Push security assets to cloudsmith
         id: push_security_assets
         if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
         uses: cloudsmith-io/action@7af394e0f8add4867bce109385962dafecad1b8d # v0.6.14
         with:
-          api-key: ${{ steps.cloudsmith_token.outputs.oidc-token }}
           command: "push"
           format: "raw"
           owner: "kong"
@@ -388,3 +386,4 @@ jobs:
           summary: "SLSA security artifacts for ${{ github.repository }}"
           description: "SBOM and Binary artifact Provenance for ${{ github.repository }}"
           use-executable: "false"
+          skip-install-cli: "true"

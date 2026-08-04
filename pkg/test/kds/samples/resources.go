@@ -1,8 +1,6 @@
 package samples
 
 import (
-	"time"
-
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
@@ -113,52 +111,6 @@ var (
 		Subscriptions: []*mesh_proto.DiscoverySubscription{{
 			Id: "1",
 		}},
-	}
-	TrafficRoute = &mesh_proto.TrafficRoute{
-		Sources: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Destinations: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Conf: &mesh_proto.TrafficRoute_Conf{
-			Split: []*mesh_proto.TrafficRoute_Split{{
-				Weight: util_proto.UInt32(10),
-				Destination: map[string]string{
-					mesh_proto.ServiceTag: "*",
-				},
-			}},
-		},
-	}
-	Timeout = &mesh_proto.Timeout{
-		Sources: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Destinations: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				mesh_proto.ServiceTag: "*",
-			},
-		}},
-		Conf: &mesh_proto.Timeout_Conf{
-			ConnectTimeout: util_proto.Duration(time.Second * 5),
-			Tcp: &mesh_proto.Timeout_Conf_Tcp{
-				IdleTimeout: util_proto.Duration(time.Second * 5),
-			},
-			Http: &mesh_proto.Timeout_Conf_Http{
-				RequestTimeout: util_proto.Duration(time.Second * 5),
-				IdleTimeout:    util_proto.Duration(time.Second * 5),
-			},
-			Grpc: &mesh_proto.Timeout_Conf_Grpc{
-				StreamIdleTimeout: util_proto.Duration(time.Second * 5),
-				MaxStreamDuration: util_proto.Duration(time.Second * 5),
-			},
-		},
 	}
 	Secret2 = &system_proto.Secret{
 		Data: util_proto.Bytes([]byte("secret")),
