@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -73,10 +74,8 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 	validForErr, validFor := validateValidFor(idReq.ValidFor)
 	verr.Add(validForErr)
 
-	if idReq.Type != "" {
-		if err := mesh_proto.ProxyType(idReq.Type).IsValid(); err != nil {
-			verr.AddViolation("type", err.Error())
-		}
+	if idReq.Type != "" && mesh_proto.ProxyType(idReq.Type) != mesh_proto.DataplaneProxyType {
+		verr.AddViolation("type", fmt.Sprintf("%s is not a valid proxy type", idReq.Type))
 	}
 
 	if verr.HasViolations() {

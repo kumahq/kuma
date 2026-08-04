@@ -46,8 +46,6 @@ var _ = Describe("bootstrapGenerator", func() {
 
 	authEnabled := map[string]bool{
 		string(mesh_proto.DataplaneProxyType): true,
-		string(mesh_proto.IngressProxyType):   true,
-		string(mesh_proto.EgressProxyType):    true,
 	}
 
 	BeforeEach(func() {
