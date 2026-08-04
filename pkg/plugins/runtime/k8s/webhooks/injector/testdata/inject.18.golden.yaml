@@ -6,15 +6,37 @@ metadata:
     kuma.io/application-probe-proxy-port: "0"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/sidecar-injected: "true"
-    kuma.io/sidecar-uid: "5678"
-    kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-inbound-port: "15006"
-    kuma.io/transparent-proxying-ip-family-mode: dualstack
-    kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: disabled
     kuma.io/virtual-probes-port: "9000"
     traffic.kuma.io/exclude-inbound-ports: ""
     traffic.kuma.io/exclude-outbound-ports: ""
+    traffic.kuma.io/transparent-proxy-config: |
+      ipFamilyMode: dualstack
+      kumaDPUser: "5678"
+      redirect:
+        dns:
+          captureAll: false
+          enabled: false
+          port: 0
+          resolvConfigPath: /etc/resolv.conf
+          skipConntrackZoneSplit: false
+        inbound:
+          enabled: true
+          excludePorts:
+          - 1234
+          - 5678
+          port: 15006
+        outbound:
+          enabled: true
+          excludePorts:
+          - 4321
+          - 7654
+          port: 15001
+      retry:
+        maxRetries: 4
+        sleepBetweenRetries: 2s
+      wait: 5
+      waitInterval: 0
   labels:
     kuma.io/mesh: default
     run: busybox
@@ -30,7 +52,7 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --verbose
+    - --config=/tmp/transparent-proxy/base/config.yaml
     command:
     - /usr/bin/kumactl
     - install
@@ -60,10 +82,14 @@ spec:
     volumeMounts:
     - mountPath: /tmp
       name: kuma-init-tmp
+    - mountPath: /tmp/transparent-proxy/base
+      name: transparent-proxy-base
+      readOnly: true
   - args:
     - run
     - --log-level=info
     - --concurrency=2
+    - --transparent-proxy-config=/tmp/transparent-proxy/base/config.yaml
     env:
     - name: INSTANCE_IP
       valueFrom:
@@ -170,6 +196,9 @@ spec:
     volumeMounts:
     - mountPath: /tmp
       name: kuma-sidecar-tmp
+    - mountPath: /tmp/transparent-proxy/base
+      name: transparent-proxy-base
+      readOnly: true
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
@@ -190,4 +219,10 @@ spec:
   - emptyDir:
       sizeLimit: 10M
     name: kuma-sidecar-tmp
+  - downwardAPI:
+      items:
+      - fieldRef:
+          fieldPath: metadata.annotations['traffic.kuma.io/transparent-proxy-config']
+        path: config.yaml
+    name: transparent-proxy-base
 status: {}

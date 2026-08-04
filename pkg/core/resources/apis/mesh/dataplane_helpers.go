@@ -61,17 +61,6 @@ func overlap(address1 net.IP, address2 net.IP) bool {
 	return address1.Equal(address2)
 }
 
-func (d *DataplaneResource) GetIP() string {
-	if d == nil {
-		return ""
-	}
-	if d.Spec.Networking.AdvertisedAddress != "" {
-		return d.Spec.Networking.AdvertisedAddress
-	} else {
-		return d.Spec.Networking.Address
-	}
-}
-
 func (d *DataplaneResource) IsIPv6() bool {
 	return d != nil && govalidator.IsIPv6(d.Spec.GetNetworking().GetAddress())
 }
@@ -106,7 +95,7 @@ func (d *DataplaneResource) AdminAddress(defaultAdminPort uint32) string {
 	if d == nil {
 		return ""
 	}
-	ip := d.GetIP()
+	ip := d.GetAddress()
 	adminPort := d.AdminPort(defaultAdminPort)
 	return net.JoinHostPort(ip, strconv.FormatUint(uint64(adminPort), 10))
 }

@@ -170,7 +170,7 @@ func applyToInbounds(
 		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
-			SourceIP:           dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
+			SourceIP:           dataplane.GetAddress(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
 			DestinationService: dataplane.InboundIdentifyingName(inbound),
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
@@ -212,7 +212,7 @@ func applyToZoneProxyListeners(
 		}
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
-			SourceIP:           dataplane.GetIP(),
+			SourceIP:           dataplane.GetAddress(),
 			DestinationService: mesh_proto.ServiceUnknown,
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
@@ -256,7 +256,7 @@ func applyToOutbounds(
 
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      dataplane.IdentifyingName(),
-			SourceIP:           dataplane.GetIP(),
+			SourceIP:           dataplane.GetAddress(),
 			DestinationService: outbound.LegacyOutbound.GetService(),
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
@@ -289,7 +289,7 @@ func applyToTransparentProxyListeners(
 
 	kumaValues := listeners_v3.KumaValues{
 		SourceService:      dataplane.IdentifyingName(),
-		SourceIP:           dataplane.GetIP(),
+		SourceIP:           dataplane.GetAddress(),
 		DestinationService: "external",
 		Mesh:               dataplane.GetMeta().GetMesh(),
 		Zone:               zone,
@@ -322,7 +322,7 @@ func applyToDirectAccess(
 	for endpoint, listener := range directAccess {
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      dataplane.IdentifyingName(),
-			SourceIP:           dataplane.GetIP(),
+			SourceIP:           dataplane.GetAddress(),
 			DestinationService: generator.DirectAccessEndpointName(endpoint),
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
@@ -413,7 +413,7 @@ func applyToRealResource(
 
 	kumaValues := listeners_v3.KumaValues{
 		SourceService:      proxy.Dataplane.IdentifyingName(),
-		SourceIP:           proxy.Dataplane.GetIP(),
+		SourceIP:           proxy.Dataplane.GetAddress(),
 		DestinationService: r.ResourceOrigin.Name,
 		Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
 		Zone:               zone,

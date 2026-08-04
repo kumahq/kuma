@@ -353,18 +353,17 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 			}
 			return resolvedMeshZoneAddress, nil
 		case core_mesh.DataplaneType:
-			list, err = modifyAllEntries(list, func(resource core_model.Resource) (core_model.Resource, error) {
-				dp, ok := resource.(*core_mesh.DataplaneResource)
-				if !ok {
-					return nil, errors.New("entry is not a dataplane this shouldn't happen")
-				}
-				zi, err := xds_topology.ResolveDataplaneAddress(m.ipFunc, dp)
-				if err != nil {
-					l.Error(err, "failed to resolve dataplane's domain name, ignoring dataplane", "mesh", dp.GetMeta().GetMesh(), "name", dp.GetMeta().GetName())
-					return nil, nil
-				}
-				return zi, nil
-			})
+			dp, ok := resource.(*core_mesh.DataplaneResource)
+			if !ok {
+				return nil, errors.New("entry is not a dataplane this shouldn't happen")
+			}
+
+			resolvedDataplane, err := xds_topology.ResolveDataplaneAddress(m.ipFunc, dp)
+			if err != nil {
+				l.Error(err, "failed to resolve dataplane's domain name, ignoring dataplane", "mesh", dp.GetMeta().GetMesh(), "name", dp.GetMeta().GetName())
+				return nil, nil
+			}
+			return resolvedDataplane, nil
 		}
 		return resource, nil
 	})
