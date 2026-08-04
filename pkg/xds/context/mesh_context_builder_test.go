@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/dns/vips"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
 	test_store "github.com/kumahq/kuma/v2/pkg/test/store"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	xds_server "github.com/kumahq/kuma/v2/pkg/xds/server"
@@ -141,4 +142,68 @@ var _ = Describe("hash", func() {
 			Expect(afterContext).To(Equal(beforeContext), "context should be the exact same object")
 		}
 	}, test.EntriesForFolder("meshcontext_hash"))
+})
+
+// remoteMeshZoneAddressWithHostname is the public address of the zone proxy in zone
+// "east", published as a load balancer hostname instead of an IP, which is what the
+// ingress Service reconciler produces on EKS.
+const remoteMeshZoneAddressWithHostname = `
+type: MeshZoneAddress
+name: zone-proxy-east
+mesh: default
+labels:
+  kuma.io/zone: east
+  kuma.io/origin: global
+spec:
+  address: lb.example.com
+  port: 10001
+`
+
+func endpointTargets(meshCtx *xds_context.MeshContext) []string {
+	var targets []string
+	for _, endpoints := range meshCtx.EndpointMap {
+		for _, endpoint := range endpoints {
+			targets = append(targets, endpoint.Target)
+		}
+	}
+	return targets
+}
+
+var _ = Describe("MeshZoneAddress", func() {
+	var resourceStore store.ResourceStore
+
+	BeforeEach(func() {
+		resourceStore = memory.NewStore()
+	})
+
+	It("resolves the MeshZoneAddress hostname before it reaches the endpoint map", func() {
+		// given a MeshZoneAddress pointing at a load balancer hostname, as reconciled
+		// from a LoadBalancer Service on EKS, where the hostname takes precedence
+		meshContextBuilder := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			func(host string) ([]net.IP, error) {
+				if ip := net.ParseIP(host); ip != nil {
+					return []net.IP{ip}, nil
+				}
+				return []net.IP{net.ParseIP("10.0.0.1")}, nil
+			},
+			"zone-1",
+			vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
+			"mesh",
+			80,
+			xds_context.AnyToAnyReachableServicesGraphBuilder,
+			nil,
+		)
+		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
+		Expect(test_store.LoadResources(context.Background(), resourceStore, remoteMeshZoneAddressWithHostname)).To(Succeed())
+		Expect(samples.MeshServiceSyncedBackendBuilder().Create(resourceStore)).To(Succeed())
+
+		// when
+		meshCtx, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the endpoint target is the resolved IP, not the hostname Envoy can't dial
+		Expect(endpointTargets(meshCtx)).To(ConsistOf("10.0.0.1"))
+	})
 })
