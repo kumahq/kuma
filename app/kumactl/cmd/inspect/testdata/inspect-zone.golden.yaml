@@ -28,9 +28,6 @@ items:
           Mesh:
             responsesRejected: "1"
             responsesSent: "2"
-          ProxyTemplate:
-            responsesRejected: "1"
-            responsesSent: "2"
           RateLimit:
             responsesRejected: "1"
             responsesSent: "2"
