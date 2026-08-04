@@ -123,9 +123,19 @@ func HashMetaIdentity(r Resource) []byte {
 
 func writeMetaIdentity(hasher hash.Hash, r Resource) {
 	meta := r.GetMeta()
-	_, _ = hasher.Write([]byte(r.Descriptor().Name))
-	_, _ = hasher.Write([]byte(meta.GetMesh()))
-	_, _ = hasher.Write([]byte(meta.GetName()))
+	WriteLenPrefixed(hasher, string(r.Descriptor().Name))
+	WriteLenPrefixed(hasher, meta.GetMesh())
+	WriteLenPrefixed(hasher, meta.GetName())
+}
+
+// WriteLenPrefixed writes s into hasher prefixed with its length, so that
+// consecutive writes of variable-length strings can't produce the same byte
+// stream for different values, e.g. ("a", "bc") and ("ab", "c").
+func WriteLenPrefixed(hasher hash.Hash, s string) {
+	var lenBuf [8]byte
+	binary.BigEndian.PutUint64(lenBuf[:], uint64(len(s)))
+	_, _ = hasher.Write(lenBuf[:])
+	_, _ = hasher.Write([]byte(s))
 }
 
 // WriteSortedLabels writes labels into hasher in a deterministic,
@@ -138,16 +148,9 @@ func WriteSortedLabels(hasher hash.Hash, labels map[string]string) {
 	}
 	sort.Strings(keys)
 
-	var lenBuf [8]byte
-	writeLenPrefixed := func(s string) {
-		binary.BigEndian.PutUint64(lenBuf[:], uint64(len(s)))
-		_, _ = hasher.Write(lenBuf[:])
-		_, _ = hasher.Write([]byte(s))
-	}
-
 	for _, k := range keys {
-		writeLenPrefixed(k)
-		writeLenPrefixed(labels[k])
+		WriteLenPrefixed(hasher, k)
+		WriteLenPrefixed(hasher, labels[k])
 	}
 }
 

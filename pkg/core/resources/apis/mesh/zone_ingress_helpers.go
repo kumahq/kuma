@@ -47,7 +47,7 @@ func (r *ZoneIngressResource) AdminAddress(defaultAdminPort uint32) string {
 func (r *ZoneIngressResource) Hash() []byte {
 	hasher := fnv.New128a()
 	_, _ = hasher.Write(model.HashMeta(r))
-	_, _ = hasher.Write([]byte(r.Spec.GetNetworking().GetAddress()))
-	_, _ = hasher.Write([]byte(r.Spec.GetNetworking().GetAdvertisedAddress()))
+	model.WriteLenPrefixed(hasher, r.Spec.GetNetworking().GetAddress())
+	model.WriteLenPrefixed(hasher, r.Spec.GetNetworking().GetAdvertisedAddress())
 	return hasher.Sum(nil)
 }

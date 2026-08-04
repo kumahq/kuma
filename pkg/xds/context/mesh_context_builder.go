@@ -500,7 +500,7 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	}
 
 	for _, m := range maps.SortedKeys(resources.CrossMeshResources) {
-		_, _ = hasher.Write([]byte(m))
+		core_model.WriteLenPrefixed(hasher, m)
 		_, _ = hasher.Write(resources.CrossMeshResources[m].Hash())
 	}
 	return hasher.Sum(nil)
@@ -535,7 +535,7 @@ func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalCont
 		}
 	}
 	for _, meshName := range maps.SortedKeys(resources.CrossMeshResources) {
-		_, _ = hasher.Write([]byte(meshName))
+		core_model.WriteLenPrefixed(hasher, meshName)
 		crossMesh := resources.CrossMeshResources[meshName]
 		for _, resType := range maps.SortedKeys(crossMesh) {
 			if affectsPolicyMatching(resType) {
