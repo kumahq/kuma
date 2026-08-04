@@ -2168,7 +2168,7 @@ Migrate any remaining `FaultInjection` resources to `MeshFaultInjection` before 
 
 #### Deprecation of `healthyPanicThreshold` for `MeshHealthCheck`
 
-The `healthyPanicThreshold` field in the `MeshHealthCheck` policy is deprecated and will be removed in a future release. It has been moved to the `MeshCircuitBreaker` policy.
+The `healthyPanicThreshold` field in the `MeshHealthCheck` policy is deprecated in favor of the `MeshCircuitBreaker` policy. It has since been removed — see [`healthyPanicThreshold` removed from `MeshHealthCheck`](#healthypanicthreshold-removed-from-meshhealthcheck).
 
 ### Changes on revoking dataplane tokens
 
