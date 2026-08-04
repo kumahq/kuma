@@ -386,3 +386,4 @@ jobs:
           summary: "SLSA security artifacts for ${{ github.repository }}"
           description: "SBOM and Binary artifact Provenance for ${{ github.repository }}"
           use-executable: "false"
+          skip-install-cli: "true"
