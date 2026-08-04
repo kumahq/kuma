@@ -891,7 +891,6 @@ var _ = Describe("PodReconciler", func() {
 					mesh_proto.MeshTag:             "poc",
 					mesh_proto.ResourceOriginLabel: "zone",
 					mesh_proto.EnvTag:              mesh_proto.KubernetesEnvironment,
-					mesh_proto.ProxyTypeLabel:      "sidecar",
 				},
 				OwnerReferences: []kube_meta.OwnerReference{
 					{

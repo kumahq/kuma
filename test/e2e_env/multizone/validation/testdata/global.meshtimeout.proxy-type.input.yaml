@@ -2,7 +2,6 @@ type: MeshTimeout
 name: mt-proxy-type
 mesh: multizone-label-validation
 labels:
-  kuma.io/proxy-type: sidecar
 spec:
   targetRef:
     kind: Mesh

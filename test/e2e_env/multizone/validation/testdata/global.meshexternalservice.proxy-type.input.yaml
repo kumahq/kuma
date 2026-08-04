@@ -2,7 +2,6 @@ type: MeshExternalService
 name: mes-proxy-type
 mesh: multizone-label-validation
 labels:
-  kuma.io/proxy-type: sidecar
 spec:
   match:
     type: HostnameGenerator
