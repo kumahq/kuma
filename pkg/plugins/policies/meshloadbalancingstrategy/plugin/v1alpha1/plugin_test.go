@@ -1852,7 +1852,7 @@ func paymentsAndBackendRouting() *xds_builders.RoutingBuilder {
 
 // outboundRoute mirrors the single catch-all route that
 // meshhttproute_plugin.GenerateOutboundListener produces for an outbound.
-func outboundRoute(dpTagService string, splits ...envoy_common.Split) *meshhttproute_xds.HttpOutboundRouteConfigurer {
+func outboundRoute(service string, splits ...envoy_common.Split) *meshhttproute_xds.HttpOutboundRouteConfigurer {
 	match := meshhttproute_api.Match{
 		Path: &meshhttproute_api.PathMatch{
 			Type:  meshhttproute_api.PathPrefix,
@@ -1860,14 +1860,14 @@ func outboundRoute(dpTagService string, splits ...envoy_common.Split) *meshhttpr
 		},
 	}
 	return &meshhttproute_xds.HttpOutboundRouteConfigurer{
-		RouteConfigName: envoy_names.GetOutboundRouteName("backend"),
-		VirtualHostName: "backend",
+		RouteConfigName: envoy_names.GetOutboundRouteName(service),
+		VirtualHostName: service,
 		Routes: []meshhttproute_xds.OutboundRoute{{
 			Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{match})),
 			Match: match,
 			Split: splits,
 		}},
-		DpTags: mesh_proto.MultiValueTagSet{"kuma.io/service": {dpTagService: true}},
+		DpTags: mesh_proto.MultiValueTagSet{"kuma.io/service": {service: true}},
 	}
 }
 
