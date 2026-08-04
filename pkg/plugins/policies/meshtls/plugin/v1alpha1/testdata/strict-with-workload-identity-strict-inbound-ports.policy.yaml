@@ -1,0 +1,5 @@
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      mode: Strict

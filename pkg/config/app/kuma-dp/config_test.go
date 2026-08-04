@@ -56,7 +56,7 @@ var _ = Describe("Config", func() {
 				"KUMA_DATAPLANE_MESH":                                           "demo",
 				"KUMA_DATAPLANE_NAME":                                           "example",
 				"KUMA_DATAPLANE_DRAIN_TIME":                                     "60s",
-				"KUMA_DATAPLANE_PROXY_TYPE":                                     "ingress",
+				"KUMA_DATAPLANE_PROXY_TYPE":                                     "dataplane",
 				"KUMA_READINESS_PORT":                                           "9902",
 				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":                            "envoy.sh",
 				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":                             "/var/run/envoy",
@@ -153,6 +153,12 @@ var _ = Describe("Config", func() {
 		},
 		Entry("unsupported proxy type", func(cfg *kuma_dp.Config) {
 			cfg.Dataplane.ProxyType = "gateway"
+		}),
+		Entry("legacy ingress proxy type", func(cfg *kuma_dp.Config) {
+			cfg.Dataplane.ProxyType = "ingress"
+		}),
+		Entry("legacy egress proxy type", func(cfg *kuma_dp.Config) {
+			cfg.Dataplane.ProxyType = "egress"
 		}),
 		Entry("invalid cp url", func(cfg *kuma_dp.Config) {
 			cfg.ControlPlane.URL = ":333"

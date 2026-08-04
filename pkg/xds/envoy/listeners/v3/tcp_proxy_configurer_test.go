@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
@@ -40,11 +41,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-				envoy_common.WithService("localhost:8080"),
-				envoy_common.WithWeight(200),
-				envoy_common.WithTags(map[string]string{"version": "v1"}),
-			)},
+			clusters:        []envoy_common.Cluster{plugins_xds.NewClusterBuilder().WithService("localhost:8080").WithTags(map[string]string{"version": "v1"}).Build()},
 			expected: `
         name: inbound:192.168.0.1:8080
         trafficDirection: INBOUND
@@ -66,21 +63,13 @@ var _ = Describe("TcpProxyConfigurer", func() {
               statPrefix: localhost_8080
 `,
 		}),
-		Entry("basic tcp_proxy with weighted destination clusters", testCase{
+		Entry("basic tcp_proxy with multiple destination clusters", testCase{
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
 			clusters: []envoy_common.Cluster{
-				envoy_common.NewCluster(
-					envoy_common.WithService("db"),
-					envoy_common.WithWeight(10),
-					envoy_common.WithTags(map[string]string{"kuma.io/service": "db", "version": "v1"}),
-				),
-				envoy_common.NewCluster(
-					envoy_common.WithService("db"),
-					envoy_common.WithWeight(90),
-					envoy_common.WithTags(map[string]string{"kuma.io/service": "db", "version": "v2"}),
-				),
+				plugins_xds.NewClusterBuilder().WithService("db").WithTags(map[string]string{"kuma.io/service": "db", "version": "v1"}).Build(),
+				plugins_xds.NewClusterBuilder().WithService("db").WithTags(map[string]string{"kuma.io/service": "db", "version": "v2"}).Build(),
 			},
 			expected: `
             address:
@@ -100,13 +89,13 @@ var _ = Describe("TcpProxyConfigurer", func() {
                           envoy.lb:
                             version: v1
                       name: db
-                      weight: 10
+                      weight: 1
                     - metadataMatch:
                         filterMetadata:
                           envoy.lb:
                             version: v2
                       name: db
-                      weight: 90
+                      weight: 1
             name: inbound:127.0.0.1:5432
             trafficDirection: INBOUND
             enableReusePort: true`,
@@ -134,10 +123,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
 			clusters: []envoy_common.Cluster{
-				envoy_common.NewCluster(
-					envoy_common.WithService("localhost:8080"),
-					envoy_common.WithWeight(200),
-				),
+				plugins_xds.NewClusterBuilder().WithService("localhost:8080").Build(),
 			},
 
 			expected: `
@@ -157,19 +143,13 @@ var _ = Describe("TcpProxyConfigurer", func() {
               statPrefix: localhost_8080
 `,
 		}),
-		Entry("basic tcp_proxy with weighted destination clusters", testCase{
+		Entry("basic tcp_proxy with multiple destination clusters", testCase{
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
 			clusters: []envoy_common.Cluster{
-				envoy_common.NewCluster(
-					envoy_common.WithService("db-0"),
-					envoy_common.WithWeight(10),
-				),
-				envoy_common.NewCluster(
-					envoy_common.WithService("db-1"),
-					envoy_common.WithWeight(90),
-				),
+				plugins_xds.NewClusterBuilder().WithService("db-0").Build(),
+				plugins_xds.NewClusterBuilder().WithService("db-1").Build(),
 			},
 			expected: `
             address:
@@ -185,9 +165,9 @@ var _ = Describe("TcpProxyConfigurer", func() {
                   weightedClusters:
                     clusters:
                     - name: db-0
-                      weight: 10
+                      weight: 1
                     - name: db-1
-                      weight: 90
+                      weight: 1
             name: inbound:127.0.0.1:5432
             trafficDirection: INBOUND
             enableReusePort: true`,

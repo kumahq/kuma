@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
@@ -44,10 +45,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
 			service:         "backend",
-			routes: envoy_common.Routes{envoy_common.NewRouteFromCluster(envoy_common.NewCluster(
-				envoy_common.WithService("localhost:8080"),
-				envoy_common.WithWeight(200),
-			))},
+			routes:          envoy_common.Routes{envoy_common.NewRouteFromCluster(plugins_xds.NewClusterBuilder().WithService("localhost:8080").Build())},
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND

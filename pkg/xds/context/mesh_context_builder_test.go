@@ -454,6 +454,53 @@ status:
 		Expect(ctx3.Hash).ToNot(Equal(ctx2.Hash), "VIP allocation must invalidate the mesh context")
 	})
 
+	It("resolves a Dataplane address that is a DNS name", func() {
+		// given a builder whose lookup resolves a hostname, as it would on AWS ECS
+		// where the Dataplane is created before the container gets its IP
+		builderWithDNS := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			func(host string) ([]net.IP, error) {
+				switch host {
+				case "backend.dns.name":
+					return []net.IP{net.ParseIP("192.168.0.10")}, nil
+				default:
+					return []net.IP{net.ParseIP(host)}, nil
+				}
+			},
+			"zone-1",
+			nil,
+		)
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: backend.dns.name
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: backend
+`)).To(Succeed())
+
+		// when
+		meshCtx, err := builderWithDNS.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the dataplane stored in the mesh context is resolved
+		dataplanes := meshCtx.Resources.Dataplanes().Items
+		Expect(dataplanes).To(HaveLen(1))
+		Expect(dataplanes[0].Spec.GetNetworking().GetAddress()).To(Equal("192.168.0.10"))
+
+		// and so is the endpoint Envoy EDS gets, since it only accepts IPs
+		Expect(meshCtx.EndpointMap["backend"]).To(HaveLen(1))
+		Expect(meshCtx.EndpointMap["backend"][0].Target).To(Equal("192.168.0.10"))
+	})
+
 	It("returns an error instead of panicking when listing resources fails", func() {
 		// given a mesh exists but listing any other resource fails (e.g. DB connection lost)
 		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())
@@ -545,6 +592,7 @@ var _ = Describe("ServicesInformation", func() {
 			Meta: &test_model.ResourceMeta{Mesh: meshName, Name: "zone-egress-dp"},
 			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "127.0.0.10",
 					Listeners: []*mesh_proto.Dataplane_Networking_Listener{
 						{
 							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
