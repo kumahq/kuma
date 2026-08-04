@@ -102,13 +102,22 @@ jobs:
             ./build/distributions/out/*.sha256
             !./build/distributions/out/*.tar.gz.sha256
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
+      # cloudsmith-cli-action v3 dropped the oidc-token output (the CLI now
+      # exchanges OIDC lazily instead), so exchange the GitHub OIDC token for
+      # a Cloudsmith one directly against the same endpoint the CLI uses.
       - name: Get Cloudsmith OIDC token
         id: cloudsmith_token
-        uses: cloudsmith-io/cloudsmith-cli-action@db783de9f6e7a445e5e31d94f4210303b48a10a3 # v3.0.1
-        with:
-          oidc-namespace: kong
-          oidc-service-slug: ${{ contains(inputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
-          oidc-auth-only: true
+        env:
+          CLOUDSMITH_SERVICE_SLUG: ${{ contains(inputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
+        run: |
+          id_token=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://github.com/${GITHUB_REPOSITORY_OWNER}" | jq -r '.value')
+          token=$(curl -sSf -X POST "https://api.cloudsmith.io/openid/kong/" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg oidc_token "$id_token" --arg service_slug "$CLOUDSMITH_SERVICE_SLUG" '{oidc_token:$oidc_token, service_slug:$service_slug}')" \
+            | jq -r '.token')
+          echo "::add-mask::$token"
+          echo "oidc-token=$token" >> "$GITHUB_OUTPUT"
       - name: publish binaries
         env:
           PULP_USERNAME: ${{ vars.PULP_USERNAME }}
