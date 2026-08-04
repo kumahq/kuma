@@ -929,7 +929,7 @@ var _ = Describe("MeshService generator", func() {
 			}
 
 			// Colon is rejected by IsValidLabelValue, triggering drop("invalid", "appci").
-			err = createDataplaneWithLabels(builders.Dataplane().WithName("dp-invalid").WithAddress("10.0.0.2").
+			err := createDataplaneWithLabels(builders.Dataplane().WithName("dp-invalid").WithAddress("10.0.0.2").
 				WithoutInbounds().
 				AddInbound(builders.Inbound().WithPort(80).WithServicePort(8080)),
 				map[string]string{metadata.KumaWorkload: "svc-invalid", "appci": "colon:invalid"})
@@ -1018,13 +1018,8 @@ var _ = Describe("MeshService generator", func() {
 					WithoutInbounds().
 					AddInbound(builders.Inbound().
 						WithPort(80).
-						WithServicePort(8080).
-						WithTags(map[string]string{
-							mesh_proto.ServiceTag: "backend",
-							"appci":               "jeffy",
-							"team":                "blue",
-						}),
-					), map[string]string{metadata.KumaWorkload: "backend"})
+						WithServicePort(8080),
+					), map[string]string{metadata.KumaWorkload: "backend", "appci": "jeffy", "team": "blue"})
 				Expect(err).ToNot(HaveOccurred())
 
 				ms := meshservice_api.NewMeshServiceResource()

@@ -65,9 +65,6 @@ var _ = Describe("bootstrapGenerator", func() {
 						{
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 					Admin: &mesh_proto.EnvoyAdmin{},
@@ -252,10 +249,7 @@ var _ = Describe("bootstrapGenerator", func() {
       {
         "port": 22022,
         "servicePort": 8443,
-        "tags": {
-          "kuma.io/protocol": "http2",
-          "kuma.io/service": "backend"
-        }
+        "protocol": "http2"
       },
     ],
     "admin": {
