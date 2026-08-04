@@ -88,6 +88,16 @@ spec:
         mode: Strict
 ```
 
+### `healthyPanicThreshold` removed from `MeshHealthCheck`
+
+The deprecated `to[].default.healthyPanicThreshold` field has been removed from the `MeshHealthCheck` policy. Use `to[].default.outlierDetection.healthyPanicThreshold` on the `MeshCircuitBreaker` policy instead.
+
+**Action required**
+
+Migrate any `MeshHealthCheck` resources using `to[].default.healthyPanicThreshold` to a `MeshCircuitBreaker` policy with `to[].default.outlierDetection.healthyPanicThreshold` before upgrading.
+
+**Warning**: Un-migrated `healthyPanicThreshold` settings are silently dropped after upgrade — the field no longer exists in the schema, so it is pruned by CRD validation on Kubernetes and discarded during deserialization on Universal. Affected clusters fall back to Envoy's default panic threshold of 50%.
+
 ### Legacy `ExternalService` resource removed
 
 The legacy `ExternalService` resource has been removed. Its CRD, API
