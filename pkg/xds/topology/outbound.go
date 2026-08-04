@@ -233,7 +233,7 @@ func endpointIdentity(dataplane *core_mesh.DataplaneResource, inbound *mesh_prot
 	if tags == nil {
 		tags = map[string]string{}
 	}
-	if protocol := inbound.GetProtocol(); protocol != "" {
+	if protocol := inbound.GetProtocolFallback(); protocol != "" {
 		tags[mesh_proto.ProtocolTag] = protocol
 	}
 	return tags

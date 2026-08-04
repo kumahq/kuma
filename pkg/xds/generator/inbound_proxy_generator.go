@@ -35,7 +35,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		}
 
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
-		protocol := core_meta.ParseProtocol(iface.GetProtocol())
+		protocol := core_meta.ParseProtocol(iface.GetProtocolFallback())
 		unifiedName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.InboundName)
 
 		// generate CDS resource
@@ -79,7 +79,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		if listenerTags == nil {
 			listenerTags = map[string]string{}
 		}
-		if protocol := iface.GetProtocol(); protocol != "" {
+		if protocol := iface.GetProtocolFallback(); protocol != "" {
 			listenerTags[mesh_proto.ProtocolTag] = protocol
 		}
 

@@ -167,7 +167,7 @@ func applyToInbounds(
 			continue
 		}
 		configured[listenerKey] = struct{}{}
-		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
+		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
 			SourceIP:           dataplane.GetAddress(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635

@@ -146,7 +146,9 @@ var _ = Describe("MeshAccessLog", func() {
 				WithService("backend").
 				WithAddress("127.0.0.1").
 				WithPort(17777).
-				WithProtocol("http")
+				WithTags(map[string]string{
+					mesh_proto.ProtocolTag: "http",
+				})
 			if given.inboundName != "" {
 				inboundBuilder = inboundBuilder.WithName(given.inboundName)
 			}
@@ -724,7 +726,9 @@ var _ = Describe("MeshAccessLog", func() {
 					WithService("backend-canary").
 					WithAddress("127.0.0.1").
 					WithPort(17777).
-					WithProtocol("http"),
+					WithTags(map[string]string{
+						mesh_proto.ProtocolTag: "http",
+					}),
 			},
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
@@ -1052,7 +1056,9 @@ var _ = Describe("MeshAccessLog", func() {
 							WithService("backend").
 							WithAddress("127.0.0.1").
 							WithPort(17777).
-							WithProtocol("http"),
+							WithTags(map[string]string{
+								mesh_proto.ProtocolTag: "http",
+							}),
 					),
 			).
 			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, core_rules.ToRules{
@@ -1141,7 +1147,9 @@ var _ = Describe("MeshAccessLog", func() {
 							WithService("backend").
 							WithAddress("127.0.0.1").
 							WithPort(17777).
-							WithProtocol("http"),
+							WithTags(map[string]string{
+								mesh_proto.ProtocolTag: "http",
+							}),
 					),
 			).
 			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, core_rules.ToRules{

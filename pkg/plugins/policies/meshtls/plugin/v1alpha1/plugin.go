@@ -360,7 +360,7 @@ func configureListener(
 	if listenerTags == nil {
 		listenerTags = map[string]string{}
 	}
-	if protocol := inbound.GetProtocol(); protocol != "" {
+	if protocol := inbound.GetProtocolFallback(); protocol != "" {
 		listenerTags[mesh_proto.ProtocolTag] = protocol
 	}
 
@@ -375,7 +375,7 @@ func configureListener(
 		return nil, err
 	}
 
-	protocol := core_meta.ParseProtocol(inbound.GetProtocol())
+	protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
 	ciphers := pointer.Deref(conf.TlsCiphers)
 
 	filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {

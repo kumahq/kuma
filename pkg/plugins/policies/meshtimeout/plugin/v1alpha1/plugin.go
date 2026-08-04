@@ -104,7 +104,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			continue
 		}
 
-		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
+		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
 
 		inboundRules := fromRules.InboundRules[listenerKey]
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
