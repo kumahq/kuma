@@ -82,13 +82,6 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		field := path.Field("inbound").Index(i)
 		result := validateInbound(inbound, networking.Address)
 		err.AddErrorAt(field, result)
-		// Require service tag only if inbound has any tags.
-		// Inbounds have no tags in tag-free mode.
-		if len(inbound.Tags) > 0 {
-			if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
-				err.AddViolationAt(field.Field("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
-			}
-		}
 	}
 	for i, outbound := range networking.GetOutbound() {
 		result := validateOutbound(outbound)
@@ -159,21 +152,6 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 			}
 		}
 	}
-
-	validateProtocol := func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
-		var result validators.ValidationError
-		if value, exist := selector[mesh_proto.ProtocolTag]; exist {
-			if core_meta.ParseProtocol(value) == core_meta.ProtocolUnknown {
-				result.AddViolationAt(
-					path.Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(core_meta.SupportedProtocols.Strings()...)),
-				)
-			}
-		}
-		return result
-	}
-	result.Add(ValidateTags(validators.RootedAt("tags"), inbound.Tags, ValidateTagsOpts{
-		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
-	}))
 
 	if inbound.Protocol != "" && core_meta.ParseProtocol(inbound.Protocol) == core_meta.ProtocolUnknown {
 		result.AddViolationAt(

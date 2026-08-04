@@ -7,6 +7,11 @@
    "name": "dp-1",
    "creationTime": "2018-07-17T16:05:36.995Z",
    "modificationTime": "2018-07-17T16:05:36.995Z",
+   "labels": {
+    "service": "backend",
+    "tagcolumn": "tag:v",
+    "version": "v1"
+   },
    "kri": "kri_dp_mesh1___dp-1_",
    "dataplane": {
     "networking": {
@@ -47,6 +52,11 @@
    "name": "dp-no-insights",
    "creationTime": "2018-07-17T16:05:36.995Z",
    "modificationTime": "2018-07-17T16:05:36.995Z",
+   "labels": {
+    "service": "backend",
+    "tagcolumn": "tag:v",
+    "version": "v1"
+   },
    "kri": "kri_dp_mesh1___dp-no-insights_",
    "dataplane": {
     "networking": {

@@ -24,7 +24,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	builtin_issuer "github.com/kumahq/kuma/v3/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/v3/pkg/xds/auth"
 	"github.com/kumahq/kuma/v3/pkg/xds/auth/universal"
 )
@@ -56,26 +55,22 @@ var _ = Describe("Authentication flow", func() {
 			UseSecrets: true,
 		})
 		Expect(err).ToNot(HaveOccurred())
-		zoneTokenValidator, err := builtin.NewZoneTokenValidator(resManager, false, store_config.MemoryStore, dp_server.ZoneTokenValidatorConfig{
-			UseSecrets: true,
-		})
-		Expect(err).ToNot(HaveOccurred())
-		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneTokenValidator, resManager, config_core.UniversalEnvironment, "zone-1")
+		authenticator = universal.NewAuthenticator(dataplaneValidator, resManager, config_core.UniversalEnvironment)
 
 		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("default"), "default")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("demo"), "demo")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
-		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"))
+		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"), core_store.CreateWithLabels(map[string]string{"team": "web", "env": "prod"}))
 		Expect(err).ToNot(HaveOccurred())
 
 		dpResWithWorkload = *samples.DataplaneWebBuilder().
 			WithName("dp-with-workload").
-			WithLabels(map[string]string{metadata.KumaWorkload: "backend"}).
+			WithLabels(map[string]string{metadata.KumaWorkload: "backend", "team": "web"}).
 			AddInboundOfService("web-api").
 			Build()
-		err = resStore.Create(ctx, &dpResWithWorkload, core_store.CreateByKey("dp-with-workload", "default"), core_store.CreateWithLabels(map[string]string{metadata.KumaWorkload: "backend"}))
+		err = resStore.Create(ctx, &dpResWithWorkload, core_store.CreateByKey("dp-with-workload", "default"), core_store.CreateWithLabels(map[string]string{metadata.KumaWorkload: "backend", "team": "web"}))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -115,9 +110,8 @@ var _ = Describe("Authentication flow", func() {
 			id: builtin_issuer.DataplaneIdentity{
 				Mesh: "default",
 				Tags: map[string]map[string]bool{
-					"kuma.io/service": {
-						"web":     true,
-						"web-api": true,
+					"team": {
+						"web": true,
 					},
 				},
 			},
@@ -129,6 +123,23 @@ var _ = Describe("Authentication flow", func() {
 				Workload: "backend",
 			},
 			dpRes: &dpResWithWorkload,
+		}),
+		Entry("should auth with a legacy token bound to the service tags declared in the dataplane spec", testCase{
+			// dpRes declares kuma.io/service only on its inbounds (via
+			// AddInboundOfService), not as a label, so this pins
+			// `kumactl generate dataplane-token --tag` staying usable
+			// against a Dataplane that has not migrated that tag to a
+			// label, even though xDS identity generation is labels-only.
+			id: builtin_issuer.DataplaneIdentity{
+				Mesh: "default",
+				Tags: map[string]map[string]bool{
+					"kuma.io/service": {
+						"web":     true,
+						"web-api": true,
+					},
+				},
+			},
+			dpRes: &dpRes,
 		}),
 	)
 
@@ -167,7 +178,7 @@ var _ = Describe("Authentication flow", func() {
 			id: builtin_issuer.DataplaneIdentity{
 				Mesh: "default",
 				Tags: map[string]map[string]bool{
-					"kuma.io/service": {
+					"team": {
 						"backend": true,
 					},
 				},
@@ -187,18 +198,20 @@ var _ = Describe("Authentication flow", func() {
 			dpRes: &dpRes,
 			err:   `dataplane has no tag "kuma.io/zone" required by the token`,
 		}),
-		Entry("on token with missing one tag value", testCase{
+		Entry("on token bound to multiple tags where one does not match", testCase{
 			id: builtin_issuer.DataplaneIdentity{
 				Mesh: "default",
 				Tags: map[string]map[string]bool{
-					"kuma.io/service": {
+					"team": {
 						"web": true,
-						// "web-api": true valid token should have also web-api
+					},
+					"env": {
+						"staging": true,
 					},
 				},
 			},
 			dpRes: &dpRes,
-			err:   `which is not allowed with this token. Allowed values in token are ["web"]`, // web and web-api order is not stable
+			err:   `which is not allowed with this token. Allowed values in token are ["staging"]`,
 		}),
 		Entry("on token with different workload", testCase{
 			id: builtin_issuer.DataplaneIdentity{
@@ -231,9 +244,8 @@ var _ = Describe("Authentication flow", func() {
 			token, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
 				Mesh: "default",
 				Tags: map[string]map[string]bool{
-					"kuma.io/service": {
-						"web":     true,
-						"web-api": true,
+					"team": {
+						"web": true,
 					},
 				},
 			}, 24*time.Hour)
@@ -344,43 +356,58 @@ var _ = Describe("Authentication flow", func() {
 		Expect(err.Error()).To(ContainSubstring(`there is no signing key`))
 	})
 
-	Context("Zone Ingress", func() {
-		ziRes := core_mesh.ZoneIngressResource{
+	Context("zone proxy", func() {
+		zoneProxyRes := core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{
-				Mesh: "zi-1",
+				Name: "zone-proxy-1",
+				Mesh: "default",
 			},
-			Spec: &mesh_proto.ZoneIngress{
-				Networking: &mesh_proto.ZoneIngress_Networking{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "127.0.0.1",
+					Listeners: []*mesh_proto.Dataplane_Networking_Listener{{
+						Type:    mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+						Address: "127.0.0.1",
+						Port:    10001,
+					}},
 				},
 			},
 		}
 
-		var zoneTokenIssuer zone.TokenIssuer
-
 		BeforeEach(func() {
-			err := resStore.Create(ctx, &ziRes, core_store.CreateByKey("zi-1", model.NoMesh))
-			Expect(err).ToNot(HaveOccurred())
-
-			zoneKeyManager := tokens.NewSigningKeyManager(resManager, system.ZoneTokenSigningKeyPrefix)
-			Expect(zoneKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
-			zoneTokenIssuer = builtin.NewZoneTokenIssuer(resManager)
+			Expect(resStore.Create(ctx, &zoneProxyRes, core_store.CreateByKey("zone-proxy-1", "default"))).To(Succeed())
 		})
 
-		It("should authenticate zone ingress with zone token", func() {
+		It("should authenticate a zone proxy Dataplane with a dataplane token", func() {
 			// given
-			identity := zone.Identity{
-				Zone:  "zone-1",
-				Scope: []string{zone.IngressScope},
+			token, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
+				Name: "zone-proxy-1",
+				Mesh: "default",
+			}, 24*time.Hour)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when / then
+			Expect(authenticator.Authenticate(ctx, &zoneProxyRes, token)).To(Succeed())
+		})
+
+		It("should reject a standalone ZoneIngress resource", func() {
+			// given
+			ziRes := core_mesh.ZoneIngressResource{
+				Meta: &test_model.ResourceMeta{Name: "zi-1"},
+				Spec: &mesh_proto.ZoneIngress{
+					Networking: &mesh_proto.ZoneIngress_Networking{
+						Address: "127.0.0.1",
+					},
+				},
 			}
-			token, err := zoneTokenIssuer.Generate(ctx, identity, time.Hour)
+			token, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{Mesh: "default"}, 24*time.Hour)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
 			err = authenticator.Authenticate(ctx, &ziRes, token)
 
 			// then
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("no matching authenticator for ZoneIngress resource")))
 		})
 	})
 })

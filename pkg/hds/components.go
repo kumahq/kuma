@@ -50,7 +50,7 @@ func DefaultCallbacks(rt core_runtime.Runtime, cache envoy_cache.SnapshotCache) 
 	}
 
 	return hds_callbacks.Chain{
-		authn.NewCallbacks(rt.ResourceManager(), rt.XDS().DpProxyAuthenticator, authn.DPNotFoundRetry{
+		authn.NewCallbacks(rt.ResourceManager(), rt.XDS().Authenticator, authn.DPNotFoundRetry{
 			// Usually the difference between DP is created from ADS and HDS is initiated is less than 1 second, but just in case we set this higher.
 			Backoff:  1 * time.Second,
 			MaxTimes: 30,

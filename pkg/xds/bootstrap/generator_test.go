@@ -100,7 +100,8 @@ var _ = Describe("bootstrapGenerator", func() {
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			err := resManager.Create(context.Background(), given.dataplane(), store.CreateByKey("name.namespace", "mesh"))
+			err := resManager.Create(context.Background(), given.dataplane(), store.CreateByKey("name.namespace", "mesh"),
+				store.CreateWithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}))
 			Expect(err).ToNot(HaveOccurred())
 
 			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false)
@@ -244,6 +245,9 @@ var _ = Describe("bootstrapGenerator", func() {
   "name": "name.namespace",
   "creationTime": "1970-01-01T00:00:00Z",
   "modificationTime": "1970-01-01T00:00:00Z",
+  "labels": {
+    "kuma.io/workload": "backend"
+  },
   "networking": {
     "address": "127.0.0.1",
     "inbound": [

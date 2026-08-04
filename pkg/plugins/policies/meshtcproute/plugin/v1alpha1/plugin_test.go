@@ -1182,7 +1182,9 @@ func dppForMeshExternalService(mesList ...*meshexternalservice_api.MeshExternalS
 		Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
 		Spec: &meshservice_api.MeshService{
 			Selector: meshservice_api.Selector{
-				DataplaneTags: &map[string]string{mesh_proto.ServiceTag: "backend"},
+				DataplaneLabels: &common_api.LabelSelector{
+					MatchLabels: &map[string]string{mesh_proto.ServiceTag: "backend"},
+				},
 			},
 			Ports: []meshservice_api.Port{{
 				Port:        80,

@@ -1088,7 +1088,12 @@
         "metadata": {
           "filterMetadata": {
             "io.kuma.tags": {
-              "kuma.io/service": "zone-proxy-demo-client",
+              "kuma.io/display-name": "zone-proxy-demo-client",
+              "kuma.io/env": "universal",
+              "kuma.io/mesh": "envoyconfig-zoneproxies",
+              "kuma.io/origin": "zone",
+              "kuma.io/proxy-type": "sidecar",
+              "kuma.io/workload": "zone-proxy-demo-client",
               "kuma.io/zone": "kuma-3",
               "team": "client-owners"
             }

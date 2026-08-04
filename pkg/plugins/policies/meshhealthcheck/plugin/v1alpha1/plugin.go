@@ -47,11 +47,22 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh, proxy.Dataplane.Spec.TagSet()); err != nil {
+	if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh, labelTagSet(proxy.Dataplane)); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// labelTagSet wraps a Dataplane's resource labels as a MultiValueTagSet so
+// they can be templated into HTTP health check headers the same way inbound
+// tags used to be.
+func labelTagSet(dataplane *core_mesh.DataplaneResource) mesh_proto.MultiValueTagSet {
+	data := map[string][]string{}
+	for key, value := range dataplane.GetMeta().GetLabels() {
+		data[key] = []string{value}
+	}
+	return mesh_proto.MultiValueTagSetFrom(data)
 }
 
 func applyToOutbounds(
@@ -92,7 +103,7 @@ func configure(
 	configurer := plugin_xds.Configurer{
 		Conf:     *conf,
 		Protocol: protocol,
-		Tags:     dataplane.Spec.TagSet(),
+		Tags:     labelTagSet(dataplane),
 	}
 
 	if err := configurer.Configure(cluster); err != nil {

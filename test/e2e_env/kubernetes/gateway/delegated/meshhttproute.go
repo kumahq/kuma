@@ -74,9 +74,10 @@ spec:
         kind: MeshService
         labels:
           kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: %[3]s
       rules:
         - matches:
-            - path: 
+            - path:
                 type: PathPrefix
                 value: /
           default:
@@ -84,6 +85,7 @@ spec:
               - kind: MeshService
                 labels:
                   kuma.io/display-name: test-server
+                  k8s.kuma.io/namespace: %[3]s
                 port: 80
                 weight: 50
               - kind: MeshExternalService
@@ -92,7 +94,7 @@ spec:
                   k8s.kuma.io/namespace: %[1]s
                 port: 80
                 weight: 50
-`, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
+`, config.CpNamespace, config.Mesh, config.Namespace))(kubernetes.Cluster)).To(Succeed())
 
 			// then receive responses from 'test-server_delegated-gateway_svc_80'
 			Eventually(func(g Gomega) {

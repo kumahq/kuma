@@ -61,17 +61,6 @@ func overlap(address1 net.IP, address2 net.IP) bool {
 	return address1.Equal(address2)
 }
 
-func (d *DataplaneResource) GetIP() string {
-	if d == nil {
-		return ""
-	}
-	if d.Spec.Networking.AdvertisedAddress != "" {
-		return d.Spec.Networking.AdvertisedAddress
-	} else {
-		return d.Spec.Networking.Address
-	}
-}
-
 func (d *DataplaneResource) IsIPv6() bool {
 	return d != nil && govalidator.IsIPv6(d.Spec.GetNetworking().GetAddress())
 }
@@ -106,7 +95,7 @@ func (d *DataplaneResource) AdminAddress(defaultAdminPort uint32) string {
 	if d == nil {
 		return ""
 	}
-	ip := d.GetIP()
+	ip := d.GetAddress()
 	adminPort := d.AdminPort(defaultAdminPort)
 	return net.JoinHostPort(ip, strconv.FormatUint(uint64(adminPort), 10))
 }
@@ -168,17 +157,38 @@ func (d *DataplaneResource) InboundIdentifyingName(inbound *mesh_proto.Dataplane
 	return d.IdentifyingName()
 }
 
-// IdentifyingName returns the workload label when set, falling back to the
-// identifying service name from the dataplane spec.
+// IdentifyingName returns the workload label when set, falling back to
+// ServiceUnknown.
 func (d *DataplaneResource) IdentifyingName() string {
 	if workload := d.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workload != "" {
 		return workload
 	}
-	services := d.Spec.TagSet().Values(mesh_proto.ServiceTag)
-	if len(services) > 0 {
-		return services[0]
-	}
 	return mesh_proto.ServiceUnknown
+}
+
+// DisplayTags returns the dataplane's resource labels merged with its
+// gateway tags (if any), formatted for CLI/API display (the TAGS column
+// and the `?tag=` filter).
+func (d *DataplaneResource) DisplayTags() mesh_proto.MultiValueTagSet {
+	return DisplayTags(d.Spec, d.GetMeta().GetLabels())
+}
+
+// DisplayTags merges labels with a dataplane's gateway tags (if any) for
+// CLI/API display. Split from the DataplaneResource method so overview
+// endpoints, which carry the Dataplane spec and its labels separately, can
+// call it too.
+func DisplayTags(dataplane *mesh_proto.Dataplane, labels map[string]string) mesh_proto.MultiValueTagSet {
+	tags := mesh_proto.MultiValueTagSet{}
+	for key, value := range labels {
+		tags[key] = map[string]bool{value: true}
+	}
+	for key, value := range dataplane.GetNetworking().GetGateway().GetTags() {
+		if _, ok := tags[key]; !ok {
+			tags[key] = map[string]bool{}
+		}
+		tags[key][value] = true
+	}
+	return tags
 }
 
 // SortDataplanes sorts dataplanes by creation time, then by name.

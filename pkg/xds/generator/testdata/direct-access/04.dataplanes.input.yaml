@@ -2,12 +2,12 @@
 type: Dataplane
 name: web-1
 mesh: default
+labels:
+  kuma.io/service: web
 networking:
   address: 192.168.0.1
   inbound:
     - port: 1234
-      tags:
-        kuma.io/service: web
   outbound:
     - address: 192.168.0.4
       port: 1234
@@ -20,32 +20,40 @@ networking:
 type: Dataplane
 name: backend-1
 mesh: default
+labels:
+  kuma.io/service: backend
 networking:
   address: 192.168.0.2
   inbound:
     - port: 1234
-      tags:
-        kuma.io/service: backend
     - port: 1235
-      tags:
-        kuma.io/service: backend-api
 ---
 type: Dataplane
 name: backend-2
 mesh: default
+labels:
+  kuma.io/service: backend
 networking:
   address: 192.168.0.3
   inbound:
     - port: 1234
-      tags:
-        kuma.io/service: backend
+---
+type: Dataplane
+name: backend-api-1
+mesh: default
+labels:
+  kuma.io/service: backend-api
+networking:
+  address: 192.168.0.5
+  inbound:
+    - port: 1234
 ---
 type: Dataplane
 name: redis-1
 mesh: default
+labels:
+  kuma.io/service: redis
 networking:
   address: 192.168.0.4
   inbound:
     - port: 1234
-      tags:
-        kuma.io/service: redis

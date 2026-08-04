@@ -14,11 +14,10 @@ import (
 )
 
 type XDSRuntimeContext struct {
-	DpProxyAuthenticator   xds_auth.Authenticator
-	ZoneProxyAuthenticator xds_auth.Authenticator
-	Hooks                  *xds_hooks.Hooks
-	ServerCallbacks        util_xds.MultiXDSCallbacks
-	Metrics                *xds_metrics.Metrics
+	Authenticator   xds_auth.Authenticator
+	Hooks           *xds_hooks.Hooks
+	ServerCallbacks util_xds.MultiXDSCallbacks
+	Metrics         *xds_metrics.Metrics
 }
 
 type ContextWithXDS interface {
@@ -45,20 +44,12 @@ func WithDefaults(ctx ContextWithXDS) (XDSRuntimeContext, error) {
 		XdsMetrics:              currentXDS.Metrics,
 	}
 
-	if currentXDS.DpProxyAuthenticator == nil {
-		dpProxyAuth, err := components.DefaultAuthenticator(authDeps, ctx.Config().DpServer.Authn.DpProxy.Type)
+	if currentXDS.Authenticator == nil {
+		authenticator, err := components.DefaultAuthenticator(authDeps, ctx.Config().DpServer.Authn.DpProxy.Type)
 		if err != nil {
 			return XDSRuntimeContext{}, err
 		}
-		currentXDS.DpProxyAuthenticator = dpProxyAuth
-	}
-
-	if currentXDS.ZoneProxyAuthenticator == nil {
-		zoneProxyAuth, err := components.DefaultAuthenticator(authDeps, ctx.Config().DpServer.Authn.ZoneProxy.Type)
-		if err != nil {
-			return XDSRuntimeContext{}, err
-		}
-		currentXDS.ZoneProxyAuthenticator = zoneProxyAuth
+		currentXDS.Authenticator = authenticator
 	}
 
 	if currentXDS.Hooks == nil {
@@ -66,8 +57,4 @@ func WithDefaults(ctx ContextWithXDS) (XDSRuntimeContext, error) {
 	}
 
 	return currentXDS, nil
-}
-
-func (x XDSRuntimeContext) PerProxyTypeAuthenticator() xds_auth.Authenticator {
-	return xds_auth.NewPerProxyTypeAuthenticator(x.DpProxyAuthenticator, x.ZoneProxyAuthenticator)
 }

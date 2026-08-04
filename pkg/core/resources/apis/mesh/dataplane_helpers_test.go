@@ -73,7 +73,7 @@ var _ = Describe("InboundIdentifyingName", func() {
 			portName:   "",
 			expected:   "backend",
 		}),
-		Entry("falls back to service tag when no portName and no workload label", testCase{
+		Entry("falls back to unknown when nothing identifies the dataplane", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",
 				Mesh: "default",
@@ -82,9 +82,9 @@ var _ = Describe("InboundIdentifyingName", func() {
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
 				},
 			},
-			serviceTag: "backend",
+			serviceTag: "",
 			portName:   "",
-			expected:   "backend",
+			expected:   mesh_proto.ServiceUnknown,
 		}),
 	)
 })
@@ -323,7 +323,7 @@ var _ = Describe("Dataplane", func() {
 		})
 	})
 
-	Describe("GetIP()", func() {
+	Describe("GetAddress()", func() {
 		type testCase struct {
 			dataplane string
 			expected  string
@@ -339,7 +339,7 @@ var _ = Describe("Dataplane", func() {
 				}
 
 				// expect
-				Expect(dataplane.GetIP()).To(Equal(given.expected))
+				Expect(dataplane.GetAddress()).To(Equal(given.expected))
 			},
 			Entry("`nil` dataplane", testCase{
 				dataplane: ``,

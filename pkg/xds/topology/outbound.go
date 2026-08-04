@@ -111,7 +111,7 @@ func BuildEdsEndpointMap(
 
 	fillDataplaneOutbounds(outbound, dataplanes, endpointWeight, meshServiceDestinations)
 
-	fillRemoteMeshServices(outbound, meshServices, zoneIngresses, meshZoneAddresses, localZone, mtlsEnabled)
+	fillRemoteMeshServices(outbound, meshServices, meshZoneAddresses, localZone, mtlsEnabled)
 
 	fillExternalServicesOutboundsThroughEgress(ctx, outbound, meshExternalServices, egressAddresses, loader)
 
@@ -158,7 +158,6 @@ func fillMeshMultiZoneServices(
 func fillRemoteMeshServices(
 	outbound core_xds.EndpointMap,
 	services []*meshservice_api.MeshServiceResource,
-	zoneIngress []*core_mesh.ZoneIngressResource,
 	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
 	localZone string,
 	mtlsEnabled bool,
@@ -170,19 +169,27 @@ func fillRemoteMeshServices(
 	// introduction of MeshIdentity doesn't requires mTLS on mesh
 	zoneToEndpoints := map[string][]core_xds.Endpoint{}
 
-	// MeshZoneAddress (mesh-scoped zone proxies) takes priority over legacy
-	// ZoneIngress for any zone that has at least one MeshZoneAddress.
-	mzaInstances := map[string]struct{}{}
+	// MeshZoneAddress is the only source of publicly reachable coordinates of a
+	// remote zone proxy. On Kubernetes it's reconciled from the zone ingress
+	// Service, on Universal it's authored by the user.
+	type zoneCoordinates struct {
+		zone        string
+		coordinates string
+	}
+	mzaInstances := map[zoneCoordinates]struct{}{}
 	for _, mza := range meshZoneAddresses {
 		zone := mza.GetMeta().GetLabels()[mesh_proto.ZoneTag]
 		if zone == "" || zone == localZone {
 			continue
 		}
-		coordinates := buildCoordinates(mza.Spec.Address, uint32(mza.Spec.Port))
-		if _, ok := mzaInstances[coordinates]; ok {
+		// many zone proxy instances can be placed behind one load balancer, in
+		// which case they share a public address and port. Deduplicate per zone
+		// to avoid unnecessary duplicated endpoints, but never across zones.
+		key := zoneCoordinates{zone: zone, coordinates: buildCoordinates(mza.Spec.Address, uint32(mza.Spec.Port))}
+		if _, ok := mzaInstances[key]; ok {
 			continue
 		}
-		mzaInstances[coordinates] = struct{}{}
+		mzaInstances[key] = struct{}{}
 		zoneToEndpoints[zone] = append(zoneToEndpoints[zone], core_xds.Endpoint{
 			Target: mza.Spec.Address,
 			Port:   uint32(mza.Spec.Port),
@@ -191,50 +198,20 @@ func fillRemoteMeshServices(
 		})
 	}
 
-	// Fall back to legacy ZoneIngress for zones without a MeshZoneAddress.
-	ziInstances := map[string]struct{}{}
-	for _, zi := range zoneIngress {
-		if !zi.IsRemoteIngress(localZone) {
-			continue
-		}
-		if _, hasEndpoints := zoneToEndpoints[zi.Spec.Zone]; hasEndpoints {
-			continue
-		}
-
-		if !zi.HasPublicAddress() {
-			// Zone Ingress is not reachable yet from other clusters.
-			// This may happen when Ingress Service is pending waiting on
-			// External IP on Kubernetes.
-			continue
-		}
-
-		ziAddress := zi.Spec.GetNetworking().GetAdvertisedAddress()
-		ziPort := zi.Spec.GetNetworking().GetAdvertisedPort()
-		ziCoordinates := buildCoordinates(ziAddress, ziPort)
-
-		if _, ok := ziInstances[ziCoordinates]; ok {
-			// many Ingress instances can be placed in front of one load
-			// balancer (all instances can have the same public address and
-			// port).
-			// In this case we only need one Instance avoiding creating
-			// unnecessary duplicated endpoints
-			continue
-		}
-		ziInstances[ziCoordinates] = struct{}{}
-
-		zoneToEndpoints[zi.Spec.Zone] = append(zoneToEndpoints[zi.Spec.Zone], core_xds.Endpoint{
-			Target: ziAddress,
-			Port:   ziPort,
-			Tags:   nil,
-			Weight: 1,
-		})
-	}
-
+	unreachableZones := map[string]struct{}{}
 	for _, ms := range services {
 		if ms.IsLocalMeshService() {
 			continue
 		}
 		msZone := ms.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+		if len(zoneToEndpoints[msZone]) == 0 {
+			if _, reported := unreachableZones[msZone]; !reported {
+				unreachableZones[msZone] = struct{}{}
+				outboundLog.Info("no MeshZoneAddress found for zone, MeshService destinations in that zone get no endpoints",
+					"zone", msZone, "mesh", ms.GetMeta().GetMesh())
+			}
+			continue
+		}
 		for _, port := range ms.Spec.Ports {
 			serviceName := destinationname.MustResolve(false, ms, port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
@@ -289,11 +266,23 @@ func fillDataplaneOutbounds(
 		dpNetworking := dpSpec.GetNetworking()
 
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
-			inboundTags := endpointIdentity(inbound.GetTags(), dataplane)
-			serviceName := inboundTags[mesh_proto.ServiceTag]
+			inboundTags := endpointIdentity(dataplane, inbound)
+			// This map is keyed by the legacy kuma.io/service, so the inbound's
+			// own service tag has to win over the Dataplane's kuma.io/service
+			// label: a Dataplane provisioned before the move to labels declares
+			// its service only per inbound, and may expose several of them.
+			serviceName := inbound.GetServiceFallback(inboundTags[mesh_proto.ServiceTag])
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
-			inboundAddress := inboundInterface.DataplaneAdvertisedIP
+			inboundAddress := inboundInterface.DataplaneIP
 			inboundPort := inboundInterface.DataplanePort
+
+			// A dataplane that declares no service at all (neither an inbound
+			// tag nor a kuma.io/service label) has no legacy identity to
+			// publish; it relies on MeshService for outbound discovery instead.
+			if serviceName == "" {
+				continue
+			}
+			inboundTags[mesh_proto.ServiceTag] = serviceName
 
 			if _, ok := meshServiceDestinations[serviceName]; ok {
 				continue
@@ -313,18 +302,17 @@ func fillDataplaneOutbounds(
 }
 
 // endpointIdentity returns the tags that make up an endpoint's load-balancing
-// identity. Dataplane workload/resource labels are merged in to preserve
-// label-based identity (affinity, matching). Inbound tags always win over
-// labels on key conflicts.
-func endpointIdentity(inboundTags map[string]string, dataplane *core_mesh.DataplaneResource) map[string]string {
-	tags := maps.Clone(inboundTags)
+// identity, sourced from the Dataplane's own resource labels. The inbound's
+// protocol is carried alongside them because service-level protocol inference
+// (MeshContext.GetServiceProtocol) reads it off the endpoint, and it is a
+// per-port property that resource labels cannot express.
+func endpointIdentity(dataplane *core_mesh.DataplaneResource, inbound *mesh_proto.Dataplane_Networking_Inbound) map[string]string {
+	tags := maps.Clone(dataplane.GetMeta().GetLabels())
 	if tags == nil {
 		tags = map[string]string{}
 	}
-	for k, v := range dataplane.GetMeta().GetLabels() {
-		if _, exists := tags[k]; !exists {
-			tags[k] = v
-		}
+	if protocol := inbound.GetProtocolFallback(); protocol != "" {
+		tags[mesh_proto.ProtocolTag] = protocol
 	}
 	return tags
 }
@@ -348,12 +336,12 @@ func fillLocalMeshServices(
 						continue
 					}
 
-					inboundTags := endpointIdentity(inbound.GetTags(), dpp)
+					inboundTags := endpointIdentity(dpp, inbound)
 					serviceName := destinationname.MustResolve(false, meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
 					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-						Target:   inboundInterface.DataplaneAdvertisedIP,
+						Target:   inboundInterface.DataplaneIP,
 						Port:     inboundInterface.DataplanePort,
 						Tags:     inboundTags,
 						Weight:   1,

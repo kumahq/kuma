@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync/atomic"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -490,112 +489,6 @@ func WaitUntilJobSucceed(namespace, app string) InstallFunc {
 		ck8s := c.(*K8sCluster)
 		return k8s.WaitUntilJobSucceedContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(namespace), app, ck8s.defaultRetries, ck8s.defaultTimeout)
 	}
-}
-
-func universalZoneProxyRelatedResource(
-	tokenProvider func(zone string) (string, error),
-	dpName string,
-	appType AppMode,
-	resourceManifestFunc func(address string, port int) (string, error),
-	concurrency int,
-) func(cluster Cluster) error {
-	return func(cluster Cluster) error {
-		uniCluster := cluster.(*UniversalCluster)
-
-		app, err := NewUniversalApp(
-			cluster.GetTesting(),
-			uniCluster.name,
-			dpName,
-			"",
-			appType,
-			UniversalAppRunOptions{
-				DockerBackend: uniCluster.GetDockerBackend(),
-				DPConcurrency: concurrency,
-				EnableIPv6:    Config.IPV6,
-			},
-		)
-		if err != nil {
-			return err
-		}
-
-		app.CreateMainApp("")
-
-		err = app.mainApp.Start()
-		if err != nil {
-			return err
-		}
-
-		uniCluster.apps[dpName] = app
-		publicAddress := app.GetIP()
-		dpYAML, err := resourceManifestFunc(publicAddress, UniversalZoneIngressPort)
-		if err != nil {
-			return err
-		}
-
-		token, err := tokenProvider(uniCluster.name)
-		if err != nil {
-			return err
-		}
-
-		switch appType {
-		case AppIngress:
-			return uniCluster.CreateZoneIngress(app, dpName, publicAddress, dpYAML, token, false)
-		case AppEgress:
-			return uniCluster.CreateZoneEgress(app, dpName, publicAddress, dpYAML, token, false)
-		default:
-			return errors.Errorf("unsupported appType: %s", appType)
-		}
-	}
-}
-
-// ingressPortAllocator hands out unique advertised ports for universal ZoneIngress
-// instances so that no two ingresses share the same IP:port when running in a
-// Docker/k3d environment where all zones resolve to the same host address.
-var ingressPortAllocator atomic.Int32
-
-func init() {
-	ingressPortAllocator.Store(int32(UniversalZoneIngressPort) - 1)
-}
-
-// AllocateIngressPort returns the next unique advertised port for a universal
-// ZoneIngress. It is safe to call from multiple goroutines.
-func AllocateIngressPort() int {
-	return int(ingressPortAllocator.Add(1))
-}
-
-func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	return MultipleIngressUniversal(AllocateIngressPort(), AppIngress, tokenProvider, opt...)
-}
-
-func MultipleIngressUniversal(advertisedPort int, name string, tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(address string, _ int) (string, error) {
-		zi := ZoneIngressTemplateData{
-			Name:              name,
-			AdvertisedAddress: address,
-			AdvertisedPort:    advertisedPort,
-			Port:              advertisedPort,
-		}
-		return RenderZoneIngressTemplate(zi)
-	}
-
-	var opts appDeploymentOptions
-	opts.apply(opt...)
-
-	return universalZoneProxyRelatedResource(tokenProvider, name, AppIngress, manifestFunc, opts.concurrency)
-}
-
-func EgressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(_ string, port int) (string, error) {
-		ze := ZoneEgressTemplateData{
-			Port: port,
-		}
-		return RenderZoneEgressTemplate(ze)
-	}
-
-	var opts appDeploymentOptions
-	opts.apply(opt...)
-
-	return universalZoneProxyRelatedResource(tokenProvider, AppEgress, AppEgress, manifestFunc, opts.concurrency)
 }
 
 func NamespaceWithSidecarInjection(namespace string) InstallFunc {
