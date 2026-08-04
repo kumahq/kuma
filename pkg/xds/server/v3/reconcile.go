@@ -27,6 +27,20 @@ import (
 
 var reconcileLog = core.Log.WithName("xds").WithName("reconcile")
 
+// resourceTypeNames are the metric label values for each snapshot resource index.
+var resourceTypeNames = [envoy_types.UnknownType]string{
+	envoy_types.Endpoint:        "Endpoint",
+	envoy_types.Cluster:         "Cluster",
+	envoy_types.Route:           "Route",
+	envoy_types.ScopedRoute:     "ScopedRoute",
+	envoy_types.VirtualHost:     "VirtualHost",
+	envoy_types.Listener:        "Listener",
+	envoy_types.Secret:          "Secret",
+	envoy_types.Runtime:         "Runtime",
+	envoy_types.ExtensionConfig: "ExtensionConfig",
+	envoy_types.RateLimitConfig: "RateLimitConfig",
+}
+
 var _ xds_sync.SnapshotReconciler = &reconciler{}
 
 type reconciler struct {
@@ -107,18 +121,6 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	}
 
 	if r.metrics != nil {
-		resourceTypeNames := [envoy_types.UnknownType]string{
-			envoy_types.Endpoint:        "Endpoint",
-			envoy_types.Cluster:         "Cluster",
-			envoy_types.Route:           "Route",
-			envoy_types.ScopedRoute:     "ScopedRoute",
-			envoy_types.VirtualHost:     "VirtualHost",
-			envoy_types.Listener:        "Listener",
-			envoy_types.Secret:          "Secret",
-			envoy_types.Runtime:         "Runtime",
-			envoy_types.ExtensionConfig: "ExtensionConfig",
-			envoy_types.RateLimitConfig: "RateLimitConfig",
-		}
 		for i, resources := range snapshot.Resources {
 			name := resourceTypeNames[i]
 			if name == "" || len(resources.Items) == 0 {
@@ -257,31 +259,14 @@ func constructVersionMap(s *envoy_cache.Snapshot) error {
 	return nil
 }
 
+// resourceTypeURL maps a snapshot resource index to its type URL, returning ""
+// for indexes that don't correspond to a known xDS type.
 func resourceTypeURL(i int) string {
-	switch envoy_types.ResponseType(i) {
-	case envoy_types.Endpoint:
-		return envoy_resource.EndpointType
-	case envoy_types.Cluster:
-		return envoy_resource.ClusterType
-	case envoy_types.Route:
-		return envoy_resource.RouteType
-	case envoy_types.ScopedRoute:
-		return envoy_resource.ScopedRouteType
-	case envoy_types.VirtualHost:
-		return envoy_resource.VirtualHostType
-	case envoy_types.Listener:
-		return envoy_resource.ListenerType
-	case envoy_types.Secret:
-		return envoy_resource.SecretType
-	case envoy_types.Runtime:
-		return envoy_resource.RuntimeType
-	case envoy_types.ExtensionConfig:
-		return envoy_resource.ExtensionConfigType
-	case envoy_types.RateLimitConfig:
-		return envoy_resource.RateLimitConfigType
-	default:
+	typeURL, err := envoy_cache.GetResponseTypeURL(envoy_types.ResponseType(i))
+	if err != nil {
 		return ""
 	}
+	return typeURL
 }
 
 // mixVersions combines two version strings into a single xxHash64 hash.
