@@ -154,12 +154,14 @@ func GenerateClusters(
 						}
 						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 						if proxy.WorkloadIdentity != nil {
-							sans := Identities(realResourceRef, meshCtx, true)
-							upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
-							if err != nil {
-								return nil, err
+							if tlsReady {
+								sans := Identities(realResourceRef, meshCtx, true)
+								upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
+								if err != nil {
+									return nil, err
+								}
+								edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 							}
-							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 						} else {
 							edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 								proxy.SecretsTracker,
