@@ -457,26 +457,15 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 		}
 	}
 
+	tlsVersion := pointer.Deref(conf.TlsVersion)
+
 	return bldrs_tls.NewDownstreamTLSContext().
 		Configure(
 			bldrs_tls.DownstreamCommonTlsContext(
 				bldrs_tls.NewCommonTlsContext().
 					Configure(bldrs_common.IfNotNil(conf.TlsCiphers, bldrs_tls.CipherSuites)).
-					Configure(bldrs_common.IfNotNil(conf.TlsVersion, func(version common_tls.Version) bldrs_common.Configurer[envoy_tls.CommonTlsContext] {
-						return func(c *envoy_tls.CommonTlsContext) error {
-							if version.Min != nil {
-								if err := bldrs_tls.TlsMinVersion(version.Min)(c); err != nil {
-									return err
-								}
-							}
-							if version.Max != nil {
-								if err := bldrs_tls.TlsMaxVersion(version.Max)(c); err != nil {
-									return err
-								}
-							}
-							return nil
-						}
-					})).
+					Configure(bldrs_common.If(tlsVersion.Min != nil, bldrs_tls.TlsMinVersion(tlsVersion.Min))).
+					Configure(bldrs_common.If(tlsVersion.Max != nil, bldrs_tls.TlsMaxVersion(tlsVersion.Max))).
 					Configure(
 						bldrs_tls.CombinedCertificateValidationContext(
 							bldrs_tls.NewCombinedCertificateValidationContext().
