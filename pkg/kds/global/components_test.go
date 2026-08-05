@@ -32,7 +32,7 @@ var _ = Describe("Global Sync", func() {
 	var globalStore store.ResourceStore
 	var closeFunc func()
 
-	dataplaneFunc := func(zone, service string) *mesh_proto.Dataplane {
+	dataplaneFunc := func() *mesh_proto.Dataplane {
 		return &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
@@ -54,7 +54,7 @@ var _ = Describe("Global Sync", func() {
 
 	VerifyResourcesWereSynchronizedToGlobal := func() {
 		for i := range 10 {
-			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
+			dp := dataplaneFunc()
 			err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
@@ -69,13 +69,13 @@ var _ = Describe("Global Sync", func() {
 
 	VerifyResourcesWereSynchronizedIndependentlyForEachZone := func() {
 		for i := range 10 {
-			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
+			dp := dataplaneFunc()
 			err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
 
 		for i := range 10 {
-			dp := dataplaneFunc("kuma-cluster-2", fmt.Sprintf("service-2-%d", i))
+			dp := dataplaneFunc()
 			err := zoneStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-2-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
@@ -104,11 +104,11 @@ var _ = Describe("Global Sync", func() {
 	}
 
 	VerifySupportForTheSameNameOfDataplanesInDifferentClusters := func() {
-		dp1 := dataplaneFunc("kuma-cluster-1", "backend")
+		dp1 := dataplaneFunc()
 		err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp1}, store.CreateByKey("dp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		dp2 := dataplaneFunc("kuma-cluster-2", "web")
+		dp2 := dataplaneFunc()
 		err = zoneStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp2}, store.CreateByKey("dp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 

@@ -19,13 +19,12 @@ import (
 
 var _ = Describe("InboundIdentifyingName", func() {
 	type testCase struct {
-		meta       test_model.ResourceMeta
-		serviceTag string
-		portName   string
-		expected   string
+		meta     test_model.ResourceMeta
+		portName string
+		expected string
 	}
 
-	newDP := func(meta test_model.ResourceMeta, serviceTag string) *DataplaneResource {
+	newDP := func(meta test_model.ResourceMeta) *DataplaneResource {
 		dp := NewDataplaneResource()
 		dp.Meta = &meta
 		dp.Spec.Networking = &mesh_proto.Dataplane_Networking{
@@ -39,7 +38,7 @@ var _ = Describe("InboundIdentifyingName", func() {
 
 	DescribeTable("should return correct inbound identifying name",
 		func(given testCase) {
-			dp := newDP(given.meta, given.serviceTag)
+			dp := newDP(given.meta)
 			dp.Spec.Networking.Inbound[0].Name = given.portName
 			Expect(dp.InboundIdentifyingName(dp.Spec.Networking.Inbound[0])).To(Equal(given.expected))
 		},
@@ -52,9 +51,8 @@ var _ = Describe("InboundIdentifyingName", func() {
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
 				},
 			},
-			serviceTag: "backend",
-			portName:   "http",
-			expected:   "kri_dp_default_zone-1_kuma-demo_backend-abc_http",
+			portName: "http",
+			expected: "kri_dp_default_zone-1_kuma-demo_backend-abc_http",
 		}),
 		Entry("falls back to workload label when port name empty", testCase{
 			meta: test_model.ResourceMeta{
@@ -64,9 +62,8 @@ var _ = Describe("InboundIdentifyingName", func() {
 					k8s_metadata.KumaWorkload: "backend",
 				},
 			},
-			serviceTag: "backend",
-			portName:   "",
-			expected:   "backend",
+			portName: "",
+			expected: "backend",
 		}),
 		Entry("falls back to unknown when nothing identifies the dataplane", testCase{
 			meta: test_model.ResourceMeta{
@@ -77,9 +74,8 @@ var _ = Describe("InboundIdentifyingName", func() {
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
 				},
 			},
-			serviceTag: "",
-			portName:   "",
-			expected:   mesh_proto.ServiceUnknown,
+			portName: "",
+			expected: mesh_proto.ServiceUnknown,
 		}),
 	)
 })
