@@ -104,14 +104,16 @@ func GenerateClusters(
 			// egress terminates this connection and matches the KRI SNI, so the
 			// egress identity is what this proxy has to trust. The egress
 			// forwards the original protocol, so the upstream keeps speaking it.
+			// Without an egress the destination has no endpoints either, so the
+			// cluster stays plaintext rather than being dropped - a cluster
+			// missing under an emitted load assignment costs the proxy its
+			// entire configuration.
 			egressSANs := meshCtx.ZoneEgressSANs()
-			if len(egressSANs) == 0 {
-				continue
-			}
 			dest = destination{
 				protocol:     port.GetProtocol(),
 				sans:         egressSANs,
 				upstreamHTTP: upstreamHTTPOptions(port.GetProtocol()),
+				plaintext:    len(egressSANs) == 0,
 			}
 		default:
 			continue
