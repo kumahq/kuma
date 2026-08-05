@@ -13,7 +13,7 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/events"
-	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
+	kds_reconcile "github.com/kumahq/kuma/v3/pkg/kds/reconcile"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
 )
@@ -39,7 +39,7 @@ func (s staticReconciler) Clear(node *envoy_core.Node) error {
 	return nil
 }
 
-var _ reconcile_v2.Reconciler = &staticReconciler{}
+var _ kds_reconcile.Reconciler = &staticReconciler{}
 
 var _ = Describe("Event Based Watchdog", func() {
 	var eventBus events.EventBus

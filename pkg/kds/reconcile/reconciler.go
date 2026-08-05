@@ -12,7 +12,7 @@ import (
 
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	cache_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/cache"
+	kds_cache "github.com/kumahq/kuma/v3/pkg/kds/cache"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/xds"
@@ -69,7 +69,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 	old, _ := r.cache.GetSnapshot(id)
 
 	// construct builder with unchanged types from the old snapshot
-	builder := cache_v2.NewSnapshotBuilder(r.providedTypes)
+	builder := kds_cache.NewSnapshotBuilder(r.providedTypes)
 	if old != nil {
 		for _, resType := range r.providedTypes {
 			if _, ok := changedTypes[resType]; ok {

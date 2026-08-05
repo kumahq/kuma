@@ -30,10 +30,10 @@ import (
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/kds"
+	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
+	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
-	kds_client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
-	kds_server_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
-	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	resources_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -167,14 +167,14 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		trySend(ctx, errorCh, err)
 		return
 	}
-	kdsStream := kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson, len(c.typesSentByGlobal))
+	kdsStream := kds_client.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson, len(c.typesSentByGlobal))
 	defer func() {
 		if err := kdsStream.CloseSend(); err != nil {
 			log.Error(err, "CloseSend returned an error")
 		}
 	}()
 
-	syncClient := kds_client_v2.NewKDSSyncClient(
+	syncClient := kds_client.NewKDSSyncClient(
 		log,
 		c.typesSentByGlobal,
 		kdsStream,
@@ -185,7 +185,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 			resources_k8s.NewSimpleKubeFactory(),
 			c.rt.Config().Store.Kubernetes.SystemNamespace,
 		),
-		kds_client_v2.SyncClientConfig{
+		kds_client.SyncClientConfig{
 			ResponseBackoff: c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 			LogPayloads:     c.rt.Config().Multizone.Zone.KDS.LogPayloads,
 		},
@@ -213,7 +213,7 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 	}()
 
 	log.Info("ZoneToGlobalSync new session created")
-	errorStream := NewErrorRecorderStream(kds_server_v2.NewServerStream(stream))
+	errorStream := NewErrorRecorderStream(kds_server.NewServerStream(stream))
 	err = c.deltaServer.DeltaStreamHandler(errorStream, "")
 	if err == nil {
 		err = errorStream.Err()
