@@ -83,12 +83,10 @@ func (c configurer) redirectPort(kind trafficKind) tproxy_config.Port {
 
 	switch kind {
 	case trafficKindOutbound:
-		annotation = k8s_metadata.KumaTransparentProxyingOutboundPortAnnotation
 		valueDefault = tproxy_config.DefaultConfig().Redirect.Outbound.Port
 		valueCurrent = c.config.Redirect.Outbound.Port
 		valueRuntime = tproxy_config.Port(c.runtime.SidecarContainer.RedirectPortOutbound)
 	case trafficKindInbound:
-		annotation = k8s_metadata.KumaTransparentProxyingInboundPortAnnotation
 		valueDefault = tproxy_config.DefaultConfig().Redirect.Inbound.Port
 		valueCurrent = c.config.Redirect.Inbound.Port
 		valueRuntime = tproxy_config.Port(c.runtime.SidecarContainer.RedirectPortInbound)
@@ -114,10 +112,12 @@ func (c configurer) redirectPort(kind trafficKind) tproxy_config.Port {
 		l.Info(warningTProxyConfigMismatch)
 	}
 
-	if v, exists, err := c.annotations.GetUint32(annotation); err != nil {
-		l.Info(warningInvalidAnnotationAndValueMismatch, annotation, err)
-	} else if exists && tproxy_config.Port(v) != valueRuntime {
-		l.Info(warningAnnotationValueMismatch, annotation, v)
+	if annotation != "" {
+		if v, exists, err := c.annotations.GetUint32(annotation); err != nil {
+			l.Info(warningInvalidAnnotationAndValueMismatch, annotation, err)
+		} else if exists && tproxy_config.Port(v) != valueRuntime {
+			l.Info(warningAnnotationValueMismatch, annotation, v)
+		}
 	}
 
 	return valueRuntime
