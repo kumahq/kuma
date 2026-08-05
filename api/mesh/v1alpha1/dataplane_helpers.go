@@ -183,18 +183,13 @@ const (
 
 type ProxyType string
 
-const (
-	DataplaneProxyType ProxyType = "dataplane"
-	IngressProxyType   ProxyType = "ingress"
-	EgressProxyType    ProxyType = "egress"
-)
+const DataplaneProxyType ProxyType = "dataplane"
 
 func (t ProxyType) IsValid() error {
-	switch t {
-	case DataplaneProxyType, IngressProxyType, EgressProxyType:
-		return nil
+	if t != DataplaneProxyType {
+		return errors.Errorf("%s is not a valid proxy type", t)
 	}
-	return errors.Errorf("%s is not a valid proxy type", t)
+	return nil
 }
 
 type InboundInterface struct {
