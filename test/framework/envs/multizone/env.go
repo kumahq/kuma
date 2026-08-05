@@ -183,8 +183,7 @@ func SetupAndGetState() []byte {
 			KumaCp: KubeZone2.GetKuma().(*K8sControlPlane).PortFwd(),
 		},
 	}
-	// govet complains of marshaling with mutex, we know what we're doing here
-	bytes, err := json.Marshal(state) //nolint:govet
+	bytes, err := json.Marshal(&state)
 	Expect(err).ToNot(HaveOccurred())
 	return bytes
 }
