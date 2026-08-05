@@ -145,8 +145,7 @@ func (d *DataplaneBuilder) AddInboundWithName(name string) *DataplaneBuilder {
 	return d.AddInbound(
 		Inbound().
 			WithPort(FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound))).
-			WithName(name).
-			WithService(name),
+			WithName(name),
 	)
 }
 
@@ -280,9 +279,6 @@ func (b *InboundBuilder) WithServicePort(port uint32) *InboundBuilder {
 }
 
 func (b *InboundBuilder) WithTags(tags map[string]string) *InboundBuilder {
-	if service, ok := tags[mesh_proto.ServiceTag]; ok {
-		b.WithService(service)
-	}
 	if protocol, ok := tags[mesh_proto.ProtocolTag]; ok {
 		b.res.Protocol = protocol
 	}
@@ -290,6 +286,7 @@ func (b *InboundBuilder) WithTags(tags map[string]string) *InboundBuilder {
 }
 
 func (b *InboundBuilder) WithService(name string) *InboundBuilder {
+	// Kept for backward compatibility with older tests that still call it.
 	return b
 }
 

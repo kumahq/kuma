@@ -111,6 +111,7 @@ func dpContribution(
 		)
 	}
 
+	// Inbound labels are gone; keep the parameter for the shared call shape.
 	_ = inbounds
 
 	// Validate and write DP resource labels.

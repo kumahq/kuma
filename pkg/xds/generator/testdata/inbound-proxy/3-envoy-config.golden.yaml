@@ -29,6 +29,13 @@ resources:
                 portValue: 8080
     name: self_inbound_dp_80
     type: STATIC
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 7200s
+        explicitHttpConfig:
+          httpProtocolOptions: {}
 - name: self_inbound_dp_443
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -84,12 +91,43 @@ resources:
     enableReusePort: false
     filterChains:
     - filters:
-      - name: envoy.filters.network.tcp_proxy
+      - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: self_inbound_dp_80
-          idleTimeout: 7200s
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 7200s
+          forwardClientCertDetails: SANITIZE_SET
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 100.64.0.0
+              prefixLen: 16
+            - addressPrefix: fc00::/7
+              prefixLen: 128
+            - addressPrefix: ::1/128
+              prefixLen: 128
+          routeConfig:
+            name: self_inbound_dp_80
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: self_inbound_dp_80
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: self_inbound_dp_80
+                  timeout: 0s
+          setCurrentClientCertDetails:
+            uri: true
           statPrefix: self_inbound_dp_80
+          streamIdleTimeout: 3600s
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -115,7 +153,7 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/unified-name: self_inbound_dp_80
+          kuma.io/protocol: http
     name: self_inbound_dp_80
     statPrefix: self_inbound_dp_80
     trafficDirection: INBOUND

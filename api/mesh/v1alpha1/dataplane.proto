@@ -60,6 +60,7 @@ message Dataplane {
       string address = 5;
 
       reserved 2;
+      reserved "tags";
 
       // Health describes the status of an inbound
       message Health {
