@@ -1,13 +1,4 @@
 resources:
-- name: kri_extsvc_default___example_
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    name: kri_extsvc_default___example_
-    type: EDS
 - name: kri_msvc_default___backend_tcp-port
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster

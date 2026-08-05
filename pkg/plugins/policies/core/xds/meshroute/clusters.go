@@ -28,11 +28,10 @@ import (
 )
 
 // destination is everything a cluster needs to know about what it talks to: the
-// protocol advertised by the destination port, the SNI and the identities to
-// use when it originates mTLS, and the upstream HTTP options to apply.
+// protocol advertised by the destination port, the identities this proxy has to
+// accept when it originates mTLS, and the upstream HTTP options to apply.
 type destination struct {
 	protocol core_meta.Protocol
-	sni      string
 	sans     []string
 	// upstreamHTTP is nil when the connection carries opaque bytes.
 	upstreamHTTP envoy_clusters.ClusterBuilderOpt
@@ -54,83 +53,6 @@ func upstreamHTTPOptions(protocol core_meta.Protocol) envoy_clusters.ClusterBuil
 	}
 }
 
-// resolveDestination describes what the clusters of a service talk to.
-//
-// GenerateEndpoints emits a load assignment for every cluster of every service,
-// so a service that produced no cluster would leave the snapshot inconsistent
-// and the proxy would receive nothing at all. A destination that resolves to no
-// real resource, or to no valid KRI, therefore still yields a destination - one
-// carrying no SNI, which keeps the cluster plaintext.
-func resolveDestination(
-	meshCtx xds_context.MeshContext,
-	service *envoy_common.Service,
-	serviceName string,
-) destination {
-	// A legacy kuma.io/service destination has no resource to resolve, so its
-	// protocol comes from the service name the accumulator keyed it under.
-	unresolved := destination{
-		protocol:     meshCtx.GetServiceProtocol(serviceName),
-		upstreamHTTP: envoy_clusters.Http2(),
-		plaintext:    true,
-	}
-
-	backendRef := service.BackendRef().RealResourceBackendRef()
-	if backendRef == nil {
-		return unresolved
-	}
-	destResource, port, ok := DestinationPortFromRef(meshCtx, backendRef)
-	if !ok {
-		return unresolved
-	}
-
-	var dest destination
-	switch backendRef.Resource.ResourceType {
-	case meshservice_api.MeshServiceType:
-		ms := destResource.(*meshservice_api.MeshServiceResource)
-		dest = destination{
-			protocol: port.GetProtocol(),
-			sans:     meshServiceIdentities(meshCtx, backendRef.Resource),
-			// The hop between the two proxies is HTTP/2 no matter which protocol
-			// the application speaks.
-			upstreamHTTP: envoy_clusters.Http2(),
-			plaintext:    !ms.TerminatesTLS(),
-		}
-	case meshmultizoneservice_api.MeshMultiZoneServiceType:
-		dest = destination{
-			protocol:     port.GetProtocol(),
-			sans:         meshMultiZoneServiceIdentities(meshCtx, backendRef.Resource),
-			upstreamHTTP: envoy_clusters.Http2(),
-		}
-	case meshexternalservice_api.MeshExternalServiceType:
-		// An external service is only reachable through a zone egress: the egress
-		// terminates this connection and matches the KRI SNI, so the egress
-		// identity is what this proxy has to trust. The egress forwards the
-		// original protocol, so the upstream keeps speaking it. Without an egress
-		// there is nothing to originate mTLS towards.
-		egressSANs := meshCtx.ZoneEgressSANs()
-		dest = destination{
-			protocol:     port.GetProtocol(),
-			sans:         egressSANs,
-			upstreamHTTP: upstreamHTTPOptions(port.GetProtocol()),
-			plaintext:    len(egressSANs) == 0,
-		}
-	default:
-		return unresolved
-	}
-
-	// The destination advertises its SNI from the resolved port name, so
-	// normalize a numeric backend-ref section (named port targeted by number) to
-	// the port name before deriving the KRI SNI.
-	kriID := kri.WithSectionName(backendRef.Resource, port.GetName())
-	if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
-		dest.plaintext = true
-		return dest
-	}
-	dest.sni = core_sni.FromKRI(kriID)
-
-	return dest
-}
-
 // GenerateClusters builds one EDS cluster per outbound destination. Every
 // destination is reachable through a mesh-scoped zone proxy, so a cluster
 // originates mTLS towards the KRI SNI of the destination port once this proxy
@@ -141,16 +63,68 @@ func GenerateClusters(
 	services envoy_common.Services,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
+
+	// A proxy without a workload identity has no certificate to present, which
+	// happens until the MeshIdentity matching it reports initialized, so it
+	// cannot originate mTLS towards any destination yet.
 	hasIdentity := proxy.WorkloadIdentity != nil
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 
-		dest := resolveDestination(meshCtx, service, serviceName)
+		backendRef := service.BackendRef().RealResourceBackendRef()
+		if backendRef == nil {
+			continue
+		}
+		destResource, port, ok := DestinationPortFromRef(meshCtx, backendRef)
+		if !ok {
+			continue
+		}
+
+		var dest destination
+		switch backendRef.Resource.ResourceType {
+		case meshservice_api.MeshServiceType:
+			ms := destResource.(*meshservice_api.MeshServiceResource)
+			dest = destination{
+				protocol: port.GetProtocol(),
+				sans:     meshServiceIdentities(meshCtx, backendRef.Resource),
+				// The hop between the two proxies is HTTP/2 no matter which
+				// protocol the application speaks.
+				upstreamHTTP: envoy_clusters.Http2(),
+				plaintext:    !ms.TerminatesTLS(),
+			}
+		case meshmultizoneservice_api.MeshMultiZoneServiceType:
+			dest = destination{
+				protocol:     port.GetProtocol(),
+				sans:         meshMultiZoneServiceIdentities(meshCtx, backendRef.Resource),
+				upstreamHTTP: envoy_clusters.Http2(),
+			}
+		case meshexternalservice_api.MeshExternalServiceType:
+			// An external service is only reachable through a zone egress: the
+			// egress terminates this connection and matches the KRI SNI, so the
+			// egress identity is what this proxy has to trust. The egress
+			// forwards the original protocol, so the upstream keeps speaking it.
+			egressSANs := meshCtx.ZoneEgressSANs()
+			if len(egressSANs) == 0 {
+				continue
+			}
+			dest = destination{
+				protocol:     port.GetProtocol(),
+				sans:         egressSANs,
+				upstreamHTTP: upstreamHTTPOptions(port.GetProtocol()),
+			}
+		default:
+			continue
+		}
+
+		kriID := kri.WithSectionName(backendRef.Resource, port.GetName())
+		if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+			continue
+		}
 
 		var transportSocket envoy_clusters.ClusterBuilderOpt
 		if hasIdentity && !dest.plaintext {
-			upstreamCtx, err := UpstreamTLSContext(proxy, dest.sni, dest.sans)
+			upstreamCtx, err := UpstreamTLSContext(proxy, core_sni.FromKRI(kriID), dest.sans)
 			if err != nil {
 				return nil, err
 			}
