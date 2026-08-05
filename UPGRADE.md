@@ -17,6 +17,7 @@ The protocol of a `Dataplane` inbound is now read only from `networking.inbound[
 Set `networking.inbound[].protocol` on every Universal `Dataplane` that currently declares its protocol only through the `kuma.io/protocol` tag, before upgrading.
 
 **Warning**: an inbound without `protocol` is treated as an unknown protocol and served as plain TCP. Its listener loses the `kuma.io/protocol` tag and the L7 filters that depend on it — HTTP access log fields, `MeshTimeout` HTTP timeouts, `MeshFaultInjection`, `MeshRateLimit` HTTP limits, HTTP-aware routing — and the endpoint stops advertising a protocol, so `MeshService`-level protocol inference falls back to TCP as well. Nothing rejects the resource, so the change is silent.
+
 ### `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` removed
 
 The `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` environment variable
