@@ -139,9 +139,9 @@ func fillMeshMultiZoneServices(
 				continue
 			}
 			for _, port := range mzSvc.Spec.Ports {
-				serviceName := destinationname.MustResolve(false, mzSvc, port)
+				serviceName := destinationname.ResolveLegacyFromDestination(mzSvc, port)
 
-				existingEndpoints := outbound[destinationname.MustResolve(false, ms, port)]
+				existingEndpoints := outbound[destinationname.ResolveLegacyFromDestination(ms, port)]
 				outbound[serviceName] = append(outbound[serviceName], existingEndpoints...)
 			}
 		}
@@ -206,7 +206,7 @@ func fillRemoteMeshServices(
 			continue
 		}
 		for _, port := range ms.Spec.Ports {
-			serviceName := destinationname.MustResolve(false, ms, port)
+			serviceName := destinationname.ResolveLegacyFromDestination(ms, port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
 				ep := endpoint
 				ep.Locality = &core_xds.Locality{
@@ -261,7 +261,7 @@ func fillLocalMeshServices(
 					}
 
 					inboundTags := endpointIdentity(dpp, inbound)
-					serviceName := destinationname.MustResolve(false, meshSvc, port)
+					serviceName := destinationname.ResolveLegacyFromDestination(meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
 					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
@@ -365,7 +365,7 @@ func fillMeshExternalServicesOnDataplane(
 	for _, mes := range meshExternalServices {
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
-		serviceName := destinationname.MustResolve(false, mes, mes.Spec.Match)
+		serviceName := destinationname.ResolveLegacyFromDestination(mes, mes.Spec.Match)
 		locality := GetLocality(nil)
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
@@ -450,7 +450,7 @@ func fillMeshExternalServicesOnEgress(
 
 		// Always unified (KRI) naming: the embedded egress is new infrastructure that only
 		// supports Exclusive MeshServices mode.
-		serviceName := destinationname.MustResolve(true, mes, mes.Spec.Match)
+		serviceName := destinationname.MustResolve(mes, mes.Spec.Match)
 		group := outbound[serviceName]
 		group.Protocol = es.Protocol
 		group.OwnerResource = es.OwnerResource
