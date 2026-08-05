@@ -69,7 +69,6 @@ spec:
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().WithName(mesh).WithoutInitialPolicies())).
-			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Install(zoneproxy.Install(
 				zoneproxy.WithMesh(mesh),
 			)).

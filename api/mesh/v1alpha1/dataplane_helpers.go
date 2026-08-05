@@ -372,20 +372,6 @@ func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
 	return selector.MatchesFuzzy(d.GetNetworking().GetGateway().GetTags())
 }
 
-// GetProtocolFallback returns the protocol supported by this inbound interface.
-// The kuma.io/protocol tag is still read as a fallback: protocol is a per-port
-// property that resource labels cannot express, so Universal dataplanes
-// persisted before the Protocol field existed carry it only as an inbound tag.
-func (d *Dataplane_Networking_Inbound) GetProtocolFallback() string {
-	if d == nil {
-		return ""
-	}
-	if d.Protocol != "" {
-		return d.Protocol
-	}
-	return d.Tags[ProtocolTag]
-}
-
 // GetServiceFallback returns the service this inbound belongs to, preferring
 // the legacy per-inbound kuma.io/service tag over the given Dataplane-scoped
 // fallback (its kuma.io/service label). A Dataplane carries a single service

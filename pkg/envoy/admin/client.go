@@ -182,12 +182,6 @@ func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.
 			return nil, err
 		}
 		u.Scheme = "https"
-	case *core_mesh.ZoneIngressResource, *core_mesh.ZoneEgressResource:
-		httpClient, err = a.buildHTTPClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-		u.Scheme = "https"
 	default:
 		return nil, errors.New("unsupported proxy type")
 	}

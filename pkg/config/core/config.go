@@ -14,16 +14,14 @@ const (
 type CpMode = string
 
 const (
-	// Deprecated: use zone
-	Standalone CpMode = "standalone"
-	Zone       CpMode = "zone"
-	Global     CpMode = "global"
+	Zone   CpMode = "zone"
+	Global CpMode = "global"
 )
 
 // ValidateCpMode to check modes of kuma-cp
 func ValidateCpMode(mode CpMode) error {
-	if mode != Standalone && mode != Zone && mode != Global {
-		return errors.Errorf("invalid mode. Available modes: %s, %s, %s", Standalone, Zone, Global)
+	if mode != Zone && mode != Global {
+		return errors.Errorf("invalid mode. Available modes: %s, %s", Zone, Global)
 	}
 	return nil
 }

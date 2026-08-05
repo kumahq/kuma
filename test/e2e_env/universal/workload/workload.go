@@ -22,7 +22,6 @@ func Workload() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(mesh)).
-			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

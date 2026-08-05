@@ -53,8 +53,6 @@ type RootRuntime struct {
 	NewDataplaneInspectClient    func(util_http.Client) kumactl_resources.DataplaneInspectClient
 	NewInspectEnvoyProxyClient   func(core_model.ResourceTypeDescriptor, util_http.Client) kumactl_resources.InspectEnvoyProxyClient
 	NewPolicyInspectClient       func(util_http.Client) kumactl_resources.PolicyInspectClient
-	NewZoneIngressOverviewClient func(util_http.Client) kumactl_resources.ZoneIngressOverviewClient
-	NewZoneEgressOverviewClient  func(util_http.Client) kumactl_resources.ZoneEgressOverviewClient
 	NewZoneOverviewClient        func(util_http.Client) kumactl_resources.ZoneOverviewClient
 	NewServiceOverviewClient     func(util_http.Client) kumactl_resources.ServiceOverviewClient
 	NewDataplaneTokenClient      func(util_http.Client) tokens.DataplaneTokenClient
@@ -99,17 +97,15 @@ func DefaultRootContext() *RootContext {
 			NewResourceStore: func(client util_http.Client) core_store.ResourceStore {
 				return kumactl_resources.NewResourceStore(client, registry.Global().ObjectDescriptors())
 			},
-			NewDataplaneOverviewClient:   kumactl_resources.NewDataplaneOverviewClient,
-			NewDataplaneInspectClient:    kumactl_resources.NewDataplaneInspectClient,
-			NewInspectEnvoyProxyClient:   kumactl_resources.NewInspectEnvoyProxyClient,
-			NewPolicyInspectClient:       kumactl_resources.NewPolicyInspectClient,
-			NewZoneIngressOverviewClient: kumactl_resources.NewZoneIngressOverviewClient,
-			NewZoneEgressOverviewClient:  kumactl_resources.NewZoneEgressOverviewClient,
-			NewZoneOverviewClient:        kumactl_resources.NewZoneOverviewClient,
-			NewServiceOverviewClient:     kumactl_resources.NewServiceOverviewClient,
-			NewDataplaneTokenClient:      tokens.NewDataplaneTokenClient,
-			NewZoneTokenClient:           tokens.NewZoneTokenClient,
-			NewAPIServerClient:           kumactl_resources.NewAPIServerClient,
+			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
+			NewDataplaneInspectClient:  kumactl_resources.NewDataplaneInspectClient,
+			NewInspectEnvoyProxyClient: kumactl_resources.NewInspectEnvoyProxyClient,
+			NewPolicyInspectClient:     kumactl_resources.NewPolicyInspectClient,
+			NewZoneOverviewClient:      kumactl_resources.NewZoneOverviewClient,
+			NewServiceOverviewClient:   kumactl_resources.NewServiceOverviewClient,
+			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
+			NewZoneTokenClient:         tokens.NewZoneTokenClient,
+			NewAPIServerClient:         kumactl_resources.NewAPIServerClient,
 			NewKubernetesResourcesClient: func(c util_http.Client) client.KubernetesResourcesClient {
 				return client.NewHTTPKubernetesResourcesClient(c, registry.Global().ObjectDescriptors())
 			},
@@ -263,22 +259,6 @@ func (rc *RootContext) CurrentZoneOverviewClient() (kumactl_resources.ZoneOvervi
 		return nil, err
 	}
 	return rc.Runtime.NewZoneOverviewClient(client), nil
-}
-
-func (rc *RootContext) CurrentZoneIngressOverviewClient() (kumactl_resources.ZoneIngressOverviewClient, error) {
-	client, err := rc.BaseAPIServerClient()
-	if err != nil {
-		return nil, err
-	}
-	return rc.Runtime.NewZoneIngressOverviewClient(client), nil
-}
-
-func (rc *RootContext) CurrentZoneEgressOverviewClient() (kumactl_resources.ZoneEgressOverviewClient, error) {
-	client, err := rc.BaseAPIServerClient()
-	if err != nil {
-		return nil, err
-	}
-	return rc.Runtime.NewZoneEgressOverviewClient(client), nil
 }
 
 func (rc *RootContext) CurrentServiceOverviewClient() (kumactl_resources.ServiceOverviewClient, error) {
