@@ -431,6 +431,37 @@ var _ = Describe("Insight Persistence", func() {
 		}).Should(Succeed())
 	})
 
+	It("should delete a ServiceInsight left over by an older control plane", func() {
+		// given a mesh with a ServiceInsight written before the upgrade
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		serviceInsight := core_mesh.NewServiceInsightResource()
+		serviceInsight.Spec = &mesh_proto.ServiceInsight{
+			Services: map[string]*mesh_proto.ServiceInsight_Service{
+				"backend": {
+					Status:      mesh_proto.ServiceInsight_Service_online,
+					ServiceType: mesh_proto.ServiceInsight_Service_internal,
+					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{
+						Total:  1,
+						Online: 1,
+					},
+				},
+			},
+		}
+		err = rm.Create(context.Background(), serviceInsight, store.CreateByKey("all-services-mesh-1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		step(stepsToResync)
+
+		// then the stale resource is removed instead of being served forever
+		Eventually(func(g Gomega) {
+			serviceInsights := &core_mesh.ServiceInsightResourceList{}
+			g.Expect(rm.List(context.Background(), serviceInsights, store.ListByMesh("mesh-1"))).To(Succeed())
+			g.Expect(serviceInsights.Items).To(BeEmpty())
+		}, "10s", "100ms").Should(Succeed())
+	})
+
 	It("should return correct dataplanes statuses in mesh insights", func() {
 		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())

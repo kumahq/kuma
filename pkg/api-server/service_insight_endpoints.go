@@ -20,8 +20,9 @@ import (
 
 // serviceInsightKey builds the key of the legacy per-mesh ServiceInsight resource.
 // The resyncer no longer writes ServiceInsight (services are now computed from
-// MeshService/MeshExternalService), so this always resolves to a not-found read;
-// it is kept only so the legacy REST endpoint stays a valid, harmless no-op.
+// MeshService/MeshExternalService) and deletes the ones left over by older control
+// planes, so this resolves to a not-found read; it is kept only so the legacy REST
+// endpoint stays a valid, harmless no-op.
 func serviceInsightKey(mesh string) core_model.ResourceKey {
 	return core_model.ResourceKey{
 		Name: fmt.Sprintf("all-services-%s", mesh),

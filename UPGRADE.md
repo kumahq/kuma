@@ -334,7 +334,10 @@ legacy `ExternalService` resources are represented by `MeshService` and
 legacy statistics:
 
 - `ServiceInsight` is no longer computed at all. The control plane never writes
-  the resource, so `GET /meshes/{mesh}/service-insights` returns an empty list
+  the resource, and it deletes the `ServiceInsight` left over by the previous
+  version on the first insight resync after the upgrade (within
+  `KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL`, 20s by default), so no stale data is
+  served. After that `GET /meshes/{mesh}/service-insights` returns an empty list
   and `GET /meshes/{mesh}/service-insights/{name}` returns `404`. This also
   covers delegated gateways, which used to be the last services reported there,
   along with their per-service `zones` list. `kumactl inspect services` and the
