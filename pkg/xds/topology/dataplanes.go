@@ -24,18 +24,9 @@ func ResolveDataplaneAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_m
 	if err != nil {
 		return nil, err
 	}
-	aip, err := lookupFirstIp(lookupIPFunc, dataplane.Spec.Networking.AdvertisedAddress)
-	if err != nil {
-		return nil, err
-	}
-	if ip != "" || aip != "" { // only if we resolve any address, in most cases this is IP not a hostname
+	if ip != "" { // only if we resolve any address, in most cases this is IP not a hostname
 		dpSpec := proto.Clone(dataplane.Spec).(*mesh_proto.Dataplane)
-		if ip != "" {
-			dpSpec.Networking.Address = ip
-		}
-		if aip != "" {
-			dpSpec.Networking.AdvertisedAddress = aip
-		}
+		dpSpec.Networking.Address = ip
 		return &core_mesh.DataplaneResource{
 			Meta: dataplane.Meta,
 			Spec: dpSpec,

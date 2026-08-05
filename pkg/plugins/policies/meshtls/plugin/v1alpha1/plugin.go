@@ -326,22 +326,17 @@ func configureInboundPassthroughListener(
 	}
 	statPrefix := inboundName
 	switch tlsMode {
-	case api.ModeStrict:
+	case api.ModeStrict, api.ModePermissive:
+		// only a sidecar that opted into strict inbound ports may restrict the
+		// passthrough to the declared inbounds, and only in strict mode
+		useStrictInboundPorts := tlsMode == api.ModeStrict &&
+			proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts)
 		return generator.CreateInboundPassthroughListener(
 			proxy,
 			inboundName,
 			address,
 			tpCfg.Redirect.Inbound.Port.Uint32(),
-			true,
-			statPrefix,
-		)
-	case api.ModePermissive:
-		return generator.CreateInboundPassthroughListener(
-			proxy,
-			inboundName,
-			address,
-			tpCfg.Redirect.Inbound.Port.Uint32(),
-			false,
+			useStrictInboundPorts,
 			statPrefix,
 		)
 	}
@@ -381,8 +376,6 @@ func configureListener(
 	}
 
 	protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
-	cluster := policies_xds.NewClusterBuilder().WithName(clusterName).Build()
-	routes := generator.GenerateRoutes(proxy, iface, cluster)
 	ciphers := pointer.Deref(conf.TlsCiphers)
 
 	filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {
@@ -393,7 +386,6 @@ func configureListener(
 			clusterName,
 			xdsCtx,
 			iface,
-			&routes,
 			conf.TlsVersion,
 			ciphers,
 		)
@@ -462,20 +454,15 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 		}
 	}
 
+	tlsVersion := pointer.Deref(conf.TlsVersion)
+
 	return bldrs_tls.NewDownstreamTLSContext().
 		Configure(
 			bldrs_tls.DownstreamCommonTlsContext(
 				bldrs_tls.NewCommonTlsContext().
 					Configure(bldrs_common.IfNotNil(conf.TlsCiphers, bldrs_tls.CipherSuites)).
-					Configure(bldrs_common.IfNotNil(conf.TlsVersion, func(version common_tls.Version) bldrs_common.Configurer[envoy_tls.CommonTlsContext] {
-						if version.Max != nil {
-							return bldrs_tls.TlsMaxVersion(version.Max)
-						}
-						if version.Min != nil {
-							return bldrs_tls.TlsMinVersion(version.Min)
-						}
-						return nil
-					})).
+					Configure(bldrs_common.If(tlsVersion.Min != nil, bldrs_tls.TlsMinVersion(tlsVersion.Min))).
+					Configure(bldrs_common.If(tlsVersion.Max != nil, bldrs_tls.TlsMaxVersion(tlsVersion.Max))).
 					Configure(
 						bldrs_tls.CombinedCertificateValidationContext(
 							bldrs_tls.NewCombinedCertificateValidationContext().

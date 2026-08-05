@@ -108,9 +108,10 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			},
 			IgnoredServiceSelectorLabels: []string{},
 			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
-			NodeLabelsToCopy:             []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"},
-			UnifiedResourceNamingEnabled: true,
-			OtelPipeEnabled:              true,
+			NodeLabelsToCopy:              []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"},
+			TransparentProxyConfigMapName: "kuma-transparent-proxy-config",
+			UnifiedResourceNamingEnabled:  true,
+			OtelPipeEnabled:               true,
 			Spire: Spire{
 				Enabled:        false,
 				MountPath:      "/run/spire/sockets",
@@ -250,9 +251,9 @@ type Injector struct {
 	IgnoredServiceSelectorLabels []string `json:"ignoredServiceSelectorLabels" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS"`
 	// NodeLabelsToCopy defines a list of node labels that should be copied to the Pod.
 	NodeLabelsToCopy []string `json:"nodeLabelsToCopy" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY"`
-	// TransparentProxyConfigMapName is used to specify the name of the ConfigMap that contains transparent proxy
-	// configuration. If this value is left empty, the transparent proxy configuration will not be loaded from
-	// a ConfigMap. The actual value is expected to be provided via an environment variable
+	// TransparentProxyConfigMapName specifies the name of the ConfigMap in the system namespace that contains the base
+	// transparent proxy configuration. The sidecar injector reads it, merges it with pod annotations and injects the
+	// result. It defaults to "kuma-transparent-proxy-config" and the ConfigMap is expected to exist.
 	TransparentProxyConfigMapName string `json:"transparentProxyConfigMap" envconfig:"kuma_runtime_kubernetes_injector_transparent_proxy_configmap_name"`
 	// UnifiedResourceNamingEnabled enables automatic injection of the unified naming feature flag into all sidecar-injected workloads.
 	// When set to true, the injector will add the required environment variable directly to the `kuma-sidecar` container.

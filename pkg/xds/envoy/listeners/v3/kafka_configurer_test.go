@@ -1,1 +1,94 @@
 package v3_test
+
+import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+)
+
+var _ = Describe("TcpProxyConfigurer", func() {
+	type testCase struct {
+		listenerProtocol xds.SocketAddressProtocol
+		listenerAddress  string
+		listenerPort     uint32
+		statsName        string
+		clusters         []envoy_common.Cluster
+		expected         string
+	}
+
+	DescribeTable("should generate proper Envoy config",
+		func(given testCase) {
+			// when
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
+				Build()
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			actual, err := util_proto.ToYAML(listener)
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(actual).To(MatchYAML(given.expected))
+		},
+		Entry("basic tcp_proxy with a single destination cluster", testCase{
+			listenerAddress: "192.168.0.1",
+			listenerPort:    8080,
+			statsName:       "localhost:8080",
+			clusters: []envoy_common.Cluster{
+				plugins_xds.NewClusterBuilder().WithService("localhost:8080").Build(),
+			},
+			expected: `
+        name: inbound:192.168.0.1:8080
+        trafficDirection: INBOUND
+        enableReusePort: true
+        address:
+          socketAddress:
+            address: 192.168.0.1
+            portValue: 8080
+        filterChains:
+        - filters:
+          - name: envoy.filters.network.tcp_proxy
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+              cluster: localhost:8080
+              statPrefix: localhost_8080
+`,
+		}),
+		Entry("basic tcp_proxy with multiple destination clusters", testCase{
+			listenerAddress: "127.0.0.1",
+			listenerPort:    5432,
+			statsName:       "db",
+			clusters: []envoy_common.Cluster{
+				plugins_xds.NewClusterBuilder().WithName("db-0").WithTags(map[string]string{"kuma.io/service": "db", "version": "v1"}).Build(),
+				plugins_xds.NewClusterBuilder().WithName("db-1").WithTags(map[string]string{"kuma.io/service": "db", "version": "v2"}).Build(),
+			},
+			expected: `
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 5432
+            filterChains:
+            - filters:
+              - name: envoy.filters.network.tcp_proxy
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                  statPrefix: db
+                  weightedClusters:
+                    clusters:
+                    - name: db-0
+                      weight: 1
+                    - name: db-1
+                      weight: 1
+            name: inbound:127.0.0.1:5432
+            trafficDirection: INBOUND
+            enableReusePort: true`,
+		}),
+	)
+})

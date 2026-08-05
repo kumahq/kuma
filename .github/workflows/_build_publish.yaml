@@ -102,18 +102,17 @@ jobs:
             ./build/distributions/out/*.sha256
             !./build/distributions/out/*.tar.gz.sha256
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
-      - name: Get Cloudsmith OIDC token
-        id: cloudsmith_token
-        uses: cloudsmith-io/cloudsmith-cli-action@db783de9f6e7a445e5e31d94f4210303b48a10a3 # v3.0.1
-        with:
-          oidc-namespace: kong
-          oidc-service-slug: ${{ contains(inputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
-          oidc-auth-only: true
+      # The cloudsmith CLI bundled in the pulp release image authenticates
+      # lazily via OIDC when it sees CLOUDSMITH_ORG/CLOUDSMITH_SERVICE_SLUG
+      # and the GitHub Actions ID-token env vars, so there is no token to
+      # mint here; mk/distribution.mk forwards them into the container.
       - name: publish binaries
         env:
           PULP_USERNAME: ${{ vars.PULP_USERNAME }}
           PULP_PASSWORD: ${{ secrets.PULP_PASSWORD }}
-          CLOUDSMITH_API_KEY: ${{ steps.cloudsmith_token.outputs.oidc-token }}
+          CLOUDSMITH_ORG: kong
+          CLOUDSMITH_SERVICE_SLUG: ${{ contains(inputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
+          CLOUDSMITH_OIDC_AUDIENCE: https://github.com/${{ github.repository_owner }}
         run: |
           make publish/pulp
   build-images:

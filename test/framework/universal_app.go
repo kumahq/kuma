@@ -344,7 +344,6 @@ func (s *UniversalApp) CreateSpireAgent(
 func (s *UniversalApp) CreateDP(
 	token, cpAddress, name, mesh, ip, dpyaml string,
 	builtindns bool,
-	proxyType string,
 	concurrency int,
 	envsMap map[string]string,
 	transparent bool,
@@ -435,10 +434,6 @@ EOF
 
 	if builtindns {
 		args = append(args, "--dns-enabled")
-	}
-
-	if proxyType != "" {
-		args = append(args, "--proxy-type", proxyType)
 	}
 
 	if Config.Debug {

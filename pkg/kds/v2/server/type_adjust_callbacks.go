@@ -8,7 +8,7 @@ import (
 )
 
 // We are using go-control-plane's server and cache for KDS exchange.
-// We are setting TypeURL for DeltaDiscoveryRequest/DeltaDiscoveryResponse for our resource name like "TrafficRoute" / "Mesh" etc.
+// We are setting TypeURL for DeltaDiscoveryRequest/DeltaDiscoveryResponse for our resource name like "MeshTimeout" / "Mesh" etc.
 // but the actual resource which we are sending is kuma.mesh.v1alpha1.KumaResource
 //
 // The function which is marshaling DeltaDiscoveryResponse

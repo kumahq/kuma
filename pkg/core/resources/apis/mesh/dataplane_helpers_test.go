@@ -323,7 +323,7 @@ var _ = Describe("Dataplane", func() {
 		})
 	})
 
-	Describe("GetIP()", func() {
+	Describe("GetAddress()", func() {
 		type testCase struct {
 			dataplane string
 			expected  string
@@ -339,7 +339,7 @@ var _ = Describe("Dataplane", func() {
 				}
 
 				// expect
-				Expect(dataplane.GetIP()).To(Equal(given.expected))
+				Expect(dataplane.GetAddress()).To(Equal(given.expected))
 			},
 			Entry("`nil` dataplane", testCase{
 				dataplane: ``,
