@@ -45,10 +45,14 @@ type DataplaneTemplateData struct {
 	AppendConfig string
 }
 
-// OutboundConfig represents an outbound configuration
+// OutboundConfig represents an outbound configuration. The destination is
+// selected through a MeshService backendRef, so an outbound whose MeshService
+// does not exist resolves to nothing instead of producing a listener for a
+// service that is not there. Service is matched on kuma.io/display-name.
 type OutboundConfig struct {
-	Port    string
-	Service string
+	Port        string
+	Service     string
+	ServicePort string
 }
 
 // TransparentProxyConfig represents transparent proxy configuration
@@ -112,8 +116,11 @@ networking:
   outbound:
 {{- range .Outbounds }}
   - port: {{ .Port }}
-    tags:
-      kuma.io/service: {{ .Service }}
+    backendRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: {{ .Service }}
+      port: {{ .ServicePort }}
 {{- end }}
 {{- end }}
 {{- if .TransparentProxy }}
