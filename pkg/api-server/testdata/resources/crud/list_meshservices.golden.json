@@ -17,8 +17,10 @@
    "spec": {
     "state": "Unavailable",
     "selector": {
-     "dataplaneTags": {
-      "app": "redis"
+     "dataplaneLabels": {
+      "matchLabels": {
+       "app": "redis"
+      }
      }
     },
     "ports": [
@@ -55,8 +57,10 @@
    "spec": {
     "state": "Unavailable",
     "selector": {
-     "dataplaneTags": {
-      "app": "redis"
+     "dataplaneLabels": {
+      "matchLabels": {
+       "app": "redis"
+      }
      }
     },
     "ports": [

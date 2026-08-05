@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
@@ -16,6 +17,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test"
@@ -26,6 +29,46 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
 )
+
+// remoteMeshZoneAddress is the public address of the zone proxy in zone "east",
+// as it arrives over KDS. On Kubernetes it's reconciled from the zone ingress
+// Service, on Universal it's authored by the user.
+const remoteMeshZoneAddress = `
+type: MeshZoneAddress
+name: zone-proxy-east
+mesh: default
+labels:
+  kuma.io/zone: east
+  kuma.io/origin: global
+spec:
+  address: 192.168.0.1
+  port: 10001
+`
+
+// remoteMeshZoneAddressWithHostname is the same zone proxy address, published as a
+// load balancer hostname instead of an IP, which is what the ingress Service
+// reconciler produces on EKS.
+const remoteMeshZoneAddressWithHostname = `
+type: MeshZoneAddress
+name: zone-proxy-east
+mesh: default
+labels:
+  kuma.io/zone: east
+  kuma.io/origin: global
+spec:
+  address: lb.example.com
+  port: 10001
+`
+
+func endpointTargets(meshCtx *xds_context.MeshContext) []string {
+	var targets []string
+	for _, endpoints := range meshCtx.EndpointMap {
+		for _, endpoint := range endpoints {
+			targets = append(targets, endpoint.Target)
+		}
+	}
+	return targets
+}
 
 var _ = Describe("hash", func() {
 	lookupIPFunc := func(s string) ([]net.IP, error) {
@@ -318,7 +361,7 @@ status:
 		Expect(after.PolicyMatchingHash).To(Equal(before.PolicyMatchingHash))
 	})
 
-	It("recomputes the mesh context when a remote MeshService and its ZoneIngress newly appear", func() {
+	It("recomputes the mesh context when a remote MeshService and its MeshZoneAddress newly appear", func() {
 		// given an mTLS-enabled mesh, matching the e2e repro
 		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
 
@@ -326,26 +369,53 @@ status:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(before.EndpointMap).To(BeEmpty())
 
-		// when a remote zone's ZoneIngress (with a resolved public address and
-		// AvailableServices) and its auto-generated MeshService arrive together,
-		// as they would over KDS when a new zone joins
-		Expect(builders.ZoneIngress().
-			WithZone("east").
-			WithAddress("192.168.0.1").
-			WithAdvertisedAddress("192.168.0.1").
-			WithPort(10001).
-			WithAdvertisedPort(10001).
-			AddSimpleAvailableService("backend").
-			Create(resourceStore)).To(Succeed())
+		// when a remote zone's MeshZoneAddress (the public address of its zone
+		// proxy) and its auto-generated MeshService arrive together, as they
+		// would over KDS when a new zone joins
+		Expect(test_store.LoadResources(context.Background(), resourceStore, remoteMeshZoneAddress)).To(Succeed())
 		Expect(samples.MeshServiceSyncedBackendBuilder().Create(resourceStore)).To(Succeed())
 
 		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", before)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then the mesh context must be rebuilt, with the new remote endpoint present
-		Expect(after.Hash).ToNot(Equal(before.Hash), "a newly synced remote MeshService+ZoneIngress must invalidate the mesh context")
+		Expect(after.Hash).ToNot(Equal(before.Hash), "a newly synced remote MeshService+MeshZoneAddress must invalidate the mesh context")
 		Expect(after).ToNot(BeIdenticalTo(before))
-		Expect(after.EndpointMap).ToNot(BeEmpty(), "the remote MeshService should get an endpoint via the ZoneIngress")
+		Expect(after.EndpointMap).ToNot(BeEmpty(), "the remote MeshService should get an endpoint via the MeshZoneAddress")
+	})
+
+	It("recomputes the mesh context when the MeshZoneAddress hostname resolves to a new IP", func() {
+		// given a MeshZoneAddress pointing at a load balancer hostname, as reconciled
+		// from a LoadBalancer Service on EKS, where the hostname takes precedence
+		resolvedIP := "10.0.0.1"
+		builderWithMutableDNS := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			func(host string) ([]net.IP, error) {
+				if ip := net.ParseIP(host); ip != nil {
+					return []net.IP{ip}, nil
+				}
+				return []net.IP{net.ParseIP(resolvedIP)}, nil
+			},
+			"zone-1",
+			nil,
+		)
+		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
+		Expect(test_store.LoadResources(context.Background(), resourceStore, remoteMeshZoneAddressWithHostname)).To(Succeed())
+		Expect(samples.MeshServiceSyncedBackendBuilder().Create(resourceStore)).To(Succeed())
+
+		before, err := builderWithMutableDNS.BuildIfChanged(context.Background(), "default", nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(endpointTargets(before)).To(ConsistOf("10.0.0.1"))
+
+		// when the load balancer rotates to a different IP, without any resource changing
+		resolvedIP = "10.0.0.2"
+
+		// then the mesh context must be rebuilt so proxies stop dialing the stale address
+		after, err := builderWithMutableDNS.BuildIfChanged(context.Background(), "default", before)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(after.Hash).ToNot(Equal(before.Hash), "re-resolved MeshZoneAddress must invalidate the mesh context")
+		Expect(endpointTargets(after)).To(ConsistOf("10.0.0.2"))
 	})
 
 	It("recomputes the mesh context through the staged arrival matching the real KDS sequence", func() {
@@ -355,19 +425,13 @@ status:
 		ctx0, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
 		Expect(err).ToNot(HaveOccurred())
 
-		// stage 1: the remote zone's ZoneIngress arrives first, fully resolved
-		// (matches the real KDS trace: ZoneIngress observed complete from creationTime)
-		Expect(builders.ZoneIngress().
-			WithZone("east").
-			WithAddress("192.168.0.1").
-			WithAdvertisedAddress("192.168.0.1").
-			WithPort(10001).
-			WithAdvertisedPort(10001).
-			Create(resourceStore)).To(Succeed())
+		// stage 1: the remote zone's MeshZoneAddress arrives first, fully resolved
+		// (matches the real KDS trace: the zone proxy address is observed complete from creationTime)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, remoteMeshZoneAddress)).To(Succeed())
 
 		ctx1, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", ctx0)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(ctx1.Hash).ToNot(Equal(ctx0.Hash), "ZoneIngress arrival alone must invalidate the mesh context")
+		Expect(ctx1.Hash).ToNot(Equal(ctx0.Hash), "MeshZoneAddress arrival alone must invalidate the mesh context")
 		Expect(ctx1.EndpointMap).To(BeEmpty(), "no MeshService exists yet, so there's nothing to route to")
 
 		// stage 2: the auto-generated MeshService is created next, WITHOUT a VIP yet
@@ -377,7 +441,7 @@ status:
 		ctx2, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", ctx1)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(ctx2.Hash).ToNot(Equal(ctx1.Hash), "MeshService arrival must invalidate the mesh context")
-		Expect(ctx2.EndpointMap).ToNot(BeEmpty(), "cross-zone routing goes through the ZoneIngress and does not require a VIP")
+		Expect(ctx2.EndpointMap).ToNot(BeEmpty(), "cross-zone routing goes through the MeshZoneAddress and does not require a VIP")
 
 		// stage 3: the VIP is allocated a couple seconds later
 		meshService := meshservice_api.NewMeshServiceResource()
@@ -389,7 +453,96 @@ status:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(ctx3.Hash).ToNot(Equal(ctx2.Hash), "VIP allocation must invalidate the mesh context")
 	})
+
+	It("resolves a Dataplane address that is a DNS name", func() {
+		// given a builder whose lookup resolves a hostname, as it would on AWS ECS
+		// where the Dataplane is created before the container gets its IP
+		builderWithDNS := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			func(host string) ([]net.IP, error) {
+				switch host {
+				case "backend.dns.name":
+					return []net.IP{net.ParseIP("192.168.0.10")}, nil
+				default:
+					return []net.IP{net.ParseIP(host)}, nil
+				}
+			},
+			"zone-1",
+			nil,
+		)
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: backend.dns.name
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: backend
+---
+type: MeshService
+name: backend
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneRef:
+      name: dp-1
+  ports:
+  - port: 8080
+    targetPort: 8080
+    appProtocol: tcp
+`)).To(Succeed())
+
+		// when
+		meshCtx, err := builderWithDNS.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the dataplane stored in the mesh context is resolved
+		dataplanes := meshCtx.Resources.Dataplanes().Items
+		Expect(dataplanes).To(HaveLen(1))
+		Expect(dataplanes[0].Spec.GetNetworking().GetAddress()).To(Equal("192.168.0.10"))
+
+		// and so is the endpoint Envoy EDS gets, since it only accepts IPs
+		meshService := meshCtx.Resources.MeshServices().Items[0]
+		endpoints := meshCtx.EndpointMap[destinationname.ResolveLegacyFromDestination(meshService, meshService.Spec.Ports[0])]
+		Expect(endpoints).To(HaveLen(1))
+		Expect(endpoints[0].Target).To(Equal("192.168.0.10"))
+	})
+
+	It("returns an error instead of panicking when listing resources fails", func() {
+		// given a mesh exists but listing any other resource fails (e.g. DB connection lost)
+		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())
+		builder := xds_context.NewMeshContextBuilder(
+			&failingListManager{ReadOnlyResourceManager: resourceStore},
+			xds_server.MeshResourceTypes(),
+			lookupIPFunc,
+			"zone-1",
+			nil,
+		)
+
+		// when building the base mesh context
+		_, err := builder.BuildBaseMeshContextIfChanged(context.Background(), "default", nil)
+
+		// then the error is surfaced rather than causing a nil-pointer panic
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("failed to build base mesh context"))
+	})
 })
+
+// failingListManager delegates Get to a real manager but fails every List, simulating a store error.
+type failingListManager struct {
+	manager.ReadOnlyResourceManager
+}
+
+func (f *failingListManager) List(context.Context, core_model.ResourceList, ...store.ListOptionsFunc) error {
+	return errors.New("store unavailable")
+}
 
 var _ = Describe("ServicesInformation", func() {
 	lookupIPFunc := func(s string) ([]net.IP, error) {
@@ -422,7 +575,7 @@ var _ = Describe("ServicesInformation", func() {
 		msBuilder := builders.MeshService().
 			WithMesh(meshName).
 			WithName("backend").
-			WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "backend").
+			WithDataplaneLabelsSelectorKV(mesh_proto.ServiceTag, "backend").
 			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
 			WithTLSStatus(meshservice_api.TLSReady)
 		Expect(msBuilder.Create(resourceStore)).To(Succeed())
@@ -453,6 +606,7 @@ var _ = Describe("ServicesInformation", func() {
 			Meta: &test_model.ResourceMeta{Mesh: meshName, Name: "zone-egress-dp"},
 			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "127.0.0.10",
 					Listeners: []*mesh_proto.Dataplane_Networking_Listener{
 						{
 							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
@@ -493,12 +647,12 @@ var _ = Describe("ServicesInformation", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then the MeshService-backed service is TLS ready
-		msKey := destinationname.MustResolve(false, ms, ms.Spec.Ports[0])
+		msKey := destinationname.ResolveLegacyFromDestination(ms, ms.Spec.Ports[0])
 		Expect(mc.ServicesInformation[msKey]).ToNot(BeNil())
 		Expect(mc.ServicesInformation[msKey].TLSReadiness).To(BeTrue())
 
 		// and the external service is unconditionally TLS ready
-		esKey := destinationname.MustResolve(false, externalService, externalService.Spec.Match)
+		esKey := destinationname.ResolveLegacyFromDestination(externalService, externalService.Spec.Match)
 		Expect(mc.ServicesInformation[esKey]).ToNot(BeNil())
 		Expect(mc.ServicesInformation[esKey].IsExternalService).To(BeTrue())
 		Expect(mc.ServicesInformation[esKey].TLSReadiness).To(BeTrue())
@@ -519,7 +673,7 @@ var _ = Describe("ServicesInformation", func() {
 		msBuilder := builders.MeshService().
 			WithMesh(meshName).
 			WithName("backend").
-			WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "backend").
+			WithDataplaneLabelsSelectorKV(mesh_proto.ServiceTag, "backend").
 			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
 			WithTLSStatus(meshservice_api.TLSReady)
 		Expect(msBuilder.Create(resourceStore)).To(Succeed())
@@ -528,7 +682,7 @@ var _ = Describe("ServicesInformation", func() {
 		mc, err := meshContextBuilder.Build(context.Background(), meshName)
 		Expect(err).ToNot(HaveOccurred())
 
-		msKey := destinationname.MustResolve(false, ms, ms.Spec.Ports[0])
+		msKey := destinationname.ResolveLegacyFromDestination(ms, ms.Spec.Ports[0])
 		info, found := mc.ServicesInformation[msKey]
 		if found {
 			Expect(info.TLSReadiness).To(BeFalse())

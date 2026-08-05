@@ -24,7 +24,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 	xds_hooks "github.com/kumahq/kuma/v3/pkg/xds/hooks"
 	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 	v3 "github.com/kumahq/kuma/v3/pkg/xds/server/v3"
@@ -46,8 +45,7 @@ func NewProxyConfigInspector(meshContext xds_context.MeshContext, dataplaneMetad
 		zone:        zone,
 		meshContext: meshContext,
 		snapshotGenerator: &v3.TemplateSnapshotGenerator{
-			ResourceSetHooks:      hooks,
-			ProxyTemplateResolver: generator.DefaultTemplateResolver,
+			ResourceSetHooks: hooks,
 		},
 		knownInternalAddresses: knownInternalAddresses,
 		dataplaneMetadata:      dataplaneMetadata,
@@ -176,10 +174,6 @@ type dummySecrets struct{}
 
 func (ds *dummySecrets) GetForDataPlane(_ context.Context, _ *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error) {
 	return ds.identity(), ds.cas(append(meshes, mesh)...), nil
-}
-
-func (ds *dummySecrets) GetForZoneEgress(_ context.Context, _ *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	return ds.identity(), ds.cas(mesh)[mesh.GetMeta().GetName()], nil
 }
 
 func (ds *dummySecrets) GetAllInOne(ctx context.Context, _ *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ []*core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {

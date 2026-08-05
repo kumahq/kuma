@@ -8,9 +8,11 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	policies_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
@@ -30,27 +32,25 @@ spec:
 `, mesh, ip))
 }
 
-func mtlsAndEgressMeshUniversal(name string) InstallFunc {
-	mesh := fmt.Sprintf(`
-type: Mesh
-name: %s
-mtls:
-  enabledBackend: ca-1
-  backends:
-    - name: ca-1
-      type: builtin
-`, name)
-	return YamlUniversal(mesh)
-}
-
 func MeshTrafficPermission() {
 	const meshName = "mtp-test"
 	const namespace = "mtp-test"
+	const identityName = "mtp-test-identity"
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
-		// Global
+		// Global. No MeshTrafficPermission is installed: the mesh has to start
+		// out default-deny for the first assertion of the test.
 		err := NewClusterSetup().
-			Install(mtlsAndEgressMeshUniversal(meshName)).
+			Install(Yaml(builders.Mesh().WithName(meshName))).
+			Install(MeshIdentityBundled(meshName, identityName)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -65,15 +65,22 @@ func MeshTrafficPermission() {
 					WithLabels(map[string]string{"kuma.io/service": "test-server"}),
 				),
 				TestServerExternalServiceUniversal("external-service", 80, false, WithDockerContainerName("kuma-es-4_external-service-mtp-test")),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 
 		// Kubernetes Zone 1
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+				zoneIngress(),
+			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName,
+			multizone.KubeZone1, multizone.UniZone1)).To(Succeed())
 
 		esIp := multizone.UniZone1.GetApp("external-service").GetIP()
 		Expect(multizone.Global.Install(externalService(meshName, esIp))).To(Succeed())

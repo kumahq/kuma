@@ -4,11 +4,10 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
 // defaultMeshTimeoutResource and defaultMeshTimeoutToResource are kept as
@@ -21,9 +20,6 @@ var defaultMeshTimeoutResource = func() model.Resource {
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TargetRef{
 				Kind: common_api.Mesh,
-				ProxyTypes: &[]common_api.TargetRefProxyType{
-					common_api.Sidecar,
-				},
 			},
 
 			// bigger than outbound side timeouts or disabled.
@@ -59,9 +55,6 @@ var defaultMeshTimeoutToResource = func() model.Resource {
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TargetRef{
 				Kind: common_api.Mesh,
-				ProxyTypes: &[]common_api.TargetRefProxyType{
-					common_api.Sidecar,
-				},
 			},
 			To: &[]v1alpha1.To{
 				{
@@ -90,83 +83,17 @@ var defaultMeshTimeoutToResource = func() model.Resource {
 	}
 }
 
-var defaulMeshGatewaysTimeoutResource = func() model.Resource {
-	return &v1alpha1.MeshTimeoutResource{
-		Spec: &v1alpha1.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
-				Kind: common_api.Mesh,
-				ProxyTypes: &[]common_api.TargetRefProxyType{
-					common_api.Gateway,
-				},
-			},
-			Rules: &[]v1alpha1.Rule{
-				{
-					Default: v1alpha1.Conf{
-						IdleTimeout: &kube_meta.Duration{
-							Duration: policies_defaults.DefaultGatewayIdleTimeout,
-						},
-						Http: &v1alpha1.Http{
-							StreamIdleTimeout: &kube_meta.Duration{
-								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
-							},
-							RequestHeadersTimeout: &kube_meta.Duration{
-								Duration: policies_defaults.DefaultGatewayRequestHeadersTimeout,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-var defaulMeshGatewaysTimeoutToResource = func() model.Resource {
-	return &v1alpha1.MeshTimeoutResource{
-		Spec: &v1alpha1.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
-				Kind: common_api.Mesh,
-				ProxyTypes: &[]common_api.TargetRefProxyType{
-					common_api.Gateway,
-				},
-			},
-			To: &[]v1alpha1.To{
-				{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.Mesh,
-					},
-					Default: v1alpha1.Conf{
-						IdleTimeout: &kube_meta.Duration{
-							Duration: policies_defaults.DefaultIdleTimeout,
-						},
-						Http: &v1alpha1.Http{
-							StreamIdleTimeout: &kube_meta.Duration{
-								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 // DefaultInboundTimeout returns timeouts for the inbound side. This resource is not created
 // in the store. It's used directly in InboundProxyGenerator. In the future, it could be replaced
 // with a new InboundTimeout policy. The main idea around these values is to have them either
 // bigger than outbound side timeouts or disabled.
-var DefaultInboundTimeout = func() *mesh_proto.Timeout_Conf {
+var DefaultInboundTimeout = func() envoy_common.Timeouts {
 	const factor = 2
 
-	return &mesh_proto.Timeout_Conf{
-		ConnectTimeout: util_proto.Duration(factor * policies_defaults.DefaultConnectTimeout),
-		Tcp: &mesh_proto.Timeout_Conf_Tcp{
-			IdleTimeout: util_proto.Duration(factor * policies_defaults.DefaultIdleTimeout),
-		},
-		Http: &mesh_proto.Timeout_Conf_Http{
-			RequestTimeout:    util_proto.Duration(0),
-			IdleTimeout:       util_proto.Duration(factor * policies_defaults.DefaultIdleTimeout),
-			StreamIdleTimeout: util_proto.Duration(factor * policies_defaults.DefaultStreamIdleTimeout),
-			MaxStreamDuration: util_proto.Duration(0),
-		},
+	return envoy_common.Timeouts{
+		Connect:        factor * policies_defaults.DefaultConnectTimeout,
+		TcpIdle:        factor * policies_defaults.DefaultIdleTimeout,
+		HttpIdle:       factor * policies_defaults.DefaultIdleTimeout,
+		HttpStreamIdle: factor * policies_defaults.DefaultStreamIdleTimeout,
 	}
 }

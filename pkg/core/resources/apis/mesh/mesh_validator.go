@@ -12,42 +12,7 @@ var AllowedMTLSBackends = 1
 func (m *MeshResource) Validate() error {
 	var verr validators.ValidationError
 	verr.AddError("mtls", validateMtls(m.Spec.Mtls))
-	verr.AddError("constraints", validateConstraints(m.Spec.Constraints))
 	return verr.OrNil()
-}
-
-func validateConstraints(constraints *mesh_proto.Mesh_Constraints) validators.ValidationError {
-	var verr validators.ValidationError
-	if constraints == nil {
-		return verr
-	}
-	verr.AddError("dataplaneProxy", validateDppConstraints(constraints.DataplaneProxy))
-	return verr
-}
-
-func validateDppConstraints(constraints *mesh_proto.Mesh_DataplaneProxyConstraints) validators.ValidationError {
-	var verr validators.ValidationError
-	if constraints == nil {
-		return verr
-	}
-
-	for i, requirement := range constraints.GetRequirements() {
-		verr.Add(ValidateSelector(
-			validators.RootedAt("requirements").Index(i).Field("tags"),
-			requirement.Tags,
-			ValidateTagsOpts{RequireAtLeastOneTag: true},
-		))
-	}
-
-	for i, requirement := range constraints.GetRestrictions() {
-		verr.Add(ValidateSelector(
-			validators.RootedAt("restrictions").Index(i).Field("tags"),
-			requirement.Tags,
-			ValidateTagsOpts{RequireAtLeastOneTag: true},
-		))
-	}
-
-	return verr
 }
 
 func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {

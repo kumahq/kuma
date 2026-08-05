@@ -2,12 +2,10 @@ package envoy
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"sort"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -19,7 +17,6 @@ type Cluster interface {
 	Service() string
 	Name() string
 	SNI() string
-	Mesh() string
 	Tags() tags.Tags
 	Hash() string
 	IsExternalService() bool
@@ -30,101 +27,6 @@ type Split interface {
 	Weight() uint32
 	LBMetadata() tags.Tags
 	HasExternalService() bool
-}
-
-// Deprecated: for new policies use pkg/plugins/policies/xds/cluster.go
-type ClusterImpl struct {
-	service           string
-	name              string
-	weight            uint32
-	tags              tags.Tags
-	mesh              string
-	isExternalService bool
-}
-
-func (c *ClusterImpl) Service() string { return c.service }
-func (c *ClusterImpl) Name() string    { return c.name }
-func (c *ClusterImpl) Weight() uint32  { return c.weight }
-func (c *ClusterImpl) Tags() tags.Tags { return c.tags }
-func (c *ClusterImpl) SNI() string     { return "" }
-
-// Mesh returns a non-empty string only if the cluster is in a different mesh
-// from the context.
-func (c *ClusterImpl) Mesh() string            { return c.mesh }
-func (c *ClusterImpl) IsExternalService() bool { return c.isExternalService }
-func (c *ClusterImpl) Hash() string            { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
-
-func (c *ClusterImpl) SetName(name string) {
-	c.name = name
-}
-
-func (c *ClusterImpl) SetMesh(mesh string) {
-	c.mesh = mesh
-}
-
-type NewClusterOpt interface {
-	apply(cluster *ClusterImpl)
-}
-
-type newClusterOptFunc func(cluster *ClusterImpl)
-
-func (f newClusterOptFunc) apply(cluster *ClusterImpl) {
-	f(cluster)
-}
-
-// Deprecated: for new policies use pkg/plugins/policies/xds/cluster.go
-func NewCluster(opts ...NewClusterOpt) *ClusterImpl {
-	c := &ClusterImpl{}
-	for _, opt := range opts {
-		opt.apply(c)
-	}
-	if err := c.validate(); err != nil {
-		panic(err)
-	}
-	return c
-}
-
-func (c *ClusterImpl) validate() error {
-	if c.service == "" || c.name == "" {
-		return errors.New("either WithService() or WithName() should be called")
-	}
-	return nil
-}
-
-func WithService(service string) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *ClusterImpl) {
-		cluster.service = service
-		if cluster.name == "" {
-			cluster.name = service
-		}
-	})
-}
-
-func WithName(name string) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *ClusterImpl) {
-		cluster.name = name
-		if cluster.service == "" {
-			cluster.service = name
-		}
-	})
-}
-
-func WithWeight(weight uint32) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *ClusterImpl) {
-		cluster.weight = weight
-	})
-}
-
-func WithTags(tags tags.Tags) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *ClusterImpl) {
-		cluster.tags = tags
-	})
-}
-
-func WithExternalService(isExternalService bool) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *ClusterImpl) {
-		cluster.isExternalService = isExternalService
-	})
 }
 
 type Service struct {

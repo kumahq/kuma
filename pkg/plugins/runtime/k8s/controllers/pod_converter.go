@@ -56,14 +56,9 @@ func (p *PodConverter) PodToDataplane(
 	}
 	// we need to validate if the labels have changed
 	workloadName := computeWorkloadName(pod.Labels, p.WorkloadLabels, pod.Spec.ServiceAccountName)
-	// Copy the allow-listed node labels onto the Dataplane labels, the same set
-	// that lands on inbound tags.
-	var nodeLabels map[string]string
-	if p.InboundConverter.InboundTagsDisabled {
-		nodeLabels, err = p.InboundConverter.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
-		if err != nil {
-			return err
-		}
+	nodeLabels, err := p.InboundConverter.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
+	if err != nil {
+		return err
 	}
 
 	labels, err := resource_labels.Compute(
@@ -206,75 +201,32 @@ func (p *PodConverter) dataplaneFor(
 	annotations := metadata.Annotations(pod.Annotations)
 
 	var tp mesh_proto.Dataplane_Networking_TransparentProxying
-	var tpConfigInAnnotation bool
-	var tpEnabledInAnnotation bool
 
-	if v, ok := annotations.GetString(metadata.KumaTrafficTransparentProxyConfig); ok && v != "" {
-		tpConfigInAnnotation = true
+	// Read directAccessServices and reachableBackends whenever the user set the
+	// annotations, independent of how transparent proxy is delivered. These are
+	// user-provided outbound settings turned into live Envoy config, so gating
+	// them behind the injector's transparent-proxy-config annotation would drop
+	// them from pods injected by an older control plane until restart, silently
+	// widening outbounds and breaking direct access.
+	if v, exist := annotations.GetList(metadata.KumaDirectAccess); exist {
+		tp.DirectAccessServices = v
 	}
 
-	if v, ok, err := annotations.GetEnabled(metadata.KumaTransparentProxyingAnnotation); err != nil {
-		return nil, err
-	} else {
-		tpEnabledInAnnotation = ok && v
-	}
-
-	if tpConfigInAnnotation || tpEnabledInAnnotation {
-		if v, exist := annotations.GetList(metadata.KumaDirectAccess); exist {
-			tp.DirectAccessServices = v
+	if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
+		var refs ReachableBackendRefs
+		if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
+			return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
 		}
 
-		if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
-			var refs ReachableBackendRefs
-			if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
-				return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
-			}
-
-			tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
-				Refs: processReachableBackendRefs(refs),
-			}
-		}
-	}
-
-	if tpEnabledInAnnotation {
-		if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation); err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, errors.New("transparent proxying inbound port has to be set in transparent mode")
-		} else {
-			tp.RedirectPortInbound = v
-		}
-
-		if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation); err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, errors.New("transparent proxying outbound port has to be set in transparent mode")
-		} else {
-			tp.RedirectPortOutbound = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			metadata.IpFamilyModeDualStack,
-			metadata.KumaTransparentProxyingIPFamilyMode,
-		); v != "" {
-			switch v {
-			case metadata.IpFamilyModeDualStack:
-				tp.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
-			case metadata.IpFamilyModeIPv4:
-				tp.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
-			default:
-				return nil, errors.Errorf("invalid ip family mode '%s'", v)
-			}
+		tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
+			Refs: processReachableBackendRefs(refs),
 		}
 	}
 
 	// Avoid setting an empty TransparentProxying object by checking if any fields are set.
 	// Only assign it if at least one relevant field has a non-zero or non-nil value.
 	if tp.DirectAccessServices != nil ||
-		tp.ReachableBackends != nil ||
-		tp.RedirectPortInbound != 0 ||
-		tp.RedirectPortOutbound != 0 ||
-		tp.IpFamilyMode != 0 {
+		tp.ReachableBackends != nil {
 		dataplane.Networking.TransparentProxying = &tp
 	}
 
@@ -284,13 +236,13 @@ func (p *PodConverter) dataplaneFor(
 	if exist {
 		switch gwType {
 		case "enabled":
-			gateway, err := p.GatewayByServiceFor(ctx, p.Zone, pod, services)
+			gateway, err := p.GatewayByServiceFor(ctx, pod, services)
 			if err != nil {
 				return nil, err
 			}
 			dataplane.Networking.Gateway = gateway
 		case "provided":
-			gateway, err := p.GatewayByDeploymentFor(ctx, p.Zone, pod, services)
+			gateway, err := p.GatewayByDeploymentFor(ctx, pod, services)
 			if err != nil {
 				return nil, err
 			}
@@ -312,28 +264,7 @@ func (p *PodConverter) dataplaneFor(
 		// (has zone proxy services but no regular services) to avoid the
 		// serviceless inbound fallback in InboundInterfacesFor.
 		if len(regularServices) > 0 || len(zoneProxyServices) == 0 {
-			var ifaces []*mesh_proto.Dataplane_Networking_Inbound
-			var err error
-			// Deduplicating inbounds by address:port is only safe when inbound
-			// tags are disabled: identity and MeshService matching then rely on
-			// the workload rather than per-service inbound tags, so collapsing
-			// several services that select the same port loses nothing. When
-			// inbound tags are enabled each service produces a distinctly tagged
-			// inbound with its own Ready/Ignored state; deduplication would drop
-			// one of them (e.g. keep an Ignored inbound over a Ready one), so we
-			// keep every inbound like the tagged path does.
-			if p.InboundConverter.InboundTagsDisabled {
-				ifaces, err = p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, regularServices)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				ifaces, err = p.InboundConverter.LegacyInboundInterfacesFor(ctx, p.Zone, pod, regularServices)
-				if err != nil {
-					return nil, err
-				}
-			}
-			dataplane.Networking.Inbound = ifaces
+			dataplane.Networking.Inbound = p.InboundConverter.InboundInterfacesFor(pod, regularServices)
 		}
 
 		// portSvc tracks which service already claimed each address:port to produce
@@ -394,25 +325,21 @@ func (p *PodConverter) dataplaneFor(
 	return dataplane, nil
 }
 
-func (p *PodConverter) GatewayByServiceFor(ctx context.Context, clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
-	interfaces, err := p.InboundConverter.LegacyInboundInterfacesFor(ctx, clusterName, pod, services)
-	if err != nil {
-		return nil, err
-	}
+func (p *PodConverter) GatewayByServiceFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
 	return &mesh_proto.Dataplane_Networking_Gateway{
 		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-		Tags: interfaces[0].Tags,
+		Tags: map[string]string{},
 	}, nil
 }
 
-func (p *PodConverter) GatewayByDeploymentFor(ctx context.Context, clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
+func (p *PodConverter) GatewayByDeploymentFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
 	namespace := pod.GetObjectMeta().GetNamespace()
 	deployment, kind, err := p.InboundConverter.NameExtractor.Name(ctx, pod)
 	if err != nil {
 		return nil, err
 	}
 	if kind != "Deployment" {
-		return p.GatewayByServiceFor(ctx, clusterName, pod, services)
+		return p.GatewayByServiceFor(ctx, pod, services)
 	}
 	return &mesh_proto.Dataplane_Networking_Gateway{
 		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,

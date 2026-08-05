@@ -24,7 +24,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend_kuma-demo_svc_3001
+        labels:
+          kuma.io/display-name: backend_kuma-demo_svc_3001
       rules:
         - matches:
             - path:
@@ -33,7 +34,8 @@ spec:
           default:
             backendRefs:
               - kind: MeshServiceSubset
-                name: backend_kuma-demo_svc_3001
+                labels:
+                  kuma.io/display-name: backend_kuma-demo_svc_3001
                 tags:
                   version: "1.0"
 ---

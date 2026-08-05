@@ -1,7 +1,6 @@
 package install
 
 import (
-	"fmt"
 	"io"
 	"maps"
 	"os"
@@ -179,16 +178,6 @@ This command requires that the KUBECONFIG environment is set`,
 				return errors.Wrap(err, "Failed to evaluate helm values")
 			}
 
-			if args.IngressUseNodePort {
-				v := "ingress.service.type=NodePort"
-				if ctx.HELMValuesPrefix != "" {
-					v = fmt.Sprintf("%s.%s", ctx.HELMValuesPrefix, v)
-				}
-				if err := strvals.ParseInto(v, vals); err != nil {
-					return errors.Wrap(err, "Failed using NodePort for ingress")
-				}
-			}
-
 			var kubeClientConfig *rest.Config
 			if !args.WithoutKubernetesConnection {
 				var err error
@@ -268,17 +257,9 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringVar(&args.Cni_bin_dir, "cni-bin-dir", args.Cni_bin_dir, "set the CNI binary directory")
 	cmd.Flags().StringVar(&args.Cni_conf_name, "cni-conf-name", args.Cni_conf_name, "set the CNI configuration name")
 	cmd.Flags().StringToStringVar(&args.Cni_nodeSelector, "cni-node-selector", args.Cni_nodeSelector, "node selector for CNI deployment")
-	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "zone"))
+	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "zone"))
 	cmd.Flags().StringVar(&args.ControlPlane_zone, "zone", args.ControlPlane_zone, "set the Kuma zone name")
 	cmd.Flags().BoolVar(&args.UseNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
-	cmd.Flags().BoolVar(&args.Ingress_enabled, "ingress-enabled", args.Ingress_enabled, "install Kuma with an Ingress deployment, using the Data Plane image")
-	cmd.Flags().StringVar(&args.Ingress_drainTime, "ingress-drain-time", args.Ingress_drainTime, "drain time for Envoy proxy")
-	cmd.Flags().BoolVar(&args.IngressUseNodePort, "ingress-use-node-port", false, "use NodePort instead of LoadBalancer for the Ingress Service")
-	cmd.Flags().StringToStringVar(&args.Ingress_nodeSelector, "ingress-node-selector", args.Ingress_nodeSelector, "node selector for Zone Ingress")
-	cmd.Flags().BoolVar(&args.Egress_enabled, "egress-enabled", args.Egress_enabled, "install Kuma with an Egress deployment, using the Data Plane image")
-	cmd.Flags().StringVar(&args.Egress_drainTime, "egress-drain-time", args.Egress_drainTime, "drain time for Envoy proxy")
-	cmd.Flags().StringVar(&args.Egress_service_type, "egress-service-type", "ClusterIP", "the type for the Egress Service (ie. ClusterIP, NodePort, LoadBalancer)")
-	cmd.Flags().StringToStringVar(&args.Egress_nodeSelector, "egress-node-selector", args.Egress_nodeSelector, "node selector for Zone Egress")
 	cmd.Flags().StringToStringVar(&args.Hooks_nodeSelector, "hooks-node-selector", args.Hooks_nodeSelector, "node selector for Helm hooks")
 	cmd.Flags().BoolVar(&args.WithoutKubernetesConnection, "without-kubernetes-connection", false, "install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades")
 	cmd.Flags().StringSliceVarP(&args.ValueFiles, "values", "f", []string{}, "specify values in a YAML file or '-' for stdin. This is similar to `helm template <chart> -f ...`")

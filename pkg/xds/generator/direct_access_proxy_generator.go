@@ -112,9 +112,9 @@ func directAccessEndpoints(dataplane *core_mesh.DataplaneResource, other *core_m
 		if err != nil {
 			return nil, err
 		}
+		dpService := dp.GetMeta().GetLabels()[mesh_proto.ServiceTag]
 		for _, inbound := range append(inbounds, dp.Spec.GetNetworking().GetInbound()...) {
-			service := inbound.Tags[mesh_proto.ServiceTag]
-			if services["*"] || services[service] {
+			if services["*"] || services[inbound.GetServiceFallback(dpService)] {
 				iface := dp.Spec.GetNetworking().ToInboundInterface(inbound)
 				endpoint := model.Endpoint{
 					Address: iface.DataplaneIP,

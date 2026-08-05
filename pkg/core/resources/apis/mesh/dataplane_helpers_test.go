@@ -19,21 +19,24 @@ import (
 
 var _ = Describe("InboundIdentifyingName", func() {
 	type testCase struct {
-		meta                test_model.ResourceMeta
-		serviceTag          string
-		inboundTagsDisabled bool
-		portName            string
-		expected            string
+		meta       test_model.ResourceMeta
+		serviceTag string
+		portName   string
+		expected   string
 	}
 
 	newDP := func(meta test_model.ResourceMeta, serviceTag string) *DataplaneResource {
 		dp := NewDataplaneResource()
 		dp.Meta = &meta
+		tags := map[string]string{}
+		if serviceTag != "" {
+			tags[mesh_proto.ServiceTag] = serviceTag
+		}
 		dp.Spec.Networking = &mesh_proto.Dataplane_Networking{
 			Address: "127.0.0.1",
 			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 				Port: 8080,
-				Tags: map[string]string{mesh_proto.ServiceTag: serviceTag},
+				Tags: tags,
 			}},
 		}
 		return dp
@@ -42,9 +45,10 @@ var _ = Describe("InboundIdentifyingName", func() {
 	DescribeTable("should return correct inbound identifying name",
 		func(given testCase) {
 			dp := newDP(given.meta, given.serviceTag)
-			Expect(dp.InboundIdentifyingName(given.inboundTagsDisabled, given.portName)).To(Equal(given.expected))
+			dp.Spec.Networking.Inbound[0].Name = given.portName
+			Expect(dp.InboundIdentifyingName(dp.Spec.Networking.Inbound[0])).To(Equal(given.expected))
 		},
-		Entry("returns dataplane KRI with sectionName when tags disabled and port named", testCase{
+		Entry("returns dataplane KRI with sectionName when port named", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",
 				Mesh: "default",
@@ -53,12 +57,11 @@ var _ = Describe("InboundIdentifyingName", func() {
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
 				},
 			},
-			serviceTag:          "backend",
-			inboundTagsDisabled: true,
-			portName:            "http",
-			expected:            "kri_dp_default_zone-1_kuma-demo_backend-abc_http",
+			serviceTag: "backend",
+			portName:   "http",
+			expected:   "kri_dp_default_zone-1_kuma-demo_backend-abc_http",
 		}),
-		Entry("falls back to workload label when tags disabled and port empty", testCase{
+		Entry("falls back to workload label when port name empty", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",
 				Mesh: "default",
@@ -66,12 +69,11 @@ var _ = Describe("InboundIdentifyingName", func() {
 					k8s_metadata.KumaWorkload: "backend",
 				},
 			},
-			serviceTag:          "backend",
-			inboundTagsDisabled: true,
-			portName:            "",
-			expected:            "backend",
+			serviceTag: "backend",
+			portName:   "",
+			expected:   "backend",
 		}),
-		Entry("falls back to service tag when tags not disabled", testCase{
+		Entry("falls back to unknown when nothing identifies the dataplane", testCase{
 			meta: test_model.ResourceMeta{
 				Name: "backend-abc",
 				Mesh: "default",
@@ -80,10 +82,9 @@ var _ = Describe("InboundIdentifyingName", func() {
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
 				},
 			},
-			serviceTag:          "backend",
-			inboundTagsDisabled: false,
-			portName:            "http",
-			expected:            "backend",
+			serviceTag: "",
+			portName:   "",
+			expected:   mesh_proto.ServiceUnknown,
 		}),
 	)
 })
@@ -322,7 +323,7 @@ var _ = Describe("Dataplane", func() {
 		})
 	})
 
-	Describe("GetIP()", func() {
+	Describe("GetAddress()", func() {
 		type testCase struct {
 			dataplane string
 			expected  string
@@ -338,7 +339,7 @@ var _ = Describe("Dataplane", func() {
 				}
 
 				// expect
-				Expect(dataplane.GetIP()).To(Equal(given.expected))
+				Expect(dataplane.GetAddress()).To(Equal(given.expected))
 			},
 			Entry("`nil` dataplane", testCase{
 				dataplane: ``,
@@ -551,10 +552,6 @@ var _ = Describe("Dataplane", func() {
 			Entry("grpc", testCase{
 				tag:      "grpc",
 				expected: core_meta.ProtocolGRPC,
-			}),
-			Entry("kafka", testCase{
-				tag:      "kafka",
-				expected: core_meta.ProtocolKafka,
 			}),
 			Entry("mongo", testCase{
 				tag:      "mongo",

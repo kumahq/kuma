@@ -22,6 +22,7 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test"
@@ -95,17 +96,10 @@ var _ = Describe("MeshRateLimit", func() {
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
-								HttpInboundRoutes(
+								HttpInboundRoute(
 									envoy_names.GetInboundRouteName("backend"),
 									"backend",
-									envoy_common.Routes{
-										{
-											Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-												envoy_common.WithService("backend"),
-												envoy_common.WithWeight(100),
-											)},
-										},
-									},
+									plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 								),
 							),
 						)).MustBuild(),
@@ -115,7 +109,7 @@ var _ = Describe("MeshRateLimit", func() {
 					Origin: metadata.OriginInbound,
 					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
+							Configure(TcpProxyDeprecated("127.0.0.1:17778", plugins_xds.NewClusterBuilder().WithName("frontend").Build())),
 						)).MustBuild(),
 				},
 			},
@@ -219,7 +213,7 @@ var _ = Describe("MeshRateLimit", func() {
 				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
+						Configure(TcpProxyDeprecated("127.0.0.1:17778", plugins_xds.NewClusterBuilder().WithName("frontend").Build())),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
@@ -259,17 +253,10 @@ var _ = Describe("MeshRateLimit", func() {
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
-							HttpInboundRoutes(
+							HttpInboundRoute(
 								envoy_names.GetInboundRouteName("backend"),
 								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									},
-								},
+								plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 							),
 						),
 					)).MustBuild(),
@@ -309,7 +296,7 @@ var _ = Describe("MeshRateLimit", func() {
 				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
+						Configure(TcpProxyDeprecated("127.0.0.1:17778", plugins_xds.NewClusterBuilder().WithName("frontend").Build())),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
@@ -347,17 +334,10 @@ var _ = Describe("MeshRateLimit", func() {
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
-							HttpInboundRoutes(
+							HttpInboundRoute(
 								envoy_names.GetInboundRouteName("backend"),
 								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									},
-								},
+								plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 							),
 						),
 					)).MustBuild(),
@@ -397,17 +377,10 @@ var _ = Describe("MeshRateLimit", func() {
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
-							HttpInboundRoutes(
+							HttpInboundRoute(
 								envoy_names.GetInboundRouteName("backend"),
 								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									},
-								},
+								plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 							),
 						),
 					)).MustBuild(),

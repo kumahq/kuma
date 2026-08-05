@@ -62,6 +62,9 @@ node:
         "name": "name.namespace",
         "creationTime": "1970-01-01T00:00:00Z",
         "modificationTime": "1970-01-01T00:00:00Z",
+        "labels": {
+          "kuma.io/workload": "backend"
+        },
         "networking": {
           "address": "127.0.0.1",
           "inbound": [
@@ -170,10 +173,6 @@ statsConfig:
     tagName: name
   - regex: ^grpc.*streams_closed(_([0-9]+))
     tagName: status
-  - regex: ^kafka(\.(\S*[0-9]))\.
-    tagName: kafka_name
-  - regex: ^kafka\..*\.(.*?(?=_duration|$))
-    tagName: kafka_type
   - regex: (worker_([0-9]+)\.)
     tagName: worker
   - regex: ((.+?)\.)rbac\.

@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/deployments/observability"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/otelcollector"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
@@ -47,10 +48,15 @@ spec:
   externalName: %s.%s.svc.cluster.local`, serviceName, config.Namespace, serviceName, config.NamespaceOutsideMesh)
 			}
 			BeforeAll(func() {
-				mesh := samples.MeshMTLSBuilder().WithName(config.Mesh)
+				mesh := samples.MeshDefaultBuilder().WithName(config.Mesh)
 				err := NewClusterSetup().
 					Install(Yaml(mesh)).
-					Install(MeshTrafficPermissionAllowAllKubernetes(config.Mesh)).
+					Install(MeshIdentityBundledKubernetes(config.Mesh, config.Mesh+"-identity")).
+					// The standalone zone CP runs under the "default" zone name.
+					Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(
+						config.Mesh,
+						fmt.Sprintf("%s.default.mesh.local", config.Mesh),
+					)).
 					Install(YamlK8s(fmt.Sprintf(`
 apiVersion: v1
 kind: Namespace
@@ -62,6 +68,11 @@ metadata:
 `, config.Namespace, config.Mesh))).
 					Install(Namespace(config.NamespaceOutsideMesh)).
 					Install(Parallel(
+						zoneproxy.Install(
+							zoneproxy.WithNamespace(config.Namespace),
+							zoneproxy.WithMesh(config.Mesh),
+							zoneproxy.WithEgress(),
+						),
 						democlient.Install(
 							democlient.WithNamespace(config.NamespaceOutsideMesh),
 							democlient.WithService(true),
@@ -72,6 +83,7 @@ metadata:
 							testserver.WithName("test-server"),
 							testserver.WithStatefulSet(),
 							testserver.WithReplicas(3),
+							testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server"}),
 						),
 						testserver.Install(
 							testserver.WithNamespace(config.NamespaceOutsideMesh),

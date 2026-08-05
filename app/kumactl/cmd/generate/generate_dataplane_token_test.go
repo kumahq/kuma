@@ -155,5 +155,25 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 			},
 			err: "--kid is required when --signing-key-path is used",
 		}),
+		Entry("when proxy type is not supported", errTestCase{
+			args: []string{
+				"generate", "dataplane-token",
+				"--name", "dp-1",
+				"--proxy-type", "ingress",
+				"--valid-for", "30s",
+			},
+			err: "ingress is not a valid proxy type",
+		}),
+		Entry("when proxy type is not supported for offline signing", errTestCase{
+			args: []string{
+				"generate", "dataplane-token",
+				"--name", "dp-1",
+				"--proxy-type", "egress",
+				"--valid-for", "30s",
+				"--kid", "1",
+				"--signing-key-path", filepath.Join("..", "..", "..", "..", "test", "keys", "samplekey.pem"),
+			},
+			err: "egress is not a valid proxy type",
+		}),
 	)
 })

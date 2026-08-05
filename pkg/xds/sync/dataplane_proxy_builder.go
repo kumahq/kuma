@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
@@ -160,14 +161,25 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 	var outbounds xds_types.Outbounds
 	for _, o := range dataplane.Spec.Networking.Outbound {
 		if o.BackendRef != nil {
+			port := o.BackendRef.Port
+			labels, sectionName := xds_context.NormalizeBackendRefTarget(
+				o.BackendRef.Kind,
+				o.BackendRef.Name,
+				"",
+				&port,
+				o.BackendRef.Labels,
+				dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
+			)
 			// convert proto BackendRef to common_api.BackendRef
 			backendRef := common_api.BackendRef{
 				TargetRef: common_api.TargetRef{
 					Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
-					Name:   pointer.To(o.BackendRef.Name),
-					Labels: pointer.To(o.BackendRef.Labels),
+					Labels: pointer.To(labels),
 				},
 				Port: pointer.To(o.BackendRef.Port),
+			}
+			if sectionName != "" {
+				backendRef.SectionName = pointer.To(sectionName)
 			}
 			ref, ok := resolve.BackendRef(kri.From(dataplane), backendRef, resolver)
 			if !ok {

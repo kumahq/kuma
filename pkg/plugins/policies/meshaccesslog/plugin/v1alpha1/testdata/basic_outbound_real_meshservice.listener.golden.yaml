@@ -23,7 +23,7 @@ filterChains:
           logFormat:
             textFormatSource:
               inlineString: |
-                [%START_TIME%] default "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-B3-TRACEID?X-DATADOG-TRACEID)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "backend" "other-meshservice-http" "127.0.0.1" "%UPSTREAM_HOST%"
+                [%START_TIME%] default "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-B3-TRACEID?X-DATADOG-TRACEID)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "unknown" "other-meshservice-http" "127.0.0.1" "%UPSTREAM_HOST%"
           path: /tmp/log
       httpFilters:
       - name: envoy.filters.http.router
@@ -35,7 +35,7 @@ filterChains:
           prefixLen: 32
       normalizePath: true
       routeConfig:
-        name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_
+        name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
         requestHeadersToAdd:
         - header:
             key: x-kuma-tags
@@ -44,16 +44,17 @@ filterChains:
         virtualHosts:
         - domains:
           - '*'
-          name: default_other-meshservice-http_other-ns_zone-1_msvc_27777
+          name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
           routes:
           - match: {}
             route:
-              cluster: default_other-meshservice-http_other-ns_zone-1_msvc_27777
+              cluster: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
               timeout: 0s
-      statPrefix: default_other-meshservice-http_other-ns_zone-1_msvc_27777
+      statPrefix: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
 metadata:
   filterMetadata:
     io.kuma.tags:
-      kuma.io/unified-name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_
-name: outbound:127.0.0.1:27777
+      kuma.io/unified-name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
+name: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
+statPrefix: kri_msvc_default_zone-1_other-ns_other-meshservice-http_27777
 trafficDirection: OUTBOUND

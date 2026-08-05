@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s/xds/hooks"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -47,40 +47,6 @@ var _ = Describe("ApiServerBypass", func() {
 		actual, err := util_proto.ToYAML(resp)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "api-server-bypass.yaml")))
-	})
-
-	It("should generate configuration for API Server bypass with unified naming", func() {
-		// given
-		hook := hooks.NewApiServerBypass("1.1.1.1", 9090)
-		rs := xds.NewResourceSet()
-		ctx := xds_context.Context{
-			Mesh: xds_context.MeshContext{
-				Resource: &mesh.MeshResource{
-					Spec: &mesh_proto.Mesh{},
-				},
-			},
-		}
-		proxy := &xds.Proxy{
-			APIVersion: envoy.APIV3,
-			Dataplane:  &mesh.DataplaneResource{},
-			Metadata: &xds.DataplaneMetadata{
-				Features: map[string]bool{
-					types.FeatureUnifiedResourceNaming: true,
-				},
-			},
-		}
-
-		// when
-		Expect(hook.Modify(rs, ctx, proxy)).To(Succeed())
-
-		// then
-		resp, err := rs.List().ToDeltaDiscoveryResponse()
-		Expect(err).ToNot(HaveOccurred())
-
-		actual, err := util_proto.ToYAML(resp)
-		Expect(err).ToNot(HaveOccurred())
-
 		Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "api-server-bypass-unified-naming.yaml")))
 	})
 
@@ -88,7 +54,7 @@ var _ = Describe("ApiServerBypass", func() {
 		// given
 		hook := hooks.NewApiServerBypass("1.1.1.1", 9090)
 		rs := xds.NewResourceSet()
-		passthroughCluster, err := envoy_clusters.NewClusterBuilder(envoy.APIV3, metadata.TransparentOutboundNameIPv4).
+		passthroughCluster, err := envoy_clusters.NewClusterBuilder(envoy.APIV3, naming.ContextualTransparentProxyName("outbound", 4)).
 			Configure(envoy_clusters.PassThroughCluster()).
 			Build()
 		Expect(err).ToNot(HaveOccurred())

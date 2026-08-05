@@ -31,7 +31,8 @@ const (
 	// OriginPrometheus is the origin for resources produced by the Prometheus endpoint generator
 	OriginPrometheus Origin = "prometheus"
 
-	// OriginProxyTemplateModifications is the origin for resources created by ProxyTemplate modifications
+	// OriginProxyTemplateModifications is the origin for resources created by MeshProxyPatch.
+	// The value is part of the user-facing API (MeshProxyPatch `match.origin`) and must not change.
 	OriginProxyTemplateModifications Origin = "proxy-template-modifications"
 
 	// OriginSecrets is the origin for resources produced by the secrets generator
@@ -53,11 +54,6 @@ const (
 	TransparentInPassThroughIPv6 = "::6"
 	TransparentAllIPv4           = "0.0.0.0"
 	TransparentAllIPv6           = "::"
-)
-
-const (
-	ProxyTemplateProfileEgressProxy  = "egress-proxy"
-	ProxyTemplateProfileIngressProxy = "ingress-proxy"
 )
 
 const (

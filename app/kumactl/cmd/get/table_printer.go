@@ -16,14 +16,11 @@ var CustomTablePrinters = map[model.ResourceType]RowPrinter{
 		Headers: []string{"MESH", "NAME", "TAGS", "ADDRESS", "AGE"},
 		RowFn: func(rootTime time.Time, item model.Resource) []string {
 			dataplane := item.(*mesh.DataplaneResource)
-			address := dataplane.Spec.GetNetworking().GetAdvertisedAddress()
-			if address == "" {
-				address = dataplane.Spec.GetNetworking().GetAddress()
-			}
+			address := dataplane.Spec.GetNetworking().GetAddress()
 			return []string{
 				dataplane.Meta.GetMesh(),         // MESH
 				dataplane.Meta.GetName(),         // NAME,
-				dataplane.Spec.TagSet().String(), // TAGS
+				dataplane.DisplayTags().String(), // TAGS
 				address,                          // ADDRESS
 				table.TimeSince(dataplane.Meta.GetModificationTime(), rootTime), // AGE
 			}

@@ -14,8 +14,7 @@ func (r *MeshLoadBalancingStrategyResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
-	verr.AddErrorAt(path, validateTo(topLevel, pointer.Deref(r.Spec.To)))
+	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
@@ -33,7 +32,7 @@ func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.Ta
 	return targetRefErr
 }
 
-func validateTo(topTargetRef common_api.TargetRef, to []To) validators.ValidationError {
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
@@ -41,14 +40,12 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
+				common_api.MeshExternalService,
 				common_api.MeshMultiZoneService,
 				common_api.MeshHTTPRoute,
 			},
 		})
 		verr.AddErrorAt(path.Field("targetRef"), errs)
-		if toItem.TargetRef.Kind == common_api.MeshExternalService && topTargetRef.Kind != common_api.Mesh {
-			verr.AddViolationAt(path.Field("targetRef.kind"), "kind MeshExternalService is only allowed with targetRef.kind: Mesh as it is configured on the Zone Egress and shared by all clients in the mesh")
-		}
 		verr.AddErrorAt(path.Field("default"), validateConf(toItem.Default, toItem))
 	}
 	return verr

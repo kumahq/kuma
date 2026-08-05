@@ -1,6 +1,4 @@
 commonLbConfig:
-  healthyPanicThreshold:
-    value: 62.9
   zoneAwareLbConfig:
     failTrafficOnPanic: true
 healthChecks:
@@ -20,7 +18,7 @@ healthChecks:
     requestHeadersToAdd:
     - header:
         key: x-kuma-tags
-        value: '&kuma.io/service=backend&'
+        value: '&kuma.io/workload=backend&'
     - header:
         key: x-some-header
         value: value
@@ -37,4 +35,4 @@ healthChecks:
   timeout: 2s
   unhealthyInterval: 17s
   unhealthyThreshold: 3
-name: echo-http-_0_
+name: kri_msvc_default___echo-http_80-_0_

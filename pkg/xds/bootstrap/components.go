@@ -13,13 +13,10 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().DpServer.TlsCertFile,
 		map[string]bool{
 			string(mesh_proto.DataplaneProxyType): rt.Config().DpServer.Authn.DpProxy.Type != dp_server.DpServerAuthNone,
-			string(mesh_proto.IngressProxyType):   rt.Config().DpServer.Authn.ZoneProxy.Type != dp_server.DpServerAuthNone,
-			string(mesh_proto.EgressProxyType):    rt.Config().DpServer.Authn.ZoneProxy.Type != dp_server.DpServerAuthNone,
 		},
 		rt.Config().DpServer.Authn.EnableReloadableTokens,
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
-		rt.Config().Experimental.InboundTagsDisabled,
 		rt.Config().BootstrapServer.Params.EnvoyAdminUnixSocket,
 	)
 	if err != nil {

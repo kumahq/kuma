@@ -5299,25 +5299,6 @@ components:
                   description: Port on which Envoy Admin API server will be listening
                   type: integer
               type: object
-            advertisedAddress:
-              description: >-
-                In some situations, a data plane proxy resides in a private
-                network (e.g.
-
-                Docker) and is not reachable via `address` to other data plane
-                proxies.
-
-                `advertisedAddress` is configured with a routable address for
-                such data
-
-                plane proxy so that other proxies in the mesh can connect to it
-                over
-
-                `advertisedAddress` and not via address.
-
-
-                Envoy still binds to the `address`, not `advertisedAddress`.
-              type: string
             gateway:
               description: >-
                 Gateway describes a configuration of the gateway of the data
@@ -5662,21 +5643,10 @@ components:
                     description: >-
                       Tags of consumed data plane proxies.
 
-                      `kuma.io/service` tag is required.
+                      These tags can then be referenced in `to` section in
+                      policies like
 
-                      These tags can then be referenced in `destinations`
-                      section of policies
-
-                      like TrafficRoute or in `to` section in policies like
-                      MeshAccessLog. It
-
-                      is recommended to only use `kuma.io/service`. If you need
-                      to consume
-
-                      specific data plane proxy of a service (for example:
-                      `version=v2`) the
-
-                      better practice is to use TrafficRoute.
+                      MeshAccessLog.
                     type: object
                 type: object
               type: array
@@ -5876,74 +5846,6 @@ components:
       type: object
     MeshItem:
       properties:
-        constraints:
-          description: Constraints that applies to the mesh and its entities
-          properties:
-            dataplaneProxy:
-              description: >-
-                DataplaneProxyMembership defines a set of requirements for data
-                plane
-
-                proxies to be a member of the mesh.
-              properties:
-                requirements:
-                  description: >-
-                    Requirements defines a set of requirements that data plane
-                    proxies must
-
-                    fulfill in order to join the mesh. A data plane proxy must
-                    fulfill at
-
-                    least one requirement in order to join the mesh. Empty list
-                    of allowed
-
-                    requirements means that any proxy that is not explicitly
-                    denied can join.
-                  items:
-                    description: >-
-                      Rules defines a set of rules for data plane proxies to be
-                      member of the mesh.
-                    properties:
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags defines set of required tags. You can specify '*'
-                          in value to
-
-                          require non empty value of tag
-                        type: object
-                    type: object
-                  type: array
-                restrictions:
-                  description: >-
-                    Restrictions defines a set of restrictions that data plane
-                    proxies cannot
-
-                    fulfill in order to join the mesh. A data plane proxy cannot
-                    fulfill any
-
-                    requirement in order to join the mesh.
-
-                    Restrictions takes precedence over requirements.
-                  items:
-                    description: >-
-                      Rules defines a set of rules for data plane proxies to be
-                      member of the mesh.
-                    properties:
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags defines set of required tags. You can specify '*'
-                          in value to
-
-                          require non empty value of tag
-                        type: object
-                    type: object
-                  type: array
-              type: object
-          type: object
         creationTime:
           description: Time at which the resource was created
           format: date-time
@@ -6050,12 +5952,7 @@ components:
           type: string
         routing:
           description: Routing settings of the mesh
-          properties:
-            defaultForbidMeshExternalServiceAccess:
-              description: |-
-                If true, blocks traffic to MeshExternalServices.
-                Default: false
-              type: boolean
+          properties: {}
           type: object
         skipCreatingInitialPolicies:
           description: >-
@@ -6403,42 +6300,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -6683,42 +6552,14 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Labels are used to select group of MeshServices that
-                          match labels. Either Labels or
+                          Labels are used to select referenced real resources
+                          and to carry legacy
 
-                          Name and Namespace can be used.
+                          service identity when a common TargetRef must still
+                          target old
+
+                          service-tag based paths.
                         type: object
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
-
-                          and `MeshServiceSubset`
-                        type: string
-                      namespace:
-                        description: >-
-                          Namespace specifies the namespace of target resource.
-                          If empty only resources in policy namespace
-
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -7356,42 +7197,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -7908,42 +7721,14 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Labels are used to select group of MeshServices that
-                          match labels. Either Labels or
+                          Labels are used to select referenced real resources
+                          and to carry legacy
 
-                          Name and Namespace can be used.
+                          service identity when a common TargetRef must still
+                          target old
+
+                          service-tag based paths.
                         type: object
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
-
-                          and `MeshServiceSubset`
-                        type: string
-                      namespace:
-                        description: >-
-                          Namespace specifies the namespace of target resource.
-                          If empty only resources in policy namespace
-
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -8207,42 +7992,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -8392,42 +8149,14 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Labels are used to select group of MeshServices that
-                          match labels. Either Labels or
+                          Labels are used to select referenced real resources
+                          and to carry legacy
 
-                          Name and Namespace can be used.
+                          service identity when a common TargetRef must still
+                          target old
+
+                          service-tag based paths.
                         type: object
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
-
-                          and `MeshServiceSubset`
-                        type: string
-                      namespace:
-                        description: >-
-                          Namespace specifies the namespace of target resource.
-                          If empty only resources in policy namespace
-
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -8544,42 +8273,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -8645,52 +8346,20 @@ components:
                                     additionalProperties:
                                       type: string
                                     description: >-
-                                      Labels are used to select group of
-                                      MeshServices that match labels. Either
-                                      Labels or
+                                      Labels are used to select referenced real
+                                      resources and to carry legacy
 
-                                      Name and Namespace can be used.
+                                      service identity when a common TargetRef
+                                      must still target old
+
+                                      service-tag based paths.
                                     type: object
-                                  mesh:
-                                    description: >-
-                                      Mesh is reserved for future use to
-                                      identify cross mesh resources.
-                                    type: string
-                                  name:
-                                    description: >-
-                                      Name of the referenced resource. Can only
-                                      be used with kinds: `MeshService`
-
-                                      and `MeshServiceSubset`
-                                    type: string
-                                  namespace:
-                                    description: >-
-                                      Namespace specifies the namespace of
-                                      target resource. If empty only resources
-                                      in policy namespace
-
-                                      will be targeted.
-                                    type: string
                                   port:
                                     description: >-
                                       Port is only supported when this ref
                                       refers to a real MeshService object
                                     format: int32
                                     type: integer
-                                  proxyTypes:
-                                    description: >-
-                                      ProxyTypes specifies the data plane types
-                                      that are subject to the policy. When not
-                                      specified,
-
-                                      all data plane types are targeted by the
-                                      policy.
-                                    items:
-                                      enum:
-                                        - Sidecar
-                                        - Gateway
-                                      type: string
-                                    type: array
                                   sectionName:
                                     description: >-
                                       SectionName is used to target specific
@@ -8798,52 +8467,20 @@ components:
                                             additionalProperties:
                                               type: string
                                             description: >-
-                                              Labels are used to select group of
-                                              MeshServices that match labels. Either
-                                              Labels or
+                                              Labels are used to select referenced
+                                              real resources and to carry legacy
 
-                                              Name and Namespace can be used.
+                                              service identity when a common TargetRef
+                                              must still target old
+
+                                              service-tag based paths.
                                             type: object
-                                          mesh:
-                                            description: >-
-                                              Mesh is reserved for future use to
-                                              identify cross mesh resources.
-                                            type: string
-                                          name:
-                                            description: >-
-                                              Name of the referenced resource. Can
-                                              only be used with kinds: `MeshService`
-
-                                              and `MeshServiceSubset`
-                                            type: string
-                                          namespace:
-                                            description: >-
-                                              Namespace specifies the namespace of
-                                              target resource. If empty only resources
-                                              in policy namespace
-
-                                              will be targeted.
-                                            type: string
                                           port:
                                             description: >-
                                               Port is only supported when this ref
                                               refers to a real MeshService object
                                             format: int32
                                             type: integer
-                                          proxyTypes:
-                                            description: >-
-                                              ProxyTypes specifies the data plane
-                                              types that are subject to the policy.
-                                              When not specified,
-
-                                              all data plane types are targeted by the
-                                              policy.
-                                            items:
-                                              enum:
-                                                - Sidecar
-                                                - Gateway
-                                              type: string
-                                            type: array
                                           sectionName:
                                             description: >-
                                               SectionName is used to target specific
@@ -9201,42 +8838,14 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Labels are used to select group of MeshServices that
-                          match labels. Either Labels or
+                          Labels are used to select referenced real resources
+                          and to carry legacy
 
-                          Name and Namespace can be used.
+                          service identity when a common TargetRef must still
+                          target old
+
+                          service-tag based paths.
                         type: object
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
-
-                          and `MeshServiceSubset`
-                        type: string
-                      namespace:
-                        description: >-
-                          Namespace specifies the namespace of target resource.
-                          If empty only resources in policy namespace
-
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -9344,42 +8953,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -9466,24 +9047,6 @@ components:
                               service
                             type: string
                         type: object
-                      healthyPanicThreshold:
-                        anyOf:
-                          - type: integer
-                          - type: string
-                        description: >-
-                          Allows to configure panic threshold for Envoy cluster.
-                          If not specified,
-
-                          the default is 50%. To disable panic mode, set to 0%.
-
-                          Either int or decimal represented as string.
-
-
-                          Deprecated: the setting has been moved to
-                          MeshCircuitBreaker policy,
-
-                          please use MeshCircuitBreaker policy instead.
-                        x-kubernetes-int-or-string: true
                       healthyThreshold:
                         description: >-
                           Number of consecutive healthy checks before
@@ -9714,42 +9277,14 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Labels are used to select group of MeshServices that
-                          match labels. Either Labels or
+                          Labels are used to select referenced real resources
+                          and to carry legacy
 
-                          Name and Namespace can be used.
+                          service identity when a common TargetRef must still
+                          target old
+
+                          service-tag based paths.
                         type: object
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
-
-                          and `MeshServiceSubset`
-                        type: string
-                      namespace:
-                        description: >-
-                          Namespace specifies the namespace of target resource.
-                          If empty only resources in policy namespace
-
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -9859,42 +9394,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -10362,42 +9869,14 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Labels are used to select group of MeshServices that
-                          match labels. Either Labels or
+                          Labels are used to select referenced real resources
+                          and to carry legacy
 
-                          Name and Namespace can be used.
+                          service identity when a common TargetRef must still
+                          target old
+
+                          service-tag based paths.
                         type: object
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
-
-                          and `MeshServiceSubset`
-                        type: string
-                      namespace:
-                        description: >-
-                          Namespace specifies the namespace of target resource.
-                          If empty only resources in policy namespace
-
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -10721,42 +10200,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -10971,42 +10422,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -11678,42 +11101,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -12009,42 +11404,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -12231,42 +11598,14 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Labels are used to select group of MeshServices that
-                          match labels. Either Labels or
+                          Labels are used to select referenced real resources
+                          and to carry legacy
 
-                          Name and Namespace can be used.
+                          service identity when a common TargetRef must still
+                          target old
+
+                          service-tag based paths.
                         type: object
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
-
-                          and `MeshServiceSubset`
-                        type: string
-                      namespace:
-                        description: >-
-                          Namespace specifies the namespace of target resource.
-                          If empty only resources in policy namespace
-
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -12373,42 +11712,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -12889,42 +12200,14 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Labels are used to select group of MeshServices that
-                          match labels. Either Labels or
+                          Labels are used to select referenced real resources
+                          and to carry legacy
 
-                          Name and Namespace can be used.
+                          service identity when a common TargetRef must still
+                          target old
+
+                          service-tag based paths.
                         type: object
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
-
-                          and `MeshServiceSubset`
-                        type: string
-                      namespace:
-                        description: >-
-                          Namespace specifies the namespace of target resource.
-                          If empty only resources in policy namespace
-
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -13040,42 +12323,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -13138,52 +12393,20 @@ components:
                                     additionalProperties:
                                       type: string
                                     description: >-
-                                      Labels are used to select group of
-                                      MeshServices that match labels. Either
-                                      Labels or
+                                      Labels are used to select referenced real
+                                      resources and to carry legacy
 
-                                      Name and Namespace can be used.
+                                      service identity when a common TargetRef
+                                      must still target old
+
+                                      service-tag based paths.
                                     type: object
-                                  mesh:
-                                    description: >-
-                                      Mesh is reserved for future use to
-                                      identify cross mesh resources.
-                                    type: string
-                                  name:
-                                    description: >-
-                                      Name of the referenced resource. Can only
-                                      be used with kinds: `MeshService`
-
-                                      and `MeshServiceSubset`
-                                    type: string
-                                  namespace:
-                                    description: >-
-                                      Namespace specifies the namespace of
-                                      target resource. If empty only resources
-                                      in policy namespace
-
-                                      will be targeted.
-                                    type: string
                                   port:
                                     description: >-
                                       Port is only supported when this ref
                                       refers to a real MeshService object
                                     format: int32
                                     type: integer
-                                  proxyTypes:
-                                    description: >-
-                                      ProxyTypes specifies the data plane types
-                                      that are subject to the policy. When not
-                                      specified,
-
-                                      all data plane types are targeted by the
-                                      policy.
-                                    items:
-                                      enum:
-                                        - Sidecar
-                                        - Gateway
-                                      type: string
-                                    type: array
                                   sectionName:
                                     description: >-
                                       SectionName is used to target specific
@@ -13239,42 +12462,14 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Labels are used to select group of MeshServices that
-                          match labels. Either Labels or
+                          Labels are used to select referenced real resources
+                          and to carry legacy
 
-                          Name and Namespace can be used.
+                          service identity when a common TargetRef must still
+                          target old
+
+                          service-tag based paths.
                         type: object
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
-
-                          and `MeshServiceSubset`
-                        type: string
-                      namespace:
-                        description: >-
-                          Namespace specifies the namespace of target resource.
-                          If empty only resources in policy namespace
-
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -13448,42 +12643,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -13728,42 +12895,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -13896,42 +13035,14 @@ components:
                         additionalProperties:
                           type: string
                         description: >-
-                          Labels are used to select group of MeshServices that
-                          match labels. Either Labels or
+                          Labels are used to select referenced real resources
+                          and to carry legacy
 
-                          Name and Namespace can be used.
+                          service identity when a common TargetRef must still
+                          target old
+
+                          service-tag based paths.
                         type: object
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`
-
-                          and `MeshServiceSubset`
-                        type: string
-                      namespace:
-                        description: >-
-                          Namespace specifies the namespace of target resource.
-                          If empty only resources in policy namespace
-
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: >-
-                          ProxyTypes specifies the data plane types that are
-                          subject to the policy. When not specified,
-
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: >-
                           SectionName is used to target specific section of
@@ -14276,42 +13387,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -14642,42 +13725,14 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Labels are used to select group of MeshServices that match
-                    labels. Either Labels or
+                    Labels are used to select referenced real resources and to
+                    carry legacy
 
-                    Name and Namespace can be used.
+                    service identity when a common TargetRef must still target
+                    old
+
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`
-
-                    and `MeshServiceSubset`
-                  type: string
-                namespace:
-                  description: >-
-                    Namespace specifies the namespace of target resource. If
-                    empty only resources in policy namespace
-
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: >-
-                    ProxyTypes specifies the data plane types that are subject
-                    to the policy. When not specified,
-
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: >-
                     SectionName is used to target specific section of resource.
@@ -14906,25 +13961,6 @@ components:
                       description: Port on which Envoy Admin API server will be listening
                       type: integer
                   type: object
-                advertisedAddress:
-                  description: >-
-                    In some situations, a data plane proxy resides in a private
-                    network (e.g.
-
-                    Docker) and is not reachable via `address` to other data
-                    plane proxies.
-
-                    `advertisedAddress` is configured with a routable address
-                    for such data
-
-                    plane proxy so that other proxies in the mesh can connect to
-                    it over
-
-                    `advertisedAddress` and not via address.
-
-
-                    Envoy still binds to the `address`, not `advertisedAddress`.
-                  type: string
                 gateway:
                   description: >-
                     Gateway describes a configuration of the gateway of the data
@@ -15279,21 +14315,10 @@ components:
                         description: >-
                           Tags of consumed data plane proxies.
 
-                          `kuma.io/service` tag is required.
+                          These tags can then be referenced in `to` section in
+                          policies like
 
-                          These tags can then be referenced in `destinations`
-                          section of policies
-
-                          like TrafficRoute or in `to` section in policies like
-                          MeshAccessLog. It
-
-                          is recommended to only use `kuma.io/service`. If you
-                          need to consume
-
-                          specific data plane proxy of a service (for example:
-                          `version=v2`) the
-
-                          better practice is to use TrafficRoute.
+                          MeshAccessLog.
                         type: object
                     type: object
                   type: array
@@ -17210,10 +16235,6 @@ components:
                   properties:
                     name:
                       type: string
-                  type: object
-                dataplaneTags:
-                  additionalProperties:
-                    type: string
                   type: object
               type: object
             state:

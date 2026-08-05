@@ -48,16 +48,10 @@ spec:
           maxStreamDuration: 0s`, Config.KumaNamespace, meshName))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-		// remove default meshtimeout policies
 		Expect(DeleteMeshPolicyOrError(
 			kubernetes.Cluster,
 			v1alpha1.MeshTimeoutResourceTypeDescriptor,
 			fmt.Sprintf("mesh-timeout-all-%s", meshName),
-		)).To(Succeed())
-		Expect(DeleteMeshPolicyOrError(
-			kubernetes.Cluster,
-			v1alpha1.MeshTimeoutResourceTypeDescriptor,
-			fmt.Sprintf("mesh-gateways-timeout-all-%s", meshName),
 		)).To(Succeed())
 	})
 

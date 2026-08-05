@@ -38,7 +38,6 @@ type K8sControlPlane struct {
 	kumactl    *kumactl.KumactlOptions
 	cluster    *K8sCluster
 	portFwd    portforward.Tunnel
-	madsFwd    portforward.Tunnel
 	verbose    bool
 	replicas   int
 	apiHeaders []string
@@ -104,20 +103,11 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 		return errors.Wrapf(err, "failed to start port-forward to API Server (port %d)", 5681)
 	}
 
-	if c.mode != core.Global {
-		if c.madsFwd, err = c.cluster.PortForward(k8s.ResourceTypeService, kumaCpSvc.Name, kumaCpSvc.Namespace, 5676); err != nil {
-			return errors.Wrapf(err, "failed to start port-forward to MADS (port: %d)", 5676)
-		}
-	}
-
 	return nil
 }
 
 func (c *K8sControlPlane) ClosePortForwards() {
 	c.portFwd.Close()
-	if c.mode != core.Global {
-		c.madsFwd.Close()
-	}
 }
 
 func (c *K8sControlPlane) RefreshPortForwards() error {
@@ -219,24 +209,18 @@ func (c *K8sControlPlane) PortFwd() portforward.Tunnel {
 	return c.portFwd
 }
 
-func (c *K8sControlPlane) MadsPortFwd() portforward.Tunnel {
-	return c.madsFwd
-}
-
 func (c *K8sControlPlane) FinalizeAdd() error {
 	if err := c.PortForwardKumaCP(); err != nil {
 		return err
 	}
 
-	return c.FinalizeAddWithPortFwd(c.portFwd, c.madsFwd)
+	return c.FinalizeAddWithPortFwd(c.portFwd)
 }
 
 func (c *K8sControlPlane) FinalizeAddWithPortFwd(
 	portFwd portforward.Tunnel,
-	madsPortForward portforward.Tunnel,
 ) error {
 	c.portFwd = portFwd
-	c.madsFwd = madsPortForward
 	if !c.cluster.opts.setupKumactl {
 		return nil
 	}
@@ -425,25 +409,6 @@ func (c *K8sControlPlane) GetMetrics() (string, error) {
 	return string(body), nil
 }
 
-func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
-	if c.madsFwd.Endpoint == "" {
-		return "", errors.New("MADS port forward wasn't setup!")
-	}
-
-	return http_helper.HTTPDoWithRetryContextE(
-		c.t,
-		context.Background(),
-		http.MethodPost,
-		fmt.Sprintf("http://%s/v3/discovery:monitoringassignments", c.madsFwd.Endpoint),
-		fmt.Appendf(nil, `{"type_url": "type.googleapis.com/kuma.observability.v1.MonitoringAssignment","node": {"id": %q}}`, clientId),
-		map[string]string{"content-type": "application/json"},
-		200,
-		DefaultRetries,
-		DefaultTimeout,
-		&tls.Config{MinVersion: tls.VersionTLS12},
-	)
-}
-
 func (c *K8sControlPlane) Exec(cmd ...string) (string, string, error) {
 	pod := c.GetKumaCPPods()[0]
 	return c.cluster.Exec(pod.Namespace, pod.Name, "", cmd...)
@@ -502,18 +467,6 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service, workload string) (strin
 	}
 
 	return c.generateToken("", string(dataBytes))
-}
-
-func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`{"zone": %q, "scope": ["ingress"]}`, zone)
-
-	return c.generateToken("/zone", data)
-}
-
-func (c *K8sControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`{"zone": %q, "scope": ["egress"]}`, zone)
-
-	return c.generateToken("/zone", data)
 }
 
 func (c *K8sControlPlane) GenerateZoneToken(zone string, scope []string) (string, error) {

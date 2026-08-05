@@ -39,8 +39,10 @@ func TransparentProxyConfigMap() {
 		}, "90s", "3s").Should(Succeed())
 
 		Expect(NewClusterSetup().
-			Install(MTLSMeshKubernetes(meshName)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			Install(MeshKubernetes(meshName)).
+			Install(MeshIdentityBundledKubernetes(meshName, "identity-"+meshName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName,
+				fmt.Sprintf("%s.default.mesh.local", meshName))).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(namespaceExternal)).
 			Install(Parallel(

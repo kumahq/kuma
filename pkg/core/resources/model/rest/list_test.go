@@ -92,7 +92,9 @@ var _ = Describe("Unmarshal ResourceList", func() {
             "spec": {
                 "targetRef": {
                     "kind": "MeshService",
-                    "name": "backend"
+                    "labels": {
+                        "kuma.io/display-name": "backend"
+                    }
                 },
                 "rules": [
                     {
@@ -195,7 +197,12 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				Name: "mtp1",
 			}))
 			Expect(rs.Items[0].GetSpec()).To(Equal(&policies_api.MeshTrafficPermission{
-				TargetRef: &common_api.TargetRef{Kind: "MeshService", Name: pointer.To("backend")},
+				TargetRef: &common_api.TargetRef{
+					Kind: "MeshService",
+					Labels: pointer.To(map[string]string{
+						mesh_proto.DisplayName: "backend",
+					}),
+				},
 				Rules: &[]policies_api.Rule{
 					{
 						Default: policies_api.RuleConf{

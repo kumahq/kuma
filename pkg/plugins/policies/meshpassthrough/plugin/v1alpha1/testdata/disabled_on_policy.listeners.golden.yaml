@@ -1,5 +1,5 @@
 resources:
-- name: outbound:passthrough:ipv4
+- name: self_transparentproxy_passthrough_outbound_ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -11,7 +11,7 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: outbound:passthrough:ipv4
+          cluster: self_transparentproxy_passthrough_outbound_ipv4
           statPrefix: outbound_passthrough_ipv4
-    name: outbound:passthrough:ipv4
+    name: self_transparentproxy_passthrough_outbound_ipv4
     trafficDirection: OUTBOUND

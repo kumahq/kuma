@@ -33,6 +33,64 @@ data:
     # see conf/kuma-cp.conf.yml for available settings
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kuma-transparent-proxy-config
+  namespace: kuma-system
+  labels:
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+data:
+  config.yaml: |
+    comments:
+      disabled: false
+    dropInvalidPackets: false
+    ipFamilyMode: dualstack
+    iptablesExecutables:
+      ip6tables: ""
+      ip6tables-restore: ""
+      ip6tables-save: ""
+      iptables: ""
+      iptables-restore: ""
+      iptables-save: ""
+    kumaDPUser: "5678"
+    log:
+      enabled: false
+    redirect:
+      dns:
+        captureAll: true
+        enabled: true
+        port: 15053
+        resolvConfigPath: /etc/resolv.conf
+        skipConntrackZoneSplit: false
+      inbound:
+        enabled: true
+        excludePorts: []
+        excludePortsForIPs: []
+        excludePortsForUIDs: []
+        includePorts: []
+        insertRedirectInsteadOfAppend: false
+        port: 15006
+      outbound:
+        enabled: true
+        excludePorts: []
+        excludePortsForIPs: []
+        excludePortsForUIDs: []
+        includePorts: []
+        insertRedirectInsteadOfAppend: false
+        port: 15001
+      vnet:
+        networks: []
+    retry:
+      maxRetries: 4
+      sleepBetweenRetries: 2s
+    storeFirewalld: false
+    verbose: false
+    wait: 5
+    waitInterval: 0
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: kuma-control-plane
@@ -93,7 +151,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
+        checksum/config: 1fa6f39d97a8aad47eff6f6670269d3333a30c2e107b0a9d14b2aa23e0f3bf24
         checksum/tls-secrets: 75a11da44c802486bc6f65640aa48a730f0f684c5c07a42ba3cd1735eb3fb070
       labels: 
         app: kuma-control-plane
@@ -152,6 +210,8 @@ spec:
               value: "/tmp/kuma"
             - name: KUMA_MODE
               value: "zone"
+            - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
+              value: "true"
             - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
               value: "grpcs://192.168.0.1:5685"
             - name: KUMA_MULTIZONE_ZONE_NAME
@@ -198,6 +258,8 @@ spec:
               value: "/tmp/kuma"
             - name: KUMA_MODE
               value: "zone"
+            - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
+              value: "true"
             - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
               value: "grpcs://192.168.0.1:5685"
             - name: KUMA_MULTIZONE_ZONE_NAME

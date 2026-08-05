@@ -2,8 +2,6 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	"github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
@@ -20,7 +18,6 @@ func GenerateOutboundListener(
 	proxy *core_xds.Proxy,
 	svc meshroute_xds.DestinationService,
 	splits []envoy_common.Split,
-	unifiedNaming bool,
 ) (*core_xds.Resource, error) {
 	bindOutbounds := proxy.Metadata.HasFeature(types.FeatureBindOutbounds)
 	transparentProxy := !bindOutbounds && proxy.GetTransparentProxy().Enabled()
@@ -31,7 +28,7 @@ func GenerateOutboundListener(
 	listenerName := envoy_names.GetOutboundListenerName(address, port)
 	listenerStatPrefix := ""
 	tcpProxyStatPrefix := svc.KumaServiceTagValue
-	if id, ok := svc.Outbound.AssociatedServiceResource(); ok && unifiedNaming {
+	if id, ok := svc.Outbound.AssociatedServiceResource(); ok {
 		listenerName = id.String()
 		listenerStatPrefix = listenerName
 		tcpProxyStatPrefix = listenerName
@@ -40,8 +37,7 @@ func GenerateOutboundListener(
 	tags := svc.OutboundListenerTags()
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...)).
-		ConfigureIf(svc.Protocol == core_meta.ProtocolKafka, envoy_listeners.Kafka(tcpProxyStatPrefix))
+		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...))
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
@@ -73,7 +69,6 @@ func generateFromService(
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
 	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].ToRules
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
 
 	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, svc, meshCtx)
 	if len(backendRefs) == 0 {
@@ -82,7 +77,7 @@ func generateFromService(
 
 	splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx)
 
-	listener, err := GenerateOutboundListener(proxy, svc, splits, unifiedNaming)
+	listener, err := GenerateOutboundListener(proxy, svc, splits)
 	if err != nil {
 		return nil, err
 	}

@@ -31,7 +31,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s
@@ -40,7 +41,6 @@ to:
       initialJitter: 5s # optional
       intervalJitter: 6s # optional
       intervalJitterPercent: 10 # optional
-      healthyPanicThreshold: 60 # optional, by default 50
       failTrafficOnPanic: true # optional, by default false
       noTrafficInterval: 10s # optional, by default 60s
       eventLogPath: "/tmp/health-check.log" # optional
@@ -74,7 +74,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshMultiZoneService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       tcp: # it will pick the protocol as described in 'protocol selection' section
@@ -86,7 +87,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: external
+      labels:
+        kuma.io/display-name: external
     default:
       interval: 10s
       tcp: # it will pick the protocol as described in 'protocol selection' section
@@ -98,7 +100,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: external
+      labels:
+        kuma.io/display-name: external
     default:
       interval: 10s
       tcp:
@@ -145,7 +148,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default: {}
 `,
 				expected: `
@@ -160,7 +164,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s
@@ -182,7 +187,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: -10s
       unhealthyInterval: -10s
@@ -216,22 +222,20 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s
       unhealthyThreshold: 3
       healthyThreshold: 1
       intervalJitterPercent: 110
-      healthyPanicThreshold: -10
       grpc: {}
 `,
 				expected: `
 violations:
   - field: spec.to[0].default.intervalJitterPercent
-    message: must be in inclusive range [0, 100]
-  - field: spec.to[0].default.healthyPanicThreshold
-    message: must be in inclusive range [0.0, 100.0]`,
+    message: must be in inclusive range [0, 100]`,
 			}),
 			Entry("path is invalid", testCase{
 				inputYaml: `
@@ -240,7 +244,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s
@@ -261,7 +266,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s

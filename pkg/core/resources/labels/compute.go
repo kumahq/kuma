@@ -3,7 +3,6 @@ package labels
 import (
 	"fmt"
 	"maps"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -23,6 +22,8 @@ type Namespace struct {
 }
 
 var UnsetNamespace = Namespace{}
+
+const legacyProxyTypeLabel = "kuma.io/proxy-type"
 
 func NewNamespace(value string, system bool) Namespace {
 	return Namespace{
@@ -183,10 +184,7 @@ func Compute(
 	}
 
 	if rd.IsProxy {
-		proxy, ok := spec.(core_model.ProxyResource)
-		if ok {
-			set(mesh_proto.ProxyTypeLabel, strings.ToLower(string(proxy.GetProxyType())))
-		}
+		delete(labels, legacyProxyTypeLabel)
 		if dp, ok := spec.(*mesh_proto.Dataplane); ok {
 			hasIngress, hasEgress := false, false
 			for _, l := range dp.GetNetworking().GetListeners() {
@@ -234,28 +232,36 @@ func ComputePolicyRole(p core_model.Policy, ns Namespace) (mesh_proto.PolicyRole
 		hasTo = true
 	}
 
-	hasFrom := false
-	if pwfl, ok := p.(core_model.PolicyWithFromList); ok && len(pwfl.GetFromList()) > 0 {
-		hasFrom = true
-	}
-
-	if hasFrom && hasTo {
-		return "", errors.New("it's not allowed to mix 'to' and 'from' arrays in the same policy")
-	}
-
-	if hasFrom || (!hasTo && !hasFrom) {
-		// if there is 'from' or neither (single item)
+	if !hasTo {
+		// single-item and rules-based inbound policies remain workload-owner scoped
 		return mesh_proto.WorkloadOwnerPolicyRole, nil
 	}
 
 	hasSameOrOmittedNamespace := func(tr common_api.TargetRef) bool {
-		return pointer.Deref(tr.Namespace) == "" || pointer.Deref(tr.Namespace) == ns.value
+		labelNamespace := pointer.Deref(tr.Labels)[mesh_proto.KubeNamespaceTag]
+		return labelNamespace == "" || labelNamespace == ns.value
+	}
+
+	// selectsSingleResourceByDisplayName reports whether ref identifies a single
+	// resource by display-name (+ optional namespace) rather than an arbitrary
+	// subset of resources via other label selectors.
+	selectsSingleResourceByDisplayName := func(tr common_api.TargetRef) bool {
+		labels := pointer.Deref(tr.Labels)
+		if labels[mesh_proto.DisplayName] == "" {
+			return false
+		}
+		for k := range labels {
+			if k != mesh_proto.DisplayName && k != mesh_proto.KubeNamespaceTag {
+				return false
+			}
+		}
+		return true
 	}
 
 	isProducerItem := func(tr common_api.TargetRef) bool {
 		switch tr.Kind {
 		case common_api.MeshService, common_api.MeshHTTPRoute:
-			return pointer.Deref(tr.Name) != "" && hasSameOrOmittedNamespace(tr)
+			return selectsSingleResourceByDisplayName(tr) && hasSameOrOmittedNamespace(tr)
 		default:
 			return false
 		}

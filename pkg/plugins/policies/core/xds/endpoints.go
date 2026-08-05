@@ -22,10 +22,6 @@ func GatherGatewayEndpoints(rs *xds.ResourceSet) EndpointMap {
 	return gatherEndpoints(rs, gateway_metadata.OriginGateway)
 }
 
-func GatherEgressEndpoints(rs *xds.ResourceSet) EndpointMap {
-	return gatherEndpoints(rs, generator_metadata.OriginEgress)
-}
-
 func gatherEndpoints(rs *xds.ResourceSet, origin origin.Origin) EndpointMap {
 	em := EndpointMap{}
 	for _, res := range rs.Resources(envoy_resource.EndpointType) {

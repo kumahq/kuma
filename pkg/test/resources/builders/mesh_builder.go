@@ -97,14 +97,6 @@ func (m *MeshBuilder) AddBuiltinMTLSBackend(name string) *MeshBuilder {
 	return m
 }
 
-func (m *MeshBuilder) WithMeshExternalServiceTrafficForbidden() *MeshBuilder {
-	if m.res.Spec.Routing == nil {
-		m.res.Spec.Routing = &mesh_proto.Routing{}
-	}
-	m.res.Spec.Routing.DefaultForbidMeshExternalServiceAccess = true
-	return m
-}
-
 func (m *MeshBuilder) WithoutInitialPolicies() *MeshBuilder {
 	m.res.Spec.SkipCreatingInitialPolicies = []string{"*"}
 	return m

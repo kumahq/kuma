@@ -33,7 +33,7 @@
       "value": {
         "directResponse": {
           "body": {
-            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"kuma.proxy_role\":\"sidecar\",\"mesh\":\"envoyconfig\",\"zone\":\"kuma-3\"}}}}"
+            "inlineString": "{\"observability\":{\"metrics\":{\"applications\":null,\"backends\":[{\"type\":\"Prometheus\",\"name\":null}],\"sidecar\":{\"profiles\":{\"appendProfiles\":[{\"name\":\"Basic\"}],\"exclude\":[{\"type\":\"Regex\",\"match\":\"envoy_cluster_external_upstream_rq_.*\"}],\"include\":[{\"type\":\"Exact\",\"match\":\"envoy_cluster_default_total_match_count\"}]},\"includeUnused\":true},\"extraLabels\":{\"kuma.proxy_role\":\"sidecar\",\"kuma.workload\":\"test-server\",\"mesh\":\"envoyconfig\",\"zone\":\"kuma-3\"}}}}"
           },
           "status": 200
         },
@@ -45,7 +45,7 @@
           {
             "header": {
               "key": "Etag",
-              "value": "488091e93561c5f7db20e1725a60d460bf639f2174ea998eebde915da2cf30e8"
+              "value": "1f1e74ba6d11f509f5d5bf08e80385d7ec89adfe38c1b8c62ae3dce227418acc"
             }
           }
         ]
@@ -63,7 +63,7 @@
             {
               "name": "If-None-Match",
               "stringMatch": {
-                "exact": "488091e93561c5f7db20e1725a60d460bf639f2174ea998eebde915da2cf30e8"
+                "exact": "1f1e74ba6d11f509f5d5bf08e80385d7ec89adfe38c1b8c62ae3dce227418acc"
               }
             }
           ],
@@ -511,20 +511,22 @@
                 "metadata": {
                   "filterMetadata": {
                     "envoy.lb": {
-                      "kuma.io/zone": "kuma-3",
-                      "team": "client-owners"
-                    },
-                    "envoy.transport_socket_match": {
-                      "kuma.io/zone": "kuma-3",
-                      "team": "client-owners"
-                    },
-                    "io.kuma.labels": {
                       "kuma.io/display-name": "demo-client",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
-                      "kuma.io/zone": "kuma-3"
+                      "kuma.io/workload": "demo-client",
+                      "kuma.io/zone": "kuma-3",
+                      "team": "client-owners"
+                    },
+                    "envoy.transport_socket_match": {
+                      "kuma.io/display-name": "demo-client",
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig",
+                      "kuma.io/origin": "zone",
+                      "kuma.io/workload": "demo-client",
+                      "kuma.io/zone": "kuma-3",
+                      "team": "client-owners"
                     }
                   }
                 }
@@ -555,25 +557,27 @@
                   "filterMetadata": {
                     "envoy.lb": {
                       "instance": "1",
+                      "kuma.io/display-name": "test-server",
+                      "kuma.io/env": "universal",
+                      "kuma.io/mesh": "envoyconfig",
+                      "kuma.io/origin": "zone",
                       "kuma.io/protocol": "http",
+                      "kuma.io/workload": "test-server",
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
                       "version": "v1"
                     },
                     "envoy.transport_socket_match": {
                       "instance": "1",
-                      "kuma.io/protocol": "http",
-                      "kuma.io/zone": "kuma-3",
-                      "team": "server-owners",
-                      "version": "v1"
-                    },
-                    "io.kuma.labels": {
                       "kuma.io/display-name": "test-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
-                      "kuma.io/zone": "kuma-3"
+                      "kuma.io/protocol": "http",
+                      "kuma.io/workload": "test-server",
+                      "kuma.io/zone": "kuma-3",
+                      "team": "server-owners",
+                      "version": "v1"
                     }
                   }
                 }
@@ -884,8 +888,12 @@
           "filterMetadata": {
             "io.kuma.tags": {
               "instance": "1",
+              "kuma.io/display-name": "test-server",
+              "kuma.io/env": "universal",
+              "kuma.io/mesh": "envoyconfig",
+              "kuma.io/origin": "zone",
               "kuma.io/protocol": "http",
-              "kuma.io/service": "test-server",
+              "kuma.io/workload": "test-server",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",
               "version": "v1"

@@ -68,7 +68,10 @@ var _ = Describe("ComputePolicyRole", func() {
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend", "kuma-demo", ""), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name":  "backend",
+					"k8s.kuma.io/namespace": "kuma-demo",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
@@ -79,7 +82,9 @@ var _ = Describe("ComputePolicyRole", func() {
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend", "", ""), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name": "backend",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
@@ -90,7 +95,10 @@ var _ = Describe("ComputePolicyRole", func() {
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshHTTPRoute("route-1", "kuma-demo"), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshHTTPRouteLabels(map[string]string{
+					"kuma.io/display-name":  "route-1",
+					"k8s.kuma.io/namespace": "kuma-demo",
+				}), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
@@ -110,10 +118,16 @@ var _ = Describe("ComputePolicyRole", func() {
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend-1", "backend-1-ns", ""), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name":  "backend-1",
+					"k8s.kuma.io/namespace": "backend-1-ns",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
-				AddTo(builders.TargetRefMeshService("backend-2", "backend-2-ns", ""), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name":  "backend-2",
+					"k8s.kuma.io/namespace": "backend-2-ns",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
@@ -124,6 +138,8 @@ var _ = Describe("ComputePolicyRole", func() {
 })
 
 var _ = Describe("Compute", func() {
+	legacyProxyTypeLabel := "kuma.io/" + "proxy-type"
+
 	type testCase struct {
 		r              core_model.Resource
 		mode           core.CpMode
@@ -259,7 +275,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":       "zone",
 				"kuma.io/zone":         "zone-1",
 				"kuma.io/env":          "kubernetes",
-				"kuma.io/proxy-type":   "gateway",
 			},
 		}),
 		Entry("dataplane proxy", testCase{
@@ -277,7 +292,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":       "zone",
 				"kuma.io/zone":         "zone-1",
 				"kuma.io/env":          "kubernetes",
-				"kuma.io/proxy-type":   "sidecar",
 			},
 		}),
 		Entry("zone egress proxy", testCase{
@@ -292,7 +306,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":       "zone",
 				"kuma.io/zone":         "zone-1",
 				"kuma.io/env":          "kubernetes",
-				"kuma.io/proxy-type":   "zoneegress",
 			},
 		}),
 		Entry("dataplane with ZoneIngress listener", testCase{
@@ -317,7 +330,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":               "zone",
 				"kuma.io/zone":                 "zone-1",
 				"kuma.io/env":                  "kubernetes",
-				"kuma.io/proxy-type":           "sidecar",
 				"kuma.io/listener-zoneingress": "enabled",
 			},
 		}),
@@ -343,7 +355,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":              "zone",
 				"kuma.io/zone":                "zone-1",
 				"kuma.io/env":                 "kubernetes",
-				"kuma.io/proxy-type":          "sidecar",
 				"kuma.io/listener-zoneegress": "enabled",
 			},
 		}),
@@ -374,7 +385,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":               "zone",
 				"kuma.io/zone":                 "zone-1",
 				"kuma.io/env":                  "kubernetes",
-				"kuma.io/proxy-type":           "sidecar",
 				"kuma.io/listener-zoneingress": "enabled",
 				"kuma.io/listener-zoneegress":  "enabled",
 			},
@@ -387,6 +397,7 @@ var _ = Describe("Compute", func() {
 				WithMesh("mesh-1").
 				WithServices("backend").
 				WithLabels(map[string]string{
+					legacyProxyTypeLabel:           "sidecar",
 					"kuma.io/listener-zoneingress": "enabled",
 					"kuma.io/listener-zoneegress":  "enabled",
 				}).
@@ -397,7 +408,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":       "zone",
 				"kuma.io/zone":         "zone-1",
 				"kuma.io/env":          "kubernetes",
-				"kuma.io/proxy-type":   "sidecar",
 			},
 		}),
 	)

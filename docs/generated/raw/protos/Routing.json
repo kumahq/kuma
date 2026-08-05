@@ -3,12 +3,6 @@
     "$ref": "#/definitions/Routing",
     "definitions": {
         "Routing": {
-            "properties": {
-                "defaultForbidMeshExternalServiceAccess": {
-                    "type": "boolean",
-                    "description": "If true, blocks traffic to MeshExternalServices. Default: false"
-                }
-            },
             "additionalProperties": true,
             "type": "object",
             "title": "Routing",

@@ -26,8 +26,6 @@ var (
 	}
 	HashMeshIncludedGlobalResources = map[core_model.ResourceType]bool{
 		core_system.GlobalSecretType: true,
-		core_mesh.ZoneIngressType:    true,
-		core_mesh.ZoneEgressType:     true,
 		core_mesh.MeshType:           true,
 	}
 )
@@ -90,12 +88,11 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		systemNamespace = rt.Config().Store.Kubernetes.SystemNamespace
 	}
 	envoyCpCtx := &xds_context.ControlPlaneContext{
-		CLACache:            claCache,
-		Secrets:             secrets,
-		IdentityManager:     providers.NewIdentityProviderManager(rt.IdentityProviders(), rt.EventBus(), issuanceLimiter),
-		Zone:                rt.Config().Multizone.Zone.Name,
-		SystemNamespace:     systemNamespace,
-		InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
+		CLACache:        claCache,
+		Secrets:         secrets,
+		IdentityManager: providers.NewIdentityProviderManager(rt.IdentityProviders(), rt.EventBus(), issuanceLimiter),
+		Zone:            rt.Config().Multizone.Zone.Name,
+		SystemNamespace: systemNamespace,
 	}
 
 	if err := v3.RegisterXDS(statsCallbacks, rt.XDS().Metrics, envoyCpCtx, rt); err != nil {

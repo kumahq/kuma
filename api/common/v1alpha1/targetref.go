@@ -3,10 +3,11 @@ package v1alpha1
 
 import (
 	"fmt"
-	"slices"
+	"maps"
 	"sort"
 	"strings"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -55,14 +56,6 @@ var order = map[TargetRefKind]int{
 	MeshHTTPRoute:        9,
 }
 
-// +kubebuilder:validation:Enum=Sidecar;Gateway
-type TargetRefProxyType string
-
-var (
-	Sidecar TargetRefProxyType = "Sidecar"
-	Gateway TargetRefProxyType = "Gateway"
-)
-
 func (k TargetRefKind) Compare(o TargetRefKind) int {
 	return order[k] - order[o]
 }
@@ -108,22 +101,12 @@ type TargetRef struct {
 	// Kind of the referenced resource
 	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
 	Kind TargetRefKind `json:"kind"`
-	// Name of the referenced resource. Can only be used with kinds: `MeshService`
-	// and `MeshServiceSubset`
-	Name *string `json:"name,omitempty"`
 	// Tags used to select a subset of proxies by tags. Can only be used with kinds
 	// `MeshSubset` and `MeshServiceSubset`
 	Tags *map[string]string `json:"tags,omitempty"`
-	// Mesh is reserved for future use to identify cross mesh resources.
-	Mesh *string `json:"mesh,omitempty"`
-	// ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-	// all data plane types are targeted by the policy.
-	ProxyTypes *[]TargetRefProxyType `json:"proxyTypes,omitempty"`
-	// Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-	// will be targeted.
-	Namespace *string `json:"namespace,omitempty"`
-	// Labels are used to select group of MeshServices that match labels. Either Labels or
-	// Name and Namespace can be used.
+	// Labels are used to select referenced real resources and to carry legacy
+	// service identity when a common TargetRef must still target old
+	// service-tag based paths.
 	Labels *map[string]string `json:"labels,omitempty"`
 	// SectionName is used to target specific section of resource.
 	// For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
@@ -134,12 +117,6 @@ func (t TargetRef) CompareDataplaneKind(other TargetRef) int {
 	if t.Kind != Dataplane || other.Kind != Dataplane {
 		return 0
 	}
-	if selectsNameAndNamespace(t) && selectsLabels(other) {
-		return 1
-	}
-	if selectsLabels(t) && selectsNameAndNamespace(other) {
-		return -1
-	}
 	if pointer.Deref(t.SectionName) != "" && pointer.Deref(other.SectionName) == "" {
 		return 1
 	}
@@ -149,21 +126,20 @@ func (t TargetRef) CompareDataplaneKind(other TargetRef) int {
 	return 0
 }
 
-func selectsNameAndNamespace(tr TargetRef) bool {
-	return pointer.Deref(tr.Name) != ""
-}
-
-func selectsLabels(tr TargetRef) bool {
-	return tr.Labels != nil
-}
-
+// IncludesGateways reports whether a policy attached with this targetRef could
+// apply to a Gateway-type dataplane (a delegated gateway is an ordinary
+// Dataplane from the CP's perspective, not a distinct kind). Kind: Mesh (and
+// the legacy MeshSubset) has no way to exclude gateways, so it always includes
+// them; Kind: Dataplane never distinguishes gateways from any other dataplane,
+// same as before proxyTypes existed (it was never a valid field on Kind:
+// Dataplane); MeshHTTPRoute is always gateway-routing.
 func IncludesGateways(ref TargetRef) bool {
-	isMeshKind := ref.Kind == Mesh || ref.Kind == meshSubset
-	isGatewayInProxyTypes := len(pointer.Deref(ref.ProxyTypes)) == 0 || slices.Contains(pointer.Deref(ref.ProxyTypes), Gateway)
-	isGatewayCompatible := isMeshKind && isGatewayInProxyTypes
-	isMeshHTTPRoute := ref.Kind == MeshHTTPRoute
-
-	return isGatewayCompatible || isMeshHTTPRoute
+	switch ref.Kind {
+	case Mesh, meshSubset, MeshHTTPRoute:
+		return true
+	default:
+		return false
+	}
 }
 
 // +kubebuilder:validation:Enum=MeshOpenTelemetryBackend
@@ -198,8 +174,8 @@ type BackendRef struct {
 
 func (b BackendRef) ReferencesRealObject() bool {
 	switch b.Kind {
-	case MeshService:
-		return pointer.Deref(b.SectionName) != "" || b.Port != nil
+	case MeshService, MeshExternalService, MeshMultiZoneService:
+		return true
 	case meshServiceSubset:
 		return false
 	// empty targetRef should not be treated as real object
@@ -216,23 +192,74 @@ type MatchesHash string
 
 type BackendRefHash string
 
+func (b BackendRef) RealResourceSelector(defaultNamespace string) (map[string]string, string, bool) {
+	if !b.ReferencesRealObject() {
+		return nil, "", false
+	}
+
+	labels, sectionName, ok := realResourceSelector(b.TargetRef, defaultNamespace)
+	if !ok {
+		return nil, "", false
+	}
+
+	if port := pointer.Deref(b.Port); port > 0 && sectionName == "" {
+		sectionName = fmt.Sprintf("%d", port)
+	}
+
+	return labels, sectionName, true
+}
+
 // Hash returns a hash of the BackendRef
 func (in BackendRef) Hash() BackendRefHash {
+	labels := pointer.Deref(in.Labels)
+	sectionName := pointer.Deref(in.SectionName)
+	if in.ReferencesRealObject() {
+		if selectorLabels, selectorSectionName, ok := in.RealResourceSelector(""); ok {
+			labels = selectorLabels
+			sectionName = selectorSectionName
+		}
+	}
+
 	keys := util_maps.SortedKeys(pointer.Deref(in.Tags))
 	orderedTags := make([]string, 0, len(keys))
 	for _, k := range keys {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, pointer.Deref(in.Tags)[k]))
 	}
 
-	keys = util_maps.SortedKeys(pointer.Deref(in.Labels))
-	orderedLabels := make([]string, 0, len(pointer.Deref(in.Labels)))
+	keys = util_maps.SortedKeys(labels)
+	orderedLabels := make([]string, 0, len(labels))
 	for _, k := range keys {
-		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, pointer.Deref(in.Labels)[k]))
+		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, labels[k]))
 	}
 
-	name := in.Name
-	if in.Port != nil {
-		name = pointer.To(fmt.Sprintf("%s_svc_%d", pointer.Deref(in.Name), *in.Port))
+	return BackendRefHash(fmt.Sprintf(
+		"%s/%s/%s/%d/%s",
+		in.Kind,
+		strings.Join(orderedTags, "/"),
+		strings.Join(orderedLabels, "/"),
+		pointer.DerefOr(in.Port, 0),
+		sectionName,
+	))
+}
+
+func realResourceSelector(ref TargetRef, defaultNamespace string) (map[string]string, string, bool) {
+	if len(pointer.Deref(ref.Labels)) > 0 {
+		labels := cloneStringMap(pointer.Deref(ref.Labels))
+		switch ref.Kind {
+		case MeshService, MeshExternalService, MeshMultiZoneService:
+			if defaultNamespace != "" &&
+				labels[mesh_proto.DisplayName] != "" &&
+				labels[mesh_proto.KubeNamespaceTag] == "" {
+				labels[mesh_proto.KubeNamespaceTag] = defaultNamespace
+			}
+		}
+		return labels, pointer.Deref(ref.SectionName), true
 	}
-	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, pointer.Deref(name), strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), pointer.Deref(in.Mesh)))
+	return nil, "", false
+}
+
+func cloneStringMap(in map[string]string) map[string]string {
+	out := make(map[string]string, len(in))
+	maps.Copy(out, in)
+	return out
 }

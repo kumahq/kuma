@@ -15,7 +15,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
@@ -84,7 +83,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 
 	endpoints := &EndpointAccumulator{
-		UnifiedResourceNaming: unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource),
 		OtelPipe: &OtelPipeResolver{
 			Resources:        ctx.Mesh.Resources,
 			NodeHostIP:       proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
@@ -100,23 +98,19 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	zone, workloadKRI := workloadIdentity(proxy)
 
-	inboundTagsDisabled := false
-	if ctx.ControlPlane != nil {
-		inboundTagsDisabled = ctx.ControlPlane.InboundTagsDisabled
-	}
-	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI, inboundTagsDisabled); err != nil {
+	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
 	if err := applyToZoneProxyListeners(rs, policies.FromRules, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, endpoints, accessLogSocketPath, ctx.Mesh, zone, workloadKRI, inboundTagsDisabled); err != nil {
+	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, endpoints, accessLogSocketPath, ctx.Mesh, zone, workloadKRI); err != nil {
 		return err
 	}
-	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI, inboundTagsDisabled); err != nil {
+	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
-	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI, inboundTagsDisabled); err != nil {
+	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
 	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
@@ -124,7 +118,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		svcCtx := rctx.
 			WithID(kri.NoSectionName(r.ResourceOrigin)).
 			WithID(r.ResourceOrigin)
-		if err := applyToRealResource(svcCtx, r, proxy, endpoints, accessLogSocketPath, zone, workloadKRI, inboundTagsDisabled); err != nil {
+		if err := applyToRealResource(svcCtx, r, proxy, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 			return err
 		}
 	}
@@ -156,7 +150,6 @@ func applyToInbounds(
 	accessLogSocketPath string,
 	zone string,
 	workloadKRI string,
-	inboundTagsDisabled bool,
 ) error {
 	configured := map[core_rules.InboundListener]struct{}{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
@@ -177,8 +170,8 @@ func applyToInbounds(
 		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
-			SourceIP:           dataplane.GetIP(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
-			DestinationService: dataplane.InboundIdentifyingName(inboundTagsDisabled, inbound.Name),
+			SourceIP:           dataplane.GetAddress(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
+			DestinationService: dataplane.InboundIdentifyingName(inbound),
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
 			WorkloadKRI:        workloadKRI,
@@ -219,7 +212,7 @@ func applyToZoneProxyListeners(
 		}
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
-			SourceIP:           dataplane.GetIP(),
+			SourceIP:           dataplane.GetAddress(),
 			DestinationService: mesh_proto.ServiceUnknown,
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
@@ -250,7 +243,6 @@ func applyToOutbounds(
 	meshCtx xds_context.MeshContext,
 	zone string,
 	workloadKRI string,
-	inboundTagsDisabled bool,
 ) error {
 	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
@@ -263,8 +255,8 @@ func applyToOutbounds(
 		serviceName := outbound.LegacyOutbound.GetService()
 
 		kumaValues := listeners_v3.KumaValues{
-			SourceService:      dataplane.IdentifyingName(inboundTagsDisabled),
-			SourceIP:           dataplane.GetIP(),
+			SourceService:      dataplane.IdentifyingName(),
+			SourceIP:           dataplane.GetAddress(),
 			DestinationService: outbound.LegacyOutbound.GetService(),
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
@@ -288,7 +280,7 @@ func applyToOutbounds(
 
 func applyToTransparentProxyListeners(
 	policies core_xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-	backends *EndpointAccumulator, path string, zone string, workloadKRI string, inboundTagsDisabled bool,
+	backends *EndpointAccumulator, path string, zone string, workloadKRI string,
 ) error {
 	conf := core_rules.ComputeConf[api.Conf](policies.ToRules.Rules, subsetutils.KumaServiceTagElement(core_meta.PassThroughServiceName))
 	if conf == nil {
@@ -296,8 +288,8 @@ func applyToTransparentProxyListeners(
 	}
 
 	kumaValues := listeners_v3.KumaValues{
-		SourceService:      dataplane.IdentifyingName(inboundTagsDisabled),
-		SourceIP:           dataplane.GetIP(),
+		SourceService:      dataplane.IdentifyingName(),
+		SourceIP:           dataplane.GetAddress(),
 		DestinationService: "external",
 		Mesh:               dataplane.GetMeta().GetMesh(),
 		Zone:               zone,
@@ -320,7 +312,7 @@ func applyToTransparentProxyListeners(
 
 func applyToDirectAccess(
 	rules core_rules.ToRules, directAccess map[model.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-	backends *EndpointAccumulator, path string, zone string, workloadKRI string, inboundTagsDisabled bool,
+	backends *EndpointAccumulator, path string, zone string, workloadKRI string,
 ) error {
 	conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.KumaServiceTagElement(core_meta.PassThroughServiceName))
 	if conf == nil {
@@ -329,8 +321,8 @@ func applyToDirectAccess(
 
 	for endpoint, listener := range directAccess {
 		kumaValues := listeners_v3.KumaValues{
-			SourceService:      dataplane.IdentifyingName(inboundTagsDisabled),
-			SourceIP:           dataplane.GetIP(),
+			SourceService:      dataplane.IdentifyingName(),
+			SourceIP:           dataplane.GetAddress(),
 			DestinationService: generator.DirectAccessEndpointName(endpoint),
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
@@ -411,7 +403,6 @@ func applyToRealResource(
 	accessLogSocketPath string,
 	zone string,
 	workloadKRI string,
-	inboundTagsDisabled bool,
 ) error {
 	listener, ok := r.Resource.(*envoy_listener.Listener)
 	if !ok {
@@ -421,8 +412,8 @@ func applyToRealResource(
 	defaultFormat := DefaultFormat(r.Protocol)
 
 	kumaValues := listeners_v3.KumaValues{
-		SourceService:      proxy.Dataplane.IdentifyingName(inboundTagsDisabled),
-		SourceIP:           proxy.Dataplane.GetIP(),
+		SourceService:      proxy.Dataplane.IdentifyingName(),
+		SourceIP:           proxy.Dataplane.GetAddress(),
 		DestinationService: r.ResourceOrigin.Name,
 		Mesh:               proxy.Dataplane.GetMeta().GetMesh(),
 		Zone:               zone,

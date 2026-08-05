@@ -14,11 +14,6 @@
                     "additionalProperties": true,
                     "description": "Routing settings of the mesh"
                 },
-                "constraints": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.Constraints",
-                    "additionalProperties": true,
-                    "description": "Constraints that applies to the mesh and its entities"
-                },
                 "skipCreatingInitialPolicies": {
                     "items": {
                         "type": "string"
@@ -124,55 +119,6 @@
             "title": "Root Chain",
             "description": "RootChain defines settings related to CA root certificate chain."
         },
-        "kuma.mesh.v1alpha1.Mesh.Constraints": {
-            "properties": {
-                "dataplaneProxy": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints",
-                    "additionalProperties": true,
-                    "description": "DataplaneProxyMembership defines a set of requirements for data plane proxies to be a member of the mesh."
-                }
-            },
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Constraints",
-            "description": "Constraints to apply to the mesh and its entities"
-        },
-        "kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints": {
-            "properties": {
-                "requirements": {
-                    "items": {
-                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules"
-                    },
-                    "type": "array",
-                    "description": "Requirements defines a set of requirements that data plane proxies must fulfill in order to join the mesh. A data plane proxy must fulfill at least one requirement in order to join the mesh. Empty list of allowed requirements means that any proxy that is not explicitly denied can join."
-                },
-                "restrictions": {
-                    "items": {
-                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules"
-                    },
-                    "type": "array",
-                    "description": "Restrictions defines a set of restrictions that data plane proxies cannot fulfill in order to join the mesh. A data plane proxy cannot fulfill any requirement in order to join the mesh. Restrictions takes precedence over requirements."
-                }
-            },
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Dataplane Proxy Constraints"
-        },
-        "kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules": {
-            "properties": {
-                "tags": {
-                    "additionalProperties": {
-                        "type": "string"
-                    },
-                    "type": "object",
-                    "description": "Tags defines set of required tags. You can specify '*' in value to require non empty value of tag"
-                }
-            },
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Rules",
-            "description": "Rules defines a set of rules for data plane proxies to be member of the mesh."
-        },
         "kuma.mesh.v1alpha1.Mesh.Mtls": {
             "properties": {
                 "enabledBackend": {
@@ -197,12 +143,6 @@
             "description": "mTLS settings of a Mesh."
         },
         "kuma.mesh.v1alpha1.Routing": {
-            "properties": {
-                "defaultForbidMeshExternalServiceAccess": {
-                    "type": "boolean",
-                    "description": "If true, blocks traffic to MeshExternalServices. Default: false"
-                }
-            },
             "additionalProperties": true,
             "type": "object",
             "title": "Routing",

@@ -17,7 +17,15 @@
                 "start": "201"
               }
             ],
-            "path": "/health"
+            "path": "/health",
+            "requestHeadersToAdd": [
+              {
+                "header": {
+                  "key": "x-kuma-tags",
+                  "value": "\u0026kuma.io/display-name=zone-proxy-egress\u0026\u0026kuma.io/env=universal\u0026\u0026kuma.io/listener-zoneegress=enabled\u0026\u0026kuma.io/mesh=envoyconfig-zoneproxies\u0026\u0026kuma.io/origin=zone\u0026\u0026kuma.io/workload=zone-proxy-egress\u0026\u0026kuma.io/zone=kuma-3\u0026"
+                }
+              }
+            ]
           },
           "interval": "10s",
           "timeout": "2s",
@@ -51,7 +59,15 @@
                   "start": "201"
                 }
               ],
-              "path": "/health"
+              "path": "/health",
+              "requestHeadersToAdd": [
+                {
+                  "header": {
+                    "key": "x-kuma-tags",
+                    "value": "\u0026kuma.io/display-name=zone-proxy-egress\u0026\u0026kuma.io/env=universal\u0026\u0026kuma.io/listener-zoneegress=enabled\u0026\u0026kuma.io/mesh=envoyconfig-zoneproxies\u0026\u0026kuma.io/origin=zone\u0026\u0026kuma.io/workload=zone-proxy-egress\u0026\u0026kuma.io/zone=kuma-3\u0026"
+                  }
+                }
+              ]
             },
             "interval": "10s",
             "timeout": "2s",
@@ -96,9 +112,48 @@
                 }
               ],
               "locality": {
-                "subZone": "priority-0"
+                "subZone": "priority-1"
               },
               "priority": 1
+            },
+            {
+              "lbEndpoints": [
+                {
+                  "endpoint": {
+                    "address": {
+                      "socketAddress": {
+                        "address": "IP_REDACTED",
+                        "portValue": 81
+                      }
+                    }
+                  },
+                  "loadBalancingWeight": 1,
+                  "metadata": {
+                    "filterMetadata": {
+                      "envoy.lb": {
+                        "kuma.io/access": "external",
+                        "kuma.io/display-name": "mes-zone-proxy",
+                        "kuma.io/env": "universal",
+                        "kuma.io/mesh": "envoyconfig-zoneproxies",
+                        "kuma.io/origin": "zone",
+                        "kuma.io/zone": "kuma-3"
+                      },
+                      "envoy.transport_socket_match": {
+                        "kuma.io/access": "external",
+                        "kuma.io/display-name": "mes-zone-proxy",
+                        "kuma.io/env": "universal",
+                        "kuma.io/mesh": "envoyconfig-zoneproxies",
+                        "kuma.io/origin": "zone",
+                        "kuma.io/zone": "kuma-3"
+                      }
+                    }
+                  }
+                }
+              ],
+              "locality": {
+                "subZone": "priority-2"
+              },
+              "priority": 2
             }
           ]
         },

@@ -16,7 +16,6 @@ import (
 	oapi_helpers "github.com/kumahq/kuma/v3/pkg/api-server/oapi-helpers"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	"github.com/kumahq/kuma/v3/pkg/core/policy"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/access"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -83,30 +82,8 @@ func (r *resourceInspectHandler) matchingDataplanesForPolicy() restful.RouteFunc
 			func(policyResource core_model.Resource) store.ListFilterFunc {
 				return func(rs core_model.Resource) bool {
 					dpp := rs.(*core_mesh.DataplaneResource)
-					if r.descriptor.IsTargetRefBased {
-						res, _ := matchers.PolicyMatches(policyResource, dpp, dependentResources)
-						return res
-					}
-					switch pr := policyResource.(type) {
-					case policy.DataplanePolicy:
-						for _, s := range pr.Selectors() {
-							if dpp.Spec.Matches(s.GetMatch()) {
-								return true
-							}
-						}
-					case policy.ConnectionPolicy:
-						for _, s := range pr.Sources() {
-							if dpp.Spec.Matches(s.GetMatch()) {
-								return true
-							}
-						}
-						for _, s := range pr.Destinations() {
-							if dpp.Spec.Matches(s.GetMatch()) {
-								return true
-							}
-						}
-					}
-					return false
+					res, _ := matchers.PolicyMatches(policyResource, dpp, dependentResources)
+					return res
 				}
 			},
 		)
@@ -543,7 +520,6 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 		}
 
 		resources := xds_context.Resources{
-			CrossMeshResources: map[core_xds.MeshName]xds_context.ResourceMap{},
 			MeshLocalResources: baseMeshContext.ResourceMap,
 		}
 		matchesByHash := map[common_api.MatchesHash][]meshhttproute_api.Match{}

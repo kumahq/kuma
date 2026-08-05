@@ -6,7 +6,6 @@ metadata:
     k8s.kuma.io/service-account: test-sa
     kuma.io/display-name: example
     kuma.io/mesh: default
-    kuma.io/proxy-type: sidecar
     kuma.io/workload: test-sa
     version: "0.1"
   name: example
@@ -18,41 +17,14 @@ spec:
         ready: true
       port: 8080
       protocol: http
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: example
-        k8s.kuma.io/service-port: "80"
-        kuma.io/protocol: http
-        kuma.io/service: example_demo_svc_80
-        kuma.io/zone: zone-1
-        version: "0.1"
     - health:
         ready: true
       port: 8443
       protocol: tcp
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: example
-        k8s.kuma.io/service-port: "443"
-        kuma.io/protocol: tcp
-        kuma.io/service: example_demo_svc_443
-        kuma.io/zone: zone-1
-        version: "0.1"
     - health:
         ready: true
       port: 7070
       protocol: tcp
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: sample
-        k8s.kuma.io/service-port: "7071"
-        kuma.io/protocol: tcp
-        kuma.io/service: sample_playground_svc_7071
-        kuma.io/zone: zone-1
-        version: "0.1"
   probes:
     endpoints:
     - inboundPath: /metrics

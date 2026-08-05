@@ -109,28 +109,19 @@ spec:
 }
 
 // ZoneProxyPluginTest exercises MeshTrace applied to a mesh-scoped zone-egress
-// Dataplane (MADR-098). It verifies that:
-//  1. The xDS pipeline generates a self_zoneegress listener with the meshtrace
-//     tracing block once MeshIdentity + MeshExternalService are present.
-//  2. Real outbound traffic from a regular sidecar through the zone-egress
-//     produces spans at the collector with the expected kuma.* tags, including
-//     kuma.workload carrying the workload-label-derived identifier (which is
-//     stable across pod restarts on K8s, unlike pod.Name).
+// Dataplane (MADR-098).
 //
-// Stability notes:
-//   - All waits use Eventually with generous timeouts to absorb MeshIdentity
-//     Ready latency and Envoy Zipkin batch flush (default 5s).
-//   - The Zipkin tracer fills localEndpoint.serviceName from Envoy bootstrap,
-//     so zone-egress spans land under service "unknown" in Jaeger. The
-//     assertion filters by tag instead of service name; see issue #16602.
+// The Zipkin tracer fills localEndpoint.serviceName from Envoy bootstrap's
+// Node.Cluster, i.e. the dataplane's IdentifyingName() -- the workload label
+// -- so zone-egress spans land under the workload's own service name in
+// Jaeger, not the mesh name or "unknown".
 func ZoneProxyPluginTest() {
 	ns := "meshtrace-zoneproxy"
 	extNs := "meshtrace-zoneproxy-ext"
 	obsNs := "obs-meshtrace-zoneproxy"
 	obsDeployment := "obs-trace-zoneproxy-deployment"
 	mesh := "meshtrace-zoneproxy"
-	workload := "zone-egress"
-	const egressPort = uint32(11102)
+	workload := zoneproxy.EgressName(mesh)
 
 	var obsClient obs.Observability
 	BeforeAll(func() {
@@ -147,11 +138,10 @@ func ZoneProxyPluginTest() {
 					testserver.WithEchoArgs("echo", "--instance", "external-server"),
 				),
 				zoneproxy.Install(
-					zoneproxy.WithName("zp-meshtrace"),
 					zoneproxy.WithNamespace(ns),
 					zoneproxy.WithMesh(mesh),
+					zoneproxy.WithEgress(),
 					zoneproxy.WithWorkload(workload),
-					zoneproxy.WithEgressPort(egressPort),
 				),
 				obs.Install(obsDeployment, obs.WithNamespace(obsNs)),
 			)).
@@ -188,12 +178,8 @@ func ZoneProxyPluginTest() {
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "90s", "3s").Should(Succeed())
 
-		// Verify a span with kuma.workload tag containing the workload name
-		// reached the collector. We filter by tag, not service, because the
-		// Zipkin tracer reports localEndpoint.serviceName="unknown" for
-		// zone-egress spans (see issue #16602).
 		Eventually(func(g Gomega) {
-			traces, err := obsClient.TracesForService("unknown", 50)
+			traces, err := obsClient.TracesForService(workload, 50)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(traces).ToNot(BeEmpty(), "no zone-egress traces at collector yet")
 

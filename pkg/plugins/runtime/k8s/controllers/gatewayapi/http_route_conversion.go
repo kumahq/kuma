@@ -11,7 +11,6 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
-	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -19,7 +18,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	k8s_util "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 )
@@ -72,25 +70,35 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 
 	var tos []v1alpha1.To
 
-	var ports []int32
+	var servicePorts []kube_core.ServicePort
 	if parentPort != nil {
-		ports = []int32{*parentPort}
-	} else {
 		for _, port := range parent.Spec.Ports {
-			ports = append(ports, port.Port)
+			if port.Port == *parentPort {
+				servicePorts = append(servicePorts, port)
+			}
 		}
+	} else {
+		servicePorts = parent.Spec.Ports
 	}
 
-	for _, port := range ports {
-		serviceName := k8s_util.ServiceTag(
-			kube_client.ObjectKeyFromObject(parent),
-			pointer.To(port),
-		)
-
+	for _, port := range servicePorts {
+		// The MeshService section name is the Service port name, falling back to
+		// the stringified port value for unnamed ports (see meshservice_controller).
+		// It must match how the MeshService is generated: a mismatched sectionName
+		// won't resolve to the intended port, so this `to` entry won't apply to
+		// traffic for that port.
+		sectionName := port.Name
+		if sectionName == "" {
+			sectionName = fmt.Sprintf("%d", port.Port)
+		}
 		tos = append(tos, v1alpha1.To{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
-				Name: pointer.To(serviceName),
+				Labels: &map[string]string{
+					mesh_proto.DisplayName:      parent.GetName(),
+					mesh_proto.KubeNamespaceTag: parent.GetNamespace(),
+				},
+				SectionName: pointer.To(sectionName),
 			},
 			Rules: rules,
 		})
@@ -379,7 +387,9 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
 	unresolvedTargetRef := common_api.TargetRef{
 		Kind: common_api.MeshService,
-		Name: pointer.To(metadata.UnresolvedBackendServiceTag),
+		Labels: &map[string]string{
+			mesh_proto.DisplayName: metadata.UnresolvedBackendServiceTag,
+		},
 	}
 
 	gk := kube_schema.GroupKind{Kind: string(*ref.Kind), Group: string(*ref.Group)}
@@ -407,9 +417,23 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 			return common_api.TargetRef{}, nil, err
 		}
 
+		sectionName := fmt.Sprintf("%d", port)
+		for _, svcPort := range svc.Spec.Ports {
+			if svcPort.Port == port {
+				if svcPort.Name != "" {
+					sectionName = svcPort.Name
+				}
+				break
+			}
+		}
+
 		return common_api.TargetRef{
 			Kind: common_api.MeshService,
-			Name: pointer.To(k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port)),
+			Labels: &map[string]string{
+				mesh_proto.DisplayName:      svc.GetName(),
+				mesh_proto.KubeNamespaceTag: svc.GetNamespace(),
+			},
+			SectionName: pointer.To(sectionName),
 		}, nil, nil
 	}
 

@@ -9,28 +9,41 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Test() {
 	_ = Describe("No Zone Egress", func() {
-		test("meshhttproute", samples.MeshMTLSBuilder(), false)
+		test("meshhttproute", builders.Mesh(), false)
 	}, Ordered)
 
 	_ = Describe("Zone Egress", func() {
-		test("meshhttproute-ze", samples.MeshMTLSBuilder(), true)
+		test("meshhttproute-ze", builders.Mesh(), true)
 	}, FlakeAttempts(3), Ordered)
 }
 
 func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
+	identityName := meshName + "-identity"
+
+	var zones []Cluster
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithIngress(),
+		)
+	}
+
 	BeforeAll(func() {
+		zones = []Cluster{multizone.UniZone1, multizone.UniZone2}
 		// Global
 		err := NewClusterSetup().
 			Install(ResourceUniversal(meshBuilder.WithName(meshName).Build())).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -45,6 +58,7 @@ func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
 					WithArgs([]string{"echo", "--instance", "zone1-v1"}),
 					WithServiceVersion("v1"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 
@@ -71,9 +85,12 @@ func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
 					WithServiceName("alias-test-server"),
 					WithServiceVersion("v2"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone2, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

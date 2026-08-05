@@ -1,8 +1,6 @@
 package zoneproxy
 
 import (
-	"slices"
-
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -15,19 +13,15 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 )
 
 func GenerateCDS(
 	proxy *core_xds.Proxy,
-	destinations MeshDestinations,
 	services envoy_common.Services,
 	meshName string,
 	origin origin.Origin,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
-
-	matchAll := destinations.KumaIoServices[mesh_proto.MatchAllTag]
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
@@ -37,7 +31,7 @@ func GenerateCDS(
 			tagsSlice = append(tagsSlice, cluster.Tags())
 		}
 
-		tagKeySlice := slices.Concat(tagsSlice, matchAll).
+		tagKeySlice := tagsSlice.
 			ToTagKeysSlice().
 			Transform(envoy_tags.Without(mesh_proto.ServiceTag))
 
@@ -110,72 +104,10 @@ func CreateFilterChain(
 
 func GetServices(
 	destinations MeshDestinations,
-	endpointMap core_xds.EndpointMap,
-	availableServices []*mesh_proto.ZoneIngress_AvailableService,
 ) envoy_common.Services {
 	acc := envoy_common.NewServicesAccumulator(nil)
 
-	matchAll := destinations.KumaIoServices[mesh_proto.MatchAllTag]
 	sniUsed := map[string]struct{}{}
-
-	for _, service := range availableServices {
-		serviceName := service.Tags[mesh_proto.ServiceTag]
-		kumaIoServices := destinations.KumaIoServices[serviceName]
-		clusterName := envoy_names.GetMeshClusterName(service.Mesh, serviceName)
-		endpoints := endpointMap[serviceName]
-
-		for _, destination := range slices.Concat(kumaIoServices, matchAll) {
-			sni := tls.SNIFromTags(destination.
-				WithTags(mesh_proto.ServiceTag, serviceName).
-				WithTags("mesh", service.Mesh),
-			)
-
-			if _, ok := sniUsed[sni]; ok {
-				continue
-			}
-
-			sniUsed[sni] = struct{}{}
-
-			// relevantTags is a set of tags for which it actually makes sense to do LB split on.
-			// If the endpoint list is the same with or without the tag, we should just not do the split.
-			// However, we should preserve full SNI, because the client expects Zone Proxy to support it.
-			// This solves the problem that Envoy deduplicate endpoints of the same address and different metadata.
-			// example 1:
-			// Ingress1 (10.0.0.1) supports service:a,version:1 and service:a,version:2
-			// Ingress2 (10.0.0.2) supports service:a,version:1 and service:a,version:2
-			// If we want to split by version, we don't need to do LB subset on version.
-			//
-			// example 2:
-			// Ingress1 (10.0.0.1) supports service:a,version:1
-			// Ingress2 (10.0.0.2) supports service:a,version:2
-			// If we want to split by version, we need LB subset.
-			relevantTags := envoy_tags.Tags{}
-			for key, value := range destination {
-				matchedTargets := map[string]struct{}{}
-				allTargets := map[string]struct{}{}
-				for _, endpoint := range endpoints {
-					address := endpoint.Address()
-					if endpoint.Tags[key] == value || value == mesh_proto.MatchAllTag {
-						matchedTargets[address] = struct{}{}
-					}
-					allTargets[address] = struct{}{}
-				}
-				if len(matchedTargets) < len(allTargets) {
-					relevantTags[key] = value
-				}
-			}
-
-			cluster := plugins_xds.NewClusterBuilder().
-				WithName(clusterName).
-				WithSNI(sni).
-				WithMesh(service.Mesh).
-				WithService(serviceName).
-				WithTags(relevantTags).
-				Build()
-
-			acc.Add(cluster)
-		}
-	}
 
 	for _, br := range destinations.BackendRefs {
 		if _, ok := sniUsed[br.SNI]; ok {
@@ -188,9 +120,8 @@ func GetServices(
 
 		cluster := plugins_xds.NewClusterBuilder().
 			WithName(clusterName).
-			WithService(br.LegacyServiceName).
+			WithService(br.EndpointMapKey).
 			WithSNI(br.SNI).
-			WithMesh(br.Mesh).
 			Build()
 
 		acc.AddBackendRef(&br.ResolvedBackendRef, cluster)

@@ -19,7 +19,6 @@ import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
 	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
@@ -105,32 +104,14 @@ type Endpoint struct {
 	Target         string
 	UnixDomainPath string
 	Port           uint32
-	Tags           map[string]string
-
-	// Labels holds resource/workload labels for this endpoint. Unlike Tags (which
-	// are derived from Dataplane inbound configuration), Labels are sourced from
-	// resource metadata (for example, pod labels in Kubernetes mode) and remain
-	// available even when KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED is true.
-	Labels          map[string]string
+	// Tags is the endpoint's load-balancing identity. It is derived from the
+	// Dataplane's workload/resource labels plus the inbound's protocol
+	// (see BuildDataplaneEndpointMap), so a single well-known key carries the identity.
+	Tags            map[string]string
 	Weight          uint32
 	Locality        *Locality
 	ExternalService *ExternalService
 }
-
-func (e Endpoint) Address() string {
-	return fmt.Sprintf("%s:%d", e.Target, e.Port)
-}
-
-func (e Endpoint) Protocol() core_meta.Protocol {
-	if e.ExternalService != nil && e.ExternalService.Protocol != "" {
-		return e.ExternalService.Protocol
-	}
-
-	return core_meta.ParseProtocol(e.Tags[mesh_proto.ProtocolTag])
-}
-
-// EndpointList is a list of Endpoints with convenience methods.
-type EndpointList []Endpoint
 
 // EndpointMap holds routing-related information about a set of endpoints grouped by service name.
 type EndpointMap map[ServiceName][]Endpoint
@@ -175,10 +156,6 @@ type Proxy struct {
 	// WorkloadIdentity stores information about identity of the proxy.
 	WorkloadIdentity *WorkloadIdentity
 
-	// ZoneEgressProxy is available only when XDS is generated for ZoneEgress data plane proxy.
-	ZoneEgressProxy *ZoneEgressProxy
-	// ZoneIngressProxy is available only when XDS is generated for ZoneIngress data plane proxy.
-	ZoneIngressProxy *ZoneIngressProxy
 	// RuntimeExtensions a set of extensions to add for custom extensions (.e.g MeshGateway)
 	RuntimeExtensions map[string]any
 	// Zone the zone the proxy is in
@@ -263,53 +240,6 @@ type SecretsTracker interface {
 
 type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
-type MeshResources struct {
-	Mesh        *core_mesh.MeshResource
-	EndpointMap EndpointMap
-
-	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
-	Dynamic   ExternalServiceDynamicPolicies
-	Resources map[core_model.ResourceType]core_model.ResourceList
-}
-
-func (r MeshResources) Get(id kri.Identifier) core_model.Resource {
-	// todo: we can probably optimize it by using indexing on ResourceIdentifier
-	list := r.ListOrEmpty(id.ResourceType).GetItems()
-	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return kri.From(r) == kri.NoSectionName(id) }); i >= 0 {
-		return list[i]
-	}
-	return nil
-}
-
-func (r MeshResources) ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList {
-	list, ok := r.Resources[resourceType]
-	if !ok {
-		list, err := registry.Global().NewList(resourceType)
-		if err != nil {
-			panic(err)
-		}
-		return list
-	}
-	return list
-}
-
-type ZoneEgressProxy struct {
-	ZoneEgressResource *core_mesh.ZoneEgressResource
-	ZoneIngresses      []*core_mesh.ZoneIngressResource
-	MeshResourcesList  []*MeshResources
-}
-
-type MeshProxyResources struct {
-	Mesh        *core_mesh.MeshResource
-	EndpointMap EndpointMap
-	Resources   map[core_model.ResourceType]core_model.ResourceList
-}
-
-type ZoneIngressProxy struct {
-	ZoneIngressResource *core_mesh.ZoneIngressResource
-	MeshResourceList    []*MeshProxyResources
-}
-
 type Routing struct {
 	OutboundTargets EndpointMap
 }
@@ -381,10 +311,6 @@ func (e Endpoint) IsExternalService() bool {
 	return e.ExternalService != nil
 }
 
-func (e Endpoint) IsMeshExternalService() bool {
-	return e.ExternalService != nil && !e.ExternalService.OwnerResource.IsEmpty()
-}
-
 func (e Endpoint) LocalityString() string {
 	if e.Locality == nil {
 		return ""
@@ -406,16 +332,6 @@ func (e Endpoint) ContainsTags(tags map[string]string) bool {
 		}
 	}
 	return true
-}
-
-func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
-	var endpoints EndpointList
-	for _, endpoint := range l {
-		if selector.Matches(endpoint.Tags) {
-			endpoints = append(endpoints, endpoint)
-		}
-	}
-	return endpoints
 }
 
 func BuildProxyId(mesh, name string) *ProxyId {

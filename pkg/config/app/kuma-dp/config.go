@@ -137,7 +137,7 @@ type Dataplane struct {
 	Mesh string `json:"mesh,omitempty" envconfig:"kuma_dataplane_mesh"`
 	// Dataplane name.
 	Name string `json:"name,omitempty" envconfig:"kuma_dataplane_name"`
-	// ProxyType defines mode which should be used, supported values: 'dataplane', 'ingress', 'egress'
+	// ProxyType defines mode which should be used, supported values: 'dataplane'
 	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
@@ -171,11 +171,6 @@ func (d *Dataplane) PostProcess() error {
 	return nil
 }
 
-func (d *Dataplane) IsZoneProxy() bool {
-	return d.ProxyType == string(mesh_proto.IngressProxyType) ||
-		d.ProxyType == string(mesh_proto.EgressProxyType)
-}
-
 func validateMeshOrName[V ~string](typ string, value V) error {
 	if value == "" {
 		return errors.Errorf("%s must be non-empty", typ)
@@ -194,13 +189,9 @@ type DataplaneRuntime struct {
 
 	// Path to Envoy binary.
 	BinaryPath string `json:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
-	// ConfigDir was used to store Envoy bootstrap config.
-	//
-	// Deprecated: use WorkDir instead.
-	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir" deprecated:"use WorkDir instead"`
-	// WorkDir is the directory to store auto-generated Envoy bootstrap config.
-	// It overrides values from deprecated ConfigDir and SocketDir.
-	WorkDir string `json:"workDir,omitempty" envconfig:"kuma_dataplane_runtime_work_dir" overrides:"ConfigDir,SocketDir"`
+	// WorkDir is the directory to store auto-generated Envoy bootstrap config,
+	// Unix domain sockets, and the dataplane token file.
+	WorkDir string `json:"workDir,omitempty" envconfig:"kuma_dataplane_runtime_work_dir"`
 	// Concurrency specifies how to generate the Envoy concurrency flag.
 	Concurrency uint32 `json:"concurrency,omitempty" envconfig:"kuma_dataplane_runtime_concurrency"`
 	// Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)
@@ -222,10 +213,6 @@ type DataplaneRuntime struct {
 	EnvoyComponentLogLevel string `json:"envoyComponentLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_component_log_level"`
 	// Resources defines the resources for this proxy.
 	Resources DataplaneResources `json:"resources,omitempty"`
-	// SocketDir dir to store socket used between Envoy and the dp process
-	//
-	// Deprecated: use WorkDir instead
-	SocketDir string `json:"socketDir,omitempty" envconfig:"kuma_dataplane_runtime_socket_dir"`
 	// Metrics defines properties of metrics
 	Metrics Metrics `json:"metrics,omitempty"`
 	// DynamicConfiguration defines properties of dataplane dynamic configuration
@@ -338,19 +325,11 @@ var _ config.Config = &Dataplane{}
 
 func (d *Dataplane) Validate() error {
 	var errs error
-	proxyType := mesh_proto.ProxyType(d.ProxyType)
-	switch proxyType {
-	case mesh_proto.DataplaneProxyType, mesh_proto.IngressProxyType, mesh_proto.EgressProxyType:
-	default:
-		if err := proxyType.IsValid(); err != nil {
-			errs = multierr.Append(errs, errors.Wrap(err, ".ProxyType is not valid"))
-		} else {
-			// Not all Dataplane types are allowed to be set directly in config.
-			errs = multierr.Append(errs, errors.Errorf(".ProxyType %q is not supported", proxyType))
-		}
+	if proxyType := mesh_proto.ProxyType(d.ProxyType); proxyType != mesh_proto.DataplaneProxyType {
+		errs = multierr.Append(errs, errors.Errorf(".ProxyType %q is not supported", proxyType))
 	}
 
-	if d.Mesh == "" && proxyType != mesh_proto.IngressProxyType && proxyType != mesh_proto.EgressProxyType {
+	if d.Mesh == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Mesh must be non-empty"))
 	}
 

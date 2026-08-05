@@ -2,4 +2,4 @@ circuitBreakers:
   thresholds:
   - maxConnections: 66
     trackRemaining: true
-name: other-service
+name: kri_msvc_default___other-service_80

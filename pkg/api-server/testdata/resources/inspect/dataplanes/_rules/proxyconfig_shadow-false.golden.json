@@ -4,7 +4,7 @@
    "self_inbound_dp_8080": {
     "name": "self_inbound_dp_8080",
     "type": "STATIC",
-    "connectTimeout": "10s",
+    "connectTimeout": "5s",
     "loadAssignment": {
      "clusterName": "self_inbound_dp_8080",
      "endpoints": [
@@ -61,7 +61,7 @@
     "metadata": {
      "filterMetadata": {
       "io.kuma.tags": {
-       "kuma.io/service": "foo"
+       "kuma.io/unified-name": "self_inbound_dp_8080"
       }
      }
     },

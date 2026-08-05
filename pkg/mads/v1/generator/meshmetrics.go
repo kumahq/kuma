@@ -14,7 +14,7 @@ import (
 
 const DefaultKumaClientId = "_kuma-default-client"
 
-func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResource, clientId string, inboundTagsDisabled bool) ([]*core_xds.Resource, error) {
+func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResource, clientId string) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
 	for meshMetricConf, dataplane := range meshMetricToDataplane {
@@ -33,14 +33,14 @@ func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResou
 				schema = "https"
 			}
 
-			service := dataplane.IdentifyingName(inboundTagsDisabled)
+			service := dataplane.IdentifyingName()
 			assignment := &observability_v1.MonitoringAssignment{
 				Mesh:    dataplane.Meta.GetMesh(),
 				Service: service,
 				Targets: []*observability_v1.MonitoringAssignment_Target{{
 					Scheme:      schema,
 					Name:        dataplane.GetMeta().GetName(),
-					Address:     net.JoinHostPort(dataplane.GetIP(), strconv.FormatUint(uint64(prometheusEndpoint.Port), 10)),
+					Address:     net.JoinHostPort(dataplane.GetAddress(), strconv.FormatUint(uint64(prometheusEndpoint.Port), 10)),
 					MetricsPath: prometheusEndpoint.Path,
 					// labels are empty because, with MeshMetric policy they are added on Dataplane Proxy level
 					Labels: map[string]string{},

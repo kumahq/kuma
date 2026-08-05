@@ -301,17 +301,10 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 	serviceTagIdentities := map[string]struct{}{}
 	spiffeIDs := map[string]struct{}{}
 	for _, dpp := range dpps {
-		tagIdentities := dpp.Spec.TagSet()[mesh_proto.ServiceTag]
-		if len(tagIdentities) == 0 {
-			// No kuma.io/service tag once Experimental.InboundTagsDisabled
-			// strips inbound tags. Fall back to the workload label, same as
-			// the mTLS identity path and MeshService generation.
-			if workload := dpp.GetMeta().GetLabels()[metadata.KumaWorkload]; workload != "" {
-				serviceTagIdentities[workload] = struct{}{}
-			}
-		}
-		for service := range tagIdentities {
-			serviceTagIdentities[service] = struct{}{}
+		// Must mirror pkg/xds/secrets.identityTags: identity comes from the
+		// workload label, the same signal the mTLS identity path relies on.
+		if workload := dpp.GetMeta().GetLabels()[metadata.KumaWorkload]; workload != "" {
+			serviceTagIdentities[workload] = struct{}{}
 		}
 		for _, identity := range meshidentity_api.AllMatched(dpp.Meta.GetLabels(), meshIdentities) {
 			if identity.Status == nil || (!identity.Status.IsInitialized() && !identity.Status.IsPartiallyReady()) {

@@ -15,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -214,7 +213,7 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 			if typ == envoy_resource.ListenerType {
 				for _, listener := range resources {
 					l := listener.Resource.(*envoy_listener.Listener)
-					if err := configureListener(ctx, rules, proxy, l, destinationname.MustResolve(false, service, port), l.TrafficDirection); err != nil {
+					if err := configureListener(ctx, rules, proxy, l, destinationname.ResolveLegacyFromDestination(service, port), l.TrafficDirection); err != nil {
 						return err
 					}
 				}
@@ -225,7 +224,7 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 }
 
 func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, direction envoy_core.TrafficDirection) error {
-	serviceName := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
+	serviceName := proxy.Dataplane.IdentifyingName()
 	// IdentifyingName falls back to "unknown" on a zone-proxy-only Dataplane (no service tag).
 	// Prefer the workload label (stable across pod restarts on K8s) and fall back to the
 	// Dataplane name (= pod name on K8s) so span service names remain meaningful.
@@ -253,16 +252,15 @@ func configureListener(ctx xds_context.Context, rules core_rules.SingleItemRules
 	resolved := resolveOtelBackendInfo(conf, ctx.Mesh.Resources)
 
 	configurer := plugin_xds.Configurer{
-		Conf:                  conf,
-		Service:               serviceName,
-		TrafficDirection:      direction,
-		Destination:           destination,
-		IsGateway:             proxy.Dataplane.Spec.IsBuiltinGateway(),
-		UnifiedResourceNaming: unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource),
-		Mesh:                  proxy.Dataplane.GetMeta().GetMesh(),
-		Zone:                  proxy.Zone,
-		WorkloadKRI:           workloadKRI,
-		SkipOpenTelemetry:     shouldSkipUnresolvedOpenTelemetryBackend(conf, resolved),
+		Conf:              conf,
+		Service:           serviceName,
+		TrafficDirection:  direction,
+		Destination:       destination,
+		IsGateway:         proxy.Dataplane.Spec.IsBuiltinGateway(),
+		Mesh:              proxy.Dataplane.GetMeta().GetMesh(),
+		Zone:              proxy.Zone,
+		WorkloadKRI:       workloadKRI,
+		SkipOpenTelemetry: shouldSkipUnresolvedOpenTelemetryBackend(conf, resolved),
 	}
 	if resolved != nil {
 		configurer.ResolvedOtelName = resolved.Name
@@ -330,26 +328,15 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 	}
 
 	var endpoint *xds.Endpoint
-	var provider string
 	useHTTP2 := false
-
-	getNameOrDefault := core_system_names.GetNameOrDefault(unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource))
 	name := ""
 	switch {
 	case backend.Zipkin != nil:
 		endpoint = endpointForZipkin(backend.Zipkin)
-		provider = plugin_xds.ZipkinProviderName
-		name = getNameOrDefault(
-			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_zipkin", core_system_names.CleanName(backend.Zipkin.Url))),
-			plugin_xds.GetTracingClusterName(provider),
-		)
+		name = core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_zipkin", core_system_names.CleanName(backend.Zipkin.Url)))
 	case backend.Datadog != nil:
 		endpoint = endpointForDatadog(backend.Datadog)
-		provider = plugin_xds.DatadogProviderName
-		name = getNameOrDefault(
-			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_datadog", core_system_names.CleanName(backend.Datadog.Url))),
-			plugin_xds.GetTracingClusterName(provider),
-		)
+		name = core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_datadog", core_system_names.CleanName(backend.Datadog.Url)))
 	case backend.OpenTelemetry != nil:
 		resolved := policies_xds.ResolveOtelBackend(
 			backend.OpenTelemetry.BackendRef,
@@ -372,11 +359,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 			useHTTP2 = resolved.Protocol != motb_api.ProtocolHTTP
 		}
 
-		provider = plugin_xds.OpenTelemetryProviderName
-		name = getNameOrDefault(
-			core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(resolved.Name))),
-			plugin_xds.GetTracingClusterName(provider),
-		)
+		name = core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(resolved.Name)))
 	}
 	builder := clusters.NewClusterBuilder(proxy.APIVersion, name)
 	if backend.OpenTelemetry != nil && useHTTP2 {
@@ -391,7 +374,7 @@ func applyToClusters(ctx xds_context.Context, rules core_rules.SingleItemRules, 
 	}
 
 	rs.Add(&xds.Resource{
-		Name:     getNameOrDefault(name, plugin_xds.GetTracingClusterName(provider)),
+		Name:     name,
 		Origin:   metadata.OriginMeshTrace,
 		Resource: res,
 	})

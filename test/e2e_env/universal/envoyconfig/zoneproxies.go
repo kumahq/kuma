@@ -41,12 +41,12 @@ const (
 	zoneProxyEgressDP  = "zone-proxy-egress"
 )
 
-// zoneProxyDpEnvs pins the kuma-dp socket directory to /tmp. Without this,
+// dppEnvs pins the kuma-dp work directory to /tmp. Without this,
 // kuma-dp creates a randomized /tmp/kuma-dp-<N>/ directory each run and that
 // random suffix would leak into the generated socket paths in the goldens,
 // making the test flaky.
 var dppEnvs = map[string]string{
-	"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+	"KUMA_DATAPLANE_RUNTIME_WORK_DIR":     "/tmp",
 	"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
 }
 
@@ -130,6 +130,10 @@ spec:
   endpoints:
     - address: 127.0.0.1
       port: 80
+      priority: 1
+    - address: 127.0.0.1
+      port: 81
+      priority: 2
 `, zoneProxyMeshName)
 
 	meshIdentityYAML := fmt.Sprintf(`
@@ -167,12 +171,14 @@ spec:
 		Install(YamlUniversal(meshExternalService)).
 		Install(YamlUniversal(meshIdentityYAML)).
 		Install(zoneproxy.Install(
+			zoneproxy.WithName("zone-proxy"),
 			zoneproxy.WithMesh(zoneProxyMeshName),
 			zoneproxy.WithIngressPort(11001),
 			zoneproxy.WithWorkload(zoneProxyIngressDP),
 			zoneproxy.WithDpEnvs(dppEnvs),
 		)).
 		Install(zoneproxy.Install(
+			zoneproxy.WithName("zone-proxy"),
 			zoneproxy.WithMesh(zoneProxyMeshName),
 			zoneproxy.WithEgressPort(11002),
 			zoneproxy.WithWorkload(zoneProxyEgressDP),
@@ -194,7 +200,7 @@ spec:
 			WithServiceName("zone-proxy-test-server-no-reusable-ports"),
 			WithWorkload("zone-proxy-test-server-no-reusable-ports"),
 			WithDpEnvs(map[string]string{
-				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":         "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_WORK_DIR":           "/tmp",
 				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED":       "false",
 				"KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED": "false",
 			})),

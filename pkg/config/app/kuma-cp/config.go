@@ -142,7 +142,7 @@ type Config struct {
 	General *GeneralConfig `json:"general,omitempty"`
 	// Environment Type, can be either "kubernetes" or "universal"
 	Environment core.EnvironmentType `json:"environment,omitempty" envconfig:"kuma_environment"`
-	// Mode in which Kuma CP is running. Available values are: "standalone", "global", "zone"
+	// Mode in which Kuma CP is running. Available values are: "global", "zone"
 	Mode core.CpMode `json:"mode" envconfig:"kuma_mode"`
 	// Resource Store configuration
 	Store *store.StoreConfig `json:"store,omitempty"`
@@ -487,8 +487,6 @@ type ExperimentalConfig struct {
 	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
 	// KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
 	KDSEventBasedWatchdog ExperimentalKDSEventBasedWatchdog `json:"kdsEventBasedWatchdog"`
-	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
-	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {

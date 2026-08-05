@@ -5,17 +5,16 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters/v3"
 	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 func ClientSideMTLS(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	mesh *core_mesh.MeshResource,
 	upstreamService string,
 	upstreamTLSReady bool,
@@ -24,21 +23,19 @@ func ClientSideMTLS(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
-			UpstreamMesh:          mesh,
-			UpstreamService:       upstreamService,
-			LocalMesh:             mesh,
-			Tags:                  tags,
-			UpstreamTLSReady:      upstreamTLSReady,
-			UseMeshTrust:          useMeshTrust,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  upstreamService,
+			LocalMesh:        mesh,
+			Tags:             tags,
+			UpstreamTLSReady: upstreamTLSReady,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }
 
 func ClientSideMTLSCustomSNI(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	mesh *core_mesh.MeshResource,
 	upstreamService string,
 	upstreamTLSReady bool,
@@ -47,22 +44,20 @@ func ClientSideMTLSCustomSNI(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
-			UpstreamMesh:          mesh,
-			UpstreamService:       upstreamService,
-			LocalMesh:             mesh,
-			Tags:                  nil,
-			UpstreamTLSReady:      upstreamTLSReady,
-			SNI:                   sni,
-			UseMeshTrust:          useMeshTrust,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  upstreamService,
+			LocalMesh:        mesh,
+			Tags:             nil,
+			UpstreamTLSReady: upstreamTLSReady,
+			SNI:              sni,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }
 
 func ClientSideMultiIdentitiesMTLS(
 	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
 	mesh *core_mesh.MeshResource,
 	upstreamTLSReady bool,
 	sni string,
@@ -71,38 +66,15 @@ func ClientSideMultiIdentitiesMTLS(
 ) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
-			UpstreamMesh:          mesh,
-			UpstreamService:       "*",
-			LocalMesh:             mesh,
-			SNI:                   sni,
-			Tags:                  nil,
-			UpstreamTLSReady:      upstreamTLSReady,
-			VerifyIdentities:      identities,
-			UseMeshTrust:          useMeshTrust,
-		})
-	})
-}
-
-func CrossMeshClientSideMTLS(
-	tracker core_xds.SecretsTracker,
-	unifiedResourceNaming bool,
-	localMesh *core_mesh.MeshResource,
-	upstreamMesh *core_mesh.MeshResource,
-	upstreamService string,
-	upstreamTLSReady bool,
-	tags []envoy_tags.Tags,
-) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:        tracker,
-			UnifiedResourceNaming: unifiedResourceNaming,
-			UpstreamMesh:          upstreamMesh,
-			UpstreamService:       upstreamService,
-			LocalMesh:             localMesh,
-			Tags:                  tags,
-			UpstreamTLSReady:      upstreamTLSReady,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  "*",
+			LocalMesh:        mesh,
+			SNI:              sni,
+			Tags:             nil,
+			UpstreamTLSReady: upstreamTLSReady,
+			VerifyIdentities: identities,
+			UseMeshTrust:     useMeshTrust,
 		})
 	})
 }
@@ -182,7 +154,7 @@ func ProvidedCustomEndpointCluster(hasIPv6 bool, allowsMixingEndpoints bool, end
 
 // LbSubset is required for MetadataMatch in Weighted Cluster in TCP Proxy to work.
 // Subset loadbalancing is used in two use cases
-//  1. TrafficRoute for splitting traffic. Example: TrafficRoute that splits 10% of the traffic to version 1 of the service backend and 90% traffic to version 2 of the service backend
+//  1. Route rules splitting traffic. Example: a route that splits 10% of the traffic to version 1 of the service backend and 90% traffic to version 2 of the service backend
 //  2. Multiple outbound sections with the same service
 //     Example:
 //     type: Dataplane
@@ -204,15 +176,7 @@ func LbSubset(tagSets envoy_tags.TagKeysSlice) ClusterBuilderOptFunc {
 	}
 }
 
-func LB(lb *mesh_proto.TrafficRoute_LoadBalancer) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.LbConfigurer{
-			Lb: lb,
-		})
-	})
-}
-
-func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_meta.Protocol) ClusterBuilderOpt {
+func Timeout(timeout envoy_common.Timeouts, protocol core_meta.Protocol) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.TimeoutConfigurer{
 			Protocol: protocol,
@@ -275,20 +239,6 @@ func UpstreamTLSContext(config *envoy_tls.UpstreamTlsContext) ClusterBuilderOpt 
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.UpstreamTLSContextConfigure{
 			Config: config,
-		})
-	})
-}
-
-// UpstreamTLSContextWithZoneMatches configures a cluster-wide default
-// UpstreamTlsContext plus per-zone overrides added as transport_socket_match
-// entries keyed on the kuma.io/zone endpoint metadata. It is used for
-// MeshMultiZoneService clusters whose endpoints span zones with different SNI
-// expectations (new mesh-scoped zone proxy vs. legacy ZoneIngress).
-func UpstreamTLSContextWithZoneMatches(config *envoy_tls.UpstreamTlsContext, zoneMatches map[string]*envoy_tls.UpstreamTlsContext) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.UpstreamTLSContextConfigure{
-			Config:      config,
-			ZoneMatches: zoneMatches,
 		})
 	})
 }

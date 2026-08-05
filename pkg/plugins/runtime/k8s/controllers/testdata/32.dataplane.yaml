@@ -6,7 +6,6 @@ metadata:
     k8s.kuma.io/service-account: mysql-service-account
     kuma.io/display-name: mysql-example
     kuma.io/mesh: default
-    kuma.io/proxy-type: sidecar
     kuma.io/sidecar-injection: enabled
     kuma.io/workload: mysql-service-account
     version: "5.7"
@@ -19,12 +18,3 @@ spec:
         ready: true
       port: 3306
       protocol: tcp
-      tags:
-        component: database
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: mysql
-        k8s.kuma.io/service-port: "3306"
-        kuma.io/protocol: tcp
-        kuma.io/service: mysql_demo_svc_3306
-        kuma.io/zone: zone-1
-        version: "5.7"
