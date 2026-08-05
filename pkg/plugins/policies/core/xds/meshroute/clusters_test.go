@@ -30,6 +30,7 @@ var _ = Describe("GenerateClusters", func() {
 	type testCase struct {
 		tlsStatus   meshservice_api.TLSStatus
 		zoneOrigin  bool
+		noIdentity  bool
 		expectMTLS  bool
 		expectedSNI string
 		expectedSAN string
@@ -64,13 +65,15 @@ var _ = Describe("GenerateClusters", func() {
 		services := envoy_common.NewServicesAccumulator(nil)
 		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("backend").Build())
 
-		proxy := xds_builders.Proxy().
-			WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
+		proxyBuilder := xds_builders.Proxy().
 			WithDataplane(builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
-				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-			Build()
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"))
+		if !given.noIdentity {
+			proxyBuilder = proxyBuilder.WithWorkloadIdentity(xds_builders.WorkloadIdentity())
+		}
+		proxy := proxyBuilder.Build()
 
 		rs, err := meshroute.GenerateClusters(proxy, meshCtx, services.Services())
 		Expect(err).ToNot(HaveOccurred())
@@ -116,6 +119,11 @@ var _ = Describe("GenerateClusters", func() {
 			expectMTLS:  true,
 			expectedSNI: "sni.msvc.default.zone-1.backend.http",
 			expectedSAN: "spiffe://default/backend",
+		}),
+		Entry("proxy without a workload identity cannot originate mTLS", testCase{
+			tlsStatus:  meshservice_api.TLSReady,
+			zoneOrigin: true,
+			noIdentity: true,
 		}),
 	)
 })

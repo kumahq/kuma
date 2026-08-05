@@ -61,6 +61,11 @@ func GenerateClusters(
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
+	// A proxy without a workload identity has no certificate to present, which
+	// happens until the MeshIdentity matching it reports initialized, so it
+	// cannot originate mTLS towards any destination yet.
+	hasIdentity := proxy.WorkloadIdentity != nil
+
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 
@@ -115,7 +120,7 @@ func GenerateClusters(
 		}
 
 		var transportSocket envoy_clusters.ClusterBuilderOpt
-		if !dest.plaintext {
+		if hasIdentity && !dest.plaintext {
 			upstreamCtx, err := UpstreamTLSContext(proxy, core_sni.FromKRI(kriID), dest.sans)
 			if err != nil {
 				return nil, err
