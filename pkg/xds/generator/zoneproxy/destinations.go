@@ -15,7 +15,6 @@ type MeshDestinations struct {
 type BackendRefDestination struct {
 	resolve.ResolvedBackendRef
 
-	Mesh           string
 	SNI            string
 	EndpointMapKey string
 }
@@ -26,12 +25,10 @@ func BuildRealResourceDestinations(destinations []core_resources.Destination) []
 	var result []BackendRefDestination
 	for _, dest := range destinations {
 		origin := kri.From(dest)
-		mesh := dest.GetMeta().GetMesh()
 
 		for _, port := range dest.GetPorts() {
 			id := kri.WithSectionName(origin, port.GetName())
 			result = append(result, BackendRefDestination{
-				Mesh:           mesh,
 				SNI:            core_sni.FromKRI(id),
 				EndpointMapKey: destinationname.ResolveLegacyFromDestination(dest, port),
 				ResolvedBackendRef: resolve.ResolvedBackendRef{

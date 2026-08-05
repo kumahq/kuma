@@ -1,8 +1,6 @@
 package meshroute
 
 import (
-	"fmt"
-
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
@@ -329,14 +327,6 @@ func handleLegacyBackendRef(
 		WithTags(mesh_proto.ServiceTag, service).
 		DestinationClusterName(nil)
 
-	// The mesh tag is present here if this destination is generated
-	// from a cross-mesh MeshGateway listener virtual outbound.
-	// It is not part of the service tags.
-	if mesh, ok := pointer.Deref(ref.Tags)[mesh_proto.MeshTag]; ok {
-		// The name should be distinct to the service & mesh combination
-		clusterName = fmt.Sprintf("%s_%s", clusterName, mesh)
-	}
-
 	isExternalService := meshCtx.IsExternalService(service)
 	refHash := common_api.BackendRef(*ref).Hash()
 
@@ -364,10 +354,6 @@ func handleLegacyBackendRef(
 			WithTags(mesh_proto.ServiceTag, service).
 			WithoutTags(mesh_proto.MeshTag)).
 		WithExternalService(isExternalService)
-
-	if mesh, ok := pointer.Deref(ref.Tags)[mesh_proto.MeshTag]; ok {
-		clusterBuilder.WithMesh(mesh)
-	}
 
 	servicesAcc.AddBackendRef(resolve.NewResolvedBackendRef(ref), clusterBuilder.Build())
 	return split
