@@ -57,6 +57,18 @@ var _ = Describe("Global Insight", func() {
 		// all proxies connected, only some of them with ready inbounds
 		err = createMeshService("svc-2-degraded", "payments", 2, 1, 2, rs)
 		Expect(err).ToNot(HaveOccurred())
+		// two proxies of the same delegated gateway service, only one of them online
+		err = createGatewayDataplane("edge-gw-1", "default", "edge-gateway", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, true, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createGatewayDataplane("edge-gw-2", "default", "edge-gateway", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, false, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createGatewayDataplane("payments-gw", "payments", "payments-gateway", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, false, rs)
+		Expect(err).ToNot(HaveOccurred())
+		// tag-free gateway, grouped by the workload it belongs to
+		err = createGatewayDataplane("shop-gw", "default", "", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, true, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createGatewayDataplane("builtin-gw", "default", "builtin-gateway", mesh_proto.Dataplane_Networking_Gateway_BUILTIN, true, rs)
+		Expect(err).ToNot(HaveOccurred())
 		err = createMeshExternalService("es-1", "default", rs)
 		Expect(err).ToNot(HaveOccurred())
 		err = createMeshExternalService("es-2", "payments", rs)
@@ -109,6 +121,52 @@ func createMeshService(name string, mesh string, connected, healthy, total int, 
 		WithMesh(mesh).
 		WithDataplaneProxies(connected, healthy, total).
 		Create(rs)
+}
+
+// createGatewayDataplane creates a gateway Dataplane along with its insight. The
+// resource is stored directly because BUILTIN gateways no longer pass Dataplane
+// validation, they only exist as legacy, pre-upgrade resources in the store.
+func createGatewayDataplane(
+	name string,
+	mesh string,
+	service string,
+	gatewayType mesh_proto.Dataplane_Networking_Gateway_GatewayType,
+	online bool,
+	rs store.ResourceStore,
+) error {
+	tags := map[string]string{}
+	if service != "" {
+		tags[mesh_proto.ServiceTag] = service
+	}
+	dataplane := core_mesh.NewDataplaneResource()
+	dataplane.Spec = &mesh_proto.Dataplane{
+		Networking: &mesh_proto.Dataplane_Networking{
+			Address: "127.0.0.1",
+			Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+				Type: gatewayType,
+				Tags: tags,
+			},
+		},
+	}
+	if err := rs.Create(context.Background(), dataplane,
+		store.CreateByKey(name, mesh),
+		store.CreateWithLabels(map[string]string{"kuma.io/workload": name}),
+	); err != nil {
+		return err
+	}
+
+	insight := builders.DataplaneInsight().WithName(name).WithMesh(mesh)
+	if online {
+		insight.AddSubscription(&mesh_proto.DiscoverySubscription{
+			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
+		})
+	} else {
+		insight.AddSubscription(&mesh_proto.DiscoverySubscription{
+			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
+			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
+		})
+	}
+	return insight.Create(rs)
 }
 
 func createMeshExternalService(name string, mesh string, rs store.ResourceStore) error {

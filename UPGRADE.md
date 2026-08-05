@@ -333,9 +333,12 @@ legacy `ExternalService` resources are represented by `MeshService` and
 `MeshExternalService` instead, so the control plane no longer computes their
 legacy statistics:
 
-- `ServiceInsight.services` no longer contains entries for regular
-  (non-gateway) services or legacy `ExternalService` resources. Only delegated
-  gateways (which are never turned into a `MeshService`) are still reported.
+- `ServiceInsight` is no longer computed at all. The control plane never writes
+  the resource, so `GET /meshes/{mesh}/service-insights` returns an empty list
+  and `GET /meshes/{mesh}/service-insights/{name}` returns `404`. This also
+  covers delegated gateways, which used to be the last services reported there,
+  along with their per-service `zones` list. `kumactl inspect services` and the
+  GUI pages backed by that endpoint list nothing.
 - `MeshInsight.services` (the `Total`/`Internal`/`External` service count
   stat) is no longer populated and is always absent from the response.
 - The Dataplane/MeshGateway inspect `_rules` endpoint no longer populates the
@@ -344,10 +347,13 @@ legacy statistics:
 
 **Action required**
 
-Update any automation or dashboards that read `ServiceInsight.services` for
-non-gateway services, `MeshInsight.services`, or the `_rules` `toRules` field
-to use `MeshService`/`MeshExternalService` status and `_rules`
-`toResourceRules` instead.
+Update any automation or dashboards that read `ServiceInsight.services`,
+`MeshInsight.services`, or the `_rules` `toRules` field to use
+`MeshService`/`MeshExternalService` status and `_rules` `toResourceRules`
+instead. For delegated gateways, which are never turned into a `MeshService`,
+use the `Dataplane`/`DataplaneOverview` endpoints filtered by gateway type;
+aggregated gateway service counts remain available under `services` in the
+global insight endpoint.
 
 ### Zone proxies authenticate with a dataplane token
 

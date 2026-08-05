@@ -14,6 +14,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 type GlobalInsightService interface {
@@ -168,9 +169,8 @@ func addResourceTotal(resources map[string]api_types.ResourceStats, resourceName
 	resources[resourceName] = stats
 }
 
-// aggregateServices counts internal services from MeshService and external services
-// from MeshExternalService. Builtin/delegated gateways are not distinguishable from
-// regular services on MeshService, so they are counted as internal like everything else.
+// aggregateServices counts internal services from MeshService, external services
+// from MeshExternalService and gateway services from gateway Dataplanes.
 func (gis *defaultGlobalInsightService) aggregateServices(
 	ctx context.Context,
 	globalInsight *api_types.GlobalInsightBase,
@@ -193,7 +193,77 @@ func (gis *defaultGlobalInsightService) aggregateServices(
 	}
 	globalInsight.Services.External.Total = len(externalServices.GetItems())
 
+	return gis.aggregateGatewayServices(ctx, globalInsight)
+}
+
+type gatewayServiceStat struct {
+	online int
+	total  int
+}
+
+// aggregateGatewayServices counts builtin and delegated gateway services from
+// gateway Dataplanes grouped by the service they belong to. Gateway Dataplanes are
+// never turned into a MeshService, so they are the only source for these stats.
+func (gis *defaultGlobalInsightService) aggregateGatewayServices(
+	ctx context.Context,
+	globalInsight *api_types.GlobalInsightBase,
+) error {
+	dataplanes := &mesh.DataplaneResourceList{}
+	if err := gis.resourceStore.List(ctx, dataplanes); err != nil {
+		return err
+	}
+	dataplaneInsights := &mesh.DataplaneInsightResourceList{}
+	if err := gis.resourceStore.List(ctx, dataplaneInsights); err != nil {
+		return err
+	}
+
+	builtin := map[string]*gatewayServiceStat{}
+	delegated := map[string]*gatewayServiceStat{}
+
+	for _, overview := range mesh.NewDataplaneOverviews(*dataplanes, *dataplaneInsights).Items {
+		gateway := overview.Spec.GetDataplane().GetNetworking().GetGateway()
+		if gateway == nil {
+			continue
+		}
+		services := delegated
+		if gateway.GetType() == mesh_proto.Dataplane_Networking_Gateway_BUILTIN {
+			services = builtin
+		}
+
+		key := gatewayServiceKey(overview)
+		stat, ok := services[key]
+		if !ok {
+			stat = &gatewayServiceStat{}
+			services[key] = stat
+		}
+		stat.total++
+		if status, _ := overview.Status(); status == mesh.Online {
+			stat.online++
+		}
+	}
+
+	for _, stat := range builtin {
+		updateServiceStatus(stat.online, stat.total, &globalInsight.Services.GatewayBuiltin)
+	}
+	for _, stat := range delegated {
+		updateServiceStatus(stat.online, stat.total, &globalInsight.Services.GatewayDelegated)
+	}
+
 	return nil
+}
+
+// gatewayServiceKey identifies the mesh-scoped service a gateway Dataplane belongs
+// to. Gateways carry no kuma.io/service tag in tag-free mode, so fall back to the
+// workload and finally to the Dataplane itself, which keeps every gateway counted.
+func gatewayServiceKey(overview *mesh.DataplaneOverviewResource) string {
+	name := overview.Spec.GetDataplane().GetNetworking().GetGateway().GetTags()[mesh_proto.ServiceTag]
+	if name == "" {
+		name = overview.GetMeta().GetLabels()[metadata.KumaWorkload]
+	}
+	if name == "" {
+		name = overview.GetMeta().GetName()
+	}
+	return overview.GetMeta().GetMesh() + "/" + name
 }
 
 func updateServiceStatus(online, total int, status *api_types.FullStatus) {
