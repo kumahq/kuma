@@ -8,14 +8,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
-
-	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 )
 
-const (
-	certWatcherBackoffBaseTime = 5 * time.Second
-	certWatcherBackoffMaxTime  = time.Minute
-)
+const certWatcherRetryInterval = 10 * time.Second
 
 // GetCertificateFunc is what tls.Config#GetCertificate expects.
 type GetCertificateFunc func(*tls.ClientHelloInfo) (*tls.Certificate, error)
@@ -32,44 +27,24 @@ func WatchKeyPair(certFile string, keyFile string, stop <-chan struct{}, log log
 		return nil, errors.Wrap(err, "failed to load TLS certificate")
 	}
 	log = log.WithName("cert-watcher").WithValues("certFile", certFile, "keyFile", keyFile)
-	// Watching can fail to start, for example when the host runs out of
-	// inotify watches. Retrying keeps a transient failure from silently
-	// disabling reloads for the rest of the process lifetime.
-	resilient := component.NewResilientComponent(
-		log,
-		&certWatcherComponent{watcher: watcher},
-		certWatcherBackoffBaseTime,
-		certWatcherBackoffMaxTime,
-	)
+	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
-		if err := resilient.Start(stop); err != nil {
-			log.Error(err, "certificate watcher terminated with an error, the certificate will not be reloaded")
+		defer cancel()
+		<-stop
+	}()
+	go func() {
+		// Watching can fail to start, for example when the host runs out of
+		// inotify watches. Retrying keeps a transient failure from disabling
+		// reloads for the rest of the process lifetime.
+		for ctx.Err() == nil {
+			if err := watcher.Start(ctx); err != nil {
+				log.Error(err, "could not watch the TLS certificate", "retryIn", certWatcherRetryInterval)
+			}
+			select {
+			case <-ctx.Done():
+			case <-time.After(certWatcherRetryInterval):
+			}
 		}
 	}()
 	return watcher.GetCertificate, nil
-}
-
-// certWatcherComponent adapts the context taken by certwatcher to the stop
-// channel a component is started with.
-type certWatcherComponent struct {
-	watcher *certwatcher.CertWatcher
-}
-
-var _ component.Component = &certWatcherComponent{}
-
-func (c *certWatcherComponent) Start(stop <-chan struct{}) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go func() {
-		select {
-		case <-stop:
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
-	return c.watcher.Start(ctx)
-}
-
-func (c *certWatcherComponent) NeedLeaderElection() bool {
-	return false
 }
