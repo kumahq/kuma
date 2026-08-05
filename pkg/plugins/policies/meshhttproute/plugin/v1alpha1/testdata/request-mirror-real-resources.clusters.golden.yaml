@@ -1,42 +1,4 @@
 resources:
-- name: kri_extsvc_default___payments-mes-mirror_9090
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    name: kri_extsvc_default___payments-mes-mirror_9090
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          alpnProtocols:
-          - kuma
-          combinedValidationContext:
-            defaultValidationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  prefix: spiffe://default/
-                sanType: URI
-            validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
-            sdsConfig:
-              ads: {}
-              resourceApiVersion: V3
-        sni: a4e00178bd7b60937.payments-mes-mirror.9090.default.mes
-    type: EDS
-    typedExtensionProtocolOptions:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicitHttpConfig:
-          http2ProtocolOptions: {}
 - name: kri_msvc_default___backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -59,16 +21,16 @@ resources:
                   exact: spiffe://default/backend
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
+              name: system_trust_bundle
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
+          - name: identity_cert:secret:default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a601e0c00295a9fbe.backend.80.default.ms
+        sni: sni.msvc.default.backend.test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -97,16 +59,16 @@ resources:
                   exact: spiffe://default/backend
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
+              name: system_trust_bundle
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
+          - name: identity_cert:secret:default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a601e0c00295a9fbe.backend.80.default.ms
+        sni: sni.msvc.default.backend.test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -135,16 +97,16 @@ resources:
                   exact: spiffe://default/payments-mirror
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
+              name: system_trust_bundle
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
+          - name: identity_cert:secret:default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: aad4a090772bd8489.payments-mirror.80.default.ms
+        sni: sni.msvc.default.payments-mirror.80
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -173,16 +135,16 @@ resources:
                   exact: spiffe://default/payments-mirror
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
+              name: system_trust_bundle
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
+          - name: identity_cert:secret:default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a2df35fadf2df7e35.payments-mz-mirror.80.default.mzms
+        sni: sni.mzsvc.default.payments-mz-mirror.80
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

@@ -383,7 +383,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -577,7 +577,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -610,8 +610,8 @@ var _ = Describe("MeshTCPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend",
 						},
 					},
 				},
@@ -635,7 +635,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -731,7 +731,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -856,7 +856,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -994,7 +994,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -1110,7 +1110,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -1158,6 +1158,12 @@ func meshContextForMeshExternalService(resources ...core_model.Resource) *xds_co
 	)
 	mc, err := meshContextBuilder.Build(context.Background(), "default")
 	Expect(err).ToNot(HaveOccurred())
+
+	// A mesh-scoped zone egress advertises a SPIFFE identity, which the client
+	// verifies when it originates mTLS towards an external service.
+	for i := range mc.ZoneEgresses {
+		mc.ZoneEgresses[i].SAN = "spiffe://default/zone-egress"
+	}
 
 	return &mc
 }
@@ -1214,7 +1220,7 @@ func dppForMeshExternalService(mesList ...*meshexternalservice_api.MeshExternalS
 		WithName("web-01").
 		WithAddress("192.168.0.2").
 		WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")
-	proxy := xds_builders.Proxy().
+	proxy := xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 		WithDataplane(dp).
 		WithOutbounds(outbounds).
 		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).

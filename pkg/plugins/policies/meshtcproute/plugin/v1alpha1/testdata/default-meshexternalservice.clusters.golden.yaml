@@ -21,16 +21,16 @@ resources:
                   exact: spiffe://default/zone-egress
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
+              name: system_trust_bundle
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
+          - name: identity_cert:secret:default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: afce62f771ed74b78.example.9090.default.mes
+        sni: sni.extsvc.default.example.9090
     type: EDS
 - name: kri_msvc_default___backend_tcp-port
   resource:
@@ -48,25 +48,16 @@ resources:
           alpnProtocols:
           - kuma
           combinedValidationContext:
-            defaultValidationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  prefix: spiffe://default/
-                sanType: URI
+            defaultValidationContext: {}
             validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
+              name: system_trust_bundle
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
+          - name: identity_cert:secret:default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a601e0c00295a9fbe.backend.80.default.ms
+        sni: sni.msvc.default.backend.tcp-port
     type: EDS
-    typedExtensionProtocolOptions:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicitHttpConfig:
-          http2ProtocolOptions: {}

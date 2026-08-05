@@ -68,3 +68,10 @@ func GenerateEndpoints(
 
 	return resources, nil
 }
+
+func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
+	if len(endpoints) > 0 {
+		return endpoints[0].IsMeshExternalService()
+	}
+	return false
+}

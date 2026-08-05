@@ -21,16 +21,16 @@ resources:
                   exact: spiffe://default/backend
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
+              name: system_trust_bundle
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
+          - name: identity_cert:secret:default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a601e0c00295a9fbe.backend.80.default.ms
+        sni: sni.msvc.default.backend.test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -59,16 +59,16 @@ resources:
                   exact: spiffe://default/backend
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
+              name: system_trust_bundle
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
+          - name: identity_cert:secret:default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a601e0c00295a9fbe.backend.80.default.ms
+        sni: sni.msvc.default.backend.test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -97,16 +97,16 @@ resources:
                   exact: spiffe://default/backend
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
+              name: system_trust_bundle
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
+          - name: identity_cert:secret:default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a601e0c00295a9fbe.backend.80.default.mzms
+        sni: sni.mzsvc.default.backend.test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

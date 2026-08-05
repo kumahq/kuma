@@ -125,8 +125,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -177,7 +177,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					AddServiceProtocol("default_external-service___extsvc_8085", core_meta.ProtocolHTTP).
 					AddExternalService("default_external-service___extsvc_8085").
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -211,8 +211,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -236,7 +236,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithResources(resources).
 					AddServiceProtocol("default_backend___msvc_80", core_meta.ProtocolHTTP).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
@@ -277,8 +277,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend",
 						},
 					},
 				},
@@ -299,7 +299,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithResources(resources).
 					AddServiceProtocol("default_backend___svc_80", core_meta.ProtocolHTTP).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
@@ -345,8 +345,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend",
 						},
 					},
 				},
@@ -374,7 +374,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithResources(resources).
 					AddServiceProtocol("default_backend___svc_80", core_meta.ProtocolHTTP).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
@@ -422,8 +422,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -440,7 +440,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -483,8 +483,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Name:        pointer.To("test-port"),
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -513,7 +513,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(dpBuilder).
 					WithOutbounds(xds_types.Outbounds{{
 						Resource: kri.WithSectionName(kri.From(&meshSvc), "test-port"),
@@ -607,7 +607,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						}
 					}).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
@@ -672,8 +672,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend",
 						},
 					},
 				},
@@ -730,14 +730,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Port:     80,
 				Resource: kri.WithSectionName(kri.From(&meshMZSvc), "80"),
 			}}
-			proxy.WorkloadIdentity = &core_xds.WorkloadIdentity{
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"identity_cert:secret:default",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			}
+			proxy.WorkloadIdentity = xds_builders.WorkloadIdentity()
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
@@ -780,8 +773,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend",
 						},
 					},
 				},
@@ -838,6 +831,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Port:     80,
 				Resource: kri.WithSectionName(kri.From(&meshMZSvc), "80"),
 			}}
+			proxy.WorkloadIdentity = xds_builders.WorkloadIdentity()
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -870,6 +864,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
 			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
+			setEgressIdentity(mc)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -931,6 +926,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 
 			egress := builders.ZoneEgress().WithPort(10002).Build()
 			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
+			setEgressIdentity(mc)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -966,6 +962,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
 			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
+			setEgressIdentity(mc)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -1004,6 +1001,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
 			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
+			setEgressIdentity(mc)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -1062,6 +1060,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
 			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, egress)
+			setEgressIdentity(mc)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -1129,6 +1128,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				&meshExtSvc,
 				egress,
 			)
+			setEgressIdentity(mc)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -1148,8 +1148,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend",
 						},
 					},
 				},
@@ -1171,8 +1171,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend-us",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend-us",
 						},
 					},
 				},
@@ -1213,7 +1213,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -1320,8 +1320,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend",
 						},
 					},
 				},
@@ -1350,8 +1350,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend-second",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend-second",
 						},
 					},
 				},
@@ -1389,7 +1389,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						dpBuilder,
 					).
@@ -1476,8 +1476,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend",
 						},
 					},
 				},
@@ -1553,7 +1553,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						dpBuilder,
 					).
@@ -1638,8 +1638,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend",
 						},
 					},
 				},
@@ -1721,7 +1721,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						dpBuilder,
 					).
@@ -1799,8 +1799,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -1827,7 +1827,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -1893,8 +1893,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -1911,8 +1911,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolTCP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "other-tcp",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/other-tcp",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -1944,7 +1944,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -2002,8 +2002,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -2030,7 +2030,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -2097,8 +2097,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -2119,7 +2119,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -2185,8 +2185,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -2207,7 +2207,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -2270,8 +2270,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -2292,7 +2292,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -2345,8 +2345,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -2367,7 +2367,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -2422,8 +2422,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -2467,7 +2467,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -2507,8 +2507,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolGRPC,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -2529,7 +2529,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -2580,8 +2580,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
+						Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+						Value: "spiffe://default/backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -2609,7 +2609,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					AddServiceProtocol("payments", core_meta.ProtocolHTTP).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -2844,7 +2844,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithMeshContext(mc).
 					WithEndpointMap(outboundTargets).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						dpBuilder,
 					).
@@ -3046,7 +3046,7 @@ func dppForMeshExternalService(mes *meshexternalservice_api.MeshExternalServiceR
 		WithName("web-01").
 		WithAddress("192.168.0.2").
 		WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")
-	proxy := xds_builders.Proxy().
+	proxy := xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 		WithDataplane(dp).
 		WithOutbounds(xds_types.Outbounds{
 			{
@@ -3063,4 +3063,13 @@ func dppForMeshExternalService(mes *meshexternalservice_api.MeshExternalServiceR
 		Build()
 
 	return dp, proxy
+}
+
+// setEgressIdentity turns the zone egresses of a mesh context into mesh-scoped
+// ones: they advertise a SPIFFE identity that the client verifies when it
+// originates mTLS towards an external service.
+func setEgressIdentity(mc *xds_context.MeshContext) {
+	for i := range mc.ZoneEgresses {
+		mc.ZoneEgresses[i].SAN = "spiffe://default/zone-egress"
+	}
 }

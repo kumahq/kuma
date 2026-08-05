@@ -336,7 +336,7 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 			Name:   outgoingMeshService.String(),
 			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, outgoingMeshService.String()).
-				Configure(clusters.ClientSideMTLS(secretsTracker, mesh.Build(), "outgoing", true, nil, false)).
+				Configure(clusters.UnknownDestinationClientSideMTLS(secretsTracker, mesh.Build(), false)).
 				MustBuild(),
 			Protocol:       core_meta.ProtocolHTTP,
 			ResourceOrigin: outgoingMeshService,
