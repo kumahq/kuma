@@ -143,7 +143,7 @@ KDS. Kubernetes clusters running `zone` mode require no changes.
 ### `standalone` mode removed
 
 The deprecated `standalone` control plane mode has been removed. `KUMA_MODE`/
-`controlPlane.mode` no longer accept `standalone`: `kuma-cp` fails config
+`controlPlane.mode` no longer accepts `standalone`: `kuma-cp` fails config
 validation at startup, and the Helm chart fails at template time.
 
 **Action required**
