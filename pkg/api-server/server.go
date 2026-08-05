@@ -46,6 +46,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	secrets_k8s "github.com/kumahq/kuma/v3/pkg/plugins/secrets/k8s"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	tokens_server "github.com/kumahq/kuma/v3/pkg/tokens/builtin/server"
 	kuma_srv "github.com/kumahq/kuma/v3/pkg/util/http/server"
 	util_prometheus "github.com/kumahq/kuma/v3/pkg/util/prometheus"
@@ -457,13 +458,13 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 }
 
 func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {
-	cert, err := tls.LoadX509KeyPair(cfg.HTTPS.TlsCertFile, cfg.HTTPS.TlsKeyFile)
+	certReloader, err := util_tls.NewKeyPairReloader(cfg.HTTPS.TlsCertFile, cfg.HTTPS.TlsKeyFile, log)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load TLS certificate")
+		return nil, err
 	}
 	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12, // to pass gosec (in practice it's always set after.
+		GetCertificate: certReloader.GetCertificate,
+		MinVersion:     tls.VersionTLS12, // to pass gosec (in practice it's always set after.
 	}
 	tlsConfig.MinVersion, err = config_types.TLSVersion(cfg.HTTPS.TlsMinVersion)
 	if err != nil {

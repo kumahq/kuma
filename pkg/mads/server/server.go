@@ -10,7 +10,6 @@ import (
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/emicklei/go-restful/v3"
-	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 
@@ -25,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/mads"
 	mads_v1 "github.com/kumahq/kuma/v3/pkg/mads/v1/service"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	kuma_srv "github.com/kumahq/kuma/v3/pkg/util/http/server"
 	util_prometheus "github.com/kumahq/kuma/v3/pkg/util/prometheus"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
@@ -58,11 +58,11 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 	defer cancel()
 	var tlsConfig *tls.Config
 	if s.config.TlsEnabled {
-		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
+		certReloader, err := util_tls.NewKeyPairReloader(s.config.TlsCertFile, s.config.TlsKeyFile, log)
 		if err != nil {
-			return errors.Wrap(err, "failed to load TLS certificate")
+			return err
 		}
-		tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12} // To make gosec happy
+		tlsConfig = &tls.Config{GetCertificate: certReloader.GetCertificate, MinVersion: tls.VersionTLS12} // To make gosec happy
 		if tlsConfig.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
 		}

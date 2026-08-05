@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 )
 
 var log = core.Log.WithName("dp-server")
@@ -146,11 +147,11 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 	defer close(d.done)
 
 	var err error
-	cert, err := tls.LoadX509KeyPair(d.config.TlsCertFile, d.config.TlsKeyFile)
+	certReloader, err := util_tls.NewKeyPairReloader(d.config.TlsCertFile, d.config.TlsKeyFile, log)
 	if err != nil {
-		return errors.Wrap(err, "failed to load TLS certificate")
+		return err
 	}
-	tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12} // To make gosec happy
+	tlsConfig := &tls.Config{GetCertificate: certReloader.GetCertificate, MinVersion: tls.VersionTLS12} // To make gosec happy
 	if tlsConfig.MinVersion, err = config_types.TLSVersion(d.config.TlsMinVersion); err != nil {
 		return err
 	}
@@ -180,7 +181,9 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 	go func() {
 		defer close(errChan)
 		d.ready.Store(true)
-		if err := server.ServeTLS(l, d.config.TlsCertFile, d.config.TlsKeyFile); err != nil {
+		// Certificate files are deliberately not passed here, the key pair
+		// comes from TLSConfig#GetCertificate so that it can be reloaded.
+		if err := server.ServeTLS(l, "", ""); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
 				log.Info("terminated normally")
 			} else {

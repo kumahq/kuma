@@ -7,7 +7,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -21,6 +20,7 @@ import (
 	kds_middleware "github.com/kumahq/kuma/v3/pkg/kds/middleware"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 )
 
 const (
@@ -78,11 +78,11 @@ func (s *server) Start(stop <-chan struct{}) error {
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	if s.config.TlsCertFile != "" && s.config.TlsEnabled {
-		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
+		certReloader, err := util_tls.NewKeyPairReloader(s.config.TlsCertFile, s.config.TlsKeyFile, muxServerLog)
 		if err != nil {
-			return errors.Wrap(err, "failed to load TLS certificate")
+			return err
 		}
-		tlsCfg := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+		tlsCfg := &tls.Config{GetCertificate: certReloader.GetCertificate, MinVersion: tls.VersionTLS12}
 		if tlsCfg.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
 		}
