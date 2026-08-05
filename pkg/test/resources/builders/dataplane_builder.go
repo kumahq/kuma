@@ -120,25 +120,42 @@ func (d *DataplaneBuilder) WithInboundOfTagsMap(tags map[string]string) *Datapla
 	return d.WithoutInbounds().AddInboundOfTagsMap(tags)
 }
 
+func (d *DataplaneBuilder) WithInboundOfTagsAndProtocol(protocol string, tagsKV ...string) *DataplaneBuilder {
+	return d.WithoutInbounds().AddInboundOfTagsAndProtocol(protocol, tagsKV...)
+}
+
 func (d *DataplaneBuilder) AddInboundOfService(service string) *DataplaneBuilder {
 	return d.AddInboundOfTags(mesh_proto.ServiceTag, service)
 }
 
 func (d *DataplaneBuilder) AddInboundHttpOfService(service string) *DataplaneBuilder {
-	return d.AddInboundOfTags(mesh_proto.ServiceTag, service, mesh_proto.ProtocolTag, "http")
+	return d.AddInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, service)
 }
 
 func (d *DataplaneBuilder) AddInboundOfTags(tags ...string) *DataplaneBuilder {
 	return d.AddInboundOfTagsMap(TagsKVToMap(tags))
 }
 
+// AddInboundOfTagsMap adds an inbound with no protocol set. Passing a kuma.io/protocol tag here
+// builds a legacy Universal inbound: the tag is there for policies to match on, but the protocol
+// field production code reads stays empty, so the inbound is served as TCP.
 func (d *DataplaneBuilder) AddInboundOfTagsMap(tags map[string]string) *DataplaneBuilder {
-	return d.AddInbound(
-		Inbound().
-			WithPort(FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound))).
-			WithServicePort(FirstInboundServicePort + uint32(len(d.res.Spec.Networking.Inbound))).
-			WithTags(tags),
-	)
+	return d.AddInbound(d.nextInbound().WithTags(tags))
+}
+
+// AddInboundOfTagsAndProtocol adds an inbound that declares its protocol the way a current
+// Dataplane does: on the protocol field, and as a kuma.io/protocol tag for policies to match on.
+func (d *DataplaneBuilder) AddInboundOfTagsAndProtocol(protocol string, tagsKV ...string) *DataplaneBuilder {
+	tags := TagsKVToMap(tagsKV)
+	tags[mesh_proto.ProtocolTag] = protocol
+	return d.AddInbound(d.nextInbound().WithProtocol(protocol).WithTags(tags))
+}
+
+// nextInbound returns an inbound builder with the port pair that follows the inbounds added so far.
+func (d *DataplaneBuilder) nextInbound() *InboundBuilder {
+	return Inbound().
+		WithPort(FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound))).
+		WithServicePort(FirstInboundServicePort + uint32(len(d.res.Spec.Networking.Inbound)))
 }
 
 func (d *DataplaneBuilder) AddInboundWithName(name string) *DataplaneBuilder {
@@ -283,6 +300,11 @@ func (b *InboundBuilder) WithServicePort(port uint32) *InboundBuilder {
 
 func (b *InboundBuilder) WithTags(tags map[string]string) *InboundBuilder {
 	maps.Copy(b.res.Tags, tags)
+	return b
+}
+
+func (b *InboundBuilder) WithProtocol(protocol string) *InboundBuilder {
+	b.res.Protocol = protocol
 	return b
 }
 

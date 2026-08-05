@@ -18,6 +18,16 @@ The `component_zone_gc` histogram is no longer exported by the control plane. `c
 
 Remove `runtime.universal.zoneResourceCleanupAge` from `kuma-cp.yaml` and `KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE` from control plane deployments and Helm values. Both are silently ignored after upgrading rather than rejected, so a stale value will not fail startup but will have no effect. If you relied on a zone-specific cleanup age, set `runtime.universal.dataplaneCleanupAge` to that value — it now applies to all Dataplanes, zone proxies included. Update any dashboard or alert that queries `component_zone_gc` to use `component_dp_gc`.
 
+### `kuma.io/protocol` inbound tag no longer sets the protocol
+
+The protocol of a `Dataplane` inbound is now read only from `networking.inbound[].protocol`. The `kuma.io/protocol` tag stays a regular tag — policies keep matching on it — but it is no longer used as a fallback when the field is unset. This only affects Universal: on Kubernetes the field is always derived from the `Service` port during conversion.
+
+**Action required**
+
+Set `networking.inbound[].protocol` on every Universal `Dataplane` that currently declares its protocol only through the `kuma.io/protocol` tag, before upgrading.
+
+**Warning**: an inbound without `protocol` is treated as an unknown protocol and served as plain TCP. Its listener loses the `kuma.io/protocol` tag and the L7 filters that depend on it — HTTP access log fields, `MeshTimeout` HTTP timeouts, `MeshFaultInjection`, `MeshRateLimit` HTTP limits, HTTP-aware routing — and the endpoint stops advertising a protocol, so `MeshService`-level protocol inference falls back to TCP as well. Nothing rejects the resource, so the change is silent.
+
 ### `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` removed
 
 The `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` environment variable
@@ -156,8 +166,7 @@ rejects `mode=global` with `environment=kubernetes`, and it also rejects
 with `environment=universal` backed by a non-Kubernetes store such as
 PostgreSQL, even if `kuma-cp` itself is deployed on Kubernetes. The Helm chart
 no longer renders the `Service`/config needed for the old Kubernetes-native
-setup. Zone and Standalone control planes on Kubernetes (`mode`
-`zone`/`standalone`) are unaffected.
+setup. Zone control planes on Kubernetes (`mode` `zone`) are unaffected.
 
 **Action required**
 
@@ -165,8 +174,19 @@ If you currently run the Global control plane on Kubernetes, migrate it to
 Universal (non-Kubernetes) infrastructure before upgrading: deploy `kuma-cp`
 in `global` mode on Universal, backed by PostgreSQL, and keep your Kubernetes
 clusters as Zone control planes connecting to that Global control plane over
-KDS. Kubernetes clusters running `zone` or `standalone` mode require no
-changes.
+KDS. Kubernetes clusters running `zone` mode require no changes.
+
+### `standalone` mode removed
+
+The deprecated `standalone` control plane mode has been removed. `KUMA_MODE`/
+`controlPlane.mode` no longer accepts `standalone`: `kuma-cp` fails config
+validation at startup, and the Helm chart fails at template time.
+
+**Action required**
+
+Rename `standalone` to `zone` in `KUMA_MODE`, `controlPlane.mode`, and any
+other runtime configuration before upgrading. `standalone` and `zone` were
+already behaviourally identical, so no other changes are required.
 
 ### `meshServices` removed from the `Mesh` schema
 

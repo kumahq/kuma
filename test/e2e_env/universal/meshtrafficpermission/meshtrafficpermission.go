@@ -1,12 +1,12 @@
 package meshtrafficpermission
 
 import (
+	"fmt"
 	"net"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
@@ -14,10 +14,35 @@ import (
 
 func MeshTrafficPermissionUniversal() {
 	meshName := "meshtrafficpermission"
+	identityName := "meshtrafficpermission-identity"
+
+	// SPIFFE ID of the demo client: the Bundled MeshIdentity renders the zone
+	// trust domain and Universal defaults the path to the workload label. The
+	// cluster only exists once the suite is running, so this is resolved lazily.
+	demoClientSpiffeID := func() string {
+		return fmt.Sprintf(
+			"spiffe://%s/workload/%s",
+			MeshIdentityTrustDomain(meshName, universal.Cluster),
+			AppModeDemoClient,
+		)
+	}
+
+	permissiveMeshTLS := fmt.Sprintf(`
+type: MeshTLS
+name: permissive
+mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        mode: Permissive
+`, meshName)
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
+			Install(MeshUniversal(meshName)).
+			Install(MeshIdentityBundled(meshName, identityName)).
 			Install(TestServerUniversal(
 				"test-server",
 				meshName,
@@ -46,12 +71,17 @@ func MeshTrafficPermissionUniversal() {
 	})
 
 	E2EAfterEach(func() {
-		// remove all MeshTrafficPermissions
-		items, err := universal.Cluster.GetKumactlOptions().KumactlList("meshtrafficpermissions", meshName)
-		Expect(err).ToNot(HaveOccurred())
-		for _, item := range items {
-			err := universal.Cluster.GetKumactlOptions().KumactlDelete("meshtrafficpermission", item, meshName)
+		// remove all MeshTrafficPermissions and MeshTLSes, so a permissive case
+		// does not leak its mode into the next test
+		for _, policy := range []struct{ plural, singular string }{
+			{"meshtrafficpermissions", "meshtrafficpermission"},
+			{"meshtlses", "meshtls"},
+		} {
+			items, err := universal.Cluster.GetKumactlOptions().KumactlList(policy.plural, meshName)
 			Expect(err).ToNot(HaveOccurred())
+			for _, item := range items {
+				Expect(universal.Cluster.GetKumactlOptions().KumactlDelete(policy.singular, item, meshName)).To(Succeed())
+			}
 		}
 	})
 
@@ -87,7 +117,7 @@ func MeshTrafficPermissionUniversal() {
 			stdout, _, _ := universal.Cluster.Exec(
 				"",
 				"",
-				"dp-demo-client-mtls",
+				AppModeDemoClient,
 				"/bin/bash",
 				"-c",
 				"\"echo request | nc test-server-tcp.mesh 80\"",
@@ -108,7 +138,7 @@ func MeshTrafficPermissionUniversal() {
 		httpTrafficBlocked(403)
 
 		// when mesh traffic permission with MeshService
-		yaml := `
+		yaml := fmt.Sprintf(`
 type: MeshTrafficPermission
 name: mtp-1
 mesh: meshtrafficpermission
@@ -122,8 +152,8 @@ spec:
        allow:
          - spiffeID:
              type: Prefix
-             value: spiffe://meshtrafficpermission/demo-client
-`
+             value: %s
+`, demoClientSpiffeID())
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 		trafficAllowed("test-server.svc.mesh.local")
@@ -134,7 +164,7 @@ spec:
 		tcpTrafficBlocked()
 
 		// when mesh traffic permission with MeshService
-		yaml := `
+		yaml := fmt.Sprintf(`
 type: MeshTrafficPermission
 name: mtp-2
 mesh: meshtrafficpermission
@@ -148,8 +178,8 @@ spec:
        allow:
          - spiffeID:
              type: Prefix
-             value: spiffe://meshtrafficpermission/demo-client
-`
+             value: %s
+`, demoClientSpiffeID())
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -158,18 +188,12 @@ spec:
 	})
 
 	It("should be able to allow the traffic with permissive mTLS (http)", func() {
-		// given mesh traffic permission with permissive mTLS
+		// given permissive mTLS
 		httpTrafficBlocked(403)
-		permissive := samples.MeshDefaultBuilder().
-			WithName(meshName).
-			WithEnabledMTLSBackend("ca-1").
-			WithBuiltinMTLSBackend("ca-1").
-			WithPermissiveMTLSBackends().
-			Build()
-		Expect(universal.Cluster.Install(ResourceUniversal(permissive))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(permissiveMeshTLS))).To(Succeed())
 
 		// when specific MTP is applied
-		yaml := `
+		yaml := fmt.Sprintf(`
 type: MeshTrafficPermission
 name: mtp-4
 mesh: meshtrafficpermission
@@ -183,7 +207,7 @@ spec:
        deny:
          - spiffeID:
              type: Prefix
-             value: spiffe://meshtrafficpermission/demo-client`
+             value: %s`, demoClientSpiffeID())
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 		// then
@@ -195,18 +219,12 @@ spec:
 	})
 
 	It("should be able to allow the traffic with permissive mTLS (tcp)", func() {
-		// given mesh traffic permission with permissive mTLS
+		// given permissive mTLS
 		tcpTrafficBlocked()
-		permissive := samples.MeshDefaultBuilder().
-			WithName(meshName).
-			WithEnabledMTLSBackend("ca-1").
-			WithBuiltinMTLSBackend("ca-1").
-			WithPermissiveMTLSBackends().
-			Build()
-		Expect(universal.Cluster.Install(ResourceUniversal(permissive))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(permissiveMeshTLS))).To(Succeed())
 
 		// when specific MTP is applied
-		yaml := `
+		yaml := fmt.Sprintf(`
 type: MeshTrafficPermission
 name: mtp-5
 mesh: meshtrafficpermission
@@ -220,7 +238,7 @@ spec:
        deny:
          - spiffeID:
              type: Prefix
-             value: spiffe://meshtrafficpermission/demo-client`
+             value: %s`, demoClientSpiffeID())
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 		// then

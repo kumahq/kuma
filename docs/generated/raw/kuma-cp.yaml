@@ -1,6 +1,6 @@
 # Environment type. Available values are: "kubernetes" or "universal"
 environment: universal # ENV: KUMA_ENVIRONMENT
-# Mode in which Kuma CP is running. Available values are: "global", "zone", "standalone" (deprecated, use "zone")
+# Mode in which Kuma CP is running. Available values are: "global", "zone"
 mode: zone # ENV: KUMA_MODE
 # Resource Store configuration
 store:

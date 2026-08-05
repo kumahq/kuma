@@ -101,7 +101,7 @@ var _ = Describe("MeshRetry", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
 			WithMetadata(&core_xds.DataplaneMetadata{
 				// Outbounds are always built from real resources, so every proxy
 				// here supports unified resource naming.

@@ -3,5 +3,6 @@ networking:
   inbound:
     - port: 9000
       servicePort: 9001
-      protocol: http
       tags:
+        kuma.io/service: backend
+        kuma.io/protocol: http
