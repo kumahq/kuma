@@ -293,10 +293,6 @@ to:
 					Message: "must be defined",
 				},
 				{
-					Field:   "spec.to[0].default.hashPolicies[2].connection",
-					Message: "must be defined",
-				},
-				{
 					Field:   "spec.to[0].default.hashPolicies[3].queryParameter",
 					Message: "must be defined",
 				},
@@ -320,7 +316,9 @@ to:
       hashPolicies:
         - type: Header
         - type: Cookie
-        - type: SourceIP
+        - type: Connection
+          connection:
+            sourceIP: true
         - type: QueryParameter
         - type: FilterState
 `),
