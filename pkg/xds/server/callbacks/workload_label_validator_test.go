@@ -67,7 +67,6 @@ var _ = Describe("Workload Label Validator", func() {
 						{
 							Port:        8080,
 							ServicePort: 8081,
-							Tags:        map[string]string{"kuma.io/service": labels["kuma.io/service"]},
 						},
 					},
 				},
