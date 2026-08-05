@@ -81,37 +81,6 @@ var (
 	ServiceInsight = &mesh_proto.ServiceInsight{
 		Services: map[string]*mesh_proto.ServiceInsight_Service{},
 	}
-	ZoneIngress = &mesh_proto.ZoneIngress{
-		Networking: &mesh_proto.ZoneIngress_Networking{
-			Address:           "127.0.0.1",
-			Port:              80,
-			AdvertisedAddress: "192.168.0.1",
-			AdvertisedPort:    10001,
-		},
-		AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
-			{
-				Tags: map[string]string{
-					mesh_proto.ServiceTag: "backend",
-				},
-			},
-		},
-	}
-	ZoneIngressInsight = &mesh_proto.ZoneIngressInsight{
-		Subscriptions: []*mesh_proto.DiscoverySubscription{{
-			Id: "1",
-		}},
-	}
-	ZoneEgress = &mesh_proto.ZoneEgress{
-		Networking: &mesh_proto.ZoneEgress_Networking{
-			Address: "127.0.0.1",
-			Port:    80,
-		},
-	}
-	ZoneEgressInsight = &mesh_proto.ZoneEgressInsight{
-		Subscriptions: []*mesh_proto.DiscoverySubscription{{
-			Id: "1",
-		}},
-	}
 	Secret2 = &system_proto.Secret{
 		Data: util_proto.Bytes([]byte("secret")),
 	}
