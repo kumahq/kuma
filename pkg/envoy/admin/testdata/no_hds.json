@@ -26,7 +26,34 @@
               "version.dependencies.coredns": "1.8.3"
             },
             "dataplane.admin.port": "6606",
-            "dataplane.resource": "{\"type\":\"Dataplane\",\"mesh\":\"default\",\"name\":\"backend-1\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\",\"networking\":{\"address\":\"127.0.0.1\",\"inbound\":[{\"port\":10010,\"servicePort\":10011,\"protocol\":\"tcp\"}],\"outbound\":[{\"port\":10006,\"tags\":{\"kuma.io/service\":\"gateway\"}}],\"admin\":{\"port\":6606}}}"
+            "dataplane.resource": {
+              "type": "Dataplane",
+              "mesh": "default",
+              "name": "backend-1",
+              "creationTime": "0001-01-01T00:00:00Z",
+              "modificationTime": "0001-01-01T00:00:00Z",
+              "networking": {
+                "address": "127.0.0.1",
+                "inbound": [
+                  {
+                    "port": 10010,
+                    "servicePort": 10011,
+                    "protocol": "tcp"
+                  }
+                ],
+                "outbound": [
+                  {
+                    "port": 10006,
+                    "tags": {
+                      "kuma.io/service": "gateway"
+                    }
+                  }
+                ],
+                "admin": {
+                  "port": 6606
+                }
+              }
+            }
           },
           "hidden_envoy_deprecated_build_version": "68fe53a889416fd8570506232052b06f5a531541/1.19.0/Modified/RELEASE/BoringSSL",
           "user_agent_name": "envoy",

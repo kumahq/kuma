@@ -28,15 +28,10 @@ var _ = Describe("InboundIdentifyingName", func() {
 	newDP := func(meta test_model.ResourceMeta, serviceTag string) *DataplaneResource {
 		dp := NewDataplaneResource()
 		dp.Meta = &meta
-		tags := map[string]string{}
-		if serviceTag != "" {
-			tags[mesh_proto.ServiceTag] = serviceTag
-		}
 		dp.Spec.Networking = &mesh_proto.Dataplane_Networking{
 			Address: "127.0.0.1",
 			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 				Port: 8080,
-				Tags: tags,
 			}},
 		}
 		return dp
