@@ -388,7 +388,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						builders.Dataplane().
 							WithName("web-01").
 							WithAddress("192.168.0.2").
-							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
+							WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web"),
 					).
 					WithOutbounds(xds_types.Outbounds{
 						{
@@ -579,7 +579,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Port:     builders.FirstOutboundPort,
@@ -638,7 +638,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						builders.Dataplane().
 							WithName("web-01").
 							WithAddress("192.168.0.2").
-							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
+							WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web"),
 					).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithOutbounds(xds_types.Outbounds{
@@ -734,7 +734,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						builders.Dataplane().
 							WithName("web-01").
 							WithAddress("192.168.0.2").
-							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
+							WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web"),
 					).
 					WithOutbounds(xds_types.Outbounds{
 						{
@@ -859,7 +859,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						builders.Dataplane().
 							WithName("web-01").
 							WithAddress("192.168.0.2").
-							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
+							WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web"),
 					).
 					WithOutbounds(xds_types.Outbounds{
 						{
@@ -997,7 +997,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						builders.Dataplane().
 							WithName("web-01").
 							WithAddress("192.168.0.2").
-							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
+							WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web"),
 					).
 					WithOutbounds(xds_types.Outbounds{
 						{
@@ -1121,7 +1121,7 @@ func dppForMeshExternalService(mesList ...*meshexternalservice_api.MeshExternalS
 	dp := builders.Dataplane().
 		WithName("web-01").
 		WithAddress("192.168.0.2").
-		WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")
+		WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")
 	proxy := xds_builders.Proxy().
 		WithDataplane(dp).
 		WithOutbounds(outbounds).

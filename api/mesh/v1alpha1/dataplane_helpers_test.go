@@ -263,7 +263,7 @@ var _ = Describe("Dataplane_Networking", func() {
 })
 
 var _ = Describe("Dataplane_Networking_Inbound", func() {
-	Describe("GetProtocolFallback()", func() {
+	Describe("GetProtocol()", func() {
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
 			expected string
@@ -271,7 +271,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 
 		DescribeTable("should return protocol from field",
 			func(given testCase) {
-				Expect(given.inbound.GetProtocolFallback()).To(Equal(given.expected))
+				Expect(given.inbound.GetProtocol()).To(Equal(given.expected))
 			},
 			Entry("inbound is `nil`", testCase{
 				inbound:  nil,

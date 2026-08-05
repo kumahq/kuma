@@ -104,8 +104,8 @@ func doRequest[T message]( //nolint:nonamedreturns
 	msg := mkMsg(
 		reqId,
 		string(proxy.Descriptor().Name),
-		nameInZone,                // send the name which without the added prefix
-		proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
+		nameInZone, // send the name which without the added prefix
+		proxy.GetMeta().GetMesh(),
 	)
 
 	if err = rpcs.Send(tenantZoneID.String(), msg); err != nil {

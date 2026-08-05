@@ -372,14 +372,6 @@ func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
 	return selector.MatchesFuzzy(d.GetNetworking().GetGateway().GetTags())
 }
 
-// GetProtocolFallback returns the protocol supported by this inbound interface.
-func (d *Dataplane_Networking_Inbound) GetProtocolFallback() string {
-	if d == nil {
-		return ""
-	}
-	return d.Protocol
-}
-
 // GetServiceFallback returns the service this inbound belongs to.
 func (d *Dataplane_Networking_Inbound) GetServiceFallback(fallback string) string {
 	return fallback

@@ -699,7 +699,7 @@ func BenchmarkDataplaneHash(b *testing.B) {
 		}).
 		WithAddress("127.0.0.1").
 		WithServices("backend").
-		WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+		WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
 		WithTransparentProxying(15001, 15006, "").
 		Build()
 

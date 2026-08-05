@@ -14,20 +14,11 @@ import (
 
 func K8sApiBypass() {
 	meshName := "k8s-api-bypass"
+	identityName := "k8s-api-bypass-identity"
 	namespace := "k8s-api-bypass"
 
-	meshDefaultMtlsOn := `
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: k8s-api-bypass
-spec:
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-`
+	trustDomain := fmt.Sprintf("%s.default.mesh.local", meshName)
+
 	disableDefaultPassthrough := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshPassthrough
@@ -46,8 +37,9 @@ spec:
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(YamlK8s(meshDefaultMtlsOn)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			Install(MeshKubernetes(meshName)).
+			Install(MeshIdentityBundledKubernetes(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName, trustDomain)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			Setup(kubernetes.Cluster)
