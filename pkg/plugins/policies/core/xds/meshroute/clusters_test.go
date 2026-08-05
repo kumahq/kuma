@@ -17,6 +17,7 @@ import (
 	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
 	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
@@ -115,7 +116,7 @@ var _ = Describe("GenerateClusters", func() {
 			Weight:   100,
 		})
 		services := envoy_common.NewServicesAccumulator(nil)
-		services.AddBackendRef(backendRef, envoy_common.NewCluster(envoy_common.WithService("backend")))
+		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("backend").Build())
 
 		proxyBuilder := xds_builders.Proxy().
 			WithSecretsTracker(envoy_common.NewSecretsTracker(core_model.DefaultMesh, nil)).
