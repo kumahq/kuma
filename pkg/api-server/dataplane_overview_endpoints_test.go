@@ -102,11 +102,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
 					{
 						Port: 1234,
-						Tags: map[string]string{
-							"service":   "backend",
-							"version":   "v1",
-							"tagcolumn": "tag:v",
-						},
 					},
 				},
 			},
@@ -119,11 +114,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
 						{
 							Port: 1234,
-							Tags: map[string]string{
-								"service":   "backend",
-								"version":   "v1",
-								"tagcolumn": "tag:v",
-							},
 						},
 					},
 				},
@@ -151,12 +141,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			"address": "127.0.0.1",
 			"inbound": [
 				{
-					"port": 1234,
-					"tags": {
-						"service": "backend",
-						"version": "v1",
-						"tagcolumn": "tag:v"
-					}
+					"port": 1234
 				}
 			]
 		}
@@ -296,9 +281,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
 						{
 							Port: 1234,
-							Tags: map[string]string{
-								"service": "test-service",
-							},
 						},
 					},
 				},

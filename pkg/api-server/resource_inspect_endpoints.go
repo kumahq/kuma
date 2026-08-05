@@ -595,8 +595,6 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 					var tags map[string]string
 					if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
 						tags = dp.Spec.Networking.Gateway.Tags
-					} else if inb := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port); inb != nil {
-						tags = inb.Tags
 					}
 					fromRules = append(fromRules, api_common.FromRule{
 						Inbound: api_common.Inbound{
@@ -628,8 +626,6 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 				var tags map[string]string
 				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
 					tags = dp.Spec.Networking.Gateway.Tags
-				} else if inb := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port); inb != nil {
-					tags = inb.Tags
 				}
 				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
 					Inbound: api_common.Inbound{
