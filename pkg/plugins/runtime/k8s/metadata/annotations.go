@@ -120,6 +120,10 @@ const (
 var PodAnnotationDeprecations = []Deprecation{
 	NewDeprecation(KumaVirtualProbesAnnotation, false),
 	NewReplaceByDeprecation(KumaVirtualProbesPortAnnotation, KumaApplicationProbeProxyPortAnnotation, false),
+	{
+		Key:     KumaSidecarInjectionAnnotation,
+		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. This is not supported you should use it as a label instead",
+	},
 }
 
 type Deprecation struct {

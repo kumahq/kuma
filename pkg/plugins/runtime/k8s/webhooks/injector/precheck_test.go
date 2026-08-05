@@ -98,6 +98,12 @@ var _ = Describe("annotation deprecation", func() {
 			expectedKeyDeprecated:         true,
 			expectedKeyDeprecationMessage: fmt.Sprintf("'%s' will be removed in a future release", metadata.KumaVirtualProbesAnnotation),
 		}),
+		Entry("kuma.io/sidecar-injection - deprecated", testCase{
+			annotationKey:                 metadata.KumaSidecarInjectionAnnotation,
+			annotationValue:               "enabled",
+			expectedKeyDeprecated:         true,
+			expectedKeyDeprecationMessage: "WARNING: you are using kuma.io/sidecar-injection as annotation. This is not supported you should use it as a label instead",
+		}),
 	)
 })
 
