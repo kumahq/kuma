@@ -142,7 +142,7 @@ type Config struct {
 	General *GeneralConfig `json:"general,omitempty"`
 	// Environment Type, can be either "kubernetes" or "universal"
 	Environment core.EnvironmentType `json:"environment,omitempty" envconfig:"kuma_environment"`
-	// Mode in which Kuma CP is running. Available values are: "standalone", "global", "zone"
+	// Mode in which Kuma CP is running. Available values are: "global", "zone"
 	Mode core.CpMode `json:"mode" envconfig:"kuma_mode"`
 	// Resource Store configuration
 	Store *store.StoreConfig `json:"store,omitempty"`

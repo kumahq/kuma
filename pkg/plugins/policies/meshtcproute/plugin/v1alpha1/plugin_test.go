@@ -444,8 +444,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			dp, proxy, backendMeshSvc := dppForMeshExternalService(&meshExtSvc)
-			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextForMeshExternalService(dp.Build(), backendDataplane(), &meshExtSvc, egress, backendMeshSvc)
+			mc := meshContextForMeshExternalService(dp.Build(), backendDataplane(), &meshExtSvc, zoneEgressDataplane(), backendMeshSvc)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -511,8 +510,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			dp, proxy, backendMeshSvc := dppForMeshExternalService(&meshExtSvc, &meshExtSvc2)
-			egress := builders.ZoneEgress().WithPort(10002).Build()
-			mc := meshContextForMeshExternalService(egress, &meshExtSvc, &meshExtSvc2, dp.Build(), backendDataplane(), backendMeshSvc)
+			mc := meshContextForMeshExternalService(zoneEgressDataplane(), &meshExtSvc, &meshExtSvc2, dp.Build(), backendDataplane(), backendMeshSvc)
 
 			proxy.Policies = core_xds.MatchedPolicies{
 				Dynamic: core_xds.PluginOriginatedPolicies{},
@@ -1053,6 +1051,23 @@ func meshContextForMeshExternalService(resources ...core_model.Resource) *xds_co
 	Expect(err).ToNot(HaveOccurred())
 
 	return &mc
+}
+
+// zoneEgressDataplane is a Dataplane exposing an embedded zone egress listener, which is
+// how MeshExternalServices become reachable through an egress.
+func zoneEgressDataplane() *core_mesh.DataplaneResource {
+	return builders.Dataplane().
+		WithName("zone-egress-01").
+		WithAddress("127.0.0.1").
+		With(func(d *core_mesh.DataplaneResource) {
+			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
+				Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+				Address: "127.0.0.1",
+				Port:    10002,
+				Name:    "ze-port",
+				State:   mesh_proto.Dataplane_Networking_Listener_Ready,
+			}}
+		}).Build()
 }
 
 // backendDataplane backs the "backend" MeshService of dppForMeshExternalService, so its

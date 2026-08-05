@@ -520,7 +520,6 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 		}
 
 		resources := xds_context.Resources{
-			CrossMeshResources: map[core_xds.MeshName]xds_context.ResourceMap{},
 			MeshLocalResources: baseMeshContext.ResourceMap,
 		}
 		matchesByHash := map[common_api.MatchesHash][]meshhttproute_api.Match{}
