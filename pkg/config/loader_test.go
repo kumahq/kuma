@@ -242,7 +242,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.WorkloadLabels).To(Equal([]string{"app.kubernetes.io/name", "app"}))
 
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
-			Expect(cfg.Runtime.Universal.ZoneResourceCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.Spire.SocketPath).To(Equal("/custom/path"))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
@@ -509,7 +508,6 @@ monitoringAssignmentServer:
 runtime:
   universal:
     dataplaneCleanupAge: 1h
-    zoneResourceCleanupAge: 1h
     spire:
       socketPath: /custom/path	  
     workload:
@@ -993,7 +991,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_SKIP_MESH_OWNER_REFERENCE":                                        "true",
 				"KUMA_RUNTIME_KUBERNETES_WORKLOAD_LABELS":                                                  "app.kubernetes.io/name,app",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
-				"KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE":                                         "1h",
 				"KUMA_RUNTIME_UNIVERSAL_SPIRE_SOCKET_PATH":                                                 "/custom/path",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
