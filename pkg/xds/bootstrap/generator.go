@@ -54,7 +54,6 @@ func NewDefaultBootstrapGenerator(
 		xdsCertFile:             dpServerCertFile,
 		authEnabledForProxyType: authEnabledForProxyType,
 		enableReloadableTokens:  enableReloadableTokens,
-		dpServerCert:            dpServerCert,
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
 		envoyAdminUnixSocket:    envoyAdminUnixSocket,
@@ -67,7 +66,6 @@ type bootstrapGenerator struct {
 	authEnabledForProxyType map[string]bool
 	enableReloadableTokens  bool
 	xdsCertFile             string
-	dpServerCert            *x509.Certificate
 	hdsEnabled              bool
 	defaultAdminPort        uint32
 	envoyAdminUnixSocket    bool
@@ -195,7 +193,7 @@ func SANMismatchErr(host string, cert *x509.Certificate) error {
 		"Either change the --cp-address in kuma-dp to one of those or execute the following steps:\n"+
 		"1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --hostname=%s'\n"+
 		"2) Set KUMA_GENERAL_TLS_CERT_FILE and KUMA_GENERAL_TLS_KEY_FILE or the equivalent in Kuma CP config file to the new certificate.\n"+
-		"3) Restart the control plane to read the new certificate and start kuma-dp.", host, sans, host)
+		"3) Start kuma-dp, the control plane picks up the new certificate on its own.", host, sans, host)
 }
 
 func ISSANMismatchErr(err error) bool {
@@ -210,8 +208,14 @@ func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) err
 		return DpTokenRequired
 	}
 	if b.config.Params.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set
-		if err := b.dpServerCert.VerifyHostname(request.Host); err != nil {
-			return SANMismatchErr(request.Host, b.dpServerCert)
+		// read the certificate on every request, the DP server reloads it
+		// when it is rotated on disk and the SANs can change with it
+		cert, err := parseCertFromFile(b.xdsCertFile)
+		if err != nil {
+			return err
+		}
+		if err := cert.VerifyHostname(request.Host); err != nil {
+			return SANMismatchErr(request.Host, cert)
 		}
 	}
 	return nil
@@ -317,7 +321,7 @@ func (b *bootstrapGenerator) adminAccessLogPath(operatingSystem string) string {
 }
 
 func parseCertFromFile(dpServerCertFile string) (*x509.Certificate, error) {
-	certBytes, err := os.ReadFile(dpServerCertFile)
+	certBytes, err := os.ReadFile(filepath.Clean(dpServerCertFile))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read certificate")
 	}
