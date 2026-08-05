@@ -21,7 +21,6 @@ func ExcludeOutboundPort() {
 	namespace := "exclude-outbound-port"
 	namespaceExternal := "exclude-outbound-port-external"
 
-	// The standalone zone CP runs under the "default" zone name.
 	trustDomain := fmt.Sprintf("%s.default.mesh.local", meshName)
 
 	BeforeAll(func() {

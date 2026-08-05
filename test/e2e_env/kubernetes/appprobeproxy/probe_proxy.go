@@ -32,7 +32,6 @@ func ApplicationProbeProxy() {
 	gRPCAppName := "grpc-test-server"
 	tcpAppName := "tcp-test-server"
 
-	// The standalone zone CP runs under the "default" zone name.
 	trustDomain := fmt.Sprintf("%s.default.mesh.local", meshName)
 
 	BeforeAll(func() {

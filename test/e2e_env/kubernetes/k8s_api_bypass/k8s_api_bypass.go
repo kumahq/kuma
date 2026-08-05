@@ -17,7 +17,6 @@ func K8sApiBypass() {
 	identityName := "k8s-api-bypass-identity"
 	namespace := "k8s-api-bypass"
 
-	// The standalone zone CP runs under the "default" zone name.
 	trustDomain := fmt.Sprintf("%s.default.mesh.local", meshName)
 
 	disableDefaultPassthrough := fmt.Sprintf(`

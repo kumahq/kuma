@@ -350,7 +350,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
-					TLS:  meshservice_api.TLS{Status: meshservice_api.TLSReady},
 				},
 			}
 			resources := xds_context.NewResources()
@@ -413,7 +412,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
-					TLS:  meshservice_api.TLS{Status: meshservice_api.TLSReady},
 				},
 			}
 			resources := xds_context.NewResources()

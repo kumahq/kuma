@@ -33,7 +33,6 @@ func KICKubernetes() {
 	identityName := "kic-identity"
 	namespaceOutsideMesh := "kic-external"
 
-	// The standalone zone CP runs under the "default" zone name.
 	trustDomain := fmt.Sprintf("%s.default.mesh.local", mesh)
 
 	var kicIP string

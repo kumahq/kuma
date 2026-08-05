@@ -58,7 +58,6 @@ func Jobs() {
 		const mesh = "jobs-mtls"
 		const identityName = "jobs-mtls-identity"
 
-		// The standalone zone CP runs under the "default" zone name.
 		trustDomain := fmt.Sprintf("%s.default.mesh.local", mesh)
 
 		BeforeAll(func() {

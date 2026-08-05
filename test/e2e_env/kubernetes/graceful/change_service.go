@@ -24,7 +24,6 @@ func ChangeService() {
 	const mesh = "changesvc"
 	const identityName = "changesvc-identity"
 
-	// The standalone zone CP runs under the "default" zone name.
 	trustDomain := fmt.Sprintf("%s.default.mesh.local", mesh)
 
 	firstTestServerLabels := map[string]string{
