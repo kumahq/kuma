@@ -332,7 +332,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{
 					Name: "backend", Mesh: "default",
 					Labels: map[string]string{
-						mesh_proto.ZoneTag: "remote-zone",
+						mesh_proto.ZoneTag:             "remote-zone",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 					},
 				},
 				Spec: &meshservice_api.MeshService{
@@ -391,8 +392,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{
 					Name: "backend", Mesh: "default",
 					Labels: map[string]string{
-						mesh_proto.ZoneTag: "remote-zone",
-						"app":              "backend",
+						mesh_proto.ZoneTag:             "remote-zone",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+						"app":                          "backend",
 					},
 				},
 				Spec: &meshservice_api.MeshService{
