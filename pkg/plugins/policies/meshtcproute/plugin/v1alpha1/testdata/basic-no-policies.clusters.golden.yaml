@@ -7,24 +7,4 @@ resources:
         ads: {}
         resourceApiVersion: V3
     name: kri_msvc_default___backend_tcp-port
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          alpnProtocols:
-          - kuma
-          combinedValidationContext:
-            defaultValidationContext: {}
-            validationContextSdsSecretConfig:
-              name: system_trust_bundle
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          tlsCertificateSdsSecretConfigs:
-          - name: identity_cert:secret:default
-            sdsConfig:
-              ads: {}
-              resourceApiVersion: V3
-        sni: sni.msvc.default.backend.tcp-port
     type: EDS

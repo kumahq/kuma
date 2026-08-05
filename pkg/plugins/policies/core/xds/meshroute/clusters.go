@@ -30,8 +30,11 @@ import (
 type destination struct {
 	protocol core_meta.Protocol
 	sans     []string
-	// upstreamHTTP is nil when the upstream is treated as plain TCP.
+	// upstreamHTTP is nil when the connection carries opaque bytes.
 	upstreamHTTP envoy_clusters.ClusterBuilderOpt
+	// plaintext keeps the cluster without a transport socket, for a destination
+	// that does not terminate TLS yet.
+	plaintext bool
 }
 
 // upstreamHTTPOptions returns the upstream options matching the protocol the
@@ -63,8 +66,8 @@ func proxyToProxyHTTPOptions(protocol core_meta.Protocol) envoy_clusters.Cluster
 
 // GenerateClusters builds one EDS cluster per outbound destination. Every proxy
 // has a workload identity and every destination is reachable through a
-// mesh-scoped zone proxy, so a cluster always originates mTLS towards the KRI
-// SNI of the destination port.
+// mesh-scoped zone proxy, so a cluster originates mTLS towards the KRI SNI of
+// the destination port.
 func GenerateClusters(
 	proxy *core_xds.Proxy,
 	meshCtx xds_context.MeshContext,
@@ -80,7 +83,7 @@ func GenerateClusters(
 			if backendRef == nil {
 				continue
 			}
-			_, port, ok := DestinationPortFromRef(meshCtx, backendRef)
+			destResource, port, ok := DestinationPortFromRef(meshCtx, backendRef)
 			if !ok {
 				continue
 			}
@@ -88,10 +91,21 @@ func GenerateClusters(
 			var dest destination
 			switch backendRef.Resource.ResourceType {
 			case meshservice_api.MeshServiceType:
+				ms := destResource.(*meshservice_api.MeshServiceResource)
 				dest = destination{
 					protocol:     port.GetProtocol(),
 					sans:         meshServiceIdentities(meshCtx, backendRef.Resource),
 					upstreamHTTP: proxyToProxyHTTPOptions(port.GetProtocol()),
+					// A proxy receives its own identity independently of the
+					// destination's, so originating mTLS before the destination
+					// reports it can serve TLS drops every request sent in
+					// between. Readiness is sticky for as long as the mesh keeps
+					// any MeshIdentity, and only resets once they are gone -
+					// which is exactly when the destination stops terminating
+					// TLS and plaintext becomes correct again. Only a local
+					// MeshService reports it: a synced one is reachable through
+					// a zone proxy, which always terminates TLS.
+					plaintext: ms.IsLocalMeshService() && ms.Status.TLS.Status != meshservice_api.TLSReady,
 				}
 			case meshmultizoneservice_api.MeshMultiZoneServiceType:
 				dest = destination{
@@ -124,17 +138,19 @@ func GenerateClusters(
 			if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
 				continue
 			}
-			upstreamCtx, err := UpstreamTLSContext(proxy, core_sni.FromKRI(kriID), dest.sans)
-			if err != nil {
-				return nil, err
-			}
 
 			clusterName := cluster.Name()
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
-				Configure(envoy_clusters.EdsCluster()).
-				Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
+				Configure(envoy_clusters.EdsCluster())
 			if dest.upstreamHTTP != nil {
 				edsClusterBuilder.Configure(dest.upstreamHTTP)
+			}
+			if !dest.plaintext {
+				upstreamCtx, err := UpstreamTLSContext(proxy, core_sni.FromKRI(kriID), dest.sans)
+				if err != nil {
+					return nil, err
+				}
+				edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 			}
 
 			edsCluster, err := edsClusterBuilder.Build()

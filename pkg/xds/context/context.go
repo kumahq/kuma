@@ -65,7 +65,6 @@ func (g BaseMeshContext) Hash() string {
 
 func (g BaseMeshContext) Resources() Resources {
 	return Resources{
-		CrossMeshResources: map[xds.MeshName]ResourceMap{},
 		MeshLocalResources: g.ResourceMap,
 	}
 }
@@ -86,16 +85,15 @@ type MeshContext struct {
 	Resources           Resources
 	DataplanesByName    map[string]*core_mesh.DataplaneResource
 	EndpointMap         xds.EndpointMap
-	CrossMeshEndpoints  map[xds.MeshName]xds.EndpointMap
 	VIPDomains          []xds_types.VIPDomains
 	VIPOutbounds        xds_types.Outbounds
 	ServicesInformation map[string]*ServiceInformation
 	DataSourceLoader    datasource.Loader
 	CAsByTrustDomain    map[string][]PEMBytes
-	// ZoneEgresses holds one entry per zone egress instance (either a legacy ZoneEgress
-	// resource or a Dataplane with a ZoneEgress listener). Each entry carries the address,
-	// port and, when WorkloadIdentity is enabled, the SPIFFE ID (SAN) that clients must
-	// verify when opening an mTLS connection to that egress.
+	// ZoneEgresses holds one entry per zone egress instance, resolved from Dataplanes
+	// that expose a ZoneEgress listener. Each entry carries the address, port and, when
+	// WorkloadIdentity is enabled, the SPIFFE ID (SAN) that clients must verify when
+	// opening an mTLS connection to that egress.
 	ZoneEgresses []xds.ZoneEgressInstance
 	// DataplaneZoneIngressEndpointMap is the shared endpoint map for embedded zone ingress
 	// listeners; built once per MeshContext and reused across all Dataplanes.
@@ -170,7 +168,6 @@ type AggregatedMeshContexts struct {
 	Hash               string
 	Meshes             []*core_mesh.MeshResource
 	MeshContextsByName map[string]MeshContext
-	ZoneEgressByName   map[string]*core_mesh.ZoneEgressResource
 }
 
 // MustGetMeshContext panics if there is no mesh context for given mesh. Call it when iterating over .Meshes
@@ -190,18 +187,4 @@ func (m AggregatedMeshContexts) AllDataplanes() []*core_mesh.DataplaneResource {
 		resources = append(resources, meshCtx.Resources.Dataplanes().Items...)
 	}
 	return resources
-}
-
-func (m AggregatedMeshContexts) ZoneEgresses() []*core_mesh.ZoneEgressResource {
-	for _, meshCtx := range m.MeshContextsByName {
-		return meshCtx.Resources.ZoneEgresses().Items // all mesh contexts has the same list
-	}
-	return nil
-}
-
-func (m AggregatedMeshContexts) ZoneIngresses() []*core_mesh.ZoneIngressResource {
-	for _, meshCtx := range m.MeshContextsByName {
-		return meshCtx.Resources.ZoneIngresses().Items // all mesh contexts has the same list
-	}
-	return nil
 }

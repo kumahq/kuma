@@ -113,6 +113,14 @@ func (m *MeshServiceBuilder) AddServiceTagIdentity(identity string) *MeshService
 	return m
 }
 
+func (m *MeshServiceBuilder) AddSpiffeIDIdentity(identity string) *MeshServiceBuilder {
+	m.res.Spec.Identities = pointer.To(append(pointer.Deref(m.res.Spec.Identities), v1alpha1.MeshServiceIdentity{
+		Type:  v1alpha1.MeshServiceIdentitySpiffeIDType,
+		Value: identity,
+	}))
+	return m
+}
+
 func (m *MeshServiceBuilder) WithKumaVIP(vip string) *MeshServiceBuilder {
 	m.res.Status.VIPs = []v1alpha1.VIP{
 		{

@@ -7,30 +7,6 @@ resources:
         ads: {}
         resourceApiVersion: V3
     name: kri_msvc_default___backend-us_test-port
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          alpnProtocols:
-          - kuma
-          combinedValidationContext:
-            defaultValidationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: spiffe://default/backend-us
-                sanType: URI
-            validationContextSdsSecretConfig:
-              name: system_trust_bundle
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          tlsCertificateSdsSecretConfigs:
-          - name: identity_cert:secret:default
-            sdsConfig:
-              ads: {}
-              resourceApiVersion: V3
-        sni: sni.msvc.default.backend-us.test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -45,30 +21,6 @@ resources:
         ads: {}
         resourceApiVersion: V3
     name: kri_msvc_default___backend_test-port
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          alpnProtocols:
-          - kuma
-          combinedValidationContext:
-            defaultValidationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: spiffe://default/backend
-                sanType: URI
-            validationContextSdsSecretConfig:
-              name: system_trust_bundle
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          tlsCertificateSdsSecretConfigs:
-          - name: identity_cert:secret:default
-            sdsConfig:
-              ads: {}
-              resourceApiVersion: V3
-        sni: sni.msvc.default.backend.test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

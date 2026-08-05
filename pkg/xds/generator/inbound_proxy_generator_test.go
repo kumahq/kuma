@@ -147,5 +147,9 @@ var _ = Describe("InboundProxyGenerator", func() {
 			dataplaneFile: "11-dataplane.input.yaml",
 			expected:      "11-envoy-config.golden.yaml",
 		}),
+		Entry("12. protocol declared only as a kuma.io/protocol tag is served as TCP", testCase{
+			dataplaneFile: "12-dataplane.input.yaml",
+			expected:      "12-envoy-config.golden.yaml",
+		}),
 	)
 })

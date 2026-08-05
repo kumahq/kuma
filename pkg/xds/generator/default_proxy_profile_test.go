@@ -200,34 +200,5 @@ var _ = Describe("DefaultProxyProfile", func() {
 `,
 			expected: "2-envoy-config.golden.yaml",
 		}),
-		Entry("should generate the default proxy config; transparent_proxying=false; unified naming", testCase{
-			mesh: `
-            mtls:
-              enabledBackend: builtin
-              backends:
-              - type: builtin
-                name: builtin
-`,
-			dataplane: `
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 80
-                  servicePort: 8080
-                  tags:
-                    kuma.io/service: backend
-              outbound:
-              - port: 54321
-                tags:
-                  kuma.io/service: db
-              - port: 59200
-                tags:
-                  kuma.io/service: elastic
-`,
-			expected: "5-envoy-config.golden.yaml",
-			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
-		}),
 	)
 })

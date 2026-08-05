@@ -30,7 +30,21 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
-const meshName = "envoyconfig"
+const (
+	meshName     = "envoyconfig"
+	identityName = "envoyconfig-identity"
+)
+
+// allowAllTrafficPermission resolves the trust domain at install time: the
+// cluster does not exist yet while the spec tree is being built.
+func allowAllTrafficPermission() InstallFunc {
+	return func(cluster Cluster) error {
+		return MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+			meshName,
+			MeshIdentityTrustDomain(meshName, cluster),
+		)(cluster)
+	}
+}
 
 func Sidecars() {
 	BeforeAll(SetupSidecarCluster)
@@ -93,22 +107,22 @@ func SetupSidecarCluster() {
 			Yaml(
 				builders.Mesh().
 					WithName(meshName).
-					WithoutInitialPolicies().
-					WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
+					WithoutInitialPolicies(),
 			),
 		).
-		Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+		Install(MeshIdentityBundled(meshName, identityName)).
+		Install(allowAllTrafficPermission()).
 		Install(DemoClientUniversal("demo-client", meshName,
 			WithTransparentProxy(true),
 			WithDpEnvs(map[string]string{
-				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_WORK_DIR":     "/tmp",
 				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
 			})),
 		).
 		Install(TestServerUniversal("test-server", meshName,
 			WithArgs([]string{"echo", "--instance", "universal-1"}),
 			WithDpEnvs(map[string]string{
-				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_WORK_DIR":     "/tmp",
 				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
 			}),
 		),
@@ -126,7 +140,7 @@ func SetupSidecarCluster() {
 }
 
 func CleanupAfterSidecarTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(meshName, []string{"demo-client", "test-server"}, MeshTrafficPermissionAllowAllUniversal(meshName), policies...)
+	return cleanupAfterTest(meshName, []string{"demo-client", "test-server"}, allowAllTrafficPermission(), policies...)
 }
 
 func CleanupAfterSidecarSuite() {

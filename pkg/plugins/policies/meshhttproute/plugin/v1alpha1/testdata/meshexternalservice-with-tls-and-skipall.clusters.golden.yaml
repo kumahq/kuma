@@ -18,7 +18,7 @@ resources:
             defaultValidationContext:
               matchTypedSubjectAltNames:
               - matcher:
-                  exact: spiffe://default/zone-egress
+                  exact: spiffe://default.zone-1.mesh.local/workload/zone-egress
                 sanType: URI
             validationContextSdsSecretConfig:
               name: system_trust_bundle

@@ -54,8 +54,6 @@ type E2eConfig struct {
 	DefaultClusterStartupRetries  int               `json:"defaultClusterStartupRetries,omitempty" envconfig:"KUMA_DEFAULT_RETRIES"`
 	DefaultClusterStartupTimeout  time.Duration     `json:"defaultClusterStartupTimeout,omitempty" envconfig:"KUMA_DEFAULT_TIMEOUT"`
 	KumactlBin                    string            `json:"kumactlBin,omitempty" envconfig:"KUMACTLBIN"`
-	ZoneEgressApp                 string            `json:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
-	ZoneIngressApp                string            `json:"zoneIngressApp,omitempty" envconfig:"KUMA_ZONE_INGRESS_APP"`
 	Arch                          string            `json:"arch,omitempty" envconfig:"ARCH"`
 	OS                            string            `json:"os,omitempty" envconfig:"OS"`
 	KumaCpConfig                  KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
@@ -247,8 +245,6 @@ var defaultConf = E2eConfig{
 			},
 		},
 	},
-	ZoneEgressApp:         "kuma-egress",
-	ZoneIngressApp:        "kuma-ingress",
 	DumpDir:               path.Join("..", "..", "..", "build", "reports", "e2e-debug"),
 	DumpOnSuccess:         false,
 	Kuma3PreflightTimeout: 45 * time.Second,
