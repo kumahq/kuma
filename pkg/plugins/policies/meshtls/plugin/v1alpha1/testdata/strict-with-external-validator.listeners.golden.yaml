@@ -92,17 +92,7 @@ resources:
         portValue: 15001
     enableReusePort: false
     filterChains:
-    - filterChainMatch:
-        destinationPort: 17777
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: self_transparentproxy_passthrough_inbound_ipv4
-          statPrefix: self_transparentproxy_passthrough_inbound_ipv4
-    - filterChainMatch:
-        destinationPort: 17778
-      filters:
+    - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
@@ -121,17 +111,7 @@ resources:
         portValue: 15001
     enableReusePort: false
     filterChains:
-    - filterChainMatch:
-        destinationPort: 17777
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: self_transparentproxy_passthrough_inbound_ipv6
-          statPrefix: self_transparentproxy_passthrough_inbound_ipv6
-    - filterChainMatch:
-        destinationPort: 17778
-      filters:
+    - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy

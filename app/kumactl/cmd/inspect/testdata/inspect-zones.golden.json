@@ -42,10 +42,6 @@
                   "responsesSent": "2",
                   "responsesRejected": "1"
                 },
-                "ProxyTemplate": {
-                  "responsesSent": "2",
-                  "responsesRejected": "1"
-                },
                 "RateLimit": {
                   "responsesSent": "2",
                   "responsesRejected": "1"

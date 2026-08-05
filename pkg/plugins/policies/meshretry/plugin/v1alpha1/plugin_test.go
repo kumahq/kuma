@@ -19,6 +19,7 @@ import (
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	plugin_v1alpha1 "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/plugin/v1alpha1"
@@ -358,10 +359,7 @@ func tcpListener(destination kri.Identifier, port uint32) envoy_common.NamedReso
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 			Configure(TcpProxyDeprecated(
 				destination.String(),
-				envoy_common.NewCluster(
-					envoy_common.WithService("backend"),
-					envoy_common.WithWeight(100),
-				),
+				plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 			)),
 		)).
 		MustBuild()

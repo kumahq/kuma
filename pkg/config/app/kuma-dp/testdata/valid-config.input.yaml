@@ -7,7 +7,7 @@ dataplane:
   mesh: demo
   name: example
   drainTime: 60s
-  proxyType: ingress
+  proxyType: dataplane
   readinessPort: 9902
 dataplaneRuntime:
   binaryPath: envoy.sh

@@ -177,9 +177,6 @@ linters:
         text: 'SA1019: cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.'
       - linters:
           - staticcheck
-        text: 'SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go'
-      - linters:
-          - staticcheck
         text: 'SA1019: .* is deprecated: use MinResyncInterval instead'
       - linters:
           - staticcheck

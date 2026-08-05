@@ -363,6 +363,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "44.services-for-pod.yaml",
 			dataplane:      "44.dataplane.yaml",
 		}),
+		Entry("45. Pod without transparent-proxy-config annotation still keeps direct access and reachable backends", testCase{
+			pod:            "45.pod.yaml",
+			servicesForPod: "45.services-for-pod.yaml",
+			dataplane:      "45.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",

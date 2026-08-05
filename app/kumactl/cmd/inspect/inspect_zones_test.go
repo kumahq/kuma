@@ -109,10 +109,6 @@ var _ = Describe("kumactl inspect zones", func() {
 											ResponsesSent:     2,
 											ResponsesRejected: 1,
 										},
-										"ProxyTemplate": {
-											ResponsesSent:     2,
-											ResponsesRejected: 1,
-										},
 										"Secret": {
 											ResponsesSent:     2,
 											ResponsesRejected: 1,

@@ -24,6 +24,7 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -256,9 +257,38 @@ var _ = Describe("MeshTLS", func() {
 				},
 			},
 		}),
+		Entry("tls version on both ends of the range with workload identity", testCase{
+			caseName:    "strict-with-workload-identity-tls-version",
+			meshBuilder: samples.MeshDefaultBuilder(),
+			workloadIdentity: &core_xds.WorkloadIdentity{
+				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"my-secret-name",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			},
+		}),
 		Entry("strict inbound ports feature = port filtering", testCase{
 			caseName:    "strict-with-feature-strict-inbound-ports",
 			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
+			features: xds_types.Features{
+				xds_types.FeatureStrictInboundPorts: true,
+			},
+		}),
+		Entry("strict inbound ports feature with workload identity = port filtering", testCase{
+			caseName:    "strict-with-workload-identity-strict-inbound-ports",
+			meshBuilder: samples.MeshMTLSBuilder(),
+			workloadIdentity: &core_xds.WorkloadIdentity{
+				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"my-secret-name",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			},
 			features: xds_types.Features{
 				xds_types.FeatureStrictInboundPorts: true,
 			},
@@ -286,17 +316,10 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 					Configure(
-						listeners.HttpInboundRoutes(
+						listeners.HttpInboundRoute(
 							envoy_names.GetInboundRouteName("backend"),
 							"backend",
-							envoy_common.Routes{
-								{
-									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-										envoy_common.WithService("backend"),
-										envoy_common.WithWeight(100),
-									)},
-								},
-							},
+							plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 						),
 					),
 				)).MustBuild(),
@@ -306,7 +329,7 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 			Origin: metadata.OriginInbound,
 			Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
+					Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", plugins_xds.NewClusterBuilder().WithName("frontend").Build())),
 				)).MustBuild(),
 		},
 		{

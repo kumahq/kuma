@@ -32,6 +32,64 @@ data:
     #
     # see conf/kuma-cp.conf.yml for available settings
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kuma-transparent-proxy-config
+  namespace: kuma
+  labels:
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+data:
+  config.yaml: |
+    comments:
+      disabled: false
+    dropInvalidPackets: false
+    ipFamilyMode: dualstack
+    iptablesExecutables:
+      ip6tables: ""
+      ip6tables-restore: ""
+      ip6tables-save: ""
+      iptables: ""
+      iptables-restore: ""
+      iptables-save: ""
+    kumaDPUser: "5678"
+    log:
+      enabled: false
+    redirect:
+      dns:
+        captureAll: true
+        enabled: true
+        port: 15053
+        resolvConfigPath: /etc/resolv.conf
+        skipConntrackZoneSplit: false
+      inbound:
+        enabled: true
+        excludePorts: []
+        excludePortsForIPs: []
+        excludePortsForUIDs: []
+        includePorts: []
+        insertRedirectInsteadOfAppend: false
+        port: 15006
+      outbound:
+        enabled: true
+        excludePorts: []
+        excludePortsForIPs: []
+        excludePortsForUIDs: []
+        includePorts: []
+        insertRedirectInsteadOfAppend: false
+        port: 15001
+      vnet:
+        networks: []
+    retry:
+      maxRetries: 4
+      sleepBetweenRetries: 2s
+    storeFirewalld: false
+    verbose: false
+    wait: 5
+    waitInterval: 0
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -108,19 +166,7 @@ rules:
       - zoneegressinsights
       - meshinsights
       - serviceinsights
-      - proxytemplates
-      - ratelimits
-      - trafficpermissions
-      - trafficroutes
-      - timeouts
-      - retries
-      - circuitbreakers
-      - virtualoutbounds
       - containerpatches
-      - faultinjections
-      - healthchecks
-      - trafficlogs
-      - traffictraces
       - meshaccesslogs
       - meshcircuitbreakers
       - meshfaultinjections
@@ -441,8 +487,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 154c47a95fc93687dd1e825cea7f843d0fe8c450f82014d27cd7eb1a49f3bd35
-        checksum/tls-secrets: a3c737f15d7d3acc5caaacfe70cfcd9814cb0ecefb45a6892ed1346e4136b43c
+        checksum/config: 345e5805076edc29201056aff714082e531755a43278703503620812d06dd10f
+        checksum/tls-secrets: a61fbd96437b68a94c5f764d22d1bf29d8234865c084f29e3a91e74b22e87957
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -562,6 +608,8 @@ spec:
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
               value: "kuma-ci/kuma-dp:greatest"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
+              value: "kuma-transparent-proxy-config"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
               value: "true"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
@@ -760,18 +808,6 @@ webhooks:
         operations:
           - CREATE
         resources:
-          - circuitbreakers
-          - faultinjections
-          - healthchecks
-          - proxytemplates
-          - ratelimits
-          - retries
-          - timeouts
-          - trafficlogs
-          - trafficpermissions
-          - trafficroutes
-          - traffictraces
-          - virtualoutbounds
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections
@@ -935,19 +971,8 @@ webhooks:
           - UPDATE
           - DELETE
         resources:
-          - circuitbreakers
           - dataplanes
-          - faultinjections
-          - healthchecks
           - meshes
-          - proxytemplates
-          - ratelimits
-          - retries
-          - trafficlogs
-          - trafficpermissions
-          - trafficroutes
-          - traffictraces
-          - virtualoutbounds
           - zones
           - containerpatches
           - meshaccesslogs
