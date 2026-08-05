@@ -5,8 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
 )
 
 type AttachmentEntry struct {
@@ -135,10 +135,14 @@ func NewPolicyInspectEntryList() *PolicyInspectEntryList {
 	}
 }
 
-type MatchedPolicies map[core_model.ResourceType][]v1alpha1.ResourceMeta
-
 type PolicyMap map[core_model.ResourceType]v1alpha1.ResourceMeta
 
+type MatchedPolicies map[core_model.ResourceType][]v1alpha1.ResourceMeta
+
+// DataplaneInspectResponseKind, DataplaneInspectResponse, DataplaneInspectEntry
+// and DataplaneInspectEntryList back the deprecated GET
+// /meshes/{mesh}/dataplanes/{name}/policies endpoint, kept only because the
+// vendored GUI bundle still calls it directly.
 type DataplaneInspectResponseKind interface {
 	dataplaneInspectEntry()
 }
@@ -214,21 +218,4 @@ func NewDataplaneInspectEntryList() *DataplaneInspectEntryList {
 }
 
 func (*DataplaneInspectEntryList) dataplaneInspectEntry() {
-}
-
-type RuleInspectResponse struct {
-	Total uint32             `json:"total"`
-	Items []RuleInspectEntry `json:"items"`
-}
-
-type RuleInspectEntry struct {
-	Type       string                  `json:"type"`
-	Name       string                  `json:"name,omitempty"`
-	Addresses  []string                `json:"addresses,omitempty"`
-	Service    string                  `json:"service,omitempty"`
-	Tags       map[string]string       `json:"tags,omitempty"`
-	PolicyType string                  `json:"policyType"`
-	Subset     map[string]string       `json:"subset"`
-	Conf       core_model.ResourceSpec `json:"conf"`
-	Origins    []ResourceKeyEntry      `json:"origins"`
 }

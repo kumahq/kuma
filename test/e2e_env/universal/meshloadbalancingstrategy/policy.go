@@ -6,13 +6,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshloadbalancingstrategy_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshloadbalancingstrategy_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func Policy() {
@@ -21,8 +20,7 @@ func Policy() {
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(Yaml(samples.MeshDefaultBuilder().
-				WithName(meshName).
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				WithName(meshName),
 			)).
 			Install(TestServerUniversal("test-server-1", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"}))).
@@ -65,15 +63,15 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
+        hashPolicies:
+          - type: Header
+            header:
+              name: x-header
         loadBalancer:
           type: RingHash
-          ringHash:
-            hashPolicies:
-              - type: Header
-                header:
-                  name: x-header
 `)(universal.Cluster)).To(Succeed())
 
 		Eventually(func(g Gomega) {
@@ -95,7 +93,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -111,7 +110,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         hashPolicies:
           - type: Header
@@ -147,7 +147,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: test-server-route
+        labels:
+          kuma.io/display-name: test-server-route
       default:
         hashPolicies:
           - type: Header

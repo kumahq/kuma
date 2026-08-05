@@ -5,8 +5,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 func ResourceArrayShouldEqual(resources core_xds.ResourceList, expected []string) {

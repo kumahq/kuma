@@ -3,16 +3,16 @@
 package apis
 
 import (
-	"github.com/kumahq/kuma/v2/pkg/core/plugins"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload"
+	"github.com/kumahq/kuma/v3/pkg/core/plugins"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload"
 )
 
 var NameToModule = map[string]*plugins.PluginInitializer{

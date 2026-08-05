@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
 )
 
 const (
@@ -50,13 +50,4 @@ func JoinSections(sections ...string) string {
 
 func JoinSectionParts(parts ...string) string {
 	return strings.Join(parts, sectionPartsSeparator)
-}
-
-func GetNameOrDefault(predicate bool) func(name string, defaultName string) string {
-	return func(name string, defaultName string) string {
-		if predicate {
-			return name
-		}
-		return defaultName
-	}
 }

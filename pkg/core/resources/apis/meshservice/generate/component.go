@@ -3,11 +3,11 @@ package generate
 import (
 	"slices"
 
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 )
 
 func Setup(rt runtime.Runtime) error {
@@ -34,7 +34,6 @@ func Setup(rt runtime.Runtime) error {
 		rt.ResourceManager(),
 		rt.MeshCache(),
 		rt.Config().Multizone.Zone.Name,
-		rt.Config().Experimental.InboundTagsDisabled,
 		rt.Config().MeshService.LabelPropagation,
 	)
 	if err != nil {

@@ -6,10 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	meshcircuitbreaker_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func MeshHealthCheck(config *Config) func() {
@@ -38,13 +39,36 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
-        http: 
+        http:
           path: %s
-          expectedStatuses: 
+          expectedStatuses:
           - %s`, config.CpNamespace, config.Mesh, path, status)
 		}
+
+		circuitBreaker := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshCircuitBreaker
+metadata:
+  name: mcb-disable-panic
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100
+`, config.CpNamespace, config.Mesh)
+
+		BeforeAll(func() {
+			Expect(framework.YamlK8s(circuitBreaker)(kubernetes.Cluster)).To(Succeed())
+		})
 
 		framework.AfterEachFailure(func() {
 			framework.DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.ObservabilityDeploymentName)
@@ -55,6 +79,11 @@ spec:
 				kubernetes.Cluster,
 				config.Mesh,
 				v1alpha1.MeshHealthCheckResourceTypeDescriptor,
+			)).To(Succeed())
+			Expect(framework.DeleteMeshResources(
+				kubernetes.Cluster,
+				config.Mesh,
+				meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor,
 			)).To(Succeed())
 		})
 

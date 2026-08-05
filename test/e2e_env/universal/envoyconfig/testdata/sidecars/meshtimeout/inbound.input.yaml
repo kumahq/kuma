@@ -4,10 +4,8 @@ mesh: envoyconfig
 labels:
   kuma.io/effect: shadow
 spec:
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         idleTimeout: 50s
         connectionTimeout: 51s
         http:

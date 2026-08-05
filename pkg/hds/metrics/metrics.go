@@ -5,7 +5,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 )
 
 type Metrics struct {

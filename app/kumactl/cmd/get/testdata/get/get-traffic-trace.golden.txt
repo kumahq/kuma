@@ -1,2 +1,0 @@
-MESH      NAME              AGE
-default   traffic-trace-1   292y

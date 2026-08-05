@@ -1,5 +1,0 @@
-Affected data plane proxies:
-
-  backend-1
-  web-1
-  redis-1

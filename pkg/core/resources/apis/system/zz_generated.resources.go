@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 )
 
 const (
@@ -108,23 +108,24 @@ func (l *ConfigResourceList) SetPagination(p model.Pagination) {
 }
 
 var ConfigResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                ConfigType,
-	Resource:            NewConfigResource(),
-	ResourceList:        &ConfigResourceList{},
-	ReadOnly:            false,
-	AdminOnly:           false,
-	Scope:               model.ScopeGlobal,
-	KDSFlags:            model.GlobalToZonesFlag | model.ProvidedByZoneFlag,
-	SkipKDSHash:         true,
-	WsPath:              "",
-	KumactlArg:          "",
-	KumactlListArg:      "",
-	AllowToInspect:      false,
-	IsPolicy:            false,
-	SingularDisplayName: "Config",
-	PluralDisplayName:   "Configs",
-	IsExperimental:      false,
-	IsProxy:             false,
+	Name:                  ConfigType,
+	Resource:              NewConfigResource(),
+	ResourceList:          &ConfigResourceList{},
+	ReadOnly:              false,
+	AdminOnly:             false,
+	Scope:                 model.ScopeGlobal,
+	KDSFlags:              model.GlobalToZonesFlag | model.ProvidedByZoneFlag,
+	SkipKDSHash:           true,
+	WsPath:                "",
+	KumactlArg:            "",
+	KumactlListArg:        "",
+	AllowToInspect:        false,
+	IsPolicy:              false,
+	SingularDisplayName:   "Config",
+	PluralDisplayName:     "Configs",
+	IsExperimental:        false,
+	IsProxy:               false,
+	AffectsPolicyMatching: true,
 }
 
 func init() {
@@ -227,23 +228,24 @@ func (l *SecretResourceList) SetPagination(p model.Pagination) {
 }
 
 var SecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                SecretType,
-	Resource:            NewSecretResource(),
-	ResourceList:        &SecretResourceList{},
-	ReadOnly:            false,
-	AdminOnly:           true,
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToZonesFlag | model.ProvidedByZoneFlag,
-	SkipKDSHash:         true,
-	WsPath:              "secrets",
-	KumactlArg:          "secret",
-	KumactlListArg:      "secrets",
-	AllowToInspect:      false,
-	IsPolicy:            false,
-	SingularDisplayName: "Secret",
-	PluralDisplayName:   "Secrets",
-	IsExperimental:      false,
-	IsProxy:             false,
+	Name:                  SecretType,
+	Resource:              NewSecretResource(),
+	ResourceList:          &SecretResourceList{},
+	ReadOnly:              false,
+	AdminOnly:             true,
+	Scope:                 model.ScopeMesh,
+	KDSFlags:              model.GlobalToZonesFlag | model.ProvidedByZoneFlag,
+	SkipKDSHash:           true,
+	WsPath:                "secrets",
+	KumactlArg:            "secret",
+	KumactlListArg:        "secrets",
+	AllowToInspect:        false,
+	IsPolicy:              false,
+	SingularDisplayName:   "Secret",
+	PluralDisplayName:     "Secrets",
+	IsExperimental:        false,
+	IsProxy:               false,
+	AffectsPolicyMatching: true,
 }
 
 func init() {
@@ -346,25 +348,26 @@ func (l *ZoneResourceList) SetPagination(p model.Pagination) {
 }
 
 var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                ZoneType,
-	Resource:            NewZoneResource(),
-	ResourceList:        &ZoneResourceList{},
-	ReadOnly:            false,
-	AdminOnly:           false,
-	Scope:               model.ScopeGlobal,
-	KDSFlags:            model.ProvidedByGlobalFlag | model.ProvidedByZoneFlag,
-	WsPath:              "zones",
-	KumactlArg:          "zone",
-	KumactlListArg:      "zones",
-	AllowToInspect:      false,
-	IsPolicy:            false,
-	SingularDisplayName: "Zone",
-	PluralDisplayName:   "Zones",
-	ShortName:           "z",
-	IsExperimental:      false,
-	IsProxy:             false,
-	Insight:             NewZoneInsightResource(),
-	Overview:            NewZoneOverviewResource(),
+	Name:                  ZoneType,
+	Resource:              NewZoneResource(),
+	ResourceList:          &ZoneResourceList{},
+	ReadOnly:              false,
+	AdminOnly:             false,
+	Scope:                 model.ScopeGlobal,
+	KDSFlags:              model.ProvidedByGlobalFlag | model.ProvidedByZoneFlag,
+	WsPath:                "zones",
+	KumactlArg:            "zone",
+	KumactlListArg:        "zones",
+	AllowToInspect:        false,
+	IsPolicy:              false,
+	SingularDisplayName:   "Zone",
+	PluralDisplayName:     "Zones",
+	ShortName:             "z",
+	IsExperimental:        false,
+	IsProxy:               false,
+	AffectsPolicyMatching: false,
+	Insight:               NewZoneInsightResource(),
+	Overview:              NewZoneOverviewResource(),
 }
 
 func init() {
@@ -467,22 +470,23 @@ func (l *ZoneInsightResourceList) SetPagination(p model.Pagination) {
 }
 
 var ZoneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                ZoneInsightType,
-	Resource:            NewZoneInsightResource(),
-	ResourceList:        &ZoneInsightResourceList{},
-	ReadOnly:            true,
-	AdminOnly:           false,
-	Scope:               model.ScopeGlobal,
-	KDSFlags:            model.ProvidedByGlobalFlag | model.ProvidedByZoneFlag,
-	WsPath:              "zone-insights",
-	KumactlArg:          "",
-	KumactlListArg:      "",
-	AllowToInspect:      false,
-	IsPolicy:            false,
-	SingularDisplayName: "Zone Insight",
-	PluralDisplayName:   "Zone Insights",
-	IsExperimental:      false,
-	IsProxy:             false,
+	Name:                  ZoneInsightType,
+	Resource:              NewZoneInsightResource(),
+	ResourceList:          &ZoneInsightResourceList{},
+	ReadOnly:              true,
+	AdminOnly:             false,
+	Scope:                 model.ScopeGlobal,
+	KDSFlags:              model.ProvidedByGlobalFlag | model.ProvidedByZoneFlag,
+	WsPath:                "zone-insights",
+	KumactlArg:            "",
+	KumactlListArg:        "",
+	AllowToInspect:        false,
+	IsPolicy:              false,
+	SingularDisplayName:   "Zone Insight",
+	PluralDisplayName:     "Zone Insights",
+	IsExperimental:        false,
+	IsProxy:               false,
+	AffectsPolicyMatching: false,
 }
 
 func init() {
@@ -600,19 +604,20 @@ func (l *ZoneOverviewResourceList) SetPagination(p model.Pagination) {
 }
 
 var ZoneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                ZoneOverviewType,
-	Resource:            NewZoneOverviewResource(),
-	ResourceList:        &ZoneOverviewResourceList{},
-	ReadOnly:            false,
-	AdminOnly:           false,
-	Scope:               model.ScopeGlobal,
-	WsPath:              "",
-	KumactlArg:          "",
-	KumactlListArg:      "",
-	AllowToInspect:      false,
-	IsPolicy:            false,
-	SingularDisplayName: "Zone Overview",
-	PluralDisplayName:   "Zone Overviews",
-	IsExperimental:      false,
-	IsProxy:             false,
+	Name:                  ZoneOverviewType,
+	Resource:              NewZoneOverviewResource(),
+	ResourceList:          &ZoneOverviewResourceList{},
+	ReadOnly:              false,
+	AdminOnly:             false,
+	Scope:                 model.ScopeGlobal,
+	WsPath:                "",
+	KumactlArg:            "",
+	KumactlListArg:        "",
+	AllowToInspect:        false,
+	IsPolicy:              false,
+	SingularDisplayName:   "Zone Overview",
+	PluralDisplayName:     "Zone Overviews",
+	IsExperimental:        false,
+	IsProxy:               false,
+	AffectsPolicyMatching: false,
 }

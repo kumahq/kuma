@@ -9,18 +9,19 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
 )
 
 type countingResourcesManager struct {
@@ -36,7 +37,7 @@ func (c *countingResourcesManager) Get(ctx context.Context, res core_model.Resou
 
 func (c *countingResourcesManager) List(ctx context.Context, list core_model.ResourceList, fn ...core_store.ListOptionsFunc) error {
 	opts := core_store.NewListOptions(fn...)
-	if list.GetItemType() == core_mesh.TrafficLogType && opts.Mesh == "slow" {
+	if list.GetItemType() == meshexternalservice_api.MeshExternalServiceType && opts.Mesh == "slow" {
 		time.Sleep(10 * time.Second)
 	}
 	atomic.AddUint32(&c.listQueries, 1)
@@ -184,24 +185,24 @@ var _ = Describe("Cached Resource Manager", func() {
 	})
 
 	It("should let concurrent List() queries for different types and meshes", test.Within(15*time.Second, func() {
-		// given ongoing TrafficLog from mesh slow that takes a lot of time to complete
+		// given ongoing MeshExternalService from mesh slow that takes a lot of time to complete
 		done := make(chan struct{})
 		go func() {
-			fetched := core_mesh.TrafficLogResourceList{}
+			fetched := meshexternalservice_api.MeshExternalServiceResourceList{}
 			err := cachedManager.List(context.Background(), &fetched, core_store.ListByMesh("slow"))
 			Expect(err).ToNot(HaveOccurred())
 			close(done)
 		}()
 
-		// when trying to fetch TrafficLog from different mesh that takes normal time to response
-		fetched := core_mesh.TrafficLogResourceList{}
+		// when trying to fetch MeshExternalService from different mesh that takes normal time to response
+		fetched := meshexternalservice_api.MeshExternalServiceResourceList{}
 		err := cachedManager.List(context.Background(), &fetched, core_store.ListByMesh("default"))
 
 		// then first request does not block request for other mesh
 		Expect(err).ToNot(HaveOccurred())
 
 		// when trying to fetch different resource type
-		fetchedTp := core_mesh.TrafficPermissionResourceList{}
+		fetchedTp := core_mesh.DataplaneResourceList{}
 		err = cachedManager.List(context.Background(), &fetchedTp, core_store.ListByMesh("default"))
 
 		// then first request does not block request for other type

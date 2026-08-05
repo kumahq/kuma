@@ -4,15 +4,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 var _ = Describe("EdsClusterConfigurer", func() {
@@ -22,7 +22,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 		tags          []tags.Tags
 		mesh          *core_mesh.MeshResource
 		goldenFile    string
-		unifiedNaming bool
 		useMeshTrust  bool
 	}
 
@@ -32,7 +31,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			tracker := envoy.NewSecretsTracker(given.mesh.GetMeta().GetName(), nil)
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, given.clusterName).
 				Configure(clusters.EdsCluster()).
-				Configure(clusters.ClientSideMTLS(tracker, given.unifiedNaming, given.mesh, given.clientService, true, given.tags, given.useMeshTrust)).
+				Configure(clusters.ClientSideMTLS(tracker, given.mesh, given.clientService, true, given.tags, given.useMeshTrust)).
 				Configure(clusters.Timeout(DefaultTimeout(), core_meta.ProtocolTCP)).
 				Build()
 
@@ -64,30 +63,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			},
 			// no tags therefore SNI is empty
 			goldenFile: "testdata/client_side_mtls_configurer/cluster-with-mtls.golden.yaml",
-		}),
-		Entry("cluster with mTLS and unified naming", testCase{
-			clusterName:   "testCluster",
-			clientService: "backend",
-			unifiedNaming: true,
-			mesh: &core_mesh.MeshResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "default",
-				},
-				Spec: &mesh_proto.Mesh{
-					Mtls: &mesh_proto.Mesh_Mtls{
-						EnabledBackend: "builtin",
-						Backends: []*mesh_proto.CertificateAuthorityBackend{
-							{
-								Name: "builtin",
-								Type: "builtin",
-							},
-						},
-					},
-					MeshServices: &mesh_proto.Mesh_MeshServices{Mode: mesh_proto.Mesh_MeshServices_Exclusive},
-				},
-			},
-			// no tags therefore SNI is empty
-			goldenFile: "testdata/client_side_mtls_configurer/cluster-with-mtls-unified-naming.golden.yaml",
 		}),
 		Entry("cluster with many different tag sets", testCase{
 			clusterName:   "testCluster",

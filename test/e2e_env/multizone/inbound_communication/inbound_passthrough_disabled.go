@@ -5,16 +5,29 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func InboundPassthroughDisabled() {
 	const namespace = "inbound-passthrough-disabled"
 	const mesh = "inbound-passthrough-disabled"
+	const identityName = "inbound-passthrough-disabled-identity"
+
+	var zones []Cluster
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(mesh),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
 		localhostAddress := "127.0.0.1"
@@ -23,10 +36,12 @@ func InboundPassthroughDisabled() {
 			wildcardAddress = "::"
 		}
 
+		zones = []Cluster{multizone.KubeZone2, multizone.UniZone2}
 		// Global
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(mesh)).
-			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
+			Install(Yaml(builders.Mesh().WithName(mesh))).
+			Install(MeshIdentityBundled(mesh, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(mesh, MeshIdentityTrustDomains(mesh, zones...)...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
@@ -61,28 +76,34 @@ func InboundPassthroughDisabled() {
 					BoundToContainerIp(),
 					WithServiceName("uni-test-server-containerip"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone2, &group)
 
 		// Kubernetes Zone 1
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(mesh),
-				testserver.WithName("k8s-test-server-wildcard"),
-				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-wildcard", "--ip", wildcardAddress),
-			)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(mesh),
-				testserver.WithName("k8s-test-server-pod"),
-				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-pod", "--ip", "$(POD_IP)"),
-				testserver.WithoutProbes(),
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh)),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(mesh),
+					testserver.WithName("k8s-test-server-wildcard"),
+					testserver.WithEchoArgs("echo", "--instance", "k8s-bound-wildcard", "--ip", wildcardAddress),
+				),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(mesh),
+					testserver.WithName("k8s-test-server-pod"),
+					testserver.WithEchoArgs("echo", "--instance", "k8s-bound-pod", "--ip", "$(POD_IP)"),
+					testserver.WithoutProbes(),
+				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, mesh, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -112,11 +133,11 @@ func InboundPassthroughDisabled() {
 					g.Expect(response.Instance).To(Equal(expectedInstance))
 				}).Should(Succeed())
 			},
-			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-wildcard"),
-			Entry("on universal binds to wildcard", "uni-test-server-wildcard.mesh", "uni-bound-wildcard"),
-			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.mesh", "uni-bound-wildcard-no-tp"),
-			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-pod"),
-			Entry("on universal binds to containerip", "uni-test-server-containerip.mesh", "uni-bound-containerip"),
+			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.cluster.local", "k8s-bound-wildcard"),
+			Entry("on universal binds to wildcard", "uni-test-server-wildcard.svc.kuma-5.mesh.local", "uni-bound-wildcard"),
+			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.svc.kuma-5.mesh.local", "uni-bound-wildcard-no-tp"),
+			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.cluster.local", "k8s-bound-pod"),
+			Entry("on universal binds to containerip", "uni-test-server-containerip.svc.kuma-5.mesh.local", "uni-bound-containerip"),
 		)
 	})
 
@@ -132,11 +153,11 @@ func InboundPassthroughDisabled() {
 					g.Expect(response.Instance).To(Equal(expectedInstance))
 				}).Should(Succeed())
 			},
-			Entry("on universal binds to wildcard", "uni-test-server-wildcard.mesh", "uni-bound-wildcard"),
-			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.mesh", "uni-bound-wildcard-no-tp"),
-			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-wildcard"),
-			Entry("on universal binds to containerip", "uni-test-server-containerip.mesh", "uni-bound-containerip"),
-			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-pod"),
+			Entry("on universal binds to wildcard", "uni-test-server-wildcard.svc.mesh.local", "uni-bound-wildcard"),
+			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.svc.mesh.local", "uni-bound-wildcard-no-tp"),
+			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.kuma-2.mesh.local", "k8s-bound-wildcard"),
+			Entry("on universal binds to containerip", "uni-test-server-containerip.svc.mesh.local", "uni-bound-containerip"),
+			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.kuma-2.mesh.local", "k8s-bound-pod"),
 		)
 	})
 }

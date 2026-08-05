@@ -7,18 +7,35 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func ReachableBackends() {
 	meshName := "reachable-backends"
 	namespace := "reachable-backends"
 	namespaceOutside := "reachable-backends-non-mesh"
+	identityName := "reachable-backends-identity"
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
+
+	zoneProxies := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+		)
+	}
+
 	reachableBackends := fmt.Sprintf(`
       refs:
       - kind: MeshService
@@ -39,7 +56,7 @@ func ReachableBackends() {
 `, namespace)
 
 	meshPassthrough := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1 
+apiVersion: kuma.io/v1alpha1
 kind: MeshPassthrough
 metadata:
   name: disable-passthrough-reachable
@@ -49,12 +66,22 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Sidecar"]
-    tags:
-      kuma.io/service: client-server_reachable-backends_svc_80
+    kind: Dataplane
+    labels:
+      app: client-server
   default:
     passthroughMode: None`, Config.KumaNamespace, meshName)
+
+	disableDefaultPassthrough := fmt.Sprintf(`
+type: MeshPassthrough
+mesh: %s
+name: disable-default-passthrough
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    passthroughMode: None
+`, meshName)
 
 	meshExternalService := func(serviceName string) string {
 		return fmt.Sprintf(`
@@ -110,20 +137,16 @@ spec:
         k8s.kuma.io/namespace: %s
 `, meshName, namespace)
 
+	var zones []Cluster
+
 	BeforeAll(func() {
+		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2}
 		// Global
 		err := NewClusterSetup().
-			Install(
-				Yaml(
-					builders.Mesh().
-						WithName(meshName).
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).
-						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
-						WithEgressRoutingEnabled().
-						WithoutPassthrough(),
-				),
-			).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(Yaml(builders.Mesh().WithName(meshName))).
+			Install(YamlUniversal(disableDefaultPassthrough)).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Install(YamlUniversal(mmzs)).
 			Install(YamlUniversal(mmzsNotAccessible)).
 			Install(YamlUniversal(meshExternalService("external-service"))).
@@ -143,21 +166,18 @@ spec:
 					testserver.WithName("client-server"),
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
-					testserver.WithReachableServices("dummy-service"),
 					testserver.WithReachableBackends(reachableBackends),
 				),
 				testserver.Install(
 					testserver.WithName("client-server-namespace"),
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
-					testserver.WithReachableServices("dummy-service"),
 					testserver.WithReachableBackends(reachableBackendsNamespaceLabel),
 				),
 				testserver.Install(
 					testserver.WithName("client-server-no-access"),
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
-					testserver.WithReachableServices("dummy-service"),
 					testserver.WithReachableBackends("{}"),
 				),
 				testserver.Install(
@@ -178,6 +198,7 @@ spec:
 					testserver.WithName("not-accessible-es"),
 					testserver.WithNamespace(namespaceOutside),
 				),
+				zoneProxies(),
 			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 
@@ -197,9 +218,12 @@ spec:
 					testserver.WithMesh(meshName),
 					testserver.WithEchoArgs("echo", "--instance", "other-zone-not-accessible"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

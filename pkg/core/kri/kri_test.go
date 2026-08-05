@@ -4,11 +4,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	// register core resource types (Dataplane, *Overview, ...) in the global registry
-	_ "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	rest_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
+	_ "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	rest_v1alpha1 "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
 )
 
 var _ = Describe("FromResourceMetaE", func() {

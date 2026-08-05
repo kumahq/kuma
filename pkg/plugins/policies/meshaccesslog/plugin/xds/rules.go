@@ -7,13 +7,13 @@ import (
 
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	bldrs_accesslog "github.com/kumahq/kuma/v2/pkg/envoy/builders/accesslog"
-	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	bldrs_accesslog "github.com/kumahq/kuma/v3/pkg/envoy/builders/accesslog"
+	. "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 // MatchToCEL converts a Kuma inbound Match into a CEL expression evaluating to

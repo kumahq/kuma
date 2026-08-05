@@ -18,11 +18,11 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
-	kssh "github.com/kumahq/kuma/v2/test/framework/ssh"
-	"github.com/kumahq/kuma/v2/test/framework/universal"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/tunnel"
+	kssh "github.com/kumahq/kuma/v3/test/framework/ssh"
+	"github.com/kumahq/kuma/v3/test/framework/universal"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
 type AppMode string
@@ -98,7 +98,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode
 	dockerExtraOptions = append(dockerExtraOptions, app.publishPortsForDocker()...)
 	if !runOptions.EnableIPv6 {
 		// For now supporting mixed environments with IPv4 and IPv6 addresses is challenging, specifically with
-		// builtin DNS. This is due to our mix of CoreDNS and Envoy DNS architecture.
+		// builtin DNS.
 		// Here we make sure the IPv6 address is not allocated to the container unless explicitly requested.
 		dockerExtraOptions = append(dockerExtraOptions, "--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
 	}
@@ -344,7 +344,6 @@ func (s *UniversalApp) CreateSpireAgent(
 func (s *UniversalApp) CreateDP(
 	token, cpAddress, name, mesh, ip, dpyaml string,
 	builtindns bool,
-	proxyType string,
 	concurrency int,
 	envsMap map[string]string,
 	transparent bool,
@@ -435,10 +434,6 @@ EOF
 
 	if builtindns {
 		args = append(args, "--dns-enabled")
-	}
-
-	if proxyType != "" {
-		args = append(args, "--proxy-type", proxyType)
 	}
 
 	if Config.Debug {

@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
 var _ = Describe("MeshTLS", func() {
@@ -68,12 +68,8 @@ var _ = Describe("MeshTLS", func() {
 				name: "meshtls-5",
 				file: "invalid-top-level-sectionName",
 			}),
-			Entry("mixed from and rules", testCase{
-				name: "meshtls-6",
-				file: "invalid-rules-and-from",
-			}),
 			Entry("invalid top level kind dataplane", testCase{
-				name: "meshtls-7",
+				name: "meshtls-6",
 				file: "invalid-top-level-dataplane",
 			}),
 		)

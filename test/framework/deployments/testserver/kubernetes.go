@@ -3,7 +3,6 @@ package testserver
 import (
 	"fmt"
 	"maps"
-	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -11,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
 
 const secondaryPort = 9090
@@ -259,9 +258,6 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 		},
 	}
 	spec.Spec.InitContainers = append(spec.Spec.InitContainers, k.opts.initContainersToAdd...)
-	if len(k.opts.ReachableServices) > 0 {
-		spec.Annotations["kuma.io/transparent-proxying-reachable-services"] = strings.Join(k.opts.ReachableServices, ",")
-	}
 	if k.opts.ReachableBackends != "" {
 		spec.Annotations["kuma.io/reachable-backends"] = k.opts.ReachableBackends
 	}

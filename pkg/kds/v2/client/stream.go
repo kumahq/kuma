@@ -11,13 +11,13 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/kds"
-	"github.com/kumahq/kuma/v2/pkg/kds/util"
-	cache_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/cache"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/kds"
+	"github.com/kumahq/kuma/v3/pkg/kds/util"
+	cache_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/cache"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
 )
 
 var _ DeltaKDSStream = &stream{}
@@ -229,7 +229,13 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		nameToVersion: nameToVersion,
 	}
 	return UpstreamResponse{
-		ControlPlaneId:      resp.GetControlPlane().GetIdentifier(),
+		// Attribute the batch to the connecting peer's declared client-id
+		// (s.clientID), not the ControlPlane.Identifier in the payload. The
+		// client-id is request metadata the peer declares; verifying it per
+		// connection is the (enterprise) zone-token filter's job, not this
+		// path's. The two match in ordinary sync, so this only changes behavior
+		// when they diverge.
+		ControlPlaneId:      s.clientID,
 		Nonce:               resp.GetNonce(),
 		Type:                rs.GetItemType(),
 		AddedResources:      rs,

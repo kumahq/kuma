@@ -8,7 +8,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/pkg/version"
+	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
 const previewVersion = "preview"

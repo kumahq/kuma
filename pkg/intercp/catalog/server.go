@@ -3,9 +3,9 @@ package catalog
 import (
 	"context"
 
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 )
 
 var serverLog = core.Log.WithName("intercp").WithName("catalog").WithName("server")
@@ -27,12 +27,13 @@ func NewServer(heartbeats *Heartbeats, leaderInfo component.LeaderInfo) system_p
 }
 
 func (s *server) Ping(_ context.Context, request *system_proto.PingRequest) (*system_proto.PingResponse, error) {
-	serverLog.V(1).Info("received ping", "instanceID", request.InstanceId, "address", request.Address, "ready", request.Ready)
+	serverLog.V(1).Info("received ping", "instanceID", request.InstanceId, "address", request.Address, "ready", request.Ready, "version", request.Version)
 	instance := Instance{
 		Id:          request.InstanceId,
 		Address:     request.Address,
 		InterCpPort: uint16(request.InterCpPort),
 		Leader:      false,
+		Version:     request.Version,
 	}
 	if request.Ready {
 		s.heartbeats.Add(instance)

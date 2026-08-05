@@ -15,7 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
 type updater[T envoy_types.Resource] interface {
@@ -94,6 +94,11 @@ type UnexpectedFilterConfigTypeError struct {
 
 func (e *UnexpectedFilterConfigTypeError) Error() string {
 	return fmt.Sprintf("filter config has unexpected type: expected %T, got %T", e.expected, e.actual)
+}
+
+func (e *UnexpectedFilterConfigTypeError) Is(target error) bool {
+	_, ok := target.(*UnexpectedFilterConfigTypeError)
+	return ok
 }
 
 func NewUnexpectedFilterConfigTypeError(actual, expected proto.Message) error {

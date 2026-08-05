@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	config_access "github.com/kumahq/kuma/v2/pkg/config/access"
-	"github.com/kumahq/kuma/v2/pkg/core/access"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
+	config_access "github.com/kumahq/kuma/v3/pkg/config/access"
+	"github.com/kumahq/kuma/v3/pkg/core/access"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
 )
 
 type staticZoneTokenAccess struct {

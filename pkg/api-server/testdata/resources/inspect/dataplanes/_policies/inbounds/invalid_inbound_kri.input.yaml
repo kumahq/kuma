@@ -1,8 +1,6 @@
 #/meshes/default/dataplanes/dp-1/_inbounds/invalid-kri/_policies 400
 type: Mesh
 name: default
-meshServices:
-  mode: Exclusive
 ---
 type: Dataplane
 name: dp-1

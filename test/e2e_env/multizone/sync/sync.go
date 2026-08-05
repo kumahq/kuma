@@ -1,29 +1,36 @@
 package sync
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/kds/hash"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/api"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/api"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Sync() {
 	namespace := "sync"
 	meshName := "sync"
+
+	// zoneProxies deploys the ingress and egress of the mesh in a zone. Zone
+	// proxies are mesh scoped, so every zone of the mesh needs its own.
+	zoneProxies := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+		)
+	}
 
 	BeforeAll(func() {
 		Expect(
@@ -39,12 +46,12 @@ labels:
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: MeshService
-        name: client-server_kuma-test_svc_80 # this is just something to sync
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Exact
+              value: spiffe://%[1]s/client-server_kuma-test_svc_80 # this is just something to sync
 `, meshName)),
 			)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -52,11 +59,17 @@ spec:
 		group := errgroup.Group{}
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+				zoneProxies(),
+			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 
 		NewClusterSetup().
-			Install(TestServerUniversal("test-server", meshName)).
+			Install(Parallel(
+				TestServerUniversal("test-server", meshName),
+				zoneProxies(),
+			)).
 			SetupInGroup(multizone.UniZone1, &group)
 		Expect(group.Wait()).To(Succeed())
 	})
@@ -104,28 +117,17 @@ spec:
 	})
 
 	Context("from Remote to Global", func() {
-		It("should sync Zone Ingress", func() {
+		It("should sync zone proxy Dataplanes", func() {
+			// Zone proxies are mesh-scoped Dataplanes carrying a ZoneIngress or
+			// ZoneEgress listener, so they reach Global over the same KDS path
+			// as any other Dataplane of the mesh.
 			Eventually(func(g Gomega) {
-				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses", "")
+				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "--mesh", meshName)
 				g.Expect(err).ToNot(HaveOccurred())
-				// Some tests create their own ZoneIngresses that may or may not
-				// be run simultaneously
-				g.Expect(strings.Count(out, "Online")).To(BeNumerically(">=", 4))
-			}, "30s", "1s").Should(Succeed())
-
-			// should be able to retrieve Zone Ingress from Universal zone by KRI
-			Eventually(func(g Gomega) {
-				out := mesh.NewZoneIngressResource()
-				statusCode := api.FetchResourceByKri(g, multizone.Global, out, kri.MustFromString("kri_zi__kuma-5__ingress_"))
-				g.Expect(statusCode).To(Equal(http.StatusOK))
-			}).Should(Succeed())
-		})
-
-		It("should sync Zone Egresses", func() {
-			Eventually(func(g Gomega) {
-				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneegresses")
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(strings.Count(out, "Online")).To(Equal(4))
+				for _, zone := range []string{multizone.KubeZone1.ZoneName(), multizone.UniZone1.ZoneName()} {
+					g.Expect(out).To(ContainSubstring(zoneproxy.IngressName(meshName)), "no ingress of zone %s", zone)
+					g.Expect(out).To(ContainSubstring(zoneproxy.EgressName(meshName)), "no egress of zone %s", zone)
+				}
 			}, "30s", "1s").Should(Succeed())
 		})
 
@@ -133,7 +135,9 @@ spec:
 			Eventually(func(g Gomega) {
 				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplanes", "--mesh", meshName)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(strings.Count(out, "Online")).To(Equal(2))
+				// demo-client and test-server, plus an ingress and an egress in
+				// each of the two zones the mesh spans
+				g.Expect(strings.Count(out, "Online")).To(Equal(6))
 			}, "30s", "1s").Should(Succeed())
 
 			// should be able to retrieve Dataplane from Universal zone by KRI
@@ -183,54 +187,6 @@ type: system.kuma.io/secret `, Config.KumaNamespace, meshName)
 	})
 
 	Context("from Global to Zone", func() {
-		universalPolicyNamed := func(name string, weight int) string {
-			return fmt.Sprintf(`
-type: TrafficRoute
-mesh: sync
-name: %s
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'
-conf:
-  split:
-    - weight: %d
-      destination:
-        kuma.io/service: '*'`, name, weight)
-		}
-
-		kubernetesPolicyNamed := func(name string, weight int) string {
-			return fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: TrafficRoute
-mesh: default
-metadata:
-  name: %s
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: '*'
-  conf:
-    split:
-      - weight: %d
-        destination:
-          kuma.io/service: '*'`, name, weight)
-		}
-
-		policySyncedToZones := func(name string) {
-			Eventually(func() (string, error) {
-				return k8s.RunKubectlAndGetOutputContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), "get", "trafficroute")
-			}, "30s", "1s").Should(ContainSubstring(name))
-			Eventually(func() (string, error) {
-				return multizone.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-routes", "-m", meshName)
-			}, "30s", "1s").Should(ContainSubstring(name))
-		}
-
 		It("should sync secret from zone to global", func() {
 			secretName := "global-and-zone-secret"
 			zoneSecret := fmt.Sprintf(`
@@ -272,7 +228,7 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 			Eventually(func(g Gomega) {
 				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(strings.Count(out, secretName)).To(Equal(1))
+				g.Expect(strings.Count(out, fmt.Sprintf("kuma.io/display-name: %s", secretName))).To(Equal(1))
 				g.Expect(strings.Count(out, "Z2xvYmFsCg==")).To(Equal(1))
 			}, "30s", "1s").Should(Succeed())
 			Consistently(func(g Gomega) {
@@ -287,7 +243,7 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 			Eventually(func(g Gomega) {
 				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(strings.Count(out, "new-global-secret")).To(Equal(1))
+				g.Expect(strings.Count(out, "kuma.io/display-name: new-global-secret")).To(Equal(1))
 			}, "30s", "1s").Should(Succeed())
 			// should sync resource to the zone even if one is invalid
 			Eventually(func(g Gomega) {
@@ -307,92 +263,6 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(strings.Count(out, fmt.Sprintf("kuma.io/display-name: %s", secretName))).To(Equal(1))
 			}, "10s", "1s").Should(Succeed())
-		})
-
-		It("should sync policy creation", func() {
-			// given
-			name := "tr-synced"
-
-			// when
-			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
-
-			// then
-			policySyncedToZones(name)
-		})
-
-		It("should sync policy update", func() {
-			// given
-			name := "tr-update"
-			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
-			policySyncedToZones(name)
-
-			// when
-			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 101)))).To(Succeed())
-
-			// then
-			hashedName := hash.HashedName(meshName, "tr-update")
-			Eventually(func() (string, error) {
-				return k8s.RunKubectlAndGetOutputContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), "get", "trafficroute", hashedName, "-oyaml")
-			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
-			Eventually(func() (string, error) {
-				return multizone.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
-			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
-		})
-
-		Context("Deny", func() {
-			name := "tr-denied"
-			BeforeAll(func() {
-				Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
-				policySyncedToZones(name)
-			})
-
-			It("should deny creating policy on Kube Zone CP", func() {
-				err := k8s.KubectlApplyFromStringContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), kubernetesPolicyNamed("denied", 100))
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should deny creating policy on Universal Zone CP", func() {
-				err := multizone.UniZone1.GetKumactlOptions().KumactlApplyFromString(universalPolicyNamed("denied", 100))
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should deny update on Kube Zone CP", func() {
-				policyUpdate := kubernetesPolicyNamed(name, 101)
-				err := k8s.KubectlApplyFromStringContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), policyUpdate)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should deny update on Universal Zone CP", func() {
-				policyUpdate := universalPolicyNamed(name, 101)
-				err := multizone.UniZone1.GetKumactlOptions().KumactlApplyFromString(policyUpdate)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should deny delete on Kube Zone CP", func() {
-				err := k8s.RunKubectlContextE(multizone.KubeZone1.GetTesting(), context.Background(), multizone.KubeZone1.GetKubectlOptions(), "delete", "trafficroute", name)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should deny delete on Universal Zone CP", func() {
-				err := multizone.UniZone1.GetKumactlOptions().RunKumactl("delete", "traffic-route", name, "-m", meshName)
-				Expect(err).To(HaveOccurred())
-			})
-		})
-
-		It("should sync policy with a long name and store it as display name", func() {
-			// given
-			name := strings.Repeat("x", 253)
-
-			// when
-			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
-
-			// then
-			hashedName := hash.HashedName(meshName, name)
-			for _, cluster := range multizone.Zones() {
-				Eventually(func() (string, error) {
-					return cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
-				}, "30s", "1s").Should(ContainSubstring(`kuma.io/display-name: ` + name))
-			}
 		})
 	})
 }

@@ -8,26 +8,27 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config"
-	"github.com/kumahq/kuma/v2/pkg/config/access"
-	api_server "github.com/kumahq/kuma/v2/pkg/config/api-server"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/apis"
-	"github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/config/diagnostics"
-	dns_server "github.com/kumahq/kuma/v2/pkg/config/dns-server"
-	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
-	"github.com/kumahq/kuma/v2/pkg/config/eventbus"
-	"github.com/kumahq/kuma/v2/pkg/config/intercp"
-	"github.com/kumahq/kuma/v2/pkg/config/mads"
-	"github.com/kumahq/kuma/v2/pkg/config/multizone"
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/policies"
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/runtime"
-	"github.com/kumahq/kuma/v2/pkg/config/tracing"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/config/xds"
-	"github.com/kumahq/kuma/v2/pkg/config/xds/bootstrap"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	"github.com/kumahq/kuma/v3/pkg/config/access"
+	api_server "github.com/kumahq/kuma/v3/pkg/config/api-server"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/apis"
+	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/config/diagnostics"
+	dns_server "github.com/kumahq/kuma/v3/pkg/config/dns-server"
+	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
+	"github.com/kumahq/kuma/v3/pkg/config/eventbus"
+	"github.com/kumahq/kuma/v3/pkg/config/intercp"
+	"github.com/kumahq/kuma/v3/pkg/config/mads"
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/policies"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/runtime"
+	"github.com/kumahq/kuma/v3/pkg/config/tracing"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/config/xds"
+	"github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
+	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
 )
 
 var _ config.Config = &Config{}
@@ -41,9 +42,6 @@ type Defaults struct {
 	SkipMeshCreation bool `json:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
 	// If true, it skips creating the default tenant resources
 	SkipTenantResources bool `json:"skipTenantResources" envconfig:"kuma_defaults_skip_tenant_resources"`
-	// If true, automatically create the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh.
-	// These policies are essential for traffic to flow correctly when operating a global control plane with zones running older (<2.6.0) versions of Kuma.
-	CreateMeshRoutingResources bool `json:"createMeshRoutingResources" envconfig:"kuma_defaults_create_mesh_routing_resources"`
 	// If true, it skips creating default hostname generators
 	SkipHostnameGenerators bool `json:"SkipHostnameGenerators" envconfig:"kuma_defaults_skip_hostname_generators"`
 }
@@ -144,7 +142,7 @@ type Config struct {
 	General *GeneralConfig `json:"general,omitempty"`
 	// Environment Type, can be either "kubernetes" or "universal"
 	Environment core.EnvironmentType `json:"environment,omitempty" envconfig:"kuma_environment"`
-	// Mode in which Kuma CP is running. Available values are: "standalone", "global", "zone"
+	// Mode in which Kuma CP is running. Available values are: "global", "zone"
 	Mode core.CpMode `json:"mode" envconfig:"kuma_mode"`
 	// Resource Store configuration
 	Store *store.StoreConfig `json:"store,omitempty"`
@@ -176,8 +174,6 @@ type Config struct {
 	Access access.AccessConfig `json:"access"`
 	// Configuration of experimental features
 	Experimental ExperimentalConfig `json:"experimental"`
-	// Proxy holds configuration for proxies
-	Proxy xds.Proxy `json:"proxy"`
 	// Intercommunication CP configuration
 	InterCp intercp.InterCpConfig `json:"interCp"`
 	// Tracing
@@ -286,19 +282,13 @@ var DefaultConfig = func() Config {
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
-			KubeOutboundsAsVIPs:             true,
-			UseTagFirstVirtualOutboundModel: false,
-			IngressTagFilters:               []string{},
+			IngressTagFilters: []string{},
 			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
-				Enabled:            false,
-				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
-				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
 				DelayFullResync:    false,
 			},
-			SidecarContainers: true,
-			DeltaXds:          false,
 		},
-		Proxy:         xds.DefaultProxyConfig(),
 		InterCp:       intercp.DefaultInterCpConfig(),
 		EventBus:      eventbus.Default(),
 		Policies:      policies.Default(),
@@ -333,6 +323,23 @@ func (c *Config) Validate() error {
 	}
 	switch c.Mode {
 	case core.Global:
+		if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
+			return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
+		}
+		if c.Environment == core.KubernetesEnvironment {
+			return errors.Errorf(
+				"Kubernetes-native Global Control Plane is not supported: mode=%s cannot be combined with environment=%s. "+
+					"Run mode=%s with environment=%s backed by a non-Kubernetes store such as PostgreSQL, even when Kuma CP itself is deployed on Kubernetes",
+				core.Global, core.KubernetesEnvironment, core.Global, core.UniversalEnvironment,
+			)
+		}
+		if c.Store.Type == store.KubernetesStore {
+			return errors.Errorf(
+				"Kubernetes-native Global Control Plane is not supported: mode=%s cannot be combined with store.type=%s. "+
+					"Run mode=%s with environment=%s backed by a non-Kubernetes store such as PostgreSQL, even when Kuma CP itself is deployed on Kubernetes",
+				core.Global, store.KubernetesStore, core.Global, core.UniversalEnvironment,
+			)
+		}
 		if err := c.Multizone.Global.Validate(); err != nil {
 			return errors.Wrap(err, "Multizone Global validation failed")
 		}
@@ -418,6 +425,12 @@ type GeneralConfig struct {
 	ResilientComponentBaseBackoff config_types.Duration `json:"resilientComponentBaseBackoff" envconfig:"kuma_general_resilient_component_base_backoff"`
 	// ResilientComponentMaxBackoff configures max backoff for restarting resilient component: KDS sync, Insight resync, PostgresEventListener, etc.
 	ResilientComponentMaxBackoff config_types.Duration `json:"resilientComponentMaxBackoff" envconfig:"kuma_general_resilient_component_max_backoff"`
+	// CertGenerationBaseBackoff configures the base backoff before retrying dataplane certificate generation after a failure (e.g. a misconfigured CA backend), so a failing backend is not called on every DP sync tick.
+	CertGenerationBaseBackoff config_types.Duration `json:"certGenerationBaseBackoff" envconfig:"kuma_general_cert_generation_base_backoff"`
+	// CertGenerationMaxBackoff configures the max backoff before retrying dataplane certificate generation after a failure (e.g. a misconfigured CA backend).
+	CertGenerationMaxBackoff config_types.Duration `json:"certGenerationMaxBackoff" envconfig:"kuma_general_cert_generation_max_backoff"`
+	// CertGenerationCircuitBreakerMinProxies is the number of distinct proxies that must fail certificate generation against the same backend before its circuit breaker opens and short-circuits further attempts. Kept well above 1 so a single misbehaving proxy can never trip a whole backend. In a mesh with fewer proxies than this the circuit breaker never opens and only the per-proxy backoff applies (still bounded), so small deployments may want to lower it. 0 disables the circuit breaker, leaving only per-proxy backoff.
+	CertGenerationCircuitBreakerMinProxies int `json:"certGenerationCircuitBreakerMinProxies" envconfig:"kuma_general_cert_generation_circuit_breaker_min_proxies"`
 }
 
 var _ config.Config = &GeneralConfig{}
@@ -444,36 +457,29 @@ func (g *GeneralConfig) Validate() error {
 
 func DefaultGeneralConfig() *GeneralConfig {
 	return &GeneralConfig{
-		DNSCacheTTL:                   config_types.Duration{Duration: 10 * time.Second},
-		WorkDir:                       "",
-		TlsCipherSuites:               []string{},
-		TlsMinVersion:                 "TLSv1_2",
-		ResilientComponentBaseBackoff: config_types.Duration{Duration: 5 * time.Second},
-		ResilientComponentMaxBackoff:  config_types.Duration{Duration: 1 * time.Minute},
+		DNSCacheTTL:                            config_types.Duration{Duration: 10 * time.Second},
+		WorkDir:                                "",
+		TlsCipherSuites:                        []string{},
+		TlsMinVersion:                          "TLSv1_2",
+		ResilientComponentBaseBackoff:          config_types.Duration{Duration: 5 * time.Second},
+		ResilientComponentMaxBackoff:           config_types.Duration{Duration: 1 * time.Minute},
+		CertGenerationBaseBackoff:              config_types.Duration{Duration: 5 * time.Second},
+		CertGenerationMaxBackoff:               config_types.Duration{Duration: 5 * time.Minute},
+		CertGenerationCircuitBreakerMinProxies: issuer.DefaultCircuitBreakerMinProxies,
 	}
 }
 
 func DefaultDefaultsConfig() *Defaults {
 	return &Defaults{
-		SkipMeshCreation:           false,
-		SkipTenantResources:        false,
-		CreateMeshRoutingResources: false,
-		SkipHostnameGenerators:     false,
+		SkipMeshCreation:       false,
+		SkipTenantResources:    false,
+		SkipHostnameGenerators: false,
 	}
 }
 
 type ExperimentalConfig struct {
 	config.BaseConfig
 
-	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
-	// This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
-	KubeOutboundsAsVIPs bool `json:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
-	// Tag first virtual outbound model is compressed version of default Virtual Outbound model
-	// It is recommended to use tag first model for deployments with more than 2k services
-	// You can enable this flag on existing deployment. In order to downgrade cp with this flag enabled
-	// you need to first disable this flag and redeploy cp, after config is rewritten to default
-	// format you can downgrade your cp
-	UseTagFirstVirtualOutboundModel bool `json:"useTagFirstVirtualOutboundModel" envconfig:"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL"`
 	// List of prefixes that will be used to filter out tags by keys from ingress' available services section.
 	// This can trim the size of the ZoneIngress object significantly.
 	// The drawback is that you cannot use filtered out tags for traffic routing.
@@ -481,21 +487,9 @@ type ExperimentalConfig struct {
 	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
 	// KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
 	KDSEventBasedWatchdog ExperimentalKDSEventBasedWatchdog `json:"kdsEventBasedWatchdog"`
-	// If true then control plane computes reachable services automatically based on MeshTrafficPermission.
-	// Lack of MeshTrafficPermission is treated as Deny the traffic.
-	AutoReachableServices bool `json:"autoReachableServices" envconfig:"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES"`
-	// Enables sidecar containers in Kubernetes if supported by the Kubernetes
-	// environment.
-	SidecarContainers bool `json:"sidecarContainers" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
-	// If true uses Delta xDS to deliver changes to sidecars.
-	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
-	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
-	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {
-	// If true, then experimental event based watchdog to generate KDS snapshot is used.
-	Enabled bool `json:"enabled" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED"`
 	// How often we flush changes when experimental event based watchdog is used.
 	FlushInterval config_types.Duration `json:"flushInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL"`
 	// How often we schedule full KDS resync when experimental event based watchdog is used.

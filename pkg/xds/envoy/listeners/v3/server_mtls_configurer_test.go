@@ -4,13 +4,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("ServerMtlsConfigurer", func() {
@@ -30,7 +31,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			tracker := envoy_common.NewSecretsTracker(given.mesh.GetMeta().GetName(), nil)
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(ServerSideMTLS(given.mesh, tracker, nil, nil, false, false)).
+					Configure(ServerSideMTLS(given.mesh, tracker, nil, nil, false)).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
 				Build()
 			// then
@@ -46,10 +47,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-				envoy_common.WithService("localhost:8080"),
-				envoy_common.WithWeight(200),
-			)},
+			clusters:        []envoy_common.Cluster{plugins_xds.NewClusterBuilder().WithService("localhost:8080").Build()},
 			mesh: &core_mesh.MeshResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "default",
@@ -90,12 +88,12 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                             prefix: spiffe://default/
                           sanType: URI
                       validationContextSdsSecretConfig:
-                        name: mesh_ca:secret:default
+                        name: system_mtls_ca_default
                         sdsConfig:
                           ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert:secret:default
+                    - name: system_mtls_identity_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
@@ -108,10 +106,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-				envoy_common.WithService("localhost:8080"),
-				envoy_common.WithWeight(200),
-			)},
+			clusters:        []envoy_common.Cluster{plugins_xds.NewClusterBuilder().WithService("localhost:8080").Build()},
 			mesh: &core_mesh.MeshResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "default",
@@ -152,12 +147,12 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                             prefix: spiffe://default/
                           sanType: URI
                       validationContextSdsSecretConfig:
-                        name: mesh_ca:secret:default
+                        name: system_mtls_ca_default
                         sdsConfig:
                           ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert:secret:default
+                    - name: system_mtls_identity_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3

@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("HTTP Filter modifications", func() {
@@ -314,6 +314,41 @@ var _ = Describe("HTTP Filter modifications", func() {
                       statPrefix: localhost_8081
                 name: inbound:192.168.0.1:8081
                 trafficDirection: INBOUND`,
+		}),
+		Entry("should match listener by legacy name against a unified-naming listener", testCase{
+			listeners: []string{
+				`
+                name: self_transparentproxy_passthrough_outbound_ipv4
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      httpFilters:
+                      - name: envoy.filters.http.router
+                      - name: envoy.filters.http.cors
+                      statPrefix: outbound_passthrough`,
+			},
+			modifications: []string{
+				`
+                httpFilter:
+                   operation: Remove
+                   match:
+                     listenerName: outbound:passthrough:ipv4
+`,
+			},
+			expected: `
+            resources:
+            - name: self_transparentproxy_passthrough_outbound_ipv4
+              resource:
+                '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      statPrefix: outbound_passthrough
+                name: self_transparentproxy_passthrough_outbound_ipv4`,
 		}),
 		Entry("should remove all filters of given name from all listeners", testCase{
 			listeners: []string{

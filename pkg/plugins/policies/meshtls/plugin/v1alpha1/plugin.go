@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"maps"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -9,36 +11,35 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 
-	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
-	bldrs_matcher "github.com/kumahq/kuma/v2/pkg/envoy/builders/matcher"
-	bldrs_tls "github.com/kumahq/kuma/v2/pkg/envoy/builders/tls"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	"github.com/kumahq/kuma/v2/pkg/util/proto"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	xds_tls "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
+	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
+	bldrs_matcher "github.com/kumahq/kuma/v3/pkg/envoy/builders/matcher"
+	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	xds_tls "github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
 
 var logger = core.Log.WithName("MeshTLS")
@@ -317,32 +318,25 @@ func configureInboundPassthroughListener(
 		proxy.WorkloadIdentity,
 		caBackend,
 	)
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
-	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
 	address := metadata.TransparentAllIPv4
-	inboundName := nameOrDefault(naming.ContextualTransparentProxyName("inbound", 4), metadata.TransparentInboundNameIPv4)
+	inboundName := naming.ContextualTransparentProxyName("inbound", 4)
 	if ipv6 {
-		inboundName = nameOrDefault(naming.ContextualTransparentProxyName("inbound", 6), metadata.TransparentInboundNameIPv6)
+		inboundName = naming.ContextualTransparentProxyName("inbound", 6)
 		address = metadata.TransparentAllIPv6
 	}
-	statPrefix := nameOrDefault(inboundName, "")
+	statPrefix := inboundName
 	switch tlsMode {
-	case api.ModeStrict:
+	case api.ModeStrict, api.ModePermissive:
+		// only a sidecar that opted into strict inbound ports may restrict the
+		// passthrough to the declared inbounds, and only in strict mode
+		useStrictInboundPorts := tlsMode == api.ModeStrict &&
+			proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts)
 		return generator.CreateInboundPassthroughListener(
 			proxy,
 			inboundName,
 			address,
 			tpCfg.Redirect.Inbound.Port.Uint32(),
-			true,
-			statPrefix,
-		)
-	case api.ModePermissive:
-		return generator.CreateInboundPassthroughListener(
-			proxy,
-			inboundName,
-			address,
-			tpCfg.Redirect.Inbound.Port.Uint32(),
-			false,
+			useStrictInboundPorts,
 			statPrefix,
 		)
 	}
@@ -356,23 +350,25 @@ func configureListener(
 	inbound *mesh_proto.Dataplane_Networking_Inbound,
 	conf api.Conf,
 ) (envoy_common.NamedResource, error) {
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, xdsCtx.Mesh.Resource)
-	getName := naming.GetNameOrFallbackFunc(unifiedNaming)
-
 	inboundContextualID := naming.MustContextualInboundName(proxy.Dataplane, iface.InboundName)
 
-	legacyClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
-	legacyListenerName := envoy_names.GetInboundListenerName(iface.DataplaneIP, iface.DataplanePort)
+	listenerName := inboundContextualID
+	statPrefix := inboundContextualID
+	clusterName := inboundContextualID
 
-	listenerName := getName(inboundContextualID, legacyListenerName)
-	statPrefix := getName(inboundContextualID, "")
-	clusterName := getName(inboundContextualID, legacyClusterName)
+	listenerTags := maps.Clone(proxy.Dataplane.GetMeta().GetLabels())
+	if listenerTags == nil {
+		listenerTags = map[string]string{}
+	}
+	if protocol := inbound.GetProtocolFallback(); protocol != "" {
+		listenerTags[mesh_proto.ProtocolTag] = protocol
+	}
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.InboundListener(iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.TransparentProxying(proxy)).
-		Configure(envoy_listeners.TagsMetadata(inbound.GetTags()))
+		Configure(envoy_listeners.TagsMetadata(generator.InboundListenerTags(listenerTags, inboundContextualID)))
 
 	downstreamCtx, err := downstreamTLSContext(xdsCtx, proxy, conf)
 	if err != nil {
@@ -380,9 +376,6 @@ func configureListener(
 	}
 
 	protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
-	service := inbound.GetService()
-	cluster := policies_xds.NewClusterBuilder().WithName(clusterName).Build()
-	routes := generator.GenerateRoutes(proxy, iface, cluster)
 	ciphers := pointer.Deref(conf.TlsCiphers)
 
 	filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {
@@ -393,15 +386,12 @@ func configureListener(
 			clusterName,
 			xdsCtx,
 			iface,
-			service,
-			&routes,
 			conf.TlsVersion,
 			ciphers,
 		)
 	}
 
 	filterChainKumaTLS := filterChainBuilder(true).
-		Configure(envoy_listeners.NetworkRBAC(listenerName, true, proxy.Policies.TrafficPermissions[iface])).
 		Configure(envoy_listeners.DownstreamTlsContext(downstreamCtx))
 
 	if getMeshTLSMode(
@@ -442,7 +432,7 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 	// TODO: do we need this validator since we have a better validator of CA matched with TrustDomain
 	// check: pkg/core/resources/apis/meshtrust/generator/v1alpha1/secrets.go
 	if proxy.WorkloadIdentity.ManagementMode == core_xds.KumaManagementMode {
-		for trustDomain := range xdsCtx.Mesh.CAsByTrustDomain {
+		for _, trustDomain := range util_maps.SortedKeys(xdsCtx.Mesh.CAsByTrustDomain) {
 			id, err := spiffeid.TrustDomainFromString(trustDomain)
 			if err != nil {
 				return nil, err
@@ -464,20 +454,15 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 		}
 	}
 
+	tlsVersion := pointer.Deref(conf.TlsVersion)
+
 	return bldrs_tls.NewDownstreamTLSContext().
 		Configure(
 			bldrs_tls.DownstreamCommonTlsContext(
 				bldrs_tls.NewCommonTlsContext().
 					Configure(bldrs_common.IfNotNil(conf.TlsCiphers, bldrs_tls.CipherSuites)).
-					Configure(bldrs_common.IfNotNil(conf.TlsVersion, func(version common_tls.Version) bldrs_common.Configurer[envoy_tls.CommonTlsContext] {
-						if version.Max != nil {
-							return bldrs_tls.TlsMaxVersion(version.Max)
-						}
-						if version.Min != nil {
-							return bldrs_tls.TlsMinVersion(version.Min)
-						}
-						return nil
-					})).
+					Configure(bldrs_common.If(tlsVersion.Min != nil, bldrs_tls.TlsMinVersion(tlsVersion.Min))).
+					Configure(bldrs_common.If(tlsVersion.Max != nil, bldrs_tls.TlsMaxVersion(tlsVersion.Max))).
 					Configure(
 						bldrs_tls.CombinedCertificateValidationContext(
 							bldrs_tls.NewCombinedCertificateValidationContext().

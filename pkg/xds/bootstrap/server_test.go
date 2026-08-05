@@ -16,23 +16,23 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	dp_server_cfg "github.com/kumahq/kuma/v2/pkg/config/dp-server"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	xds_config "github.com/kumahq/kuma/v2/pkg/config/xds"
-	bootstrap_config "github.com/kumahq/kuma/v2/pkg/config/xds/bootstrap"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/dp-server/server"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	dp_server_cfg "github.com/kumahq/kuma/v3/pkg/config/dp-server"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	bootstrap_config "github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/dp-server/server"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap"
 )
 
 var _ = Describe("Bootstrap Server", func() {
@@ -43,8 +43,6 @@ var _ = Describe("Bootstrap Server", func() {
 
 	authEnabled := map[string]bool{
 		string(mesh_proto.DataplaneProxyType): true,
-		string(mesh_proto.IngressProxyType):   true,
-		string(mesh_proto.EgressProxyType):    true,
 	}
 
 	version := `
@@ -95,9 +93,7 @@ var _ = Describe("Bootstrap Server", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		proxyConfig := xds_config.DefaultProxyConfig()
-
-		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0, false, false, false)
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0, false)
 		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
 			Generator: generator,
@@ -153,23 +149,6 @@ var _ = Describe("Bootstrap Server", func() {
 		}
 	}
 
-	gatewayDataplane := func() *mesh.DataplaneResource {
-		return &mesh.DataplaneResource{
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: "8.8.8.8",
-					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-						Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "gateway",
-						},
-					},
-					Admin: &mesh_proto.EnvoyAdmin{},
-				},
-			},
-		}
-	}
-
 	type testCase struct {
 		dataplaneName      string
 		dataplane          func() *mesh.DataplaneResource
@@ -180,7 +159,8 @@ var _ = Describe("Bootstrap Server", func() {
 	DescribeTable("should return configuration",
 		func(given testCase) {
 			// given
-			err := resManager.Create(context.Background(), given.dataplane(), store.CreateByKey(given.dataplaneName, "default"))
+			err := resManager.Create(context.Background(), given.dataplane(), store.CreateByKey(given.dataplaneName, "default"),
+				store.CreateWithLabels(map[string]string{metadata.KumaWorkload: "backend"}))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -221,12 +201,6 @@ var _ = Describe("Bootstrap Server", func() {
 			dataplane:          defaultDataplane,
 			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneToken": "token", "workdir": "/tmp", %s }`, version),
 			expectedConfigFile: "bootstrap.k8s.golden.yaml",
-		}),
-		Entry("with max heap size", testCase{
-			dataplaneName:      "gateway-1.default",
-			dataplane:          gatewayDataplane,
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "gateway-1.default", "dataplaneToken": "token", "workdir": "/tmp", "resources": { "maxHeapSizeBytes": 2000000 }, %s }`, version),
-			expectedConfigFile: "bootstrap.gateway.golden.yaml",
 		}),
 		Entry("full data provided", testCase{
 			dataplaneName: "dp-1.default",

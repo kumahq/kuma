@@ -1,30 +1,41 @@
 package meshmultizoneservice
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/kumahq/kuma/v2/test/e2e_env/kubernetes/gateway"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Connectivity() {
 	namespace := "mzmsconnectivity"
 	clientNamespace := "mzmsconnectivity-client"
 	meshName := "mzmsconnectivity"
+	identityName := "mzmsconnectivity-identity"
+
+	var zones []Cluster
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
+		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2, multizone.UniZone1}
 		Expect(NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Everywhere")).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(Yaml(builders.Mesh().WithName(meshName))).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Install(YamlUniversal(`
 type: MeshMultiZoneService
 name: test-server
@@ -43,53 +54,6 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		meshGateway := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshGateway
-metadata:
-  name: edge-gateway-mmzs
-  labels:
-    kuma.io/origin: zone
-mesh: %s
-spec:
-  selectors:
-  - match:
-      kuma.io/service: edge-gateway-mmzs_%s_svc
-  conf:
-    listeners:
-    - port: 8080
-      protocol: HTTP
-`, meshName, namespace)
-		gatewayRoute := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshHTTPRoute
-metadata:
-  name: route-mzms
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-    kuma.io/origin: zone
-spec:
-  targetRef:
-    kind: MeshGateway
-    name: edge-gateway-mmzs
-  to:
-    - targetRef:
-        kind: Mesh
-      rules:
-        - matches:
-            - path:
-                type: PathPrefix
-                value: /mmzs
-          default:
-            backendRefs:
-              - kind: MeshMultiZoneService
-                labels:
-                  kuma.io/display-name: test-server
-                port: 80
-                weight: 1
-`, Config.KumaNamespace, meshName)
-
 		group := errgroup.Group{}
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
@@ -105,18 +69,19 @@ spec:
 					testserver.WithNamespace(clientNamespace),
 				),
 				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+				zoneIngress(),
 			)).
-			Install(YamlK8s(meshGateway)).
-			Install(YamlK8s(gatewayRoute)).
-			Install(YamlK8s(gateway.MkGatewayInstance("edge-gateway-mmzs", namespace, meshName))).
 			SetupInGroup(multizone.KubeZone1, &group)
 
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(meshName),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(meshName),
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone2, &group)
 
@@ -124,9 +89,12 @@ spec:
 			Install(Parallel(
 				DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true)),
 				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"})),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -159,30 +127,6 @@ spec:
 			return response.Instance, nil
 		}
 	}
-
-	type testCase struct {
-		address       string
-		instanceMatch types.GomegaMatcher
-	}
-
-	DescribeTable("Gateway in Kubernetes",
-		func(given testCase) {
-			Eventually(func(g Gomega) {
-				response, err := client.CollectEchoResponse(
-					multizone.KubeZone1, "demo-client",
-					fmt.Sprintf("http://edge-gateway-mmzs.%s:8080/%s", namespace, given.address),
-					client.FromKubernetesPod(clientNamespace, "demo-client"),
-				)
-
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Instance).To(given.instanceMatch)
-			}, "30s", "1s").Should(Succeed())
-		},
-		Entry("should access MeshMultiZoneService", testCase{
-			address:       "mmzs",
-			instanceMatch: Equal("kube-test-server-1"),
-		}),
-	)
 
 	It("should access app from kube cluster and fallback to other zones", func() {
 		// given traffic to local zone only

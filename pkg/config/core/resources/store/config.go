@@ -6,10 +6,10 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/resources/k8s"
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/resources/k8s"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 )
 
 var _ config.Config = &StoreConfig{}

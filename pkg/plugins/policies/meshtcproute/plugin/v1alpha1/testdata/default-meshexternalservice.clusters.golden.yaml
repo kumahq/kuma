@@ -1,50 +1,12 @@
 resources:
-- name: backend
+- name: kri_extsvc_default___example_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: backend
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          alpnProtocols:
-          - kuma
-          combinedValidationContext:
-            defaultValidationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: spiffe://default/backend
-                sanType: URI
-            validationContextSdsSecretConfig:
-              name: mesh_ca:secret:default
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          tlsCertificateSdsSecretConfigs:
-          - name: identity_cert:secret:default
-            sdsConfig:
-              ads: {}
-              resourceApiVersion: V3
-        sni: backend{mesh=default}
-    type: EDS
-    typedExtensionProtocolOptions:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicitHttpConfig:
-          http2ProtocolOptions: {}
-- name: default_example___extsvc_9090
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    name: default_example___extsvc_9090
+    name: kri_extsvc_default___example_
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
@@ -59,14 +21,52 @@ resources:
                   exact: spiffe://default/zone-egress
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: mesh_ca:secret:default
+              name: system_mtls_ca_default
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: identity_cert:secret:default
+          - name: system_mtls_identity_default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
         sni: afce62f771ed74b78.example.9090.default.mes
     type: EDS
+- name: kri_msvc_default___backend_tcp-port
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: kri_msvc_default___backend_tcp-port
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  prefix: spiffe://default/
+                sanType: URI
+            validationContextSdsSecretConfig:
+              name: system_mtls_ca_default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: system_mtls_identity_default
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: a601e0c00295a9fbe.backend.80.default.ms
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}

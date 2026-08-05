@@ -6,10 +6,10 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/report"
-	"github.com/kumahq/kuma/v2/test/framework/universal"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/report"
+	"github.com/kumahq/kuma/v3/test/framework/universal"
 )
 
 var Cluster *framework.UniversalCluster
@@ -24,9 +24,6 @@ func SetupAndGetState() []byte {
 			framework.WithEnv("KUMA_MESH_SERVICE_LABEL_PROPAGATION_ENABLED", "true"),
 		}, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Universal)...)
 	Expect(Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))).To(Succeed())
-	Expect(Cluster.Install(framework.EgressUniversal(func(zone string) (string, error) {
-		return Cluster.GetKuma().GenerateZoneEgressToken("")
-	}))).To(Succeed())
 	bytes, err := json.Marshal(Cluster.GetUniversalNetworkingState())
 	Expect(err).ToNot(HaveOccurred())
 	return bytes
@@ -51,7 +48,6 @@ func RestoreState(bytes []byte) {
 		true,
 	)
 	Expect(err).ToNot(HaveOccurred())
-	Expect(Cluster.AddNetworking(&state.ZoneEgress, framework.Config.ZoneEgressApp)).To(Succeed())
 	Cluster.SetCp(cp)
 }
 

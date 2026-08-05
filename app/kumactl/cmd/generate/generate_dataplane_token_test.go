@@ -12,13 +12,13 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
-	test_kumactl "github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/tokens"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/issuer"
-	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/app/kumactl/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
+	test_kumactl "github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/tokens"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/issuer"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
 )
 
 type staticDataplaneTokenGenerator struct {
@@ -154,6 +154,26 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 				"--signing-key-path", filepath.Join("..", "..", "..", "..", "..", "..", "..", "test", "keys", "samplekey.pem"),
 			},
 			err: "--kid is required when --signing-key-path is used",
+		}),
+		Entry("when proxy type is not supported", errTestCase{
+			args: []string{
+				"generate", "dataplane-token",
+				"--name", "dp-1",
+				"--proxy-type", "ingress",
+				"--valid-for", "30s",
+			},
+			err: "ingress is not a valid proxy type",
+		}),
+		Entry("when proxy type is not supported for offline signing", errTestCase{
+			args: []string{
+				"generate", "dataplane-token",
+				"--name", "dp-1",
+				"--proxy-type", "egress",
+				"--valid-for", "30s",
+				"--kid", "1",
+				"--signing-key-path", filepath.Join("..", "..", "..", "..", "test", "keys", "samplekey.pem"),
+			},
+			err: "egress is not a valid proxy type",
 		}),
 	)
 })

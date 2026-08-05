@@ -1,11 +1,13 @@
 package zoneproxy
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
 
 type universalDeployment struct {
@@ -19,12 +21,12 @@ func (d *universalDeployment) Name() string {
 func (d *universalDeployment) Deploy(cluster framework.Cluster) error {
 	uniCluster := cluster.(*framework.UniversalCluster)
 
-	if d.opts.IngressPort > 0 {
+	if d.opts.Ingress {
 		if err := d.deployProxy(uniCluster, "ZoneIngress", d.ingressName(), int(d.opts.IngressPort)); err != nil {
 			return err
 		}
 	}
-	if d.opts.EgressPort > 0 {
+	if d.opts.Egress {
 		if err := d.deployProxy(uniCluster, "ZoneEgress", d.egressName(), int(d.opts.EgressPort)); err != nil {
 			return err
 		}
@@ -81,15 +83,73 @@ func (d *universalDeployment) deployProxy(uniCluster *framework.UniversalCluster
 		return errors.Wrapf(err, "failed to generate DP token for %q", name)
 	}
 
-	return uniCluster.CreateDataplaneProxy(app, name, ip, dpYAML, token, d.opts.DpEnvs)
+	if err := uniCluster.CreateDataplaneProxy(app, name, ip, dpYAML, token, d.opts.DpEnvs); err != nil {
+		return err
+	}
+
+	// CreateDataplaneProxy only starts the process. Wait for the proxy to
+	// register before returning, so a proxy that never comes up fails here
+	// rather than as a connection error in an unrelated assertion later. The
+	// Kubernetes deployment gets the same gate from WaitPodsAvailable.
+	if err := d.waitDataplaneOnline(uniCluster, name); err != nil {
+		return err
+	}
+
+	if listenerType == "ZoneIngress" {
+		return d.createMeshZoneAddress(uniCluster, name, ip, port)
+	}
+	return nil
+}
+
+func (d *universalDeployment) waitDataplaneOnline(uniCluster *framework.UniversalCluster, name string) error {
+	_, err := retry.DoWithRetryContextE(
+		uniCluster.GetTesting(), context.Background(),
+		"wait for zone proxy "+name+" to come online",
+		framework.DefaultRetries, framework.DefaultTimeout,
+		func() (string, error) {
+			online, found, err := framework.IsDataplaneOnline(uniCluster, d.opts.Mesh, name)
+			if err != nil {
+				return "", err
+			}
+			if !found {
+				return "", errors.Errorf("zone proxy %q not registered yet", name)
+			}
+			if !online {
+				return "", errors.Errorf("zone proxy %q not online yet", name)
+			}
+			return "", nil
+		})
+	return err
+}
+
+// createMeshZoneAddress publishes the address other zones dial to reach this
+// ingress. On Kubernetes the meshzoneaddress controller derives it from the
+// zone proxy Service; on Universal there is no Service, so the deployment
+// creates the resource itself.
+func (d *universalDeployment) createMeshZoneAddress(uniCluster *framework.UniversalCluster, name, ip string, port int) error {
+	mza := fmt.Sprintf(`
+type: MeshZoneAddress
+name: %s
+mesh: %s
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: %s
+spec:
+  address: %s
+  port: %d
+`, name, d.opts.Mesh, uniCluster.ZoneName(), ip, port)
+
+	return framework.NewClusterSetup().
+		Install(framework.YamlUniversal(mza)).
+		Setup(uniCluster)
 }
 
 func (d *universalDeployment) ingressName() string {
-	return fmt.Sprintf("%s-ingress", d.opts.Name)
+	return ingressName(d.opts.Name)
 }
 
 func (d *universalDeployment) egressName() string {
-	return fmt.Sprintf("%s-egress", d.opts.Name)
+	return egressName(d.opts.Name)
 }
 
 func (d *universalDeployment) Delete(_ framework.Cluster) error {

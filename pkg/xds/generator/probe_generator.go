@@ -6,20 +6,20 @@ import (
 
 	"github.com/pkg/errors"
 
-	model "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
-	envoy_virtual_hosts "github.com/kumahq/kuma/v2/pkg/xds/envoy/virtualhosts"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	model "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
+	envoy_virtual_hosts "github.com/kumahq/kuma/v3/pkg/xds/envoy/virtualhosts"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 type ProbeProxyGenerator struct{}
 
-func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, _ xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	// if app probe proxy is enabled for this DP, Virtual Probes are not needed
 	appProbeProxyEnabled := proxy.Metadata.GetAppProbeProxyEnabled()
 	if appProbeProxyEnabled {
@@ -33,9 +33,10 @@ func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, _
 
 	virtualHostBuilder := envoy_virtual_hosts.NewVirtualHostBuilder(proxy.APIVersion, "probe")
 
-	portSet := map[uint32]bool{}
+	inboundNameByPort := map[uint32]string{}
 	for _, inbound := range proxy.Dataplane.Spec.Networking.Inbound {
-		portSet[proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound).WorkloadPort] = true
+		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
+		inboundNameByPort[iface.WorkloadPort] = iface.InboundName
 	}
 	for _, endpoint := range probes.Endpoints {
 		matchURL, err := url.Parse(endpoint.Path)
@@ -46,9 +47,10 @@ func (g ProbeProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, _
 		if err != nil {
 			return nil, err
 		}
-		if portSet[endpoint.InboundPort] {
+		if inboundName, ok := inboundNameByPort[endpoint.InboundPort]; ok {
+			localClusterName := naming.MustContextualInboundName(proxy.Dataplane, inboundName)
 			virtualHostBuilder.Configure(
-				envoy_virtual_hosts.Route(matchURL.Path, newURL.Path, names.GetLocalClusterName(endpoint.InboundPort), true))
+				envoy_virtual_hosts.Route(matchURL.Path, newURL.Path, localClusterName, true))
 		} else {
 			// On Kubernetes we are overriding probes for every container, but there is no guarantee that given
 			// probe will have an equivalent in inbound interface (ex. sidecar that is not selected by any service).

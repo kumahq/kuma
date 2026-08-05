@@ -5,14 +5,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kumahq/kuma/v2/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework"
 )
 
 type DeploymentOpts struct {
 	Name                string
 	Namespace           string
 	Mesh                string
-	ReachableServices   []string
 	ReachableBackends   string
 	WithStatefulSet     bool
 	ServiceAccount      string
@@ -65,12 +64,6 @@ func WithTLS(key, crt string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.tlsKey = key
 		opts.tlsCrt = crt
-	}
-}
-
-func WithReachableServices(services ...string) DeploymentOptsFn {
-	return func(opts *DeploymentOpts) {
-		opts.ReachableServices = services
 	}
 }
 

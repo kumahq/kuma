@@ -14,20 +14,20 @@ import (
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	mads_config "github.com/kumahq/kuma/v2/pkg/config/mads"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/mads"
-	mads_v1 "github.com/kumahq/kuma/v2/pkg/mads/v1/service"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	kuma_srv "github.com/kumahq/kuma/v2/pkg/util/http/server"
-	util_prometheus "github.com/kumahq/kuma/v2/pkg/util/prometheus"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	mads_config "github.com/kumahq/kuma/v3/pkg/config/mads"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/mads"
+	mads_v1 "github.com/kumahq/kuma/v3/pkg/mads/v1/service"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	kuma_srv "github.com/kumahq/kuma/v3/pkg/util/http/server"
+	util_prometheus "github.com/kumahq/kuma/v3/pkg/util/prometheus"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 )
 
 var log = core.Log.WithName("mads-server")
@@ -39,9 +39,8 @@ type muxServer struct {
 	metrics core_metrics.Metrics
 	ready   atomic.Bool
 	mesh_proto.UnimplementedMultiplexServiceServer
-	rm                  manager.ReadOnlyResourceManager
-	meshCache           *mesh.Cache
-	inboundTagsDisabled bool
+	rm        manager.ReadOnlyResourceManager
+	meshCache *mesh.Cache
 }
 
 type HttpService interface {
@@ -84,7 +83,7 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 		})))
 	if s.config.VersionIsEnabled(mads.API_V1) {
 		log.Info("MADS v1 is enabled")
-		svc := mads_v1.NewService(s.config, s.rm, log.WithValues("apiVersion", mads.API_V1), s.meshCache, s.inboundTagsDisabled)
+		svc := mads_v1.NewService(s.config, s.rm, log.WithValues("apiVersion", mads.API_V1), s.meshCache)
 		svc.RegisterRoutes(ws)
 		svc.Start(ctx)
 	}
@@ -121,15 +120,18 @@ func SetupServer(rt core_runtime.Runtime) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}
+	if rt.Config().Environment == config_core.KubernetesEnvironment {
+		log.Info("MADS is not supported on Kubernetes, use MeshMetric with Prometheus Kubernetes service discovery instead")
+		return nil
+	}
 	if !rt.Config().MonitoringAssignmentServer.Enabled {
 		log.Info("MADS server is disabled")
 		return nil
 	}
 	return rt.Add(&muxServer{
-		meshCache:           rt.MeshCache(),
-		rm:                  rt.ReadOnlyResourceManager(),
-		config:              rt.Config().MonitoringAssignmentServer,
-		metrics:             rt.Metrics(),
-		inboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
+		meshCache: rt.MeshCache(),
+		rm:        rt.ReadOnlyResourceManager(),
+		config:    rt.Config().MonitoringAssignmentServer,
+		metrics:   rt.Metrics(),
 	})
 }

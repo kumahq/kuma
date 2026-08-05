@@ -4,15 +4,16 @@ mesh: mesh-1
 name: mtp-1
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
       version: v1
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
@@ -20,78 +21,86 @@ name: mtp-2
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-3
 spec:
   targetRef:
-    kind: MeshService
-    name: web
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-4
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       version: v1
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-5
 spec:
   targetRef:
-    kind: MeshService
-    name: backend
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+    kind: Dataplane
+    labels:
+      kuma.io/service: backend
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-6
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
       version: v2
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-7
 spec:
   targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
+    kind: Dataplane
+    labels:
+      kuma.io/service: web
       env: dev
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://mesh-1

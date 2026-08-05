@@ -3,7 +3,7 @@ package install
 import (
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
 )
 
 func NewInstallCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -16,7 +16,6 @@ func NewInstallCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	// sub-commands
 	cmd.AddCommand(newInstallControlPlaneCmd(&pctx.InstallCpContext))
 	cmd.AddCommand(newInstallCrdsCmd(&pctx.InstallCRDContext))
-	cmd.AddCommand(newInstallObservability(pctx))
 	cmd.AddCommand(newInstallDemoCmd(&pctx.InstallDemoContext))
 	cmd.AddCommand(newInstallTransparentProxy())
 	cmd.AddCommand(newInstallTransparentProxyValidator())

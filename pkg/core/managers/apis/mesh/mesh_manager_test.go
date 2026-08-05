@@ -7,30 +7,30 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_store "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/config/multizone"
-	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
-	"github.com/kumahq/kuma/v2/pkg/core/datasource"
-	"github.com/kumahq/kuma/v2/pkg/core/managers/apis/mesh"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/secrets/cipher"
-	secrets_manager "github.com/kumahq/kuma/v2/pkg/core/secrets/manager"
-	secrets_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/v2/pkg/core/tokens"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	ca_builtin "github.com/kumahq/kuma/v2/pkg/plugins/ca/builtin"
-	"github.com/kumahq/kuma/v2/pkg/plugins/ca/provided"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	test_resources "github.com/kumahq/kuma/v2/pkg/test/resources"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
+	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
+	"github.com/kumahq/kuma/v3/pkg/core/datasource"
+	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
+	secrets_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
+	secrets_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/v3/pkg/core/tokens"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	ca_builtin "github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin"
+	"github.com/kumahq/kuma/v3/pkg/plugins/ca/provided"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	test_resources "github.com/kumahq/kuma/v3/pkg/test/resources"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Mesh Manager", func() {
@@ -59,9 +59,7 @@ var _ = Describe("Mesh Manager", func() {
 				Store: &config_store.StoreConfig{
 					Type: config_store.MemoryStore, UnsafeDelete: false,
 				},
-				Defaults: &kuma_cp.Defaults{
-					CreateMeshRoutingResources: false,
-				},
+				Defaults:  &kuma_cp.Defaults{},
 				Multizone: multizone.DefaultMultizoneConfig(),
 			})
 		unsafeDeleteResManager = mesh.NewMeshManager(
@@ -71,9 +69,7 @@ var _ = Describe("Mesh Manager", func() {
 				Store: &config_store.StoreConfig{
 					Type: config_store.MemoryStore, UnsafeDelete: true,
 				},
-				Defaults: &kuma_cp.Defaults{
-					CreateMeshRoutingResources: false,
-				},
+				Defaults:  &kuma_cp.Defaults{},
 				Multizone: multizone.DefaultMultizoneConfig(),
 			})
 	})
@@ -151,72 +147,6 @@ var _ = Describe("Mesh Manager", func() {
 			key := tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(meshName), tokens.DefaultKeyID, meshName)
 			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(key))
 			Expect(err).ToNot(HaveOccurred())
-		})
-
-		Describe("should set default values for Prometheus settings", func() {
-			type testCase struct {
-				input    string
-				expected string
-			}
-
-			DescribeTable("should apply defaults on a target MeshResource",
-				func(given testCase) {
-					// given
-					key := model.ResourceKey{Name: "demo"}
-					mesh := core_mesh.NewMeshResource()
-
-					// when
-					err := util_proto.FromYAML([]byte(given.input), mesh.Spec)
-					// then
-					Expect(err).ToNot(HaveOccurred())
-
-					// when
-					err = resManager.Create(context.Background(), mesh, store.CreateBy(key))
-					// then
-					Expect(err).ToNot(HaveOccurred())
-
-					// when
-					actual, err := util_proto.ToYAML(mesh.Spec)
-					// then
-					Expect(err).ToNot(HaveOccurred())
-					Expect(actual).To(MatchYAML(given.expected))
-
-					By("fetching a fresh Mesh object")
-
-					new := core_mesh.NewMeshResource()
-
-					// when
-					err = resManager.Get(context.Background(), new, store.GetBy(key))
-					// then
-					Expect(err).ToNot(HaveOccurred())
-
-					// when
-					actual, err = util_proto.ToYAML(new.Spec)
-					// then
-					Expect(err).ToNot(HaveOccurred())
-					Expect(actual).To(MatchYAML(given.expected))
-				},
-				Entry("when both `metrics.prometheus.port` and `metrics.prometheus.path` are not set", testCase{
-					input: `
-                    metrics:
-                      backends:
-                      - name: prometheus-1
-                        type: prometheus
-`,
-					expected: `
-                    metrics:
-                      backends:
-                      - name: prometheus-1
-                        type: prometheus
-                        conf:
-                          port: 5670
-                          path: /metrics
-                          tags:
-                            kuma.io/service: dataplane-metrics
-                          tls: {}
-`,
-				}),
-			)
 		})
 
 		It("should validate all CAs", func() {
@@ -361,140 +291,6 @@ var _ = Describe("Mesh Manager", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-		})
-
-		Describe("should set default values for Prometheus settings", func() {
-			type testCase struct {
-				initial  string
-				updated  string
-				expected string
-			}
-
-			DescribeTable("should apply defaults on a target MeshResource",
-				func(given testCase) {
-					// given
-					key := model.ResourceKey{Name: "demo"}
-					mesh := core_mesh.NewMeshResource()
-
-					// when
-					err := util_proto.FromYAML([]byte(given.initial), mesh.Spec)
-					// then
-					Expect(err).ToNot(HaveOccurred())
-
-					By("creating a new Mesh")
-					// when
-					err = resManager.Create(context.Background(), mesh, store.CreateBy(key))
-					// then
-					Expect(err).ToNot(HaveOccurred())
-
-					By("changing Prometheus settings")
-					// when
-					mesh.Spec = &mesh_proto.Mesh{}
-					err = util_proto.FromYAML([]byte(given.updated), mesh.Spec)
-					// then
-					Expect(err).ToNot(HaveOccurred())
-
-					By("updating the Mesh with new Prometheus settings")
-					// when
-					err = resManager.Update(context.Background(), mesh)
-					// then
-					Expect(err).ToNot(HaveOccurred())
-
-					// when
-					actual, err := util_proto.ToYAML(mesh.Spec)
-					// then
-					Expect(err).ToNot(HaveOccurred())
-					Expect(actual).To(MatchYAML(given.expected))
-
-					By("fetching a fresh Mesh object")
-
-					new := core_mesh.NewMeshResource()
-
-					// when
-					err = resManager.Get(context.Background(), new, store.GetBy(key))
-					// then
-					Expect(err).ToNot(HaveOccurred())
-
-					// when
-					actual, err = util_proto.ToYAML(new.Spec)
-					// then
-					Expect(err).ToNot(HaveOccurred())
-					Expect(actual).To(MatchYAML(given.expected))
-				},
-				Entry("when both config is changed", testCase{
-					initial: `
-                    metrics:
-                      enabledBackend: prometheus-1
-                      backends:
-                      - name: prometheus-1
-                        type: prometheus
-`,
-					updated: `
-                    metrics:
-                      enabledBackend: prometheus-1
-                      backends:
-                      - name: prometheus-1
-                        type: prometheus
-                        conf:
-                          port: 1234
-                          path: /non-standard-path
-                          tags:
-                            kuma.io/service: custom-prom
-`,
-					expected: `
-                    metrics:
-                      enabledBackend: prometheus-1
-                      backends:
-                      - name: prometheus-1
-                        type: prometheus
-                        conf:
-                          port: 1234
-                          path: /non-standard-path
-                          tags:
-                            kuma.io/service: custom-prom
-                          tls: {}
-`,
-				}),
-				Entry("when config remain unchanged", testCase{
-					initial: `
-                    metrics:
-                      enabledBackend: prometheus-1
-                      backends:
-                      - name: prometheus-1
-                        type: prometheus
-                        conf:
-                          port: 1234
-                          path: /non-standard-path
-                          tags:
-                            kuma.io/service: custom-prom
-`,
-					updated: `
-                    metrics:
-                      enabledBackend: prometheus-1
-                      backends:
-                      - name: prometheus-1
-                        type: prometheus
-                        conf:
-                          port: 1234
-                          path: /non-standard-path
-                          tags:
-                            kuma.io/service: custom-prom
-`,
-					expected: `
-                    metrics:
-                      enabledBackend: prometheus-1
-                      backends:
-                      - name: prometheus-1
-                        type: prometheus
-                        conf:
-                          port: 1234
-                          path: /non-standard-path
-                          tags:
-                            kuma.io/service: custom-prom
-                          tls: {}
-`,
-				}),
-			)
 		})
 	})
 })

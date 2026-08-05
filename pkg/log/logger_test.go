@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 )
 
 var _ = Describe("Logger", func() {

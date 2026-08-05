@@ -6,8 +6,8 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
-	v3 "github.com/kumahq/kuma/v2/pkg/hds/v3"
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
+	v3 "github.com/kumahq/kuma/v3/pkg/hds/v3"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
 )
 
 type reconciler struct {
@@ -27,7 +27,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_config_core_v3.N
 	switch {
 	case oldSnapshot == nil:
 		snap = newSnapshot
-	case !util_xds_v3.SingleTypeSnapshotEqual(oldSnapshot, newSnapshot):
+	case !util_xds_v3.SingleTypeSnapshotEqual(newSnapshot, oldSnapshot):
 		snap = newSnapshot
 	default:
 		snap = oldSnapshot

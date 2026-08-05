@@ -10,18 +10,18 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice"
-	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice"
+	meshmzservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 )
 
 var _ = Describe("Updater", func() {
@@ -61,7 +61,7 @@ var _ = Describe("Updater", func() {
 
 	ms1Builder := samples.MeshServiceBackendBuilder().
 		WithName("backend").
-		WithDataplaneTagsSelectorKV("app", "backend").
+		WithDataplaneLabelsSelectorKV("app", "backend").
 		WithLabels(map[string]string{
 			mesh_proto.DisplayName: "backend",
 			mesh_proto.ZoneTag:     "east",
@@ -69,7 +69,7 @@ var _ = Describe("Updater", func() {
 
 	ms2Builder := samples.MeshServiceBackendBuilder().
 		WithName("backend-syncedhash").
-		WithDataplaneTagsSelectorKV("app", "backend").
+		WithDataplaneLabelsSelectorKV("app", "backend").
 		WithLabels(map[string]string{
 			mesh_proto.DisplayName: "backend",
 			mesh_proto.ZoneTag:     "west",

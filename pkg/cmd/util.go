@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 
-	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
 )
 
 type RunCmdOpts struct {

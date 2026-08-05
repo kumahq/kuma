@@ -11,36 +11,37 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshaccesslog_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	meshcircuitbreaker_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshretry_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
-	meshtcproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	meshtimeout_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshaccesslog_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshcircuitbreaker_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func MeshExternalService() {
 	var tcpSinkDockerName string
 	meshNameNoDefaults := "mesh-external-service-no-default-policy"
-	meshDefaulMtlsOn := func(meshName string) InstallFunc {
+	identityName := "mes-identity"
+	disableDefaultPassthrough := func(meshName string) InstallFunc {
 		return YamlUniversal(fmt.Sprintf(`
-type: Mesh
-name: "%s"
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-networking:
-  outbound:
-    passthrough: false
+type: MeshPassthrough
+mesh: %s
+name: disable-default-passthrough
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    passthroughMode: None
 `, meshName))
 	}
 
@@ -95,7 +96,17 @@ networking:
 		esHttp2ContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttp2Name)
 
 		err := NewClusterSetup().
-			Install(meshDefaulMtlsOn(meshNameNoDefaults)).
+			Install(Yaml(builders.Mesh().WithName(meshNameNoDefaults))).
+			Install(MeshIdentityBundled(meshNameNoDefaults, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				meshNameNoDefaults,
+				MeshIdentityTrustDomain(meshNameNoDefaults, universal.Cluster),
+			)).
+			Install(disableDefaultPassthrough(meshNameNoDefaults)).
+			Install(zoneproxy.Install(
+				zoneproxy.WithMesh(meshNameNoDefaults),
+				zoneproxy.WithEgress(),
+			)).
 			Install(TcpSinkUniversal("mes-tcp-sink", WithDockerContainerName(tcpSinkDockerName))).
 			Install(TestServerExternalServiceUniversal(esHttpName, 80, false, WithDockerContainerName(esHttpContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).
@@ -103,6 +114,13 @@ networking:
 			Install(DemoClientUniversal("mes-demo-client-no-defaults", meshNameNoDefaults, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(func(g Gomega) {
+			out, err := universal.Cluster.GetKumactlOptions().
+				RunKumactlAndGetOutput("get", "meshidentity", "-m", meshNameNoDefaults, identityName, "-o", "json")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).To(ContainSubstring("Successfully initialized"))
+		}, "30s", "1s").Should(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -231,7 +249,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes-retry
+        labels:
+          kuma.io/display-name: mes-retry
       default:
         http:
           numRetries: 5
@@ -297,7 +316,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes-timeout
+        labels:
+          kuma.io/display-name: mes-timeout
       default:
         idleTimeout: 20s
         http:
@@ -386,7 +406,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes-http-route
+        labels:
+          kuma.io/display-name: mes-http-route
       rules:
         - matches:
             - path:
@@ -395,7 +416,8 @@ spec:
           default:
             backendRefs:
               - kind: MeshExternalService
-                name: mes-http-2-route
+                labels:
+                  kuma.io/display-name: mes-http-2-route
                 weight: 100
 `, meshNameNoDefaults)
 			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
@@ -475,12 +497,14 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes-tcp-route
+        labels:
+          kuma.io/display-name: mes-tcp-route
       rules:
         - default:
             backendRefs:
               - kind: MeshExternalService
-                name: mes-tcp-2-route
+                labels:
+                  kuma.io/display-name: mes-tcp-2-route
 `, meshNameNoDefaults)
 			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
 			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService2))).To(Succeed())
@@ -565,7 +589,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes-access-log
+        labels:
+          kuma.io/display-name: mes-access-log
       default:
         backends:
           - type: Tcp

@@ -1,9 +1,0 @@
-type: TrafficLog
-name: all-traffic
-mesh: logging
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'

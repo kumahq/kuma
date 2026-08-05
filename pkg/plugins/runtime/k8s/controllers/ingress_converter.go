@@ -6,8 +6,8 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 // List of priority for picking IP when Service that selects ingress is of type NodePort
@@ -27,10 +27,7 @@ func (p *PodConverter) IngressFor(
 	if len(services) != 1 {
 		return errors.Errorf("ingress should be matched by exactly one service. Matched %d services", len(services))
 	}
-	ifaces, err := p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)
-	if err != nil {
-		return errors.Wrap(err, "could not generate inbound interfaces")
-	}
+	ifaces := p.InboundConverter.InboundInterfacesFor(pod, services)
 	if len(ifaces) != 1 {
 		return errors.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
 	}

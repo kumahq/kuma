@@ -8,4 +8,4 @@ healthChecks:
       text: 63476c755a776f3d
   timeout: 2s
   unhealthyThreshold: 3
-name: echo-tcp
+name: kri_msvc_default___echo-tcp_80

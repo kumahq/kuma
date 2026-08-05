@@ -1,8 +1,6 @@
 #/meshes/default/dataplanes/dp-1/_layout 200
 type: Mesh
 name: default
-meshServices:
-  mode: Exclusive
 ---
 type: Dataplane
 name: dp-1
@@ -14,11 +12,13 @@ networking:
   inbound:
     - port: 8080
       name: main-port
+      protocol: http
       tags:
         kuma.io/service: foo
         kuma.io/protocol: http
     - port: 8081
       name: secondary-port
+      protocol: tcp
       tags:
         kuma.io/service: foo
         kuma.io/protocol: tcp

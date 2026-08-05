@@ -7,11 +7,11 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var (

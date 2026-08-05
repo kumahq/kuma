@@ -1,7 +1,7 @@
 address:
   socketAddress:
     address: 127.0.0.1
-    portValue: 37777
+    portValue: 37779
 filterChains:
 - filters:
   - name: envoy.filters.network.tcp_proxy
@@ -13,22 +13,26 @@ filterChains:
           '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
           attributes: {}
           body:
-            stringValue: '[%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-service-tcp)
-              took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED%
-              bytes'
+            kvlistValue:
+              values:
+              - key: mesh
+                value:
+                  stringValue: default
           grpcService:
             envoyGrpc:
-              clusterName: meshaccesslog:opentelemetry:0
+              clusterName: system_meshaccesslog_other-otel-collector-5317
           logName: MeshAccessLog
           resourceAttributes:
             values:
             - key: kuma.mesh
               value:
                 stringValue: default
-      cluster: other-service-tcp
-      statPrefix: other-service-tcp
+      cluster: kri_msvc_default_zone-1_other-ns_bar-meshservice-tcp_37779
+      statPrefix: kri_msvc_default_zone-1_other-ns_bar-meshservice-tcp_37779
 metadata:
   filterMetadata:
-    io.kuma.tags: {}
-name: outbound:127.0.0.1:37777
+    io.kuma.tags:
+      kuma.io/unified-name: kri_msvc_default_zone-1_other-ns_bar-meshservice-tcp_37779
+name: kri_msvc_default_zone-1_other-ns_bar-meshservice-tcp_37779
+statPrefix: kri_msvc_default_zone-1_other-ns_bar-meshservice-tcp_37779
 trafficDirection: OUTBOUND

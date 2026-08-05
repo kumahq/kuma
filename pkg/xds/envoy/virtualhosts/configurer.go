@@ -4,10 +4,7 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_routes_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes/v3"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
 func DomainNames(domainNames ...string) VirtualHostBuilderOpt {
@@ -22,11 +19,9 @@ func DomainNames(domainNames ...string) VirtualHostBuilderOpt {
 	)
 }
 
-func Routes(routes envoy_common.Routes) VirtualHostBuilderOpt {
-	return AddVirtualHostConfigurer(
-		&RoutesConfigurer{
-			Routes: routes,
-		})
+// CatchAllRoute configures the single prefix "/" route of an inbound virtual host.
+func CatchAllRoute(cluster envoy_common.Cluster) VirtualHostBuilderOpt {
+	return AddVirtualHostConfigurer(&CatchAllRouteConfigurer{Cluster: cluster})
 }
 
 // Redirect for paths that match to matchPath returns 301 status code with new port and path
@@ -61,14 +56,6 @@ func SetResponseHeader(name string, value string) VirtualHostBuilderOpt {
 			}
 
 			vh.ResponseHeadersToAdd = append(vh.ResponseHeadersToAdd, hsts)
-		}),
-	)
-}
-
-func Retry(retry *core_mesh.RetryResource, protocol core_meta.Protocol) VirtualHostBuilderOpt {
-	return AddVirtualHostConfigurer(
-		VirtualHostMustConfigureFunc(func(vh *envoy_config_route_v3.VirtualHost) {
-			vh.RetryPolicy = envoy_routes_v3.RetryConfig(retry, protocol)
 		}),
 	)
 }

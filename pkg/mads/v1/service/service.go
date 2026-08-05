@@ -7,14 +7,14 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/go-logr/logr"
 
-	"github.com/kumahq/kuma/v2/pkg/config/mads"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	mads_generator "github.com/kumahq/kuma/v2/pkg/mads/v1/generator"
-	mads_reconcile "github.com/kumahq/kuma/v2/pkg/mads/v1/reconcile"
-	util_watchdog "github.com/kumahq/kuma/v2/pkg/util/watchdog"
-	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
+	"github.com/kumahq/kuma/v3/pkg/config/mads"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	mads_generator "github.com/kumahq/kuma/v3/pkg/mads/v1/generator"
+	mads_reconcile "github.com/kumahq/kuma/v3/pkg/mads/v1/reconcile"
+	util_watchdog "github.com/kumahq/kuma/v3/pkg/util/watchdog"
+	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 )
 
 type service struct {
@@ -24,12 +24,12 @@ type service struct {
 	watchdog *util_watchdog.SimpleWatchdog
 }
 
-func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.ReadOnlyResourceManager, log logr.Logger, meshCache *mesh.Cache, inboundTagsDisabled bool) *service {
+func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.ReadOnlyResourceManager, log logr.Logger, meshCache *mesh.Cache) *service {
 	hasher := &util_xds_v3.FallBackNodeHash{DefaultId: mads_generator.DefaultKumaClientId}
 	cache := envoy_cache.NewSnapshotCache(false, hasher, util_xds.NewLogger(log))
 	reconciler := mads_reconcile.NewReconciler(
 		cache,
-		mads_reconcile.NewSnapshotGenerator(rm, mads_generator.MonitoringAssignmentsGenerator{InboundTagsDisabled: inboundTagsDisabled}, meshCache, inboundTagsDisabled),
+		mads_reconcile.NewSnapshotGenerator(rm, meshCache),
 	)
 	// We use the clientIds from the reconciler from the node hasher
 	hasher.GetIds = reconciler.KnownClientIds

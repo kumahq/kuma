@@ -1,0 +1,17 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+    rollouts-pod-template-hash: active-hash
+    kuma.io/sidecar-injection: enabled
+spec:
+  containers:
+    - ports:
+        - containerPort: 9000
+          name: grpc
+status:
+  podIP: 192.168.0.1
+  containerStatuses:
+    - ready: true
+      started: true

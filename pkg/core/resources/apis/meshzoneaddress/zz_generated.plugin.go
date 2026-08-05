@@ -1,9 +1,9 @@
 package meshzoneaddress
 
 import (
-	api_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
-	k8s_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/k8s/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
+	api_v1alpha1 "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
+	k8s_v1alpha1 "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/k8s/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 )
 
 func InitPlugin() {

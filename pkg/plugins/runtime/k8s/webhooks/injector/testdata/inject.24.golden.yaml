@@ -5,30 +5,86 @@ metadata:
     docs: Documentation
     kubectl.kubernetes.io/default-container: busybox
     kuma.io/application-probe-proxy-port: "0"
-    kuma.io/builtin-dns: enabled
-    kuma.io/builtin-dns-logging: "false"
-    kuma.io/builtin-dns-port: "25053"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/sidecar-env-vars: KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-proxy-concurrency: "99"
-    kuma.io/sidecar-uid: "5678"
-    kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-inbound-port: "15006"
-    kuma.io/transparent-proxying-ip-family-mode: dualstack
-    kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: disabled
     kuma.io/virtual-probes-port: "9000"
+    traffic.kuma.io/transparent-proxy-config: |
+      ipFamilyMode: dualstack
+      kumaDPUser: "5678"
+      redirect:
+        dns:
+          captureAll: false
+          enabled: false
+          port: 25053
+          resolvConfigPath: /etc/resolv.conf
+          skipConntrackZoneSplit: false
+        inbound:
+          enabled: true
+          port: 15006
+        outbound:
+          enabled: true
+          port: 15001
+      retry:
+        maxRetries: 4
+        sleepBetweenRetries: 2s
+      wait: 5
+      waitInterval: 0
   labels:
     kuma.io/mesh: default
     run: busybox
   name: busybox
 spec:
   containers:
+  - image: busybox
+    name: busybox
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
+  initContainers:
+  - args:
+    - --config=/tmp/transparent-proxy/base/config.yaml
+    command:
+    - /usr/bin/kumactl
+    - install
+    - transparent-proxy
+    env:
+    - name: XTABLES_LOCKFILE
+      value: /tmp/xtables.lock
+    image: kuma/kuma-init:latest
+    imagePullPolicy: IfNotPresent
+    name: kuma-init
+    resources:
+      limits:
+        memory: 50M
+      requests:
+        cpu: 20m
+        memory: 20M
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+        - NET_RAW
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsGroup: 0
+      runAsUser: 0
+    volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
+    - mountPath: /tmp/transparent-proxy/base
+      name: transparent-proxy-base
+      readOnly: true
   - args:
     - run
     - --log-level=info
     - --concurrency=99
+    - --transparent-proxy-config=/tmp/transparent-proxy/base/config.yaml
     env:
     - name: INSTANCE_IP
       valueFrom:
@@ -69,16 +125,10 @@ spec:
       value: "false"
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
-    - name: KUMA_DNS_CORE_DNS_BINARY_PATH
-      value: coredns
-    - name: KUMA_DNS_CORE_DNS_PORT
-      value: "25053"
     - name: KUMA_DNS_ENABLED
       value: "true"
-    - name: KUMA_DNS_ENABLE_LOGGING
-      value: "false"
-    - name: KUMA_DNS_ENVOY_DNS_PORT
-      value: "25055"
+    - name: KUMA_DNS_PROXY_PORT
+      value: "25053"
     - name: NEW_ENV_VAR
       value: "123"
     - name: POD_NAME
@@ -93,6 +143,13 @@ spec:
           fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - killall
+          - -USR2
+          - kuma-dp
     livenessProbe:
       failureThreshold: 212
       httpGet:
@@ -121,6 +178,7 @@ spec:
         cpu: 150m
         ephemeral-storage: 50M
         memory: 164Mi
+    restartPolicy: Always
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -129,20 +187,20 @@ spec:
       readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
+    startupProbe:
+      httpGet:
+        path: /ready
+        port: 9901
+      successThreshold: 1
     volumeMounts:
     - mountPath: /tmp
       name: kuma-sidecar-tmp
+    - mountPath: /tmp/transparent-proxy/base
+      name: transparent-proxy-base
+      readOnly: true
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
-  - image: busybox
-    name: busybox
-    resources: {}
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
-  initContainers:
   - command:
     - sh
     - -c
@@ -150,39 +208,6 @@ spec:
     image: busybox
     name: init
     resources: {}
-  - args:
-    - --redirect-all-dns-traffic
-    - --redirect-dns-port=25053
-    - --verbose
-    command:
-    - /usr/bin/kumactl
-    - install
-    - transparent-proxy
-    env:
-    - name: XTABLES_LOCKFILE
-      value: /tmp/xtables.lock
-    image: kuma/kuma-init:latest
-    imagePullPolicy: IfNotPresent
-    name: kuma-init
-    resources:
-      limits:
-        memory: 50M
-      requests:
-        cpu: 20m
-        memory: 20M
-    securityContext:
-      capabilities:
-        add:
-        - NET_ADMIN
-        - NET_RAW
-        drop:
-        - ALL
-      readOnlyRootFilesystem: true
-      runAsGroup: 0
-      runAsUser: 0
-    volumeMounts:
-    - mountPath: /tmp
-      name: kuma-init-tmp
   volumes:
   - name: default-token-w7dxf
     secret:
@@ -193,4 +218,10 @@ spec:
   - emptyDir:
       sizeLimit: 10M
     name: kuma-sidecar-tmp
+  - downwardAPI:
+      items:
+      - fieldRef:
+          fieldPath: metadata.annotations['traffic.kuma.io/transparent-proxy-config']
+        path: config.yaml
+    name: transparent-proxy-base
 status: {}

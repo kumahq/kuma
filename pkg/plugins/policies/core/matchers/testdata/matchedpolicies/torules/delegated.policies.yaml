@@ -17,8 +17,9 @@ name: mt1
 mesh: default
 spec:
   targetRef:
-    kind: MeshService
-    name: kong_kong_svc_80
+    kind: Dataplane
+    labels:
+      kuma.io/service: kong_kong_svc_80
   to:
     - targetRef:
         kind: Mesh

@@ -7,11 +7,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 )
 
 type Identity struct {

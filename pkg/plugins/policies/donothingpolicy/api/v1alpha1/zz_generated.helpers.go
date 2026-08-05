@@ -4,30 +4,13 @@
 package v1alpha1
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (x *DoNothingPolicy) GetTargetRef() common_api.TargetRef {
 	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
-}
-
-func (x *From) GetTargetRef() common_api.TargetRef {
-	return x.TargetRef
-}
-
-func (x *From) GetDefault() interface{} {
-	return x.Default
-}
-
-func (x *DoNothingPolicy) GetFromList() []core_model.PolicyItem {
-	var result []core_model.PolicyItem
-	for _, itm := range pointer.Deref(x.From) {
-		item := itm
-		result = append(result, &item)
-	}
-	return result
 }
 
 func (x *To) GetTargetRef() common_api.TargetRef {

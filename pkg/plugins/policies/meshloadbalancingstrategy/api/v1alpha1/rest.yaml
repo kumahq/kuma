@@ -165,7 +165,6 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshExternalService
                     - MeshMultiZoneService
@@ -177,32 +176,10 @@ components:
                   additionalProperties:
                     type: string
                   description: |-
-                    Labels are used to select group of MeshServices that match labels. Either Labels or
-                    Name and Namespace can be used.
+                    Labels are used to select referenced real resources and to carry legacy
+                    service identity when a common TargetRef must still target old
+                    service-tag based paths.
                   type: object
-                mesh:
-                  description: Mesh is reserved for future use to identify cross mesh resources.
-                  type: string
-                name:
-                  description: |-
-                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                    `MeshServiceSubset` and `MeshGatewayRoute`
-                  type: string
-                namespace:
-                  description: |-
-                    Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                    will be targeted.
-                  type: string
-                proxyTypes:
-                  description: |-
-                    ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                    all data plane types are targeted by the policy.
-                  items:
-                    enum:
-                      - Sidecar
-                      - Gateway
-                    type: string
-                  type: array
                 sectionName:
                   description: |-
                     SectionName is used to target specific section of resource.
@@ -343,88 +320,6 @@ components:
                               a drop in replacement for the ring hash load balancer any place in which
                               consistent hashing is desired.
                             properties:
-                              hashPolicies:
-                                description: |-
-                                  HashPolicies specify a list of request/connection properties that are used to calculate a hash.
-                                  These hash policies are executed in the specified order. If a hash policy has the “terminal” attribute
-                                  set to true, and there is already a hash generated, the hash is returned immediately,
-                                  ignoring the rest of the hash policy list.
-                                items:
-                                  properties:
-                                    connection:
-                                      properties:
-                                        sourceIP:
-                                          description: Hash on source IP address.
-                                          type: boolean
-                                      type: object
-                                    cookie:
-                                      properties:
-                                        name:
-                                          description: The name of the cookie that will be used to obtain the hash key.
-                                          minLength: 1
-                                          type: string
-                                        path:
-                                          description: The name of the path for the cookie.
-                                          type: string
-                                        ttl:
-                                          description: If specified, a cookie with the TTL will be generated if the cookie is not present.
-                                          type: string
-                                      required:
-                                        - name
-                                      type: object
-                                    filterState:
-                                      properties:
-                                        key:
-                                          description: |-
-                                            The name of the Object in the per-request filterState, which is
-                                            an Envoy::Hashable object. If there is no data associated with the key,
-                                            or the stored object is not Envoy::Hashable, no hash will be produced.
-                                          minLength: 1
-                                          type: string
-                                      required:
-                                        - key
-                                      type: object
-                                    header:
-                                      properties:
-                                        name:
-                                          description: The name of the request header that will be used to obtain the hash key.
-                                          minLength: 1
-                                          type: string
-                                      required:
-                                        - name
-                                      type: object
-                                    queryParameter:
-                                      properties:
-                                        name:
-                                          description: |-
-                                            The name of the URL query parameter that will be used to obtain the hash key.
-                                            If the parameter is not present, no hash will be produced. Query parameter names
-                                            are case-sensitive.
-                                          minLength: 1
-                                          type: string
-                                      required:
-                                        - name
-                                      type: object
-                                    terminal:
-                                      description: |-
-                                        Terminal is a flag that short-circuits the hash computing. This field provides
-                                        a ‘fallback’ style of configuration: “if a terminal policy doesn’t work, fallback
-                                        to rest of the policy list”, it saves time when the terminal policy works.
-                                        If true, and there is already a hash computed, ignore rest of the list of hash polices.
-                                      type: boolean
-                                    type:
-                                      enum:
-                                        - Header
-                                        - Cookie
-                                        - Connection
-                                        - SourceIP
-                                        - QueryParameter
-                                        - FilterState
-                                      type: string
-                                  required:
-                                    - type
-                                  type: object
-                                type: array
                               tableSize:
                                 description: |-
                                   The table size for Maglev hashing. Maglev aims for “minimal disruption”
@@ -459,88 +354,6 @@ components:
                                   - XXHash
                                   - MurmurHash2
                                 type: string
-                              hashPolicies:
-                                description: |-
-                                  HashPolicies specify a list of request/connection properties that are used to calculate a hash.
-                                  These hash policies are executed in the specified order. If a hash policy has the “terminal” attribute
-                                  set to true, and there is already a hash generated, the hash is returned immediately,
-                                  ignoring the rest of the hash policy list.
-                                items:
-                                  properties:
-                                    connection:
-                                      properties:
-                                        sourceIP:
-                                          description: Hash on source IP address.
-                                          type: boolean
-                                      type: object
-                                    cookie:
-                                      properties:
-                                        name:
-                                          description: The name of the cookie that will be used to obtain the hash key.
-                                          minLength: 1
-                                          type: string
-                                        path:
-                                          description: The name of the path for the cookie.
-                                          type: string
-                                        ttl:
-                                          description: If specified, a cookie with the TTL will be generated if the cookie is not present.
-                                          type: string
-                                      required:
-                                        - name
-                                      type: object
-                                    filterState:
-                                      properties:
-                                        key:
-                                          description: |-
-                                            The name of the Object in the per-request filterState, which is
-                                            an Envoy::Hashable object. If there is no data associated with the key,
-                                            or the stored object is not Envoy::Hashable, no hash will be produced.
-                                          minLength: 1
-                                          type: string
-                                      required:
-                                        - key
-                                      type: object
-                                    header:
-                                      properties:
-                                        name:
-                                          description: The name of the request header that will be used to obtain the hash key.
-                                          minLength: 1
-                                          type: string
-                                      required:
-                                        - name
-                                      type: object
-                                    queryParameter:
-                                      properties:
-                                        name:
-                                          description: |-
-                                            The name of the URL query parameter that will be used to obtain the hash key.
-                                            If the parameter is not present, no hash will be produced. Query parameter names
-                                            are case-sensitive.
-                                          minLength: 1
-                                          type: string
-                                      required:
-                                        - name
-                                      type: object
-                                    terminal:
-                                      description: |-
-                                        Terminal is a flag that short-circuits the hash computing. This field provides
-                                        a ‘fallback’ style of configuration: “if a terminal policy doesn’t work, fallback
-                                        to rest of the policy list”, it saves time when the terminal policy works.
-                                        If true, and there is already a hash computed, ignore rest of the list of hash polices.
-                                      type: boolean
-                                    type:
-                                      enum:
-                                        - Header
-                                        - Cookie
-                                        - Connection
-                                        - SourceIP
-                                        - QueryParameter
-                                        - FilterState
-                                      type: string
-                                  required:
-                                    - type
-                                  type: object
-                                type: array
                               maxRingSize:
                                 description: |-
                                   Maximum hash ring size. Defaults to 8M entries, and limited to 8M entries,
@@ -678,7 +491,6 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
@@ -690,32 +502,10 @@ components:
                         additionalProperties:
                           type: string
                         description: |-
-                          Labels are used to select group of MeshServices that match labels. Either Labels or
-                          Name and Namespace can be used.
+                          Labels are used to select referenced real resources and to carry legacy
+                          service identity when a common TargetRef must still target old
+                          service-tag based paths.
                         type: object
-                      mesh:
-                        description: Mesh is reserved for future use to identify cross mesh resources.
-                        type: string
-                      name:
-                        description: |-
-                          Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                          `MeshServiceSubset` and `MeshGatewayRoute`
-                        type: string
-                      namespace:
-                        description: |-
-                          Namespace specifies the namespace of target resource. If empty only resources in policy namespace
-                          will be targeted.
-                        type: string
-                      proxyTypes:
-                        description: |-
-                          ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                          all data plane types are targeted by the policy.
-                        items:
-                          enum:
-                            - Sidecar
-                            - Gateway
-                          type: string
-                        type: array
                       sectionName:
                         description: |-
                           SectionName is used to target specific section of resource.

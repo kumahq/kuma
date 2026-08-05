@@ -4,25 +4,27 @@ import (
 	"fmt"
 	"time"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (r *MeshRateLimitResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
-		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
+	if len(pointer.Deref(r.Spec.Rules)) > 0 && len(pointer.Deref(r.Spec.To)) > 0 {
+		verr.AddViolationAt(path, "field 'to' must be empty when 'rules' is defined")
+	}
+	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 {
+		verr.AddViolationAt(path, "at least one of 'to' or 'rules' has to be defined")
 	}
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
 	verr.AddErrorAt(path, validateRules(topLevel, pointer.Deref(r.Spec.Rules)))
-	verr.AddErrorAt(path, validateFrom(topLevel, pointer.Deref(r.Spec.From)))
 	verr.AddErrorAt(path, validateTo(topLevel, pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
@@ -36,11 +38,6 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, isI
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshGateway,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
-				common_api.MeshHTTPRoute,
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
@@ -50,9 +47,6 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, isI
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
 			IsInboundPolicy: isInboundPolicy,
@@ -110,31 +104,6 @@ func validateSourceConditionedRule(path validators.PathBuilder, conf Conf) valid
 	const msg = "can't be specified when matches contain spiffeID because this field cannot be conditioned on source identity"
 	if pointer.Deref(conf.Local).TCP != nil {
 		verr.AddViolationAt(path.Field("local").Field("tcp"), msg)
-	}
-	return verr
-}
-
-func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.ValidationError {
-	var verr validators.ValidationError
-	if common_api.IncludesGateways(topTargetRef) && len(from) != 0 {
-		verr.AddViolationAt(validators.RootedAt("from"),
-			fmt.Sprintf("%s when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to", validators.MustNotBeDefined))
-		return verr
-	}
-	if topTargetRef.Kind == common_api.MeshHTTPRoute && len(from) != 0 {
-		verr.AddViolationAt(validators.RootedAt("from"),
-			fmt.Sprintf("%s when spec.kind is MeshHTTPRoute", validators.MustNotBeDefined))
-		return verr
-	}
-	for idx, fromItem := range from {
-		path := validators.RootedAt("from").Index(idx)
-		defaultField := path.Field("default")
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-			},
-		}))
-		verr.Add(validateDefault(defaultField, fromItem.Default))
 	}
 	return verr
 }

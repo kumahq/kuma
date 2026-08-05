@@ -3,9 +3,9 @@ package v1alpha1_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	. "github.com/kumahq/kuma/v2/pkg/test/resources/validators"
+	meshmzservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
 )
 
 var _ = Describe("validation", func() {
@@ -28,7 +28,7 @@ ports:
 		ErrorCase("spec.template empty",
 			validators.Violation{
 				Field:   `spec.ports[0].appProtocol`,
-				Message: `appProtocol must be one of: grpc, http, http2, kafka, tcp`,
+				Message: `appProtocol must be one of: grpc, http, http2, tcp`,
 			}, `
 selector:
   meshService:

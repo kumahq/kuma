@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	meshpassthrough_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
-	meshproxypatch_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	meshpassthrough_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
+	meshproxypatch_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func MeshPassthrough(config *Config) func() {
@@ -39,10 +39,9 @@ metadata:
     kuma.io/mesh: %[2]s
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Gateway"]
-    tags:
-      kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
+    kind: Dataplane
+    labels:
+      app: %[2]s-gateway
   default:
     appendModifications:
       - networkFilter:
@@ -69,10 +68,9 @@ metadata:
     kuma.io/mesh: %[2]s
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Gateway"]
-    tags:
-      kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
+    kind: Dataplane
+    labels:
+      app: %[2]s-gateway
   default:
     passthroughMode: None
 `, config.CpNamespace, config.Mesh)
@@ -102,10 +100,9 @@ metadata:
     kuma.io/mesh: %[2]s
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Gateway"]
-    tags:
-      kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
+    kind: Dataplane
+    labels:
+      app: %[2]s-gateway
   default:
     passthroughMode: Matched
     appendMatch:

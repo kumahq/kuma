@@ -11,23 +11,35 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sethvargo/go-retry"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	"github.com/kumahq/kuma/v2/pkg/kds"
-	"github.com/kumahq/kuma/v2/pkg/kds/util"
-	client_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/client"
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	resources_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	k8s_model "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/model"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/kds"
+	"github.com/kumahq/kuma/v3/pkg/kds/util"
+	client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	resources_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+)
+
+var globalSyncLog = core.Log.WithName("kds-global-sync")
+
+const (
+	// Retries of an update that lost a write conflict. The first one runs
+	// immediately, which is all a store reading its own writes needs; the later
+	// ones wait so a cached store (Kubernetes informer) can observe the write
+	// that won.
+	updateConflictRetries = 2
+	updateConflictBackoff = 100 * time.Millisecond
 )
 
 // ResourceSyncer allows to synchronize resources in Store
@@ -252,6 +264,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		}
 	}
 	var nackError error
+	var conflicted []OnUpdate
 	err = store.InTx(ctx, s.transactions, func(ctx context.Context) error {
 		for _, r := range onCreate {
 			rk := core_model.MetaToResourceKey(r.GetMeta())
@@ -288,17 +301,95 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 
 		for _, upd := range onUpdate {
 			log.V(1).Info("updating a resource", "name", upd.r.GetMeta().GetName(), "mesh", upd.r.GetMeta().GetMesh())
-			now := time.Now()
 			// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
 			// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
 			// from upstream store, because we update downstream only when resource have changed in upstream
-			if err := s.resourceStore.Update(ctx, upd.r, append(upd.opts, store.ModifiedAt(now))...); err != nil {
-				return err
+			if err := s.resourceStore.Update(ctx, upd.r, append(upd.opts, store.ModifiedAt(time.Now()))...); err != nil {
+				if !store.IsConflict(err) {
+					return err
+				}
+				// Retry outside the transaction, so the backoff doesn't hold its
+				// connection and row locks. Continuing is safe: a conflict is a
+				// zero-row update, not a database error, so the transaction lives on.
+				conflicted = append(conflicted, upd)
 			}
 		}
 		return nil
 	})
-	return err, nackError
+	if err != nil {
+		return err, nackError
+	}
+	return s.retryConflictedUpdates(ctx, conflicted, opts, log), nackError
+}
+
+// retryConflictedUpdates reapplies updates that lost a write conflict, rebased on a
+// fresh copy: zone-local writers (VIP allocator, hostname generators) invalidate the
+// version read at List time. It runs after the transaction commits, so the waits
+// hold no connection or row locks, and the batch shares one wait per attempt. Sync
+// is no longer all-or-nothing, which is fine for a convergent reconciliation of a
+// single type, and the Kubernetes store has no transactions anyway. Exhausting the
+// retries returns the error and forces a resync; skipping would drift silently,
+// since delta xDS marks the resource delivered on send.
+func (s *syncResourceStore) retryConflictedUpdates(ctx context.Context, pending []OnUpdate, opts *SyncOption, log logr.Logger) error {
+	if len(pending) == 0 {
+		return nil
+	}
+	backoff := retry.WithMaxRetries(updateConflictRetries, retry.WithFullJitter(retry.NewConstant(updateConflictBackoff)))
+	err := retry.Do(ctx, backoff, func(ctx context.Context) error {
+		for _, upd := range pending {
+			log.Info("resource was modified in another place while syncing, retrying with a fresh copy",
+				"name", upd.r.GetMeta().GetName(), "mesh", upd.r.GetMeta().GetMesh())
+			if err := s.refreshForUpdate(ctx, upd, opts); err != nil {
+				return err
+			}
+		}
+		var conflicted []OnUpdate
+		var lastConflict error
+		if err := store.InTx(ctx, s.transactions, func(ctx context.Context) error {
+			for _, upd := range pending {
+				if err := s.resourceStore.Update(ctx, upd.r, append(upd.opts, store.ModifiedAt(time.Now()))...); err != nil {
+					if !store.IsConflict(err) {
+						return err
+					}
+					lastConflict = err
+					conflicted = append(conflicted, upd)
+				}
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+		pending = conflicted
+		if len(pending) > 0 {
+			return retry.RetryableError(lastConflict)
+		}
+		return nil
+	})
+	if store.IsConflict(err) {
+		log.Info("gave up syncing a resource that keeps being modified in another place, forcing a resync",
+			"name", pending[0].r.GetMeta().GetName(), "mesh", pending[0].r.GetMeta().GetMesh())
+	}
+	return err
+}
+
+// refreshForUpdate re-reads the downstream copy and rebases the pending upstream
+// change onto it, so the retry carries the current version. Status comes from the
+// fresh copy for the same reason Sync preserves it: on the Zone it belongs to
+// local components, not to the upstream.
+func (s *syncResourceStore) refreshForUpdate(ctx context.Context, upd OnUpdate, opts *SyncOption) error {
+	fresh, err := registry.Global().NewObject(upd.r.Descriptor().Name)
+	if err != nil {
+		return err
+	}
+	rk := core_model.MetaToResourceKey(upd.r.GetMeta())
+	if err := s.resourceStore.Get(ctx, fresh, store.GetByKey(rk.Name, rk.Mesh)); err != nil {
+		return err
+	}
+	upd.r.SetMeta(fresh.GetMeta())
+	if upd.r.Descriptor().HasStatus && opts.IgnoreStatusChange {
+		return upd.r.SetStatus(fresh.GetStatus())
+	}
+	return nil
 }
 
 func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bool) (core_model.ResourceList, error) {
@@ -358,6 +449,7 @@ func GlobalSyncCallback(
 	k8sStore bool,
 	kubeFactory resources_k8s.KubeFactory,
 	systemNamespace string,
+	rewrites *prometheus.CounterVec,
 ) *client_v2.Callbacks {
 	supportsHashSuffixes := kds.ContextHasFeature(ctx, kds.FeatureHashSuffix)
 
@@ -383,14 +475,32 @@ func GlobalSyncCallback(
 				}
 			}
 
+			// In-spec zone tags are pinned to the connecting zone's client-id
+			// alongside the top-level Spec.Zone, independent of whether xDS
+			// generation still reads them: a zone must not be able to plant a
+			// spoofed kuma.io/zone claim into any synced resource field.
+			clientID := upstream.ControlPlaneId
 			switch upstream.Type {
 			case core_mesh.ZoneIngressType:
 				for _, zi := range upstream.AddedResources.(*core_mesh.ZoneIngressResourceList).Items {
-					zi.Spec.Zone = upstream.ControlPlaneId
+					var rejected []string
+					rejected = pinZone(&zi.Spec.Zone, clientID, rejected)
+					for _, svc := range zi.Spec.GetAvailableServices() {
+						rejected = pinZoneTag(svc.GetTags(), clientID, rejected)
+					}
+					recordZoneRewrite(rewrites, upstream.Type, zi.GetMeta(), clientID, rejected)
 				}
 			case core_mesh.ZoneEgressType:
 				for _, ze := range upstream.AddedResources.(*core_mesh.ZoneEgressResourceList).Items {
-					ze.Spec.Zone = upstream.ControlPlaneId
+					var rejected []string
+					rejected = pinZone(&ze.Spec.Zone, clientID, rejected)
+					recordZoneRewrite(rewrites, upstream.Type, ze.GetMeta(), clientID, rejected)
+				}
+			case core_mesh.DataplaneType:
+				for _, dp := range upstream.AddedResources.(*core_mesh.DataplaneResourceList).Items {
+					var rejected []string
+					rejected = pinZoneTag(dp.Spec.GetNetworking().GetGateway().GetTags(), clientID, rejected)
+					recordZoneRewrite(rewrites, upstream.Type, dp.GetMeta(), clientID, rejected)
 				}
 			}
 
@@ -407,6 +517,49 @@ func GlobalSyncCallback(
 			}), Zone(upstream.ControlPlaneId))
 		},
 	}
+}
+
+// pinZone sets *field to zone, recording in rejected any differing value it replaces.
+func pinZone(field *string, zone string, rejected []string) []string {
+	if *field != "" && *field != zone {
+		rejected = append(rejected, *field)
+	}
+	*field = zone
+	return rejected
+}
+
+// pinZoneTag pins an existing kuma.io/zone tag to zone (an absent tag names no
+// zone, so it is left alone), recording any differing value in rejected. A nil
+// map is fine: the read misses and the write never runs.
+func pinZoneTag(tags map[string]string, zone string, rejected []string) []string {
+	if v, ok := tags[mesh_proto.ZoneTag]; ok {
+		if v != "" && v != zone {
+			rejected = append(rejected, v)
+		}
+		tags[mesh_proto.ZoneTag] = zone
+	}
+	return rejected
+}
+
+// recordZoneRewrite reports an attribution rewrite only when it replaced a
+// differing value (in ordinary sync rejected is empty and nothing is recorded).
+// The counter is deliberately labeled only by resource type to stay
+// low-cardinality; the unbounded detail goes to the log line.
+func recordZoneRewrite(rewrites *prometheus.CounterVec, resType core_model.ResourceType, meta core_model.ResourceMeta, clientID string, rejected []string) {
+	if len(rejected) == 0 {
+		return
+	}
+	if rewrites != nil {
+		rewrites.WithLabelValues(string(resType)).Inc()
+	}
+	globalSyncLog.Info(
+		"[WARNING] rewrote synced resource zone attribution to the connecting zone's client-id because a payload value differed",
+		"type", string(resType),
+		"name", meta.GetName(),
+		"mesh", meta.GetMesh(),
+		"clientID", clientID,
+		"replacedValues", rejected,
+	)
 }
 
 func addNamespaceSuffix(kubeFactory resources_k8s.KubeFactory, upstream client_v2.UpstreamResponse, ns string) error {

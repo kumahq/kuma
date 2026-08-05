@@ -1,2 +1,0 @@
-MESH      NAME            AGE
-default   traffic-log-1   292y

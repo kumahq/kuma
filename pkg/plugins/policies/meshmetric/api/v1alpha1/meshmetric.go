@@ -4,7 +4,7 @@ package v1alpha1
 import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // MeshMetric enables collection and export of service mesh metrics. It configures sidecar and application metrics scraping, allows customization of which metrics are published, and supports exporting to Prometheus or OpenTelemetry backends for monitoring and observability.
@@ -134,14 +134,8 @@ type PrometheusTls struct {
 }
 
 type OpenTelemetryBackend struct {
-	// Endpoint for OpenTelemetry collector.
-	//
-	// Deprecated: use BackendRef instead.
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=""
-	Endpoint string `json:"endpoint"`
 	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
-	// defines the collector endpoint. Mutually exclusive with Endpoint.
+	// defines the collector endpoint.
 	BackendRef *common_api.BackendResourceRef `json:"backendRef,omitempty"`
 	// RefreshInterval defines how frequent metrics should be pushed to collector
 	RefreshInterval *k8s.Duration `json:"refreshInterval,omitempty"`

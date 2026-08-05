@@ -159,7 +159,7 @@ components:
           x-go-type: common_api.Match
           x-go-type-import:
             name: common_api
-            path: github.com/kumahq/kuma/v2/api/common/v1alpha1
+            path: github.com/kumahq/kuma/v3/api/common/v1alpha1
         origin:
           type: array
           description: The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.

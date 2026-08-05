@@ -7,15 +7,17 @@ import (
 	. "github.com/onsi/gomega"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	meshtimeout_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	meshaccesslog_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/kds/samples"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
 var _ = Describe("ComputePolicyRole", func() {
@@ -66,7 +68,10 @@ var _ = Describe("ComputePolicyRole", func() {
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend", "kuma-demo", ""), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name":  "backend",
+					"k8s.kuma.io/namespace": "kuma-demo",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
@@ -77,7 +82,9 @@ var _ = Describe("ComputePolicyRole", func() {
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend", "", ""), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name": "backend",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
@@ -88,74 +95,39 @@ var _ = Describe("ComputePolicyRole", func() {
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshHTTPRoute("route-1", "kuma-demo"), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshHTTPRouteLabels(map[string]string{
+					"kuma.io/display-name":  "route-1",
+					"k8s.kuma.io/namespace": "kuma-demo",
+				}), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
 			namespace:    resource_labels.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.ProducerPolicyRole,
 		}),
-		Entry("workload-owner policy with from", testCase{
-			policy: builders.MeshTimeout().
-				WithMesh("mesh-1").WithName("name-1").
+		Entry("workload-owner policy with rules", testCase{
+			policy: builders.MeshAccessLog().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
+				AddRule(builders.MeshAccessLogConf().
+					AddBackends(make([]meshaccesslog_api.Backend, 0))).
 				Build().Spec,
 			namespace:    resource_labels.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.WorkloadOwnerPolicyRole,
-		}),
-		Entry("workload-owner policy with both from and to", testCase{
-			policy: builders.MeshTimeout().
-				WithMesh("mesh-1").WithName("name-1").
-				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
-				AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
-				Build().Spec,
-			namespace:   resource_labels.NewNamespace("kuma-demo", false),
-			expectedErr: "it's not allowed to mix 'to' and 'from' arrays in the same policy",
-		}),
-		Entry("consumer policy with from", testCase{
-			policy: builders.MeshTimeout().
-				WithMesh("mesh-1").WithName("name-1").
-				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend", "backend-ns", ""), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
-				AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
-				Build().Spec,
-			namespace:   resource_labels.NewNamespace("kuma-demo", false),
-			expectedErr: "it's not allowed to mix 'to' and 'from' arrays in the same policy",
-		}),
-		Entry("system policy with both from and to", testCase{
-			policy: builders.MeshTimeout().
-				WithMesh("mesh-1").WithName("name-1").
-				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
-				AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
-					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-				}).
-				Build().Spec,
-			namespace:    resource_labels.NewNamespace("kuma-system", true),
-			expectedRole: mesh_proto.SystemPolicyRole,
 		}),
 		Entry("policy with consumer and producer to-items", testCase{
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
 				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshService("backend-1", "backend-1-ns", ""), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name":  "backend-1",
+					"k8s.kuma.io/namespace": "backend-1-ns",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
-				AddTo(builders.TargetRefMeshService("backend-2", "backend-2-ns", ""), meshtimeout_api.Conf{
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name":  "backend-2",
+					"k8s.kuma.io/namespace": "backend-2-ns",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
@@ -166,6 +138,8 @@ var _ = Describe("ComputePolicyRole", func() {
 })
 
 var _ = Describe("Compute", func() {
+	legacyProxyTypeLabel := "kuma.io/" + "proxy-type"
+
 	type testCase struct {
 		r              core_model.Resource
 		mode           core.CpMode
@@ -181,6 +155,7 @@ var _ = Describe("Compute", func() {
 				given.r.GetSpec(),
 				given.r.GetMeta().GetLabels(),
 				given.r.GetMeta().GetMesh(),
+				given.r.GetMeta().GetName(),
 				resource_labels.WithNamespace(resource_labels.GetNamespace(given.r.GetMeta(), "kuma-system")),
 				resource_labels.WithMode(given.mode),
 				resource_labels.WithK8s(given.isK8s),
@@ -201,22 +176,27 @@ var _ = Describe("Compute", func() {
 				}).
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/env":    "kubernetes",
-				"kuma.io/mesh":   "mesh-1",
-				"kuma.io/origin": "zone",
-				"kuma.io/zone":   "zone-1",
+				"kuma.io/display-name": "idle-timeout",
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
 			},
 		}),
 		Entry("source/destination policy on zone-k8s", testCase{
 			mode:      core.Zone,
 			isK8s:     true,
 			localZone: "zone-1",
-			r: &mesh.TimeoutResource{
-				Spec: samples.Timeout,
+			r: &meshexternalservice_api.MeshExternalServiceResource{
+				Spec: builders.MeshExternalService().Build().Spec,
 				Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "sample-timeout"},
 			},
 			expectedLabels: map[string]string{
-				"kuma.io/mesh": "mesh-1",
+				"kuma.io/display-name": "sample-timeout",
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
 			},
 		}),
 		Entry("mesh resource on non-federated zone", testCase{
@@ -227,7 +207,26 @@ var _ = Describe("Compute", func() {
 				Spec: samples.Mesh1,
 				Meta: &test_model.ResourceMeta{Mesh: core_model.NoMesh, Name: "mesh-1"},
 			},
-			expectedLabels: map[string]string{},
+			expectedLabels: map[string]string{
+				"kuma.io/display-name": "mesh-1",
+				"kuma.io/origin":       "zone",
+			},
+		}),
+		Entry("plugin originated policy on global", testCase{
+			mode:  core.Global,
+			isK8s: true,
+			r: builders.MeshTimeout().
+				WithMesh("mesh-1").WithName("idle-timeout").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/display-name": "idle-timeout",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "global",
+			},
 		}),
 		Entry("plugin originated policy on zone-k8s on custom namespace", testCase{
 			mode:      core.Zone,
@@ -244,6 +243,7 @@ var _ = Describe("Compute", func() {
 				Build(),
 			expectedLabels: map[string]string{
 				"k8s.kuma.io/namespace": "custom-ns",
+				"kuma.io/display-name":  "idle-timeout",
 				"kuma.io/policy-role":   "consumer",
 				"kuma.io/mesh":          "mesh-1",
 				"kuma.io/origin":        "zone",
@@ -255,16 +255,26 @@ var _ = Describe("Compute", func() {
 			mode:      core.Zone,
 			isK8s:     true,
 			localZone: "zone-1",
-			r: builders.Dataplane().
-				WithMesh("mesh-1").
-				WithBuiltInGateway("test-gateway").
-				Build(),
+			r: &mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "dp-1"},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+							Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "test-gateway",
+							},
+						},
+					},
+				},
+			},
 			expectedLabels: map[string]string{
-				"kuma.io/mesh":       "mesh-1",
-				"kuma.io/origin":     "zone",
-				"kuma.io/zone":       "zone-1",
-				"kuma.io/env":        "kubernetes",
-				"kuma.io/proxy-type": "gateway",
+				"kuma.io/display-name": "dp-1",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/env":          "kubernetes",
 			},
 		}),
 		Entry("dataplane proxy", testCase{
@@ -277,11 +287,11 @@ var _ = Describe("Compute", func() {
 				WithMesh("mesh-1").
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/mesh":       "mesh-1",
-				"kuma.io/origin":     "zone",
-				"kuma.io/zone":       "zone-1",
-				"kuma.io/env":        "kubernetes",
-				"kuma.io/proxy-type": "sidecar",
+				"kuma.io/display-name": "backend-1",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/env":          "kubernetes",
 			},
 		}),
 		Entry("zone egress proxy", testCase{
@@ -292,10 +302,10 @@ var _ = Describe("Compute", func() {
 				WithPort(1001).
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/origin":     "zone",
-				"kuma.io/zone":       "zone-1",
-				"kuma.io/env":        "kubernetes",
-				"kuma.io/proxy-type": "zoneegress",
+				"kuma.io/display-name": "zoneegress-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/env":          "kubernetes",
 			},
 		}),
 		Entry("dataplane with ZoneIngress listener", testCase{
@@ -315,11 +325,11 @@ var _ = Describe("Compute", func() {
 				}).
 				Build(),
 			expectedLabels: map[string]string{
+				"kuma.io/display-name":         "dp-1",
 				"kuma.io/mesh":                 "mesh-1",
 				"kuma.io/origin":               "zone",
 				"kuma.io/zone":                 "zone-1",
 				"kuma.io/env":                  "kubernetes",
-				"kuma.io/proxy-type":           "sidecar",
 				"kuma.io/listener-zoneingress": "enabled",
 			},
 		}),
@@ -340,11 +350,11 @@ var _ = Describe("Compute", func() {
 				}).
 				Build(),
 			expectedLabels: map[string]string{
+				"kuma.io/display-name":        "dp-1",
 				"kuma.io/mesh":                "mesh-1",
 				"kuma.io/origin":              "zone",
 				"kuma.io/zone":                "zone-1",
 				"kuma.io/env":                 "kubernetes",
-				"kuma.io/proxy-type":          "sidecar",
 				"kuma.io/listener-zoneegress": "enabled",
 			},
 		}),
@@ -370,11 +380,11 @@ var _ = Describe("Compute", func() {
 				}).
 				Build(),
 			expectedLabels: map[string]string{
+				"kuma.io/display-name":         "dp-1",
 				"kuma.io/mesh":                 "mesh-1",
 				"kuma.io/origin":               "zone",
 				"kuma.io/zone":                 "zone-1",
 				"kuma.io/env":                  "kubernetes",
-				"kuma.io/proxy-type":           "sidecar",
 				"kuma.io/listener-zoneingress": "enabled",
 				"kuma.io/listener-zoneegress":  "enabled",
 			},
@@ -387,17 +397,86 @@ var _ = Describe("Compute", func() {
 				WithMesh("mesh-1").
 				WithServices("backend").
 				WithLabels(map[string]string{
+					legacyProxyTypeLabel:           "sidecar",
 					"kuma.io/listener-zoneingress": "enabled",
 					"kuma.io/listener-zoneegress":  "enabled",
 				}).
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/mesh":       "mesh-1",
-				"kuma.io/origin":     "zone",
-				"kuma.io/zone":       "zone-1",
-				"kuma.io/env":        "kubernetes",
-				"kuma.io/proxy-type": "sidecar",
+				"kuma.io/display-name": "dp-1",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/env":          "kubernetes",
 			},
 		}),
 	)
+
+	It("does not recompute labels for imported resources on privileged writes", func() {
+		// A resource synced from another CP: on this zone it is not locally
+		// originated (origin=global) and its display-name was set by the origin
+		// CP. A privileged (KDS sync) write must leave those labels untouched.
+		res := builders.MeshTimeout().
+			WithMesh("mesh-1").
+			WithName("idle-timeout").
+			WithTargetRef(builders.TargetRefMesh()).
+			AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+				IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+			}).
+			Build()
+		existing := map[string]string{
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+			mesh_proto.MeshTag:             "mesh-1",
+			mesh_proto.DisplayName:         "name-from-origin-cp",
+		}
+
+		labels, err := resource_labels.Compute(
+			res.Descriptor(),
+			res.GetSpec(),
+			existing,
+			"mesh-1",
+			"recomputed-name",
+			resource_labels.WithMode(core.Zone),
+			resource_labels.WithK8s(true),
+			resource_labels.WithZone("zone-1"),
+			resource_labels.WithPrivileged(true),
+		)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(labels).To(Equal(existing))
+	})
+
+	It("recomputes labels on privileged writes to locally-originated resources", func() {
+		// A privileged write (origin=zone on this zone) is locally originated,
+		// so it must still recompute CP-owned labels: the stale display-name is
+		// overwritten, unlike the imported-resource case above.
+		res := builders.MeshTimeout().
+			WithMesh("mesh-1").
+			WithName("idle-timeout").
+			WithTargetRef(builders.TargetRefMesh()).
+			AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+				IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+			}).
+			Build()
+		existing := map[string]string{
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+			mesh_proto.MeshTag:             "mesh-1",
+			mesh_proto.DisplayName:         "stale-name",
+		}
+
+		labels, err := resource_labels.Compute(
+			res.Descriptor(),
+			res.GetSpec(),
+			existing,
+			"mesh-1",
+			"recomputed-name",
+			resource_labels.WithMode(core.Zone),
+			resource_labels.WithK8s(true),
+			resource_labels.WithZone("zone-1"),
+			resource_labels.WithPrivileged(true),
+		)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(labels).To(HaveKeyWithValue(mesh_proto.DisplayName, "recomputed-name"))
+	})
 })

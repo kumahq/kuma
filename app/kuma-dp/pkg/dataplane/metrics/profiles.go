@@ -7,9 +7,9 @@ import (
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 
-	"github.com/kumahq/kuma/v2/pkg/core/system_names"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/core/system_names"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 )
 
 type (
@@ -213,10 +213,6 @@ var basicProfileLabels = []selectorFunction{
 	selectorToFilterFunction(v1alpha1.Selector{
 		Type:  v1alpha1.PrefixSelectorType,
 		Match: names.GetOpenTelemetryClusterPrefix(),
-	}),
-	selectorToFilterFunction(v1alpha1.Selector{
-		Type:  v1alpha1.PrefixSelectorType,
-		Match: names.GetTracingClusterPrefix(),
 	}),
 }
 

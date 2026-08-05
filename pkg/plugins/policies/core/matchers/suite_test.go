@@ -6,13 +6,13 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 func TestMatchers(t *testing.T) {
@@ -59,15 +59,6 @@ func readDPP(file string) *core_mesh.DataplaneResource {
 	dpp, err := rest.YAML.UnmarshalCore(dppYaml)
 	Expect(err).ToNot(HaveOccurred())
 	return dpp.(*core_mesh.DataplaneResource)
-}
-
-func readES(file string) *core_mesh.ExternalServiceResource {
-	dppYaml, err := os.ReadFile(file)
-	Expect(err).ToNot(HaveOccurred())
-
-	dpp, err := rest.YAML.UnmarshalCore(dppYaml)
-	Expect(err).ToNot(HaveOccurred())
-	return dpp.(*core_mesh.ExternalServiceResource)
 }
 
 func readMES(file string) *meshexternalservice_api.MeshExternalServiceResource {

@@ -5,20 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
 )
 
 var kumactlConnectionErrorSubstrings = []string{
@@ -258,33 +256,6 @@ func NumberOfResources(c Cluster, resource core_model.ResourceTypeDescriptor) (i
 		Total int `json:"total"`
 	}{}
 	if err := json.Unmarshal([]byte(output), &t); err != nil {
-		return 0, err
-	}
-	return t.Total, nil
-}
-
-// NumberOfResourcesByPath counts resources by querying the cluster's REST API
-// directly at the given path (e.g. "/zone-ingresses"). Use this instead of
-// NumberOfResources when the cluster runs an old CP that may not support the
-// current kumactl endpoint names.
-func NumberOfResourcesByPath(c Cluster, path string) (int, error) {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, c.GetKuma().GetAPIServerAddress()+path, http.NoBody)
-	if err != nil {
-		return 0, err
-	}
-	r, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	defer func() { _ = r.Body.Close() }()
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return 0, err
-	}
-	t := struct {
-		Total int `json:"total"`
-	}{}
-	if err := json.Unmarshal(body, &t); err != nil {
 		return 0, err
 	}
 	return t.Total, nil

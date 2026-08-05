@@ -5,17 +5,16 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	model "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	model "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 type TransparentProxyGenerator struct{}
@@ -75,22 +74,11 @@ func CreateOutboundPassthroughListener(
 	outboundPort uint32,
 	statPrefix string,
 ) (envoy_common.NamedResource, error) {
-	sourceService := proxy.Dataplane.IdentifyingName(ctx.ControlPlane != nil && ctx.ControlPlane.InboundTagsDisabled)
-	meshName := ctx.Mesh.Resource.GetMeta().GetName()
-
 	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, allIP, outboundPort, model.SocketAddressProtocolTCP).
 		WithOverwriteName(listenerName).
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName)))).
-			Configure(envoy_listeners.NetworkAccessLog(
-				meshName,
-				envoy_common.TrafficDirectionUnspecified,
-				sourceService,
-				"external",
-				ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName]),
-				proxy,
-			)))).
+			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, plugins_xds.NewClusterBuilder().WithService(listenerName).Build())))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {
@@ -148,17 +136,17 @@ func CreateInboundPassthroughListener(
 			// if service doesn't have any port we don't need to expose listener
 			if inbound.Port == mesh_proto.TCPPortReserved {
 				inboundListenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-					Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(naming.ContextualNoDestinationClusterName("inbound"))))).
+					Configure(envoy_listeners.TcpProxyDeprecated(listenerName, plugins_xds.NewClusterBuilder().WithService(naming.ContextualNoDestinationClusterName("inbound")).Build())).
 					Configure(envoy_listeners.MatchDestiantionPort(inbound.Port))))
 			} else {
 				inboundListenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-					Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName)))).
+					Configure(envoy_listeners.TcpProxyDeprecated(listenerName, plugins_xds.NewClusterBuilder().WithService(listenerName).Build())).
 					Configure(envoy_listeners.MatchDestiantionPort(inbound.Port))))
 			}
 		}
 	} else {
 		inboundListenerBuilder.Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, envoy_common.NewCluster(envoy_common.WithService(listenerName))))))
+			Configure(envoy_listeners.TcpProxyDeprecated(listenerName, plugins_xds.NewClusterBuilder().WithService(listenerName).Build()))))
 	}
 
 	listener, err := inboundListenerBuilder.Build()
@@ -175,29 +163,16 @@ func (TransparentProxyGenerator) generate(
 	inboundName string,
 	allIP string,
 	inPassThroughIP string,
-	unifiedNaming bool,
 ) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 	tpCfg := proxy.GetTransparentProxy()
 
-	var outboundPassThroughCluster envoy_common.NamedResource
-	var err error
-
-	if ctx.Mesh.Resource.Spec.IsPassthrough() {
-		outboundPassThroughCluster, err = CreateOutboundPassThroughCluster(proxy.APIVersion, outboundName)
-		if err != nil {
-			return nil, err
-		}
+	outboundPassThroughCluster, err := CreateOutboundPassThroughCluster(proxy.APIVersion, outboundName)
+	if err != nil {
+		return nil, err
 	}
 
-	outboundStatPrefix := ""
-	inboundStatPrefix := ""
-	if unifiedNaming {
-		outboundStatPrefix = outboundName
-		inboundStatPrefix = inboundName
-	}
-
-	outboundListener, err := CreateOutboundPassthroughListener(proxy, ctx, outboundName, allIP, tpCfg.Redirect.Outbound.Port.Uint32(), outboundStatPrefix)
+	outboundListener, err := CreateOutboundPassthroughListener(proxy, ctx, outboundName, allIP, tpCfg.Redirect.Outbound.Port.Uint32(), outboundName)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +188,7 @@ func (TransparentProxyGenerator) generate(
 		ctx.Mesh.Resource.MTLSEnabled() &&
 		ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_STRICT
 
-	inboundListener, err := CreateInboundPassthroughListener(proxy, inboundName, allIP, tpCfg.Redirect.Inbound.Port.Uint32(), useStrictInboundPorts, inboundStatPrefix)
+	inboundListener, err := CreateInboundPassthroughListener(proxy, inboundName, allIP, tpCfg.Redirect.Inbound.Port.Uint32(), useStrictInboundPorts, inboundName)
 	if err != nil {
 		return nil, err
 	}
@@ -224,13 +199,11 @@ func (TransparentProxyGenerator) generate(
 		Resource: outboundListener,
 	})
 
-	if ctx.Mesh.Resource.Spec.IsPassthrough() {
-		resources.Add(&model.Resource{
-			Name:     outboundPassThroughCluster.GetName(),
-			Origin:   metadata.OriginTransparent,
-			Resource: outboundPassThroughCluster,
-		})
-	}
+	resources.Add(&model.Resource{
+		Name:     outboundPassThroughCluster.GetName(),
+		Origin:   metadata.OriginTransparent,
+		Resource: outboundPassThroughCluster,
+	})
 	resources.Add(&model.Resource{
 		Name:     inboundListener.GetName(),
 		Origin:   metadata.OriginTransparent,
@@ -245,29 +218,23 @@ func (TransparentProxyGenerator) generate(
 }
 
 func (tpg TransparentProxyGenerator) generateIPv4(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
-	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
 	return tpg.generate(
 		ctx,
 		proxy,
-		nameOrDefault(naming.ContextualTransparentProxyName("outbound", 4), metadata.TransparentOutboundNameIPv4),
-		nameOrDefault(naming.ContextualTransparentProxyName("inbound", 4), metadata.TransparentInboundNameIPv4),
+		naming.ContextualTransparentProxyName("outbound", 4),
+		naming.ContextualTransparentProxyName("inbound", 4),
 		metadata.TransparentAllIPv4,
 		metadata.TransparentInPassThroughIPv4,
-		unifiedNaming,
 	)
 }
 
 func (tpg TransparentProxyGenerator) generateIPv6(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
-	nameOrDefault := naming.GetNameOrFallbackFunc(unifiedNaming)
 	return tpg.generate(
 		ctx,
 		proxy,
-		nameOrDefault(naming.ContextualTransparentProxyName("outbound", 6), metadata.TransparentOutboundNameIPv6),
-		nameOrDefault(naming.ContextualTransparentProxyName("inbound", 6), metadata.TransparentInboundNameIPv6),
+		naming.ContextualTransparentProxyName("outbound", 6),
+		naming.ContextualTransparentProxyName("inbound", 6),
 		metadata.TransparentAllIPv6,
 		metadata.TransparentInPassThroughIPv6,
-		unifiedNaming,
 	)
 }

@@ -6,7 +6,7 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 )
 
 const (
@@ -64,7 +64,6 @@ func gatherAllListeners(listeners Listeners) []*envoy_listener.Listener {
 	for _, listener := range listeners.Outbound {
 		add(listener)
 	}
-	add(listeners.Egress)
 	for _, listener := range listeners.ZoneIngress {
 		add(listener)
 	}

@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	meshhealthcheck_proto "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	meshhealthcheck_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 )
 
 var _ = Describe("MeshHealthCheck", func() {
@@ -27,12 +27,12 @@ var _ = Describe("MeshHealthCheck", func() {
 			},
 			Entry("full example", `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s
@@ -41,7 +41,6 @@ to:
       initialJitter: 5s # optional
       intervalJitter: 6s # optional
       intervalJitterPercent: 10 # optional
-      healthyPanicThreshold: 60 # optional, by default 50
       failTrafficOnPanic: true # optional, by default false
       noTrafficInterval: 10s # optional, by default 60s
       eventLogPath: "/tmp/health-check.log" # optional
@@ -69,26 +68,14 @@ to:
         serviceName: "" # optional, service name parameter which will be sent to gRPC service
         authority: "" # optional, the value of the :authority header in the gRPC health check request, by default name of the cluster this health check is associated with
 `),
-			Entry("top level MeshGateway", `
-targetRef:
-  kind: MeshGateway
-  name: edge
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      interval: 10s
-      tcp: # it will pick the protocol as described in 'protocol selection' section
-        disabled: true # new, default false, can be disabled for override
-`),
 			Entry("to level MeshMultiZoneService", `
 targetRef:
   kind: Mesh
 to:
   - targetRef:
       kind: MeshMultiZoneService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       tcp: # it will pick the protocol as described in 'protocol selection' section
@@ -100,7 +87,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: external
+      labels:
+        kuma.io/display-name: external
     default:
       interval: 10s
       tcp: # it will pick the protocol as described in 'protocol selection' section
@@ -112,7 +100,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: external
+      labels:
+        kuma.io/display-name: external
     default:
       interval: 10s
       tcp:
@@ -155,12 +144,12 @@ violations:
 			Entry("required fields are missing", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default: {}
 `,
 				expected: `
@@ -171,12 +160,12 @@ violations:
 			Entry("positive values are out of range", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s
@@ -194,12 +183,12 @@ violations:
 			Entry("positive durations are out of range", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: -10s
       timeout: -2s
@@ -226,37 +215,34 @@ violations:
 			Entry("all percentages are out of percentage range", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s
       unhealthyThreshold: 3
       healthyThreshold: 1
       intervalJitterPercent: 110
-      healthyPanicThreshold: -10
       grpc: {}
 `,
 				expected: `
 violations:
   - field: spec.to[0].default.intervalJitterPercent
-    message: must be in inclusive range [0, 100]
-  - field: spec.to[0].default.healthyPanicThreshold
-    message: must be in inclusive range [0.0, 100.0]`,
+    message: must be in inclusive range [0, 100]`,
 			}),
 			Entry("path is invalid", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s
@@ -273,12 +259,12 @@ violations:
 			Entry("status codes out of range in expectedStatuses", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       interval: 10s
       timeout: 2s

@@ -12,29 +12,29 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	workload_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	kds_context "github.com/kumahq/kuma/v2/pkg/kds/context"
-	"github.com/kumahq/kuma/v2/pkg/kds/mux"
-	client_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/client"
-	sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/grpc"
-	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
-	"github.com/kumahq/kuma/v2/pkg/test/kds/setup"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
+	"github.com/kumahq/kuma/v3/pkg/kds/mux"
+	client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
+	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/grpc"
+	"github.com/kumahq/kuma/v3/pkg/test/kds/samples"
+	"github.com/kumahq/kuma/v3/pkg/test/kds/setup"
 )
 
 var _ = Describe("Zone Delta Sync", func() {
@@ -417,15 +417,17 @@ var _ = Describe("KDSSyncClient logging", func() {
 				"addedResourcesCount",
 				"removedResourcesCount",
 			},
+			// ControlPlaneId now reflects the connecting peer's client-id ("zone-1"),
+			// not the in-band "cp-1"; it must not leak into summary logs.
 			[]string{
-				"cp-1",
+				"zone-1",
 			},
 		),
 		Entry("full payload logging when enabled",
 			true,
 			[]string{
 				"DeltaDiscoveryResponse received",
-				"cp-1",
+				"zone-1",
 				"nonce-1",
 			},
 			[]string{

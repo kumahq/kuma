@@ -13,20 +13,20 @@ import (
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/resources"
-	test_kumactl "github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
-	api_server_types "github.com/kumahq/kuma/v2/pkg/api-server/types"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
+	"github.com/kumahq/kuma/v3/app/kumactl/cmd"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/resources"
+	test_kumactl "github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
 )
 
 type testDataplaneInspectClient struct {
-	response api_server_types.DataplaneInspectResponse
+	response api_common.PoliciesList
 }
 
-func (t *testDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, name string) (api_server_types.DataplaneInspectResponse, error) {
+func (t *testDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, name string) (api_common.PoliciesList, error) {
 	return t.response, nil
 }
 
@@ -50,7 +50,7 @@ var _ = Describe("kumactl inspect dataplane", func() {
 			rawResponse, err := os.ReadFile(path.Join("testdata", given.serverOutput))
 			Expect(err).ToNot(HaveOccurred())
 
-			response := api_server_types.DataplaneInspectResponse{}
+			response := api_common.PoliciesList{}
 			Expect(json.Unmarshal(rawResponse, &response)).To(Succeed())
 
 			testClient := &testDataplaneInspectClient{
@@ -87,12 +87,7 @@ var _ = Describe("kumactl inspect dataplane", func() {
 			goldenFile:   "inspect-dataplane.golden.txt",
 			matcher:      matchers.MatchGoldenEqual,
 		}),
-		Entry("default output (no kind in response)", testCase{
-			serverOutput: "inspect-dataplane-1.5.server-response.json",
-			goldenFile:   "inspect-dataplane.golden.txt",
-			matcher:      matchers.MatchGoldenEqual,
-		}),
-		Entry("builtin gateway dataplane", testCase{
+		Entry("gateway dataplane", testCase{
 			serverOutput: "inspect-gateway-dataplane.server-response.json",
 			goldenFile:   "inspect-gateway-dataplane.golden.txt",
 			matcher:      matchers.MatchGoldenEqual,

@@ -8,11 +8,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	secret_model "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	secret_model "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 )
 
 func ExecuteOwnerTests(
@@ -30,6 +31,20 @@ func ExecuteOwnerTests(
 		err := s.Close()
 		Expect(err).ToNot(HaveOccurred())
 	})
+
+	newMeshExternalService := func() *meshexternalservice_api.MeshExternalServiceResource {
+		return &meshexternalservice_api.MeshExternalServiceResource{
+			Spec: &meshexternalservice_api.MeshExternalService{
+				Match: meshexternalservice_api.Match{
+					Type:     meshexternalservice_api.HostnameGeneratorType,
+					Port:     80,
+					Protocol: core_meta.ProtocolHTTP,
+				},
+				Endpoints: &[]meshexternalservice_api.Endpoint{{Address: "demo.example.com", Port: 80}},
+			},
+			Status: &meshexternalservice_api.MeshExternalServiceStatus{},
+		}
+	}
 
 	Context("Store: "+storeName, func() {
 		It("should delete secret when its owner is deleted", func() {
@@ -63,16 +78,8 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			name := "resource-1"
-			trRes := core_mesh.TrafficRouteResource{
-				Spec: &v1alpha1.TrafficRoute{
-					Conf: &v1alpha1.TrafficRoute_Conf{
-						Destination: map[string]string{
-							"path": "demo",
-						},
-					},
-				},
-			}
-			err = s.Create(context.Background(), &trRes,
+			trRes := newMeshExternalService()
+			err = s.Create(context.Background(), trRes,
 				store.CreateByKey(name, mesh),
 				store.CreatedAt(time.Now()),
 				store.CreateWithOwner(meshRes))
@@ -83,7 +90,7 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			actual := core_mesh.NewTrafficRouteResource()
+			actual := meshexternalservice_api.NewMeshExternalServiceResource()
 			err = s.Get(context.Background(), actual, store.GetByKey(name, mesh))
 			Expect(store.IsNotFound(err)).To(BeTrue())
 		})
@@ -95,16 +102,8 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			name := "resource-1"
-			trRes := core_mesh.TrafficRouteResource{
-				Spec: &v1alpha1.TrafficRoute{
-					Conf: &v1alpha1.TrafficRoute_Conf{
-						Destination: map[string]string{
-							"path": "demo",
-						},
-					},
-				},
-			}
-			err = s.Create(context.Background(), &trRes,
+			trRes := newMeshExternalService()
+			err = s.Create(context.Background(), trRes,
 				store.CreateByKey(name, mesh),
 				store.CreatedAt(time.Now()),
 				store.CreateWithOwner(meshRes))
@@ -118,7 +117,7 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			actual := core_mesh.NewTrafficRouteResource()
+			actual := meshexternalservice_api.NewMeshExternalServiceResource()
 			err = s.Get(context.Background(), actual, store.GetByKey(name, mesh))
 			Expect(store.IsNotFound(err)).To(BeTrue())
 		})
@@ -130,22 +129,14 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			for i := range 10 {
-				tr := core_mesh.TrafficRouteResource{
-					Spec: &v1alpha1.TrafficRoute{
-						Conf: &v1alpha1.TrafficRoute_Conf{
-							Destination: map[string]string{
-								"path": "demo",
-							},
-						},
-					},
-				}
-				err = s.Create(context.Background(), &tr,
+				tr := newMeshExternalService()
+				err = s.Create(context.Background(), tr,
 					store.CreateByKey(fmt.Sprintf("resource-%d", i), mesh),
 					store.CreatedAt(time.Now()),
 					store.CreateWithOwner(meshRes))
 				Expect(err).ToNot(HaveOccurred())
 			}
-			actual := core_mesh.TrafficRouteResourceList{}
+			actual := meshexternalservice_api.MeshExternalServiceResourceList{}
 			err = s.List(context.Background(), &actual, store.ListByMesh(mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual.Items).To(HaveLen(10))
@@ -155,7 +146,7 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			actual = core_mesh.TrafficRouteResourceList{}
+			actual = meshexternalservice_api.MeshExternalServiceResourceList{}
 			err = s.List(context.Background(), &actual, store.ListByMesh(mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual.Items).To(BeEmpty())
@@ -169,15 +160,7 @@ func ExecuteOwnerTests(
 
 			var prev model.Resource = meshRes
 			for i := range 10 {
-				curr := &core_mesh.TrafficRouteResource{
-					Spec: &v1alpha1.TrafficRoute{
-						Conf: &v1alpha1.TrafficRoute_Conf{
-							Destination: map[string]string{
-								"path": "demo",
-							},
-						},
-					},
-				}
+				curr := newMeshExternalService()
 				err := s.Create(context.Background(), curr,
 					store.CreateByKey(fmt.Sprintf("resource-%d", i), mesh),
 					store.CreatedAt(time.Now()),
@@ -186,7 +169,7 @@ func ExecuteOwnerTests(
 				prev = curr
 			}
 
-			actual := core_mesh.TrafficRouteResourceList{}
+			actual := meshexternalservice_api.MeshExternalServiceResourceList{}
 			err = s.List(context.Background(), &actual, store.ListByMesh(mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual.Items).To(HaveLen(10))
@@ -196,7 +179,7 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			actual = core_mesh.TrafficRouteResourceList{}
+			actual = meshexternalservice_api.MeshExternalServiceResourceList{}
 			err = s.List(context.Background(), &actual, store.ListByMesh(mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual.Items).To(BeEmpty())
@@ -209,15 +192,7 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			name := "resource-1"
-			trRes := &core_mesh.TrafficRouteResource{
-				Spec: &v1alpha1.TrafficRoute{
-					Conf: &v1alpha1.TrafficRoute_Conf{
-						Destination: map[string]string{
-							"path": "demo",
-						},
-					},
-				},
-			}
+			trRes := newMeshExternalService()
 			err = s.Create(context.Background(), trRes,
 				store.CreateByKey(name, mesh),
 				store.CreatedAt(time.Now()),
@@ -225,7 +200,7 @@ func ExecuteOwnerTests(
 			Expect(err).ToNot(HaveOccurred())
 
 			// when children is deleted
-			err = s.Delete(context.Background(), core_mesh.NewTrafficRouteResource(), store.DeleteByKey(name, mesh))
+			err = s.Delete(context.Background(), meshexternalservice_api.NewMeshExternalServiceResource(), store.DeleteByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

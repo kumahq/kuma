@@ -14,10 +14,10 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	test_container "github.com/kumahq/kuma/v2/test/framework/container"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	test_container "github.com/kumahq/kuma/v3/test/framework/container"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
 var (

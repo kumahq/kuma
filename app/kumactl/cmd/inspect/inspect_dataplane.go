@@ -3,16 +3,18 @@ package inspect
 import (
 	"context"
 	"fmt"
-	"text/template"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
-	api_server_types "github.com/kumahq/kuma/v2/pkg/api-server/types"
-	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/printers"
+	kuma_cmd "github.com/kumahq/kuma/v3/pkg/cmd"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 const (
@@ -23,43 +25,7 @@ const (
 	InspectionConfig         = "config"
 )
 
-var dataplaneInspectTemplate = `{{ with IsSidecar . }}{{ range $num, $item := .Items }}{{ .AttachmentEntry | FormatAttachment }}:
-{{ range $typ, $policies := .MatchedPolicies }}  {{ $typ }}
-    {{ range $policies }}{{ .Name }}
-{{ end }}{{ end }}
-{{ end }}{{ end }}{{ with IsGateway . }}MESHGATEWAY:
-{{ range $typ, $policy := .Policies }}  {{ $typ }}
-    {{ .Name }}
-{{ end }}
-{{ range .Listeners }}LISTENER ({{ .Protocol }}:{{ .Port }}):
-{{ range .Hosts }}  {{ .HostName }}:
-{{ range .Routes }}    ROUTE {{ .Route }}:
-{{ range .Destinations }}      {{ FormatTags .Tags }}:
-{{ range $typ, $policy := .Policies }}        {{ $typ }}
-          {{ .Name }}
-{{ end }}
-{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}`
-
 func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
-	tmpl, err := template.New("dataplane_inspect").Funcs(template.FuncMap{
-		"IsSidecar": func(e api_server_types.DataplaneInspectResponse) *api_server_types.DataplaneInspectEntryList {
-			if concrete, ok := e.DataplaneInspectResponseKind.(*api_server_types.DataplaneInspectEntryList); ok {
-				return concrete
-			}
-			return nil
-		},
-		"IsGateway": func(e api_server_types.DataplaneInspectResponse) *api_server_types.GatewayDataplaneInspectResult {
-			if concrete, ok := e.DataplaneInspectResponseKind.(*api_server_types.GatewayDataplaneInspectResult); ok {
-				return concrete
-			}
-			return nil
-		},
-		"FormatAttachment": attachmentToStr(true),
-		"FormatTags":       tagsToStr(true),
-	}).Parse(dataplaneInspectTemplate)
-	if err != nil {
-		panic("unable to parse template")
-	}
 	var configDump bool
 	var includeEDS bool
 	var inspectionType string
@@ -99,11 +65,30 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 					return errors.Wrap(err, "failed to create a dataplane inspect client")
 				}
 
-				entryList, err := client.InspectPolicies(context.Background(), pctx.CurrentMesh(), name)
+				policies, err := client.InspectPolicies(context.Background(), pctx.CurrentMesh(), name)
 				if err != nil {
 					return err
 				}
-				return tmpl.Execute(cmd.OutOrStdout(), entryList)
+				format := output.Format(pctx.InspectContext.Args.OutputFormat)
+				return printers.GenericPrint(format, policies, printers.Table{
+					Headers: []string{"Kind", "Origins"},
+					RowForItem: func(i int, container any) ([]string, error) {
+						list, ok := container.(api_common.PoliciesList)
+						if !ok {
+							return nil, errors.Errorf("unexpected container type %T, expected %T", container, api_common.PoliciesList{})
+						}
+						items := list.Policies
+						if i >= len(items) {
+							return nil, nil
+						}
+						itm := items[i]
+						origins := make([]string, len(itm.Origins))
+						for j, origin := range itm.Origins {
+							origins[j] = origin.Kri
+						}
+						return []string{itm.Kind, strings.Join(origins, ",")}, nil
+					},
+				}, cmd.OutOrStdout())
 			case InspectionTypeConfigDump:
 				bytes, err := client.ConfigDump(context.Background(), resourceKey, includeEDS)
 				if err != nil {

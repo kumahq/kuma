@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	. "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 )
 
 var _ = Describe("MultiValueTagSet", func() {
@@ -131,8 +131,8 @@ var _ = Describe("Dataplane_Networking", func() {
 						},
 					},
 					expected: []InboundInterface{
-						{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "192.168.0.1", WorkloadPort: 80, InboundName: "test-port"},
-						{DataplaneAdvertisedIP: "192.168.0.2", DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443, InboundName: "443"},
+						{DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "192.168.0.1", WorkloadPort: 80, InboundName: "test-port"},
+						{DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443, InboundName: "443"},
 					},
 				}),
 			)
@@ -170,20 +170,18 @@ var _ = Describe("Dataplane_Networking", func() {
 			Entry("empty sectionName selects all inbounds", testCase{
 				expected: []InboundInterface{
 					{
-						DataplaneAdvertisedIP: "192.168.0.1",
-						DataplaneIP:           "192.168.0.1",
-						DataplanePort:         80,
-						WorkloadIP:            "192.168.0.1",
-						WorkloadPort:          80,
-						InboundName:           "main-port",
+						DataplaneIP:   "192.168.0.1",
+						DataplanePort: 80,
+						WorkloadIP:    "192.168.0.1",
+						WorkloadPort:  80,
+						InboundName:   "main-port",
 					},
 					{
-						DataplaneAdvertisedIP: "192.168.0.1",
-						DataplaneIP:           "192.168.0.1",
-						DataplanePort:         443,
-						WorkloadIP:            "192.168.0.1",
-						WorkloadPort:          443,
-						InboundName:           "secondary-port",
+						DataplaneIP:   "192.168.0.1",
+						DataplanePort: 443,
+						WorkloadIP:    "192.168.0.1",
+						WorkloadPort:  443,
+						InboundName:   "secondary-port",
 					},
 				},
 			}),
@@ -191,12 +189,11 @@ var _ = Describe("Dataplane_Networking", func() {
 				sectionName: "main-port",
 				expected: []InboundInterface{
 					{
-						DataplaneAdvertisedIP: "192.168.0.1",
-						DataplaneIP:           "192.168.0.1",
-						DataplanePort:         80,
-						WorkloadIP:            "192.168.0.1",
-						WorkloadPort:          80,
-						InboundName:           "main-port",
+						DataplaneIP:   "192.168.0.1",
+						DataplanePort: 80,
+						WorkloadIP:    "192.168.0.1",
+						WorkloadPort:  80,
+						InboundName:   "main-port",
 					},
 				},
 			}),
@@ -266,42 +263,13 @@ var _ = Describe("Dataplane_Networking", func() {
 })
 
 var _ = Describe("Dataplane_Networking_Inbound", func() {
-	Describe("GetService()", func() {
-		type testCase struct {
-			inbound  *Dataplane_Networking_Inbound
-			expected string
-		}
-
-		DescribeTable("should infer service name from `service` tag",
-			func(given testCase) {
-				Expect(given.inbound.GetService()).To(Equal(given.expected))
-			},
-			Entry("inbound is `nil`", testCase{
-				inbound:  nil,
-				expected: "",
-			}),
-			Entry("inbound has no `service` tag", testCase{
-				inbound:  &Dataplane_Networking_Inbound{},
-				expected: "",
-			}),
-			Entry("inbound has `service` tag", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{
-						"kuma.io/service": "backend",
-					},
-				},
-				expected: "backend",
-			}),
-		)
-	})
-
 	Describe("GetProtocolFallback()", func() {
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
 			expected string
 		}
 
-		DescribeTable("should return protocol from field or fall back to tag",
+		DescribeTable("should return protocol from field, falling back to the tag",
 			func(given testCase) {
 				Expect(given.inbound.GetProtocolFallback()).To(Equal(given.expected))
 			},
@@ -309,7 +277,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 				inbound:  nil,
 				expected: "",
 			}),
-			Entry("inbound has no protocol field or tag", testCase{
+			Entry("inbound has no protocol field", testCase{
 				inbound:  &Dataplane_Networking_Inbound{},
 				expected: "",
 			}),
@@ -319,66 +287,65 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 				},
 				expected: "grpc",
 			}),
-			Entry("inbound has `protocol` tag with a known value", testCase{
+			Entry("legacy inbound carries the protocol only as a tag", testCase{
 				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{
-						"kuma.io/protocol": "http",
-					},
+					Tags: map[string]string{ProtocolTag: "http"},
 				},
 				expected: "http",
 			}),
-			Entry("inbound has both protocol field and tag - field takes precedence", testCase{
+			Entry("protocol field wins over the tag", testCase{
 				inbound: &Dataplane_Networking_Inbound{
 					Protocol: "grpc",
-					Tags: map[string]string{
-						"kuma.io/protocol": "http",
-					},
+					Tags:     map[string]string{ProtocolTag: "http"},
 				},
 				expected: "grpc",
 			}),
-			Entry("inbound has `protocol` tag with an unknown value", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{
-						"kuma.io/protocol": "not-yet-supported-protocol",
-					},
-				},
-				expected: "not-yet-supported-protocol",
-			}),
 		)
 	})
-})
 
-var _ = Describe("Dataplane with inbound", func() {
-	d := Dataplane{
-		Networking: &Dataplane_Networking{
-			Inbound: []*Dataplane_Networking_Inbound{
-				{
-					Tags: map[string]string{
-						"kuma.io/service": "backend",
-						"version":         "v1",
-					},
-				},
-				{
-					Tags: map[string]string{
-						"kuma.io/service": "backend-metrics",
-						"version":         "v1",
-						"role":            "metrics",
-					},
-				},
+	Describe("GetServiceFallback()", func() {
+		type testCase struct {
+			inbound  *Dataplane_Networking_Inbound
+			fallback string
+			expected string
+		}
+
+		DescribeTable("should return the legacy inbound tag, falling back to the Dataplane's service",
+			func(given testCase) {
+				Expect(given.inbound.GetServiceFallback(given.fallback)).To(Equal(given.expected))
 			},
-		},
-	}
-
-	Describe("TagSet()", func() {
-		It("should provide combined tags", func() {
-			// when
-			tags := d.TagSet()
-
-			// then
-			Expect(tags.Values("kuma.io/service")).To(Equal([]string{"backend", "backend-metrics"}))
-			Expect(tags.Values("version")).To(Equal([]string{"v1"}))
-			Expect(tags.Values("role")).To(Equal([]string{"metrics"}))
-		})
+			Entry("inbound is `nil`", testCase{
+				inbound:  nil,
+				fallback: "backend",
+				expected: "backend",
+			}),
+			Entry("inbound carries no tags", testCase{
+				inbound:  &Dataplane_Networking_Inbound{},
+				fallback: "backend",
+				expected: "backend",
+			}),
+			Entry("inbound carries an empty service tag", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Tags: map[string]string{ServiceTag: ""},
+				},
+				fallback: "backend",
+				expected: "backend",
+			}),
+			Entry("legacy inbound declares its own service", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Tags: map[string]string{ServiceTag: "backend-api"},
+				},
+				fallback: "backend",
+				expected: "backend-api",
+			}),
+			Entry("legacy inbound on a Dataplane with no service at all", testCase{
+				inbound: &Dataplane_Networking_Inbound{
+					Tags: map[string]string{ServiceTag: "backend-api"},
+				},
+				fallback: "",
+				expected: "backend-api",
+			}),
+		)
 	})
 })
 

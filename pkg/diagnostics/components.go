@@ -1,8 +1,8 @@
 package diagnostics
 
 import (
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 )
 
 func SetupServer(rt core_runtime.Runtime) error {

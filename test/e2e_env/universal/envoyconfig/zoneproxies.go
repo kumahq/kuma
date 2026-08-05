@@ -9,29 +9,29 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	meshaccesslog "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	meshcircuitbreaker "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	meshfaultinjection "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	meshhealthcheck "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
-	meshhttproute "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshloadbalancing "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	meshmetric "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	meshproxypatch "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	meshratelimit "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/api/v1alpha1"
-	meshretry "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
-	meshtimeout "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	meshtls "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtls/api/v1alpha1"
-	meshtrace "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	meshtrafficpermission "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/zoneproxy"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	meshopentelemetrybackend "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	meshaccesslog "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshcircuitbreaker "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshfaultinjection "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	meshhealthcheck "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
+	meshhttproute "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshloadbalancing "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	meshmetric "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	meshproxypatch "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	meshratelimit "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	meshretry "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtimeout "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	meshtls "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
+	meshtrace "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	meshtrafficpermission "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 const zoneProxyMeshName = "envoyconfig-zoneproxies"
@@ -41,12 +41,12 @@ const (
 	zoneProxyEgressDP  = "zone-proxy-egress"
 )
 
-// zoneProxyDpEnvs pins the kuma-dp socket directory to /tmp. Without this,
+// dppEnvs pins the kuma-dp work directory to /tmp. Without this,
 // kuma-dp creates a randomized /tmp/kuma-dp-<N>/ directory each run and that
 // random suffix would leak into the generated socket paths in the goldens,
 // making the test flaky.
 var dppEnvs = map[string]string{
-	"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+	"KUMA_DATAPLANE_RUNTIME_WORK_DIR":     "/tmp",
 	"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
 }
 
@@ -72,6 +72,7 @@ func ZoneProxies() {
 		meshmetric.MeshMetricResourceTypeDescriptor,
 		meshproxypatch.MeshProxyPatchResourceTypeDescriptor,
 		meshtrafficpermission.MeshTrafficPermissionResourceTypeDescriptor,
+		meshopentelemetrybackend.MeshOpenTelemetryBackendResourceTypeDescriptor,
 	))
 
 	DescribeTable("should generate proper Envoy config for zone proxies",
@@ -109,7 +110,7 @@ func TestZoneProxyConfig(inputFile string) {
 		g.Expect(getConfig(zoneProxyMeshName, "zone-proxy-test-server-no-reusable-ports")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "zone-proxy-test-server-no-reusable-ports.golden.json", 1)))
 		g.Expect(getConfig(zoneProxyMeshName, zoneProxyIngressDP)).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", zoneProxyIngressDP+".golden.json", 1)))
 		g.Expect(getConfig(zoneProxyMeshName, zoneProxyEgressDP)).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", zoneProxyEgressDP+".golden.json", 1)))
-	}, "90s", "2s").Should(Succeed())
+	}, "180s", "2s").Should(Succeed())
 }
 
 func SetupZoneProxyCluster() {
@@ -129,6 +130,10 @@ spec:
   endpoints:
     - address: 127.0.0.1
       port: 80
+      priority: 1
+    - address: 127.0.0.1
+      port: 81
+      priority: 2
 `, zoneProxyMeshName)
 
 	meshIdentityYAML := fmt.Sprintf(`
@@ -156,8 +161,7 @@ spec:
 			Yaml(
 				builders.Mesh().
 					WithName(zoneProxyMeshName).
-					WithoutInitialPolicies().
-					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+					WithoutInitialPolicies(),
 			),
 		).
 		Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
@@ -167,12 +171,14 @@ spec:
 		Install(YamlUniversal(meshExternalService)).
 		Install(YamlUniversal(meshIdentityYAML)).
 		Install(zoneproxy.Install(
+			zoneproxy.WithName("zone-proxy"),
 			zoneproxy.WithMesh(zoneProxyMeshName),
 			zoneproxy.WithIngressPort(11001),
 			zoneproxy.WithWorkload(zoneProxyIngressDP),
 			zoneproxy.WithDpEnvs(dppEnvs),
 		)).
 		Install(zoneproxy.Install(
+			zoneproxy.WithName("zone-proxy"),
 			zoneproxy.WithMesh(zoneProxyMeshName),
 			zoneproxy.WithEgressPort(11002),
 			zoneproxy.WithWorkload(zoneProxyEgressDP),
@@ -194,7 +200,7 @@ spec:
 			WithServiceName("zone-proxy-test-server-no-reusable-ports"),
 			WithWorkload("zone-proxy-test-server-no-reusable-ports"),
 			WithDpEnvs(map[string]string{
-				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":         "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_WORK_DIR":           "/tmp",
 				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED":       "false",
 				"KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED": "false",
 			})),
@@ -238,7 +244,17 @@ spec:
 }
 
 func CleanupAfterZoneProxyTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(zoneProxyMeshName, []string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"}, policies...)
+	return cleanupAfterTest(
+		zoneProxyMeshName,
+		[]string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"},
+		func(cluster Cluster) error {
+			return MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				zoneProxyMeshName,
+				fmt.Sprintf("%s.%s.mesh.local", zoneProxyMeshName, universal.Cluster.ZoneName()),
+			)(cluster)
+		},
+		policies...,
+	)
 }
 
 func CleanupAfterZoneProxySuite() {

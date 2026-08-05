@@ -48,7 +48,7 @@ image/kuma-cp/$(1): image/static/$(1) build/artifacts-linux-$(1)/kuma-cp ## Dev:
 	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-cp,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-cp.Dockerfile .
 
 .PHONY: image/kuma-dp/$(1)
-image/kuma-dp/$(1): image/base/$(1) image/envoy/$(1) build/artifacts-linux-$(1)/kuma-dp build/artifacts-linux-$(1)/coredns ## Dev: Rebuild `kuma-dp` Docker image
+image/kuma-dp/$(1): image/base/$(1) image/envoy/$(1) build/artifacts-linux-$(1)/kuma-dp ## Dev: Rebuild `kuma-dp` Docker image
 	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-dp,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-dp.Dockerfile .
 
 .PHONY: image/kumactl/$(1)
@@ -64,7 +64,7 @@ image/kuma-cni/$(1): image/base-root/$(1) build/artifacts-linux-$(1)/kuma-cni bu
 	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-cni,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-cni.Dockerfile .
 
 .PHONY: image/kuma-universal/$(1)
-image/kuma-universal/$(1): image/envoy/$(1) build/artifacts-linux-$(1)/kuma-cp build/artifacts-linux-$(1)/kuma-dp build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/test-server build/artifacts-linux-$(1)/coredns
+image/kuma-universal/$(1): image/envoy/$(1) build/artifacts-linux-$(1)/kuma-cp build/artifacts-linux-$(1)/kuma-dp build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/test-server
 	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-universal,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(KUMA_DIR)/test/dockerfiles/universal.Dockerfile .
 endef
 $(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call IMAGE_TARGETS_BY_ARCH,$(goarch))))
@@ -145,6 +145,10 @@ images/test: $(addprefix images/,$(IMAGES_TEST)) ## Dev: Rebuild test Docker ima
 .PHONY: docker/info/registry
 docker/info/registry: ## Output the Docker registry
 	@echo $(DOCKER_REGISTRY)
+
+.PHONY: docker/info/enabled-arches
+docker/info/enabled-arches: ## Output the arches `images/<name>` builds for
+	@echo $(ENABLED_GOARCHES)
 
 # The awk command is ok because we're passing a list of container image names which won't contain ' ' or '"'
 # This outputs something like: ["docker.io/kumahq/kuma-cp:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-dp:0.0.0-preview.vlocal-build","docker.io/kumahq/kumactl:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-init:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-cni:0.0.0-preview.vlocal-build"]

@@ -4,11 +4,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls/v3"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/tls/v3"
 )
 
 type caRequest struct {
@@ -66,7 +66,6 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				snippet, err := v3.CreateDownstreamTlsContext(
 					&caRequest{mesh: mesh.GetMeta().GetName()},
 					&identityRequest{mesh: mesh.GetMeta().GetName()},
-					false,
 					given.useMeshTrust,
 				)
 				// then
@@ -88,12 +87,12 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                           prefix: spiffe://default/
                         sanType: URI
                     validationContextSdsSecretConfig:
-                      name: mesh_ca:secret:default
+                      name: system_mtls_ca_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert:secret:default
+                  - name: system_mtls_identity_default
                     sdsConfig:
                       ads: {}
                       resourceApiVersion: V3
@@ -111,7 +110,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                         ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert:secret:default
+                  - name: system_mtls_identity_default
                     sdsConfig:
                       ads: {}
                       resourceApiVersion: V3
@@ -135,7 +134,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				mesh := "default"
 
 				// when
-				snippet, err := v3.CreateUpstreamTlsContext(&identityRequest{mesh: mesh}, &caRequest{mesh: mesh}, given.upstreamService, "", nil, false, given.useMeshTrust)
+				snippet, err := v3.CreateUpstreamTlsContext(&identityRequest{mesh: mesh}, &caRequest{mesh: mesh}, given.upstreamService, "", nil, given.useMeshTrust)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when
@@ -158,12 +157,12 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                           exact: spiffe://default/backend
                         sanType: URI
                     validationContextSdsSecretConfig:
-                      name: mesh_ca:secret:default
+                      name: system_mtls_ca_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert:secret:default
+                  - name: system_mtls_identity_default
                     sdsConfig:
                       ads: {}
                       resourceApiVersion: V3`,
@@ -183,7 +182,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                         ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert:secret:default
+                  - name: system_mtls_identity_default
                     sdsConfig:
                       ads: {}
                       resourceApiVersion: V3`,

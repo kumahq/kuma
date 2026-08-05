@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
 )
 
 // HoldConnection opens a long-lived HTTP/1.1 keep-alive TCP connection from

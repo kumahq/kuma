@@ -10,12 +10,12 @@ import (
 	"github.com/shopspring/decimal"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (r *MeshTraceResource) validate() error {
@@ -35,10 +35,6 @@ func (r *MeshTraceResource) validateTop(targetRef *common_api.TargetRef) validat
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshGateway,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: false,
@@ -47,9 +43,6 @@ func (r *MeshTraceResource) validateTop(targetRef *common_api.TargetRef) validat
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
 		})
@@ -166,15 +159,14 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 	case OpenTelemetryBackendType:
 		otelPath := firstBackendPath.Field("openTelemetry")
 		otelBackend := backend.OpenTelemetry
-		if otelBackend == nil {
+		switch {
+		case otelBackend == nil:
 			verr.AddViolationAt(otelPath, validators.MustBeDefined)
-			break
+		case otelBackend.BackendRef == nil:
+			verr.AddViolationAt(otelPath.Field("backendRef"), validators.MustBeDefined)
+		default:
+			verr.AddErrorAt(otelPath.Field("backendRef"), validators.ValidateBackendResourceRef(otelBackend.BackendRef))
 		}
-
-		verr.AddErrorAt(otelPath, validators.ValidateOtelBackendRefOrEndpoint(
-			otelBackend.Endpoint,
-			otelBackend.BackendRef,
-		))
 	default:
 		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}

@@ -1,9 +1,8 @@
 package v1alpha1_test
 
 import (
-	"context"
-	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -11,45 +10,41 @@ import (
 	. "github.com/onsi/gomega"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	meshroute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	meshhttproute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/xds"
-	meshtcproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	meshroute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
+	meshhttproute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
+	meshtcproute_plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshAccessLog", func() {
@@ -70,21 +65,54 @@ var _ = Describe("MeshAccessLog", func() {
 		SectionName:  "",
 	}
 
-	type sidecarTestCase struct {
-		resources           []core_xds.Resource
-		outbounds           xds_types.Outbounds
-		toRules             core_rules.ToRules
-		fromRules           core_rules.FromRules
-		expectedListeners   []string
-		expectedClusters    []string
-		features            xds_types.Features
-		meshServicesMode    mesh_proto.Mesh_MeshServices_Mode
-		dataplaneLabels     map[string]string
-		inboundTagsDisabled bool
-		inboundName         string
-		extraInbounds       []*builders.InboundBuilder
+	otherMeshServiceTCP := &kri.Identifier{
+		ResourceType: meshservice_api.MeshServiceType,
+		Mesh:         "default",
+		Zone:         "zone-1",
+		Namespace:    "other-ns",
+		Name:         "other-meshservice-tcp",
 	}
-	DescribeTable("should generate proper Envoy config",
+
+	fooMeshServiceTCP := &kri.Identifier{
+		ResourceType: meshservice_api.MeshServiceType,
+		Mesh:         "default",
+		Zone:         "zone-1",
+		Namespace:    "other-ns",
+		Name:         "foo-meshservice-tcp",
+	}
+
+	barMeshServiceTCP := &kri.Identifier{
+		ResourceType: meshservice_api.MeshServiceType,
+		Mesh:         "default",
+		Zone:         "zone-1",
+		Namespace:    "other-ns",
+		Name:         "bar-meshservice-tcp",
+	}
+
+	otelCollectorMotb := otelBackendMotb("otel-collector", "otel-collector", 4317)
+	otherOtelCollectorMotb := otelBackendMotb("other-otel-collector", "other-otel-collector", 5317)
+	otelCollectorBackendRef := &common_api.BackendResourceRef{
+		Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+		Labels: map[string]string{mesh_proto.DisplayName: "otel-collector"},
+	}
+	otherOtelCollectorBackendRef := &common_api.BackendResourceRef{
+		Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+		Labels: map[string]string{mesh_proto.DisplayName: "other-otel-collector"},
+	}
+
+	type sidecarTestCase struct {
+		resources         []core_xds.Resource
+		toRules           core_rules.ToRules
+		fromRules         core_rules.FromRules
+		expectedListeners []string
+		expectedClusters  []string
+		dataplaneLabels   map[string]string
+		inboundName       string
+		extraInbounds     []*builders.InboundBuilder
+		motbBackends      []*motb_api.MeshOpenTelemetryBackendResource
+	}
+	DescribeTable(
+		"should generate proper Envoy config",
 		func(given sidecarTestCase) {
 			// given
 			resourceSet := core_xds.NewResourceSet()
@@ -93,9 +121,16 @@ var _ = Describe("MeshAccessLog", func() {
 				resourceSet.Add(&r)
 			}
 
+			meshResources := xds_context.NewResources()
+			if len(given.motbBackends) > 0 {
+				meshResources.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType] = &motb_api.MeshOpenTelemetryBackendResourceList{
+					Items: given.motbBackends,
+				}
+			}
+
 			xdsCtx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshDefaultBuilder().WithMeshServicesEnabled(given.meshServicesMode)).
-				WithResources(xds_context.NewResources()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithResources(meshResources).
 				WithEndpointMap(
 					xds_builders.EndpointMap().
 						AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/service", "backend")).
@@ -105,9 +140,6 @@ var _ = Describe("MeshAccessLog", func() {
 				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 				AddServiceProtocol("other-service-http", core_meta.ProtocolHTTP).
 				AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
-				With(func(ctx *xds_context.Context) {
-					ctx.ControlPlane.InboundTagsDisabled = given.inboundTagsDisabled
-				}).
 				Build()
 
 			inboundBuilder := builders.Inbound().
@@ -134,22 +166,12 @@ var _ = Describe("MeshAccessLog", func() {
 			proxy := xds_builders.Proxy().
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithMetadata(&core_xds.DataplaneMetadata{
-					WorkDir:  "/tmp",
-					Features: given.features,
+					WorkDir: "/tmp",
+					// Outbounds are always built from real resources, so every
+					// proxy here supports unified resource naming.
+					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
 				}).
 				WithDataplane(dpBuilder).
-				WithOutbounds(append(given.outbounds, &xds_types.Outbound{
-					LegacyOutbound: builders.Outbound().
-						WithService("other-service-http").
-						WithAddress("127.0.0.1").
-						WithPort(27777).Build(),
-				}, &xds_types.Outbound{
-					LegacyOutbound: builders.Outbound().
-						WithService("other-service-tcp").
-						WithAddress("127.0.0.1").
-						WithPort(37777).Build(),
-				},
-				)).
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, given.toRules, given.fromRules),
 				).
@@ -168,32 +190,11 @@ var _ = Describe("MeshAccessLog", func() {
 				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[i].Resource)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", expectedCluster)))
 			}
 		},
-		Entry("basic outbound route", sidecarTestCase{
-			resources: []core_xds.Resource{
-				otherServiceHTTPListener(),
-			},
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
-						},
-					},
-				},
-			},
-			expectedListeners: []string{"basic_outbound.listener.golden.yaml"},
-		}),
 		Entry("basic outbound route from real MeshService", sidecarTestCase{
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{
-						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 					},
 				}}),
 			},
@@ -224,7 +225,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 					{
@@ -233,7 +234,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 					{
@@ -242,7 +243,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-3"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 				}),
@@ -289,6 +290,65 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"basic_outbound_meshhttproute.listener.golden.yaml"},
 		}),
+		Entry("matches MeshHTTPRoute policy when route name carries a unified-naming rule section", sidecarTestCase{
+			resources: []core_xds.Resource{
+				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{
+					{
+						Name: routeKRI("route-1").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
+						},
+					},
+					{
+						// Under unified naming, a real-resource route carries a
+						// "rule_N" section name identifying the specific
+						// MeshHTTPRoute rule that produced it.
+						Name: kri.WithSectionName(routeKRI("route-2"), "rule_0").String(),
+						Match: meshhttproute_api.Match{
+							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
+						},
+						Split: []envoy_common.Split{
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
+						},
+					},
+				}),
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceHTTP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
+									File: &api.FileBackend{
+										Path: "/tmp/meshservice/log",
+									},
+								}},
+							},
+						},
+					},
+					// This MeshAccessLog targets the whole MeshHTTPRoute
+					// resource (no rule section), which must still match
+					// route-2's rule-scoped name.
+					routeKRI("route-2"): {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
+									File: &api.FileBackend{
+										Path: "/tmp/route-2/log",
+									},
+								}},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"basic_outbound_meshhttproute_unified_naming.listener.golden.yaml"},
+		}),
 		Entry("disable MAL for MeshHTTPRoute", sidecarTestCase{
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{
@@ -298,7 +358,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 					{
@@ -307,7 +367,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 					{
@@ -316,7 +376,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-3"},
 						},
 						Split: []envoy_common.Split{
-							xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+							xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 						},
 					},
 				}),
@@ -350,7 +410,7 @@ var _ = Describe("MeshAccessLog", func() {
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshExternalServiceHTTP, 47777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{
-						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshExternalServiceHTTP, 47777)).Build(),
+						xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshExternalServiceHTTP, 47777)).Build(),
 					},
 				}}),
 			},
@@ -374,19 +434,20 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("outbound tcpproxy with file backend and default format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+									},
+								}},
+							},
 						},
 					},
 				},
@@ -395,22 +456,23 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("outbound tcpproxy with file backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-									Format: &api.Format{
-										Plain: pointer.To("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+										Format: &api.Format{
+											Plain: pointer.To("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -419,25 +481,26 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("outbound tcpproxy with file backend and json format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-									Format: &api.Format{
-										Json: pointer.To([]api.JsonValue{
-											{Key: "protocol", Value: "%PROTOCOL%"},
-											{Key: "duration", Value: "%DURATION%"},
-										}),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.FileBackendType,
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+										Format: &api.Format{
+											Json: pointer.To([]api.JsonValue{
+												{Key: "protocol", Value: "%PROTOCOL%"},
+												{Key: "duration", Value: "%DURATION%"},
+											}),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -446,183 +509,80 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("outbound tcpproxy with tcp backend and default format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.TCPBackendType,
-								Tcp: &api.TCPBackend{
-									Address: "logging.backend",
-								},
-							}},
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.TCPBackendType,
+									Tcp: &api.TCPBackend{
+										Address: "logging.backend",
+									},
+								}},
+							},
 						},
 					},
 				},
 			},
 			expectedListeners: []string{"outbound_tcp_backend_default_format.listener.golden.yaml"},
 		}),
-		Entry("outbound tcpproxy with opentelemetry backend, plain format, unified naming", sidecarTestCase{
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
-			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
-				outboundServiceTCPListener("foo-service", 37778),
-				outboundServiceTCPListener("bar-service", 37779),
-			},
-			outbounds: xds_types.Outbounds{
-				{LegacyOutbound: builders.Outbound().
-					WithService("foo-service").
-					WithAddress("127.0.0.1").
-					WithPort(37778).Build()},
-				{LegacyOutbound: builders.Outbound().
-					WithService("bar-service").
-					WithAddress("127.0.0.1").
-					WithPort(37779).Build()},
-			},
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service-tcp",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									Endpoint: "otel-collector",
-								},
-							}},
-						},
-					},
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "foo-service",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									Endpoint: "otel-collector",
-									Body: &apiextensionsv1.JSON{
-										Raw: []byte("%KUMA_MESH%"),
-									},
-								},
-							}},
-						},
-					},
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "bar-service",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									Endpoint: "other-otel-collector:5317",
-									Body: &apiextensionsv1.JSON{
-										Raw: []byte(`{
-										  "kvlistValue": {
-											"values": [
-											  {"key": "mesh", "value": {"stringValue": "%KUMA_MESH%"}}
-											]
-										  }
-									    }`),
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-			expectedClusters: []string{
-				"outbound_otel_unified_naming.cluster.golden.yaml",
-				"outbound_otel_unified_naming_1.cluster.golden.yaml",
-			},
-			expectedListeners: []string{
-				"outbound_otel_unified_naming.listener.golden.yaml",
-				"outbound_otel_unified_naming_1.listener.golden.yaml",
-				"outbound_otel_unified_naming_2.listener.golden.yaml",
-			},
-		}),
 		Entry("outbound tcpproxy with opentelemetry backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
-				outboundServiceTCPListener("foo-service", 37778),
-				outboundServiceTCPListener("bar-service", 37779),
-			},
-			outbounds: xds_types.Outbounds{
-				{LegacyOutbound: builders.Outbound().
-					WithService("foo-service").
-					WithAddress("127.0.0.1").
-					WithPort(37778).Build()},
-				{LegacyOutbound: builders.Outbound().
-					WithService("bar-service").
-					WithAddress("127.0.0.1").
-					WithPort(37779).Build()},
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
+				outboundRealServiceTCPListener(*fooMeshServiceTCP, 37778),
+				outboundRealServiceTCPListener(*barMeshServiceTCP, 37779),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service-tcp",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									Endpoint: "otel-collector",
-								},
-							}},
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: otelCollectorBackendRef,
+									},
+								}},
+							},
 						},
 					},
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "foo-service",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									Endpoint: "otel-collector",
-									Body: &apiextensionsv1.JSON{
-										Raw: []byte("%KUMA_MESH%"),
+					*fooMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: otelCollectorBackendRef,
+										Body: &apiextensionsv1.JSON{
+											Raw: []byte("%KUMA_MESH%"),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "bar-service",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									Endpoint: "other-otel-collector:5317",
-									Body: &apiextensionsv1.JSON{
-										Raw: []byte(`{
-										  "kvlistValue": {
-											"values": [
-											  {"key": "mesh", "value": {"stringValue": "%KUMA_MESH%"}}
-											]
-										  }
-									    }`),
+					*barMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: otherOtelCollectorBackendRef,
+										Body: &apiextensionsv1.JSON{
+											Raw: []byte(`{
+											  "kvlistValue": {
+												"values": [
+												  {"key": "mesh", "value": {"stringValue": "%KUMA_MESH%"}}
+												]
+											  }
+										    }`),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -636,25 +596,27 @@ var _ = Describe("MeshAccessLog", func() {
 				"outbound_otel_backend_plain_format_1.listener.golden.yaml",
 				"outbound_otel_backend_plain_format_2.listener.golden.yaml",
 			},
+			motbBackends: []*motb_api.MeshOpenTelemetryBackendResource{otelCollectorMotb, otherOtelCollectorMotb},
 		}),
 		Entry("outbound tcpproxy with tcp backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.TCPBackendType,
-								Tcp: &api.TCPBackend{
-									Address: "logging.backend",
-									Format: &api.Format{
-										Plain: pointer.To("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.TCPBackendType,
+									Tcp: &api.TCPBackend{
+										Address: "logging.backend",
+										Format: &api.Format{
+											Plain: pointer.To("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -663,53 +625,37 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("outbound tcpproxy with tcp backend and json format", sidecarTestCase{
 			resources: []core_xds.Resource{
-				outboundServiceTCPListener("other-service-tcp", 37777),
+				outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777),
 			},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.TCPBackendType,
-								Tcp: &api.TCPBackend{
-									Address: "logging.backend",
-									Format: &api.Format{
-										Json: pointer.To([]api.JsonValue{
-											{Key: "protocol", Value: "%PROTOCOL%"},
-											{Key: "duration", Value: "%DURATION%"},
-										}),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.TCPBackendType,
+									Tcp: &api.TCPBackend{
+										Address: "logging.backend",
+										Format: &api.Format{
+											Json: pointer.To([]api.JsonValue{
+												{Key: "protocol", Value: "%PROTOCOL%"},
+												{Key: "duration", Value: "%DURATION%"},
+											}),
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
 			},
 			expectedListeners: []string{"outbound_tcp_backend_json_format.listener.golden.yaml"},
 		}),
-		Entry("basic outbound route without match", sidecarTestCase{
+		Entry("outbound route with no matching MeshAccessLog policy", sidecarTestCase{
 			resources: []core_xds.Resource{
 				otherServiceHTTPListener(),
 			},
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
-						},
-					},
-				},
-			},
+			toRules:           core_rules.ToRules{},
 			expectedListeners: []string{"outbound_route_without_match.listener.golden.yaml"},
 		}),
 		Entry("basic inbound route", sidecarTestCase{
@@ -717,22 +663,16 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
-						Configure(
-							HttpInboundRoutes(
-								envoy_names.GetInboundRouteName("backend"),
-								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									},
-								},
+					Configure(FilterChain(
+						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(
+								HttpInboundRoute(
+									envoy_names.GetInboundRouteName("backend"),
+									"backend",
+									xds.NewClusterBuilder().WithService("backend").Build(),
+								),
 							),
-						),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
@@ -769,22 +709,16 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
-						Configure(
-							HttpInboundRoutes(
-								envoy_names.GetInboundRouteName("backend"),
-								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									},
-								},
+					Configure(FilterChain(
+						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(
+								HttpInboundRoute(
+									envoy_names.GetInboundRouteName("backend"),
+									"backend",
+									xds.NewClusterBuilder().WithService("backend").Build(),
+								),
 							),
-						),
 					)).MustBuild(),
 			}},
 			extraInbounds: []*builders.InboundBuilder{
@@ -825,31 +759,24 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"inbound_route_duplicate_port.listener.golden.yaml"},
 		}),
-		Entry("inbound route with inbound tags disabled", sidecarTestCase{
+		Entry("inbound route in tag-free mode", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
-						Configure(
-							HttpInboundRoutes(
-								envoy_names.GetInboundRouteName("backend"),
-								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									},
-								},
+					Configure(FilterChain(
+						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(
+								HttpInboundRoute(
+									envoy_names.GetInboundRouteName("backend"),
+									"backend",
+									xds.NewClusterBuilder().WithService("backend").Build(),
+								),
 							),
-						),
 					)).MustBuild(),
 			}},
-			inboundTagsDisabled: true,
-			inboundName:         "http",
+			inboundName: "http",
 			dataplaneLabels: map[string]string{
 				mesh_proto.ZoneTag:          "zone-1",
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
@@ -881,17 +808,13 @@ var _ = Describe("MeshAccessLog", func() {
 					}},
 				},
 			},
-			expectedListeners: []string{"inbound_route_tags_disabled.listener.golden.yaml"},
+			expectedListeners: []string{"inbound_route_tagless.listener.golden.yaml"},
 		}),
 		Entry("outbound otel backend with workload identity and legacy placeholder key", sidecarTestCase{
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{
-						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 					},
 				}}),
 			},
@@ -908,7 +831,7 @@ var _ = Describe("MeshAccessLog", func() {
 								Backends: &[]api.Backend{{
 									Type: api.OtelTelemetryBackendType,
 									OpenTelemetry: &api.OtelBackend{
-										Endpoint: "otel-collector",
+										BackendRef: otelCollectorBackendRef,
 										Body: &apiextensionsv1.JSON{
 											Raw: []byte("%KUMA_MESH% %KUMA_ZONE% %KUMA_WORKLOAD%"),
 										},
@@ -928,16 +851,13 @@ var _ = Describe("MeshAccessLog", func() {
 			},
 			expectedListeners: []string{"outbound_otel_workload_identity.listener.golden.yaml"},
 			expectedClusters:  []string{"outbound_otel_workload_identity.cluster.golden.yaml"},
+			motbBackends:      []*motb_api.MeshOpenTelemetryBackendResource{otelCollectorMotb},
 		}),
 		Entry("outbound file backend with workload variables", sidecarTestCase{
-			meshServicesMode: mesh_proto.Mesh_MeshServices_Exclusive,
-			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
 			resources: []core_xds.Resource{
 				outboundRealServiceHTTPListener(*otherMeshServiceHTTP, 27777, []meshhttproute_xds.OutboundRoute{{
 					Split: []envoy_common.Split{
-						xds.NewSplitBuilder().WithClusterName(serviceName(*otherMeshServiceHTTP, 27777)).Build(),
+						xds.NewSplitBuilder().WithClusterName(destinationName(*otherMeshServiceHTTP, 27777)).Build(),
 					},
 				}}),
 			},
@@ -972,22 +892,16 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
-						Configure(
-							HttpInboundRoutes(
-								envoy_names.GetInboundRouteName("backend"),
-								"backend",
-								envoy_common.Routes{
-									{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									},
-								},
+					Configure(FilterChain(
+						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(
+								HttpInboundRoute(
+									envoy_names.GetInboundRouteName("backend"),
+									"backend",
+									xds.NewClusterBuilder().WithService("backend").Build(),
+								),
 							),
-						),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
@@ -1025,10 +939,11 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "outbound:zoneegress",
 				Origin: metadata.OriginEgress,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(MatchTransportProtocol("tls")).
-						Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
-						Configure(TcpProxyDeprecated("aws-aurora", envoy_common.NewCluster(envoy_common.WithService("aws-aurora")))),
+					Configure(FilterChain(
+						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(MatchTransportProtocol("tls")).
+							Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
+							Configure(TcpProxyDeprecated("aws-aurora", xds.NewClusterBuilder().WithService("aws-aurora").Build())),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
@@ -1056,10 +971,11 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound:zoneingress",
 				Origin: metadata.OriginIngress,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "10.20.30.40", 10001, core_xds.SocketAddressProtocolTCP, true).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(MatchTransportProtocol("tls")).
-						Configure(MatchServerNames("inbound-backend{mesh=default}")).
-						Configure(TcpProxyDeprecated("backend", envoy_common.NewCluster(envoy_common.WithService("backend")))),
+					Configure(FilterChain(
+						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(MatchTransportProtocol("tls")).
+							Configure(MatchServerNames("inbound-backend{mesh=default}")).
+							Configure(TcpProxyDeprecated("backend", xds.NewClusterBuilder().WithService("backend").Build())),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
@@ -1091,7 +1007,7 @@ var _ = Describe("MeshAccessLog", func() {
 		)
 
 		resourceSet := core_xds.NewResourceSet()
-		outboundListener := outboundServiceTCPListener("other-service-tcp", 37777)
+		outboundListener := outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777)
 		resourceSet.Add(&outboundListener)
 
 		motb := motb_api.NewMeshOpenTelemetryBackendResource()
@@ -1135,40 +1051,31 @@ var _ = Describe("MeshAccessLog", func() {
 				builders.Dataplane().
 					WithName("backend").
 					WithMesh("default").
-					AddInbound(builders.Inbound().
-						WithService("backend").
-						WithAddress("127.0.0.1").
-						WithPort(17777).
-						WithTags(map[string]string{
-							mesh_proto.ProtocolTag: "http",
-						}),
+					AddInbound(
+						builders.Inbound().
+							WithService("backend").
+							WithAddress("127.0.0.1").
+							WithPort(17777).
+							WithTags(map[string]string{
+								mesh_proto.ProtocolTag: "http",
+							}),
 					),
 			).
-			WithOutbounds(xds_types.Outbounds{
-				{
-					LegacyOutbound: builders.Outbound().
-						WithService("other-service-tcp").
-						WithAddress("127.0.0.1").
-						WithPort(37777).Build(),
-				},
-			}).
 			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service-tcp",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: &common_api.BackendResourceRef{
-										Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
-										Labels: map[string]string{mesh_proto.DisplayName: backendName},
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: &common_api.BackendResourceRef{
+											Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+											Labels: map[string]string{mesh_proto.DisplayName: backendName},
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -1202,7 +1109,7 @@ var _ = Describe("MeshAccessLog", func() {
 
 	It("should skip access log for dangling opentelemetry backendRef", func() {
 		resourceSet := core_xds.NewResourceSet()
-		outboundListener := outboundServiceTCPListener("other-service-tcp", 37777)
+		outboundListener := outboundRealServiceTCPListener(*otherMeshServiceTCP, 37777)
 		resourceSet.Add(&outboundListener)
 
 		// No MOTB resources - the backendRef will be dangling
@@ -1235,40 +1142,31 @@ var _ = Describe("MeshAccessLog", func() {
 				builders.Dataplane().
 					WithName("backend").
 					WithMesh("default").
-					AddInbound(builders.Inbound().
-						WithService("backend").
-						WithAddress("127.0.0.1").
-						WithPort(17777).
-						WithTags(map[string]string{
-							mesh_proto.ProtocolTag: "http",
-						}),
+					AddInbound(
+						builders.Inbound().
+							WithService("backend").
+							WithAddress("127.0.0.1").
+							WithPort(17777).
+							WithTags(map[string]string{
+								mesh_proto.ProtocolTag: "http",
+							}),
 					),
 			).
-			WithOutbounds(xds_types.Outbounds{
-				{
-					LegacyOutbound: builders.Outbound().
-						WithService("other-service-tcp").
-						WithAddress("127.0.0.1").
-						WithPort(37777).Build(),
-				},
-			}).
 			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, core_rules.ToRules{
-				Rules: []*core_rules.Rule{ //nolint:staticcheck // SA1019 Test: backward compat with deprecated Rule
-					{
-						Subset: subsetutils.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service-tcp",
-						}},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.OtelTelemetryBackendType,
-								OpenTelemetry: &api.OtelBackend{
-									BackendRef: &common_api.BackendResourceRef{
-										Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
-										Labels: map[string]string{"kuma.io/display-name": "non-existent-backend"},
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					*otherMeshServiceTCP: {
+						Conf: []any{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									Type: api.OtelTelemetryBackendType,
+									OpenTelemetry: &api.OtelBackend{
+										BackendRef: &common_api.BackendResourceRef{
+											Kind:   common_api.BackendResourceMeshOpenTelemetryBackend,
+											Labels: map[string]string{"kuma.io/display-name": "non-existent-backend"},
+										},
 									},
-								},
-							}},
+								}},
+							},
 						},
 					},
 				},
@@ -1294,140 +1192,7 @@ var _ = Describe("MeshAccessLog", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(string(listenerResources)).ToNot(ContainSubstring("open_telemetry"))
 	})
-
-	type gatewayTestCase struct {
-		routes []*core_mesh.MeshGatewayRouteResource
-		rules  core_rules.GatewayRules
-	}
-	DescribeTable("should generate proper Envoy config for MeshGateway Dataplanes",
-		func(given gatewayTestCase) {
-			gateways := core_mesh.MeshGatewayResourceList{
-				Items: []*core_mesh.MeshGatewayResource{{
-					Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
-					Spec: &mesh_proto.MeshGateway{
-						Selectors: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									mesh_proto.ServiceTag: "gateway",
-								},
-							},
-						},
-						Conf: &mesh_proto.MeshGateway_Conf{
-							Listeners: []*mesh_proto.MeshGateway_Listener{
-								{
-									Protocol: mesh_proto.MeshGateway_Listener_HTTP,
-									Port:     8080,
-								},
-							},
-						},
-					},
-				}},
-			}
-			resources := xds_context.NewResources()
-			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &gateways
-			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-				Items: given.routes,
-			}
-
-			xdsCtx := *xds_builders.Context().
-				WithMeshBuilder(samples.MeshDefaultBuilder()).
-				WithResources(resources).
-				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-				AddServiceProtocol("other-service", core_meta.ProtocolHTTP).
-				Build()
-			proxy := xds_builders.Proxy().
-				WithDataplane(
-					builders.Dataplane().
-						WithName("gateway").
-						WithMesh("default").
-						WithBuiltInGateway("gateway"),
-				).
-				WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshAccessLogType, given.rules)).
-				Build()
-
-			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
-			}
-
-			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
-			Expect(err).NotTo(HaveOccurred())
-
-			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			nameSplit := strings.Split(GinkgoT().Name(), " ")
-			name := nameSplit[len(nameSplit)-1]
-
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.listener.golden.yaml", name))))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.cluster.golden.yaml", name))))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.route.golden.yaml", name))))
-		},
-		Entry("basic-gateway", gatewayTestCase{
-			routes: []*core_mesh.MeshGatewayRouteResource{
-				builders.GatewayRoute().
-					WithName("sample-gateway-route").
-					WithGateway("gateway").
-					WithExactMatchHttpRoute("/", "backend", "other-service").
-					Build(),
-			},
-			rules: core_rules.GatewayRules{
-				FromRules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 8080}: {
-						{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								Backends: &[]api.Backend{{
-									Type: api.FileBackendType,
-									File: &api.FileBackend{
-										Path: "/tmp/from-log",
-									},
-								}},
-							},
-						},
-					},
-				},
-				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
-					{Address: "127.0.0.1", Port: 8080}: {
-						{
-							Conf: api.Conf{
-								Backends: &[]api.Backend{{
-									Type: api.FileBackendType,
-									File: &api.FileBackend{
-										Path: "/tmp/from-log",
-									},
-								}},
-							},
-						},
-					},
-				},
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "127.0.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{},
-								Conf: api.Conf{
-									Backends: &[]api.Backend{{
-										Type: api.FileBackendType,
-										File: &api.FileBackend{
-											Path: "/tmp/to-log",
-										},
-									}},
-								},
-							}},
-						},
-					},
-				},
-			},
-		}),
-	)
 })
-
-func getResourceYaml(list core_xds.ResourceList) []byte {
-	actualResource, err := util_proto.ToYAML(list[0].Resource)
-	Expect(err).ToNot(HaveOccurred())
-	return actualResource
-}
 
 func otherServiceHTTPListener() core_xds.Resource {
 	listener, err := meshhttproute_plugin.GenerateOutboundListener(
@@ -1448,29 +1213,27 @@ func otherServiceHTTPListener() core_xds.Resource {
 			},
 		}},
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
-		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
 }
 
-func outboundServiceTCPListener(service string, port uint32) core_xds.Resource {
+func outboundRealServiceTCPListener(serviceResourceKRI kri.Identifier, port int32) core_xds.Resource {
 	listener, err := meshtcproute_plugin.GenerateOutboundListener(
 		&core_xds.Proxy{
 			APIVersion: envoy_common.APIV3,
 		},
 		meshroute_xds.DestinationService{
 			Outbound: &xds_types.Outbound{
-				Address: "127.0.0.1",
-				Port:    port,
+				Address:  "127.0.0.1",
+				Port:     uint32(port),
+				Resource: destinationKRI(serviceResourceKRI, port),
 			},
-			Protocol:            core_meta.ProtocolTCP,
-			KumaServiceTagValue: service,
+			Protocol: core_meta.ProtocolTCP,
 		},
 		[]envoy_common.Split{
-			xds.NewSplitBuilder().WithClusterName(service).Build(),
+			xds.NewSplitBuilder().WithClusterName(destinationName(serviceResourceKRI, port)).Build(),
 		},
-		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
@@ -1485,25 +1248,45 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
 				Port:     uint32(port),
-				Resource: serviceResourceKRI,
+				Resource: destinationKRI(serviceResourceKRI, port),
 			},
-			Protocol:            core_meta.ProtocolHTTP,
-			KumaServiceTagValue: serviceName(serviceResourceKRI, port),
+			Protocol: core_meta.ProtocolHTTP,
 		},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
-		false,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
 }
 
-func serviceName(id kri.Identifier, port int32) string {
-	desc, err := registry.Global().DescriptorFor(id.ResourceType)
-	Expect(err).ToNot(HaveOccurred())
-	return destinationname.ResolveLegacyFromKRI(id, desc.ShortName, port)
+// destinationKRI returns the identifier of a destination as it is carried by an
+// Outbound: the service resource identifier scoped to the port it is reached on.
+func destinationKRI(id kri.Identifier, port int32) kri.Identifier {
+	return kri.WithSectionName(id, strconv.Itoa(int(port)))
+}
+
+// destinationName is the unified (KRI) name Envoy resources for this destination
+// are given, matching what meshroute generates when the proxy supports unified
+// resource naming.
+func destinationName(id kri.Identifier, port int32) string {
+	return destinationKRI(id, port).String()
 }
 
 func routeKRI(name string) kri.Identifier {
 	return kri.Identifier{ResourceType: meshhttproute_api.MeshHTTPRouteType, Name: name, Mesh: "default"}
+}
+
+func otelBackendMotb(name, address string, port int32) *motb_api.MeshOpenTelemetryBackendResource {
+	motb := motb_api.NewMeshOpenTelemetryBackendResource()
+	motb.SetMeta(&test_model.ResourceMeta{
+		Mesh:   "default",
+		Name:   name,
+		Labels: map[string]string{mesh_proto.DisplayName: name},
+	})
+	motb.Spec.Endpoint = &motb_api.Endpoint{
+		Address: pointer.To(address),
+		Port:    pointer.To(port),
+	}
+	motb.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
+	return motb
 }

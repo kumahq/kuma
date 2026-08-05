@@ -6,10 +6,9 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/portforward"
-	"github.com/kumahq/kuma/v2/test/framework/report"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/report"
 )
 
 var Cluster *framework.K8sCluster
@@ -26,11 +25,6 @@ func SetupAndGetState() []byte {
 
 	kumaOptions := append(
 		[]framework.KumaDeploymentOption{
-			framework.WithEgress(),
-			framework.WithEgressEnvoyAdminTunnel(),
-			framework.WithCtlOpts(map[string]string{
-				"--set": "controlPlane.supportGatewaySecretsInAllNamespaces=true", // needed for test/e2e_env/kubernetes/gateway/gatewayapi.go:470
-			}),
 			// Occasionally CP will lose a leader in the E2E test just because of this deadline,
 			// which does not make sense in such controlled environment (one k3d node, one instance of the CP).
 			// 100s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
@@ -40,22 +34,13 @@ func SetupAndGetState() []byte {
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
 	)
-	if !framework.Config.KumaExperimentalSidecarContainers {
-		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS", "false"))
-	}
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))
 	}, "90s", "3s").Should(Succeed())
 
 	state := framework.K8sNetworkingState{
 		KumaCp: Cluster.GetKuma().(*framework.K8sControlPlane).PortFwd(),
-		MADS:   Cluster.GetKuma().(*framework.K8sControlPlane).MadsPortFwd(),
 	}
-	state.ZoneEgress = Cluster.GetPortForward(portforward.Spec{
-		AppName:    framework.Config.ZoneEgressApp,
-		Namespace:  framework.Config.KumaNamespace,
-		RemotePort: 9902,
-	})
 
 	bytes, err := json.Marshal(state)
 	Expect(err).ToNot(HaveOccurred())
@@ -86,13 +71,8 @@ func RestoreState(bytes []byte) {
 		1,
 		nil, // headers were not configured in setup
 	)
-	Expect(cp.FinalizeAddWithPortFwd(state.KumaCp, state.MADS)).To(Succeed())
+	Expect(cp.FinalizeAddWithPortFwd(state.KumaCp)).To(Succeed())
 	Cluster.SetCP(cp)
-	Cluster.AddPortForward(state.ZoneEgress, portforward.Spec{
-		AppName:    framework.Config.ZoneEgressApp,
-		Namespace:  framework.Config.KumaNamespace,
-		RemotePort: 9902,
-	})
 }
 
 func SynchronizedAfterSuite() {

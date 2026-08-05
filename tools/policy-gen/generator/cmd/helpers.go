@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	commontemplate "github.com/kumahq/kuma/v2/tools/common/template"
-	"github.com/kumahq/kuma/v2/tools/policy-gen/generator/pkg/parse"
+	commontemplate "github.com/kumahq/kuma/v3/tools/common/template"
+	"github.com/kumahq/kuma/v3/tools/policy-gen/generator/pkg/parse"
 )
 
 func newHelpers(rootArgs *args) *cobra.Command {
@@ -32,16 +32,21 @@ func newHelpers(rootArgs *args) *cobra.Command {
 				return nil
 			}
 
+			// GetPolicyItem is only generated for policies without to/rules lists;
+			// those policies implement PolicyItem directly on the root spec struct
+			generateGetPolicyItem := !pconfig.HasTo && !pconfig.HasRules
+			needsCoreModel := pconfig.HasTo || generateGetPolicyItem
+
 			outPath := filepath.Join(filepath.Dir(policyPath), "zz_generated.helpers.go")
 			return commontemplate.GoTemplate(helpersTemplate, map[string]any{
 				"name":                  pconfig.Name,
 				"version":               pconfig.Package,
 				"generateTo":            pconfig.HasTo,
-				"generateFrom":          pconfig.HasFrom,
 				"generateRules":         pconfig.HasRules,
 				"ruleHasMatches":        pconfig.RuleHasMatches,
 				"skipGetDefault":        pconfig.SkipGetDefault,
-				"generateGetPolicyItem": !pconfig.HasFrom && !pconfig.HasTo,
+				"generateGetPolicyItem": generateGetPolicyItem,
+				"needsCoreModel":        needsCoreModel,
 			}, outPath)
 		},
 	}
@@ -57,37 +62,15 @@ var helpersTemplate = template.Must(template.New("missingkey=error").Parse(
 package {{.version}}
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"{{ if .generateRules }}
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"{{ end }}
-    "github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"{{ if .needsCoreModel }}
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"{{ end }}{{ if .generateRules }}
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"{{ end }}
+    "github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (x *{{.name}}) GetTargetRef() common_api.TargetRef {
 	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
 }
-
-{{ if .generateFrom }}
-
-func (x *From) GetTargetRef() common_api.TargetRef {
-	return x.TargetRef
-}
-{{ if not .skipGetDefault }}
-
-func (x *From) GetDefault() interface{} {
-	return x.Default
-}
-{{- end }}
-
-func (x *{{.name}}) GetFromList() []core_model.PolicyItem {
-	var result []core_model.PolicyItem
-	for _, itm := range pointer.Deref(x.From) {
-		item := itm
-		result = append(result, &item)
-	}
-	return result
-}
-{{- end }}
 {{ if .generateTo }}
 
 func (x *To) GetTargetRef() common_api.TargetRef {

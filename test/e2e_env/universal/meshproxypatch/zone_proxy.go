@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	meshproxypatch_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/zoneproxy"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	meshproxypatch_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 // ZoneProxy verifies that MeshProxyPatch is applied to mesh-scoped zone proxy
@@ -20,12 +20,10 @@ import (
 // applied, pushed via xDS, and observed on the live Envoy of each zone proxy.
 func ZoneProxy() {
 	const mesh = "mpp-zone-proxy"
-	// proxyName is the zone-proxy deployment base name. zoneproxy.Install
-	// derives the app and tunnel keys from it as <proxyName>-ingress and
-	// <proxyName>-egress.
-	const proxyName = "mpp-zone-proxy"
-	const ingressWorkload = proxyName + "-ingress"
-	const egressWorkload = proxyName + "-egress"
+	// The zone proxies are named after the mesh, so the app and tunnel keys
+	// are the ones zoneproxy derives from it.
+	ingressWorkload := zoneproxy.IngressName(mesh)
+	egressWorkload := zoneproxy.EgressName(mesh)
 
 	// clusterPatch renders a MeshProxyPatch that adds a STATIC cluster. The
 	// cluster carries an explicit loadAssignment with an unreachable dummy
@@ -74,9 +72,6 @@ spec:
 			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Install(zoneproxy.Install(
 				zoneproxy.WithMesh(mesh),
-				zoneproxy.WithName(proxyName),
-				zoneproxy.WithIngressPort(12001),
-				zoneproxy.WithEgressPort(12002),
 			)).
 			Setup(universal.Cluster)).To(Succeed())
 	})

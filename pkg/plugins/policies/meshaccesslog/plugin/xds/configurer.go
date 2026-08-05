@@ -1,7 +1,6 @@
 package xds
 
 import (
-	"fmt"
 	"strconv"
 
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
@@ -13,19 +12,19 @@ import (
 	otlp "go.opentelemetry.io/proto/otlp/common/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	bldrs_accesslog "github.com/kumahq/kuma/v2/pkg/envoy/builders/accesslog"
-	. "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	policies_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	bldrs_accesslog "github.com/kumahq/kuma/v3/pkg/envoy/builders/accesslog"
+	. "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 const (
@@ -110,39 +109,30 @@ func (r *OtelPipeResolver) PipeBackends() map[string]xds.OtelPipeBackend {
 }
 
 type EndpointAccumulator struct {
-	endpoints             map[LoggingEndpoint]int
-	latest                int
-	UnifiedResourceNaming bool
-	OtelPipe              *OtelPipeResolver
+	endpoints map[LoggingEndpoint]int
+	latest    int
+	OtelPipe  *OtelPipeResolver
 }
 
 type endpointClusterName string
 
 func (acc *EndpointAccumulator) ClusterForEndpoint(endpoint LoggingEndpoint) endpointClusterName {
-	ind, found := acc.endpoints[endpoint]
-	if !found {
-		ind = acc.latest
+	if _, found := acc.endpoints[endpoint]; !found {
 		if acc.endpoints == nil {
 			acc.endpoints = map[LoggingEndpoint]int{}
 		}
-		acc.endpoints[endpoint] = ind
+		acc.endpoints[endpoint] = acc.latest
 		acc.latest += 1
 	}
 
-	getNameOrDefault := core_system_names.GetNameOrDefault(acc.UnifiedResourceNaming)
-	var name string
 	if endpoint.SocketPath != "" {
-		name = getNameOrDefault(
-			core_system_names.AsSystemName("meshaccesslog_otel_"+core_system_names.CleanName(endpoint.BackendName)),
-			fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind),
-		)
-	} else {
-		name = getNameOrDefault(
-			core_system_names.AsSystemName("meshaccesslog_"+core_system_names.CleanName(endpoint.Address+"-"+strconv.Itoa(int(endpoint.Port)))),
-			fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind),
+		return endpointClusterName(
+			core_system_names.AsSystemName("meshaccesslog_otel_" + core_system_names.CleanName(endpoint.BackendName)),
 		)
 	}
-	return endpointClusterName(name)
+	return endpointClusterName(
+		core_system_names.AsSystemName("meshaccesslog_" + core_system_names.CleanName(endpoint.Address+"-"+strconv.Itoa(int(endpoint.Port)))),
+	)
 }
 
 func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccumulator) *LoggingEndpoint {
@@ -153,7 +143,7 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 
 	resolved := policies_xds.ResolveOtelBackend(
 		otelBackend.BackendRef,
-		otelBackend.Endpoint,
+		"",
 		policies_xds.ParseOtelEndpoint,
 		func(ep string) string { return ep },
 		pipe.Resources,

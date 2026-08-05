@@ -4,7 +4,7 @@
 // heavy transitive dependencies across the build graph and keeps ownership clear
 package metadata
 
-import . "github.com/kumahq/kuma/v2/pkg/core/xds/origin"
+import . "github.com/kumahq/kuma/v3/pkg/core/xds/origin"
 
 const (
 	// OriginAdmin is the origin for resources produced by the admin proxy/generator
@@ -12,9 +12,6 @@ const (
 
 	// OriginDirectAccess is the origin for resources produced by the direct-access proxy generator
 	OriginDirectAccess Origin = "direct-access"
-
-	// OriginDNS is the origin for resources produced by the DNS generator
-	OriginDNS Origin = "dns"
 
 	// OriginEgress is the origin for resources associated with the egress dataplane/proxy
 	OriginEgress Origin = "egress"
@@ -34,11 +31,9 @@ const (
 	// OriginPrometheus is the origin for resources produced by the Prometheus endpoint generator
 	OriginPrometheus Origin = "prometheus"
 
-	// OriginProxyTemplateModifications is the origin for resources created by ProxyTemplate modifications
+	// OriginProxyTemplateModifications is the origin for resources created by MeshProxyPatch.
+	// The value is part of the user-facing API (MeshProxyPatch `match.origin`) and must not change.
 	OriginProxyTemplateModifications Origin = "proxy-template-modifications"
-
-	// OriginProxyTemplateRaw is the origin for resources created by raw ProxyTemplate snippets
-	OriginProxyTemplateRaw Origin = "proxy-template-raw"
 
 	// OriginSecrets is the origin for resources produced by the secrets generator
 	OriginSecrets Origin = "secrets"
@@ -59,11 +54,6 @@ const (
 	TransparentInPassThroughIPv6 = "::6"
 	TransparentAllIPv4           = "0.0.0.0"
 	TransparentAllIPv6           = "::"
-)
-
-const (
-	ProxyTemplateProfileEgressProxy  = "egress-proxy"
-	ProxyTemplateProfileIngressProxy = "ingress-proxy"
 )
 
 const (

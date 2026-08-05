@@ -9,17 +9,17 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	rest_v1alpha1 "github.com/kumahq/kuma/v2/pkg/core/resources/model/rest/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	rest_v1alpha1 "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 )
 
 func parseResource(bytes []byte, resource core_model.Resource) {
@@ -28,8 +28,9 @@ func parseResource(bytes []byte, resource core_model.Resource) {
 	err := yaml.Unmarshal(bytes, &resMeta)
 	Expect(err).ToNot(HaveOccurred())
 	resource.SetMeta(&model.ResourceMeta{
-		Mesh: resMeta.Mesh,
-		Name: resMeta.Name,
+		Mesh:   resMeta.Mesh,
+		Name:   resMeta.Name,
+		Labels: resMeta.Labels,
 	})
 }
 
@@ -127,6 +128,12 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			dataplanesFile: "04.dataplanes.input.yaml",
 			meshFile:       "04.mesh.input.yaml",
 			expected:       "04.envoy-config.golden.yaml",
+		}),
+		Entry("should not leak inbounds of other services declared by a legacy dataplane", testCase{
+			dataplaneFile:  "05.dataplane.input.yaml",
+			dataplanesFile: "05.dataplanes.input.yaml",
+			meshFile:       "05.mesh.input.yaml",
+			expected:       "05.envoy-config.golden.yaml",
 		}),
 	)
 })

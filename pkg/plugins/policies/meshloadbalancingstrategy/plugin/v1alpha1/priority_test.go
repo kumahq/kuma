@@ -4,14 +4,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	v1alpha1 "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	v1alpha1 "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var _ = Describe("GetLocalityGroups()", func() {
-	Describe("label fallback when inbound tags are disabled", func() {
+	Describe("label fallback when inbound tags are absent", func() {
 		It("should build local lb groups from pod labels when inbound tags are absent", func() {
 			// given: configuration with a single affinity tag
 			conf := &api.Conf{
@@ -24,7 +24,7 @@ var _ = Describe("GetLocalityGroups()", func() {
 				},
 			}
 
-			// given: no inbound tags (simulates KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED)
+			// given: no inbound tags (tag-free mode)
 			var inboundTags mesh_proto.MultiValueTagSet
 
 			// given: pod labels carry the affinity key

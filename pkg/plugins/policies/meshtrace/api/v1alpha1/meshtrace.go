@@ -4,7 +4,7 @@ package v1alpha1
 import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // MeshTrace enables distributed tracing to track requests as they flow through multiple services in the mesh. It supports exporting trace data to backends like Zipkin, Datadog, and OpenTelemetry, with configurable sampling rates and custom tags for detailed observability and debugging of service interactions.
@@ -59,15 +59,8 @@ type Backend struct {
 
 // OpenTelemetry tracing backend configuration.
 type OpenTelemetryBackend struct {
-	// Address of OpenTelemetry collector.
-	//
-	// Deprecated: use BackendRef instead.
-	// +kubebuilder:example="otel-collector:4317"
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=""
-	Endpoint string `json:"endpoint"`
 	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
-	// defines the collector endpoint. Mutually exclusive with Endpoint.
+	// defines the collector endpoint.
 	BackendRef *common_api.BackendResourceRef `json:"backendRef,omitempty"`
 }
 

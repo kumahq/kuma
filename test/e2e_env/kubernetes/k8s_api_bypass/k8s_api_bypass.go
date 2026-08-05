@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func K8sApiBypass() {
@@ -27,15 +27,26 @@ spec:
     backends:
       - name: ca-1
         type: builtin
-  networking:
-    outbound:
-      passthrough: %s
 `
+	disableDefaultPassthrough := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshPassthrough
+metadata:
+  name: disable-default-passthrough
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    passthroughMode: None
+`, Config.KumaNamespace, meshName)
 	var clientPodName string
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "true"))).
+			Install(YamlK8s(meshDefaultMtlsOn)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
@@ -84,7 +95,7 @@ spec:
 		}).MustPassRepeatedly(5).Should(Succeed())
 
 		// when passthrough is disabled on the Mesh
-		err := kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "false")))
+		err := kubernetes.Cluster.Install(YamlK8s(disableDefaultPassthrough))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication with API Server still works

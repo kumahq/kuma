@@ -7,10 +7,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
+
+// minCompatibleDPVersion is the oldest data plane version compatible with the
+// current control plane. CoreDNS was removed from the data plane in 2.14.x, so
+// older data planes can no longer resolve mesh services against a newer CP.
+const minCompatibleDPVersion = "2.14.0"
 
 func UniversalCompatibility() {
 	meshName := "compatibility"
@@ -54,16 +59,16 @@ func UniversalCompatibility() {
 
 			Eventually(func(g Gomega) {
 				// New client can reach new server
-				_, err := client.CollectEchoResponse(universal.Cluster, "demo-client-latest", "test-server-latest.mesh")
+				_, err := client.CollectEchoResponse(universal.Cluster, "demo-client-latest", "test-server-latest.svc.mesh.local")
 				g.Expect(err).ToNot(HaveOccurred())
 				// Old client can reach new server
-				_, err = client.CollectEchoResponse(universal.Cluster, clientName, "test-server-latest.mesh")
+				_, err = client.CollectEchoResponse(universal.Cluster, clientName, "test-server-latest.svc.mesh.local")
 				g.Expect(err).ToNot(HaveOccurred())
 				// New client can reach old server
-				_, err = client.CollectEchoResponse(universal.Cluster, "demo-client-latest", serverName+".mesh")
+				_, err = client.CollectEchoResponse(universal.Cluster, "demo-client-latest", serverName+".svc.mesh.local")
 				g.Expect(err).ToNot(HaveOccurred())
 			}, "20s", "250ms").Should(Succeed())
 		},
 		EntryDescription("from version: %s"),
-		SupportedVersionEntries())
+		SupportedVersionEntriesAtLeast(minCompatibleDPVersion))
 }

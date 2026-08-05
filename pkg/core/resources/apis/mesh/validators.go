@@ -13,18 +13,17 @@ import (
 	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
 
 var (
-	NameCharacterSet     = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
 	DomainRegexp         = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
 	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
 	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
@@ -56,19 +55,12 @@ type ValidateTargetRefOpts struct {
 	SupportedKinds             []common_api.TargetRefKind
 	SupportedKindsError        string
 	GatewayListenerTagsAllowed bool
-	// AllowedInvalidNames field allows to provide names that deviate from
-	// standard naming conventions in specific scenarios. I.e. normally,
-	// service names cannot contain forward slashes ("/"). However, there
-	// are exceptions during resource conversion:
-	// * Gateway API to Kuma HTTPRoute Conversion
-	//   When converting an HTTPRoute from Gateway API to a MeshHTTPRoute
-	//   (Kuma's resource definition), there might be situations where the
-	//   targeted backend reference cannot be found. In such cases, Kuma
-	//   sets the service name to "kuma.io/unresolved-backend". This name
-	//   includes a forward slash, but it's allowed as an exception to
-	//   handle unresolved references.
+	// AllowedInvalidNames is kept for compatibility with callers that still pass
+	// legacy validation options while common TargetRef uses labels-only real
+	// resource selectors.
 	AllowedInvalidNames []string
 	IsInboundPolicy     bool
+	IsBackendRef        bool
 }
 
 func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) validators.ValidationError {
@@ -374,80 +366,38 @@ func ValidateTargetRef(
 
 	switch ref.Kind {
 	case common_api.Mesh:
-		if pointer.Deref(ref.Name) != "" {
-			err.AddViolation("name", fmt.Sprintf("using name with kind %v is not yet supported", ref.Kind))
-		}
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
-		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
-		err.Add(validateProxyTypes("proxyTypes", ref.ProxyTypes))
 	case common_api.Dataplane:
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
-		err.Add(disallowedField("proxyTypes", pointer.Deref(ref.ProxyTypes), ref.Kind))
-		if len(pointer.Deref(ref.Labels)) > 0 && (pointer.Deref(ref.Name) != "" || pointer.Deref(ref.Namespace) != "") {
-			err.AddViolation("labels", "either labels or name and namespace must be specified")
-		}
 		if !opts.IsInboundPolicy && pointer.Deref(ref.SectionName) != "" {
 			err.AddViolation("sectionName", "can only be used with inbound policies")
 		}
-	case common_api.MeshSubset:
-		err.Add(disallowedField("name", pointer.Deref(ref.Name), ref.Kind))
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
+	case common_api.LegacyMeshSubsetKind():
 		err.Add(ValidateTags(validators.RootedAt("tags"), pointer.Deref(ref.Tags), ValidateTagsOpts{}))
 		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
-		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
-		err.Add(validateProxyTypes("proxyTypes", ref.ProxyTypes))
 	case common_api.MeshService:
-		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		err.Add(disallowedField("proxyTypes", pointer.Deref(ref.ProxyTypes), ref.Kind))
-		if len(pointer.Deref(ref.Labels)) == 0 && pointer.Deref(ref.Name) == "" {
-			err.AddViolation("", fmt.Sprintf("name or labels must be set when kind is %v", ref.Kind))
-		}
-		if len(pointer.Deref(ref.Labels)) > 0 && (pointer.Deref(ref.Name) != "" || pointer.Deref(ref.Namespace) != "") {
-			err.AddViolation("labels", "either labels or name and namespace must be specified")
-		}
+		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
 	case common_api.MeshHTTPRoute:
-		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		err.Add(disallowedField("proxyTypes", pointer.Deref(ref.ProxyTypes), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
-		if len(pointer.Deref(ref.Labels)) == 0 && pointer.Deref(ref.Name) == "" {
-			err.AddViolation("", fmt.Sprintf("name or labels must be set when kind is %v", ref.Kind))
-		}
-		if len(pointer.Deref(ref.Labels)) > 0 && (pointer.Deref(ref.Name) != "" || pointer.Deref(ref.Namespace) != "") {
-			err.AddViolation("labels", "either labels or name and namespace must be specified")
-		}
-	case common_api.MeshServiceSubset, common_api.MeshGateway:
-		err.Add(requiredField("name", pointer.Deref(ref.Name), ref.Kind))
-		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
-		err.Add(disallowedField("proxyTypes", pointer.Deref(ref.ProxyTypes), ref.Kind))
+		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
+	case common_api.LegacyMeshServiceSubsetKind():
+		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
 		err.Add(ValidateSelector(validators.RootedAt("tags"), pointer.Deref(ref.Tags), ValidateTagsOpts{}))
-		if ref.Kind == common_api.MeshGateway && len(pointer.Deref(ref.Tags)) > 0 && !opts.GatewayListenerTagsAllowed {
-			err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		}
-		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
-		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
 	case common_api.MeshExternalService:
-		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
-		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		err.Add(disallowedField("proxyTypes", pointer.Deref(ref.ProxyTypes), ref.Kind))
-		if len(pointer.Deref(ref.Labels)) == 0 && pointer.Deref(ref.Name) == "" {
-			err.AddViolation("", fmt.Sprintf("name or labels must be set when kind is %v", ref.Kind))
-		}
-		if len(pointer.Deref(ref.Labels)) > 0 && (pointer.Deref(ref.Name) != "" || pointer.Deref(ref.Namespace) != "") {
-			err.AddViolation("labels", "either labels or name must be specified")
-		}
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
+		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
+	case common_api.MeshMultiZoneService:
+		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
+		// sectionName selects a MeshMultiZoneService port and stays allowed,
+		// mirroring MeshService and the pre-refactor behavior.
+		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
 	}
 
 	return err
@@ -480,30 +430,7 @@ func ValidateMatch(match common_api.Match) validators.ValidationError {
 	return verr
 }
 
-func validateProxyTypes(field string, proxyTypes *[]common_api.TargetRefProxyType) validators.ValidationError {
-	var err validators.ValidationError
-
-	if proxyTypes != nil && len(pointer.Deref(proxyTypes)) == 0 {
-		err.AddViolation(field, "must be undefined or have at least one element")
-	}
-
-	return err
-}
-
-func validateName(value string, allowedInvalidNames []string) validators.ValidationError {
-	var err validators.ValidationError
-
-	if !slices.Contains(allowedInvalidNames, value) && !NameCharacterSet.MatchString(value) {
-		err.AddViolation(
-			"name",
-			"invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'.",
-		)
-	}
-
-	return err
-}
-
-func disallowedField[T ~string | ~map[string]string | ~[]common_api.TargetRefProxyType](
+func disallowedField[T ~string | ~map[string]string](
 	name string,
 	value T,
 	kind common_api.TargetRefKind,
@@ -531,13 +458,11 @@ func requiredField[T ~string | ~map[string]string](
 	return err
 }
 
-func isSet[T ~string | ~map[string]string | ~[]common_api.TargetRefProxyType](value T) bool {
+func isSet[T ~string | ~map[string]string](value T) bool {
 	switch v := any(value).(type) {
 	case string:
 		return v != ""
 	case map[string]string:
-		return len(v) > 0
-	case []common_api.TargetRefProxyType:
 		return len(v) > 0
 	default:
 		return false

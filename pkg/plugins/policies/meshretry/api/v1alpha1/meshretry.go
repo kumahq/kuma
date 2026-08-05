@@ -5,7 +5,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 
 // MeshRetry configures automatic retry behavior for failed requests to improve service reliability. It supports configurable retry conditions, limits, timeouts, and backoff strategies for HTTP, gRPC, and TCP traffic, helping services recover from transient failures.

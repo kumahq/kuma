@@ -3,25 +3,21 @@ package v1alpha1
 import (
 	"github.com/shopspring/decimal"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (r *MeshCircuitBreakerResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
-	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
-		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
-	}
-	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
-		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
+	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 {
+		verr.AddViolationAt(path, "at least one of 'to' or 'rules' has to be defined")
 	}
 	verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules)))
-	verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
 	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
@@ -33,10 +29,6 @@ func (r *MeshCircuitBreakerResource) validateTop(targetRef *common_api.TargetRef
 	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
-			common_api.MeshSubset,
-			common_api.MeshService,
-			common_api.MeshGateway,
-			common_api.MeshServiceSubset,
 			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
@@ -50,22 +42,6 @@ func validateRules(rules []Rule) validators.ValidationError {
 	for idx, rule := range rules {
 		path := validators.RootedAt("from").Index(idx)
 		verr.Add(validateDefault(path.Field("default"), rule.Default))
-	}
-	return verr
-}
-
-func validateFrom(from []From) validators.ValidationError {
-	var verr validators.ValidationError
-	for idx, fromItem := range from {
-		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-			},
-		}))
-
-		defaultField := path.Field("default")
-		verr.Add(validateDefault(defaultField, fromItem.Default))
 	}
 	return verr
 }

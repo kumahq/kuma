@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	bootstrap_k8s "github.com/kumahq/kuma/v2/pkg/plugins/bootstrap/k8s"
+	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
 )
 
 // RunKubectlWithStdinAndGetOutputE runs kubectl with the given args, piping
@@ -102,7 +102,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 	if err := k8s.RunKubectlContextE(
 		cluster.GetTesting(), context.Background(),
 		cluster.GetKubectlOptions(),
-		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/standard-install.yaml"); err != nil {
+		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.0/standard-install.yaml"); err != nil {
 		return err
 	}
 

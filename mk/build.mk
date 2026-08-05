@@ -1,10 +1,10 @@
 define LD_FLAGS
 -ldflags="$(if $(filter true,$(DEBUG)),, -s -w) \
--X github.com/kumahq/kuma/v2/pkg/version.version=$(BUILD_INFO_VERSION) \
--X github.com/kumahq/kuma/v2/pkg/version.gitTag=$(GIT_TAG) \
--X github.com/kumahq/kuma/v2/pkg/version.gitCommit=$(GIT_COMMIT) \
--X github.com/kumahq/kuma/v2/pkg/version.buildDate=$(BUILD_DATE) \
--X github.com/kumahq/kuma/v2/pkg/version.Envoy=$(if $(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION)) \
+-X github.com/kumahq/kuma/v3/pkg/version.version=$(BUILD_INFO_VERSION) \
+-X github.com/kumahq/kuma/v3/pkg/version.gitTag=$(GIT_TAG) \
+-X github.com/kumahq/kuma/v3/pkg/version.gitCommit=$(GIT_COMMIT) \
+-X github.com/kumahq/kuma/v3/pkg/version.buildDate=$(BUILD_DATE) \
+-X github.com/kumahq/kuma/v3/pkg/version.Envoy=$(if $(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION)) \
 $(EXTRA_LD_FLAGS)"
 endef
 
@@ -26,12 +26,8 @@ BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_KUMACTL_DIR := ${BUILD_ARTIFACTS_DIR}/kumactl
 export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
-# An optional extension to the coredns packages
-COREDNS_EXT ?=
-COREDNS_VERSION = v1.14.2
-
 # List of binaries that we have build/release build rules for.
-BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni envoy
+BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-cni install-cni envoy
 # List of binaries that we have build/test build roles for.
 BUILD_TEST_BINARIES += test-server
 
@@ -75,6 +71,29 @@ build/info/short:
 build/info/version:
 	@echo $(BUILD_INFO_VERSION)
 
+# Override to assert against something other than what this checkout computes,
+# e.g. a tag name in CI, which then also covers the checkout computing it wrong.
+EXPECTED_VERSION ?= $(BUILD_INFO_VERSION)
+
+# Override for a binary other than the native kuma-cp build, e.g. a cross-compiled
+# binary from `build-images` (build/artifacts-linux-$(GOARCH)/<binary>/<binary>).
+BINARY_PATH ?= $(BUILD_ARTIFACTS_DIR)/kuma-cp/kuma-cp
+
+# Assert on an already built binary, so callers that just built it (e.g. `build/distributions`)
+# don't pay for a rebuild: every `build/artifacts-*` target is .PHONY.
+.PHONY: check/binary-version
+check/binary-version: ## Dev: Assert the already built binary at $(BINARY_PATH) reports $(EXPECTED_VERSION)
+	@actual=$$($(BINARY_PATH) version | awk '{print $$NF}'); \
+	if [ -z "$$actual" ] || [ "$$actual" != "$(EXPECTED_VERSION)" ]; then \
+		echo "$(BINARY_PATH) binary reports version '$$actual', expected version '$(EXPECTED_VERSION)'"; \
+		exit 1; \
+	fi; \
+	echo "$(BINARY_PATH) binary correctly reports version '$(EXPECTED_VERSION)'"
+
+.PHONY: build/assert-tag-version
+build/assert-tag-version: build/kuma-cp ## Dev: Build kuma-cp and assert it reports the tag version
+	@$(MAKE) check/binary-version
+
 .PHONY: build
 build: build/release build/test ## Dev: Build all binaries
 
@@ -108,7 +127,7 @@ build/artifacts-$(1)-$(2)/kuma-dp:
 	$(Build_Go_Application) ./app/kuma-dp
 
 .PHONY: build/artifacts-$(1)-$(2)/kumactl
-build/artifacts-$(1)-$(2)/kumactl: build/ebpf
+build/artifacts-$(1)-$(2)/kumactl:
 	$(Build_Go_Application) ./app/kumactl
 
 .PHONY: build/artifacts-$(1)-$(2)/kuma-cni
@@ -118,12 +137,6 @@ build/artifacts-$(1)-$(2)/kuma-cni:
 .PHONY: build/artifacts-$(1)-$(2)/install-cni
 build/artifacts-$(1)-$(2)/install-cni:
 	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/install
-
-.PHONY: build/artifacts-$(1)-$(2)/coredns
-build/artifacts-$(1)-$(2)/coredns:
-	mkdir -p $$(@) && \
-	[ -f $$(@)/coredns ] || \
-	curl --retry 3 --retry-delay 60 -s --fail --location https://github.com/kumahq/coredns-builds/releases/download/$(COREDNS_VERSION)/coredns_$(COREDNS_VERSION)_$(1)_$(2)$(COREDNS_EXT).tar.gz | tar -C $$(@) -xz
 
 .PHONY: build/artifacts-$(1)-$(2)/envoy
 build/artifacts-$(1)-$(2)/envoy:
@@ -139,5 +152,5 @@ endef
 $(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_TARGET,$(goos),$(goarch)))))
 
 .PHONY: clean/build
-clean/build: clean/ebpf ## Dev: Remove build/ dir
+clean/build: ## Dev: Remove build/ dir
 	rm -rf "$(BUILD_DIR)"

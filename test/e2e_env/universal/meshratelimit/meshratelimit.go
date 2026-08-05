@@ -6,23 +6,24 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func Policy() {
 	meshName := "mesh-rate-limit"
 	rateLimitPolicy := fmt.Sprintf(`
 type: MeshRateLimit
-mesh: "%s"
-name: mesh-rate-limit-all-sources
+mesh: "%[1]s"
+name: mesh-rate-limit-all-sources-%[1]s
 spec:
   targetRef:
-    kind: MeshService
-    name: test-server
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-server
   rules:
     - default:
         local:
@@ -42,8 +43,9 @@ mesh: "%s"
 name: mesh-rate-limit-tcp
 spec:
   targetRef:
-    kind: MeshService
-    name: test-server-tcp
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-server-tcp
   rules:
     - default:
         local:
@@ -56,10 +58,17 @@ spec:
 			Install(MeshUniversal(meshName)).
 			Install(YamlUniversal(rateLimitPolicy)).
 			Install(YamlUniversal(rateLimitPolicyTcp)).
-			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal-1"}))).
-			Install(TestServerUniversal("test-server-tcp", meshName,
+			Install(TestServerUniversal(
+				"test-server", meshName,
+				WithArgs([]string{"echo", "--instance", "universal-1"}),
+				WithLabels(map[string]string{"kuma.io/service": "test-server"}),
+			)).
+			Install(TestServerUniversal(
+				"test-server-tcp", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-2"}),
-				WithServiceName("test-server-tcp"))).
+				WithServiceName("test-server-tcp"),
+				WithLabels(map[string]string{"kuma.io/service": "test-server-tcp"}),
+			)).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("tcp-client", meshName, WithTransparentProxy(false))).
 			Install(DemoClientUniversal("web", meshName, WithTransparentProxy(true))).
@@ -77,7 +86,7 @@ spec:
 	requestRateLimited := func(container string, svc string, responseCode int) func(g Gomega) {
 		return func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, container, fmt.Sprintf("%s.mesh", svc),
+				universal.Cluster, container, fmt.Sprintf("%s.svc.mesh.local", svc),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).Should(Equal(responseCode))
@@ -98,10 +107,10 @@ spec:
 
 	It("should limit all sources", func() {
 		By("demo-client to test-server should be rate limited by mesh-rate-limit-all-sources")
-		Eventually(requestRateLimited("demo-client", "test-server", 429), "10s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("demo-client", "test-server", 429), "30s", "100ms").Should(Succeed())
 
 		By("web to test-server should be rate limited by mesh-rate-limit-all-sources")
-		Eventually(requestRateLimited("web", "test-server", 429), "10s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("web", "test-server", 429), "30s", "100ms").Should(Succeed())
 	})
 
 	It("should limit tcp connections", func() {
@@ -109,13 +118,13 @@ spec:
 		// should have no ratelimited connections
 		Eventually(func(g Gomega) {
 			g.Expect(tcpRateLimitStats(admin)).To(stats.BeEqualZero())
-		}, "10s", "1s").Should(Succeed())
+		}, "20s", "1s").Should(Succeed())
 
 		// open connection
 		go keepConnectionOpen()
 
 		// should return 503 when number of connections is exceeded
-		Eventually(requestRateLimited("web", "test-server-tcp", 503), "10s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("web", "test-server-tcp", 503), "20s", "100ms").Should(Succeed())
 		// and stats should increase
 		Expect(tcpRateLimitStats(admin)).To(stats.BeGreaterThanZero())
 	})

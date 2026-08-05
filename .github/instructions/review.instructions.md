@@ -30,6 +30,28 @@ excludeAgent: "coding-agent"
 
 ---
 
+## Blast Radius (Downstream Impact)
+
+**When the diff stops producing, renames, moves, or gates data, trace who still reads it.** Most Kuma state crosses untyped boundaries - `map[string]string` tags/labels, string-keyed xDS metadata, KDS-synced proto fields - so the compiler and unit tests do NOT catch a broken producer→consumer link. Verify it by hand.
+
+**Triggers (any in the diff):**
+
+- Removes/renames a struct field, tag key, label, or xDS metadata key
+- Gates an existing data path behind a flag or condition
+- Stops writing something that was previously always set
+- Changes what KDS syncs global↔zone, or a MeshContext cache-hash input
+
+**Procedure:**
+
+1. Name the datum (field / tag key / metadata key / label / flag).
+2. Grep every reader, including string-literal map/metadata lookups, not just typed references. Cross package boundaries.
+3. For each reader: is there a fallback when the datum is absent? If not → likely runtime break with no failing test.
+4. Report the chain producer→…→consumer, not just the edit site. Ask for a test covering the affected flag/path combination.
+
+**Severity:** 🔴 consumer breaks with no fallback • 🟡 plausible break unverified, or no test for the flag/path combination.
+
+---
+
 ## Severity & Checklist
 
 **Levels:**

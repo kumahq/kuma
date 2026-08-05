@@ -9,7 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 )
 
 var _ = Describe("ComponentAwareSink", func() {

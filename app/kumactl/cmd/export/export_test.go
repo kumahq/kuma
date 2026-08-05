@@ -13,20 +13,20 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	api_types "github.com/kumahq/kuma/v2/api/openapi/types"
-	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/client"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/resources"
-	test_kumactl "github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/api-server/mappers"
-	core_system "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	memory_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
+	"github.com/kumahq/kuma/v3/app/kumactl/cmd"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/client"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/resources"
+	test_kumactl "github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/api-server/mappers"
+	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	memory_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
 )
 
 var _ = Describe("kumactl export", func() {
@@ -102,7 +102,6 @@ var _ = Describe("kumactl export", func() {
 				samples.MeshDefault(),
 				samples.SampleSigningKeyGlobalSecret(),
 				samples.MeshAccessLogWithFileBackend(),
-				samples.Retry(),
 				samples.MeshTimeoutInCustomNamespace(),
 				samples.MeshDefaultBuilder().WithName("mesh-with-mtls").WithBuiltinMTLSBackend("ca-1").Build(),
 				samples.SampleSecretBuilder().WithMesh("mesh-with-mtls").WithName(core_system.BuiltinCertSecretName("mesh-with-mtls", "ca-1")).Build(),
@@ -120,7 +119,6 @@ var _ = Describe("kumactl export", func() {
 				samples.MeshDefault(),
 				samples.SampleSigningKeyGlobalSecret(),
 				samples.MeshAccessLogWithFileBackend(),
-				samples.Retry(),
 				samples.MeshTimeoutInCustomNamespace(),
 				samples.MeshAccessLogWithZoneOriginLabel(),
 				samples.MeshDefaultBuilder().WithName("mesh-with-mtls").WithBuiltinMTLSBackend("ca-1").Build(),
@@ -139,7 +137,6 @@ var _ = Describe("kumactl export", func() {
 				samples.MeshDefault(),
 				samples.SampleSigningKeyGlobalSecret(),
 				samples.MeshAccessLogWithFileBackend(),
-				samples.Retry(),
 				samples.DataplaneBackend(),
 			},
 			args: []string{
@@ -152,7 +149,6 @@ var _ = Describe("kumactl export", func() {
 				samples.MeshDefault(),
 				samples.SampleSigningKeyGlobalSecret(),
 				samples.MeshAccessLogWithFileBackend(),
-				samples.Retry(),
 				samples.DataplaneBackend(),
 				samples.MeshTimeoutInCustomNamespace(),
 			},
@@ -167,7 +163,6 @@ var _ = Describe("kumactl export", func() {
 				samples.MeshDefault(),
 				samples.SampleSigningKeyGlobalSecret(),
 				samples.MeshAccessLogWithFileBackend(),
-				samples.Retry(),
 				samples.DataplaneBackend(),
 				samples.MeshAccessLogWithZoneOriginLabel(),
 			},

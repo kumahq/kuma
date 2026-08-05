@@ -3,16 +3,15 @@ package labels
 import (
 	"fmt"
 	"maps"
-	"strings"
 
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 // Namespace type allows to avoid carrying both 'namespace' and 'systemNamespace' around the code base
@@ -23,6 +22,8 @@ type Namespace struct {
 }
 
 var UnsetNamespace = Namespace{}
+
+const legacyProxyTypeLabel = "kuma.io/proxy-type"
 
 func NewNamespace(value string, system bool) Namespace {
 	return Namespace{
@@ -48,6 +49,9 @@ type Options struct {
 	Namespace      Namespace
 	ServiceAccount string
 	Workload       string
+	// Privileged marks trusted CP-internal writes (KDS sync, GC,
+	// storage-version migrator) whose labels must not be recomputed.
+	Privileged bool
 }
 
 type Option func(*Options)
@@ -96,6 +100,12 @@ func WithMode(mode config_core.CpMode) Option {
 	}
 }
 
+func WithPrivileged(privileged bool) Option {
+	return func(opts *Options) {
+		opts.Privileged = privileged
+	}
+}
+
 // Compute computes labels for a resource based on its type, spec, existing labels, namespace, mesh, mode, k8s and localZone.
 // Only use set / setIfNotExist to set labels as it makes sure the label is on the list of computed labels (that is used in another project).
 func Compute(
@@ -103,12 +113,19 @@ func Compute(
 	spec core_model.ResourceSpec,
 	existingLabels map[string]string,
 	mesh string,
+	displayName string,
 	opts ...Option,
 ) (map[string]string, error) {
 	labelsOpts := NewOptions(opts...)
 	labels := map[string]string{}
 	if len(existingLabels) > 0 {
 		labels = maps.Clone(existingLabels)
+	}
+
+	// Only skip recomputation for resources imported from another CP (e.g. via
+	// KDS sync); locally-originated resources are always recomputed.
+	if labelsOpts.Privileged && !core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
+		return labels, nil
 	}
 
 	set := func(k, v string) {
@@ -131,23 +148,26 @@ func Compute(
 		return core_model.DefaultMesh
 	}
 
+	set(mesh_proto.DisplayName, displayName)
+
 	if rd.Scope == core_model.ScopeMesh {
 		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
 	}
 
-	if labelsOpts.Mode == config_core.Zone {
+	switch labelsOpts.Mode {
+	case config_core.Global:
+		set(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin))
+	case config_core.Zone:
+		set(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
 		// If resource can't be created on Zone (like Mesh), there is no point in adding
-		// 'kuma.io/zone', 'kuma.io/origin' and 'kuma.io/env' labels even if the zone is non-federated
+		// 'kuma.io/zone' and 'kuma.io/env' labels even if the zone is non-federated
 		if rd.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
-			setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
-			if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
-				setIfNotExist(mesh_proto.ZoneTag, labelsOpts.ZoneName)
-				env := mesh_proto.UniversalEnvironment
-				if labelsOpts.IsK8s {
-					env = mesh_proto.KubernetesEnvironment
-				}
-				setIfNotExist(mesh_proto.EnvTag, env)
+			setIfNotExist(mesh_proto.ZoneTag, labelsOpts.ZoneName)
+			env := mesh_proto.UniversalEnvironment
+			if labelsOpts.IsK8s {
+				env = mesh_proto.KubernetesEnvironment
 			}
+			setIfNotExist(mesh_proto.EnvTag, env)
 		}
 	}
 
@@ -164,10 +184,7 @@ func Compute(
 	}
 
 	if rd.IsProxy {
-		proxy, ok := spec.(core_model.ProxyResource)
-		if ok {
-			set(mesh_proto.ProxyTypeLabel, strings.ToLower(string(proxy.GetProxyType())))
-		}
+		delete(labels, legacyProxyTypeLabel)
 		if dp, ok := spec.(*mesh_proto.Dataplane); ok {
 			hasIngress, hasEgress := false, false
 			for _, l := range dp.GetNetworking().GetListeners() {
@@ -215,28 +232,36 @@ func ComputePolicyRole(p core_model.Policy, ns Namespace) (mesh_proto.PolicyRole
 		hasTo = true
 	}
 
-	hasFrom := false
-	if pwfl, ok := p.(core_model.PolicyWithFromList); ok && len(pwfl.GetFromList()) > 0 {
-		hasFrom = true
-	}
-
-	if hasFrom && hasTo {
-		return "", errors.New("it's not allowed to mix 'to' and 'from' arrays in the same policy")
-	}
-
-	if hasFrom || (!hasTo && !hasFrom) {
-		// if there is 'from' or neither (single item)
+	if !hasTo {
+		// single-item and rules-based inbound policies remain workload-owner scoped
 		return mesh_proto.WorkloadOwnerPolicyRole, nil
 	}
 
 	hasSameOrOmittedNamespace := func(tr common_api.TargetRef) bool {
-		return pointer.Deref(tr.Namespace) == "" || pointer.Deref(tr.Namespace) == ns.value
+		labelNamespace := pointer.Deref(tr.Labels)[mesh_proto.KubeNamespaceTag]
+		return labelNamespace == "" || labelNamespace == ns.value
+	}
+
+	// selectsSingleResourceByDisplayName reports whether ref identifies a single
+	// resource by display-name (+ optional namespace) rather than an arbitrary
+	// subset of resources via other label selectors.
+	selectsSingleResourceByDisplayName := func(tr common_api.TargetRef) bool {
+		labels := pointer.Deref(tr.Labels)
+		if labels[mesh_proto.DisplayName] == "" {
+			return false
+		}
+		for k := range labels {
+			if k != mesh_proto.DisplayName && k != mesh_proto.KubeNamespaceTag {
+				return false
+			}
+		}
+		return true
 	}
 
 	isProducerItem := func(tr common_api.TargetRef) bool {
 		switch tr.Kind {
 		case common_api.MeshService, common_api.MeshHTTPRoute:
-			return pointer.Deref(tr.Name) != "" && hasSameOrOmittedNamespace(tr)
+			return selectsSingleResourceByDisplayName(tr) && hasSameOrOmittedNamespace(tr)
 		default:
 			return false
 		}

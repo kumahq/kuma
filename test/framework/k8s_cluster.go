@@ -8,6 +8,7 @@ import (
 	"io"
 	"maps"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,22 +33,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	resources_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
-	"github.com/kumahq/kuma/v2/test/framework/portforward"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resources_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
+	"github.com/kumahq/kuma/v3/test/framework/portforward"
 )
 
 type K8sNetworkingState struct {
-	ZoneEgress  portforward.Tunnel `json:"zoneEgress"`
-	ZoneIngress portforward.Tunnel `json:"zoneIngress"`
-	KumaCp      portforward.Tunnel `json:"kumaCp"`
-	MADS        portforward.Tunnel `json:"mads"`
+	KumaCp portforward.Tunnel `json:"kumaCp"`
 }
 
 type K8sCluster struct {
@@ -253,14 +251,6 @@ func (c *K8sCluster) ClosePortForwards(specs ...portforward.Spec) {
 			}
 		}
 	}
-}
-
-func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	return c.GetEnvoyAdminTunnel(Config.ZoneEgressApp, Config.KumaNamespace)
-}
-
-func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
-	return c.GetEnvoyAdminTunnel(Config.ZoneIngressApp, Config.KumaNamespace)
 }
 
 // GetEnvoyAdminTunnel creates or returns an Envoy admin tunnel for any named
@@ -508,20 +498,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--use-node-port"] = ""
 	}
 
-	if c.opts.zoneIngress {
-		argsMap["--ingress-enabled"] = ""
-		argsMap["--ingress-use-node-port"] = ""
-		args = append(args, "--set", fmt.Sprintf("%singress.resources.limits.cpu=null", Config.HelmSubChartPrefix))
-	}
-
-	if c.opts.zoneEgress {
-		argsMap["--egress-enabled"] = ""
-		args = append(args, "--set", fmt.Sprintf("%segress.resources.limits.cpu=null", Config.HelmSubChartPrefix))
-		if Config.Debug {
-			args = append(args, "--set", fmt.Sprintf("%segress.logLevel=debug", Config.HelmSubChartPrefix))
-		}
-	}
-
 	if c.opts.cni {
 		argsMap["--cni-enabled"] = ""
 		argsMap["--cni-chained"] = ""
@@ -542,7 +518,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 
 	if Config.IPV6 {
 		args = append(args,
-			"--env-var", "KUMA_DNS_SERVER_CIDR=fd00:fd00::/64",
 			"--env-var", "KUMA_IPAM_MESH_SERVICE_CIDR=fd00:fd01::/64",
 			"--env-var", "KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR=fd00:fd02::/64",
 			"--env-var", "KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR=fd00:fd03::/64",
@@ -612,7 +587,6 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 	}
 
 	if Config.IPV6 {
-		values["controlPlane.envVars.KUMA_DNS_SERVER_CIDR"] = "fd00:fd00::/64"
 		values["controlPlane.envVars.KUMA_IPAM_MESH_SERVICE_CIDR"] = "fd00:fd01::/64"
 		values["controlPlane.envVars.KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"] = "fd00:fd02::/64"
 		values["controlPlane.envVars.KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"] = "fd00:fd03::/64"
@@ -781,12 +755,6 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 		appsToInstall = append(appsToInstall, appInstallation{Config.CNIApp, namespace, 1, nil})
 	}
-	if c.opts.zoneIngress {
-		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneIngressApp, Config.KumaNamespace, 1, nil})
-	}
-	if c.opts.zoneEgress {
-		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneEgressApp, Config.KumaNamespace, 1, nil})
-	}
 
 	for i := range appsToInstall {
 		idx := i
@@ -803,32 +771,6 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	}
 	if err != nil {
 		return err
-	}
-
-	if c.opts.zoneEgressEnvoyAdminTunnel {
-		if !c.opts.zoneEgress {
-			return errors.New("cannot create tunnel to zone egress's envoy admin without egress")
-		}
-
-		if _, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-			AppName:   Config.ZoneEgressApp,
-			Namespace: Config.KumaNamespace,
-		}); err != nil {
-			return err
-		}
-	}
-
-	if c.opts.zoneIngressEnvoyAdminTunnel {
-		if !c.opts.zoneIngress {
-			return errors.New("cannot create tunnel to zone ingress' envoy admin without ingress")
-		}
-
-		if _, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-			AppName:   Config.ZoneIngressApp,
-			Namespace: Config.KumaNamespace,
-		}); err != nil {
-			return err
-		}
 	}
 
 	if !c.opts.skipDefaultMesh {
@@ -940,102 +882,36 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 	return nil
 }
 
-// StartZoneIngress scales the replicas of a zone ingress to 1 and wait for it to complete.
-func (c *K8sCluster) StartZoneIngress() error {
-	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=1", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
+// ScaleApp scales a Deployment and waits for the cluster to settle on the
+// requested number of pods. Scaling to 0 waits for the pods to be gone.
+func (c *K8sCluster) ScaleApp(namespace, app string, replicas int) error {
+	if err := k8s.RunKubectlContextE(
+		c.GetTesting(), context.Background(),
+		c.GetKubectlOptions(namespace),
+		"scale", fmt.Sprintf("--replicas=%d", replicas), fmt.Sprintf("deployment/%s", app),
+	); err != nil {
 		return err
 	}
-	if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
+	if replicas == 0 {
+		_, err := retry.DoWithRetryContextE(c.t, context.Background(),
+			fmt.Sprintf("wait for %s to be down", app),
+			c.defaultRetries,
+			c.defaultTimeout,
+			func() (string, error) {
+				pods := c.getPods(namespace, app)
+				if len(pods) == 0 {
+					return "Done", nil
+				}
+				names := []string{}
+				for _, p := range pods {
+					names = append(names, p.Name)
+				}
+				return "", fmt.Errorf("some pods are still present count: '%s'", strings.Join(names, ","))
+			},
+		)
 		return err
 	}
-
-	if _, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-		AppName:   Config.ZoneIngressApp,
-		Namespace: Config.KumaNamespace,
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// StopZoneIngress scales the replicas of a zone ingress to 0 and wait for it to complete. Useful for testing behavior when traffic goes through ingress but there is no instance.
-func (c *K8sCluster) StopZoneIngress() error {
-	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
-		return err
-	}
-
-	c.ClosePortForwards(portforward.Spec{
-		AppName:   Config.ZoneIngressApp,
-		Namespace: Config.KumaNamespace,
-	})
-
-	_, err := retry.DoWithRetryContextE(c.t, context.Background(),
-		"wait for zone ingress to be down",
-		c.defaultRetries,
-		c.defaultTimeout,
-		func() (string, error) {
-			pods := c.getPods(Config.KumaNamespace, Config.ZoneIngressApp)
-			if len(pods) == 0 {
-				return "Done", nil
-			}
-			var names []string
-			for _, p := range pods {
-				names = append(names, p.Name)
-			}
-			return "", fmt.Errorf("some pods are still present count: '%s'", strings.Join(names, ","))
-		},
-	)
-	return err
-}
-
-// StartZoneEngress scales the replicas of a zone engress to 1 and wait for it to complete.
-func (c *K8sCluster) StartZoneEgress() error {
-	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=1", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
-		return err
-	}
-	if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
-		return err
-	}
-
-	if _, err := c.GetOrCreateAdminTunnel(portforward.Spec{
-		AppName:   Config.ZoneEgressApp,
-		Namespace: Config.KumaNamespace,
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// StopZoneEgress scales the replicas of a zone egress to 0 and wait for it to complete. Useful for testing behavior when traffic goes through egress but there is no instance.
-func (c *K8sCluster) StopZoneEgress() error {
-	if err := k8s.RunKubectlContextE(c.GetTesting(), context.Background(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
-		return err
-	}
-
-	c.ClosePortForwards(portforward.Spec{
-		AppName:   Config.ZoneEgressApp,
-		Namespace: Config.KumaNamespace,
-	})
-
-	_, err := retry.DoWithRetryContextE(c.t, context.Background(),
-		"wait for zone egress to be down",
-		c.defaultRetries,
-		c.defaultTimeout,
-		func() (string, error) {
-			pods := c.getPods(Config.KumaNamespace, Config.ZoneEgressApp)
-			if len(pods) == 0 {
-				return "Done", nil
-			}
-			names := []string{}
-			for _, p := range pods {
-				names = append(names, p.Name)
-			}
-			return "", fmt.Errorf("some pods are still present count: '%s'", strings.Join(names, ","))
-		},
-	)
-	return err
+	return c.WaitApp(app, namespace, replicas)
 }
 
 // StopControlPlane scales the replicas of a control plane to 0 and wait for it to complete. Useful for testing restarts in combination with RestartControlPlane.
@@ -1103,17 +979,19 @@ func (c *K8sCluster) GetKumaCPLogs() map[string]string {
 
 	out := make(map[string]string)
 	for _, p := range pods {
+		stdoutKey := fmt.Sprintf("%s/stdout", p.Name)
 		log, err := c.GetPodLogs(p, v1.PodLogOptions{})
 		if err != nil {
-			out["failed"] = fmt.Sprintf("failed to retrieve logs %v", err)
+			out[stdoutKey] = fmt.Sprintf("failed to retrieve logs %v", err)
+			continue
 		}
-		out["stdout"] = log
+		out[stdoutKey] = log
 
 		log, err = c.GetPodLogs(p, v1.PodLogOptions{
 			Previous: true,
 		})
 		if err == nil {
-			out["stdout_previous"] = log
+			out[fmt.Sprintf("%s/stdout_previous", p.Name)] = log
 		}
 	}
 
@@ -1804,12 +1682,33 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 
 	pullCtx, cancelPull := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelPull()
+	trustCachedTags := os.Getenv("KUMA_E2E_TRUST_CACHED_IMAGE_TAGS") == "true"
+	tagDigestRef := func(tagged, digestRef string) error {
+		tagCmd := exec.CommandContext(pullCtx, "docker", "tag", digestRef, tagged)
+		if out, err := tagCmd.CombinedOutput(); err != nil {
+			return errors.Wrapf(err, "docker tag %s %s: %s", digestRef, tagged, strings.TrimSpace(string(out)))
+		}
+		return nil
+	}
 	var wg sync.WaitGroup
 	pullErrs := make([]error, len(images))
 	for i, img := range images {
 		wg.Add(1)
 		go func(i int, img string) {
 			defer wg.Done()
+			if tagged, digestRef, ok := splitDigestRef(img); ok {
+				if exec.CommandContext(pullCtx, "docker", "image", "inspect", digestRef).Run() == nil {
+					if err := tagDigestRef(tagged, digestRef); err != nil {
+						pullErrs[i] = err
+					}
+					return
+				}
+				if trustCachedTags && exec.CommandContext(pullCtx, "docker", "image", "inspect", tagged).Run() == nil {
+					return
+				}
+			} else if exec.CommandContext(pullCtx, "docker", "image", "inspect", img).Run() == nil {
+				return
+			}
 			_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "pull image "+img, 5, 5*time.Second, func() (string, error) {
 				pullCmd := exec.CommandContext(pullCtx, "docker", "pull", "--quiet", img)
 				out, err := pullCmd.CombinedOutput()
@@ -1826,9 +1725,8 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 			if !ok {
 				return
 			}
-			tagCmd := exec.CommandContext(pullCtx, "docker", "tag", digestRef, tagged)
-			if out, err := tagCmd.CombinedOutput(); err != nil {
-				pullErrs[i] = errors.Wrapf(err, "docker tag %s %s: %s", digestRef, tagged, strings.TrimSpace(string(out)))
+			if err := tagDigestRef(tagged, digestRef); err != nil {
+				pullErrs[i] = err
 			}
 		}(i, img)
 	}
@@ -1847,6 +1745,10 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 		} else {
 			importImages[i] = img
 		}
+	}
+
+	if manifest := os.Getenv("KUMA_E2E_PRELOAD_MANIFEST"); manifest != "" {
+		recordPreloadedImages(manifest, importImages)
 	}
 
 	// Match `LoadImages` retry strategy: a single transient docker / k3d
@@ -1904,6 +1806,21 @@ func splitDigestRef(image string) (string, string, bool) {
 	colonIdx += slashIdx + 1
 	repo := base[:colonIdx]
 	return base, repo + digestPart, true
+}
+
+var preloadManifestMu sync.Mutex
+
+func recordPreloadedImages(path string, images []string) {
+	preloadManifestMu.Lock()
+	defer preloadManifestMu.Unlock()
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	for _, img := range images {
+		fmt.Fprintln(f, img)
+	}
 }
 
 func (c *K8sCluster) DeleteNode(name string) error {
@@ -1978,27 +1895,34 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 		return tnl, nil
 	}
 
-	fwd, err := c.PortForwardApp(args)
+	// Envoy admin is no longer reachable over the pod network (it lives on a
+	// Unix socket in the sidecar). Read it through the control plane's inspect
+	// API instead, which fetches from the proxy over its own mTLS admin
+	// channel. Resolve the app's Envoy proxy resource, then build the inspect
+	// path prefix for it.
+	pod, err := PodOfApp(c, args.AppName, args.Namespace)
 	if err != nil {
-		return nil, errors.Wrapf(
-			err,
-			"failed to start port-forward to %s in namespace %q (port %d)",
-			args.AppName,
-			args.Namespace,
-			args.RemotePort,
-		)
+		return nil, errors.Wrapf(err, "failed to resolve pod for app %q in namespace %q", args.AppName, args.Namespace)
+	}
+	proxyName := fmt.Sprintf("%s.%s", pod.Name, args.Namespace)
+
+	var prefix string
+	switch args.AppName {
+	case Config.ZoneEgressApp:
+		prefix = fmt.Sprintf("/zoneegresses/%s", proxyName)
+	case Config.ZoneIngressApp:
+		prefix = fmt.Sprintf("/zoneingresses/%s", proxyName)
+	default:
+		mesh := pod.Labels["kuma.io/mesh"]
+		if mesh == "" {
+			mesh = "default"
+		}
+		prefix = fmt.Sprintf("/meshes/%s/dataplanes/%s", mesh, proxyName)
 	}
 
-	tnl, err = tunnel.NewK8sEnvoyAdminTunnel(c.t, fwd.Endpoint)
-	if err != nil {
-		return nil, errors.Wrapf(
-			err,
-			"failed to create admin tunnel to %s in namespace %q (port %d)",
-			args.AppName,
-			args.Namespace,
-			args.RemotePort,
-		)
-	}
+	tnl = tunnel.NewCPTunnel(func(inspectionPath string, query url.Values) ([]byte, error) {
+		return c.controlplane.InspectEnvoyProxy(fmt.Sprintf("%s/%s", prefix, inspectionPath), query)
+	})
 
 	c.mutex.Lock()
 	if existing := c.adminTunnels[args]; existing != nil {

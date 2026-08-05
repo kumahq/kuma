@@ -2,13 +2,14 @@ syntax = "proto3";
 
 package kuma.system.v1alpha1;
 
-option go_package = "github.com/kumahq/kuma/v2/api/system/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v3/api/system/v1alpha1";
 
 message PingRequest {
   string instance_id = 1;
   string address = 2;
   uint32 inter_cp_port = 3;
   bool ready = 4;
+  string version = 5;
 }
 
 message PingResponse {

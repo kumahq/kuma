@@ -2,26 +2,65 @@ package rules_test
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshtrafficpermission_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/file"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	"github.com/kumahq/kuma/v2/pkg/xds/context"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtrafficpermission_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/file"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
+	"github.com/kumahq/kuma/v3/pkg/xds/context"
 )
+
+// fromTestPolicyItem is a minimal core_model.PolicyItem stand-in used to exercise
+// the generic from-list rule building/merging logic without depending on a
+// specific policy's 'From' type.
+type fromTestPolicyItem struct {
+	targetRef common_api.TargetRef
+	conf      meshtrafficpermission_api.Conf
+}
+
+func (f *fromTestPolicyItem) GetTargetRef() common_api.TargetRef {
+	return f.targetRef
+}
+
+func (f *fromTestPolicyItem) GetDefault() any {
+	return f.conf
+}
+
+// toTestPolicy / toTestPolicyItem are minimal PolicyWithToList / PolicyItem
+// stand-ins used to exercise buildToListWithRoutes without depending on a
+// concrete policy type (whose validation forbids a top-level MeshHTTPRoute ref).
+type toTestPolicy struct {
+	targetRef common_api.TargetRef
+	toList    []core_model.PolicyItem
+}
+
+func (p *toTestPolicy) GetTargetRef() common_api.TargetRef { return p.targetRef }
+func (p *toTestPolicy) GetToList() []core_model.PolicyItem { return p.toList }
+
+type toTestPolicyItem struct {
+	targetRef common_api.TargetRef
+	conf      any
+}
+
+func (t *toTestPolicyItem) GetTargetRef() common_api.TargetRef { return t.targetRef }
+func (t *toTestPolicyItem) GetDefault() any                    { return t.conf }
 
 var _ = Describe("Rules", func() {
 	Describe("SubsetIter", func() {
@@ -450,23 +489,37 @@ var _ = Describe("Rules", func() {
 			return list
 		}
 
-		DescribeTable("should build a rule-based view for the policy with a from list",
-			func(inputFile string) {
-				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (any, error) {
-					// given
-					listener := core_rules.InboundListener{
-						Address: "127.0.0.1",
-						Port:    80,
-					}
-					policiesByInbound := map[core_rules.InboundListener]core_model.ResourceList{
-						listener: samePolicyTypesToList(policies),
-					}
-					// when
-					return core_rules.BuildFromRules(policiesByInbound)
-				})
-			},
-			test.EntriesForFolder("rules/from"),
-		)
+		It("should build inbound rules without legacy subset rules", func() {
+			input, err := os.ReadFile("../matchers/testdata/matchedpolicies/fromrules/01.policies.yaml")
+			Expect(err).ToNot(HaveOccurred())
+
+			var policies []core_model.Resource
+			for _, policyBytes := range util_yaml.SplitYAML(string(input)) {
+				policy, err := rest.YAML.UnmarshalCore([]byte(policyBytes))
+				Expect(err).ToNot(HaveOccurred())
+				policies = append(policies, policy)
+			}
+
+			listener := core_rules.InboundListener{
+				Address: "1.1.1.1",
+				Port:    8080,
+			}
+
+			actual, err := core_rules.BuildFromRules(map[core_rules.InboundListener]core_model.ResourceList{
+				listener: samePolicyTypesToList(policies),
+			})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual.Rules).To(BeEmpty())
+			Expect(actual.InboundRules).To(HaveLen(1))
+			Expect(actual.InboundRules).To(HaveKey(listener))
+			Expect(actual.InboundRules[listener]).To(HaveLen(3))
+
+			bytes, err := yaml.Marshal(actual.InboundRules[listener])
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(bytes)).To(ContainSubstring("spiffe://mesh-1/backend"))
+			Expect(string(bytes)).To(ContainSubstring("spiffe://mesh-1/orders"))
+			Expect(string(bytes)).To(ContainSubstring("spiffe://mesh-1"))
+		})
 
 		DescribeTable("should build a rule-based view for the policy with a to list",
 			func(inputFile string) {
@@ -918,9 +971,9 @@ var _ = Describe("Rules", func() {
 		// Helper to create a PolicyItemWithMeta for testing
 		createPolicyItem := func(targetRef common_api.TargetRef, action meshtrafficpermission_api.Action) core_rules.PolicyItemWithMeta {
 			return core_rules.PolicyItemWithMeta{
-				PolicyItem: &meshtrafficpermission_api.From{
-					TargetRef: targetRef,
-					Default: meshtrafficpermission_api.Conf{
+				PolicyItem: &fromTestPolicyItem{
+					targetRef: targetRef,
+					conf: meshtrafficpermission_api.Conf{
 						Action: pointer.To(action),
 					},
 				},
@@ -957,15 +1010,15 @@ var _ = Describe("Rules", func() {
 					Kind: common_api.Mesh,
 				}, "AllowWithShadowDeny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-2"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-3"},
 				}, "Allow"),
 			}
@@ -997,15 +1050,15 @@ var _ = Describe("Rules", func() {
 			// All three intersect with each other
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"zone": "us-east"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"zone": "us-east", "env": "prod"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"env": "prod"},
 				}, "AllowWithShadowDeny"),
 			}
@@ -1034,15 +1087,15 @@ var _ = Describe("Rules", func() {
 			// But they're connected via B in the graph
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1", "version": "v1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1", "version": "v2"},
 				}, "AllowWithShadowDeny"),
 			}
@@ -1095,11 +1148,11 @@ var _ = Describe("Rules", func() {
 			// Multiple policies with the same targetRef
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1"},
 				}, "Deny"),
 			}
@@ -1126,7 +1179,7 @@ var _ = Describe("Rules", func() {
 			}
 			for i := 1; i <= 5; i++ {
 				items = append(items, createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{
 						"app":       fmt.Sprintf("app-%d", i),
 						"namespace": fmt.Sprintf("ns-%d", i),
@@ -1163,11 +1216,11 @@ var _ = Describe("Rules", func() {
 			// {app: app-1} and {app: app-2} don't intersect because app can only have one value
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-1"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"app": "app-2"},
 				}, "Deny"),
 			}
@@ -1191,11 +1244,11 @@ var _ = Describe("Rules", func() {
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{Kind: common_api.Mesh}, "AllowWithShadowDeny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"zone": "us-east", "env": "prod", "team": "platform"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"zone": "us-west", "env": "dev", "team": "product"},
 				}, "Deny"),
 			}
@@ -1222,19 +1275,19 @@ var _ = Describe("Rules", func() {
 			// D: {env: dev}  - disjoint from B and C, intersects with A via Mesh-like behavior
 			items := []core_rules.PolicyItemWithMeta{
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"zone": "us-east"},
 				}, "Allow"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"zone": "us-east", "env": "prod"},
 				}, "Deny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"env": "prod"},
 				}, "AllowWithShadowDeny"),
 				createPolicyItem(common_api.TargetRef{
-					Kind: common_api.MeshSubset,
+					Kind: common_api.LegacyMeshSubsetKind(),
 					Tags: &map[string]string{"env": "dev"},
 				}, "Allow"),
 			}
@@ -1256,5 +1309,101 @@ var _ = Describe("Rules", func() {
 			}
 			verifySemanticEquivalence(rulesCliques, rulesComponents, testElements)
 		})
+	})
+})
+
+var _ = Describe("buildToListWithRoutes", func() {
+	route := func(name, namespace, backend string) core_model.Resource {
+		return &v1alpha1.MeshHTTPRouteResource{
+			Meta: &test_model.ResourceMeta{
+				Mesh: "mesh-1",
+				Name: name,
+				Labels: map[string]string{
+					mesh_proto.DisplayName:      "route-1",
+					mesh_proto.KubeNamespaceTag: namespace,
+				},
+			},
+			Spec: &v1alpha1.MeshHTTPRoute{
+				To: &[]v1alpha1.To{{
+					TargetRef: common_api.TargetRef{
+						Kind:   common_api.MeshService,
+						Labels: pointer.To(map[string]string{mesh_proto.DisplayName: backend}),
+					},
+					Rules: []v1alpha1.Rule{{}},
+				}},
+			},
+		}
+	}
+
+	policyTargetingRoute := &toTestPolicy{
+		targetRef: common_api.TargetRef{
+			Kind:   common_api.MeshHTTPRoute,
+			Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "route-1"}),
+		},
+		toList: []core_model.PolicyItem{
+			&toTestPolicyItem{targetRef: common_api.TargetRef{Kind: common_api.Mesh}, conf: map[string]any{}},
+		},
+	}
+
+	routes := []core_model.Resource{
+		route("route-1.ns-a", "ns-a", "backend-a"),
+		route("route-1.ns-b", "ns-b", "backend-b"),
+	}
+
+	expandedServices := func(items []core_model.PolicyItem) []string {
+		var services []string
+		for _, item := range items {
+			services = append(services, pointer.Deref(item.GetTargetRef().Labels)[mesh_proto.DisplayName])
+		}
+		return services
+	}
+
+	It("expands only same-namespace routes for a namespaced (consumer) policy", func() {
+		meta := &test_model.ResourceMeta{
+			Mesh: "mesh-1",
+			Name: "timeout-1",
+			Labels: map[string]string{
+				mesh_proto.PolicyRoleLabel:  string(mesh_proto.ConsumerPolicyRole),
+				mesh_proto.KubeNamespaceTag: "ns-a",
+			},
+		}
+
+		items, err := core_rules.BuildToListWithRoutesForTesting(meta, policyTargetingRoute, routes)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(expandedServices(items)).To(ConsistOf("backend-a"))
+	})
+
+	It("expands all matching routes for a namespace-agnostic (system) policy", func() {
+		meta := &test_model.ResourceMeta{Mesh: "mesh-1", Name: "timeout-1"}
+
+		items, err := core_rules.BuildToListWithRoutesForTesting(meta, policyTargetingRoute, routes)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(expandedServices(items)).To(ConsistOf("backend-a", "backend-b"))
+	})
+
+	It("fails when a route target selects a service by labels without kuma.io/display-name", func() {
+		routeWithoutDisplayName := &v1alpha1.MeshHTTPRouteResource{
+			Meta: &test_model.ResourceMeta{
+				Mesh: "mesh-1",
+				Name: "route-1.ns-a",
+				Labels: map[string]string{
+					mesh_proto.DisplayName:      "route-1",
+					mesh_proto.KubeNamespaceTag: "ns-a",
+				},
+			},
+			Spec: &v1alpha1.MeshHTTPRoute{
+				To: &[]v1alpha1.To{{
+					TargetRef: common_api.TargetRef{
+						Kind:   common_api.MeshService,
+						Labels: pointer.To(map[string]string{"env": "dev"}),
+					},
+					Rules: []v1alpha1.Rule{{}},
+				}},
+			},
+		}
+		meta := &test_model.ResourceMeta{Mesh: "mesh-1", Name: "timeout-1"}
+
+		_, err := core_rules.BuildToListWithRoutesForTesting(meta, policyTargetingRoute, []core_model.Resource{routeWithoutDisplayName})
+		Expect(err).To(MatchError(ContainSubstring("kuma.io/display-name label is required")))
 	})
 })

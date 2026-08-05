@@ -12,10 +12,10 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	core_registry "github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	k8s_registry "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("OwnerReferenceMutator", func() {
@@ -74,11 +74,13 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
-              "mesh": "default",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
-                "name": "empty"
+                "name": "empty",
+                "labels": {
+                  "kuma.io/mesh": "default"
+                }
               }
             }`,
 			expectedPatch: `
@@ -101,12 +103,14 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
-              "mesh": "not-existing-mesh",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": "not-existing-mesh"
+                }
               }
             }`,
 			expectedMessage: `meshes.kuma.io "not-existing-mesh" not found`,
@@ -115,11 +119,14 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
-                "creationTimestamp": null
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": ""
+                }
               }
             }`,
 			expectedMessage: `mesh: cannot be empty`,
@@ -198,7 +205,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -213,13 +220,13 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
-              "mesh": "default",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
+                  "kuma.io/mesh": "default",
                   "kuma.io/origin": "global"
                 }
               }
@@ -231,13 +238,13 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			inputObject: `
             {
               "apiVersion": "kuma.io/v1alpha1",
-              "kind": "TrafficRoute",
-              "mesh": "default",
+              "kind": "MeshExternalService",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
+                  "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone"
                 }
               }

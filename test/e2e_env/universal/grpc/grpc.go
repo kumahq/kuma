@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func GRPC() {
@@ -15,22 +15,26 @@ func GRPC() {
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MeshUniversal(meshName)).
-			Install(TestServerUniversal("test-server", meshName,
+			Install(TestServerUniversal(
+				"test-server", meshName,
 				WithServiceName("test-server"),
 				WithProtocol("grpc"),
 				WithArgs([]string{"grpc", "server", "--port", "8080"}),
 				WithTransparentProxy(true),
 			)).
-			Install(TestServerUniversal("second-test-server", meshName,
+			Install(TestServerUniversal(
+				"second-test-server", meshName,
 				WithServiceName("second-test-server"),
 				WithProtocol("grpc"),
 				WithArgs([]string{"grpc", "server", "--port", "8080"}),
 				WithTransparentProxy(true),
 			)).
-			Install(TestServerUniversal("test-client", meshName,
+			Install(TestServerUniversal(
+				"test-client", meshName,
 				WithServiceName("test-client"),
-				WithArgs([]string{"grpc", "client", "--unary", "--address", "test-server.mesh:80"}),
+				WithArgs([]string{"grpc", "client", "--unary", "--address", "test-server.svc.mesh.local:80"}),
 				WithTransparentProxy(true),
+				WithLabels(map[string]string{"kuma.io/service": "test-client"}),
 			)).
 			Setup(universal.Cluster)).To(Succeed())
 	})
@@ -49,8 +53,8 @@ func GRPC() {
 			cmd := tunnel.AdminCurlCmd("/stats?format=prometheus")
 			stdout, _, err := universal.Cluster.Exec("", "", "test-server", cmd...)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="localhost_8080"}`))
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="localhost_8080"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="self_inbound_dp_80"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="self_inbound_dp_80"}`))
 		}, "30s", "1s").Should(Succeed())
 	})
 
@@ -59,8 +63,8 @@ func GRPC() {
 			cmd := tunnel.AdminCurlCmd("/stats?format=prometheus")
 			stdout, _, err := universal.Cluster.Exec("", "", "test-client", cmd...)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="test-server"}`))
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="test-server"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="kri_msvc_grpc_kuma-3__test-server_80"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="kri_msvc_grpc_kuma-3__test-server_80"}`))
 		}, "30s", "1s").Should(Succeed())
 	})
 
@@ -72,12 +76,14 @@ name: http-route-1
 mesh: grpc
 spec:
   targetRef:
-    kind: MeshService
-    name: test-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: test-client
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -86,10 +92,12 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: test-server
+                labels:
+                  kuma.io/display-name: test-server
                 weight: 50
               - kind: MeshService
-                name: second-test-server
+                labels:
+                  kuma.io/display-name: second-test-server
                 weight: 50
 `
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
@@ -99,8 +107,8 @@ spec:
 			stdout, _, err := universal.Cluster.Exec("", "", "second-test-server", cmd...)
 			g.Expect(err).ToNot(HaveOccurred())
 
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="localhost_8080"}`))
-			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="localhost_8080"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="self_inbound_dp_80"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="self_inbound_dp_80"}`))
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 	})
 }

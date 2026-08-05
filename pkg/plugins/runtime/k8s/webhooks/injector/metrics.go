@@ -4,7 +4,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	kube_errors "k8s.io/apimachinery/pkg/api/errors"
 
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 )
 
 type injectionMetrics struct {

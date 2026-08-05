@@ -1,8 +1,6 @@
 #/meshes/default/dataplanes/dp-zone-proxy/_layout 200
 type: Mesh
 name: default
-meshServices:
-  mode: Exclusive
 ---
 type: Dataplane
 name: dp-zone-proxy

@@ -7,28 +7,29 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"k8s.io/client-go/util/cert"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/dns/vips"
-	envoy_admin_tls "github.com/kumahq/kuma/v2/pkg/envoy/admin/tls"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	"github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
-	"github.com/kumahq/kuma/v2/pkg/xds/server"
-	"github.com/kumahq/kuma/v2/pkg/xds/sync"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
+	envoy_admin_tls "github.com/kumahq/kuma/v3/pkg/envoy/admin/tls"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
+	"github.com/kumahq/kuma/v3/pkg/xds/server"
+	"github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
 
 type staticSnapshotReconciler struct {
@@ -73,6 +74,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 	var resManager manager.ResourceManager
 	var snapshotReconciler *staticSnapshotReconciler
 	var deps sync.DataplaneWatchdogDependencies
+	var xdsMetrics *xds_metrics.Metrics
 
 	BeforeEach(func() {
 		snapshotReconciler = &staticSnapshotReconciler{}
@@ -84,20 +86,18 @@ var _ = Describe("Dataplane Watchdog", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			zone,
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
-			".mesh",
-			80,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			nil,
 		)
 		newMetrics, err := metrics.NewMetrics(zone)
+		Expect(err).ToNot(HaveOccurred())
+		xdsMetrics, err = xds_metrics.NewMetrics(newMetrics)
 		Expect(err).ToNot(HaveOccurred())
 		cache, err := mesh.NewCache(cacheExpirationTime, meshContextBuilder, newMetrics)
 		Expect(err).ToNot(HaveOccurred())
 		eventBus, err := events.NewEventBus(10, newMetrics)
 		Expect(err).ToNot(HaveOccurred())
 
-		secrets, err := secrets.NewSecrets(nil, nil, newMetrics) // nil is ok for now, because we don't use it
+		secrets, err := secrets.NewSecrets(nil, nil, newMetrics, issuer.Unlimited()) // nil is ok for now, because we don't use it
 		Expect(err).ToNot(HaveOccurred())
 
 		plugins := map[string]providers.IdentityProvider{
@@ -113,10 +113,11 @@ var _ = Describe("Dataplane Watchdog", func() {
 			EnvoyCpCtx: &xds_context.ControlPlaneContext{
 				Secrets:         secrets,
 				Zone:            zone,
-				IdentityManager: providers.NewIdentityProviderManager(plugins, eventBus),
+				IdentityManager: providers.NewIdentityProviderManager(plugins, eventBus, issuer.Unlimited()),
 			},
 			MeshCache:  cache,
 			ResManager: resManager,
+			XdsMetrics: xdsMetrics,
 		}
 
 		pair, err := envoy_admin_tls.GenerateCA()
@@ -191,6 +192,23 @@ var _ = Describe("Dataplane Watchdog", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshotReconciler.proxy).To(BeNil())
+		})
+
+		It("should count successful config-hash-triggered reconciles only", func() {
+			// when
+			_, err := watchdog.Sync(ctx)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(testutil.ToFloat64(xdsMetrics.DataplaneConfigRegenerated.WithLabelValues(resKey.Mesh))).To(Equal(1.0))
+
+			// when
+			time.Sleep(cacheExpirationTime)
+			_, err = watchdog.Sync(ctx)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(testutil.ToFloat64(xdsMetrics.DataplaneConfigRegenerated.WithLabelValues(resKey.Mesh))).To(Equal(1.0))
 		})
 	})
 })

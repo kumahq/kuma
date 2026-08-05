@@ -7,13 +7,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/printers"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/table"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/printers"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 func newInspectZonesCmd(pctx *cmd.RootContext) *cobra.Command {

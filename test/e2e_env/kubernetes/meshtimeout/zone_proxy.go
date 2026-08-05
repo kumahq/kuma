@@ -7,14 +7,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	meshretry_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
-	meshtimeout_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/zoneproxy"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	meshretry_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func meshTimeoutZoneProxyMeshIdentity(meshName string) string {
@@ -116,14 +116,12 @@ func ZoneProxyMeshTimeout() {
 	ns := "meshtimeout-zoneproxy"
 	extNs := "meshtimeout-zoneproxy-ext"
 	mesh := "meshtimeout-zoneproxy"
-	workload := "zone-egress"
-	const egressPort = uint32(11102)
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(ns)).
 			Install(Namespace(extNs)).
-			Install(MeshWithMeshServicesKubernetes(mesh, "Exclusive")).
+			Install(MeshKubernetes(mesh)).
 			Install(YamlK8s(meshTimeoutZoneProxyMTP(mesh))).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh)),
@@ -133,11 +131,9 @@ func ZoneProxyMeshTimeout() {
 					testserver.WithEchoArgs("echo", "--instance", "external-server"),
 				),
 				zoneproxy.Install(
-					zoneproxy.WithName("zp-meshtimeout"),
 					zoneproxy.WithNamespace(ns),
 					zoneproxy.WithMesh(mesh),
-					zoneproxy.WithWorkload(workload),
-					zoneproxy.WithEgressPort(egressPort),
+					zoneproxy.WithEgress(),
 				),
 			)).
 			Install(YamlK8s(meshTimeoutZoneProxyMeshIdentity(mesh))).

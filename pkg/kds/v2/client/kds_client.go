@@ -7,8 +7,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/validator"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
 )
 
 type UpstreamResponse struct {

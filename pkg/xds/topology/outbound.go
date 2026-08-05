@@ -9,194 +9,116 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
-	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/datasource"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshmzservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	meshzoneaddress_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/datasource"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var outboundLog = core.Log.WithName("xds").WithName("outbound")
 
-func BuildExternalServicesEndpointMap(
-	ctx context.Context,
-	mesh *core_mesh.MeshResource,
-	externalServices []*core_mesh.ExternalServiceResource,
-	loader datasource.Loader,
-	zone string,
-) core_xds.EndpointMap {
-	outbound := core_xds.EndpointMap{}
-	if !mesh.ZoneEgressEnabled() {
-		fillExternalServicesOutbounds(ctx, outbound, externalServices, mesh, loader, zone)
-	}
-	return outbound
-}
+// A Dataplane gets one endpoint map per listener kind it exposes, because the same
+// destination resolves to different endpoints depending on who is routing to it:
+//
+//   - BuildDataplaneEndpointMap      - a regular proxy's outbounds
+//   - BuildDataplaneZoneIngressEndpointMap - an embedded zone ingress, terminating traffic
+//     from other zones and forwarding it to local workloads
+//   - BuildDataplaneZoneEgressEndpointMap  - an embedded zone egress, terminating traffic
+//     from the local zone and forwarding it outside the mesh
+//
+// Every destination is backed by a real resource (MeshService, MeshMultiZoneService,
+// MeshExternalService); kuma.io/service is not a source of endpoints.
 
-// BuildEgressEndpointMap creates a map of endpoints that match given selectors
-// and are not local for the provided zone (external services and services
-// behind remote zone ingress only)
-func BuildEgressEndpointMap(
+// BuildDataplaneEndpointMap builds the endpoints a regular Dataplane routes to: local and
+// remote MeshServices, MeshMultiZoneServices, and MeshExternalServices reached through a
+// zone egress.
+func BuildDataplaneEndpointMap(
 	ctx context.Context,
-	mesh *core_mesh.MeshResource,
 	localZone string,
-	zoneIngresses []*core_mesh.ZoneIngressResource,
-	externalServices []*core_mesh.ExternalServiceResource,
+	meshServices []*meshservice_api.MeshServiceResource,
+	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
+	dataplanes []*core_mesh.DataplaneResource,
+	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
 	loader datasource.Loader,
+	mtlsEnabled bool,
+	egressAddresses []core_xds.ZoneEgressInstance,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil, false, map[core_xds.ServiceName]struct{}{})
-
-	fillExternalServicesReachableFromZone(ctx, outbound, externalServices, meshExternalServices, mesh, loader, localZone)
-
-	for serviceName, endpoints := range outbound {
-		var newEndpoints []core_xds.Endpoint
-
-		for _, endpoint := range endpoints {
-			endpoint.Tags["mesh"] = mesh.GetMeta().GetName()
-			newEndpoints = append(newEndpoints, endpoint)
-		}
-
-		outbound[serviceName] = newEndpoints
-	}
+	fillLocalMeshServices(outbound, meshServices, dataplanes)
+	fillRemoteMeshServices(outbound, meshServices, meshZoneAddresses, localZone, mtlsEnabled)
+	fillMeshExternalServicesOnDataplane(ctx, outbound, meshExternalServices, egressAddresses, loader)
+	// has to be last, it republishes the endpoints the fillers above produced
+	fillMeshMultiZoneServices(outbound, meshServices, meshMultiZoneServices)
 
 	return outbound
 }
 
-// BuildDataplaneEgressEndpointMap builds endpoints only for MeshExternalServices reachable from the dataplane.
-// Used for embedded egress listeners in a Dataplane resource.
-// Always uses unified (KRI) naming as this is new infrastructure that only supports Exclusive MeshServices mode.
+// BuildDataplaneZoneIngressEndpointMap builds the endpoints an embedded zone ingress listener
+// forwards to: local MeshServices and the MeshMultiZoneServices covering them. A zone ingress
+// only ever terminates traffic destined for its own zone, so remote and external destinations
+// are absent by design.
+func BuildDataplaneZoneIngressEndpointMap(
+	meshServices []*meshservice_api.MeshServiceResource,
+	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
+	dataplanes []*core_mesh.DataplaneResource,
+) core_xds.EndpointMap {
+	outbound := core_xds.EndpointMap{}
+
+	fillLocalMeshServices(outbound, meshServices, dataplanes)
+	// has to be last, it republishes the endpoints the filler above produced
+	fillMeshMultiZoneServices(outbound, meshServices, meshMultiZoneServices)
+
+	return outbound
+}
+
+// BuildDataplaneZoneEgressEndpointMap builds the endpoints an embedded zone egress listener
+// forwards to: the real addresses of every MeshExternalService. This is the far side of the
+// hop that BuildDataplaneEndpointMap points at the egress itself.
+//
+// The result carries per-destination protocol and owner alongside the endpoints, which the
+// egress listener needs to pick a filter chain. Always uses unified (KRI) naming, as this is
+// new infrastructure that only supports Exclusive MeshServices mode.
 func BuildDataplaneZoneEgressEndpointMap(
 	ctx context.Context,
 	mesh *core_mesh.MeshResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	loader datasource.Loader,
 ) core_xds.EgressEndpointMap {
-	tmp := core_xds.EndpointMap{}
-	for _, mes := range meshExternalServices {
-		if err := createMeshExternalServiceEndpoint(ctx, tmp, mes, mesh, loader, true); err != nil {
-			outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
-		}
-	}
-	result := core_xds.EgressEndpointMap{}
-	for name, endpoints := range tmp {
-		group := core_xds.EgressEndpointGroup{Endpoints: endpoints}
-		if len(endpoints) > 0 && endpoints[0].ExternalService != nil {
-			group.Protocol = endpoints[0].ExternalService.Protocol
-			group.OwnerResource = endpoints[0].ExternalService.OwnerResource
-		}
-		result[name] = group
-	}
-	return result
-}
-
-// BuildDataplaneZoneIngressEndpointMap builds endpoints only for local MeshServices and MeshMultiZoneServices.
-// Used for embedded zone ingress listeners in a Dataplane resource.
-func BuildDataplaneZoneIngressEndpointMap(
-	mesh *core_mesh.MeshResource,
-	localZone string,
-	meshServices []*meshservice_api.MeshServiceResource,
-	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
-	dataplanes []*core_mesh.DataplaneResource,
-) core_xds.EndpointMap {
-	outbound := core_xds.EndpointMap{}
-	meshServicesByKri := make(map[kri.Identifier]*meshservice_api.MeshServiceResource, len(meshServices))
-	for _, ms := range meshServices {
-		meshServicesByKri[kri.From(ms)] = ms
-	}
-	fillLocalMeshServices(outbound, meshServices, dataplanes, mesh, localZone)
-	fillMeshMultiZoneServices(outbound, meshServicesByKri, meshMultiZoneServices)
+	outbound := core_xds.EgressEndpointMap{}
+	fillMeshExternalServicesOnEgress(ctx, outbound, meshExternalServices, mesh, loader)
 	return outbound
 }
 
-func BuildIngressEndpointMap(
-	ctx context.Context,
-	mesh *core_mesh.MeshResource,
-	localZone string,
-	meshServices []*meshservice_api.MeshServiceResource,
-	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
-	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
-	dataplanes []*core_mesh.DataplaneResource,
-	externalServices []*core_mesh.ExternalServiceResource,
-	gateways []*core_mesh.MeshGatewayResource,
-	zoneEgresses []*core_mesh.ZoneEgressResource,
-	egressAddresses []core_xds.ZoneEgressInstance,
-	loader datasource.Loader,
-	mtlsEnabled bool,
-) core_xds.EndpointMap {
-	// Build EDS endpoint map just like for regular DPP, but without list of Ingress.
-	// This way we only keep local endpoints.
-	outbound := BuildEdsEndpointMap(ctx, mesh, localZone, meshServices, meshMultiZoneServices, meshExternalServices, dataplanes, nil, nil, zoneEgresses, externalServices, loader, mtlsEnabled, egressAddresses)
-	fillLocalCrossMeshOutbounds(outbound, mesh, dataplanes, gateways, 1, localZone)
-	return outbound
-}
-
-func BuildEdsEndpointMap(
-	ctx context.Context,
-	mesh *core_mesh.MeshResource,
-	localZone string,
-	meshServices []*meshservice_api.MeshServiceResource,
-	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
-	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
-	dataplanes []*core_mesh.DataplaneResource,
-	zoneIngresses []*core_mesh.ZoneIngressResource,
-	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
-	zoneEgresses []*core_mesh.ZoneEgressResource,
-	externalServices []*core_mesh.ExternalServiceResource,
-	loader datasource.Loader,
-	mtlsEnabled bool,
-	egressAddresses []core_xds.ZoneEgressInstance,
-) core_xds.EndpointMap {
-	outbound := core_xds.EndpointMap{}
-
-	meshServicesByKri := make(map[kri.Identifier]*meshservice_api.MeshServiceResource, len(meshServices))
-	for _, ms := range meshServices {
-		meshServicesByKri[kri.From(ms)] = ms
-	}
-
-	fillLocalMeshServices(outbound, meshServices, dataplanes, mesh, localZone)
-	// we want to prefer endpoints build by MeshService
-	// this way we can for example stop cross-zone traffic by default using kuma.io/service
-	meshServiceDestinations := map[core_xds.ServiceName]struct{}{}
-	for name := range outbound {
-		meshServiceDestinations[name] = struct{}{}
-	}
-
-	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.ZoneEgressEnabled(), meshServiceDestinations)
-	endpointWeight := uint32(1)
-	if ingressInstances > 0 {
-		endpointWeight = ingressInstances
-	}
-
-	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight, localZone, meshServiceDestinations)
-
-	fillRemoteMeshServices(outbound, meshServices, zoneIngresses, meshZoneAddresses, mesh, localZone, mtlsEnabled)
-
-	fillExternalServicesOutboundsThroughEgress(ctx, outbound, externalServices, meshExternalServices, egressAddresses, mesh, localZone, loader)
-
-	// it has to be last because it reuses endpoints for other cases
-	fillMeshMultiZoneServices(outbound, meshServicesByKri, meshMultiZoneServices)
-
-	return outbound
-}
-
+// fillMeshMultiZoneServices publishes, under each MeshMultiZoneService destination, the
+// endpoints already built for the MeshServices it matched. It reuses what the other fillers
+// produced, so it must run after them.
 func fillMeshMultiZoneServices(
 	outbound core_xds.EndpointMap,
-	meshServicesByName map[kri.Identifier]*meshservice_api.MeshServiceResource,
+	meshServices []*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 ) {
+	if len(meshMultiZoneServices) == 0 {
+		return
+	}
+
+	meshServicesByName := make(map[kri.Identifier]*meshservice_api.MeshServiceResource, len(meshServices))
+	for _, ms := range meshServices {
+		meshServicesByName[kri.From(ms)] = ms
+	}
+
 	for _, mzSvc := range meshMultiZoneServices {
 		for _, matchedMs := range mzSvc.Status.MeshServices {
 			ri := kri.Identifier{
@@ -217,9 +139,9 @@ func fillMeshMultiZoneServices(
 				continue
 			}
 			for _, port := range mzSvc.Spec.Ports {
-				serviceName := destinationname.MustResolve(false, mzSvc, port)
+				serviceName := destinationname.ResolveLegacyFromDestination(mzSvc, port)
 
-				existingEndpoints := outbound[destinationname.MustResolve(false, ms, port)]
+				existingEndpoints := outbound[destinationname.ResolveLegacyFromDestination(ms, port)]
 				outbound[serviceName] = append(outbound[serviceName], existingEndpoints...)
 			}
 		}
@@ -229,9 +151,7 @@ func fillMeshMultiZoneServices(
 func fillRemoteMeshServices(
 	outbound core_xds.EndpointMap,
 	services []*meshservice_api.MeshServiceResource,
-	zoneIngress []*core_mesh.ZoneIngressResource,
 	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
-	mesh *core_mesh.MeshResource,
 	localZone string,
 	mtlsEnabled bool,
 ) {
@@ -242,75 +162,51 @@ func fillRemoteMeshServices(
 	// introduction of MeshIdentity doesn't requires mTLS on mesh
 	zoneToEndpoints := map[string][]core_xds.Endpoint{}
 
-	// MeshZoneAddress (mesh-scoped zone proxies) takes priority over legacy
-	// ZoneIngress for any zone that has at least one MeshZoneAddress.
-	mzaInstances := map[string]struct{}{}
+	// MeshZoneAddress is the only source of publicly reachable coordinates of a
+	// remote zone proxy. On Kubernetes it's reconciled from the zone ingress
+	// Service, on Universal it's authored by the user.
+	type zoneCoordinates struct {
+		zone        string
+		coordinates string
+	}
+	mzaInstances := map[zoneCoordinates]struct{}{}
 	for _, mza := range meshZoneAddresses {
 		zone := mza.GetMeta().GetLabels()[mesh_proto.ZoneTag]
 		if zone == "" || zone == localZone {
 			continue
 		}
-		coordinates := buildCoordinates(mza.Spec.Address, uint32(mza.Spec.Port))
-		if _, ok := mzaInstances[coordinates]; ok {
+		// many zone proxy instances can be placed behind one load balancer, in
+		// which case they share a public address and port. Deduplicate per zone
+		// to avoid unnecessary duplicated endpoints, but never across zones.
+		key := zoneCoordinates{zone: zone, coordinates: buildCoordinates(mza.Spec.Address, uint32(mza.Spec.Port))}
+		if _, ok := mzaInstances[key]; ok {
 			continue
 		}
-		mzaInstances[coordinates] = struct{}{}
+		mzaInstances[key] = struct{}{}
 		zoneToEndpoints[zone] = append(zoneToEndpoints[zone], core_xds.Endpoint{
-			Target:   mza.Spec.Address,
-			Port:     uint32(mza.Spec.Port),
-			Tags:     nil,
-			Weight:   1,
-			Locality: GetLocality(localZone, &zone, mesh.LocalityAwareLbEnabled()),
+			Target: mza.Spec.Address,
+			Port:   uint32(mza.Spec.Port),
+			Tags:   nil,
+			Weight: 1,
 		})
 	}
 
-	// Fall back to legacy ZoneIngress for zones without a MeshZoneAddress.
-	ziInstances := map[string]struct{}{}
-	for _, zi := range zoneIngress {
-		if !zi.IsRemoteIngress(localZone) {
-			continue
-		}
-		if _, hasEndpoints := zoneToEndpoints[zi.Spec.Zone]; hasEndpoints {
-			continue
-		}
-
-		if !zi.HasPublicAddress() {
-			// Zone Ingress is not reachable yet from other clusters.
-			// This may happen when Ingress Service is pending waiting on
-			// External IP on Kubernetes.
-			continue
-		}
-
-		ziAddress := zi.Spec.GetNetworking().GetAdvertisedAddress()
-		ziPort := zi.Spec.GetNetworking().GetAdvertisedPort()
-		ziCoordinates := buildCoordinates(ziAddress, ziPort)
-
-		if _, ok := ziInstances[ziCoordinates]; ok {
-			// many Ingress instances can be placed in front of one load
-			// balancer (all instances can have the same public address and
-			// port).
-			// In this case we only need one Instance avoiding creating
-			// unnecessary duplicated endpoints
-			continue
-		}
-		ziInstances[ziCoordinates] = struct{}{}
-
-		zoneToEndpoints[zi.Spec.Zone] = append(zoneToEndpoints[zi.Spec.Zone], core_xds.Endpoint{
-			Target:   ziAddress,
-			Port:     ziPort,
-			Tags:     nil,
-			Weight:   1,
-			Locality: GetLocality(localZone, &zi.Spec.Zone, mesh.LocalityAwareLbEnabled()),
-		})
-	}
-
+	unreachableZones := map[string]struct{}{}
 	for _, ms := range services {
 		if ms.IsLocalMeshService() {
 			continue
 		}
 		msZone := ms.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+		if len(zoneToEndpoints[msZone]) == 0 {
+			if _, reported := unreachableZones[msZone]; !reported {
+				unreachableZones[msZone] = struct{}{}
+				outboundLog.Info("no MeshZoneAddress found for zone, MeshService destinations in that zone get no endpoints",
+					"zone", msZone, "mesh", ms.GetMeta().GetMesh())
+			}
+			continue
+		}
 		for _, port := range ms.Spec.Ports {
-			serviceName := destinationname.MustResolve(false, ms, port)
+			serviceName := destinationname.ResolveLegacyFromDestination(ms, port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
 				ep := endpoint
 				ep.Locality = &core_xds.Locality{
@@ -327,74 +223,28 @@ func fillRemoteMeshServices(
 	}
 }
 
-type MeshServiceIdentity struct {
-	Resource   *meshservice_api.MeshServiceResource
-	Identities map[string]struct{}
-}
-
-// endpointWeight defines default weight for in-cluster endpoint.
-// Examples of having service "backend":
-//  1. Single-zone deployment, 2 instances in one cluster (zone1)
-//     All endpoints have to have the same weight (ex. 1) to achieve fair loadbalancing.
-//     Endpoints:
-//     * backend-zone1-1 - weight: 1
-//     * backend-zone1-2 - weight: 1
-//  2. Multi-zone deployment, 2 instances in "zone1" (local zone), 3 instances in "zone2" (remote zone) with 1 Ingress instance
-//     Endpoints:
-//     * backend-zone1-1 - weight: 1
-//     * backend-zone1-2 - weight: 1
-//     * ingress-zone2-1 - weight: 3 (all remote endpoints are aggregated to one Ingress, it needs to have weight of instances in other cluster)
-//  3. Multi-zone deployment, 2 instances in "zone1" (local zone), 2 instances in "zone2" (remote zone) with 1 Ingress instance
-//     Many instances of Ingress will forward the traffic to the same endpoints in "zone2" so we need to lower the weights.
-//     Since weights are integers, we cannot put fractional on ingress endpoints weights, we need to adjust "default" weight for local zone
-//     Endpoints:
-//     * backend-zone1-1 - weight: 2
-//     * backend-zone1-2 - weight: 2
-//     * ingress-zone2-1 - weight: 3
-//     * ingress-zone2-2 - weight: 3
-func fillDataplaneOutbounds(
-	outbound core_xds.EndpointMap,
-	dataplanes []*core_mesh.DataplaneResource,
-	mesh *core_mesh.MeshResource,
-	endpointWeight uint32,
-	localZone string,
-	meshServiceDestinations map[core_xds.ServiceName]struct{},
-) {
-	for _, dataplane := range dataplanes {
-		dpSpec := dataplane.Spec
-		dpNetworking := dpSpec.GetNetworking()
-
-		for _, inbound := range dpNetworking.GetHealthyInbounds() {
-			inboundTags := maps.Clone(inbound.GetTags())
-			serviceName := inboundTags[mesh_proto.ServiceTag]
-			inboundInterface := dpNetworking.ToInboundInterface(inbound)
-			inboundAddress := inboundInterface.DataplaneAdvertisedIP
-			inboundPort := inboundInterface.DataplanePort
-
-			if _, ok := meshServiceDestinations[serviceName]; ok {
-				continue
-			}
-
-			// TODO(yskopets): do we need to dedup?
-			// TODO(yskopets): sort ?
-			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-				Target:   inboundAddress,
-				Port:     inboundPort,
-				Tags:     inboundTags,
-				Labels:   dataplane.GetMeta().GetLabels(),
-				Weight:   endpointWeight,
-				Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
-			})
-		}
+// endpointIdentity returns the tags that make up an endpoint's load-balancing
+// identity, sourced from the Dataplane's own resource labels. The inbound's
+// protocol is carried alongside them because service-level protocol inference
+// (MeshContext.GetServiceProtocol) reads it off the endpoint, and it is a
+// per-port property that resource labels cannot express.
+func endpointIdentity(dataplane *core_mesh.DataplaneResource, inbound *mesh_proto.Dataplane_Networking_Inbound) map[string]string {
+	tags := maps.Clone(dataplane.GetMeta().GetLabels())
+	if tags == nil {
+		tags = map[string]string{}
 	}
+	if protocol := inbound.GetProtocolFallback(); protocol != "" {
+		tags[mesh_proto.ProtocolTag] = protocol
+	}
+	return tags
 }
 
+// fillLocalMeshServices adds one endpoint per healthy inbound backing a MeshService of this
+// zone, pointing straight at the workload.
 func fillLocalMeshServices(
 	outbound core_xds.EndpointMap,
 	meshServices []*meshservice_api.MeshServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
-	mesh *core_mesh.MeshResource,
-	localZone string,
 ) {
 	dppsForMs := meshservice.MatchDataplanesWithMeshServices(dataplanes, meshServices, true)
 	for meshSvc, dpps := range dppsForMs {
@@ -410,124 +260,19 @@ func fillLocalMeshServices(
 						continue
 					}
 
-					inboundTags := maps.Clone(inbound.GetTags())
-					serviceName := destinationname.MustResolve(false, meshSvc, port)
+					inboundTags := endpointIdentity(dpp, inbound)
+					serviceName := destinationname.ResolveLegacyFromDestination(meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
 					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-						Target:   inboundInterface.DataplaneAdvertisedIP,
+						Target:   inboundInterface.DataplaneIP,
 						Port:     inboundInterface.DataplanePort,
 						Tags:     inboundTags,
-						Labels:   dpp.GetMeta().GetLabels(),
 						Weight:   1,
-						Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
+						Locality: GetLocality(getZone(inboundTags)),
 					})
 				}
 			}
-		}
-	}
-}
-
-func CrossMeshEndpointTags(
-	gateways []*core_mesh.MeshGatewayResource,
-	dataplanes []*core_mesh.DataplaneResource,
-) []mesh_proto.SingleValueTagSet {
-	endpoints := []mesh_proto.SingleValueTagSet{}
-
-	for _, dataplane := range dataplanes {
-		if !dataplane.Spec.IsBuiltinGateway() {
-			continue
-		}
-
-		gateway := SelectGateway(gateways, dataplane.Spec.Matches)
-		if gateway == nil {
-			continue
-		}
-
-		dpSpec := dataplane.Spec
-		dpNetworking := dpSpec.GetNetworking()
-
-		dpGateway := dpNetworking.GetGateway()
-		dpTags := dpGateway.GetTags()
-
-		for _, listener := range gateway.Spec.GetConf().GetListeners() {
-			if !listener.CrossMesh {
-				continue
-			}
-			endpoints = append(endpoints, mesh_proto.Merge(dpTags, gateway.Spec.GetTags(), listener.GetTags()))
-		}
-	}
-
-	return endpoints
-}
-
-func BuildCrossMeshEndpointMap(
-	mesh *core_mesh.MeshResource,
-	otherMesh *core_mesh.MeshResource,
-	localZone string,
-	gateways []*core_mesh.MeshGatewayResource,
-	dataplanes []*core_mesh.DataplaneResource,
-	zoneIngresses []*core_mesh.ZoneIngressResource,
-	zoneEgresses []*core_mesh.ZoneEgressResource,
-) core_xds.EndpointMap {
-	outbound := core_xds.EndpointMap{}
-
-	ingressInstances := fillIngressOutbounds(
-		outbound,
-		zoneIngresses,
-		zoneEgresses,
-		localZone,
-		mesh,
-		otherMesh,
-		mesh.ZoneEgressEnabled(),
-		map[core_xds.ServiceName]struct{}{},
-	)
-
-	endpointWeight := uint32(1)
-	if ingressInstances > 0 {
-		endpointWeight = ingressInstances
-	}
-	fillLocalCrossMeshOutbounds(outbound, mesh, dataplanes, gateways, endpointWeight, localZone)
-	return outbound
-}
-
-func fillLocalCrossMeshOutbounds(
-	outbound core_xds.EndpointMap,
-	mesh *core_mesh.MeshResource,
-	dataplanes []*core_mesh.DataplaneResource,
-	gateways []*core_mesh.MeshGatewayResource,
-	endpointWeight uint32,
-	localZone string,
-) {
-	for _, dataplane := range dataplanes {
-		if !dataplane.Spec.IsBuiltinGateway() {
-			continue
-		}
-
-		gateway := SelectGateway(gateways, dataplane.Spec.Matches)
-		if gateway == nil {
-			continue
-		}
-
-		dpSpec := dataplane.Spec
-		dpNetworking := dpSpec.GetNetworking()
-
-		dpGateway := dpNetworking.GetGateway()
-		dpTags := dpGateway.GetTags()
-		serviceName := dpTags[mesh_proto.ServiceTag]
-
-		for _, listener := range gateway.Spec.GetConf().GetListeners() {
-			if !listener.CrossMesh {
-				continue
-			}
-
-			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-				Target:   dpNetworking.GetAddress(),
-				Port:     listener.GetPort(),
-				Tags:     mesh_proto.Merge(dpTags, gateway.Spec.GetTags(), listener.GetTags()),
-				Weight:   endpointWeight,
-				Locality: GetLocality(localZone, getZone(dpTags), mesh.LocalityAwareLbEnabled()),
-			})
 		}
 	}
 }
@@ -537,219 +282,6 @@ func buildCoordinates(address string, port uint32) string {
 		address,
 		strconv.FormatUint(uint64(port), 10),
 	)
-}
-
-func fillIngressOutbounds(
-	outbound core_xds.EndpointMap,
-	zoneIngresses []*core_mesh.ZoneIngressResource,
-	zoneEgresses []*core_mesh.ZoneEgressResource,
-	localZone string,
-	mesh *core_mesh.MeshResource,
-	otherMesh *core_mesh.MeshResource, // otherMesh is set if we are looking for specific crossmesh connections
-	routeThroughZoneEgress bool,
-	meshServiceDestinations map[core_xds.ServiceName]struct{},
-) uint32 {
-	ziInstances := map[string]struct{}{}
-
-	for _, zi := range zoneIngresses {
-		if !zi.IsRemoteIngress(localZone) {
-			continue
-		}
-
-		if !mesh.MTLSEnabled() {
-			// Ingress routes the request by TLS SNI, therefore for cross
-			// cluster communication MTLS is required.
-			// We ignore Ingress from endpoints if MTLS is disabled, otherwise
-			// we would fail anyway.
-			continue
-		}
-
-		if !zi.HasPublicAddress() {
-			// Zone Ingress is not reachable yet from other clusters.
-			// This may happen when Ingress Service is pending waiting on
-			// External IP on Kubernetes.
-			continue
-		}
-
-		ziNetworking := zi.Spec.GetNetworking()
-		ziAddress := ziNetworking.GetAdvertisedAddress()
-		ziPort := ziNetworking.GetAdvertisedPort()
-		ziCoordinates := buildCoordinates(ziAddress, ziPort)
-
-		if _, ok := ziInstances[ziCoordinates]; ok {
-			// many Ingress instances can be placed in front of one load
-			// balancer (all instances can have the same public address and
-			// port).
-			// In this case we only need one Instance avoiding creating
-			// unnecessary duplicated endpoints
-			continue
-		}
-
-		if len(zi.Spec.GetAvailableServices()) > 0 {
-			// Consider squashing instances only if available services are reconciled.
-			// This is necessary to perform graceful join of new instances of ZoneIngress.
-			// When a new instance of ZoneIngress is up, it's immediately synced to all zones.
-			// Only after a short period of time (first XDS reconciliation) it will be updated with AvailableServices.
-			// If we just take any instance, we may choose an instance without AvailableServices as a representation
-			// of all ZoneIngress instances behind one load balancer.
-			ziInstances[ziCoordinates] = struct{}{}
-		}
-
-		for _, service := range zi.Spec.GetAvailableServices() {
-			relevantMesh := mesh
-			if otherMesh != nil {
-				relevantMesh = otherMesh
-			}
-
-			if service.Mesh != relevantMesh.GetMeta().GetName() {
-				continue
-			}
-			if _, hasMeshTag := service.Tags[mesh_proto.MeshTag]; otherMesh != nil && !hasMeshTag {
-				// If the mesh tag is set, we assume the service should be available
-				// crossMesh but only if we're looking for this other mesh
-				continue
-			}
-
-			// deep copy map to not modify tags in BuildRemoteEndpointMap
-			serviceTags := maps.Clone(service.GetTags())
-			serviceName := serviceTags[mesh_proto.ServiceTag]
-			serviceInstances := service.GetInstances()
-			locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
-
-			if _, ok := meshServiceDestinations[serviceName]; ok {
-				continue
-			}
-
-			// TODO (bartsmykla): We have to check if it will be ok in a situation
-			//  where we have few zone ingresses with the same services, as
-			//  with zone egresses we will generate endpoints with the same
-			//  targets and ports (zone egress ones), which envoy probably will
-			//  ignore
-			// If zone egresses present, we want to pass the traffic:
-			// dp -> zone egress -> zone ingress -> dp
-			if routeThroughZoneEgress {
-				for _, ze := range zoneEgresses {
-					zeNetworking := ze.Spec.GetNetworking()
-					zeAddress := zeNetworking.GetAddress()
-					zePort := zeNetworking.GetPort()
-
-					endpoint := core_xds.Endpoint{
-						Target:   zeAddress,
-						Port:     zePort,
-						Tags:     serviceTags,
-						Weight:   1,
-						Locality: locality,
-					}
-					// this is necessary for correct spiffe generation for dp when
-					// traffic is routed: egress -> ingress -> egress
-					if service.ExternalService {
-						endpoint.ExternalService = &core_xds.ExternalService{}
-					}
-
-					outbound[serviceName] = append(outbound[serviceName], endpoint)
-				}
-			} else {
-				endpoint := core_xds.Endpoint{
-					Target:   ziAddress,
-					Port:     ziPort,
-					Tags:     serviceTags,
-					Weight:   serviceInstances,
-					Locality: locality,
-				}
-
-				outbound[serviceName] = append(outbound[serviceName], endpoint)
-			}
-		}
-	}
-
-	return uint32(len(ziInstances))
-}
-
-func fillExternalServicesReachableFromZone(
-	ctx context.Context,
-	outbound core_xds.EndpointMap,
-	externalServices []*core_mesh.ExternalServiceResource,
-	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
-	mesh *core_mesh.MeshResource,
-	loader datasource.Loader,
-	zone string,
-) {
-	for _, externalService := range externalServices {
-		if externalService.IsReachableFromZone(zone) {
-			createExternalServiceEndpoint(ctx, outbound, externalService, mesh, loader, zone)
-		}
-	}
-	for _, mes := range meshExternalServices {
-		if mes.IsReachableFromZone(zone) {
-			err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, false)
-			if err != nil {
-				outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
-				continue
-			}
-		}
-	}
-}
-
-func fillExternalServicesOutbounds(
-	ctx context.Context,
-	outbound core_xds.EndpointMap,
-	externalServices []*core_mesh.ExternalServiceResource,
-	mesh *core_mesh.MeshResource,
-	loader datasource.Loader,
-	zone string,
-) {
-	for _, externalService := range externalServices {
-		createExternalServiceEndpoint(ctx, outbound, externalService, mesh, loader, zone)
-	}
-}
-
-func createMeshExternalServiceEndpoint(
-	ctx context.Context,
-	outbounds core_xds.EndpointMap,
-	mes *meshexternalservice_api.MeshExternalServiceResource,
-	mesh *core_mesh.MeshResource,
-	loader datasource.Loader,
-	unifiedNaming bool,
-) error {
-	es := &core_xds.ExternalService{
-		Protocol:      mes.Spec.Match.Protocol,
-		OwnerResource: kri.From(mes),
-	}
-	tags := maps.Clone(mes.Meta.GetLabels())
-	if tags == nil {
-		tags = map[string]string{}
-	}
-	meshName := mesh.GetMeta().GetName()
-	tls := mes.Spec.Tls
-	if tls != nil && tls.Enabled {
-		err := setTlsConfiguration(ctx, tls, es, meshName, loader)
-		if err != nil {
-			return err
-		}
-	}
-
-	// if all ip make it static - it's done in endpoint_cluster_configurer
-	for i, endpoint := range pointer.Deref(mes.Spec.Endpoints) {
-		if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) && tls != nil && tls.Enabled {
-			es.ServerName = endpoint.Address
-		}
-		priority := pointer.DerefOr(endpoint.Priority, 0)
-		locality := &core_xds.Locality{
-			Priority: priority,
-			SubZone:  "priority-" + strconv.Itoa(int(priority)),
-		}
-		outboundEndpoint := &core_xds.Endpoint{
-			Target:          endpoint.Address,
-			Port:            uint32(endpoint.Port),
-			Weight:          1,
-			ExternalService: es,
-			Tags:            tags,
-			Locality:        locality,
-		}
-		name := destinationname.MustResolve(unifiedNaming, mes, mes.Spec.Match)
-		outbounds[name] = append(outbounds[name], *outboundEndpoint)
-	}
-	return nil
 }
 
 func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, es *core_xds.ExternalService, meshName string, loader datasource.Loader) error {
@@ -819,61 +351,22 @@ func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, 
 	return nil
 }
 
-func createExternalServiceEndpoint(
+// fillMeshExternalServicesOnDataplane points every MeshExternalService destination at the zone
+// egress instances rather than at the external address itself: a regular proxy always takes the
+// egress hop, and the egress resolves the real endpoints (see fillMeshExternalServicesOnEgress).
+// With no egress instances the destination is left without endpoints.
+func fillMeshExternalServicesOnDataplane(
 	ctx context.Context,
 	outbound core_xds.EndpointMap,
-	externalService *core_mesh.ExternalServiceResource,
-	mesh *core_mesh.MeshResource,
-	loader datasource.Loader,
-	zone string,
-) {
-	service := externalService.Spec.GetService()
-	externalServiceEndpoint, err := NewExternalServiceEndpoint(ctx, externalService, mesh, loader, zone)
-	if err != nil {
-		outboundLog.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
-		return
-	}
-	outbound[service] = append(outbound[service], *externalServiceEndpoint)
-}
-
-func fillExternalServicesOutboundsThroughEgress(
-	ctx context.Context,
-	outbound core_xds.EndpointMap,
-	externalServices []*core_mesh.ExternalServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	egressAddresses []core_xds.ZoneEgressInstance,
-	mesh *core_mesh.MeshResource,
-	localZone string,
 	loader datasource.Loader,
 ) {
-	if mesh.ZoneEgressEnabled() {
-		for _, externalService := range externalServices {
-			// deep copy map to not modify tags in ExternalService.
-			serviceTags := maps.Clone(externalService.Spec.GetTags())
-			serviceName := serviceTags[mesh_proto.ServiceTag]
-			locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
-
-			for _, ze := range egressAddresses {
-				endpoint := core_xds.Endpoint{
-					Target: ze.Address,
-					Port:   ze.Port,
-					Tags:   serviceTags,
-					// AS it's a role of zone egress to load balance traffic between
-					// instances, we can safely set weight to 1
-					Weight:          1,
-					Locality:        locality,
-					ExternalService: &core_xds.ExternalService{},
-				}
-
-				outbound[serviceName] = append(outbound[serviceName], endpoint)
-			}
-		}
-	}
 	for _, mes := range meshExternalServices {
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
-		serviceName := destinationname.MustResolve(false, mes, mes.Spec.Match)
-		locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
+		serviceName := destinationname.ResolveLegacyFromDestination(mes, mes.Spec.Match)
+		locality := GetLocality(nil)
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
 			Protocol:      mes.Spec.Match.Protocol,
@@ -904,58 +397,66 @@ func fillExternalServicesOutboundsThroughEgress(
 	}
 }
 
-// NewExternalServiceEndpoint builds a new Endpoint from an ExternalServiceResource.
-func NewExternalServiceEndpoint(
+// fillMeshExternalServicesOnEgress resolves every MeshExternalService to its real endpoints,
+// one per entry in spec.endpoints. This is the egress's own view of the destination; a
+// MeshExternalService whose TLS config cannot be loaded is logged and skipped so one bad
+// resource does not drop the whole map.
+func fillMeshExternalServicesOnEgress(
 	ctx context.Context,
-	externalService *core_mesh.ExternalServiceResource,
+	outbound core_xds.EgressEndpointMap,
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	mesh *core_mesh.MeshResource,
 	loader datasource.Loader,
-	zone string,
-) (*core_xds.Endpoint, error) {
-	spec := externalService.Spec
-	tls := spec.GetNetworking().GetTls()
-	meshName := mesh.GetMeta().GetName()
-	// deep copy map to not modify tags in ExternalService.
-	tags := maps.Clone(spec.GetTags())
+) {
+	for _, mes := range meshExternalServices {
+		es := &core_xds.ExternalService{
+			Protocol:      mes.Spec.Match.Protocol,
+			OwnerResource: kri.From(mes),
+		}
+		tags := maps.Clone(mes.Meta.GetLabels())
+		if tags == nil {
+			tags = map[string]string{}
+		}
+		tls := mes.Spec.Tls
+		if tls != nil && tls.Enabled {
+			if err := setTlsConfiguration(ctx, tls, es, mesh.GetMeta().GetName(), loader); err != nil {
+				outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+				continue
+			}
+		}
 
-	caCert, err := loadBytes(ctx, tls.GetCaCert(), meshName, loader)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not load caCert")
-	}
-	clientCert, err := loadBytes(ctx, tls.GetClientCert(), meshName, loader)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not load clientCert")
-	}
-	clientKey, err := loadBytes(ctx, tls.GetClientKey(), meshName, loader)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not load clientKey")
-	}
+		// if all ip make it static - it's done in endpoint_cluster_configurer
+		var endpoints []core_xds.Endpoint
+		for i, endpoint := range pointer.Deref(mes.Spec.Endpoints) {
+			if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) && tls != nil && tls.Enabled {
+				es.ServerName = endpoint.Address
+			}
+			priority := pointer.DerefOr(endpoint.Priority, 0)
+			endpoints = append(endpoints, core_xds.Endpoint{
+				Target:          endpoint.Address,
+				Port:            uint32(endpoint.Port),
+				Weight:          1,
+				ExternalService: es,
+				Tags:            tags,
+				Locality: &core_xds.Locality{
+					Priority: priority,
+					SubZone:  "priority-" + strconv.Itoa(int(priority)),
+				},
+			})
+		}
+		if len(endpoints) == 0 {
+			continue
+		}
 
-	es := &core_xds.ExternalService{
-		TLSEnabled:               tls.GetEnabled(),
-		CaCert:                   caCert,
-		ClientCert:               clientCert,
-		ClientKey:                clientKey,
-		AllowRenegotiation:       tls.GetAllowRenegotiation().GetValue(),
-		SkipHostnameVerification: tls.GetSkipHostnameVerification().GetValue(),
-		ServerName:               tls.GetServerName().GetValue(),
+		// Always unified (KRI) naming: the embedded egress is new infrastructure that only
+		// supports Exclusive MeshServices mode.
+		serviceName := destinationname.MustResolve(mes, mes.Spec.Match)
+		group := outbound[serviceName]
+		group.Protocol = es.Protocol
+		group.OwnerResource = es.OwnerResource
+		group.Endpoints = append(group.Endpoints, endpoints...)
+		outbound[serviceName] = group
 	}
-
-	if es.TLSEnabled {
-		name := externalService.Meta.GetName()
-
-		tags = envoy_tags.Tags(tags).
-			WithTags(mesh_proto.ExternalServiceTag, name)
-	}
-
-	return &core_xds.Endpoint{
-		Target:          spec.GetHost(),
-		Port:            spec.GetPortUInt32(),
-		Tags:            tags,
-		Weight:          1,
-		ExternalService: es,
-		Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
-	}, nil
 }
 
 func loadBytes(ctx context.Context, ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {
@@ -973,29 +474,22 @@ const (
 	priorityRemote = 1
 )
 
-func GetLocality(localZone string, otherZone *string, localityAwareness bool) *core_xds.Locality {
+func GetLocality(otherZone *string) *core_xds.Locality {
 	if otherZone == nil {
 		return nil
 	}
 
-	// we want to set the Locality even when localityAwareLoadBalancing is not enabled
-	// If we set the locality we have an extra visibility about this in /clusters etc.
-	// Kuma's LocalityAwareLoadBalancing feature is based only on Priority therefore when
-	// it's disabled we need to set Priority to local.
+	// We always set the Locality with a local Priority: this gives extra
+	// visibility about it in /clusters etc., and cross-zone priority is now
+	// owned by the MeshLoadBalancingStrategy policy.
 	//
-	// Setting this regardless of LocalityAwareLoadBalancing on the mesh also solves
-	// the problem that endpoints have problems when moving from one locality to another
+	// Setting this regardless also solves the problem that endpoints have
+	// problems when moving from one locality to another
 	// https://github.com/envoyproxy/envoy/issues/12392
-
-	var priority uint32 = priorityLocal
-
-	if localityAwareness && localZone != *otherZone {
-		priority = priorityRemote
-	}
 
 	return &core_xds.Locality{
 		Zone:     *otherZone,
-		Priority: priority,
+		Priority: priorityLocal,
 	}
 }
 

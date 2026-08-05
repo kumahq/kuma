@@ -10,11 +10,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/version"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
 type ResourceAdmissionChecker struct {
@@ -92,8 +92,7 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 		if !c.DisableOriginLabelValidation && originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
 			return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin), string(resourceOrigin)))
 		}
-	//nolint:staticcheck
-	case core.Zone, core.Standalone:
+	case core.Zone:
 		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
 		if !c.DisableOriginLabelValidation && ns == c.SystemNamespace {
 			if !originPresent || resourceOrigin != mesh_proto.ZoneResourceOrigin {

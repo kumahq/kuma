@@ -9,9 +9,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	kuma_xds "github.com/kumahq/kuma/v2/pkg/config/xds"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	kuma_xds "github.com/kumahq/kuma/v3/pkg/config/xds"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
 
 var _ = Describe("XdsServerConfig", func() {
@@ -28,6 +28,7 @@ var _ = Describe("XdsServerConfig", func() {
 		// and
 		Expect(cfg.DataplaneConfigurationRefreshInterval.Duration).To(Equal(3 * time.Second))
 		Expect(cfg.DataplaneStatusFlushInterval.Duration).To(Equal(5 * time.Second))
+		Expect(cfg.PolicyMatchingCacheSize).To(Equal(1234))
 	})
 
 	Context("with modified environment variables", func() {
@@ -50,6 +51,7 @@ var _ = Describe("XdsServerConfig", func() {
 			env := map[string]string{
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL": "3s",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":          "5s",
+				"KUMA_XDS_SERVER_POLICY_MATCHING_CACHE_SIZE":               "1234",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -67,6 +69,7 @@ var _ = Describe("XdsServerConfig", func() {
 			// and
 			Expect(cfg.DataplaneConfigurationRefreshInterval.Duration).To(Equal(3 * time.Second))
 			Expect(cfg.DataplaneStatusFlushInterval.Duration).To(Equal(5 * time.Second))
+			Expect(cfg.PolicyMatchingCacheSize).To(Equal(1234))
 		})
 	})
 
@@ -91,5 +94,17 @@ var _ = Describe("XdsServerConfig", func() {
 
 		// then
 		Expect(err).To(MatchError("parsing configuration from file 'testdata/invalid-config.input.yaml' failed: configuration validation failed: DataplaneConfigurationRefreshInterval must be positive"))
+	})
+
+	It("should reject negative policy matching cache size", func() {
+		// given
+		cfg := kuma_xds.DefaultXdsServerConfig()
+		cfg.PolicyMatchingCacheSize = -1
+
+		// when
+		err := cfg.Validate()
+
+		// then
+		Expect(err).To(MatchError("PolicyMatchingCacheSize must be non-negative"))
 	})
 })

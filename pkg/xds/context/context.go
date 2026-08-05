@@ -3,19 +3,18 @@ package context
 import (
 	"encoding/base64"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/datasource"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/datasource"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 var logger = core.Log.WithName("xds").WithName("context")
@@ -33,12 +32,11 @@ type ConnectionInfo struct {
 // ControlPlaneContext contains shared global data and components that are required for generating XDS
 // This data is the same regardless of a data plane proxy and mesh we are generating the data for.
 type ControlPlaneContext struct {
-	CLACache            envoy.CLACache
-	Secrets             secrets.Secrets
-	IdentityManager     providers.IdentityProviderManager
-	Zone                string
-	SystemNamespace     string
-	InboundTagsDisabled bool
+	CLACache        envoy.CLACache
+	Secrets         secrets.Secrets
+	IdentityManager providers.IdentityProviderManager
+	Zone            string
+	SystemNamespace string
 }
 
 // GlobalContext holds resources that are Global
@@ -67,7 +65,6 @@ func (g BaseMeshContext) Hash() string {
 
 func (g BaseMeshContext) Resources() Resources {
 	return Resources{
-		CrossMeshResources: map[xds.MeshName]ResourceMap{},
 		MeshLocalResources: g.ResourceMap,
 	}
 }
@@ -79,25 +76,24 @@ type PEMBytes []byte
 // If there is an information that can be precomputed and shared between all data plane proxies
 // it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
-	Hash                        string
-	Resource                    *core_mesh.MeshResource
-	BaseMeshContext             *BaseMeshContext
-	Resources                   Resources
-	DataplanesByName            map[string]*core_mesh.DataplaneResource
-	EndpointMap                 xds.EndpointMap
-	IngressEndpointMap          xds.EndpointMap
-	ExternalServicesEndpointMap xds.EndpointMap
-	CrossMeshEndpoints          map[xds.MeshName]xds.EndpointMap
-	VIPDomains                  []xds_types.VIPDomains
-	VIPOutbounds                xds_types.Outbounds
-	ServicesInformation         map[string]*ServiceInformation
-	DataSourceLoader            datasource.Loader
-	ReachableServicesGraph      ReachableServicesGraph
-	CAsByTrustDomain            map[string][]PEMBytes
-	// ZoneEgresses holds one entry per zone egress instance (either a legacy ZoneEgress
-	// resource or a Dataplane with a ZoneEgress listener). Each entry carries the address,
-	// port and, when WorkloadIdentity is enabled, the SPIFFE ID (SAN) that clients must
-	// verify when opening an mTLS connection to that egress.
+	Hash string
+	// PolicyMatchingHash hashes matching-relevant resources (policies, gateways, external services).
+	// Excludes Dataplane roster; stays stable across DP-registration waves.
+	PolicyMatchingHash  string
+	Resource            *core_mesh.MeshResource
+	BaseMeshContext     *BaseMeshContext
+	Resources           Resources
+	DataplanesByName    map[string]*core_mesh.DataplaneResource
+	EndpointMap         xds.EndpointMap
+	VIPDomains          []xds_types.VIPDomains
+	VIPOutbounds        xds_types.Outbounds
+	ServicesInformation map[string]*ServiceInformation
+	DataSourceLoader    datasource.Loader
+	CAsByTrustDomain    map[string][]PEMBytes
+	// ZoneEgresses holds one entry per zone egress instance, resolved from Dataplanes
+	// that expose a ZoneEgress listener. Each entry carries the address, port and, when
+	// WorkloadIdentity is enabled, the SPIFFE ID (SAN) that clients must verify when
+	// opening an mTLS connection to that egress.
 	ZoneEgresses []xds.ZoneEgressInstance
 	// DataplaneZoneIngressEndpointMap is the shared endpoint map for embedded zone ingress
 	// listeners; built once per MeshContext and reused across all Dataplanes.
@@ -105,10 +101,6 @@ type MeshContext struct {
 	// DataplaneZoneEgressEndpointMap is the shared endpoint map for embedded zone egress
 	// listeners; built once per MeshContext and reused across all Dataplanes.
 	DataplaneZoneEgressEndpointMap xds.EgressEndpointMap
-	// ZonesWithMeshScopedProxy is the set of zones that have at least one
-	// MeshZoneAddress, meaning their zone ingress uses the new mesh-scoped zone proxy.
-	// Clusters targeting services in these zones must use the KRI-derived SNI format (MADR 101).
-	ZonesWithMeshScopedProxy map[string]bool
 }
 
 type ServiceInformation struct {
@@ -128,36 +120,6 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 
 func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destination {
 	return mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
-}
-
-func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {
-	if tt == nil {
-		return nil
-	}
-	if tb := mc.Resource.GetTracingBackend(tt.Spec.GetConf().GetBackend()); tb == nil {
-		logger.Info("Tracing backend is not found. Ignoring.",
-			"backendName", tt.Spec.GetConf().GetBackend(),
-			"trafficTraceName", tt.GetMeta().GetName(),
-			"trafficTraceMesh", tt.GetMeta().GetMesh())
-		return nil
-	} else {
-		return tb
-	}
-}
-
-func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh_proto.LoggingBackend {
-	if tl == nil {
-		return nil
-	}
-	if lb := mc.Resource.GetLoggingBackend(tl.Spec.GetConf().GetBackend()); lb == nil {
-		logger.Info("Logging backend is not found. Ignoring.",
-			"backendName", tl.Spec.GetConf().GetBackend(),
-			"trafficLogName", tl.GetMeta().GetName(),
-			"trafficLogMesh", tl.GetMeta().GetMesh())
-		return nil
-	} else {
-		return lb
-	}
 }
 
 func (mc *MeshContext) GetServiceProtocol(serviceName string) core_meta.Protocol {
@@ -187,7 +149,7 @@ func (mc *MeshContext) GetTLSReadiness() map[string]bool {
 }
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {
-	return len(mc.Resources.RateLimits().Items) > 0 || len(mc.Resources.FaultInjections().Items) > 0 || len(mc.Resources.MeshFaultInjections().Items) > 0
+	return len(mc.Resources.MeshFaultInjections().Items) > 0
 }
 
 // ZoneEgressSANs returns the SPIFFE IDs of all zone egress instances that have a SAN set.
@@ -206,7 +168,6 @@ type AggregatedMeshContexts struct {
 	Hash               string
 	Meshes             []*core_mesh.MeshResource
 	MeshContextsByName map[string]MeshContext
-	ZoneEgressByName   map[string]*core_mesh.ZoneEgressResource
 }
 
 // MustGetMeshContext panics if there is no mesh context for given mesh. Call it when iterating over .Meshes
@@ -224,29 +185,6 @@ func (m AggregatedMeshContexts) AllDataplanes() []*core_mesh.DataplaneResource {
 	for _, mesh := range m.Meshes {
 		meshCtx := m.MustGetMeshContext(mesh.Meta.GetName())
 		resources = append(resources, meshCtx.Resources.Dataplanes().Items...)
-	}
-	return resources
-}
-
-func (m AggregatedMeshContexts) ZoneEgresses() []*core_mesh.ZoneEgressResource {
-	for _, meshCtx := range m.MeshContextsByName {
-		return meshCtx.Resources.ZoneEgresses().Items // all mesh contexts has the same list
-	}
-	return nil
-}
-
-func (m AggregatedMeshContexts) ZoneIngresses() []*core_mesh.ZoneIngressResource {
-	for _, meshCtx := range m.MeshContextsByName {
-		return meshCtx.Resources.ZoneIngresses().Items // all mesh contexts has the same list
-	}
-	return nil
-}
-
-func (m AggregatedMeshContexts) AllMeshGateways() []*core_mesh.MeshGatewayResource {
-	var resources []*core_mesh.MeshGatewayResource
-	for _, mesh := range m.Meshes {
-		meshCtx := m.MustGetMeshContext(mesh.Meta.GetName())
-		resources = append(resources, meshCtx.Resources.MeshGateways().Items...)
 	}
 	return resources
 }

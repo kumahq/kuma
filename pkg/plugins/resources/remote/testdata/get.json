@@ -1,29 +1,23 @@
 {
-  "type": "TrafficRoute",
+  "type": "MeshExternalService",
   "mesh": "default",
   "name": "res-1",
   "creationTime": "2018-07-17T16:05:36.995Z",
   "modificationTime": "2019-07-17T16:05:36.995Z",
-  "sources": [
-    {
-      "match": {
-        "kuma.io/service": "*"
-      }
-    }
-  ],
-  "destinations": [
-    {
-      "match": {
-        "kuma.io/service": "*"
-      }
-    }
-  ],
-  "conf": {
-    "loadBalancer": {
-      "roundRobin": {}
+  "spec": {
+    "match": {
+      "type": "HostnameGenerator",
+      "port": 9000,
+      "protocol": "http"
     },
-    "destination": {
-      "kuma.io/service": "*"
-    }
+    "endpoints": [
+      {
+        "address": "192.168.0.1",
+        "port": 27017
+      }
+    ]
+  },
+  "status": {
+    "vip": {}
   }
 }

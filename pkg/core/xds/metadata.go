@@ -6,15 +6,15 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
 )
 
 var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
@@ -86,30 +86,6 @@ func (m *DataplaneMetadata) GetDataplaneResource() *core_mesh.DataplaneResource 
 	if m != nil {
 		if d, ok := m.Resource.(*core_mesh.DataplaneResource); ok {
 			return d
-		}
-	}
-
-	return nil
-}
-
-// GetZoneIngressResource returns the underlying ZoneIngressResource, if present.
-// If the resource is of a different type, it returns nil.
-func (m *DataplaneMetadata) GetZoneIngressResource() *core_mesh.ZoneIngressResource {
-	if m != nil {
-		if z, ok := m.Resource.(*core_mesh.ZoneIngressResource); ok {
-			return z
-		}
-	}
-
-	return nil
-}
-
-// GetZoneEgressResource returns the underlying ZoneEgressResource, if present.
-// If the resource is of a different type, it returns nil.
-func (m *DataplaneMetadata) GetZoneEgressResource() *core_mesh.ZoneEgressResource {
-	if m != nil {
-		if z, ok := m.Resource.(*core_mesh.ZoneEgressResource); ok {
-			return z
 		}
 	}
 

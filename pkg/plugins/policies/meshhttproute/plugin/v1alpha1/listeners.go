@@ -5,30 +5,28 @@ import (
 	"reflect"
 	"slices"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	meshroute_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/xds"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	envoy_listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
-	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
-	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	meshroute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
+	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 func GenerateOutboundListener(
@@ -36,7 +34,6 @@ func GenerateOutboundListener(
 	svc meshroute_xds.DestinationService,
 	routes []xds.OutboundRoute,
 	originDPPTags mesh_proto.MultiValueTagSet,
-	unifiedNaming bool,
 ) (*core_xds.Resource, error) {
 	transparentProxyEnabled := !proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) && proxy.GetTransparentProxy().Enabled()
 
@@ -46,10 +43,10 @@ func GenerateOutboundListener(
 	legacyRouteConfigName := envoy_names.GetOutboundRouteName(svc.KumaServiceTagValue)
 	legacyListenerName := envoy_names.GetOutboundListenerName(address, port)
 
-	routeConfigName := svc.ConditionallyResolveKRIWithFallback(true, legacyRouteConfigName)
-	virtualHostName := svc.ConditionallyResolveKRIWithFallback(unifiedNaming, svc.KumaServiceTagValue)
-	listenerStatPrefix := svc.ConditionallyResolveKRIWithFallback(unifiedNaming, "")
-	listenerName := svc.ConditionallyResolveKRIWithFallback(unifiedNaming, legacyListenerName)
+	routeConfigName := svc.ResolveKRIWithFallback(legacyRouteConfigName)
+	virtualHostName := svc.ResolveKRIWithFallback(svc.KumaServiceTagValue)
+	listenerStatPrefix := svc.ResolveKRIWithFallback("")
+	listenerName := svc.ResolveKRIWithFallback(legacyListenerName)
 
 	route := &xds.HttpOutboundRouteConfigurer{
 		RouteConfigName: routeConfigName,
@@ -75,7 +72,7 @@ func GenerateOutboundListener(
 		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).
 		Configure(envoy_listeners.OutboundListener(address, port, core_xds.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.TransparentProxying(transparentProxyEnabled)).
-		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))).
+		Configure(envoy_listeners.TagsMetadata(svc.OutboundListenerTags())).
 		Configure(envoy_listeners.FilterChain(filterChain))
 
 	resource, err := listener.Build()
@@ -102,30 +99,35 @@ func generateFromService(
 ) (*core_xds.ResourceSet, error) {
 	var routes []xds.OutboundRoute
 
-	unifiedNaming := unified_naming.Enabled(proxy.Metadata, meshCtx.Resource)
-
-	for _, route := range prepareRoutes(rules, svc, meshCtx, unifiedNaming) {
-		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx, unifiedNaming)
+	for _, route := range prepareRoutes(rules, svc, meshCtx) {
+		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
 		if len(split) == 0 {
 			continue
 		}
-		for _, filter := range route.Filters {
-			if filter.Type == api.RequestMirrorType {
-				// we need to create a split for the mirror backend
-				_ = meshroute_xds.MakeHTTPSplit(
-					clusterCache, servicesAcc,
-					[]resolve.ResolvedBackendRef{*resolve.NewResolvedBackendRef(pointer.To(resolve.LegacyBackendRef(filter.RequestMirror.BackendRef)))},
-					meshCtx,
-					unifiedNaming,
-				)
+		// mirrored requests go to a cluster of their own, it has no weight so
+		// keep the split only to know which cluster was created for the mirror
+		mirrorSplits := map[int]envoy_common.Split{}
+		for i := range route.Filters {
+			ref, ok := route.MirrorBackendRefs[i]
+			if !ok {
+				continue
 			}
+			mirrorSplit := meshroute_xds.MakeHTTPSplit(
+				clusterCache, servicesAcc,
+				[]resolve.ResolvedBackendRef{ref},
+				meshCtx,
+			)
+			if len(mirrorSplit) == 0 {
+				continue
+			}
+			mirrorSplits[i] = mirrorSplit[0]
 		}
 		routes = append(routes, xds.OutboundRoute{
-			Name:                    route.Name,
-			Match:                   route.Match,
-			Filters:                 route.Filters,
-			Split:                   split,
-			BackendRefToClusterName: clusterCache,
+			Name:         route.Name,
+			Match:        route.Match,
+			Filters:      route.Filters,
+			MirrorSplits: mirrorSplits,
+			Split:        split,
 		})
 	}
 
@@ -135,10 +137,14 @@ func generateFromService(
 
 	var dpTags mesh_proto.MultiValueTagSet
 	if meshCtx.IsXKumaTagsUsed() {
-		dpTags = proxy.Dataplane.Spec.TagSet()
+		data := map[string][]string{}
+		for key, value := range proxy.Dataplane.GetMeta().GetLabels() {
+			data[key] = []string{value}
+		}
+		dpTags = mesh_proto.MultiValueTagSetFrom(data)
 	}
 
-	listener, err := GenerateOutboundListener(proxy, svc, routes, dpTags, unifiedNaming)
+	listener, err := GenerateOutboundListener(proxy, svc, routes, dpTags)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +211,6 @@ func prepareRoutes(
 	toRules rules.ToRules,
 	svc meshroute_xds.DestinationService,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) []api.Route {
 	conf, originByMatches := ComputeHTTPRouteConf(toRules, svc, meshCtx)
 
@@ -227,13 +232,21 @@ func prepareRoutes(
 		routeName := string(matchesHash)
 		origin := originByMatches[matchesHash]
 
-		originID := kri.FromResourceMeta(origin.Resource, api.MeshHTTPRouteType)
-		if unifiedNaming {
-			originID = kri.WithSectionName(originID, fmt.Sprintf("rule_%d", origin.RuleIndex))
-		}
+		originID := kri.WithSectionName(kri.FromResourceMeta(origin.Resource, api.MeshHTTPRouteType), fmt.Sprintf("rule_%d", origin.RuleIndex))
 
 		if _, ok := svc.Outbound.AssociatedServiceResource(); ok {
 			routeName = originID.String()
+		}
+
+		mirrorRefs := map[int]resolve.ResolvedBackendRef{}
+
+		for i, filter := range filters {
+			if filter.Type != api.RequestMirrorType || filter.RequestMirror == nil {
+				continue
+			}
+			if rbr, ok := resolve.BackendRef(originID, filter.RequestMirror.BackendRef, meshCtx.ResolveResourceIdentifier); ok {
+				mirrorRefs[i] = rbr
+			}
 		}
 
 		for _, match := range rule.Matches {
@@ -248,10 +261,12 @@ func prepareRoutes(
 			routes = append(
 				routes,
 				api.Route{
-					Name:        routeName,
-					Match:       match,
-					Filters:     filters,
-					BackendRefs: refs,
+					Name:              routeName,
+					Origin:            originID,
+					Match:             match,
+					Filters:           filters,
+					BackendRefs:       refs,
+					MirrorBackendRefs: mirrorRefs,
 				},
 			)
 		}
@@ -273,8 +288,9 @@ func prepareRoutes(
 
 	if noCatchAll {
 		routes = append(routes, api.Route{
-			Match: catchAllMatch,
-			Name:  string(api.HashMatches([]api.Match{catchAllMatch})),
+			Match:  catchAllMatch,
+			Name:   string(api.HashMatches([]api.Match{catchAllMatch})),
+			Origin: svc.Outbound.Resource,
 		})
 	}
 

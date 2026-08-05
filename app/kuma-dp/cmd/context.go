@@ -8,14 +8,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	kumadp_config "github.com/kumahq/kuma/v2/app/kuma-dp/pkg/config"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
-	kumadp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/log"
-	leader_memory "github.com/kumahq/kuma/v2/pkg/plugins/leader/memory"
+	kumadp_config "github.com/kumahq/kuma/v3/app/kuma-dp/pkg/config"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/otelenv"
+	kumadp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/log"
+	leader_memory "github.com/kumahq/kuma/v3/pkg/plugins/leader/memory"
 )
 
 // RootContext contains variables, functions and components that can be overridden when extending kuma-dp or running the test.

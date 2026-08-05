@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 var _ = Describe("MeshCircuitBreaker", func() {
@@ -26,44 +26,12 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			},
 			Entry("full example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionLimits:
-        maxConnections: 12
-        maxConnectionPools: 12
-        maxPendingRequests: 92
-        maxRetries: 8
-        maxRequests: 128
-      outlierDetection:
-        disabled: false
-        interval: 11s
-        baseEjectionTime: 38s
-        maxEjectionPercent: 22
-        splitExternalAndLocalErrors: true
-        detectors:
-          totalFailures:
-            consecutive: 10
-          gatewayFailures:
-            consecutive: 10
-          localOriginFailures:
-            consecutive: 10
-          successRate:
-            minimumHosts: 5
-            requestVolume: 10
-            standardDeviationFactor: "1.9"
-          failurePercentage:
-            requestVolume: 10
-            minimumHosts: 5
-            threshold: 31
-          healthyPanicThreshold: 60
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits:
         maxConnections: 2
@@ -126,7 +94,8 @@ to:
           healthyPanicThreshold: 80
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits:
         maxConnections: 22
@@ -158,8 +127,7 @@ to:
           healthyPanicThreshold: 90`),
 			Entry("only to targetRef", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: Mesh
@@ -193,7 +161,8 @@ to:
             threshold: 85
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits:
         maxConnections: 22
@@ -224,12 +193,12 @@ to:
             threshold: 75`),
 			Entry("minimal example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits: { }`),
 			Entry("with MeshMultiZoneService", `
@@ -238,7 +207,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshMultiZoneService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits: { }`),
 			Entry("with MeshExternalService", `
@@ -247,7 +217,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: external
+      labels:
+        kuma.io/display-name: external
     default:
       connectionLimits: { }`),
 			Entry("top level Dataplane to MeshExternalService", `
@@ -256,17 +227,21 @@ targetRef:
 to:
   - targetRef:
       kind: MeshExternalService
-      name: external
+      labels:
+        kuma.io/display-name: external
     default:
       connectionLimits: { }`),
-			Entry("gateway example", `
+			Entry("inbound rules and outbound to together", `
 targetRef:
-  kind: MeshGateway
-  name: edge
+  kind: Mesh
+rules:
+  - default:
+      connectionLimits: { }
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits: { }`),
 		)
@@ -292,7 +267,7 @@ to:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty 'from' and 'to' array", testCase{
+			Entry("empty 'to' array", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
@@ -300,66 +275,12 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from', 'to' or 'rules' has to be defined`,
-			}),
-			Entry("unsupported kind in from selector", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: MeshGatewayRoute
-    default:
-      connectionLimits: { }`,
-				expected: `
-violations:
-  - field: spec.from[0].targetRef.kind
-    message: value 'MeshGatewayRoute' is not supported`,
-			}),
-			Entry("from mixed with rules", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionLimits: { }
-rules:
-  - default:
-      connectionLimits: { }`,
-				expected: `
-violations:
-  - field: spec
-    message: fields 'to' and 'from' must be empty when 'rules' is defined`,
-			}),
-			Entry("to mixed with rules", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-to:
-  - targetRef:
-      kind: MeshServiceSubset
-    default:
-      connectionLimits: { }
-rules:
-  - default:
-      connectionLimits: { }`,
-				expected: `
-violations:
-- field: spec
-  message: fields 'to' and 'from' must be empty when 'rules' is defined
-- field: spec.to[0].targetRef.kind
-  message: value 'MeshServiceSubset' is not supported`,
+    message: at least one of 'to' or 'rules' has to be defined`,
 			}),
 			Entry("unsupported kind in to selector", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshServiceSubset
@@ -390,12 +311,12 @@ violations:
 			Entry("missing configuration", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend`,
+      labels:
+        kuma.io/display-name: web-backend`,
 				expected: `
 violations:
   - field: spec.to[0].default
@@ -404,12 +325,12 @@ violations:
 			Entry("limits cannot be be equal 0 when specified", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionLimits:
         maxConnections: 0
@@ -433,12 +354,12 @@ violations:
 			Entry("any outlierDetection's numeric property except 'healthyPanicThreshold' cannot be be 0 when specified", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         interval: 0s
@@ -486,12 +407,12 @@ violations:
 			Entry("any outlierDetection's percentage property cannot be be greater than 100 when specified", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         maxEjectionPercent: 101
@@ -511,12 +432,12 @@ violations:
 			Entry("any outlierDetection's percentage property cannot be be smaller than 0 when specified", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         detectors:
@@ -533,12 +454,12 @@ violations:
 			Entry("detectors are not defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         maxEjectionPercent: 100`,
@@ -550,12 +471,12 @@ violations:
 			Entry("detector is empty", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         maxEjectionPercent: 100
@@ -568,12 +489,12 @@ violations:
 			Entry("detector has incorrect values", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       outlierDetection:
         detectors:

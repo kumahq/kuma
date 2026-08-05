@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 type Destination struct {
@@ -25,6 +25,11 @@ type GatewayListenerInspectEntry struct {
 	Hosts    []HostInspectEntry `json:"hosts"`
 }
 
+// GatewayDataplaneInspectResult is the gateway-kinded variant of the response
+// from the deprecated GET /meshes/{mesh}/dataplanes/{name}/policies endpoint.
+// Nothing in this repo produces it anymore, but DataplaneInspectResponse's
+// Marshal/UnmarshalJSON keep it as a documented, wire-compatible kind for the
+// vendored GUI bundle that still calls the endpoint.
 type GatewayDataplaneInspectResult struct {
 	Gateway   ResourceKeyEntry              `json:"gateway"`
 	Listeners []GatewayListenerInspectEntry `json:"listeners"`

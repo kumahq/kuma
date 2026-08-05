@@ -10,25 +10,24 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/josephburnett/jd/v2"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
-	bldrs_tls "github.com/kumahq/kuma/v2/pkg/envoy/builders/tls"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/cla"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator"
-	xds_hooks "github.com/kumahq/kuma/v2/pkg/xds/hooks"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
-	v3 "github.com/kumahq/kuma/v2/pkg/xds/server/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/sync"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
+	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/cla"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	xds_hooks "github.com/kumahq/kuma/v3/pkg/xds/hooks"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
+	v3 "github.com/kumahq/kuma/v3/pkg/xds/server/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
 
 type ProxyConfig map[string]any
@@ -46,8 +45,7 @@ func NewProxyConfigInspector(meshContext xds_context.MeshContext, dataplaneMetad
 		zone:        zone,
 		meshContext: meshContext,
 		snapshotGenerator: &v3.TemplateSnapshotGenerator{
-			ResourceSetHooks:      hooks,
-			ProxyTemplateResolver: generator.DefaultTemplateResolver,
+			ResourceSetHooks: hooks,
 		},
 		knownInternalAddresses: knownInternalAddresses,
 		dataplaneMetadata:      dataplaneMetadata,
@@ -176,10 +174,6 @@ type dummySecrets struct{}
 
 func (ds *dummySecrets) GetForDataPlane(_ context.Context, _ *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error) {
 	return ds.identity(), ds.cas(append(meshes, mesh)...), nil
-}
-
-func (ds *dummySecrets) GetForZoneEgress(_ context.Context, _ *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	return ds.identity(), ds.cas(mesh)[mesh.GetMeta().GetName()], nil
 }
 
 func (ds *dummySecrets) GetAllInOne(ctx context.Context, _ *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ []*core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {

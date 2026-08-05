@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/observability"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/observability"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func MeshTrace(config *Config) func() {
@@ -72,9 +72,9 @@ spec:
 				srvs, err := observabilityClient.TracedServices()
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(srvs).To(ContainElements([]string{
-					fmt.Sprintf("%[1]s-gateway-admin_%[1]s_svc_8444", config.Mesh),
+					"gateway",
 					"jaeger-all-in-one",
-					fmt.Sprintf("test-server_%s_svc_80", config.Mesh),
+					"test-server",
 				}))
 			}, "30s", "1s").Should(Succeed())
 		})

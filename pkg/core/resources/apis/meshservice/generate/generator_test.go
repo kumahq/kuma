@@ -12,28 +12,26 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/generate"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/dns/vips"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	cache_mesh "github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/server"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/generate"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	cache_mesh "github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
 type countingResourceManager struct {
@@ -59,6 +57,20 @@ var _ = Describe("MeshService generator", func() {
 	var metrics core_metrics.Metrics
 
 	gracePeriodInterval := 500 * time.Millisecond
+	backendDataplane := samples.DataplaneBackendBuilder
+	createDataplaneWithLabels := func(builder *builders.DataplaneBuilder, labels map[string]string) error {
+		return resManager.Create(
+			context.Background(),
+			builder.Build(),
+			store.CreateBy(builder.Key()),
+			store.CreateWithLabels(labels),
+		)
+	}
+	createBackendDataplane := func(builder *builders.DataplaneBuilder) error {
+		return createDataplaneWithLabels(builder, map[string]string{
+			metadata.KumaWorkload: "backend",
+		})
+	}
 
 	BeforeEach(func() {
 		m, err := core_metrics.NewMetrics("")
@@ -71,10 +83,6 @@ var _ = Describe("MeshService generator", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			"zone",
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
-			".mesh",
-			80,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			nil,
 		)
 		meshCache, err := cache_mesh.NewCache(
@@ -91,7 +99,6 @@ var _ = Describe("MeshService generator", func() {
 			resManager,
 			meshCache,
 			"zone",
-			false,
 			kuma_cp.MeshServiceLabelPropagation{},
 		)
 
@@ -104,7 +111,7 @@ var _ = Describe("MeshService generator", func() {
 		}()
 
 		Expect(
-			samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+			samples.MeshDefaultBuilder().Create(resManager),
 		).To(Succeed())
 	})
 
@@ -113,7 +120,7 @@ var _ = Describe("MeshService generator", func() {
 	})
 
 	It("should generate MeshService from a single Dataplane", func() {
-		err := samples.DataplaneBackendBuilder().Create(resManager)
+		err := createBackendDataplane(backendDataplane())
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -175,14 +182,14 @@ var _ = Describe("MeshService generator", func() {
 	})
 
 	It("should generate MeshService from a single Dataplane with inbound name", func() {
-		err := samples.DataplaneBackendBuilder().WithoutInbounds().
+		err := createBackendDataplane(backendDataplane().WithoutInbounds().
 			AddInbound(
 				builders.Inbound().
 					WithPort(builders.FirstInboundPort).
 					WithServicePort(builders.FirstInboundServicePort).
 					WithName("main").
 					WithTags(map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.ProtocolTag: "tcp"}),
-			).Create(resManager)
+			))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -200,7 +207,7 @@ var _ = Describe("MeshService generator", func() {
 	})
 
 	It("should not change MeshService if a conflicting Dataplanes appears", func() {
-		err := samples.DataplaneBackendBuilder().Create(resManager)
+		err := createBackendDataplane(backendDataplane())
 		Expect(err).ToNot(HaveOccurred())
 
 		ms := meshservice_api.NewMeshServiceResource()
@@ -217,7 +224,7 @@ var _ = Describe("MeshService generator", func() {
 			}))
 		}, "2s", "100ms").Should(Succeed())
 
-		err = samples.DataplaneBackendBuilder().WithName("dp-2").
+		err = createBackendDataplane(backendDataplane().WithName("dp-2").
 			AddInbound(
 				builders.Inbound().
 					WithPort(81).
@@ -225,8 +232,7 @@ var _ = Describe("MeshService generator", func() {
 					WithTags(map[string]string{
 						mesh_proto.ServiceTag: "backend",
 					}),
-			).
-			Create(resManager)
+			))
 		Expect(err).ToNot(HaveOccurred())
 
 		Consistently(func(g Gomega) {
@@ -243,7 +249,7 @@ var _ = Describe("MeshService generator", func() {
 	})
 
 	It("should allow MeshService to be changed if all Dataplanes change", func() {
-		err := samples.DataplaneBackendBuilder().Create(resManager)
+		err := createBackendDataplane(backendDataplane())
 		Expect(err).ToNot(HaveOccurred())
 
 		ms := meshservice_api.NewMeshServiceResource()
@@ -280,7 +286,7 @@ var _ = Describe("MeshService generator", func() {
 	})
 
 	It("should eventually delete MeshService if all Dataplanes disappear", func() {
-		err := samples.DataplaneBackendBuilder().Create(resManager)
+		err := createBackendDataplane(backendDataplane())
 		Expect(err).ToNot(HaveOccurred())
 
 		ms := meshservice_api.NewMeshServiceResource()
@@ -306,7 +312,7 @@ var _ = Describe("MeshService generator", func() {
 	})
 
 	It("should not delete MeshService not managed by the generator", func() {
-		err := samples.DataplaneBackendBuilder().Create(resManager)
+		err := createBackendDataplane(backendDataplane())
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(samples.MeshServiceWebBuilder().Create(resManager)).To(Succeed())
@@ -318,7 +324,7 @@ var _ = Describe("MeshService generator", func() {
 	})
 
 	It("should not delete MeshService immediately", func() {
-		err := samples.DataplaneBackendBuilder().Create(resManager)
+		err := createBackendDataplane(backendDataplane())
 		Expect(err).ToNot(HaveOccurred())
 
 		ms := meshservice_api.NewMeshServiceResource()
@@ -370,7 +376,9 @@ var _ = Describe("MeshService generator", func() {
 		ms := meshservice_api.NewMeshServiceResource()
 		ms.Spec = &meshservice_api.MeshService{
 			Selector: meshservice_api.Selector{
-				DataplaneTags: &map[string]string{mesh_proto.ServiceTag: "remote-backend"},
+				DataplaneLabels: &common_api.LabelSelector{
+					MatchLabels: &map[string]string{mesh_proto.ServiceTag: "remote-backend"},
+				},
 			},
 			Ports: []meshservice_api.Port{{
 				Name:        pointer.To("80"),
@@ -399,7 +407,7 @@ var _ = Describe("MeshService generator", func() {
 	})
 
 	It("should not delete MeshService if a Dataplane comes back", func() {
-		err := samples.DataplaneBackendBuilder().Create(resManager)
+		err := createBackendDataplane(backendDataplane())
 		Expect(err).ToNot(HaveOccurred())
 
 		ms := meshservice_api.NewMeshServiceResource()
@@ -426,7 +434,7 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 
 		Expect(
-			samples.DataplaneBackendBuilder().Create(resManager),
+			createBackendDataplane(backendDataplane()),
 		).To(Succeed())
 
 		// The MeshService isn't ever deleted
@@ -437,7 +445,7 @@ var _ = Describe("MeshService generator", func() {
 	})
 
 	It("should preserve existing labels when updating MeshService", func() {
-		err := samples.DataplaneBackendBuilder().Create(resManager)
+		err := createBackendDataplane(backendDataplane())
 		Expect(err).ToNot(HaveOccurred())
 
 		ms := meshservice_api.NewMeshServiceResource()
@@ -469,7 +477,7 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
-	Context("with InboundTagsDisabled", func() {
+	Context("with tag-free inbound behavior", func() {
 		BeforeEach(func() {
 			close(stopCh)
 
@@ -483,10 +491,6 @@ var _ = Describe("MeshService generator", func() {
 				server.MeshResourceTypes(),
 				net.LookupIP,
 				"zone",
-				vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
-				".mesh",
-				80,
-				xds_context.AnyToAnyReachableServicesGraphBuilder,
 				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
@@ -503,7 +507,6 @@ var _ = Describe("MeshService generator", func() {
 				resManager,
 				meshCache,
 				"zone",
-				true,
 				kuma_cp.MeshServiceLabelPropagation{},
 			)
 			Expect(err).ToNot(HaveOccurred())
@@ -514,7 +517,7 @@ var _ = Describe("MeshService generator", func() {
 				Expect(allocator.Start(innerCh)).To(Succeed())
 			}()
 			Expect(
-				samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+				samples.MeshDefaultBuilder().Create(resManager),
 			).To(Succeed())
 		})
 
@@ -608,7 +611,7 @@ var _ = Describe("MeshService generator", func() {
 		})
 	})
 
-	Context("with InboundTagsDisabled and LabelPropagation enabled", func() {
+	Context("with tag-free inbound behavior and LabelPropagation enabled", func() {
 		BeforeEach(func() {
 			close(stopCh)
 
@@ -622,10 +625,6 @@ var _ = Describe("MeshService generator", func() {
 				server.MeshResourceTypes(),
 				net.LookupIP,
 				"zone",
-				vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
-				".mesh",
-				80,
-				xds_context.AnyToAnyReachableServicesGraphBuilder,
 				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
@@ -642,7 +641,6 @@ var _ = Describe("MeshService generator", func() {
 				resManager,
 				meshCache,
 				"zone",
-				true,
 				kuma_cp.MeshServiceLabelPropagation{Enabled: true},
 			)
 			Expect(err).ToNot(HaveOccurred())
@@ -653,7 +651,7 @@ var _ = Describe("MeshService generator", func() {
 				Expect(allocator.Start(innerCh)).To(Succeed())
 			}()
 			Expect(
-				samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+				samples.MeshDefaultBuilder().Create(resManager),
 			).To(Succeed())
 		})
 
@@ -697,10 +695,6 @@ var _ = Describe("MeshService generator", func() {
 				server.MeshResourceTypes(),
 				net.LookupIP,
 				"zone",
-				vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
-				".mesh",
-				80,
-				xds_context.AnyToAnyReachableServicesGraphBuilder,
 				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
@@ -717,7 +711,6 @@ var _ = Describe("MeshService generator", func() {
 				resManager,
 				meshCache,
 				"zone",
-				false,
 				kuma_cp.MeshServiceLabelPropagation{Enabled: true},
 			)
 			Expect(err).ToNot(HaveOccurred())
@@ -728,20 +721,19 @@ var _ = Describe("MeshService generator", func() {
 				Expect(allocator.Start(innerCh)).To(Succeed())
 			}()
 			Expect(
-				samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+				samples.MeshDefaultBuilder().Create(resManager),
 			).To(Succeed())
 		})
 
 		It("removes a previously-propagated label when the Dataplane stops carrying it", func() {
-			err := builders.Dataplane().
+			err := createDataplaneWithLabels(builders.Dataplane().
 				WithAddress("127.0.0.1").
 				WithoutInbounds().
 				AddInbound(builders.Inbound().
 					WithPort(80).
 					WithServicePort(8080).
 					WithTags(map[string]string{mesh_proto.ServiceTag: "backend", "appci": "jeffy"}),
-				).
-				Create(resManager)
+				), map[string]string{metadata.KumaWorkload: "backend"})
 			Expect(err).ToNot(HaveOccurred())
 
 			ms := meshservice_api.NewMeshServiceResource()
@@ -769,7 +761,7 @@ var _ = Describe("MeshService generator", func() {
 			// invalid as a label value. The old tracking encoded the key name as a
 			// label value and silently skipped such keys, leaving them stuck on the
 			// MeshService forever after the carrier DP was removed.
-			err := builders.Dataplane().
+			err := createDataplaneWithLabels(builders.Dataplane().
 				WithAddress("127.0.0.1").
 				WithoutInbounds().
 				AddInbound(builders.Inbound().
@@ -779,8 +771,7 @@ var _ = Describe("MeshService generator", func() {
 						mesh_proto.ServiceTag:  "backend",
 						"app.example.com/tier": "gold",
 					}),
-				).
-				Create(resManager)
+				), map[string]string{metadata.KumaWorkload: "backend"})
 			Expect(err).ToNot(HaveOccurred())
 
 			ms := meshservice_api.NewMeshServiceResource()
@@ -815,7 +806,10 @@ var _ = Describe("MeshService generator", func() {
 				Build()
 			Expect(resManager.Create(context.Background(), dp,
 				store.CreateByKey("dp-1", model.DefaultMesh),
-				store.CreateWithLabels(map[string]string{"app.example.com/tier": "gold"}),
+				store.CreateWithLabels(map[string]string{
+					metadata.KumaWorkload:  "backend",
+					"app.example.com/tier": "gold",
+				}),
 			)).To(Succeed())
 
 			ms := meshservice_api.NewMeshServiceResource()
@@ -826,7 +820,9 @@ var _ = Describe("MeshService generator", func() {
 
 			loaded := core_mesh.NewDataplaneResource()
 			Expect(resManager.Get(context.Background(), loaded, store.GetByKey("dp-1", model.DefaultMesh))).To(Succeed())
-			Expect(resManager.Update(context.Background(), loaded, store.UpdateWithLabels(map[string]string{}))).To(Succeed())
+			Expect(resManager.Update(context.Background(), loaded, store.UpdateWithLabels(map[string]string{
+				metadata.KumaWorkload: "backend",
+			}))).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
@@ -836,7 +832,7 @@ var _ = Describe("MeshService generator", func() {
 		})
 
 		It("does not Update when nothing changes between reconciles", func() {
-			err := samples.DataplaneBackendBuilder().Create(resManager)
+			err := createBackendDataplane(backendDataplane())
 			Expect(err).ToNot(HaveOccurred())
 
 			ms := meshservice_api.NewMeshServiceResource()
@@ -851,7 +847,7 @@ var _ = Describe("MeshService generator", func() {
 		})
 
 		It("propagates non-reserved labels on create and excludes reserved keys", func() {
-			err := builders.Dataplane().
+			err := createDataplaneWithLabels(builders.Dataplane().
 				WithAddress("127.0.0.1").
 				WithoutInbounds().
 				AddInbound(builders.Inbound().
@@ -862,8 +858,7 @@ var _ = Describe("MeshService generator", func() {
 						"appci":               "jeffy",
 						mesh_proto.ZoneTag:    "user-zone",
 					}),
-				).
-				Create(resManager)
+				), map[string]string{metadata.KumaWorkload: "backend"})
 			Expect(err).ToNot(HaveOccurred())
 
 			ms := meshservice_api.NewMeshServiceResource()
@@ -877,7 +872,7 @@ var _ = Describe("MeshService generator", func() {
 		})
 
 		It("issues an Update when only a propagated label changed", func() {
-			err := samples.DataplaneBackendBuilder().Create(resManager)
+			err := createBackendDataplane(backendDataplane())
 			Expect(err).ToNot(HaveOccurred())
 
 			ms := meshservice_api.NewMeshServiceResource()
@@ -900,7 +895,7 @@ var _ = Describe("MeshService generator", func() {
 		})
 
 		It("preserves externally-added labels on reconcile", func() {
-			err := samples.DataplaneBackendBuilder().Create(resManager)
+			err := createBackendDataplane(backendDataplane())
 			Expect(err).ToNot(HaveOccurred())
 
 			ms := meshservice_api.NewMeshServiceResource()
@@ -919,7 +914,7 @@ var _ = Describe("MeshService generator", func() {
 		})
 
 		It("propagates all non-reserved labels when AllowedLabelKeys is empty", func() {
-			err := builders.Dataplane().
+			err := createDataplaneWithLabels(builders.Dataplane().
 				WithAddress("127.0.0.1").
 				WithoutInbounds().
 				AddInbound(builders.Inbound().
@@ -930,8 +925,7 @@ var _ = Describe("MeshService generator", func() {
 						"appci":               "jeffy",
 						"team":                "blue",
 					}),
-				).
-				Create(resManager)
+				), map[string]string{metadata.KumaWorkload: "backend"})
 			Expect(err).ToNot(HaveOccurred())
 
 			ms := meshservice_api.NewMeshServiceResource()
@@ -949,22 +943,22 @@ var _ = Describe("MeshService generator", func() {
 				Expect(m.GetCounter().GetValue()).To(Equal(0.0))
 			}
 
-			err := builders.Dataplane().WithName("dp-conflict").WithAddress("10.0.0.1").
+			err := createDataplaneWithLabels(builders.Dataplane().WithName("dp-conflict").WithAddress("10.0.0.1").
 				WithoutInbounds().
 				AddInbound(builders.Inbound().WithPort(80).WithServicePort(8080).
 					WithTags(map[string]string{mesh_proto.ServiceTag: "svc-conflict", "appci": "a"})).
 				AddInbound(builders.Inbound().WithPort(81).WithServicePort(8081).
-					WithTags(map[string]string{mesh_proto.ServiceTag: "svc-conflict", "appci": "b"})).
-				Create(resManager)
+					WithTags(map[string]string{mesh_proto.ServiceTag: "svc-conflict", "appci": "b"})),
+				map[string]string{metadata.KumaWorkload: "svc-conflict"})
 			Expect(err).ToNot(HaveOccurred())
 
 			// Colon is valid in Kuma tag values but rejected by IsValidLabelValue,
 			// triggering drop("invalid", "appci") in step 2 of dpContribution.
-			err = builders.Dataplane().WithName("dp-invalid").WithAddress("10.0.0.2").
+			err = createDataplaneWithLabels(builders.Dataplane().WithName("dp-invalid").WithAddress("10.0.0.2").
 				WithoutInbounds().
 				AddInbound(builders.Inbound().WithPort(80).WithServicePort(8080).
-					WithTags(map[string]string{mesh_proto.ServiceTag: "svc-invalid", "appci": "colon:invalid"})).
-				Create(resManager)
+					WithTags(map[string]string{mesh_proto.ServiceTag: "svc-invalid", "appci": "colon:invalid"})),
+				map[string]string{metadata.KumaWorkload: "svc-invalid"})
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) {
@@ -1018,10 +1012,6 @@ var _ = Describe("MeshService generator", func() {
 					server.MeshResourceTypes(),
 					net.LookupIP,
 					"zone",
-					vips.NewPersistence(resManager, config_manager.NewConfigManager(s), false),
-					".mesh",
-					80,
-					xds_context.AnyToAnyReachableServicesGraphBuilder,
 					nil,
 				)
 				meshCache, err := cache_mesh.NewCache(
@@ -1038,7 +1028,6 @@ var _ = Describe("MeshService generator", func() {
 					resManager,
 					meshCache,
 					"zone",
-					false,
 					kuma_cp.MeshServiceLabelPropagation{Enabled: true, AllowedLabelKeys: []string{"appci"}},
 				)
 				Expect(err).ToNot(HaveOccurred())
@@ -1049,12 +1038,12 @@ var _ = Describe("MeshService generator", func() {
 					Expect(allocator.Start(innerCh)).To(Succeed())
 				}()
 				Expect(
-					samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+					samples.MeshDefaultBuilder().Create(resManager),
 				).To(Succeed())
 			})
 
 			It("propagates only allowed keys", func() {
-				err := builders.Dataplane().
+				err := createDataplaneWithLabels(builders.Dataplane().
 					WithAddress("127.0.0.1").
 					WithoutInbounds().
 					AddInbound(builders.Inbound().
@@ -1065,8 +1054,7 @@ var _ = Describe("MeshService generator", func() {
 							"appci":               "jeffy",
 							"team":                "blue",
 						}),
-					).
-					Create(resManager)
+					), map[string]string{metadata.KumaWorkload: "backend"})
 				Expect(err).ToNot(HaveOccurred())
 
 				ms := meshservice_api.NewMeshServiceResource()

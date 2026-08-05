@@ -10,13 +10,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/api/openapi/types"
-	api_common "github.com/kumahq/kuma/v2/api/openapi/types/common"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v3/api/openapi/types"
+	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func waitMeshServiceReady(mesh, name string, spiffeIDs ...string) {
@@ -65,7 +65,9 @@ func getConfig(mesh, dpp string) string {
 		// pin what's actually sent, so an op about only the byte count is
 		// pure noise.
 		return item.Op == api_common.Test ||
-			strings.HasSuffix(item.Path, "maxDirectResponseBodySizeBytes")
+			strings.HasSuffix(item.Path, "maxDirectResponseBodySizeBytes") ||
+			strings.HasSuffix(item.Path, "Listener/_kuma:dynamicconfig") ||
+			strings.HasSuffix(item.Path, "Listener/system_dynamicconfig")
 	}))
 	// Zero maxDirectResponseBodySizeBytes nested inside wholesale listener add
 	// values: the byte count re-derives from the body the golden already pins.
@@ -214,7 +216,12 @@ func redactSpiffeTrustBundles(jsonStr string) string {
 	return string(out)
 }
 
-var dynamicConfigJsonPatch = []byte(`[{ "op": "remove", "path": "/xds/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig" }]`)
+// The dynamic config listener is named "_kuma:dynamicconfig" with legacy
+// naming or "system_dynamicconfig" with unified resource naming.
+var dynamicConfigJsonPatch = []byte(`[
+	{ "op": "remove", "path": "/xds/type.googleapis.com~1envoy.config.listener.v3.Listener/_kuma:dynamicconfig" },
+	{ "op": "remove", "path": "/xds/type.googleapis.com~1envoy.config.listener.v3.Listener/system_dynamicconfig" }
+]`)
 
 // We can remove dynamic config as this contains dns config which changes in multiple places making it hard to mask
 func redactKumaDynamicConfig(jsonStr string) string {
@@ -338,12 +345,12 @@ func normalizeClusterAddress(cluster map[string]any) {
 	}
 }
 
-func cleanupAfterTest(mesh string, dpps []string, policies ...core_model.ResourceTypeDescriptor) func() {
+func cleanupAfterTest(mesh string, dpps []string, reinstallMTP InstallFunc, policies ...core_model.ResourceTypeDescriptor) func() {
 	GinkgoHelper()
 	return func() {
 		GinkgoHelper()
 		Expect(DeleteMeshResources(universal.Cluster, mesh, policies...)).To(Succeed())
-		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
+		Expect(universal.Cluster.Install(reinstallMTP)).To(Succeed())
 		// Wait for the dataplane xDS configs to settle before letting the next
 		// spec start. Without this the next test races envoy convergence: a
 		// resource (e.g. an OpenTelemetry cluster from the previous meshmetric

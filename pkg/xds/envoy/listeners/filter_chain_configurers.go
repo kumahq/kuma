@@ -7,43 +7,19 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
-	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
-	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
-	envoy_routes_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
+	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 func GrpcStats() FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.GrpcStatsConfigurer{})
-}
-
-func Kafka(statsName string) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.KafkaConfigurer{
-		StatsName: statsName,
-	})
-}
-
-func Tracing(
-	backend *mesh_proto.TracingBackend,
-	service string,
-	direction envoy_common.TrafficDirection,
-	destination string,
-	spawnUpstreamSpan bool,
-) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.TracingConfigurer{
-		Backend:           backend,
-		Service:           service,
-		TrafficDirection:  direction,
-		Destination:       destination,
-		SpawnUpstreamSpan: spawnUpstreamSpan,
-	})
 }
 
 func StaticEndpoints(ipv6Enabled bool, virtualHostName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
@@ -74,16 +50,14 @@ func ServerSideMTLS(
 	secrets core_xds.SecretsTracker,
 	tlsVersion *common_tls.Version,
 	tlsCiphers []common_tls.TlsCipher,
-	unifiedResourceNaming bool,
 	useMeshTrust bool,
 ) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
-		Mesh:                  mesh,
-		SecretsTracker:        secrets,
-		TlsVersion:            tlsVersion,
-		TlsCiphers:            tlsCiphers,
-		UnifiedResourceNaming: unifiedResourceNaming,
-		UseMeshTrust:          useMeshTrust,
+		Mesh:           mesh,
+		SecretsTracker: secrets,
+		TlsVersion:     tlsVersion,
+		TlsCiphers:     tlsCiphers,
+		UseMeshTrust:   useMeshTrust,
 	})
 }
 
@@ -111,17 +85,6 @@ func HttpConnectionManager(statsName string, forwardClientCertDetails bool, inte
 	return AddFilterChainConfigurer(hcmConfigurer)
 }
 
-func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.TrafficPermissionResource) FilterChainBuilderOpt {
-	if !rbacEnabled {
-		return FilterChainBuilderOptFunc(nil)
-	}
-
-	return AddFilterChainConfigurer(&v3.NetworkRBACConfigurer{
-		StatsName:  statsName,
-		Permission: permission,
-	})
-}
-
 type splitAdapter struct {
 	clusterName string
 	weight      uint32
@@ -145,18 +108,12 @@ func DownstreamTlsContext(downstreamTlsContext *envoy_tls.DownstreamTlsContext) 
 func TcpProxyDeprecated(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	var splits []envoy_common.Split
 	for _, cluster := range clusters {
-		sa := &splitAdapter{
+		splits = append(splits, &splitAdapter{
 			clusterName:        cluster.Name(),
 			lbMetadata:         cluster.Tags(),
 			hasExternalService: cluster.IsExternalService(),
 			weight:             1,
-		}
-
-		if c, ok := cluster.(*envoy_common.ClusterImpl); ok {
-			sa.weight = c.Weight()
-		}
-
-		splits = append(splits, sa)
+		})
 	}
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
 		StatsName:   statsName,
@@ -168,18 +125,12 @@ func TcpProxyDeprecated(statsName string, clusters ...envoy_common.Cluster) Filt
 func TcpProxyDeprecatedWithMetadata(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	var splits []envoy_common.Split
 	for _, cluster := range clusters {
-		sa := &splitAdapter{
+		splits = append(splits, &splitAdapter{
 			clusterName:        cluster.Name(),
 			lbMetadata:         cluster.Tags(),
 			hasExternalService: cluster.IsExternalService(),
 			weight:             1,
-		}
-
-		if c, ok := cluster.(*envoy_common.ClusterImpl); ok {
-			sa.weight = c.Weight()
-		}
-
-		splits = append(splits, sa)
+		})
 	}
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
 		StatsName:   statsName,
@@ -193,66 +144,6 @@ func TCPProxy(statsName string, splits ...envoy_common.Split) FilterChainBuilder
 		StatsName:   statsName,
 		Splits:      splits,
 		UseMetadata: true,
-	})
-}
-
-func FaultInjection(faultInjections ...*core_mesh.FaultInjectionResource) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.FaultInjectionConfigurer{
-		FaultInjections: faultInjections,
-	})
-}
-
-func RateLimit(rateLimits []*core_mesh.RateLimitResource) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.RateLimitConfigurer{
-		RateLimits: rateLimits,
-	})
-}
-
-func NetworkAccessLog(
-	mesh string,
-	trafficDirection envoy_common.TrafficDirection,
-	sourceService string,
-	destinationService string,
-	backend *mesh_proto.LoggingBackend,
-	proxy *core_xds.Proxy,
-) FilterChainBuilderOpt {
-	if backend == nil {
-		return FilterChainBuilderOptFunc(nil)
-	}
-
-	return AddFilterChainConfigurer(&v3.NetworkAccessLogConfigurer{
-		AccessLogConfigurer: v3.AccessLogConfigurer{
-			Mesh:               mesh,
-			TrafficDirection:   trafficDirection,
-			SourceService:      sourceService,
-			DestinationService: destinationService,
-			Backend:            backend,
-			Proxy:              proxy,
-		},
-	})
-}
-
-func HttpAccessLog(
-	mesh string,
-	trafficDirection envoy_common.TrafficDirection,
-	sourceService string,
-	destinationService string,
-	backend *mesh_proto.LoggingBackend,
-	proxy *core_xds.Proxy,
-) FilterChainBuilderOpt {
-	if backend == nil {
-		return FilterChainBuilderOptFunc(nil)
-	}
-
-	return AddFilterChainConfigurer(&v3.HttpAccessLogConfigurer{
-		AccessLogConfigurer: v3.AccessLogConfigurer{
-			Mesh:               mesh,
-			TrafficDirection:   trafficDirection,
-			SourceService:      sourceService,
-			DestinationService: destinationService,
-			Backend:            backend,
-			Proxy:              proxy,
-		},
 	})
 }
 
@@ -270,55 +161,15 @@ func HttpDynamicRoute(name string) FilterChainBuilderOpt {
 	})
 }
 
-func HttpInboundRoutes(routeConfigName string, virtualHostName string, routes envoy_common.Routes) FilterChainBuilderOpt {
+func HttpInboundRoute(routeConfigName string, virtualHostName string, cluster envoy_common.Cluster) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.HttpInboundRouteConfigurer{
 		RouteConfigName: routeConfigName,
 		VirtualHostName: virtualHostName,
-		Routes:          routes,
+		Cluster:         cluster,
 	})
 }
 
-func HttpOutboundRoute(
-	routeConfigName string,
-	virtualHostName string,
-	routes envoy_common.Routes,
-	dpTags mesh_proto.MultiValueTagSet,
-) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{
-		RouteConfigName: routeConfigName,
-		VirtualHostName: virtualHostName,
-		Routes:          routes,
-		DpTags:          dpTags,
-	})
-}
-
-func MaxConnectAttempts(retry *core_mesh.RetryResource) FilterChainBuilderOpt {
-	if retry == nil || retry.Spec.Conf.GetTcp() == nil {
-		return FilterChainBuilderOptFunc(nil)
-	}
-
-	return AddFilterChainConfigurer(&v3.MaxConnectAttemptsConfigurer{
-		Retry: retry,
-	})
-}
-
-func Retry(
-	retry *core_mesh.RetryResource,
-	protocol core_meta.Protocol,
-) FilterChainBuilderOpt {
-	if retry == nil {
-		return FilterChainBuilderOptFunc(nil)
-	}
-
-	return AddFilterChainConfigurer(
-		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
-			for _, virtualHost := range hcm.GetRouteConfig().VirtualHosts {
-				virtualHost.RetryPolicy = envoy_routes_v3.RetryConfig(retry, protocol)
-			}
-		}))
-}
-
-func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_meta.Protocol) FilterChainBuilderOpt {
+func Timeout(timeout envoy_common.Timeouts, protocol core_meta.Protocol) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.TimeoutConfigurer{
 		Conf:     timeout,
 		Protocol: protocol,

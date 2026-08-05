@@ -15,21 +15,21 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
-	test_kumactl "github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/rest/errors/types"
-	memory_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	test_store "github.com/kumahq/kuma/v2/pkg/test/store"
-	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/app/kumactl/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
+	test_kumactl "github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/rest/errors/types"
+	memory_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	test_store "github.com/kumahq/kuma/v3/pkg/test/store"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
 )
 
 const defaultNetworkingSection = `networking:
@@ -430,13 +430,14 @@ name: mtp-1
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: foo
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: foo
+              value: spiffe://mesh-1
 `,
-			err: `resource[0]: failed to parse resource: spec.from[0].default.action: in body should be one of [Allow Deny AllowWithShadowDeny]`,
+			err: `resource[0]: failed to parse resource: spec.rules[0].default.allow[0].spiffeID.type: in body should be one of [Exact Prefix]`,
 		}),
 	)
 

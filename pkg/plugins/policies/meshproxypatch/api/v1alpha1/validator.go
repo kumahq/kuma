@@ -10,13 +10,13 @@ import (
 	envoy_hcm_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/proto"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	jsonpatch_validators "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	jsonpatch_validators "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/jsonpatch/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 const (
@@ -41,10 +41,6 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) va
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
-				common_api.MeshGateway,
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: false,
@@ -53,10 +49,7 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) va
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
 				common_api.Dataplane,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 			},
 		})
 	}

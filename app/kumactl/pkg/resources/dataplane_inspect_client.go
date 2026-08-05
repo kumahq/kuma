@@ -9,12 +9,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	api_server_types "github.com/kumahq/kuma/v2/pkg/api-server/types"
-	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
 )
 
 type DataplaneInspectClient interface {
-	InspectPolicies(ctx context.Context, mesh, name string) (api_server_types.DataplaneInspectResponse, error)
+	InspectPolicies(ctx context.Context, mesh, name string) (api_common.PoliciesList, error)
 }
 
 func NewDataplaneInspectClient(client util_http.Client) DataplaneInspectClient {
@@ -29,25 +29,25 @@ type httpDataplaneInspectClient struct {
 
 var _ DataplaneInspectClient = &httpDataplaneInspectClient{}
 
-func (h *httpDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, name string) (api_server_types.DataplaneInspectResponse, error) {
-	resUrl, err := url.Parse(fmt.Sprintf("/meshes/%s/dataplanes/%s/policies", mesh, name))
+func (h *httpDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, name string) (api_common.PoliciesList, error) {
+	resUrl, err := url.Parse(fmt.Sprintf("/meshes/%s/dataplanes/%s/_policies", mesh, name))
 	if err != nil {
-		return api_server_types.DataplaneInspectResponse{}, errors.Wrap(err, "could not construct the url")
+		return api_common.PoliciesList{}, errors.Wrap(err, "could not construct the url")
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, resUrl.String(), http.NoBody)
 	if err != nil {
-		return api_server_types.DataplaneInspectResponse{}, err
+		return api_common.PoliciesList{}, err
 	}
 	statusCode, b, err := doRequest(h.Client, ctx, req)
 	if err != nil {
-		return api_server_types.DataplaneInspectResponse{}, err
+		return api_common.PoliciesList{}, err
 	}
 	if statusCode != 200 {
-		return api_server_types.DataplaneInspectResponse{}, errors.Errorf("(%d): %s", statusCode, string(b))
+		return api_common.PoliciesList{}, errors.Errorf("(%d): %s", statusCode, string(b))
 	}
-	response := &api_server_types.DataplaneInspectResponse{}
+	var response api_common.PoliciesList
 	if err := json.Unmarshal(b, &response); err != nil {
-		return api_server_types.DataplaneInspectResponse{}, err
+		return api_common.PoliciesList{}, err
 	}
-	return *response, nil
+	return response, nil
 }

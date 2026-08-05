@@ -12,17 +12,18 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/config"
 
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/v2/pkg/config/mads"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/mads/server"
-	"github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config/mads"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/mads/server"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 )
 
 type testRuntime struct {
@@ -128,5 +129,24 @@ var _ = Describe("MADS Server", func() {
 				g.Expect(response.Body.Close()).To(Succeed())
 			}
 		}, "10s", "100ms").Should(Succeed())
+	})
+})
+
+var _ = Describe("MADS Server on Kubernetes", func() {
+	It("should not register any component", func() {
+		m, err := metrics.NewMetrics("zone-1")
+		Expect(err).ToNot(HaveOccurred())
+
+		rt := &testRuntime{
+			rm: manager.NewResourceManager(memory.NewStore()),
+			config: kuma_cp.Config{
+				Environment:                config_core.KubernetesEnvironment,
+				MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig(),
+			},
+			metrics: m,
+		}
+
+		Expect(server.SetupServer(rt)).To(Succeed())
+		Expect(rt.components).To(BeEmpty())
 	})
 })

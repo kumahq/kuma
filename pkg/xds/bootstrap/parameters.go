@@ -3,28 +3,19 @@ package bootstrap
 import (
 	"time"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
 type KumaDpBootstrap struct {
-	AggregateMetricsConfig []AggregateMetricsConfig
-	NetworkingConfig       NetworkingConfig
+	NetworkingConfig NetworkingConfig
 }
 
 type NetworkingConfig struct {
-	CorefileTemplate []byte
-	Address          string
-}
-
-type AggregateMetricsConfig struct {
-	Name    string
-	Path    string
 	Address string
-	Port    uint32
 }
 
 type configParameters struct {
@@ -89,7 +80,6 @@ type configParameters struct {
 	DNSPort                       uint32
 	ProxyType                     string
 	Features                      xds_types.Features
-	IsGatewayDataplane            bool
 	Resources                     types.ProxyResources
 	SystemCaPath                  string
 	TransparentProxy              *tproxy_config.DataplaneConfig

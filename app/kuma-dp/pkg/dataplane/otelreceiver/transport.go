@@ -27,9 +27,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/otelenv"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 const defaultHTTPClientTimeout = 30 * time.Second

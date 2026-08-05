@@ -10,10 +10,10 @@ import (
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
-	"github.com/kumahq/kuma/v2/test/framework/universal"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
+	"github.com/kumahq/kuma/v3/test/framework/universal"
 )
 
 var _ ControlPlane = &UniversalControlPlane{}
@@ -48,13 +48,17 @@ func NewUniversalControlPlane(
 		cpNetworking: networking,
 		setupKumactl: setupKumactl,
 	}
-	token, err := ucp.retrieveAdminToken()
-	if err != nil {
-		return nil, err
-	}
+	// Honor setupKumactl the same way the Kubernetes control plane does
+	// (see k8s_controlplane.go)
+	if setupKumactl {
+		token, err := ucp.retrieveAdminToken()
+		if err != nil {
+			return nil, err
+		}
 
-	if err := kumactl.KumactlConfigControlPlanesAdd(clusterName, ucp.GetAPIServerAddress(), token, apiHeaders); err != nil {
-		return nil, err
+		if err := kumactl.KumactlConfigControlPlanesAdd(clusterName, ucp.GetAPIServerAddress(), token, apiHeaders); err != nil {
+			return nil, err
+		}
 	}
 	return ucp, nil
 }
@@ -196,24 +200,6 @@ func (c *UniversalControlPlane) GenerateDpToken(mesh, service, workload string) 
 	data := fmt.Sprintf("'%s'", escapedData)
 
 	return c.generateToken("/dataplane", data)
-}
-
-func (c *UniversalControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
-	rawData := fmt.Sprintf(`{"zone": %q, "scope": ["ingress"]}`, zone)
-	// Escape single quotes for shell safety: replace ' with '\''
-	escapedData := strings.ReplaceAll(rawData, "'", `'\''`)
-	data := fmt.Sprintf("'%s'", escapedData)
-
-	return c.generateToken("/zone", data)
-}
-
-func (c *UniversalControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
-	rawData := fmt.Sprintf(`{"zone": %q, "scope": ["egress"]}`, zone)
-	// Escape single quotes for shell safety: replace ' with '\''
-	escapedData := strings.ReplaceAll(rawData, "'", `'\''`)
-	data := fmt.Sprintf("'%s'", escapedData)
-
-	return c.generateToken("/zone", data)
 }
 
 func (c *UniversalControlPlane) GenerateZoneToken(

@@ -22,8 +22,7 @@ type KumaSidecarConfiguration struct {
 }
 
 type NetworkingConfiguration struct {
-	CorefileTemplate []byte `json:"corefileTemplate"`
-	Address          string `json:"address"`
+	Address string `json:"address"`
 }
 
 type MetricsConfiguration struct {

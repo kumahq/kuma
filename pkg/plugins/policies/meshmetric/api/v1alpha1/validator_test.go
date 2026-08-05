@@ -3,8 +3,8 @@ package v1alpha1
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	. "github.com/kumahq/kuma/v2/pkg/test/resources/validators"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
 )
 
 var _ = Describe("validation", func() {
@@ -15,8 +15,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   sidecar:
     profiles:
@@ -44,15 +43,17 @@ default:
           mode: "ProvidedTLS"
     - type: OpenTelemetry
       openTelemetry:
-        endpoint: otel-collector:4778
+        backendRef:
+          kind: MeshOpenTelemetryBackend
+          labels:
+            kuma.io/display-name: my-otel
 `),
 		Entry("openTelemetry with backendRef", `
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
@@ -77,8 +78,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: Prometheus
@@ -94,8 +94,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: Prometheus
@@ -113,8 +112,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   applications:
     - port: 95599
@@ -130,8 +128,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   sidecar:
     profiles:
@@ -151,8 +148,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   sidecar:
     profiles:
@@ -170,8 +166,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   sidecar:
     profiles:
@@ -179,83 +174,21 @@ default:
         - name: not_supported
 `),
 		ErrorCase(
-			"invalid endpoint missing port",
+			"openTelemetry backendRef missing",
 			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
-				Message: "must be in host:port format",
+				Field:   "spec.default.backends.backend[0].openTelemetry.backendRef",
+				Message: "must be defined",
 			},
 			`
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: "asdasd123"
-`),
-		ErrorCase(
-			"invalid endpoint with URL scheme",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
-				Message: "must be in host:port format, not a URL",
-			},
-			`
-type: MeshMetric
-mesh: mesh-1
-name: metrics-1
-targetRef:
-  kind: MeshService
-  name: svc-1
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: "http://endpoint:8023"
-`),
-		ErrorCase(
-			"openTelemetry neither endpoint nor backendRef",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry",
-				Message: "openTelemetry must have exactly one defined: endpoint, backendRef",
-			},
-			`
-type: MeshMetric
-mesh: mesh-1
-name: metrics-1
-targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
       openTelemetry: {}
-`),
-		ErrorCase(
-			"openTelemetry both endpoint and backendRef",
-			validators.Violation{
-				Field:   "spec.default.backends.backend[0].openTelemetry",
-				Message: "openTelemetry must have only one type defined: endpoint, backendRef",
-			},
-			`
-type: MeshMetric
-mesh: mesh-1
-name: metrics-1
-targetRef:
-  kind: MeshService
-  name: svc-1
-default:
-  backends:
-    - type: OpenTelemetry
-      openTelemetry:
-        endpoint: otel-collector:4778
-        backendRef:
-          kind: MeshOpenTelemetryBackend
-          labels:
-            kuma.io/display-name: my-otel
 `),
 		ErrorCase(
 			"openTelemetry backendRef no labels",
@@ -268,8 +201,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry
@@ -288,8 +220,7 @@ type: MeshMetric
 mesh: mesh-1
 name: metrics-1
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 default:
   backends:
     - type: OpenTelemetry

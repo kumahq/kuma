@@ -7,27 +7,25 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
-	"github.com/kumahq/kuma/v2/pkg/api-server/customization"
-	config_api_server "github.com/kumahq/kuma/v2/pkg/config/api-server"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/v2/pkg/core/access"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	resources_access "github.com/kumahq/kuma/v2/pkg/core/resources/access"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/dns/vips"
-	envoyadmin_access "github.com/kumahq/kuma/v2/pkg/envoy/admin/access"
-	"github.com/kumahq/kuma/v2/pkg/insights/globalinsight"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	test_runtime "github.com/kumahq/kuma/v2/pkg/test/runtime"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	"github.com/kumahq/kuma/v2/pkg/xds/server"
+	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
+	"github.com/kumahq/kuma/v3/pkg/api-server/customization"
+	config_api_server "github.com/kumahq/kuma/v3/pkg/config/api-server"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/core/access"
+	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
+	envoyadmin_access "github.com/kumahq/kuma/v3/pkg/envoy/admin/access"
+	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	test_runtime "github.com/kumahq/kuma/v3/pkg/test/runtime"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
 func TestWs(t *testing.T) {
@@ -83,10 +81,6 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
-			cfg.DNSServer.Domain,
-			cfg.DNSServer.ServiceVipPort,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			nil,
 		),
 		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),

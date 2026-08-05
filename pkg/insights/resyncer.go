@@ -11,19 +11,19 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 var log = core.Log.WithName("mesh-insight-resyncer")
@@ -340,7 +340,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					f |= FlagMesh
 				}
 				// Only a subset of types influence service insights
-				if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType || resourceChanged.Type == core_mesh.ExternalServiceType {
+				if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType {
 					f |= FlagService
 				}
 				if f != 0 {
@@ -362,30 +362,14 @@ func (r *resyncer) processEvent(ctx context.Context, start time.Time, event resy
 	r.idleTime.Observe(float64(startProcessingTime.Sub(start).Milliseconds()))
 	r.timeToProcessItem.Observe(float64(startProcessingTime.Sub(event.time).Milliseconds()))
 
-	// When meshServices.mode is Exclusive, kuma.io/service based ServiceInsights are no longer relevant.
-	meshRes := core_mesh.NewMeshResource()
-	if err := r.rm.Get(ctx, meshRes, store.GetByKey(event.mesh, model.NoMesh)); err != nil {
-		if store.IsNotFound(err) {
-			// Mesh no longer exists, there is nothing to recompute. This can happen when Mesh is being deleted.
-			return nil
-		}
-		return errors.Wrap(err, "unable to get Mesh to recompute insights")
-	}
-	exclusiveMeshServices := meshRes.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive
-
 	dpOverviews, err := r.dpOverviews(ctx, event.mesh)
 	if err != nil {
 		return errors.Wrap(err, "unable to get DataplaneOverviews to recompute insights")
 	}
 
-	externalServices := &core_mesh.ExternalServiceResourceList{}
-	if err := r.rm.List(ctx, externalServices, store.ListByMesh(event.mesh)); err != nil {
-		return errors.Wrap(err, "unable to get ExternalServices to recompute insights")
-	}
-
 	anyChanged := false
 	if event.flag&FlagService == FlagService {
-		err, changed := r.createOrUpdateServiceInsight(ctx, event.mesh, dpOverviews, externalServices.Items, exclusiveMeshServices)
+		err, changed := r.createOrUpdateServiceInsight(ctx, event.mesh, dpOverviews)
 		if err != nil {
 			return errors.Wrap(err, "unable to resync ServiceInsight")
 		}
@@ -394,7 +378,7 @@ func (r *resyncer) processEvent(ctx context.Context, start time.Time, event resy
 		}
 	}
 	if event.flag&FlagMesh == FlagMesh {
-		err, changed := r.createOrUpdateMeshInsight(ctx, event.mesh, dpOverviews, externalServices.Items, event.types, exclusiveMeshServices)
+		err, changed := r.createOrUpdateMeshInsight(ctx, event.mesh, dpOverviews, event.types)
 		if err != nil {
 			return errors.Wrap(err, "unable to resync MeshInsight")
 		}
@@ -440,8 +424,8 @@ func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tena
 
 func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status, backend string, addressPort string) {
 	if svcName == "" {
-		// When KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED is set, inbounds carry no
-		// kuma.io/service tag, so there is no service to track here.
+		// Inbounds carry no kuma.io/service tag in tag-free mode, so
+		// there is no service to track here.
 		return
 	}
 	if _, ok := insight.Services[svcName]; !ok {
@@ -472,15 +456,9 @@ func (r *resyncer) createOrUpdateServiceInsight(
 	ctx context.Context,
 	mesh string,
 	dpOverviews []*core_mesh.DataplaneOverviewResource,
-	externalServices []*core_mesh.ExternalServiceResource,
-	exclusiveMeshServices bool,
 ) (error, bool) {
 	insight := &mesh_proto.ServiceInsight{
 		Services: map[string]*mesh_proto.ServiceInsight_Service{},
-	}
-	if exclusiveMeshServices {
-		// set ServiceInsight with empty Services map
-		return r.upsertServiceInsight(ctx, mesh, insight)
 	}
 
 	zonesMap := map[string]map[string]struct{}{}
@@ -498,31 +476,15 @@ func (r *resyncer) createOrUpdateServiceInsight(
 		networking := dpOverview.Spec.GetDataplane().GetNetworking()
 		backend := dpOverview.Spec.GetDataplaneInsight().GetMTLS().GetIssuedBackend()
 
-		if gw := networking.GetGateway(); gw != nil {
-			var svcType mesh_proto.ServiceInsight_Service_Type
-			switch gw.Type {
-			case mesh_proto.Dataplane_Networking_Gateway_BUILTIN:
-				svcType = mesh_proto.ServiceInsight_Service_gateway_builtin
-			case mesh_proto.Dataplane_Networking_Gateway_DELEGATED:
-				svcType = mesh_proto.ServiceInsight_Service_gateway_delegated
-			}
-			populateInsight(svcType, insight, gw.GetTags()[mesh_proto.ServiceTag], status, backend, "")
-			addSvcToZones(gw.GetTags()[mesh_proto.ServiceTag], gw.GetTags()[mesh_proto.ZoneTag])
+		gw := networking.GetGateway()
+		// Regular services (and builtin gateways) are represented by MeshService.
+		// Delegated gateways are never turned into MeshService, so they must
+		// still be reported here.
+		if gw == nil || gw.Type != mesh_proto.Dataplane_Networking_Gateway_DELEGATED {
+			continue
 		}
-
-		for _, inbound := range networking.GetInbound() {
-			if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
-				continue
-			}
-			// address port is empty to save space in the resource. It will be filled by the server on API response
-			populateInsight(mesh_proto.ServiceInsight_Service_internal, insight, inbound.GetService(), status, backend, "")
-			addSvcToZones(inbound.GetService(), inbound.GetTags()[mesh_proto.ZoneTag])
-		}
-	}
-
-	for _, es := range externalServices {
-		populateInsight(mesh_proto.ServiceInsight_Service_external, insight, es.Spec.GetService(), "", "", es.Spec.Networking.GetAddress())
-		addSvcToZones(es.Spec.GetService(), es.Spec.GetTags()[mesh_proto.ZoneTag])
+		populateInsight(mesh_proto.ServiceInsight_Service_gateway_delegated, insight, gw.GetTags()[mesh_proto.ServiceTag], status, backend, "")
+		addSvcToZones(gw.GetTags()[mesh_proto.ServiceTag], gw.GetTags()[mesh_proto.ZoneTag])
 	}
 
 	for svcName, svc := range insight.Services {
@@ -530,8 +492,6 @@ func (r *resyncer) createOrUpdateServiceInsight(
 		total := svc.Dataplanes.Online + svc.Dataplanes.Offline
 
 		switch {
-		case svc.ServiceType == mesh_proto.ServiceInsight_Service_external:
-			svc.Status = mesh_proto.ServiceInsight_Service_not_available
 		case online == 0:
 			svc.Status = mesh_proto.ServiceInsight_Service_offline
 		case online == total:
@@ -580,9 +540,7 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	ctx context.Context,
 	mesh string,
 	dpOverviews []*core_mesh.DataplaneOverviewResource,
-	externalServices []*core_mesh.ExternalServiceResource,
 	types map[model.ResourceType]struct{},
-	exclusiveMeshServices bool,
 ) (error, bool) {
 	log := kuma_log.AddFieldsFromCtx(log, ctx, r.extensions).WithValues("mesh", mesh) // Add info
 	insight := &mesh_proto.MeshInsight{
@@ -593,7 +551,6 @@ func (r *resyncer) createOrUpdateMeshInsight(
 			GatewayBuiltin:   &mesh_proto.MeshInsight_DataplaneStat{},
 			GatewayDelegated: &mesh_proto.MeshInsight_DataplaneStat{},
 		},
-		Policies:  map[string]*mesh_proto.MeshInsight_PolicyStat{},
 		Resources: map[string]*mesh_proto.MeshInsight_ResourceStat{},
 		DpVersions: &mesh_proto.MeshInsight_DpVersions{
 			KumaDp: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
@@ -606,7 +563,6 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	}
 
 	insight.Dataplanes.Total = uint32(len(dpOverviews))
-	internalServices := map[string]struct{}{}
 
 	for _, dpOverview := range dpOverviews {
 		dpInsight := dpOverview.Spec.DataplaneInsight
@@ -653,26 +609,6 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		updateTotal(kumaDpVersion, insight.DpVersions.KumaDp)
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
 		updateMTLS(dpInsight.GetMTLS(), status, insight.MTLS)
-
-		// internalServices is only used for the Services stat, which we don't report in
-		// Exclusive mode, so skip building it then.
-		if !exclusiveMeshServices {
-			if svc := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]; svc != "" {
-				internalServices[svc] = struct{}{}
-			}
-
-			for _, inbound := range networking.GetInbound() {
-				if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
-					continue
-				}
-				// With KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED inbounds have no
-				// kuma.io/service tag, so there is no service to count here.
-				if inbound.GetService() == "" {
-					continue
-				}
-				internalServices[inbound.GetService()] = struct{}{}
-			}
-		}
 	}
 
 	insight.DataplanesByType.Gateway.Online = insight.GetDataplanesByType().GetGatewayBuiltin().GetOnline() + insight.GetDataplanesByType().GetGatewayDelegated().GetOnline()
@@ -680,23 +616,12 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	insight.DataplanesByType.Gateway.PartiallyDegraded = insight.GetDataplanesByType().GetGatewayBuiltin().GetPartiallyDegraded() + insight.GetDataplanesByType().GetGatewayDelegated().GetPartiallyDegraded()
 	insight.DataplanesByType.Gateway.Total = insight.GetDataplanesByType().GetGatewayBuiltin().GetTotal() + insight.GetDataplanesByType().GetGatewayDelegated().GetTotal()
 
-	if !exclusiveMeshServices {
-		insight.Services = &mesh_proto.MeshInsight_ServiceStat{
-			Total:    uint32(len(internalServices) + len(externalServices)),
-			Internal: uint32(len(internalServices)),
-			External: uint32(len(externalServices)),
-		}
-	}
-
 	key := MeshInsightKey(mesh)
 	changed := false
 	err := manager.Upsert(ctx, r.rm, key, core_mesh.NewMeshInsightResource(), func(resource model.Resource) error {
 		oldInsight := resource.GetSpec().(*mesh_proto.MeshInsight)
 		for k, v := range oldInsight.Resources {
 			insight.Resources[k] = proto.Clone(v).(*mesh_proto.MeshInsight_ResourceStat)
-		}
-		for k, v := range oldInsight.Policies {
-			insight.Policies[k] = proto.Clone(v).(*mesh_proto.MeshInsight_PolicyStat)
 		}
 		if proto.Equal(oldInsight, &mesh_proto.MeshInsight{}) {
 			// insight was not yet computed, need to update all
@@ -719,8 +644,6 @@ func (r *resyncer) createOrUpdateMeshInsight(
 			var count int
 			// Reuse counter of resources that we already have
 			switch typ {
-			case core_mesh.ExternalServiceType:
-				count = len(externalServices)
 			case core_mesh.DataplaneType:
 				count = len(dpOverviews)
 			default:
@@ -735,16 +658,9 @@ func (r *resyncer) createOrUpdateMeshInsight(
 				insight.Resources[string(typ)] = &mesh_proto.MeshInsight_ResourceStat{
 					Total: uint32(count),
 				}
-				if desc.IsPolicy {
-					// backwards compatibility
-					insight.Policies[string(typ)] = &mesh_proto.MeshInsight_PolicyStat{
-						Total: uint32(count),
-					}
-				}
 			}
 			if count == 0 {
 				delete(insight.Resources, string(typ))
-				delete(insight.Policies, string(typ))
 			}
 		}
 

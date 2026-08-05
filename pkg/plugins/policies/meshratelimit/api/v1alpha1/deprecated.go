@@ -3,20 +3,12 @@ package v1alpha1
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/jsonpatch/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (t *MeshRateLimitResource) Deprecations() []string {
 	var deprecations []string
-	if len(pointer.Deref(t.Spec.From)) > 0 {
-		deprecations = append(deprecations, "'from' field is deprecated, use 'rules' instead")
-		for i, rule := range pointer.Deref(t.Spec.From) {
-			if rule.Default.Local != nil && isStatusInvalid(*rule.Default.Local) {
-				deprecations = append(deprecations, fmt.Sprintf("'spec.from[%d].default.local.http.requestRate.status' must be 400 or higher. Please update your configuration.", i))
-			}
-		}
-	}
 	if len(pointer.Deref(t.Spec.Rules)) > 0 {
 		for i, rule := range pointer.Deref(t.Spec.Rules) {
 			if rule.Default.Local != nil && isStatusInvalid(*rule.Default.Local) {

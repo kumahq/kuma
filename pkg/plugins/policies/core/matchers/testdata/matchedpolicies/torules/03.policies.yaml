@@ -7,7 +7,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       rules:
         - matches:
             - path:
@@ -15,14 +16,13 @@ spec:
                 value: /
           default: {}
 ---
-# mtp-1 should select DPP because it targets MeshHTTPRoute that selects the DPP
+# mtp-1 should select DPP because it targets the same (all) DPPs as http-route-1
 type: MeshTimeout
 mesh: mesh-1
 name: mtp-1
 spec:
   targetRef:
-    kind: MeshHTTPRoute
-    name: http-route-1
+    kind: Dataplane
   to:
     - targetRef:
         kind: Mesh
@@ -36,7 +36,8 @@ name: mtp-2
 spec:
   targetRef:
     kind: MeshService
-    name: web
+    labels:
+      kuma.io/display-name: web
   to:
     - targetRef:
         kind: Mesh
@@ -52,7 +53,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
       default:
         http:
           requestTimeout: 2s

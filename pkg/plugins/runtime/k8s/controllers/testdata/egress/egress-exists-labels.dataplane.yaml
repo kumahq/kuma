@@ -2,8 +2,9 @@ metadata:
   labels:
     app: kuma-egress
     k8s.kuma.io/namespace: kuma-system
-    kuma.io/proxy-type: zoneegress
+    kuma.io/display-name: kuma-egress
     test: new
+  name: kuma-egress
 spec:
   networking:
     address: 192.168.0.1

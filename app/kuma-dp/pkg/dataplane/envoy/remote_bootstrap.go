@@ -17,12 +17,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
+	kuma_dp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
 type remoteBootstrapClient struct {
@@ -192,7 +192,7 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 		},
 		DynamicMetadata: metadata,
 		OtelEnv:         otelEnv,
-		DNSPort:         opts.Config.DNS.EnvoyDNSPort,
+		DNSPort:         opts.Config.DNS.ProxyPort,
 		ReadinessPort:   opts.Config.Dataplane.ReadinessPort,
 		// AppProbeProxyEnabled controls whether the per-pod HTTP probe proxy is enabled.
 		//
@@ -222,8 +222,7 @@ func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client 
 		OperatingSystem:      b.operatingSystem,
 		Features:             features,
 		Resources:            resources,
-		//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
-		Workdir: opts.Config.DataplaneRuntime.SocketDir,
+		Workdir:              opts.Config.DataplaneRuntime.WorkDir,
 		MetricsResources: types.MetricsResources{
 			CertPath: opts.Config.DataplaneRuntime.Metrics.CertPath,
 			KeyPath:  opts.Config.DataplaneRuntime.Metrics.KeyPath,

@@ -11,15 +11,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane Overview Endpoints", func() {
@@ -36,11 +36,15 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 		stop()
 	})
 
-	createDpWithInsights := func(name string, dp *v1alpha1.Dataplane) {
+	createDpWithInsights := func(name string, dp *v1alpha1.Dataplane, labels ...map[string]string) {
 		dpResource := core_mesh.DataplaneResource{
 			Spec: dp,
 		}
-		err := resourceStore.Create(context.Background(), &dpResource, store.CreateByKey(name, "mesh1"), store.CreatedAt(t1))
+		opts := []store.CreateOptionsFunc{store.CreateByKey(name, "mesh1"), store.CreatedAt(t1)}
+		if len(labels) > 0 {
+			opts = append(opts, store.CreateWithLabels(labels[0]))
+		}
+		err := resourceStore.Create(context.Background(), &dpResource, opts...)
 		Expect(err).ToNot(HaveOccurred())
 
 		sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
@@ -87,6 +91,11 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			},
 		})
 
+		dp1Labels := map[string]string{
+			"service":   "backend",
+			"version":   "v1",
+			"tagcolumn": "tag:v",
+		}
 		createDpWithInsights("dp-1", &v1alpha1.Dataplane{
 			Networking: &v1alpha1.Dataplane_Networking{
 				Address: "127.0.0.1",
@@ -101,7 +110,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 					},
 				},
 			},
-		})
+		}, dp1Labels)
 
 		dpResource := core_mesh.DataplaneResource{
 			Spec: &v1alpha1.Dataplane{
@@ -120,7 +129,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				},
 			},
 		}
-		err = resourceStore.Create(context.Background(), &dpResource, store.CreateByKey("dp-no-insights", "mesh1"), store.CreatedAt(t1))
+		err = resourceStore.Create(context.Background(), &dpResource, store.CreateByKey("dp-no-insights", "mesh1"), store.CreatedAt(t1), store.CreateWithLabels(dp1Labels))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -131,6 +140,11 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	"mesh": "mesh1",
 	"creationTime": "2018-07-17T16:05:36.995Z",
 	"modificationTime": "2018-07-17T16:05:36.995Z",
+	"labels": {
+		"service": "backend",
+		"version": "v1",
+		"tagcolumn": "tag:v"
+	},
 	"kri": "kri_dp_mesh1___dp-1_",
 	"dataplane": {
 		"networking": {

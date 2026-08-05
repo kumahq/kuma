@@ -7,17 +7,17 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/defaults"
-	defaults_mesh "github.com/kumahq/kuma/v2/pkg/defaults/mesh"
-	meshcircuitbreaker "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/defaults"
+	defaults_mesh "github.com/kumahq/kuma/v3/pkg/defaults/mesh"
+	meshcircuitbreaker "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("EnsureDefaultMeshResourcesUpToDate", func() {
@@ -40,7 +40,7 @@ var _ = Describe("EnsureDefaultMeshResourcesUpToDate", func() {
 		m := core_mesh.NewMeshResource()
 		err := resManager.Create(context.Background(), m, core_store.CreateByKey(name, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
-		err = defaults_mesh.EnsureDefaultMeshResources(context.Background(), resManager, m, []string{}, context.Background(), false, false, "", config_core.Zone, "zone-1", false)
+		err = defaults_mesh.EnsureDefaultMeshResources(context.Background(), resManager, m, []string{}, context.Background(), false, "", config_core.Zone, "zone-1", false)
 		Expect(err).ToNot(HaveOccurred())
 		mcb := meshcircuitbreaker.NewMeshCircuitBreakerResource()
 		Expect(resManager.Get(context.Background(), mcb, mcbKey(name))).ToNot(HaveOccurred())

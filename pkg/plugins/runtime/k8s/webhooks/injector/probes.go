@@ -1,15 +1,12 @@
 package injector
 
 import (
-	"strconv"
-
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/probes"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 )
 
 func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
@@ -90,14 +87,5 @@ func overrideHTTPProbe(probe *kube_core.Probe, virtualPort uint32) error {
 	}
 	probe.HTTPGet.Port = intstr.FromInt(int(virtual.Port()))
 	probe.HTTPGet.Path = virtual.Path()
-	return nil
-}
-
-func setVirtualProbesPortAnnotation(annotations metadata.Annotations, pod *kube_core.Pod, cfg runtime_k8s.Injector) error {
-	port, _, err := metadata.Annotations(pod.Annotations).GetUint32WithDefault(cfg.VirtualProbesPort, metadata.KumaVirtualProbesPortAnnotation)
-	if err != nil {
-		return err
-	}
-	annotations[metadata.KumaVirtualProbesPortAnnotation] = strconv.Itoa(int(port))
 	return nil
 }

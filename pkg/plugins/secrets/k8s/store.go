@@ -14,16 +14,16 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	secret_model "github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	secret_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
-	common_k8s "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	secret_model "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
+	common_k8s "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ secret_store.SecretStore = &KubernetesStore{}

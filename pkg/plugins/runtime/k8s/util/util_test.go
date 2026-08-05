@@ -3,7 +3,6 @@ package util_test
 import (
 	"time"
 
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -12,7 +11,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 )
 
 var _ = Describe("Util", func() {
@@ -210,58 +209,7 @@ var _ = Describe("Util", func() {
 		),
 	)
 
-	Describe("MeshOf(..)", func() {
-		type testCase struct {
-			podAnnotations map[string]string
-			nsAnnotations  map[string]string
-			expected       string
-		}
-
-		DescribeTable("should use value of `kuma.io/mesh` annotation on a Pod or fallback to the `default` Mesh",
-			func(given testCase) {
-				// given
-				pod := &kube_core.Pod{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Annotations: given.podAnnotations,
-					},
-				}
-				ns := &kube_core.Namespace{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Annotations: given.nsAnnotations,
-					},
-				}
-
-				// then
-				Expect(util.MeshOfByLabelOrAnnotation(logr.Discard(), pod, ns)).To(Equal(given.expected))
-			},
-			Entry("Pod without annotations", testCase{
-				podAnnotations: nil,
-				expected:       "default",
-			}),
-			Entry("Pod with empty `kuma.io/mesh` annotation", testCase{
-				podAnnotations: map[string]string{
-					"kuma.io/mesh": "",
-				},
-				expected: "default",
-			}),
-			Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
-				podAnnotations: map[string]string{
-					"kuma.io/mesh": "demo",
-				},
-				expected: "demo",
-			}),
-			Entry("Pod with empty `kuma.io/mesh` annotation, Namespace with annotation", testCase{
-				podAnnotations: map[string]string{
-					"kuma.io/mesh": "",
-				},
-				nsAnnotations: map[string]string{
-					"kuma.io/mesh": "demo",
-				},
-				expected: "demo",
-			}),
-		)
-	})
-	Describe("MeshOfByLabelOrAnnotation(..)", func() {
+	Describe("MeshOfByLabel(..)", func() {
 		type testCase struct {
 			podLabels      map[string]string
 			podAnnotations map[string]string
@@ -270,7 +218,7 @@ var _ = Describe("Util", func() {
 			expected       string
 		}
 
-		DescribeTable("should use value of `kuma.io/mesh` annotation on a Pod or fallback to the `default` Mesh",
+		DescribeTable("should use value of `kuma.io/mesh` label on a Pod or fallback to the `default` Mesh",
 			func(given testCase) {
 				// given
 				pod := &kube_core.Pod{
@@ -287,14 +235,14 @@ var _ = Describe("Util", func() {
 				}
 
 				// then
-				Expect(util.MeshOfByLabelOrAnnotation(logr.Discard(), pod, ns)).To(Equal(given.expected))
+				Expect(util.MeshOfByLabel(pod, ns)).To(Equal(given.expected))
 			},
-			Entry("Pod without annotations", testCase{
-				podAnnotations: nil,
-				expected:       "default",
+			Entry("Pod without labels", testCase{
+				podLabels: nil,
+				expected:  "default",
 			}),
-			Entry("Pod with empty `kuma.io/mesh` annotation", testCase{
-				podAnnotations: map[string]string{
+			Entry("Pod with empty `kuma.io/mesh` label", testCase{
+				podLabels: map[string]string{
 					"kuma.io/mesh": "",
 				},
 				expected: "default",
@@ -305,29 +253,23 @@ var _ = Describe("Util", func() {
 				},
 				expected: "demo",
 			}),
-			Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
+			Entry("Pod with non-empty `kuma.io/mesh` annotation is ignored", testCase{
 				podAnnotations: map[string]string{
 					"kuma.io/mesh": "demo",
 				},
-				expected: "demo",
+				expected: "default",
 			}),
-			Entry("Pod with empty `kuma.io/mesh` annotation, Namespace with label", testCase{
-				podAnnotations: map[string]string{
-					"kuma.io/mesh": "",
-				},
+			Entry("Pod without label, Namespace with label", testCase{
 				nsLabels: map[string]string{
 					"kuma.io/mesh": "demo",
 				},
 				expected: "demo",
 			}),
-			Entry("Pod with empty `kuma.io/mesh` annotation, Namespace with annotation", testCase{
-				podAnnotations: map[string]string{
-					"kuma.io/mesh": "",
-				},
+			Entry("Pod without label, Namespace with annotation is ignored", testCase{
 				nsAnnotations: map[string]string{
 					"kuma.io/mesh": "demo",
 				},
-				expected: "demo",
+				expected: "default",
 			}),
 		)
 	})

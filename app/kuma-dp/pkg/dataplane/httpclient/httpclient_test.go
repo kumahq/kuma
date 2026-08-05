@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/httpclient"
 )
 
 var _ = Describe("httpclient", func() {

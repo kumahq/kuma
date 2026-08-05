@@ -6,13 +6,31 @@ metadata:
     kuma.io/application-probe-proxy-port: "9000"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/sidecar-injected: "true"
-    kuma.io/sidecar-uid: "5678"
-    kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-inbound-port: "15006"
-    kuma.io/transparent-proxying-ip-family-mode: dualstack
-    kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: disabled
     kuma.io/virtual-probes-port: "9000"
+    traffic.kuma.io/transparent-proxy-config: |
+      ipFamilyMode: dualstack
+      kumaDPUser: "5678"
+      redirect:
+        dns:
+          captureAll: false
+          enabled: false
+          port: 0
+          resolvConfigPath: /etc/resolv.conf
+          skipConntrackZoneSplit: false
+        inbound:
+          enabled: true
+          excludePorts:
+          - 9000
+          port: 15006
+        outbound:
+          enabled: true
+          port: 15001
+      retry:
+        maxRetries: 4
+        sleepBetweenRetries: 2s
+      wait: 5
+      waitInterval: 0
   labels:
     kuma.io/mesh: default
     run: busybox
@@ -20,10 +38,49 @@ metadata:
 spec:
   automountServiceAccountToken: false
   containers:
+  - image: busybox
+    name: busybox
+    resources: {}
+  initContainers:
+  - args:
+    - --config=/tmp/transparent-proxy/base/config.yaml
+    command:
+    - /usr/bin/kumactl
+    - install
+    - transparent-proxy
+    env:
+    - name: XTABLES_LOCKFILE
+      value: /tmp/xtables.lock
+    image: kuma/kuma-init:latest
+    imagePullPolicy: IfNotPresent
+    name: kuma-init
+    resources:
+      limits:
+        memory: 50M
+      requests:
+        cpu: 20m
+        memory: 20M
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+        - NET_RAW
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsGroup: 0
+      runAsUser: 0
+    volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
+    - mountPath: /tmp/transparent-proxy/base
+      name: transparent-proxy-base
+      readOnly: true
   - args:
     - run
     - --log-level=info
     - --concurrency=2
+    - --transparent-proxy-config=/tmp/transparent-proxy/base/config.yaml
     env:
     - name: INSTANCE_IP
       valueFrom:
@@ -78,6 +135,13 @@ spec:
           fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - killall
+          - -USR2
+          - kuma-dp
     livenessProbe:
       failureThreshold: 212
       httpGet:
@@ -106,6 +170,7 @@ spec:
         cpu: 150m
         ephemeral-storage: 50M
         memory: 164Mi
+    restartPolicy: Always
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -114,45 +179,21 @@ spec:
       readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
+    startupProbe:
+      failureThreshold: 213
+      httpGet:
+        path: /ready
+        port: 9901
+      initialDelaySeconds: 261
+      periodSeconds: 26
+      successThreshold: 1
+      timeoutSeconds: 24
     volumeMounts:
     - mountPath: /tmp
       name: kuma-sidecar-tmp
-  - image: busybox
-    name: busybox
-    resources: {}
-  initContainers:
-  - args:
-    - --exclude-inbound-ports=9000
-    - --verbose
-    command:
-    - /usr/bin/kumactl
-    - install
-    - transparent-proxy
-    env:
-    - name: XTABLES_LOCKFILE
-      value: /tmp/xtables.lock
-    image: kuma/kuma-init:latest
-    imagePullPolicy: IfNotPresent
-    name: kuma-init
-    resources:
-      limits:
-        memory: 50M
-      requests:
-        cpu: 20m
-        memory: 20M
-    securityContext:
-      capabilities:
-        add:
-        - NET_ADMIN
-        - NET_RAW
-        drop:
-        - ALL
-      readOnlyRootFilesystem: true
-      runAsGroup: 0
-      runAsUser: 0
-    volumeMounts:
-    - mountPath: /tmp
-      name: kuma-init-tmp
+    - mountPath: /tmp/transparent-proxy/base
+      name: transparent-proxy-base
+      readOnly: true
   volumes:
   - emptyDir:
       sizeLimit: 10M
@@ -160,4 +201,10 @@ spec:
   - emptyDir:
       sizeLimit: 10M
     name: kuma-sidecar-tmp
+  - downwardAPI:
+      items:
+      - fieldRef:
+          fieldPath: metadata.annotations['traffic.kuma.io/transparent-proxy-config']
+        path: config.yaml
+    name: transparent-proxy-base
 status: {}

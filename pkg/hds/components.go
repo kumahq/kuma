@@ -7,16 +7,16 @@ import (
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	"github.com/kumahq/kuma/v2/pkg/hds/authn"
-	hds_callbacks "github.com/kumahq/kuma/v2/pkg/hds/callbacks"
-	hds_metrics "github.com/kumahq/kuma/v2/pkg/hds/metrics"
-	hds_server "github.com/kumahq/kuma/v2/pkg/hds/server"
-	"github.com/kumahq/kuma/v2/pkg/hds/tracker"
-	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/hds/authn"
+	hds_callbacks "github.com/kumahq/kuma/v3/pkg/hds/callbacks"
+	hds_metrics "github.com/kumahq/kuma/v3/pkg/hds/metrics"
+	hds_server "github.com/kumahq/kuma/v3/pkg/hds/server"
+	"github.com/kumahq/kuma/v3/pkg/hds/tracker"
+	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
 )
 
 var hdsServerLog = core.Log.WithName("hds-server")
@@ -50,7 +50,7 @@ func DefaultCallbacks(rt core_runtime.Runtime, cache envoy_cache.SnapshotCache) 
 	}
 
 	return hds_callbacks.Chain{
-		authn.NewCallbacks(rt.ResourceManager(), rt.XDS().DpProxyAuthenticator, authn.DPNotFoundRetry{
+		authn.NewCallbacks(rt.ResourceManager(), rt.XDS().Authenticator, authn.DPNotFoundRetry{
 			// Usually the difference between DP is created from ADS and HDS is initiated is less than 1 second, but just in case we set this higher.
 			Backoff:  1 * time.Second,
 			MaxTimes: 30,

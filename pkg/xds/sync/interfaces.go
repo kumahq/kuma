@@ -3,10 +3,10 @@ package sync
 import (
 	"context"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 type ConnectionInfoTracker interface {

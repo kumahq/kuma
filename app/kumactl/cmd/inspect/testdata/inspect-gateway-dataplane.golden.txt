@@ -1,17 +1,4 @@
-MESHGATEWAY:
-  TrafficLog
-    all-traffic
-  TrafficTrace
-    all-traffic
-
-LISTENER (HTTP:80):
-  *:
-    ROUTE route-1:
-      SERVICE backend:
-        HealthCheck
-          hc-1
-
-      SERVICE redis:
-        Timeout
-          t-1
-
+Kind                    Origins
+MeshTrafficPermission   kri_mtp_default_default__edge-gateway_
+MeshHTTPRoute           kri_mhttproute_default_default__edge-gateway_to-backend
+MeshTimeout             kri_mt_default_default__edge-gateway_

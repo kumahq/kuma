@@ -6,9 +6,9 @@ import (
 
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/sni"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/sni"
 )
 
 func (t *MeshServiceResource) Deprecations() []string {
@@ -19,6 +19,15 @@ func (t *MeshServiceResource) Deprecations() []string {
 		deprecations = append(deprecations, fmt.Sprintf(
 			"Invalid %s resource name: '%s'. It does not conform to the DNS format (RFC 1035). This is deprecated. Errors: %s",
 			MeshServiceResourceTypeDescriptor.Name, name, strings.Join(allErrs, "; ")))
+	}
+
+	// `spec.selector.dataplaneTags` was removed in 3.0.0, so a MeshService that
+	// only carried it now deserializes with an empty selector and silently
+	// matches nothing. Warn instead of letting it fail quietly.
+	if t.Spec.Selector.DataplaneRef == nil && t.Spec.Selector.DataplaneLabels == nil {
+		deprecations = append(deprecations, fmt.Sprintf(
+			"%s resource '%s' has no selector, so it matches no data plane proxies. Set 'spec.selector.dataplaneRef' or 'spec.selector.dataplaneLabels'. The 'spec.selector.dataplaneTags' selector was removed, migrate it to 'dataplaneLabels'.",
+			MeshServiceResourceTypeDescriptor.Name, name))
 	}
 
 	base := kri.From(t)

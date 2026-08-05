@@ -4,10 +4,10 @@ import (
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/exp/constraints"
 
-	core_config "github.com/kumahq/kuma/v2/pkg/config"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	core_config "github.com/kumahq/kuma/v3/pkg/config"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type PortLike interface {

@@ -6,7 +6,7 @@ import "api/mesh/options.proto";
 import "api/system/v1alpha1/zone.proto";
 import "api/system/v1alpha1/zone_insight.proto";
 
-option go_package = "github.com/kumahq/kuma/v2/api/system/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v3/api/system/v1alpha1";
 
 // ZoneOverview defines the projected state of a Zone.
 message ZoneOverview {
@@ -16,6 +16,7 @@ message ZoneOverview {
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).skip_registration = true;
   option (kuma.mesh.resource).skip_kubernetes_wrappers = true;
+  option (kuma.mesh.resource).policy_matching_exempt = true;
 
   Zone zone = 1;
 

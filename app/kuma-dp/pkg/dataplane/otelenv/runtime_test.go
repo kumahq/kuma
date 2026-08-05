@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 )
 
 var _ = Describe("ResolveBackend", func() {

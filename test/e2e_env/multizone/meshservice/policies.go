@@ -6,35 +6,41 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshfaultinjection_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	meshhealthcheck_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshretry_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
-	meshtcproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
-	"github.com/kumahq/kuma/v2/test/framework/portforward"
+	meshcircuitbreaker_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshfaultinjection_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	meshhealthcheck_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/test/framework/portforward"
 )
 
 func MeshServiceTargeting() {
 	meshName := "real-resource-mesh"
 	namespace := "real-resource-ns"
+	identityName := "real-resource-identity"
 	addressSuffix := "realreasource"
+
 	addressToMeshService := func(service string) string {
 		return fmt.Sprintf("%s.%s.%s.%s", service, namespace, Kuma1, addressSuffix)
 	}
 
+	var zones []Cluster
+
 	BeforeAll(func() {
+		zones = []Cluster{multizone.KubeZone1, multizone.KubeZone2}
 		Expect(NewClusterSetup().
-			Install(ResourceUniversal(samples.MeshMTLSBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Build())).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(ResourceUniversal(builders.Mesh().WithName(meshName).Build())).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
@@ -83,13 +89,24 @@ spec:
 
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+				),
+				// Zone proxies are mesh scoped, so the mesh needs its own
+				// ingress in the zone the client reaches across zones.
+				zoneproxy.Install(
+					zoneproxy.WithMesh(meshName),
+					zoneproxy.WithNamespace(namespace),
+					zoneproxy.WithIngress(),
+				),
 			)).Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
+
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 
 		// remove default retry policy
 		Expect(DeleteMeshResources(multizone.Global, meshName, meshretry_api.MeshRetryResourceTypeDescriptor)).To(Succeed())
@@ -104,7 +121,7 @@ spec:
 		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshtcproute_api.MeshTCPRouteResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor)).To(Succeed())
-		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, core_mesh.ExternalServiceResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.KubeZone2, meshName, meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor)).To(Succeed())
 	})
 
@@ -115,7 +132,7 @@ spec:
 	})
 
 	retryStat := func(admin envoy_admin.Tunnel) *stats.Stats {
-		s, err := admin.GetStats("cluster.real-resource-mesh_test-server_real-resource-ns_kuma-2_msvc_80.upstream_rq_retry_success")
+		s, err := admin.GetStats(fmt.Sprintf("cluster.kri_msvc_%s_%s_%s_test-server_main.upstream_rq_retry_success", meshName, Kuma2, namespace))
 		Expect(err).ToNot(HaveOccurred())
 		return s
 	}
@@ -147,7 +164,8 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
+        labels:
+          kuma.io/display-name: test-server
         sectionName: main
       rules:
         - matches:
@@ -190,7 +208,9 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: kumaioservice-targeted-test-server_%s_svc_80
+        labels:
+          kuma.io/display-name: kumaioservice-targeted-test-server
+          k8s.kuma.io/namespace: %s
       rules:
         - matches:
             - path:
@@ -245,13 +265,15 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: test-server
+      labels:
+        kuma.io/display-name: test-server
       sectionName: main
     rules:
     - default:
         backendRefs:
         - kind: MeshService
-          name: second-test-server
+          labels:
+            kuma.io/display-name: second-test-server
           port: 80
 `, namespace, meshName))(multizone.KubeZone1)).To(Succeed())
 
@@ -281,12 +303,9 @@ metadata:
     kuma.io/origin: zone
 spec:
   targetRef:
-    kind: Mesh
-    proxyTypes: ["Sidecar"]
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+    kind: Dataplane
+  rules:
+    - default:
           http:
             - abort:
                 httpStatus: 503
@@ -403,14 +422,37 @@ spec:
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
-        healthyPanicThreshold: 0
         reuseConnection: true
         http:
           path: /are-you-healthy
           expectedStatuses:
           - 500`, Config.KumaNamespace, meshName, Kuma2)
-		// update HealthCheck policy to check for another status code
+		circuitBreaker := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshCircuitBreaker
+metadata:
+  name: mcb-for-ms-in-kuma-2
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+    kuma.io/origin: zone
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server
+          kuma.io/zone: %s
+      default:
+        outlierDetection:
+          healthyPanicThreshold: 0
+          detectors:
+            totalFailures:
+              consecutive: 100
+`, Config.KumaNamespace, meshName, Kuma2)
+		// update HealthCheck policy to check for another status code, and disable panic mode
 		Expect(YamlK8s(healthCheck)(multizone.KubeZone1)).To(Succeed())
+		Expect(YamlK8s(circuitBreaker)(multizone.KubeZone1)).To(Succeed())
 
 		// check that test-server is unhealthy
 		Eventually(func(g Gomega) {

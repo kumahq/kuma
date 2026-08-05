@@ -8,40 +8,41 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
-	api_server "github.com/kumahq/kuma/v2/pkg/api-server/customization"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/access"
-	"github.com/kumahq/kuma/v2/pkg/core/ca"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/datasource"
-	"github.com/kumahq/kuma/v2/pkg/core/dns/lookup"
-	managers_dataplane "github.com/kumahq/kuma/v2/pkg/core/managers/apis/dataplane"
-	managers_mesh "github.com/kumahq/kuma/v2/pkg/core/managers/apis/mesh"
-	resources_access "github.com/kumahq/kuma/v2/pkg/core/resources/access"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
-	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/core/secrets/store"
-	dp_server "github.com/kumahq/kuma/v2/pkg/dp-server/server"
-	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
-	envoyadmin_access "github.com/kumahq/kuma/v2/pkg/envoy/admin/access"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	"github.com/kumahq/kuma/v2/pkg/insights/globalinsight"
-	"github.com/kumahq/kuma/v2/pkg/intercp/client"
-	kds_context "github.com/kumahq/kuma/v2/pkg/kds/context"
-	"github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres/config"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin"
-	tokens_access "github.com/kumahq/kuma/v2/pkg/tokens/builtin/access"
-	zone_access "github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone/access"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
-	xds_runtime "github.com/kumahq/kuma/v2/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
+	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
+	api_server "github.com/kumahq/kuma/v3/pkg/api-server/customization"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/access"
+	"github.com/kumahq/kuma/v3/pkg/core/ca"
+	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/datasource"
+	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
+	managers_dataplane "github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplane"
+	managers_mesh "github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
+	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
+	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/core/secrets/store"
+	dp_server "github.com/kumahq/kuma/v3/pkg/dp-server/server"
+	"github.com/kumahq/kuma/v3/pkg/envoy/admin"
+	envoyadmin_access "github.com/kumahq/kuma/v3/pkg/envoy/admin/access"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
+	"github.com/kumahq/kuma/v3/pkg/intercp/client"
+	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
+	tokens_access "github.com/kumahq/kuma/v3/pkg/tokens/builtin/access"
+	zone_access "github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone/access"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 // Runtime represents initialized application state.
@@ -95,6 +96,7 @@ type RuntimeContext interface {
 	PgxConfigCustomizationFn() config.PgxConfigCustomization
 	Tenants() multitenant.Tenants
 	APIWebServiceCustomize() func(ws *restful.WebService) error
+	RouteMetadataProvider() RouteMetadataProvider
 	IdentityProviders() providers.IdentityProviders
 }
 
@@ -112,6 +114,17 @@ type ResourceValidators struct {
 }
 
 type ExtraReportsFn func(Runtime) (map[string]string, error)
+
+// RouteMetadataProvider supplies metadata to attach to the auto-generated CRUD
+// routes (find, list, create-or-update, delete) of each resource type, keyed by
+// resource descriptor and HTTP verb; sub-routes (_overview, _config, _policies,
+// _rules, inspect, legacy overview) are not passed to it. It runs synchronously
+// while the API server is built at startup, so a panic fails the boot by design.
+// Kuma does not interpret the values, but the metadata namespace is shared with
+// route gates such as authn's reserved "auth":"skip" (pkg/api-server/authn);
+// keys Kuma reserves are dropped rather than attached. A nil provider attaches
+// nothing.
+type RouteMetadataProvider func(desc core_model.ResourceTypeDescriptor, method string) map[string]string
 
 var _ Runtime = &runtime{}
 
@@ -204,6 +217,7 @@ type runtimeContext struct {
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
 	apiWebServiceCustomize   []func(*restful.WebService) error
+	routeMetadataProvider    RouteMetadataProvider
 	identityProviders        providers.IdentityProviders
 }
 
@@ -349,4 +363,8 @@ func (rc *runtimeContext) APIWebServiceCustomize() func(*restful.WebService) err
 
 		return err
 	}
+}
+
+func (rc *runtimeContext) RouteMetadataProvider() RouteMetadataProvider {
+	return rc.routeMetadataProvider
 }

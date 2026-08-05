@@ -6,11 +6,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/hostname"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/hostname"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 type MeshServiceHostnameGenerator struct {
@@ -57,7 +57,7 @@ func (g *MeshServiceHostnameGenerator) HasStatusChanged(resource model.Resource,
 	return !reflect.DeepEqual(addresses, service.Status.Addresses) || !reflect.DeepEqual(generatorStatuses, service.Status.HostnameGenerators), nil
 }
 
-func (g *MeshServiceHostnameGenerator) GenerateHostname(localZone string, generator *hostnamegenerator_api.HostnameGeneratorResource, resource model.Resource) (string, error) {
+func (g *MeshServiceHostnameGenerator) GenerateHostname(localZone string, generator *hostnamegenerator_api.HostnameGeneratorResource, resource model.Resource, validateDNS bool) (string, error) {
 	service, ok := resource.(*meshservice_api.MeshServiceResource)
 	if !ok {
 		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshservice_api.MeshServiceResource)(nil), resource)
@@ -68,5 +68,5 @@ func (g *MeshServiceHostnameGenerator) GenerateHostname(localZone string, genera
 	if !generator.Spec.Selector.MeshService.Matches(service.Meta.GetLabels()) {
 		return "", nil
 	}
-	return hostname.EvaluateTemplate(localZone, generator.Spec.Template, service.GetMeta())
+	return hostname.EvaluateTemplate(localZone, generator.Spec.Template, service.GetMeta(), validateDNS)
 }

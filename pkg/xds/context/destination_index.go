@@ -1,16 +1,16 @@
 package context
 
 import (
+	"maps"
 	"time"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 // DestinationIndex indexes destinations by KRI and labels. It provides optimized access to Kuma destinations. It should
@@ -33,7 +33,7 @@ func NewDestinationIndex(resources ...[]core_model.Resource) *DestinationIndex {
 		for _, item := range destinations {
 			ri := kri.From(item)
 			destinationByIdentifier[ri] = item.(core.Destination)
-			buildLabelValueToServiceNames(ri, destinationsByLabelByValue, item.GetMeta().GetLabels())
+			buildLabelValueToServiceNames(ri, destinationsByLabelByValue, destinationIndexLabels(item.GetMeta()))
 		}
 	}
 
@@ -50,24 +50,38 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 	networking := dataplane.Spec.GetNetworking()
 
 	processRef := func(kind string, name string, namespace string, port *uint32, labels map[string]string) {
-		ids := di.resolveResourceIdentifiersForLabels(core_model.ResourceType(kind), labels)
-		if len(ids) == 0 {
-			ids = []kri.Identifier{
-				resolve.TargetRefToKRI(
-					kri.From(dataplane),
-					common_api.TargetRef{
-						Kind:      common_api.TargetRefKind(kind),
-						Name:      &name,
-						Namespace: &namespace,
-						Labels:    &labels,
-					},
-				),
-			}
+		selectorLabels, sectionName := NormalizeBackendRefTarget(
+			kind,
+			name,
+			namespace,
+			port,
+			labels,
+			dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
+		)
+		if len(selectorLabels) == 0 {
+			return
 		}
 
+		backendRef := common_api.BackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind:   common_api.TargetRefKind(kind),
+				Labels: &selectorLabels,
+			},
+			Port: port,
+		}
+		if sectionName != "" {
+			backendRef.SectionName = pointer.To(sectionName)
+		}
+
+		selectorLabels, sectionName, ok := backendRef.RealResourceSelector("")
+		if !ok {
+			return
+		}
+
+		ids := di.resolveResourceIdentifiersForLabels(core_model.ResourceType(kind), selectorLabels)
 		for _, id := range ids {
-			if port != nil {
-				id = kri.WithSectionName(id, *port)
+			if sectionName != "" {
+				id = kri.WithSectionName(id, sectionName)
 			}
 
 			var dest core.Destination
@@ -192,4 +206,18 @@ func buildLabelValueToServiceNames(ri kri.Identifier, resourceNamesByLabels labe
 			}
 		}
 	}
+}
+
+func destinationIndexLabels(meta core_model.ResourceMeta) map[string]string {
+	if meta == nil {
+		return nil
+	}
+
+	labels := map[string]string{}
+	maps.Copy(labels, meta.GetLabels())
+	if labels[mesh_proto.DisplayName] == "" {
+		labels[mesh_proto.DisplayName] = core_model.GetDisplayName(meta)
+	}
+
+	return labels
 }

@@ -20,18 +20,18 @@ import (
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	"github.com/kumahq/kuma/v2/pkg/util/template"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/tunnel"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
-	kssh "github.com/kumahq/kuma/v2/test/framework/ssh"
-	"github.com/kumahq/kuma/v2/test/framework/universal"
-	"github.com/kumahq/kuma/v2/test/framework/utils"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/util/template"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
+	kssh "github.com/kumahq/kuma/v3/test/framework/ssh"
+	"github.com/kumahq/kuma/v3/test/framework/universal"
+	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
 type UniversalCluster struct {
@@ -144,7 +144,6 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	env := map[string]string{"KUMA_MODE": mode, "KUMA_DNS_SERVER_PORT": "53"}
 
 	if Config.IPV6 {
-		env["KUMA_DNS_SERVER_CIDR"] = "fd00:fd00::/64"
 		env["KUMA_IPAM_MESH_SERVICE_CIDR"] = "fd00:fd01::/64"
 		env["KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"] = "fd00:fd02::/64"
 		env["KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"] = "fd00:fd03::/64"
@@ -306,7 +305,7 @@ func (c *UniversalCluster) DeleteNamespace(string, ...NamespaceDeleteHookFunc) e
 func (c *UniversalCluster) CreateDP(app *UniversalApp, name string, mesh string, ip string, dpyaml string, envs map[string]string, token string, builtindns bool, concurrency int, transparent bool, dpVersion string) error {
 	cpIp := c.controlplane.Networking().IP
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	err := app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, "", concurrency, envs, transparent, dpVersion)
+	err := app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, concurrency, envs, transparent, dpVersion)
 	if err != nil {
 		return err
 	}
@@ -317,41 +316,12 @@ func (c *UniversalCluster) CreateDP(app *UniversalApp, name string, mesh string,
 	return app.dpApp.Start()
 }
 
-func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, name, ip, dpyaml, token string, builtindns bool) error {
-	err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, builtindns, "ingress", 0, nil, false, "")
-	if err != nil {
-		return err
-	}
-
-	c.networking[Config.ZoneIngressApp] = app.universalNetworking
-
-	c.createEnvoyTunnel(Config.ZoneIngressApp)
-	return app.dpApp.Start()
-}
-
-func (c *UniversalCluster) CreateZoneEgress(
-	app *UniversalApp,
-	name, ip, dpYAML, token string,
-	builtinDNS bool,
-) error {
-	err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpYAML, builtinDNS, "egress", app.concurrency, nil, false, "")
-	if err != nil {
-		return err
-	}
-
-	egressApp := c.GetApp(AppEgress)
-	c.networking[Config.ZoneEgressApp] = egressApp.universalNetworking
-
-	c.createEnvoyTunnel(Config.ZoneEgressApp)
-	return app.dpApp.Start()
-}
-
 // CreateDataplaneProxy starts kuma-dp for an app registered as a regular
 // Dataplane. The dpyaml must be a Dataplane resource manifest that may include
 // a listeners section. envs is optional kuma-dp environment overrides; pass
 // nil to use defaults.
 func (c *UniversalCluster) CreateDataplaneProxy(app *UniversalApp, name, ip, dpyaml, token string, envs map[string]string) error {
-	if err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, false, "", 0, envs, false, ""); err != nil {
+	if err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, false, 0, envs, false, ""); err != nil {
 		return err
 	}
 	c.mutex.Lock()
@@ -626,16 +596,9 @@ func (c *UniversalCluster) DeleteDeployment(name string) error {
 }
 
 func (c *UniversalCluster) GetUniversalNetworkingState() universal.NetworkingState {
-	out := universal.NetworkingState{
+	return universal.NetworkingState{
 		KumaCp: *c.controlplane.Networking(),
 	}
-	if ingressState := c.networking[Config.ZoneIngressApp]; ingressState != nil {
-		out.ZoneIngress = *ingressState //nolint:govet
-	}
-	if egressState := c.networking[Config.ZoneEgressApp]; egressState != nil {
-		out.ZoneEgress = *egressState //nolint:govet
-	}
-	return out //nolint:govet
 }
 
 func (c *UniversalCluster) AddNetworking(networking *universal.Networking, name string) error {
@@ -661,22 +624,6 @@ func (c *UniversalCluster) createEnvoyTunnel(name string) {
 		b, err := os.ReadFile(s.StdOutFile())
 		return string(b), err
 	})
-}
-
-func (c *UniversalCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	return c.GetAppEnvoyTunnel(Config.ZoneEgressApp)
-}
-
-func (c *UniversalCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
-	return c.GetAppEnvoyTunnel(Config.ZoneIngressApp)
-}
-
-func (c *UniversalCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
-	return c.GetAppEnvoyTunnelE(Config.ZoneEgressApp)
-}
-
-func (c *UniversalCluster) GetZoneIngressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
-	return c.GetAppEnvoyTunnelE(Config.ZoneIngressApp)
 }
 
 func (c *UniversalCluster) Install(fn InstallFunc) error {

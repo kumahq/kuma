@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
 func (r *HostnameGeneratorResource) validate() error {

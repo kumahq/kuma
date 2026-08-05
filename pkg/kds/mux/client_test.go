@@ -15,17 +15,17 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/kds/mux"
-	"github.com/kumahq/kuma/v2/pkg/kds/service"
-	sync_store_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/store"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
-	kds_setup "github.com/kumahq/kuma/v2/pkg/test/kds/setup"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/kds/mux"
+	"github.com/kumahq/kuma/v3/pkg/kds/service"
+	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	kds_setup "github.com/kumahq/kuma/v3/pkg/test/kds/setup"
 )
 
 // reconnectTrackingServer simulates a Global CP that closes the

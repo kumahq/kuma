@@ -5,10 +5,10 @@
  "creationTime": "0001-01-01T00:00:00Z",
  "modificationTime": "0001-01-01T00:00:00Z",
  "labels": {
+  "kuma.io/display-name": "dp-1",
   "kuma.io/env": "universal",
   "kuma.io/mesh": "default",
   "kuma.io/origin": "zone",
-  "kuma.io/proxy-type": "sidecar",
   "kuma.io/zone": "default"
  },
  "kri": "kri_dp_default_default__dp-1_",

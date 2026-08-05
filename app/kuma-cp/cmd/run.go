@@ -5,33 +5,31 @@ import (
 
 	"github.com/spf13/cobra"
 
-	api_server "github.com/kumahq/kuma/v2/pkg/api-server"
-	"github.com/kumahq/kuma/v2/pkg/clusterid"
-	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
-	"github.com/kumahq/kuma/v2/pkg/config"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core/bootstrap"
-	meshidentity_status "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/status"
-	meshservice_generate "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/generate"
-	workload_generate "github.com/kumahq/kuma/v2/pkg/core/resources/apis/workload/generate"
-	"github.com/kumahq/kuma/v2/pkg/defaults"
-	"github.com/kumahq/kuma/v2/pkg/diagnostics"
-	"github.com/kumahq/kuma/v2/pkg/dns"
-	dp_server "github.com/kumahq/kuma/v2/pkg/dp-server"
-	"github.com/kumahq/kuma/v2/pkg/gc"
-	"github.com/kumahq/kuma/v2/pkg/hds"
-	"github.com/kumahq/kuma/v2/pkg/insights"
-	"github.com/kumahq/kuma/v2/pkg/intercp"
-	"github.com/kumahq/kuma/v2/pkg/ipam"
-	kds_global "github.com/kumahq/kuma/v2/pkg/kds/global"
-	kds_zone "github.com/kumahq/kuma/v2/pkg/kds/zone"
-	mads_server "github.com/kumahq/kuma/v2/pkg/mads/server"
-	metrics "github.com/kumahq/kuma/v2/pkg/metrics/components"
-	"github.com/kumahq/kuma/v2/pkg/util/os"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
-	"github.com/kumahq/kuma/v2/pkg/xds"
-	"github.com/kumahq/kuma/v2/pkg/zone"
+	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
+	"github.com/kumahq/kuma/v3/pkg/clusterid"
+	kuma_cmd "github.com/kumahq/kuma/v3/pkg/cmd"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/core/bootstrap"
+	meshidentity_status "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/status"
+	meshservice_generate "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/generate"
+	workload_generate "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/generate"
+	"github.com/kumahq/kuma/v3/pkg/defaults"
+	"github.com/kumahq/kuma/v3/pkg/diagnostics"
+	"github.com/kumahq/kuma/v3/pkg/dns"
+	dp_server "github.com/kumahq/kuma/v3/pkg/dp-server"
+	"github.com/kumahq/kuma/v3/pkg/gc"
+	"github.com/kumahq/kuma/v3/pkg/hds"
+	"github.com/kumahq/kuma/v3/pkg/insights"
+	"github.com/kumahq/kuma/v3/pkg/intercp"
+	"github.com/kumahq/kuma/v3/pkg/ipam"
+	kds_global "github.com/kumahq/kuma/v3/pkg/kds/global"
+	kds_zone "github.com/kumahq/kuma/v3/pkg/kds/zone"
+	mads_server "github.com/kumahq/kuma/v3/pkg/mads/server"
+	metrics "github.com/kumahq/kuma/v3/pkg/metrics/components"
+	"github.com/kumahq/kuma/v3/pkg/util/os"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
+	"github.com/kumahq/kuma/v3/pkg/xds"
 )
 
 var runLog = controlPlaneLog.WithName("run")
@@ -58,11 +56,6 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				return err
 			}
 
-			//nolint:staticcheck
-			if cfg.Mode == config_core.Standalone {
-				runLog.Info(`[WARNING] "standalone" mode is deprecated. Changing it to "zone". Set KUMA_MODE to "zone" as "standalone" will be removed in the future.`)
-				cfg.Mode = config_core.Zone
-			}
 			kuma_cp.PrintDeprecations(&cfg, cmd.OutOrStdout())
 
 			gracefulCtx, ctx, _ := opts.SetupSignalHandler()
@@ -153,10 +146,6 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 			}
 			if err := workload_generate.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Workload generator")
-				return err
-			}
-			if err := zone.Setup(rt); err != nil {
-				runLog.Error(err, "unable to set up ZoneIngress available services")
 				return err
 			}
 			if err := dns.SetupHostnameGenerator(rt); err != nil {

@@ -3,16 +3,18 @@ package metrics
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	util_cache "github.com/kumahq/kuma/v2/pkg/util/cache"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	util_cache "github.com/kumahq/kuma/v3/pkg/util/cache"
 )
 
 type Metrics struct {
-	XdsGenerations          *prometheus.HistogramVec
-	XdsGenerationsErrors    prometheus.Counter
-	KubeAuthCache           *prometheus.CounterVec
-	CertExpirationTimestamp *prometheus.GaugeVec
-	SnapshotResources       *prometheus.HistogramVec
+	XdsGenerations             *prometheus.HistogramVec
+	XdsGenerationsErrors       prometheus.Counter
+	KubeAuthCache              *prometheus.CounterVec
+	CertExpirationTimestamp    *prometheus.GaugeVec
+	SnapshotResources          *prometheus.HistogramVec
+	DataplaneConfigRegenerated *prometheus.CounterVec
+	PolicyMatchingCache        *prometheus.CounterVec
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
@@ -37,15 +39,33 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		Help:    "Distribution of resource counts per xDS snapshot by resource type.",
 		Buckets: prometheus.ExponentialBuckets(1, 2, 12),
 	}, []string{"resource_type"})
-	if err := metrics.BulkRegister(xdsGenerations, xdsGenerationsErrors, kubeAuthCache, certExpirationTimestamp, snapshotResources); err != nil {
+	dataplaneConfigRegenerated := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "xds_dataplane_config_regenerated_total",
+		Help: "Counter of successful Dataplane xDS reconcile attempts triggered by mesh-context hash changes.",
+	}, []string{"mesh"})
+	policyMatchingCache := util_cache.NewMetric(
+		"policy_matching_cache",
+		"Cache hit/miss counts for MatchedPolicies memoisation on the dataplane watchdog path.",
+	)
+	if err := metrics.BulkRegister(
+		xdsGenerations,
+		xdsGenerationsErrors,
+		kubeAuthCache,
+		certExpirationTimestamp,
+		snapshotResources,
+		dataplaneConfigRegenerated,
+		policyMatchingCache,
+	); err != nil {
 		return nil, err
 	}
 
 	return &Metrics{
-		XdsGenerations:          xdsGenerations,
-		XdsGenerationsErrors:    xdsGenerationsErrors,
-		KubeAuthCache:           kubeAuthCache,
-		CertExpirationTimestamp: certExpirationTimestamp,
-		SnapshotResources:       snapshotResources,
+		XdsGenerations:             xdsGenerations,
+		XdsGenerationsErrors:       xdsGenerationsErrors,
+		KubeAuthCache:              kubeAuthCache,
+		CertExpirationTimestamp:    certExpirationTimestamp,
+		SnapshotResources:          snapshotResources,
+		DataplaneConfigRegenerated: dataplaneConfigRegenerated,
+		PolicyMatchingCache:        policyMatchingCache,
 	}, nil
 }

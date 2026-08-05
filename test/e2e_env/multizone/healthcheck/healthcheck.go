@@ -7,21 +7,27 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func ApplicationOnUniversalClientOnK8s() {
 	namespace := "healthcheck-app-on-universal"
 	meshName := "healthcheck-app-on-universal"
+	identityName := "healthcheck-identity"
+
+	var zones []Cluster
 
 	BeforeAll(func() {
+		zones = []Cluster{multizone.KubeZone1, multizone.UniZone2}
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
-			Install(TrafficRouteUniversal(meshName)).
-			Install(TrafficPermissionUniversal(meshName)).
+			Install(Yaml(builders.Mesh().WithName(meshName))).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
@@ -45,10 +51,18 @@ func ApplicationOnUniversalClientOnK8s() {
 				TestServerUniversal("test-server-3", meshName,
 					WithArgs([]string{"echo", "--instance", "dp-universal-3"}),
 					WithProtocol("tcp")),
+				// Zone proxies are mesh scoped, so the mesh needs its own
+				// ingress in the zone the client reaches across zones.
+				zoneproxy.Install(
+					zoneproxy.WithMesh(meshName),
+					zoneproxy.WithIngress(),
+				),
 			)).
 			SetupInGroup(multizone.UniZone2, &group)
 
 		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -65,7 +79,7 @@ func ApplicationOnUniversalClientOnK8s() {
 
 	It("should not load balance requests to unhealthy instance", func() {
 		expectHealthyInstances := func(g Gomega) {
-			instances, err := client.CollectResponsesByInstance(multizone.KubeZone1, "demo-client", "test-server.mesh",
+			instances, err := client.CollectResponsesByInstance(multizone.KubeZone1, "demo-client", "test-server.svc.kuma-5.mesh.local",
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithNumberOfRequests(10),
 			)

@@ -7,12 +7,12 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	meshmetric_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/zoneproxy"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	meshmetric_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func ZoneProxy() {
@@ -48,18 +48,7 @@ spec:
 
 		group := errgroup.Group{}
 		NewClusterSetup().
-			Install(Parallel(
-				zoneproxy.Install(
-					zoneproxy.WithMesh(mesh),
-					zoneproxy.WithIngressPort(11001),
-					zoneproxy.WithWorkload("zone-proxy-ingress"),
-				),
-				zoneproxy.Install(
-					zoneproxy.WithMesh(mesh),
-					zoneproxy.WithEgressPort(11002),
-					zoneproxy.WithWorkload("zone-proxy-egress"),
-				),
-			)).
+			Install(zoneproxy.Install(zoneproxy.WithMesh(mesh))).
 			SetupInGroup(multizone.UniZone1, &group)
 		Expect(group.Wait()).To(Succeed())
 	})
@@ -80,7 +69,7 @@ spec:
 
 	// dynConfigJSON returns the listeners config_dump of the given zone-proxy
 	// DPP as JSON. The meshmetric dynconf payload is embedded as the
-	// `inlineString` body of the `_kuma:dynamicconfig` listener's direct
+	// `inlineString` body of the `system_dynamicconfig` listener's direct
 	// response, so a substring search over the marshaled listeners is enough
 	// to assert on the contract without walking the proto structure.
 	// g must come from an Eventually callback so that failures are retryable.
@@ -103,9 +92,9 @@ spec:
 
 		// then — zone-egress
 		Eventually(func(g Gomega) {
-			payload := dynConfigJSON(g, "zone-proxy-egress")
+			payload := dynConfigJSON(g, zoneproxy.EgressName(mesh))
 			// MeshMetric reached the proxy and emitted the dynconf listener.
-			g.Expect(payload).To(ContainSubstring("_kuma:dynamicconfig"))
+			g.Expect(payload).To(ContainSubstring("system_dynamicconfig"))
 			// applications[] must be cleared on a zone-proxy-only DPP.
 			// The inlineString field is JSON-encoded inside the larger JSON dump,
 			// so internal quotes appear as \" in the payload string.
@@ -123,8 +112,8 @@ spec:
 
 		// then — zone-ingress
 		Eventually(func(g Gomega) {
-			payload := dynConfigJSON(g, "zone-proxy-ingress")
-			g.Expect(payload).To(ContainSubstring("_kuma:dynamicconfig"))
+			payload := dynConfigJSON(g, zoneproxy.IngressName(mesh))
+			g.Expect(payload).To(ContainSubstring("system_dynamicconfig"))
 			g.Expect(payload).To(ContainSubstring(`\"applications\":null`))
 			g.Expect(payload).ToNot(ContainSubstring("ignored-on-zone-proxy"))
 			g.Expect(payload).To(ContainSubstring(`\"kuma.proxy_role\":\"zone-ingress\"`))

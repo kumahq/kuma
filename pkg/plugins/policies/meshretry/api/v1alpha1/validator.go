@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (r *MeshRetryResource) validate() error {
@@ -30,11 +30,6 @@ func (r *MeshRetryResource) validateTop(targetRef *common_api.TargetRef) validat
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshGateway,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
-				common_api.MeshHTTPRoute,
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
@@ -43,9 +38,6 @@ func (r *MeshRetryResource) validateTop(targetRef *common_api.TargetRef) validat
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
 		})
@@ -59,7 +51,7 @@ func validateTo(to []To, topLevelKind common_api.TargetRef) validators.Validatio
 
 		var supportedKinds []common_api.TargetRefKind
 		switch topLevelKind.Kind {
-		case common_api.MeshGateway, common_api.MeshHTTPRoute:
+		case common_api.MeshHTTPRoute:
 			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshExternalService,
@@ -73,7 +65,6 @@ func validateTo(to []To, topLevelKind common_api.TargetRef) validators.Validatio
 				common_api.MeshHTTPRoute,
 			}
 		}
-
 		verr.AddErrorAt(
 			path.Field("targetRef"),
 			mesh.ValidateTargetRef(

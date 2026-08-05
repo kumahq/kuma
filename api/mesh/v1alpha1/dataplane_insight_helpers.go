@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/api/generic"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/api/generic"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ generic.Insight = &DataplaneInsight{}

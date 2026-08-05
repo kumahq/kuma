@@ -6,9 +6,10 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/dns/lookup"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 )
 
 // ResolveDataplaneAddress resolves 'dataplane.networking.address' if it has DNS name in it. This is a crucial feature for
@@ -23,18 +24,9 @@ func ResolveDataplaneAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_m
 	if err != nil {
 		return nil, err
 	}
-	aip, err := lookupFirstIp(lookupIPFunc, dataplane.Spec.Networking.AdvertisedAddress)
-	if err != nil {
-		return nil, err
-	}
-	if ip != "" || aip != "" { // only if we resolve any address, in most cases this is IP not a hostname
+	if ip != "" { // only if we resolve any address, in most cases this is IP not a hostname
 		dpSpec := proto.Clone(dataplane.Spec).(*mesh_proto.Dataplane)
-		if ip != "" {
-			dpSpec.Networking.Address = ip
-		}
-		if aip != "" {
-			dpSpec.Networking.AdvertisedAddress = aip
-		}
+		dpSpec.Networking.Address = ip
 		return &core_mesh.DataplaneResource{
 			Meta: dataplane.Meta,
 			Spec: dpSpec,
@@ -43,20 +35,26 @@ func ResolveDataplaneAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_m
 	return dataplane, nil
 }
 
-func ResolveZoneIngressPublicAddress(lookupIPFunc lookup.LookupIPFunc, zoneIngress *core_mesh.ZoneIngressResource) (*core_mesh.ZoneIngressResource, error) {
-	ip, err := lookupFirstIp(lookupIPFunc, zoneIngress.Spec.GetNetworking().GetAdvertisedAddress())
+// ResolveMeshZoneAddressPublicAddress resolves 'meshZoneAddress.spec.address' if it has a DNS name in it. On Kubernetes
+// the address is reconciled from the ingress Service and a LoadBalancer hostname takes precedence over its IP, so this
+// is the common case on EKS. Endpoints built from MeshZoneAddress are served over EDS, which requires an IP.
+func ResolveMeshZoneAddressPublicAddress(
+	lookupIPFunc lookup.LookupIPFunc,
+	meshZoneAddress *meshzoneaddress_api.MeshZoneAddressResource,
+) (*meshzoneaddress_api.MeshZoneAddressResource, error) {
+	ip, err := lookupFirstIp(lookupIPFunc, meshZoneAddress.Spec.Address)
 	if err != nil {
 		return nil, err
 	}
 	if ip != "" { // only if we resolve any address, in most cases this is IP not a hostname
-		ziSpec := proto.Clone(zoneIngress.Spec).(*mesh_proto.ZoneIngress)
-		ziSpec.Networking.AdvertisedAddress = ip
-		return &core_mesh.ZoneIngressResource{
-			Meta: zoneIngress.Meta,
-			Spec: ziSpec,
+		spec := meshZoneAddress.Spec.DeepCopy()
+		spec.Address = ip
+		return &meshzoneaddress_api.MeshZoneAddressResource{
+			Meta: meshZoneAddress.Meta,
+			Spec: spec,
 		}, nil
 	}
-	return zoneIngress, nil
+	return meshZoneAddress, nil
 }
 
 func lookupFirstIp(lookupIPFunc lookup.LookupIPFunc, address string) (string, error) {

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kumahq/kuma/v2/api/openapi/types"
-	util_http "github.com/kumahq/kuma/v2/pkg/util/http"
+	"github.com/kumahq/kuma/v3/api/openapi/types"
+	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
 )
 
 type ApiServerClient interface {

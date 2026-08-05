@@ -12,22 +12,22 @@ import (
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	mesh_cache "github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	mesh_cache "github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 const (
@@ -44,7 +44,6 @@ type Generator struct {
 	resManager              manager.ResourceManager
 	meshCache               *mesh_cache.Cache
 	zone                    string
-	inboundTagsDisabled     bool
 	labelPropagationEnabled bool
 	allowSet                map[string]struct{} // nil = allow all non-reserved
 	droppedLabels           *prometheus.CounterVec
@@ -60,7 +59,6 @@ func New(
 	resManager manager.ResourceManager,
 	meshCache *mesh_cache.Cache,
 	zone string,
-	inboundTagsDisabled bool,
 	labelPropagation kuma_cp.MeshServiceLabelPropagation,
 ) (*Generator, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
@@ -94,7 +92,6 @@ func New(
 		resManager:              resManager,
 		meshCache:               meshCache,
 		zone:                    zone,
-		inboundTagsDisabled:     inboundTagsDisabled,
 		labelPropagationEnabled: labelPropagation.Enabled,
 		allowSet:                allowSet,
 		droppedLabels:           droppedLabels,
@@ -103,78 +100,13 @@ func New(
 
 type meshServicesResult struct {
 	services           map[string]*meshservice_api.MeshService
-	labelContributions map[string]map[string]string // serviceTag → per-DP contribution
-}
-
-func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
-	if g.inboundTagsDisabled {
-		return g.workloadMeshServiceForDataplane(dataplane)
-	}
-	return g.serviceTagMeshServicesForDataplane(dataplane)
-}
-
-// serviceTagMeshServicesForDataplane generates MeshServices grouped by the
-// kuma.io/service inbound tag. Used when inbound tags are enabled.
-func (g *Generator) serviceTagMeshServicesForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
-	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
-	portsByService := map[string][]meshservice_api.Port{}
-	inboundsByService := map[string][]*mesh_proto.Dataplane_Networking_Inbound{}
-	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
-		serviceTagValue := inbound.GetTags()[mesh_proto.ServiceTag]
-		allErrs := apimachineryvalidation.NameIsDNS1035Label(serviceTagValue, false)
-		if len(allErrs) != 0 {
-			log.Info("couldn't generate MeshService from kuma.io/service, contains invalid characters", "value", serviceTagValue, "error", allErrs)
-			continue
-		}
-
-		port := meshservice_api.Port{
-			Name:        &inbound.Name,
-			Port:        int32(inbound.Port),
-			TargetPort:  pointer.To(intstr.FromInt32(int32(inbound.Port))),
-			AppProtocol: core_meta.ProtocolTCP,
-		}
-
-		if name := pointer.Deref(port.Name); name == "" {
-			port.Name = pointer.To(fmt.Sprintf("%d", port.Port))
-		}
-
-		if proto := inbound.GetProtocolFallback(); proto != "" {
-			if p := core_meta.ParseProtocol(proto); p != core_meta.ProtocolUnknown {
-				port.AppProtocol = p
-			}
-		}
-
-		portsByService[serviceTagValue] = append(portsByService[serviceTagValue], port)
-		inboundsByService[serviceTagValue] = append(inboundsByService[serviceTagValue], inbound)
-	}
-
-	services := map[string]*meshservice_api.MeshService{}
-	for serviceTag, ports := range portsByService {
-		ms := meshservice_api.MeshService{
-			Selector: meshservice_api.Selector{
-				DataplaneTags: &map[string]string{
-					mesh_proto.ServiceTag: serviceTag,
-				},
-			},
-			Ports: ports,
-		}
-		services[serviceTag] = &ms
-	}
-
-	contributions := map[string]map[string]string{}
-	if g.labelPropagationEnabled {
-		for tag, ins := range inboundsByService {
-			contributions[tag] = dpContribution(dataplane, ins, g.allowSet, g.droppedLabels, g.logger, tag)
-		}
-	}
-
-	return meshServicesResult{services: services, labelContributions: contributions}
+	labelContributions map[string]map[string]string // workload name → per-DP contribution
 }
 
 // workloadMeshServiceForDataplane generates a single MeshService per
-// kuma.io/workload label value. Used when inbound tags are disabled: inbounds
-// no longer carry tags, so service identity is derived from the workload the
-// Dataplane belongs to, producing a 1:1 workload-to-MeshService mapping.
+// kuma.io/workload label value. Inbounds no longer carry tags for generated
+// Dataplanes, so service identity is derived from the workload the Dataplane
+// belongs to, producing a 1:1 workload-to-MeshService mapping.
 func (g *Generator) workloadMeshServiceForDataplane(dataplane *core_mesh.DataplaneResource) meshServicesResult {
 	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
 
@@ -287,7 +219,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 	log := g.logger.WithValues("mesh", mesh)
 	meshservicesByName := map[string][]dataplaneAndMeshService{}
 	for _, dataplane := range core_mesh.SortDataplanes(dataplanes) {
-		result := g.meshServicesForDataplane(dataplane)
+		result := g.workloadMeshServiceForDataplane(dataplane)
 		for name, ms := range result.services {
 			meshservicesByName[name] = append(meshservicesByName[name], dataplaneAndMeshService{
 				dataplane:         dataplane,
@@ -463,27 +395,9 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 				return err
 			}
 			for mesh, meshCtx := range aggregatedMeshCtxs.MeshContextsByName {
-				if meshCtx.Resource.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Disabled {
-					dataplanes := meshCtx.Resources.Dataplanes()
-					meshServices := meshCtx.Resources.MeshServices()
-					g.generate(ctx, mesh, dataplanes.Items, meshServices.Items)
-				} else {
-					for _, meshService := range meshCtx.Resources.MeshServices().Items {
-						if !meshService.IsLocalMeshService() {
-							// Synced from another zone via KDS, this zone's generator must not delete it.
-							continue
-						}
-						if managedBy, ok := meshService.GetMeta().GetLabels()[mesh_proto.ManagedByLabel]; !ok || managedBy != managedByValue {
-							continue
-						}
-						log := g.logger.WithValues("mesh", mesh, "MeshService", meshService.GetMeta().GetName())
-						if err := g.resManager.Delete(ctx, meshservice_api.NewMeshServiceResource(), store.DeleteBy(model.MetaToResourceKey(meshService.GetMeta()))); err != nil {
-							log.Error(err, "couldn't delete MeshService")
-							continue
-						}
-						log.Info("deleted MeshService")
-					}
-				}
+				dataplanes := meshCtx.Resources.Dataplanes()
+				meshServices := meshCtx.Resources.MeshServices()
+				g.generate(ctx, mesh, dataplanes.Items, meshServices.Items)
 			}
 			g.metric.Observe(float64(time.Since(start).Milliseconds()))
 

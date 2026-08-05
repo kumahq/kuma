@@ -4,11 +4,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/tls"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/tls"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("ServerSideStaticMTLS", func() {
@@ -21,10 +22,7 @@ var _ = Describe("ServerSideStaticMTLS", func() {
 				KeyPEM:  []byte("keyPEM"),
 			},
 		}
-		cluster := envoy_common.NewCluster(
-			envoy_common.WithService("localhost:8080"),
-			envoy_common.WithWeight(200),
-		)
+		cluster := plugins_xds.NewClusterBuilder().WithService("localhost:8080").Build()
 
 		// when
 		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).

@@ -3,7 +3,7 @@ package mesh
 import (
 	"fmt"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 )
 
 type Status string
@@ -36,7 +36,7 @@ func (t *DataplaneOverviewResource) Status() (Status, []string) {
 
 	for _, inbound := range networking.GetInbound() {
 		if (inbound.Health != nil && !inbound.Health.Ready) || inbound.State == mesh_proto.Dataplane_Networking_Inbound_NotReady {
-			errs = append(errs, fmt.Sprintf("inbound[port=%d,svc=%s] is not ready", inbound.Port, inbound.Tags[mesh_proto.ServiceTag]))
+			errs = append(errs, fmt.Sprintf("inbound[port=%d] is not ready", inbound.Port))
 		} else {
 			ready++
 		}

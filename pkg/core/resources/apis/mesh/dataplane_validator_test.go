@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane", func() {
@@ -227,58 +227,6 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   tags:
                     kuma.io/service: redis`),
-		Entry("dataplane with metrics backend defined and unique aggregate entries", `
-            type: Dataplane
-            name: dp-1
-            mesh: default
-            networking:
-              address: 192.168.0.1
-              admin:
-                port: 8080
-              inbound:
-                - port: 8080
-                  servicePort: 7777
-                  address: 192.168.0.1
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
-              outbound:
-                - port: 3333
-                  address: 192.168.0.1
-                  tags:
-                    kuma.io/service: redis
-            metrics:
-              type: prometheus
-              conf:
-                aggregate:
-                - name: app
-                  port: 123
-                  path: "/stats"
-                - name: sidecar
-                  port: 999
-                  path: "/metrics"`),
-		Entry("dataplane with metrics backend type defined", `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  admin:
-                    port: 8080
-                  inbound:
-                    - port: 8080
-                      servicePort: 7777
-                      address: 192.168.0.1
-                      tags:
-                        kuma.io/service: backend
-                        version: "1"
-                  outbound:
-                    - port: 3333
-                      address: 192.168.0.1
-                      tags:
-                        kuma.io/service: redis
-                metrics:
-                  type: prometheus`),
 		Entry("dataplane with backend ref for MeshService", `
             type: Dataplane
             name: dp-1
@@ -599,7 +547,23 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.listeners
                   message: listeners cannot be defined for delegated gateways`,
 		}),
-		Entry("networking: builtin gateway must not have inbounds", testCase{
+		Entry("networking: builtin gateway is rejected", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  gateway:
+                    type: BUILTIN
+                    tags:
+                      kuma.io/service: kong`,
+			expected: `
+                violations:
+                - field: networking.gateway.type
+                  message: BUILTIN gateways are no longer supported, use DELEGATED instead`,
+		}),
+		Entry("networking: builtin gateway with inbounds and listeners is still rejected at type", testCase{
 			dataplane: `
                 type: Dataplane
                 name: dp-1
@@ -613,86 +577,7 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 3333
                       tags:
-                        kuma.io/service: kong`,
-			expected: `
-                violations:
-                - field: networking.inbound
-                  message: inbound cannot be defined for builtin gateways`,
-		}),
-		Entry("networking: builtin gateway must not have outbounds", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    type: BUILTIN
-                    tags:
-                      kuma.io/service: kong
-                  outbound:
-                    - port: 3333
-                      tags:
-                        kuma.io/service: kong`,
-			expected: `
-                violations:
-                - field: networking.outbound
-                  message: outbound cannot be defined for builtin gateways`,
-		}),
-		Entry("networking: builtin gateway must not have probes", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    type: BUILTIN
-                    tags:
-                      kuma.io/service: kong
-                probes:
-                  port: 0
-                  endpoints:
-                   - inboundPort: 8088
-                     inboundPath: /healthz
-                     path: /8080/healthz`,
-			expected: `
-                violations:
-                - field: networking.probes
-                  message: probes cannot be defined for builtin gateways`,
-		}),
-		Entry("networking: builtin gateway must not have listeners", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    type: BUILTIN
-                    tags:
-                      kuma.io/service: kong
-                  listeners:
-                    - type: ZoneEgress
-                      address: 192.168.0.1
-                      port: 10002
-                      name: ze-port`,
-			expected: `
-                violations:
-                - field: networking.listeners
-                  message: listeners cannot be defined for builtin gateways`,
-		}),
-		Entry("networking: builtin gateway listeners and probes both rejected", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    type: BUILTIN
-                    tags:
-                      kuma.io/service: kong
+                        kuma.io/service: kong
                   listeners:
                     - type: ZoneEgress
                       address: 192.168.0.1
@@ -706,26 +591,8 @@ var _ = Describe("Dataplane", func() {
                      path: /8080/healthz`,
 			expected: `
                 violations:
-                - field: networking.listeners
-                  message: listeners cannot be defined for builtin gateways
-                - field: networking.probes
-                  message: probes cannot be defined for builtin gateways`,
-		}),
-		Entry("networking: builtin gateway must have a service tag", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    type: BUILTIN
-                    tags:
-                      foo: bar`,
-			expected: `
-                violations:
-                - field: networking.gateway.tags
-                  message: mandatory tag "kuma.io/service" is missing`,
+                - field: networking.gateway.type
+                  message: BUILTIN gateways are no longer supported, use DELEGATED instead`,
 		}),
 		Entry("networking.inbound: port of the range", testCase{
 			dataplane: `
@@ -793,91 +660,6 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.inbound[0].address
                   message: address has to be valid IP address`,
-		}),
-		Entry("networking.inbound: empty service tag", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  inbound:
-                    - port: 1234
-                      tags:
-                        version: "v1"
-                  outbound:
-                    - port: 3333
-                      tags:
-                        kuma.io/service: redis`,
-			expected: `
-                violations:
-                - field: networking.inbound[0].tags["kuma.io/service"]
-                  message: tag has to exist`,
-		}),
-		Entry("networking.inbound: empty tag value", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  inbound:
-                    - port: 1234
-                      tags:
-                        kuma.io/service: backend
-                        version:
-                  outbound:
-                    - port: 3333
-                      tags:
-                        kuma.io/service: redis`,
-			expected: `
-                violations:
-                - field: 'networking.inbound[0].tags["version"]'
-                  message: tag value must be non-empty`,
-		}),
-		Entry("networking.inbound: `protocol` tag with an empty value", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  inbound:
-                    - port: 1234
-                      tags:
-                        kuma.io/service: backend
-                        kuma.io/protocol:
-                  outbound:
-                    - port: 3333
-                      tags:
-                        kuma.io/service: redis`,
-			expected: `
-                violations:
-                - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
-                  message: 'tag "kuma.io/protocol" has an invalid value "". Allowed values: grpc, http, http2, kafka, tcp'
-                - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
-                  message: tag value must be non-empty`,
-		}),
-		Entry("networking.inbound: `protocol` tag with unsupported value", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  inbound:
-                    - port: 1234
-                      tags:
-                        kuma.io/service: backend
-                        kuma.io/protocol: not-yet-supported-protocol
-                  outbound:
-                    - port: 3333
-                      tags:
-                        kuma.io/service: redis`,
-			expected: `
-                violations:
-                - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
-                  message: 'tag "kuma.io/protocol" has an invalid value "not-yet-supported-protocol". Allowed values: grpc, http, http2, kafka, tcp'`,
 		}),
 		Entry("networking.gateway: empty service tag", testCase{
 			dataplane: `
@@ -1046,50 +828,6 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.outbound[0].address
                   message: address has to be valid IP address`,
-		}),
-		Entry("networking.inbound: tag name with invalid characters", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  inbound:
-                    - port: 1234
-                      tags:
-                        kuma.io/service: backend
-                        version: "v1"
-                        inv@lidT/gN%me: value
-                  outbound:
-                    - port: 3333
-                      tags:
-                        kuma.io/service: redis`,
-			expected: `
-                violations:
-                - field: networking.inbound[0].tags["inv@lidT/gN%me"]
-                  message: tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`,
-		}),
-		Entry("networking.inbound: tag value with invalid characters", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  inbound:
-                    - port: 1234
-                      tags:
-                        kuma.io/service: backend
-                        version: "v1"
-                        invalidTagValue: inv@lid+t@g
-                  outbound:
-                    - port: 3333
-                      tags:
-                        kuma.io/service: redis`,
-			expected: `
-                violations:
-                - field: networking.inbound[0].tags["invalidTagValue"]
-                  message: tag value must consist of alphanumeric characters, dots, dashes and underscores`,
 		}),
 		Entry("inbound service address", testCase{
 			dataplane: `
@@ -1296,74 +1034,6 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.admin.port
                   message: must differ from outbound`,
-		}),
-		Entry("dataplane with duplicate metrics entry", testCase{
-			dataplane: `
-            type: Dataplane
-            name: dp-1
-            mesh: default
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 8080
-                  servicePort: 7777
-                  address: 192.168.0.1
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
-              outbound:
-                - port: 3333
-                  address: 192.168.0.1
-                  tags:
-                    kuma.io/service: redis
-            metrics:
-              type: prometheus
-              conf:
-                aggregate:
-                - name: app
-                  port: 123
-                  path: "/stats"
-                - name: app
-                  port: 999
-                  path: "/metrics"
-                - name: duplicate-app
-                  port: 12366
-                  path: "/duplicate"
-                - name: duplicate-app
-                  port: 12345
-                  path: "/other"  `,
-			expected: `
-                violations:
-                - field: metrics.conf.aggregate[1].name
-                  message: 'duplicate entry: app, values have to be unique'
-                - field: metrics.conf.aggregate[3].name
-                  message: 'duplicate entry: duplicate-app, values have to be unique'`,
-		}),
-		Entry("dataplane with not supported metrics type", testCase{
-			dataplane: `
-            type: Dataplane
-            name: dp-1
-            mesh: default
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 8080
-                  servicePort: 7777
-                  address: 192.168.0.1
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
-              outbound:
-                - port: 3333
-                  address: 192.168.0.1
-                  tags:
-                    kuma.io/service: redis
-            metrics:
-              type: custom-backend`,
-			expected: `
-                violations:
-                - field: metrics.type
-                  message: 'unknown backend type. Available backends: "prometheus"'`,
 		}),
 		Entry("dataplane with empty backend ref", testCase{
 			dataplane: `
@@ -1677,8 +1347,8 @@ var _ = Describe("Dataplane", func() {
 		}),
 	)
 
-	Describe("service tag requirement based on inbound tags presence", func() {
-		It("should allow dataplane with empty inbound tags (InboundTagsDisabled)", func() {
+	Describe("gateway service tag requirement based on tag presence", func() {
+		It("should allow dataplane with empty inbound tags (tag-free mode)", func() {
 			// setup
 			dataplane := core_mesh.NewDataplaneResource()
 
@@ -1696,29 +1366,22 @@ var _ = Describe("Dataplane", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should require service tag when inbound has other tags", func() {
-			// setup
+		It("should allow dataplane with empty gateway tags (tag-free mode)", func() {
 			dataplane := core_mesh.NewDataplaneResource()
 
 			// when
 			err := util_proto.FromYAML([]byte(`
                 networking:
                   address: 192.168.0.1
-                  inbound:
-                    - port: 8080
-                      tags:
-                        version: "1"
+                  gateway:
+                    type: DELEGATED
+                    tags: {}
 `), dataplane.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
-			// then - has tags but no service tag = old setup, service tag required
-			verr := dataplane.Validate()
-			actual, err := yaml.Marshal(verr)
+			// then - empty tags = new setup, no service tag required
+			err = dataplane.Validate()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(`
-                violations:
-                - field: networking.inbound[0].tags["kuma.io/service"]
-                  message: tag has to exist`))
 		})
 	})
 })

@@ -10,9 +10,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	test_metrics "github.com/kumahq/kuma/v2/pkg/test/metrics"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/once"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/once"
 )
 
 var _ = Describe("OnceCache", func() {

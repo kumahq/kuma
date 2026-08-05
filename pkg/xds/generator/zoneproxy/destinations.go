@@ -1,74 +1,36 @@
 package zoneproxy
 
 import (
-	"reflect"
-	"slices"
-
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_sni "github.com/kumahq/kuma/v2/pkg/core/resources/sni"
-	"github.com/kumahq/kuma/v2/pkg/dns"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshtcproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 )
 
 type MeshDestinations struct {
-	KumaIoServices map[string][]envoy_tags.Tags
-	BackendRefs    []BackendRefDestination
+	BackendRefs []BackendRefDestination
 }
 
 type BackendRefDestination struct {
 	resolve.ResolvedBackendRef
 
-	Mesh              string
-	SNI               string
-	LegacyServiceName string
-}
-
-// BuildMeshDestinations builds destinations for legacy zone proxies using the hash-based SNI format.
-func BuildMeshDestinations(
-	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
-	systemNamespace string,
-	resources xds_context.Resources,
-	realResourceLists ...core_resources.DestinationList,
-) MeshDestinations {
-	return MeshDestinations{
-		KumaIoServices: buildKumaIoServiceDestinations(availableServices, resources),
-		BackendRefs: BuildRealResourceDestinations(
-			util_slices.FlatMap(realResourceLists, core_resources.DestinationList.GetDestinations),
-			systemNamespace,
-			false,
-		),
-	}
+	SNI            string
+	EndpointMapKey string
 }
 
 // BuildRealResourceDestinations produces one BackendRefDestination per
 // (destination, port) pair.
-func BuildRealResourceDestinations(destinations []core_resources.Destination, systemNS string, useNewSNIFormat bool) []BackendRefDestination {
+func BuildRealResourceDestinations(destinations []core_resources.Destination) []BackendRefDestination {
 	var result []BackendRefDestination
 	for _, dest := range destinations {
 		origin := kri.From(dest)
-		mesh := dest.GetMeta().GetMesh()
-
-		sniFor := newSNIBuilder(dest, origin, mesh, systemNS, useNewSNIFormat)
 
 		for _, port := range dest.GetPorts() {
 			id := kri.WithSectionName(origin, port.GetName())
 			result = append(result, BackendRefDestination{
-				Mesh:              mesh,
-				SNI:               sniFor(id, port),
-				LegacyServiceName: destinationname.ResolveLegacyFromDestination(dest, port),
+				SNI:            core_sni.FromKRI(id),
+				EndpointMapKey: destinationname.ResolveLegacyFromDestination(dest, port),
 				ResolvedBackendRef: resolve.ResolvedBackendRef{
 					Ref: &resolve.RealResourceBackendRef{
 						Resource: id,
@@ -80,254 +42,4 @@ func BuildRealResourceDestinations(destinations []core_resources.Destination, sy
 		}
 	}
 	return result
-}
-
-func newSNIBuilder(dest core_resources.Destination, origin kri.Identifier, mesh, systemNS string, useNewSNIFormat bool) func(kri.Identifier, core_resources.Port) string {
-	if useNewSNIFormat {
-		return func(id kri.Identifier, _ core_resources.Port) string {
-			return core_sni.FromKRI(id)
-		}
-	}
-	var rName string
-	switch r := any(dest).(type) {
-	case *meshservice_api.MeshServiceResource:
-		rName = r.SNIName(systemNS)
-	default:
-		rName = core_model.GetDisplayName(dest.GetMeta())
-	}
-	return func(_ kri.Identifier, port core_resources.Port) string {
-		return tls.SNIForResource(rName, mesh, origin.ResourceType, port.GetValue(), nil)
-	}
-}
-
-func buildKumaIoServiceDestinations(
-	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
-	res xds_context.Resources,
-) map[string][]envoy_tags.Tags {
-	destForMesh := map[string][]envoy_tags.Tags{}
-	trafficRoutes := res.TrafficRoutes().Items
-	addTrafficRouteDestinations(trafficRoutes, destForMesh)
-	meshHTTPRoutes := res.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items
-	meshTCPRoutes := res.ListOrEmpty(meshtcproute_api.MeshTCPRouteType).(*meshtcproute_api.MeshTCPRouteResourceList).Items
-	addMeshHTTPRouteDestinations(trafficRoutes, meshHTTPRoutes, destForMesh)
-	addMeshTCPRouteDestinations(trafficRoutes, meshTCPRoutes, destForMesh)
-	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
-	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
-	addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableServices, destForMesh)
-	return destForMesh
-}
-
-func addMeshGatewayDestinations(
-	meshGateways []*core_mesh.MeshGatewayResource,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	for _, meshGateway := range meshGateways {
-		for _, selector := range meshGateway.Selectors() {
-			addMeshGatewayListenersDestinations(
-				meshGateway.Spec,
-				selector.GetMatch(),
-				destinations,
-			)
-		}
-	}
-}
-
-func addMeshGatewayListenersDestinations(
-	meshGateway *mesh_proto.MeshGateway,
-	matchTags map[string]string,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	service := matchTags[mesh_proto.ServiceTag]
-
-	for _, listener := range meshGateway.GetConf().GetListeners() {
-		if !listener.CrossMesh {
-			continue
-		}
-
-		destinations[service] = append(
-			destinations[service],
-			mesh_proto.Merge(
-				meshGateway.GetTags(),
-				matchTags,
-				listener.GetTags(),
-			),
-		)
-	}
-}
-
-func addGatewayRouteDestinations(
-	gatewayRoutes []*core_mesh.MeshGatewayRouteResource,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	var backends []*mesh_proto.MeshGatewayRoute_Backend
-
-	for _, route := range gatewayRoutes {
-		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
-
-		for _, rule := range route.Spec.GetConf().GetTcp().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
-	}
-
-	for _, backend := range backends {
-		addDestination(backend.Destination, destinations)
-	}
-}
-
-func addTrafficRouteDestinations(
-	policies []*core_mesh.TrafficRouteResource,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	for _, policy := range policies {
-		for _, split := range policy.Spec.Conf.GetSplitWithDestination() {
-			addDestination(split.Destination, destinations)
-		}
-
-		for _, http := range policy.Spec.Conf.Http {
-			for _, split := range http.GetSplitWithDestination() {
-				addDestination(split.Destination, destinations)
-			}
-		}
-	}
-}
-
-func addMeshHTTPRouteDestinations(
-	trafficRoutes []*core_mesh.TrafficRouteResource,
-	policies []*meshhttproute_api.MeshHTTPRouteResource,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	if len(trafficRoutes) == 0 {
-		addTrafficFlowByDefaultDestination(destinations)
-	}
-
-	// Note that we're not merging these resources, but that's OK because the
-	// set of destinations after merging is a subset of the set we get here by
-	// iterating through them.
-	for _, policy := range policies {
-		for _, to := range pointer.Deref(policy.Spec.To) {
-			if toTags, ok := envoy_tags.FromLegacyTargetRef(to.TargetRef); ok {
-				addMeshHTTPRouteToDestinations(to.Rules, toTags, destinations)
-			}
-		}
-	}
-}
-
-func addMeshTCPRouteDestinations(
-	trafficRoutes []*core_mesh.TrafficRouteResource,
-	policies []*meshtcproute_api.MeshTCPRouteResource,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	if len(trafficRoutes) == 0 {
-		addTrafficFlowByDefaultDestination(destinations)
-	}
-
-	// Note that we're not merging these resources, but that's OK because the
-	// set of destinations after merging is a subset of the set we get here by
-	// iterating through them.
-	for _, policy := range policies {
-		for _, to := range pointer.Deref(policy.Spec.To) {
-			if toTags, ok := envoy_tags.FromLegacyTargetRef(to.TargetRef); ok {
-				addMeshTCPRouteToDestinations(to.Rules, toTags, destinations)
-			}
-		}
-	}
-}
-
-func addMeshHTTPRouteToDestinations(
-	rules []meshhttproute_api.Rule,
-	toTags envoy_tags.Tags,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	for _, rule := range rules {
-		if rule.Default.BackendRefs == nil {
-			addDestination(toTags, destinations)
-			continue
-		}
-
-		for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
-			if tags, ok := envoy_tags.FromLegacyTargetRef(backendRef.TargetRef); ok {
-				addDestination(tags, destinations)
-			}
-		}
-	}
-}
-
-func addMeshTCPRouteToDestinations(
-	rules []meshtcproute_api.Rule,
-	toTags envoy_tags.Tags,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	for _, rule := range rules {
-		if rule.Default.BackendRefs == nil {
-			addDestination(toTags, destinations)
-			continue
-		}
-
-		for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
-			if tags, ok := envoy_tags.FromLegacyTargetRef(backendRef.TargetRef); ok {
-				addDestination(tags, destinations)
-			}
-		}
-	}
-}
-
-func addDestination(tags map[string]string, destinations map[string][]envoy_tags.Tags) {
-	service := tags[mesh_proto.ServiceTag]
-	destinations[service] = append(destinations[service], tags)
-}
-
-// addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist makes sure that when
-// at least one MeshHTTPRoute policy exists there will be a "match all"
-// destination pointing to all services (kuma.io/service:* -> kuma.io/service:*)
-// This logic is necessary because of conflicting behaviors of TrafficRoute and
-// MeshHTTPRoute policies. TrafficRoute expects that by default traffic doesn't
-// flow, and there is necessary TrafficRoute with appropriate configuration
-// to make communication between services possible. MeshHTTPRoute on the other
-// hand expects the traffic to flow by default. As a result, when there is
-// at least one MeshHTTPRoute policy present, traffic between services will flow
-// by default, when there is none, it will flow, when appropriate TrafficRoute
-// policy will exist.
-func addTrafficFlowByDefaultDestination(
-	destinations map[string][]envoy_tags.Tags,
-) {
-	// We need to add a destination to route any service to any instance of
-	// that service
-	matchAllTags := envoy_tags.Tags{mesh_proto.ServiceTag: mesh_proto.MatchAllTag}
-	matchAllDestinations := destinations[mesh_proto.MatchAllTag]
-	foundAllServicesDestination := slices.ContainsFunc(
-		matchAllDestinations,
-		func(tagsElem envoy_tags.Tags) bool {
-			return reflect.DeepEqual(tagsElem, matchAllTags)
-		},
-	)
-
-	if !foundAllServicesDestination {
-		matchAllDestinations = append(matchAllDestinations, matchAllTags)
-	}
-
-	destinations[mesh_proto.MatchAllTag] = matchAllDestinations
-}
-
-func addVirtualOutboundDestinations(
-	virtualOutbounds []*core_mesh.VirtualOutboundResource,
-	availableServices []*mesh_proto.ZoneIngress_AvailableService,
-	destinations map[string][]envoy_tags.Tags,
-) {
-	// If there are no VirtualOutbounds, we are not modifying destinations
-	if len(virtualOutbounds) == 0 {
-		return
-	}
-
-	for _, availableService := range availableServices {
-		for _, matched := range dns.Match(virtualOutbounds, availableService.Tags) {
-			service := availableService.Tags[mesh_proto.ServiceTag]
-			tags := envoy_tags.Tags{}
-			for _, param := range matched.Spec.GetConf().GetParameters() {
-				tags[param.TagKey] = availableService.Tags[param.TagKey]
-			}
-			destinations[service] = append(destinations[service], tags)
-		}
-	}
 }

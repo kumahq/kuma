@@ -1,11 +1,11 @@
 package builders
 
 import (
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
 type ProxyBuilder struct {

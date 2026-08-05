@@ -4,7 +4,7 @@ import (
 	"slices"
 	"strings"
 
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 )
 
 // Protocol identifies a protocol supported by a service.
@@ -17,7 +17,6 @@ const (
 	ProtocolHTTP      Protocol = "http"
 	ProtocolHTTP2     Protocol = "http2"
 	ProtocolGRPC      Protocol = "grpc"
-	ProtocolKafka     Protocol = "kafka"
 	ProtocolMysql     Protocol = "mysql"
 	ProtocolRawBuffer Protocol = "raw_buffer"
 )
@@ -26,7 +25,7 @@ func (p Protocol) String() string { return string(p) }
 
 func ParseProtocol[T ~string](protocol T) Protocol {
 	switch proto := Protocol(strings.ToLower(string(protocol))); proto {
-	case ProtocolHTTP, ProtocolHTTP2, ProtocolTCP, ProtocolTLS, ProtocolGRPC, ProtocolKafka, ProtocolMysql:
+	case ProtocolHTTP, ProtocolHTTP2, ProtocolTCP, ProtocolTLS, ProtocolGRPC, ProtocolMysql:
 		return proto
 	default:
 		return ProtocolUnknown
@@ -53,7 +52,6 @@ var SupportedProtocols = ProtocolList{
 	ProtocolGRPC,
 	ProtocolHTTP,
 	ProtocolHTTP2,
-	ProtocolKafka,
 	ProtocolTCP,
 }
 
@@ -84,7 +82,6 @@ var protocolStacks = map[Protocol]ProtocolList{
 	ProtocolGRPC:  {ProtocolGRPC, ProtocolHTTP2, ProtocolTCP},
 	ProtocolHTTP2: {ProtocolHTTP2, ProtocolTCP},
 	ProtocolHTTP:  {ProtocolHTTP, ProtocolTCP},
-	ProtocolKafka: {ProtocolKafka, ProtocolTCP},
 	ProtocolTLS:   {ProtocolTCP},
 	ProtocolTCP:   {ProtocolTCP},
 }

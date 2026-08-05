@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/postgres"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/postgres"
 )
 
 func ResilienceMultizoneUniversalPostgres() {
@@ -136,35 +136,6 @@ func ResilienceMultizoneUniversalPostgres() {
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
 		}, "30s", "1s").Should(ContainSubstring("Offline"))
-	})
-
-	It("should mark zone ingress as offline after it is killed forcefully when zone control-plane is down", func() {
-		// deploy zone-ingress and wait while it's started
-		Expect(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)(zoneUniversal)).To(Succeed())
-		Eventually(func() (string, error) {
-			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses")
-		}, "30s", "1s").Should(ContainSubstring("Online"))
-
-		g, ok := zoneUniversal.(*UniversalCluster)
-		Expect(ok).To(BeTrue())
-
-		kumaCP := g.GetApp(AppModeCP)
-		Expect(kumaCP).ToNot(BeNil())
-
-		// when Zone CP is killed
-		Expect(zoneUniversal.(*UniversalCluster).Kill(AppModeCP, "kuma-cp run")).To(Succeed())
-
-		// and zone-ingress is killed while Zone CP is down
-		Expect(zoneUniversal.(*UniversalCluster).Kill(AppIngress, "kuma-dp")).To(Succeed())
-
-		// and Zone CP is restarted
-		Expect(kumaCP.ReStart()).Should(Succeed())
-		Eventually(zoneUniversal.VerifyKuma, "30s", "1s").ShouldNot(HaveOccurred())
-
-		// then zone-ingress is offline
-		Eventually(func() (string, error) {
-			return zoneUniversal.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses")
-		}, "40s", "1s").Should(ContainSubstring("Offline"))
 	})
 
 	It("should mark zone as offline when zone control-plane is down", func() {

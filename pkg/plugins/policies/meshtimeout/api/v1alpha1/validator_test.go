@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 var _ = Describe("MeshTimeout", func() {
@@ -26,23 +26,12 @@ var _ = Describe("MeshTimeout", func() {
 			},
 			Entry("full example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionTimeout: 10s
-      idleTimeout: 1h
-      http:
-        requestTimeout: 0s
-        streamIdleTimeout: 1h
-        maxStreamDuration: 1h
-        maxConnectionDuration: 1h
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: 10s
       idleTimeout: 1h
@@ -53,12 +42,12 @@ to:
         maxConnectionDuration: 1h`),
 			Entry("only to targetRef", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: 10s
       idleTimeout: 1h
@@ -69,36 +58,23 @@ to:
         maxConnectionDuration: 1h`),
 			Entry("minimal example", `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       http:
         requestTimeout: 1s`),
-			Entry("top-level TargetRefKind is MeshHTTPRoute", `
-targetRef:
-  kind: MeshHTTPRoute
-  name: route-1
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-        requestTimeout: 1s
-        streamIdleTimeout: 2s
-`),
 			Entry("example MeshExternalService", `
 targetRef:
-  kind: MeshSubset
-  tags:
-    kuma.io/service: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshExternalService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       http:
         requestTimeout: 1s
@@ -111,21 +87,18 @@ to:
         requestTimeout: 1s`),
 			Entry("example MeshHTTPRoute", `
 targetRef:
-  kind: MeshSubset
-  tags:
-    kuma.io/service: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshHTTPRoute
-      name: http-route-1
+      labels:
+        kuma.io/display-name: http-route-1
     default:
       http:
         requestTimeout: 1s`),
 			Entry("example MeshHTTPRoute with labels", `
 targetRef:
-  kind: MeshSubset
-  tags:
-    kuma.io/service: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshHTTPRoute
@@ -172,7 +145,7 @@ rules:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty 'from' and 'to' array", testCase{
+			Entry("empty 'to' array", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
@@ -180,29 +153,12 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from', 'to' or 'rules' has to be defined`,
-			}),
-			Entry("unsupported kind in from selector", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: MeshGatewayRoute
-    default:
-      http:
-        requestTimeout: 1s`,
-				expected: `
-violations:
-  - field: spec.from[0].targetRef.kind
-    message: value 'MeshGatewayRoute' is not supported`,
+    message: at least one of 'to' or 'rules' has to be defined`,
 			}),
 			Entry("unsupported kind in to selector", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshServiceSubset
@@ -235,12 +191,12 @@ violations:
 			Entry("missing timeout configuration", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend`,
+      labels:
+        kuma.io/display-name: web-backend`,
 				expected: `
 violations:
   - field: spec.to[0].default
@@ -249,12 +205,12 @@ violations:
 			Entry("timeout cannot be negative", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       idleTimeout: -1s`,
 				expected: `
@@ -265,12 +221,12 @@ violations:
 			Entry("multiple timeout cannot be negative", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: -1s
       http:
@@ -285,12 +241,12 @@ violations:
 			Entry("multiple timeout cannot be negative", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
+  kind: Mesh
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       http: {}`,
 				expected: `
@@ -303,7 +259,8 @@ violations:
 to:
   - targetRef:
       kind: MeshHTTPRoute
-      name: http-route-1
+      labels:
+        kuma.io/display-name: http-route-1
       sectionName: some-section
     default:
       http:
@@ -321,7 +278,8 @@ targetRef:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: 10s
       idleTimeout: 1h
@@ -329,16 +287,11 @@ to:
         requestTimeout: 1s
         streamIdleTimeout: 1h
         maxStreamDuration: 1h
-        maxConnectionDuration: 1h
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionTimeout: 11s`,
+        maxConnectionDuration: 1h`,
 				expected: `
 violations:
-  - field: spec.from
-    message: must not be defined
+  - field: spec.targetRef.kind
+    message: value 'MeshHTTPRoute' is not supported
   - field: spec.to[0].targetRef.kind
     message: value 'MeshService' is not supported
   - field: spec.to[0].default.connectionTimeout
@@ -350,52 +303,23 @@ violations:
   - field: spec.to[0].default.http.maxConnectionDuration
     message: can't be specified when top-level TargetRef is referencing MeshHTTPRoute`,
 			}),
-			Entry("top-level targetRef is referencing MeshGateway", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshGateway
-  name: gateway-1
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      connectionTimeout: 10s
-      idleTimeout: 1h
-      http:
-        requestTimeout: 1s
-        streamIdleTimeout: 1h
-        maxStreamDuration: 1h
-        maxConnectionDuration: 1h
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionTimeout: 11s`,
-				expected: `
-violations:
-  - field: spec.from
-    message: must not be defined
-  - field: spec.to[0].targetRef.kind
-    message: value 'MeshService' is not supported`,
-			}),
-			Entry("to TargetRef using labels and name for MeshExternalService", testCase{
+			Entry("to TargetRef using labels and sectionName for MeshExternalService", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
 to:
   - targetRef:
       kind: MeshExternalService
-      name: web-backend
       labels:
         kuma.io/display-name: web-backend
+      sectionName: web-backend
     default:
       connectionTimeout: 10s
       idleTimeout: 1h`,
 				expected: `
 violations:
-  - field: spec.to[0].targetRef.labels
-    message: either labels or name must be specified`,
+  - field: spec.to[0].targetRef.sectionName
+    message: must not be set with kind MeshExternalService`,
 			}),
 			Entry("when rules is defined, to cannot be defined", testCase{
 				inputYaml: `
@@ -407,30 +331,14 @@ rules:
 to:
   - targetRef:
       kind: MeshService
-      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
     default:
       connectionTimeout: 10s`,
 				expected: `
 violations:
   - field: spec
-    message: fields 'to' and 'from' must be empty when 'rules' is defined`,
-			}),
-			Entry("when rules is defined, from cannot be defined", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-rules:
-  - default:
-      connectionTimeout: 10s
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      connectionTimeout: 10s`,
-				expected: `
-violations:
-  - field: spec
-    message: fields 'to' and 'from' must be empty when 'rules' is defined`,
+    message: fields 'to' must be empty when 'rules' is defined`,
 			}),
 			Entry("rules with empty spec", testCase{
 				inputYaml: `

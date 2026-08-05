@@ -1,0 +1,27 @@
+mesh: default
+metadata:
+  labels:
+    app: example
+    k8s.kuma.io/namespace: demo
+    kuma.io/display-name: example
+    kuma.io/mesh: default
+    version: "0.1"
+  name: example
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+    - health:
+        ready: true
+      port: 8080
+      protocol: tcp
+    transparentProxying:
+      directAccessServices:
+      - test-app_playground_svc_80
+      - test-app_playground_svc_443
+      reachableBackends:
+        refs:
+        - kind: MeshService
+          name: demo-app
+          namespace: kuma-demo
+          port: 5000

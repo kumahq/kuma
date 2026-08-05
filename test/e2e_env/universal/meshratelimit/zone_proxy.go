@@ -6,13 +6,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	meshratelimit_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshratelimit/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/zoneproxy"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	meshratelimit_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func zoneProxyMeshIdentity(meshName string) string {
@@ -104,7 +103,6 @@ func zoneProxySNI(meshName, zoneName, resourceName string) string {
 func ZoneProxy() {
 	const meshName = "mrl-zone-proxy"
 	const demoClient = "demo-client"
-	const egressWorkload = "zone-proxy-egress"
 	const externalServiceApp = "mrl-zone-proxy-ext"
 	const targetedMES = "mrl-target"
 	const untargetedMES = "mrl-other"
@@ -151,14 +149,12 @@ func ZoneProxy() {
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().
 				WithName(meshName).
-				WithoutInitialPolicies().
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive))).
+				WithoutInitialPolicies())).
 			Install(YamlUniversal(zoneProxyMeshIdentity(meshName))).
 			Install(YamlUniversal(zoneProxyMeshTrafficPermission(meshName, zoneName))).
 			Install(zoneproxy.Install(
 				zoneproxy.WithMesh(meshName),
-				zoneproxy.WithEgressPort(11102),
-				zoneproxy.WithWorkload(egressWorkload),
+				zoneproxy.WithEgress(),
 				zoneproxy.WithDpEnvs(dppEnvs),
 			)).
 			Install(TestServerExternalServiceUniversal(

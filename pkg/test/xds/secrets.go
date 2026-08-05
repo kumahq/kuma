@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 var TestSecretsInfo = &secrets.Info{
@@ -63,18 +63,6 @@ func (ts *TestSecrets) get(meshes []*core_mesh.MeshResource) (*core_xds.Identity
 	}
 
 	return identitySecret, cas, allInOne
-}
-
-func (ts *TestSecrets) GetForZoneEgress(
-	_ context.Context,
-	_ *core_mesh.ZoneEgressResource,
-	mesh *core_mesh.MeshResource,
-) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	if ts.NoSecrets {
-		return nil, nil, nil
-	}
-	identity, cas, _ := ts.get([]*core_mesh.MeshResource{mesh})
-	return identity, cas[mesh.GetMeta().GetName()], nil
 }
 
 func (ts *TestSecrets) GetForDataPlane(

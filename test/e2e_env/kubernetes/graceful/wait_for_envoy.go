@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func WaitForEnvoyReady() {
@@ -60,7 +60,7 @@ spec:
     - /bin/bash
     - -c
     - --
-    - 'curl --max-time 3 --fail test-server_wait-for-envoy_svc_80.mesh && test-server echo --port 80'
+    - 'curl --max-time 3 --fail test-server.wait-for-envoy.svc.cluster.local && test-server echo --port 80'
     readinessProbe:
       httpGet:
         path: /

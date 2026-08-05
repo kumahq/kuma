@@ -6,10 +6,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/client"
-	kumactl_resources "github.com/kumahq/kuma/v2/app/kumactl/pkg/resources"
-	kumactl_config "github.com/kumahq/kuma/v2/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/version"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/client"
+	kumactl_resources "github.com/kumahq/kuma/v3/app/kumactl/pkg/resources"
+	kumactl_config "github.com/kumahq/kuma/v3/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
 func ValidateCpCoordinates(cp *kumactl_config.ControlPlane, timeout time.Duration) error {

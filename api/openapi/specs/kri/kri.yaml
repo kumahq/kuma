@@ -30,7 +30,6 @@ paths:
                   - $ref: '/specs/policies/meshaccesslog/rest.yaml#/components/schemas/MeshAccessLogItem'
                   - $ref: '/specs/policies/meshcircuitbreaker/rest.yaml#/components/schemas/MeshCircuitBreakerItem'
                   - $ref: '/specs/policies/meshfaultinjection/rest.yaml#/components/schemas/MeshFaultInjectionItem'
-                  - $ref: '/specs/protoresources/meshgateway/rest.yaml#/components/schemas/MeshGatewayItem'
                   - $ref: '/specs/policies/meshhttproute/rest.yaml#/components/schemas/MeshHTTPRouteItem'
                   - $ref: '/specs/policies/meshhealthcheck/rest.yaml#/components/schemas/MeshHealthCheckItem'
                   - $ref: '/specs/policies/meshloadbalancingstrategy/rest.yaml#/components/schemas/MeshLoadBalancingStrategyItem'

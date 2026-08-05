@@ -1,13 +1,14 @@
 package sync
 
 import (
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
-	otelstatus "github.com/kumahq/kuma/v2/pkg/xds/otel/status"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
+	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
 )
 
 var xdsServerLog = core.Log.WithName("xds").WithName("server")
@@ -23,34 +24,10 @@ func DefaultDataplaneProxyBuilder(
 	}
 }
 
-func DefaultIngressProxyBuilder(
-	rt core_runtime.Runtime,
-	apiVersion core_xds.APIVersion,
-) *IngressProxyBuilder {
-	return &IngressProxyBuilder{
-		ResManager:        rt.ResourceManager(),
-		LookupIP:          rt.LookupIP(),
-		apiVersion:        apiVersion,
-		zone:              rt.Config().Multizone.Zone.Name,
-		ingressTagFilters: rt.Config().Experimental.IngressTagFilters,
-		InternalAddresses: core_xds.InternalAddressesFromCIDRs(rt.Config().IPAM.KnownInternalCIDRs),
-	}
-}
-
-func DefaultEgressProxyBuilder(rt core_runtime.Runtime, apiVersion core_xds.APIVersion) *EgressProxyBuilder {
-	return &EgressProxyBuilder{
-		apiVersion:        apiVersion,
-		zone:              rt.Config().Multizone.Zone.Name,
-		InternalAddresses: core_xds.InternalAddressesFromCIDRs(rt.Config().IPAM.KnownInternalCIDRs),
-	}
-}
-
 // DataplaneWatchdogFactory returns a Watchdog that creates a new XdsContext and Proxy and executes SnapshotReconciler if there is any change
 func DefaultDataplaneWatchdogFactory(
 	rt core_runtime.Runtime,
 	dataplaneReconciler SnapshotReconciler,
-	ingressReconciler SnapshotReconciler,
-	egressReconciler SnapshotReconciler,
 	xdsMetrics *xds_metrics.Metrics,
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	otelStatusCache *otelstatus.Cache,
@@ -62,21 +39,16 @@ func DefaultDataplaneWatchdogFactory(
 		config,
 		apiVersion,
 	)
-
-	ingressProxyBuilder := DefaultIngressProxyBuilder(
-		rt,
-		apiVersion,
-	)
-
-	egressProxyBuilder := DefaultEgressProxyBuilder(rt, apiVersion)
+	if config.XdsServer.PolicyMatchingCacheSize > 0 {
+		dataplaneProxyBuilder = dataplaneProxyBuilder.WithPolicyMatchingCache(matchers.NewPolicyMatchingCache(
+			xdsMetrics.PolicyMatchingCache,
+			config.XdsServer.PolicyMatchingCacheSize,
+		))
+	}
 
 	deps := DataplaneWatchdogDependencies{
 		DataplaneProxyBuilder: dataplaneProxyBuilder,
 		DataplaneReconciler:   dataplaneReconciler,
-		IngressProxyBuilder:   ingressProxyBuilder,
-		IngressReconciler:     ingressReconciler,
-		EgressProxyBuilder:    egressProxyBuilder,
-		EgressReconciler:      egressReconciler,
 		EnvoyCpCtx:            envoyCpCtx,
 		MeshCache:             rt.MeshCache(),
 		ResManager:            rt.ReadOnlyResourceManager(),

@@ -3,8 +3,8 @@ package issuer
 import (
 	"context"
 
-	"github.com/kumahq/kuma/v2/pkg/core/tokens"
-	"github.com/kumahq/kuma/v2/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/core/tokens"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
 )
 
 type UserTokenValidator interface {

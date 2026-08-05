@@ -1,2 +1,3 @@
 dataplaneConfigurationRefreshInterval: 3s
 dataplaneStatusFlushInterval: 5s
+policyMatchingCacheSize: 1234

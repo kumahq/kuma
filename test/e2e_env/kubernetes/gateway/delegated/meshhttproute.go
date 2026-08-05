@@ -6,12 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func MeshHTTPRoute(config *Config) func() {
@@ -32,7 +31,7 @@ func MeshHTTPRoute(config *Config) func() {
 			Expect(framework.DeleteMeshResources(
 				kubernetes.Cluster,
 				config.Mesh,
-				core_mesh.ExternalServiceResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
 			)).To(Succeed())
 		})
 
@@ -40,17 +39,21 @@ func MeshHTTPRoute(config *Config) func() {
 			// given
 			Expect(framework.YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
-kind: ExternalService
+kind: MeshExternalService
 metadata:
   name: external-service-mhr-delegated
-mesh: %s
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
 spec:
-  tags:
-    kuma.io/service: external-service-mhr
-    kuma.io/protocol: http
-  networking:
-    address: external-service.%s.svc.cluster.local:80 # .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
-`, config.Mesh, config.NamespaceOutsideMesh))(kubernetes.Cluster)).To(Succeed())
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: external-service.%s.svc.cluster.local
+      port: 80
+`, config.CpNamespace, config.Mesh, config.NamespaceOutsideMesh))(kubernetes.Cluster)).To(Succeed())
 
 			// when
 			Expect(framework.YamlK8s(fmt.Sprintf(`
@@ -63,26 +66,35 @@ metadata:
     kuma.io/mesh: %[2]s
 spec:
   targetRef:
-    kind: MeshService
-    name: %[2]s-gateway-admin_%[2]s_svc_8444
+    kind: Dataplane
+    labels:
+      app: %[2]s-gateway
   to:
     - targetRef:
         kind: MeshService
-        name: test-server_%[2]s_svc_80
-      rules: 
+        labels:
+          kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: %[3]s
+      rules:
         - matches:
-            - path: 
+            - path:
                 type: PathPrefix
                 value: /
           default:
             backendRefs:
               - kind: MeshService
-                name: test-server_%[2]s_svc_80
+                labels:
+                  kuma.io/display-name: test-server
+                  k8s.kuma.io/namespace: %[3]s
+                port: 80
                 weight: 50
-              - kind: MeshService
-                name: external-service-mhr
+              - kind: MeshExternalService
+                labels:
+                  kuma.io/display-name: external-service-mhr-delegated
+                  k8s.kuma.io/namespace: %[1]s
+                port: 80
                 weight: 50
-`, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
+`, config.CpNamespace, config.Mesh, config.Namespace))(kubernetes.Cluster)).To(Succeed())
 
 			// then receive responses from 'test-server_delegated-gateway_svc_80'
 			Eventually(func(g Gomega) {
@@ -163,14 +175,15 @@ metadata:
     kuma.io/mesh: %[2]s
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
-      kuma.io/service: %[2]s-gateway-admin_%[2]s_svc_8444
+    kind: Dataplane
+    labels:
+      app: %[2]s-gateway
   to:
     - targetRef:
         kind: MeshService
-        name: test-server
-        namespace: %[3]s
+        labels:
+          kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: %[3]s
       rules:
         - matches:
             - path:
@@ -179,12 +192,15 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: test-server
-                namespace: %[3]s
+                labels:
+                  kuma.io/display-name: test-server
+                  k8s.kuma.io/namespace: %[3]s
                 port: 80
                 weight: 50
               - kind: MeshExternalService
-                name: plain-external-service-delegated-ms
+                labels:
+                  kuma.io/display-name: plain-external-service-delegated-ms
+                  k8s.kuma.io/namespace: %[1]s
                 port: 80
                 weight: 50
 `, config.CpNamespace, config.Mesh, config.Namespace))(kubernetes.Cluster)).To(Succeed())

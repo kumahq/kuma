@@ -20,19 +20,18 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	policies_defaults "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/defaults"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	rules_inbound "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/merge"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	clusters_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters/v3"
-	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/merge"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	clusters_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters/v3"
+	listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 const (
@@ -78,7 +77,7 @@ func (c *DeprecatedListenerConfigurer) ConfigureListener(listener *envoy_listene
 			if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 				return err
 			}
-		case core_meta.ProtocolUnknown, core_meta.ProtocolTCP, core_meta.ProtocolKafka:
+		case core_meta.ProtocolUnknown, core_meta.ProtocolTCP:
 			if err := listeners_v3.UpdateTCPProxy(filterChain, tcpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 				return err
 			}
@@ -177,52 +176,6 @@ func ConfigureRouteAction(
 	} else if routeAction.IdleTimeout == nil {
 		routeAction.IdleTimeout = util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout)
 	}
-}
-
-func ConfigureGatewayListener(conf api.Conf, protocol mesh_proto.MeshGateway_Listener_Protocol, listener *envoy_listener.Listener) error {
-	if listener == nil {
-		return nil
-	}
-
-	httpTimeouts := func(hcm *envoy_hcm.HttpConnectionManager) error {
-		if hcm.CommonHttpProtocolOptions == nil {
-			hcm.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
-		}
-		hcm.CommonHttpProtocolOptions.IdleTimeout = toProtoDurationOrDefault(
-			conf.IdleTimeout,
-			policies_defaults.DefaultGatewayIdleTimeout,
-		)
-		hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
-			pointer.Deref(conf.Http).RequestHeadersTimeout,
-			policies_defaults.DefaultGatewayRequestHeadersTimeout,
-		)
-		hcm.StreamIdleTimeout = toProtoDurationOrDefault(
-			pointer.Deref(conf.Http).StreamIdleTimeout,
-			policies_defaults.DefaultGatewayStreamIdleTimeout,
-		)
-		if httpConf := pointer.Deref(conf.Http); httpConf.RequestTimeout != nil {
-			hcm.RequestTimeout = util_proto.Duration(httpConf.RequestTimeout.Duration)
-		}
-		return nil
-	}
-	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
-		proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, policies_defaults.DefaultGatewayIdleTimeout)
-		return nil
-	}
-	for _, filterChain := range listener.FilterChains {
-		switch protocol {
-		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
-			if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
-				return err
-			}
-		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
-			if err := listeners_v3.UpdateTCPProxy(filterChain, tcpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 func ConfigureFilterChain(conf api.Conf, filterChain *envoy_listener.FilterChain) error {

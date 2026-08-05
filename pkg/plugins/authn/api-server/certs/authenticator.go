@@ -3,7 +3,7 @@ package certs
 import (
 	"github.com/emicklei/go-restful/v3"
 
-	"github.com/kumahq/kuma/v2/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
 )
 
 // backwards compatibility with Kuma 1.3.x

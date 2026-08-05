@@ -12,8 +12,8 @@ import (
 	. "github.com/onsi/gomega"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
 
 var _ = Context("kumactl install control-plane", func() {
@@ -134,7 +134,6 @@ var _ = Context("kumactl install control-plane", func() {
 				"--dataplane-init-version", "greatest",
 				"--tls-api-server-secret", "api-server-secret",
 				"--tls-api-server-client-certs-secret", "api-server-client-secret",
-				"--tls-kds-global-server-secret", "kds-global-secret",
 				"--tls-kds-zone-client-secret", "kds-ca-secret",
 				"--tls-general-ca-secret", "general-tls-secret-ca",
 				"--mode", "zone",
@@ -157,31 +156,6 @@ var _ = Context("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
 		}),
-		Entry("should generate Kubernetes resources using ebpf (experimental)", testCase{
-			extraArgs: []string{
-				"--set", "experimental.ebpf.enabled=true",
-			},
-			goldenFile: "install-control-plane.tproxy-ebpf-experimental-enabled.golden.yaml",
-		}),
-		Entry("should generate Kubernetes resources for Global", testCase{
-			extraArgs: []string{
-				"--mode", "global",
-			},
-			goldenFile: "install-control-plane.global.golden.yaml",
-		}),
-		Entry("should generate Kubernetes resources for Global Universal mode", testCase{
-			extraArgs: []string{
-				"--mode",
-				"global",
-				"--set",
-				"controlPlane.environment=universal",
-				"--set",
-				"postgres.tls.mode=verifyFull",
-				"--set",
-				"postgres.tls.caSecretName=postgres-ca",
-			},
-			goldenFile: "install-control-plane.global-universal-on-k8s.golden.yaml",
-		}),
 		Entry("should generate Kubernetes resources for Zone Universal mode", testCase{
 			extraArgs: []string{
 				"--mode",
@@ -193,7 +167,8 @@ var _ = Context("kumactl install control-plane", func() {
 				"--zone",
 				"zone-1",
 			},
-			goldenFile: "install-control-plane.zone-universal-on-k8s.golden.yaml",
+			includeCRDs: true, // CRDs should be implicitly skipped for universal environment
+			goldenFile:  "install-control-plane.zone-universal-on-k8s.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources for Zone", testCase{
 			extraArgs: []string{
@@ -203,28 +178,8 @@ var _ = Context("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.zone.golden.yaml",
 		}),
-		Entry("should generate Kubernetes resources with Ingress enabled", testCase{
-			extraArgs: []string{
-				"--ingress-enabled",
-				"--ingress-drain-time", "60s",
-				"--mode", "zone",
-				"--zone", "zone-1",
-				"--kds-global-address", "grpcs://192.168.0.1:5685",
-				"--ingress-use-node-port",
-			},
-			goldenFile: "install-control-plane.with-ingress.golden.yaml",
-		}),
-		Entry("should generate Kubernetes resources with Egress enabled", testCase{
-			extraArgs: []string{
-				"--egress-enabled",
-				"--egress-drain-time", "60s",
-			},
-			goldenFile: "install-control-plane.with-egress.golden.yaml",
-		}),
 		Entry("should work with --set", testCase{
 			extraArgs: []string{
-				"--set",
-				"egress.enabled=true,ingress.enabled=true",
 				"--set",
 				"controlPlane.mode=zone,controlPlane.zone=zone-1,controlPlane.kdsGlobalAddress=grpcs://foo.com",
 			},
@@ -241,6 +196,13 @@ var _ = Context("kumactl install control-plane", func() {
 controlPlane:
   replicas: 2
 `,
+		}),
+		Entry("should skip CRDs with --skip-crds", testCase{
+			extraArgs: []string{
+				"--skip-crds",
+			},
+			includeCRDs: true, // don't add --skip-kinds, rely on --skip-crds flag
+			goldenFile:  "install-control-plane.skip-crds.golden.yaml",
 		}),
 		Entry("should add GatewayClass if CRDs are present and enabled", testCase{
 			extraArgs: []string{
@@ -272,13 +234,13 @@ controlPlane:
 			extraArgs: []string{"--mode", "test"},
 			errorMsg:  "controlPlane.mode invalid got:'test'",
 		}),
-		Entry("", errTestCase{
-			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "zone-1", "--set", "controlPlane.environment=universal", "--set", "egress.enabled=true"},
-			errorMsg:  "Can't have egress.enabled when running controlPlane.mode=='universal'",
+		Entry("--mode global with default (kubernetes) environment", errTestCase{
+			extraArgs: []string{"--mode", "global"},
+			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
 		}),
-		Entry("", errTestCase{
-			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "zone-1", "--set", "controlPlane.environment=universal", "--set", "egress.enabled=true"},
-			errorMsg:  "Can't have egress.enabled when running controlPlane.mode=='universal'",
+		Entry("--mode global with universal environment is still unsupported", errTestCase{
+			extraArgs: []string{"--mode", "global", "--set", "controlPlane.environment=universal"},
+			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
 		}),
 		Entry("--zone is more than 253 characters", errTestCase{
 			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "takryywlpeftgnlwuwmwwfwohwzqxqlofjfsuuldtatoxlmnniytycvdnduwplvgnpnjwvzmbkqrvgnlovpynrtuyhhrqibdzwbfjrmhvwkkryzfnudghaxmegfvacjlytuyeikuawquolrykwwldjiynaxrpqgxmvwashrkigadzhxdeihcbjurhpmdrnulajpaspqcgzqxsnjrdenhruaawooojpyoprgnnoqiqdhncuztbgfsvhparjlippv"},
@@ -296,9 +258,9 @@ controlPlane:
 			extraArgs: []string{"--kds-global-address", "http://192.168.0.1:1234", "--mode", "zone", "--zone", "zone-1"},
 			errorMsg:  "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// or grpc:// got:'http://192.168.0.1:1234'",
 		}),
-		Entry("--kds-global-address is used with standalone", errTestCase{
+		Entry("--mode standalone is no longer supported", errTestCase{
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "standalone"},
-			errorMsg:  "Can't specify a controlPlane.kdsGlobalAddress when controlPlane.mode!='zone'",
+			errorMsg:  "controlPlane.mode invalid got:'standalone'",
 		}),
 		Entry("--tls-general-secret without --tls-general-ca-bundle", errTestCase{
 			extraArgs: []string{"--tls-general-secret", "sec"},

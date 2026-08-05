@@ -3,9 +3,9 @@ package v1alpha1_test
 import (
 	"testing"
 
-	"github.com/kumahq/kuma/v2/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test"
 )
 
-func TestMeshTrust(t *testing.T) {
+func TestWorkload(t *testing.T) {
 	test.RunSpecs(t, "Workload Suite")
 }

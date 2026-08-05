@@ -7,11 +7,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/v2/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/printers"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	kumactl_cmd "github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/printers"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 )
 
 func NewGetResourcesCmd(pctx *kumactl_cmd.RootContext, desc model.ResourceTypeDescriptor) *cobra.Command {

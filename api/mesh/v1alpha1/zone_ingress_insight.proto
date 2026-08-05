@@ -6,7 +6,7 @@ import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/dataplane_insight.proto";
 import "google/protobuf/struct.proto";
 
-option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
 
 // ZoneIngressInsight defines the observed state of a Zone Ingress.
 message ZoneIngressInsight {
@@ -18,6 +18,7 @@ message ZoneIngressInsight {
   option (kuma.mesh.resource).ws.name = "zone-ingress-insight";
   option (kuma.mesh.resource).ws.read_only = true;
   option (kuma.mesh.resource).scope_namespace = true;
+  option (kuma.mesh.resource).policy_matching_exempt = true;
 
   // List of ADS subscriptions created by a given Zone Kuma CP.
   repeated DiscoverySubscription subscriptions = 1;

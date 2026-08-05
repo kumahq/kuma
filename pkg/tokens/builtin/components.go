@@ -1,15 +1,15 @@
 package builtin
 
 import (
-	store_config "github.com/kumahq/kuma/v2/pkg/config/core/resources/store"
-	dp_server "github.com/kumahq/kuma/v2/pkg/config/dp-server"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/tokens"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin/zone"
+	store_config "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/tokens"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone"
 )
 
 var log = core.Log.WithName("tokens-validator")
@@ -56,32 +56,4 @@ func NewDataplaneTokenValidator(resManager manager.ReadOnlyResourceManager, stor
 			storeType,
 		), nil
 	}), nil
-}
-
-func NewZoneTokenValidator(resManager manager.ReadOnlyResourceManager, isFederatedZone bool, storeType store_config.StoreType, cfg dp_server.ZoneTokenValidatorConfig) (zone.Validator, error) {
-	publicKeys, err := tokens.PublicKeyFromConfig(cfg.PublicKeys)
-	if err != nil {
-		return nil, err
-	}
-	staticSigningKeyAccessor, err := tokens.NewStaticSigningKeyAccessor(publicKeys)
-	if err != nil {
-		return nil, err
-	}
-	accessors := []tokens.SigningKeyAccessor{staticSigningKeyAccessor}
-	if cfg.UseSecrets {
-		if isFederatedZone {
-			accessors = append(accessors, tokens.NewSigningKeyFromPublicKeyAccessor(resManager, system.ZoneTokenSigningPublicKeyPrefix))
-		} else {
-			accessors = append(accessors, tokens.NewSigningKeyAccessor(resManager, system.ZoneTokenSigningKeyPrefix))
-		}
-	}
-
-	return zone.NewValidator(
-		tokens.NewValidator(
-			log.WithName("zone-token"),
-			accessors,
-			tokens.NewRevocations(resManager, model.ResourceKey{Name: system.ZoneTokenRevocations}),
-			storeType,
-		),
-	), nil
 }

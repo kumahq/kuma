@@ -8,11 +8,11 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 var allowedKinds = map[string]struct{}{
@@ -59,32 +59,11 @@ func (d *DataplaneResource) Validate() error {
 		err.Add(validateProbes(d.Spec.GetProbes()))
 
 	case d.Spec.IsBuiltinGateway():
-		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
-			err.AddViolationAt(net.Field("inbound"), "inbound cannot be defined for builtin gateways")
-		}
-
-		if len(d.Spec.GetNetworking().GetOutbound()) > 0 {
-			err.AddViolationAt(net.Field("outbound"), "outbound cannot be defined for builtin gateways")
-		}
-
-		if len(d.Spec.GetNetworking().GetListeners()) > 0 {
-			err.AddViolationAt(net.Field("listeners"),
-				"listeners cannot be defined for builtin gateways")
-		}
-
-		if d.Spec.GetProbes() != nil {
-			err.AddViolationAt(net.Field("probes"), "probes cannot be defined for builtin gateways")
-		}
-
-		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
-		err.Add(validateNetworking(d.Spec.GetNetworking()))
+		err.AddViolationAt(net.Field("gateway").Field("type"), "BUILTIN gateways are no longer supported, use DELEGATED instead")
 
 	default:
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 		err.Add(validateProbes(d.Spec.GetProbes()))
-		if d.Spec.GetMetrics() != nil {
-			err.Add(validateMetricsBackend(d.Spec.GetMetrics()))
-		}
 		err.AddErrorAt(net.Field("listeners"), validateListeners(d.Spec.GetNetworking()))
 	}
 
@@ -103,13 +82,6 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		field := path.Field("inbound").Index(i)
 		result := validateInbound(inbound, networking.Address)
 		err.AddErrorAt(field, result)
-		// Require service tag only if inbound has any tags (old setup).
-		// With InboundTagsDisabled inbounds have no tags (new setup).
-		if len(inbound.Tags) > 0 {
-			if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
-				err.AddViolationAt(field.Field("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
-			}
-		}
 	}
 	for i, outbound := range networking.GetOutbound() {
 		result := validateOutbound(outbound)
@@ -137,16 +109,6 @@ func validateProbes(probes *mesh_proto.Dataplane_Probes) validators.ValidationEr
 		}
 	}
 	return err
-}
-
-func validateMetricsBackend(metrics *mesh_proto.MetricsBackend) validators.ValidationError {
-	var verr validators.ValidationError
-	if metrics.GetType() != mesh_proto.MetricsPrometheusType {
-		verr.AddViolationAt(validators.RootedAt("metrics").Field("type"), fmt.Sprintf("unknown backend type. Available backends: %q", mesh_proto.MetricsPrometheusType))
-	} else {
-		verr.AddErrorAt(validators.RootedAt("metrics").Field("conf"), validatePrometheusConfig(metrics.GetConf()))
-	}
-	return verr
 }
 
 func validateAddress(path validators.PathBuilder, address string) validators.ValidationError {
@@ -190,21 +152,6 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 			}
 		}
 	}
-
-	validateProtocol := func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
-		var result validators.ValidationError
-		if value, exist := selector[mesh_proto.ProtocolTag]; exist {
-			if core_meta.ParseProtocol(value) == core_meta.ProtocolUnknown {
-				result.AddViolationAt(
-					path.Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(core_meta.SupportedProtocols.Strings()...)),
-				)
-			}
-		}
-		return result
-	}
-	result.Add(ValidateTags(validators.RootedAt("tags"), inbound.Tags, ValidateTagsOpts{
-		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
-	}))
 
 	if inbound.Protocol != "" && core_meta.ParseProtocol(inbound.Protocol) == core_meta.ProtocolUnknown {
 		result.AddViolationAt(
@@ -376,7 +323,9 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 		return result
 	}
 	result.Add(ValidateTags(validators.RootedAt("tags"), gateway.Tags, ValidateTagsOpts{
-		RequireService:      true,
+		// Require service tag only if gateway has any tags.
+		// Gateways have no tags in tag-free mode.
+		RequireService:      len(gateway.Tags) > 0,
 		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
 	}),
 	)

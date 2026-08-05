@@ -1,9 +1,13 @@
 package model
 
 import (
+	"encoding/binary"
+	"encoding/json"
 	"fmt"
+	"hash"
 	"hash/fnv"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -11,9 +15,9 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/kube-openapi/pkg/validation/validate"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 )
 
 const (
@@ -105,13 +109,59 @@ func Hash(resource Resource) []byte {
 }
 
 func HashMeta(r Resource) []byte {
-	meta := r.GetMeta()
 	hasher := fnv.New128a()
+	writeMetaIdentity(hasher, r)
+	_, _ = hasher.Write([]byte(r.GetMeta().GetVersion()))
+	return hasher.Sum(nil)
+}
+
+func HashMetaIdentity(r Resource) []byte {
+	hasher := fnv.New128a()
+	writeMetaIdentity(hasher, r)
+	return hasher.Sum(nil)
+}
+
+func writeMetaIdentity(hasher hash.Hash, r Resource) {
+	meta := r.GetMeta()
 	_, _ = hasher.Write([]byte(r.Descriptor().Name))
 	_, _ = hasher.Write([]byte(meta.GetMesh()))
 	_, _ = hasher.Write([]byte(meta.GetName()))
-	_, _ = hasher.Write([]byte(meta.GetVersion()))
-	return hasher.Sum(nil)
+}
+
+// WriteSortedLabels writes labels into hasher in a deterministic,
+// unambiguous order regardless of map iteration order. Keys and values are
+// length-prefixed so that e.g. {"a":"bc"} and {"ab":"c"} don't collide.
+func WriteSortedLabels(hasher hash.Hash, labels map[string]string) {
+	keys := make([]string, 0, len(labels))
+	for k := range labels {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var lenBuf [8]byte
+	writeLenPrefixed := func(s string) {
+		binary.BigEndian.PutUint64(lenBuf[:], uint64(len(s)))
+		_, _ = hasher.Write(lenBuf[:])
+		_, _ = hasher.Write([]byte(s))
+	}
+
+	for _, k := range keys {
+		writeLenPrefixed(k)
+		writeLenPrefixed(labels[k])
+	}
+}
+
+// WriteDeterministicJSON writes a stable JSON encoding of v into hasher.
+// encoding/json sorts map keys, so the resulting bytes are deterministic.
+func WriteDeterministicJSON(hasher hash.Hash, v any) {
+	b, err := json.Marshal(v)
+	if err == nil {
+		_, _ = hasher.Write(b)
+	} else {
+		// Marshaling should not fail for the plain data structs used in resource
+		// hashing, but fall back to a value that still changes with content.
+		_, _ = fmt.Fprintf(hasher, "%+v", v)
+	}
 }
 
 func Deprecations(resource Resource) []string {
@@ -128,10 +178,6 @@ type OverviewResource interface {
 type ResourceWithInsights interface {
 	NewInsightList() ResourceList
 	NewOverviewList() ResourceList
-}
-
-type ProxyResource interface {
-	GetProxyType() mesh_proto.ProxyTypeLabelValues
 }
 
 type ResourceTypeDescriptor struct {
@@ -179,7 +225,8 @@ type ResourceTypeDescriptor struct {
 	IsTargetRefBased bool
 	// HasToTargetRef indicates that the policy can be applied to outbound traffic
 	HasToTargetRef bool
-	// HasFromTargetRef indicates that the policy can be applied to inbound traffic
+	// HasFromTargetRef is retained for REST compatibility with older clients and
+	// is no longer set by policy generators.
 	HasFromTargetRef bool
 	// HasRulesTargetRef indicates that the policy can be applied to inbound traffic
 	HasRulesTargetRef bool
@@ -187,6 +234,10 @@ type ResourceTypeDescriptor struct {
 	HasStatus bool
 	// IsProxy indicates if this resource is a proxy
 	IsProxy bool
+	// AffectsPolicyMatching indicates whether changes to resources of this type can change which
+	// policies match a dataplane. False for pure observability data (Insight/Overview types) and
+	// for other proxies' roster entries, which don't affect matching for a given dpp.
+	AffectsPolicyMatching bool
 	// IsDestination indicates if this resource is a destination
 	IsDestination bool
 	// Validator contains an OpenAPI validator for this resource
@@ -203,8 +254,8 @@ type ResourceTypeDescriptor struct {
 	AllowedOnSystemNamespaceOnly bool
 	// ShortName a name that is used in kubectl or in the envoy configuration
 	ShortName string
-	// IsFromAsRules if true, the entries in the spec.from field should be interpreted as rules.
-	// It's true for policies that allow only kind 'Mesh' in the spec.from.targetRef.
+	// IsFromAsRules is retained for REST compatibility with older clients and is
+	// no longer set by policy generators.
 	IsFromAsRules bool
 	// Order defines the execution order of the associated plugin relative to others. It's used only when IsPluginOriginated is true.
 	// Lower values run first. Used by PolicyPlugins() to return a sorted list.
@@ -244,6 +295,10 @@ func (d ResourceTypeDescriptor) NewList() ResourceList {
 
 func (d ResourceTypeDescriptor) HasInsights() bool {
 	return d.Insight != nil
+}
+
+func (d ResourceTypeDescriptor) SupportsInbound() bool {
+	return d.HasRulesTargetRef
 }
 
 func (d ResourceTypeDescriptor) NewInsight() Resource {
@@ -631,11 +686,6 @@ type Policy interface {
 type PolicyWithToList interface {
 	Policy
 	GetToList() []PolicyItem
-}
-
-type PolicyWithFromList interface {
-	Policy
-	GetFromList() []PolicyItem
 }
 
 type PolicyWithSingleItem interface {

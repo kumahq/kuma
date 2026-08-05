@@ -18,13 +18,11 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"golang.org/x/crypto/ssh"
 
-	kssh "github.com/kumahq/kuma/v2/test/framework/ssh"
+	kssh "github.com/kumahq/kuma/v3/test/framework/ssh"
 )
 
 type NetworkingState struct {
-	ZoneEgress  Networking `json:"zoneEgress"`
-	ZoneIngress Networking `json:"zoneIngress"`
-	KumaCp      Networking `json:"kumaCp"`
+	KumaCp Networking `json:"kumaCp"`
 }
 
 type Networking struct {

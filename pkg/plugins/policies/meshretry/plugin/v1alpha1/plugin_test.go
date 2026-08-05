@@ -1,47 +1,40 @@
-//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
-	"time"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
-	plugin_v1alpha1 "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/plugin/v1alpha1"
-	gateway_plugin "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
-	xds_samples "github.com/kumahq/kuma/v2/pkg/test/xds/samples"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
+	plugin_v1alpha1 "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/plugin/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshRetry", func() {
@@ -51,7 +44,7 @@ var _ = Describe("MeshRetry", func() {
 		Zone:         "zone-1",
 		Namespace:    "backend-ns",
 		Name:         "backend",
-		SectionName:  "",
+		SectionName:  "10001",
 	}
 
 	backendMeshExternalServiceIdentifier := kri.Identifier{
@@ -60,7 +53,28 @@ var _ = Describe("MeshRetry", func() {
 		Zone:         "zone-1",
 		Namespace:    "kuma-system",
 		Name:         "backend",
-		SectionName:  "",
+		SectionName:  "10001",
+	}
+
+	httpServiceIdentifier := kri.Identifier{
+		ResourceType: meshservice_api.MeshServiceType,
+		Mesh:         "default",
+		Name:         "http-service",
+		SectionName:  "10001",
+	}
+
+	grpcServiceIdentifier := kri.Identifier{
+		ResourceType: meshservice_api.MeshServiceType,
+		Mesh:         "default",
+		Name:         "grpc-service",
+		SectionName:  "10002",
+	}
+
+	tcpServiceIdentifier := kri.Identifier{
+		ResourceType: meshservice_api.MeshServiceType,
+		Mesh:         "default",
+		Name:         "tcp-service",
+		SectionName:  "10003",
 	}
 
 	type testCase struct {
@@ -80,10 +94,6 @@ var _ = Describe("MeshRetry", func() {
 		context := *xds_builders.Context().
 			WithMeshBuilder(samples.MeshDefaultBuilder()).
 			WithResources(xds_context.NewResources()).
-			AddServiceProtocol("http-service", core_meta.ProtocolHTTP).
-			AddServiceProtocol("tcp-service", core_meta.ProtocolTCP).
-			AddServiceProtocol("grpc-service", core_meta.ProtocolGRPC).
-			AddServiceProtocol("backend", core_meta.ProtocolHTTP).
 			Build()
 
 		proxy := xds_builders.Proxy().
@@ -92,34 +102,11 @@ var _ = Describe("MeshRetry", func() {
 				WithMesh("default").
 				WithAddress("127.0.0.1").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
-			WithOutbounds(xds_types.Outbounds{
-				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
-					Port: builders.FirstOutboundPort,
-					Tags: map[string]string{
-						mesh_proto.ServiceTag: "http-service",
-					},
-				}},
-				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
-					Port: builders.FirstOutboundPort + 1,
-					Tags: map[string]string{
-						mesh_proto.ServiceTag: "grpc-service",
-					},
-				}},
-				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
-					Port: builders.FirstOutboundPort + 2,
-					Tags: map[string]string{
-						mesh_proto.ServiceTag: "tcp-service",
-					},
-				}},
+			WithMetadata(&core_xds.DataplaneMetadata{
+				// Outbounds are always built from real resources, so every proxy
+				// here supports unified resource naming.
+				Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
 			}).
-			WithRouting(
-				xds_builders.Routing().
-					WithOutboundTargets(xds_builders.EndpointMap().
-						AddEndpoint("http-service", xds_samples.HttpEndpointBuilder()).
-						AddEndpoint("tcp-service", xds_samples.TcpEndpointBuilder()).
-						AddEndpoint("grpc-service", xds_samples.GrpcEndpointBuilder()),
-					),
-			).
 			WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshRetryType, given.toRules)).
 			Build()
 
@@ -133,15 +120,18 @@ var _ = Describe("MeshRetry", func() {
 	},
 		Entry("http retry", testCase{
 			resources: []core_xds.Resource{{
-				Name:     "outbound",
-				Origin:   metadata.OriginOutbound,
-				Resource: httpListenerWithSimpleRoute(10001),
+				Name:           "outbound",
+				Origin:         metadata.OriginOutbound,
+				Resource:       httpListenerWithSimpleRoute(httpServiceIdentifier, 10001),
+				ResourceOrigin: httpServiceIdentifier,
+				Protocol:       core_meta.ProtocolHTTP,
 			}},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{},
-						Conf:   testFirstHTTPRetryConf(),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					httpServiceIdentifier: {
+						Conf: []any{
+							testFirstHTTPRetryConf(),
+						},
 					},
 				},
 			},
@@ -149,18 +139,21 @@ var _ = Describe("MeshRetry", func() {
 		}),
 		Entry("http retry 0 numRetries", testCase{
 			resources: []core_xds.Resource{{
-				Name:     "outbound",
-				Origin:   metadata.OriginOutbound,
-				Resource: httpListenerWithSimpleRoute(10001),
+				Name:           "outbound",
+				Origin:         metadata.OriginOutbound,
+				Resource:       httpListenerWithSimpleRoute(httpServiceIdentifier, 10001),
+				ResourceOrigin: httpServiceIdentifier,
+				Protocol:       core_meta.ProtocolHTTP,
 			}},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							HTTP: &api.HTTP{
-								NumRetries:    pointer.To[uint32](0),
-								PerTryTimeout: test.ParseDuration("2s"),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					httpServiceIdentifier: {
+						Conf: []any{
+							api.Conf{
+								HTTP: &api.HTTP{
+									NumRetries:    pointer.To[uint32](0),
+									PerTryTimeout: test.ParseDuration("2s"),
+								},
 							},
 						},
 					},
@@ -170,44 +163,44 @@ var _ = Describe("MeshRetry", func() {
 		}),
 		Entry("grpc retry", testCase{
 			resources: []core_xds.Resource{{
-				Name:     "outbound",
-				Origin:   metadata.OriginOutbound,
-				Resource: httpListenerWithSimpleRoute(10002),
+				Name:           "outbound",
+				Origin:         metadata.OriginOutbound,
+				Resource:       httpListenerWithSimpleRoute(grpcServiceIdentifier, 10002),
+				ResourceOrigin: grpcServiceIdentifier,
+				Protocol:       core_meta.ProtocolGRPC,
 			}},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{subsetutils.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "grpc-service",
-						}},
-						Conf: api.Conf{
-							GRPC: &api.GRPC{
-								NumRetries:    pointer.To[uint32](11),
-								PerTryTimeout: test.ParseDuration("12s"),
-								BackOff: &api.BackOff{
-									BaseInterval: test.ParseDuration("13s"),
-									MaxInterval:  test.ParseDuration("14s"),
-								},
-								RateLimitedBackOff: &api.RateLimitedBackOff{
-									MaxInterval: test.ParseDuration("15s"),
-									ResetHeaders: &[]api.ResetHeader{
-										{
-											Name:   "retry-after-grpc",
-											Format: "Seconds",
-										},
-										{
-											Name:   "x-retry-after-grpc",
-											Format: "UnixTimestamp",
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					grpcServiceIdentifier: {
+						Conf: []any{
+							api.Conf{
+								GRPC: &api.GRPC{
+									NumRetries:    pointer.To[uint32](11),
+									PerTryTimeout: test.ParseDuration("12s"),
+									BackOff: &api.BackOff{
+										BaseInterval: test.ParseDuration("13s"),
+										MaxInterval:  test.ParseDuration("14s"),
+									},
+									RateLimitedBackOff: &api.RateLimitedBackOff{
+										MaxInterval: test.ParseDuration("15s"),
+										ResetHeaders: &[]api.ResetHeader{
+											{
+												Name:   "retry-after-grpc",
+												Format: "Seconds",
+											},
+											{
+												Name:   "x-retry-after-grpc",
+												Format: "UnixTimestamp",
+											},
 										},
 									},
-								},
-								RetryOn: &[]api.GRPCRetryOn{
-									api.Canceled,
-									api.DeadlineExceeded,
-									api.Internal,
-									api.ResourceExhausted,
-									api.Unavailable,
+									RetryOn: &[]api.GRPCRetryOn{
+										api.Canceled,
+										api.DeadlineExceeded,
+										api.Internal,
+										api.ResourceExhausted,
+										api.Unavailable,
+									},
 								},
 							},
 						},
@@ -218,21 +211,21 @@ var _ = Describe("MeshRetry", func() {
 		}),
 		Entry("grpc retry 0 numRetries", testCase{
 			resources: []core_xds.Resource{{
-				Name:     "outbound",
-				Origin:   metadata.OriginOutbound,
-				Resource: httpListenerWithSimpleRoute(10002),
+				Name:           "outbound",
+				Origin:         metadata.OriginOutbound,
+				Resource:       httpListenerWithSimpleRoute(grpcServiceIdentifier, 10002),
+				ResourceOrigin: grpcServiceIdentifier,
+				Protocol:       core_meta.ProtocolGRPC,
 			}},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{subsetutils.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "grpc-service",
-						}},
-						Conf: api.Conf{
-							GRPC: &api.GRPC{
-								NumRetries:    pointer.To[uint32](0),
-								PerTryTimeout: test.ParseDuration("12s"),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					grpcServiceIdentifier: {
+						Conf: []any{
+							api.Conf{
+								GRPC: &api.GRPC{
+									NumRetries:    pointer.To[uint32](0),
+									PerTryTimeout: test.ParseDuration("12s"),
+								},
 							},
 						},
 					},
@@ -242,17 +235,20 @@ var _ = Describe("MeshRetry", func() {
 		}),
 		Entry("tcp retry", testCase{
 			resources: []core_xds.Resource{{
-				Name:     "outbound",
-				Origin:   metadata.OriginOutbound,
-				Resource: tcpListener(10003),
+				Name:           "outbound",
+				Origin:         metadata.OriginOutbound,
+				Resource:       tcpListener(tcpServiceIdentifier, 10003),
+				ResourceOrigin: tcpServiceIdentifier,
+				Protocol:       core_meta.ProtocolTCP,
 			}},
 			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							TCP: &api.TCP{
-								MaxConnectAttempt: pointer.To[uint32](21),
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					tcpServiceIdentifier: {
+						Conf: []any{
+							api.Conf{
+								TCP: &api.TCP{
+									MaxConnectAttempt: pointer.To[uint32](21),
+								},
 							},
 						},
 					},
@@ -260,103 +256,12 @@ var _ = Describe("MeshRetry", func() {
 			},
 			goldenFilePrefix: "tcp",
 		}),
-		Entry("retry per http route", testCase{
-			resources: []core_xds.Resource{
-				{
-					Name:     "outbound",
-					Origin:   metadata.OriginOutbound,
-					Resource: httpListenerWithSeveralRoutes(10001),
-				},
-			},
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{
-							{
-								Key:   mesh_proto.ServiceTag,
-								Value: "http-service",
-							},
-							{
-								Key:   core_rules.RuleMatchesHashTag,
-								Value: "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=", // '[{"path":{"value":"/","type":"PathPrefix"}}]'
-							},
-						},
-						Conf: testFirstHTTPRetryConf(),
-					},
-					{
-						Subset: subsetutils.Subset{
-							{
-								Key:   mesh_proto.ServiceTag,
-								Value: "http-service",
-							},
-							{
-								Key:   core_rules.RuleMatchesHashTag,
-								Value: "U8NGexJyQPtOd+lzwvsjLMysuDL6MmTJPSRX4C43niU=", // '[{"path":{"value":"/another-backend","type":"Exact"}},{"method":"GET"}]'
-							},
-						},
-						Conf: api.Conf{
-							HTTP: &api.HTTP{
-								NumRetries:    pointer.To[uint32](6),
-								PerTryTimeout: test.ParseDuration("77s"),
-								BackOff: &api.BackOff{
-									BaseInterval: test.ParseDuration("88s"),
-									MaxInterval:  test.ParseDuration("999s"),
-								},
-								RateLimitedBackOff: &api.RateLimitedBackOff{
-									MaxInterval: test.ParseDuration("11s"),
-									ResetHeaders: &[]api.ResetHeader{
-										{
-											Name:   "x-retry-after-http",
-											Format: "UnixTimestamp",
-										},
-									},
-								},
-								RetryOn: &[]api.HTTPRetryOn{
-									"499",
-								},
-								RetriableResponseHeaders: &[]common_api.HeaderMatch{
-									{
-										Type:  pointer.To(common_api.HeaderMatchRegularExpression),
-										Name:  "x-retry-regex",
-										Value: ".*",
-									},
-								},
-								RetriableRequestHeaders: &[]common_api.HeaderMatch{
-									{
-										Type:  pointer.To(common_api.HeaderMatchPrefix),
-										Name:  "x-retry-prefix",
-										Value: "prefix-another",
-									},
-								},
-								HostSelection: &[]api.Predicate{
-									{
-										PredicateType: "OmitPreviousHosts",
-									},
-									{
-										PredicateType:   "OmitPreviousPriorities",
-										UpdateFrequency: 5,
-									},
-									{
-										PredicateType: "OmitHostsWithTags",
-										Tags: &map[string]string{
-											"another-test": "another-test",
-										},
-									},
-								},
-								HostSelectionMaxAttempts: pointer.To(int64(99)),
-							},
-						},
-					},
-				},
-			},
-			goldenFilePrefix: "retry_per_http_route",
-		}),
 		Entry("retry per MeshHTTPRoute with resource rules", testCase{
 			resources: []core_xds.Resource{
 				{
 					Name:           "outbound",
 					Origin:         metadata.OriginOutbound,
-					Resource:       httpListenerWithSeveralMeshHTTPRoutes(10001, kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType)),
+					Resource:       httpListenerWithSeveralMeshHTTPRoutes(kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType), 10001, kri.FromResourceMeta(testMeshHTTPRouteMeta(), meshhttproute_api.MeshHTTPRouteType)),
 					ResourceOrigin: kri.FromResourceMeta(testMeshServiceMeta(), meshservice_api.MeshServiceType),
 					Protocol:       core_meta.ProtocolHTTP,
 				},
@@ -383,7 +288,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
 				Origin:         metadata.OriginOutbound,
-				Resource:       httpListenerWithSimpleRoute(10001),
+				Resource:       httpListenerWithSimpleRoute(backendMeshServiceIdentifier, 10001),
 				ResourceOrigin: backendMeshServiceIdentifier,
 				Protocol:       core_meta.ProtocolHTTP,
 			}},
@@ -402,7 +307,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
 				Origin:         metadata.OriginOutbound,
-				Resource:       httpListenerWithSimpleRoute(10001),
+				Resource:       httpListenerWithSimpleRoute(backendMeshExternalServiceIdentifier, 10001),
 				ResourceOrigin: backendMeshExternalServiceIdentifier,
 				Protocol:       core_meta.ProtocolHTTP,
 			}},
@@ -418,358 +323,6 @@ var _ = Describe("MeshRetry", func() {
 			goldenFilePrefix: "http-real-mesh-external-service",
 		}),
 	)
-
-	type gatewayTestCase struct {
-		rules            core_rules.GatewayRules
-		goldenFilePrefix string
-		gateways         []*core_mesh.MeshGatewayResource
-		gatewayRoutes    []*core_mesh.MeshGatewayRouteResource
-		meshhttproutes   core_rules.GatewayRules
-	}
-
-	DescribeTable("should generate proper Envoy config for MeshGateways",
-		func(given gatewayTestCase) {
-			resources := xds_context.NewResources()
-			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
-				Items: given.gateways,
-			}
-			resources.MeshLocalResources[core_mesh.RetryType] = &core_mesh.RetryResourceList{
-				Items: []*core_mesh.RetryResource{{
-					Meta: &test_model.ResourceMeta{Name: "retry1"},
-					Spec: &mesh_proto.Retry{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									mesh_proto.ServiceTag: "*",
-								},
-							},
-						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									mesh_proto.ServiceTag: "*",
-								},
-							},
-						},
-						Conf: &mesh_proto.Retry_Conf{
-							Http: &mesh_proto.Retry_Conf_Http{
-								NumRetries:    util_proto.UInt32(5),
-								PerTryTimeout: util_proto.Duration(16 * time.Second),
-								BackOff: &mesh_proto.Retry_Conf_BackOff{
-									BaseInterval: util_proto.Duration(25 * time.Millisecond),
-									MaxInterval:  util_proto.Duration(250 * time.Millisecond),
-								},
-							},
-							Tcp: &mesh_proto.Retry_Conf_Tcp{
-								MaxConnectAttempts: 5,
-							},
-							Grpc: &mesh_proto.Retry_Conf_Grpc{
-								NumRetries:    util_proto.UInt32(5),
-								PerTryTimeout: util_proto.Duration(16 * time.Second),
-								BackOff: &mesh_proto.Retry_Conf_BackOff{
-									BaseInterval: util_proto.Duration(25 * time.Millisecond),
-									MaxInterval:  util_proto.Duration(250 * time.Millisecond),
-								},
-							},
-						},
-					},
-				}},
-			}
-			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-				Items: given.gatewayRoutes,
-			}
-
-			xdsCtx := *xds_samples.SampleContextWith(resources).Build()
-			proxy := xds_builders.Proxy().
-				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().
-					WithGatewayPolicy(api.MeshRetryType, given.rules).
-					WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes)).
-				Build()
-			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
-			}
-			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
-			Expect(err).NotTo(HaveOccurred())
-
-			httpRoutePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			// when
-			plugin := plugin_v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-
-			// then
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.listeners.golden.yaml", given.goldenFilePrefix))))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.routes.golden.yaml", given.goldenFilePrefix))))
-		},
-		Entry("http retry", gatewayTestCase{
-			goldenFilePrefix: "gateway.http",
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{
-								{
-									Subset: subsetutils.Subset{},
-									Conf: api.Conf{
-										HTTP: &api.HTTP{
-											NumRetries:    pointer.To[uint32](1),
-											PerTryTimeout: test.ParseDuration("2s"),
-											BackOff: &api.BackOff{
-												BaseInterval: test.ParseDuration("3s"),
-												MaxInterval:  test.ParseDuration("4s"),
-											},
-											RateLimitedBackOff: &api.RateLimitedBackOff{
-												MaxInterval: test.ParseDuration("5s"),
-												ResetHeaders: &[]api.ResetHeader{
-													{
-														Name:   "retry-after-http",
-														Format: "Seconds",
-													},
-													{
-														Name:   "x-retry-after-http",
-														Format: "UnixTimestamp",
-													},
-												},
-											},
-											RetryOn: &[]api.HTTPRetryOn{
-												api.All5xx,
-												api.GatewayError,
-												api.Reset,
-												api.Retriable4xx,
-												api.ConnectFailure,
-												api.EnvoyRatelimited,
-												api.RefusedStream,
-												api.Http3PostConnectFailure,
-												api.HttpMethodConnect,
-												api.HttpMethodDelete,
-												api.HttpMethodGet,
-												api.HttpMethodHead,
-												api.HttpMethodOptions,
-												api.HttpMethodPatch,
-												api.HttpMethodPost,
-												api.HttpMethodPut,
-												api.HttpMethodTrace,
-												"429",
-											},
-											RetriableResponseHeaders: &[]common_api.HeaderMatch{
-												{
-													Type:  pointer.To(common_api.HeaderMatchRegularExpression),
-													Name:  "x-retry-regex",
-													Value: ".*",
-												},
-												{
-													Type:  pointer.To(common_api.HeaderMatchExact),
-													Name:  "x-retry-exact",
-													Value: "exact-value",
-												},
-											},
-											RetriableRequestHeaders: &[]common_api.HeaderMatch{
-												{
-													Type:  pointer.To(common_api.HeaderMatchPrefix),
-													Name:  "x-retry-prefix",
-													Value: "prefix-",
-												},
-											},
-											HostSelection: &[]api.Predicate{
-												{
-													PredicateType: "OmitPreviousHosts",
-												},
-												{
-													PredicateType:   "OmitPreviousPriorities",
-													UpdateFrequency: 2,
-												},
-												{
-													PredicateType: "OmitHostsWithTags",
-													Tags: &map[string]string{
-														"test": "test",
-													},
-												},
-											},
-											HostSelectionMaxAttempts: pointer.To(int64(2)),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			gateways:      []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
-			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
-		}),
-		Entry("tcp retry", gatewayTestCase{
-			goldenFilePrefix: "gateway.tcp",
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{{
-								Subset: subsetutils.Subset{},
-								Conf: api.Conf{
-									TCP: &api.TCP{
-										MaxConnectAttempt: pointer.To[uint32](21),
-									},
-								},
-							}},
-						},
-					},
-				},
-			},
-			gateways:      []*core_mesh.MeshGatewayResource{samples.GatewayTCPResource()},
-			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayTCPRoute()},
-		}),
-		Entry("http retry with MeshHTTPRoute", gatewayTestCase{
-			goldenFilePrefix: "per-route-configuration.gateway.http",
-			rules: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-						{Address: "192.168.0.1", Port: 8080}: {
-							Rules: core_rules.Rules{
-								{
-									Subset: subsetutils.Subset{
-										{
-											Key:   core_rules.RuleMatchesHashTag,
-											Value: "L2t9uuHxXPXUg5ULwRirUaoxN4BU/zlqyPK8peSWm2g=",
-										},
-									},
-									Conf: api.Conf{
-										HTTP: &api.HTTP{
-											NumRetries:    pointer.To[uint32](1),
-											PerTryTimeout: test.ParseDuration("2s"),
-											BackOff: &api.BackOff{
-												BaseInterval: test.ParseDuration("3s"),
-												MaxInterval:  test.ParseDuration("4s"),
-											},
-											RateLimitedBackOff: &api.RateLimitedBackOff{
-												MaxInterval: test.ParseDuration("5s"),
-												ResetHeaders: &[]api.ResetHeader{
-													{
-														Name:   "retry-after-http",
-														Format: "Seconds",
-													},
-													{
-														Name:   "x-retry-after-http",
-														Format: "UnixTimestamp",
-													},
-												},
-											},
-											RetryOn: &[]api.HTTPRetryOn{
-												api.All5xx,
-												api.GatewayError,
-												api.Reset,
-												api.Retriable4xx,
-												api.ConnectFailure,
-												api.EnvoyRatelimited,
-												api.RefusedStream,
-												api.Http3PostConnectFailure,
-												api.HttpMethodConnect,
-												api.HttpMethodDelete,
-												api.HttpMethodGet,
-												api.HttpMethodHead,
-												api.HttpMethodOptions,
-												api.HttpMethodPatch,
-												api.HttpMethodPost,
-												api.HttpMethodPut,
-												api.HttpMethodTrace,
-												"429",
-											},
-											RetriableResponseHeaders: &[]common_api.HeaderMatch{
-												{
-													Type:  pointer.To(common_api.HeaderMatchRegularExpression),
-													Name:  "x-retry-regex",
-													Value: ".*",
-												},
-												{
-													Type:  pointer.To(common_api.HeaderMatchExact),
-													Name:  "x-retry-exact",
-													Value: "exact-value",
-												},
-											},
-											RetriableRequestHeaders: &[]common_api.HeaderMatch{
-												{
-													Type:  pointer.To(common_api.HeaderMatchPrefix),
-													Name:  "x-retry-prefix",
-													Value: "prefix-",
-												},
-											},
-											HostSelection: &[]api.Predicate{
-												{
-													PredicateType: "OmitPreviousHosts",
-												},
-												{
-													PredicateType:   "OmitPreviousPriorities",
-													UpdateFrequency: 2,
-												},
-												{
-													PredicateType: "OmitHostsWithTags",
-													Tags: &map[string]string{
-														"test": "test",
-													},
-												},
-											},
-											HostSelectionMaxAttempts: pointer.To(int64(2)),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			gateways: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
-			meshhttproutes: core_rules.GatewayRules{
-				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							Rules: core_rules.Rules{
-								{
-									Subset: subsetutils.MeshSubset(),
-									Conf: meshhttproute_api.PolicyDefault{
-										Rules: []meshhttproute_api.Rule{
-											{
-												Matches: []meshhttproute_api.Match{{
-													Path: &meshhttproute_api.PathMatch{
-														Type:  meshhttproute_api.Exact,
-														Value: "/",
-													},
-												}},
-												Default: meshhttproute_api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefService("backend"),
-														Weight:    pointer.To(uint(100)),
-													}},
-												},
-											},
-											{
-												Matches: []meshhttproute_api.Match{{
-													Path: &meshhttproute_api.PathMatch{
-														Type:  meshhttproute_api.Exact,
-														Value: "/another-route",
-													},
-													Method: pointer.To[meshhttproute_api.Method]("GET"),
-												}},
-												Default: meshhttproute_api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefService("backend"),
-														Weight:    pointer.To(uint(100)),
-													}},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}),
-	)
 })
 
 func getResourceYaml(list core_xds.ResourceList) []byte {
@@ -781,35 +334,32 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 	return actualListener
 }
 
-func httpListenerWithSeveralRoutes(port uint32) envoy_common.NamedResource {
-	return httpListener(port, AddFilterChainConfigurer(samples.MeshHttpOutboundWithSeveralRoutes("http-service")))
+func httpListenerWithSeveralMeshHTTPRoutes(destination kri.Identifier, port uint32, meshHTTPRoute kri.Identifier) envoy_common.NamedResource {
+	return httpListener(destination, port, AddFilterChainConfigurer(samples.RealMeshHTTPRouteOutboundRoutes("http-service", meshHTTPRoute)))
 }
 
-func httpListenerWithSeveralMeshHTTPRoutes(port uint32, meshHTTPRoute kri.Identifier) envoy_common.NamedResource {
-	return httpListener(port, AddFilterChainConfigurer(samples.RealMeshHTTPRouteOutboundRoutes("http-service", meshHTTPRoute)))
+func httpListenerWithSimpleRoute(destination kri.Identifier, port uint32) envoy_common.NamedResource {
+	return httpListener(destination, port, AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("backend")))
 }
 
-func httpListenerWithSimpleRoute(port uint32) envoy_common.NamedResource {
-	return httpListener(port, AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("backend")))
-}
-
-func httpListener(port uint32, route FilterChainBuilderOpt) envoy_common.NamedResource {
-	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", port, core_xds.SocketAddressProtocolTCP).
+// httpListener and tcpListener name the outbound listener after the destination,
+// the way the route generators name it for a real-resource destination.
+func httpListener(destination kri.Identifier, port uint32, route FilterChainBuilderOpt) envoy_common.NamedResource {
+	return NewListenerBuilder(envoy_common.APIV3, destination.String()).
+		Configure(OutboundListener("127.0.0.1", port, core_xds.SocketAddressProtocolTCP)).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-			Configure(HttpConnectionManager(fmt.Sprintf("outbound:127.0.0.1:%d", port), false, nil, true)).
+			Configure(HttpConnectionManager(destination.String(), false, nil, true)).
 			Configure(route))).
 		MustBuild()
 }
 
-func tcpListener(port uint32) envoy_common.NamedResource {
-	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", port, core_xds.SocketAddressProtocolTCP).
+func tcpListener(destination kri.Identifier, port uint32) envoy_common.NamedResource {
+	return NewListenerBuilder(envoy_common.APIV3, destination.String()).
+		Configure(OutboundListener("127.0.0.1", port, core_xds.SocketAddressProtocolTCP)).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 			Configure(TcpProxyDeprecated(
-				fmt.Sprintf("outbound:127.0.0.1:%d", port),
-				envoy_common.NewCluster(
-					envoy_common.WithService("backend"),
-					envoy_common.WithWeight(100),
-				),
+				destination.String(),
+				plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 			)),
 		)).
 		MustBuild()

@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func MeshProxyPatch() {
@@ -17,12 +17,13 @@ func MeshProxyPatch() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(mesh)).
-			Install(TestServerUniversal("test-server", mesh,
+			Install(TestServerUniversal(
+				"test-server", mesh,
 				WithTransparentProxy(true),
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("test-server"),
 			)).
-			Install(DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -44,8 +45,9 @@ mesh: %s
 name: backend-lua-filter
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: demo-client
   default:
     appendModifications:
       - httpFilter:
@@ -53,8 +55,6 @@ spec:
           match:
             name: envoy.filters.http.router
             origin: outbound
-            listenerTags:
-              kuma.io/service: test-server
           value: |
             name: envoy.filters.http.lua
             typedConfig:
@@ -71,7 +71,7 @@ spec:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func(g Gomega) {
-			responses, err := client.CollectResponses(universal.Cluster, "demo-client", "test-server.mesh")
+			responses, err := client.CollectResponses(universal.Cluster, "demo-client", "test-server.svc.mesh.local")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses[0].Received.Headers["X-Header"]).To(ContainElements("test"))
 		}, "30s", "1s").Should(Succeed())

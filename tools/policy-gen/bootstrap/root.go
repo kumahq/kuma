@@ -23,7 +23,6 @@ type config struct {
 	version           string
 	generateTargetRef bool
 	generateTo        bool
-	generateFrom      bool
 	isPolicy          bool
 	hasStatus         bool
 	order             int
@@ -103,7 +102,6 @@ func generateType(c config) error {
 		"version":           c.version,
 		"generateTargetRef": c.generateTargetRef,
 		"generateTo":        c.generateTo,
-		"generateFrom":      c.generateFrom,
 		"isPolicy":          c.isPolicy,
 		"hasStatus":         c.hasStatus,
 		"order":             c.order,
@@ -123,7 +121,6 @@ func generateType(c config) error {
 		"version":           c.version,
 		"generateTargetRef": c.generateTargetRef,
 		"generateTo":        c.generateTo,
-		"generateFrom":      c.generateFrom,
 		"isPolicy":          c.isPolicy,
 	})
 }
@@ -143,7 +140,6 @@ func generatePlugin(c config) error {
 		"package":           fmt.Sprintf("%s/%s/%s/api/%s", c.gomodule, c.basePath, c.lowercase(), c.version),
 		"generateTargetRef": c.generateTargetRef,
 		"generateTo":        c.generateTo,
-		"generateFrom":      c.generateFrom,
 		"order":             c.order,
 	})
 }
@@ -160,13 +156,12 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVar(&cfg.name, "name", "", "The name of the policy (UpperCamlCase)")
 	rootCmd.Flags().StringVar(&cfg.basePath, "path", "pkg/plugins/policies", "Where to put the generated code")
-	rootCmd.Flags().StringVar(&cfg.gomodule, "gomodule", "github.com/kumahq/kuma/v2", "Where to put the generated code")
+	rootCmd.Flags().StringVar(&cfg.gomodule, "gomodule", "github.com/kumahq/kuma/v3", "Where to put the generated code")
 	rootCmd.Flags().StringVar(&cfg.version, "version", "v1alpha1", "The version to use")
 	rootCmd.Flags().BoolVar(&cfg.skipValidator, "skip-validator", false, "don't generator a validator empty file")
 	rootCmd.Flags().BoolVar(&cfg.force, "force", false, "Overwrite any existing code")
 	rootCmd.Flags().BoolVar(&cfg.generateTargetRef, "generate-target-ref", true, "Generate top-level TargetRef for dataplane proxy matching")
 	rootCmd.Flags().BoolVar(&cfg.generateTo, "generate-to", false, "Generate 'to' array for outgoing traffic configuration")
-	rootCmd.Flags().BoolVar(&cfg.generateFrom, "generate-from", false, "Generate 'from' array for incoming traffic configuration")
 	rootCmd.Flags().BoolVar(&cfg.isPolicy, "is-policy", false, "Resource is a policy")
 	rootCmd.Flags().BoolVar(&cfg.hasStatus, "has-status", false, "Resource has a status field")
 	rootCmd.Flags().IntVar(&cfg.order, "order", 0, "Execution order of the policy plugin relative to others (lower runs first)")
@@ -175,10 +170,10 @@ func init() {
 var typeTemplate = template.Must(template.New("").Option("missingkey=error").Parse(
 	`// +kubebuilder:object:generate=true
 package {{ .version }}
-{{- if or .generateTargetRef (or .generateTo .generateFrom) }}
+{{- if or .generateTargetRef .generateTo }}
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 )
 {{- end}}
 
@@ -199,10 +194,6 @@ type {{ .name }} struct {
 	// To list makes a match between the consumed services and corresponding configurations
 	To []To` + " `json:\"to,omitempty\"`" + `
 	{{- end}}
-	{{- if .generateFrom }}
-	// From list makes a match between clients and corresponding configurations
-	From []From` + " `json:\"from,omitempty\"`" + `
-	{{- end}}
 }
 {{- if .generateTo }}
 
@@ -216,19 +207,6 @@ type To struct {
 }
 
 {{- end}}
-{{- if .generateFrom }}
-
-type From struct {
-	// TargetRef is a reference to the resource that represents a group of
-	// clients.
-	TargetRef common_api.TargetRef` + " `json:\"targetRef\"`" + `
-	// Default is a configuration specific to the group of clients referenced in
-	// 'targetRef'
-	Default Conf` + " `json:\"default,omitempty\"`" + `
-}
-
-{{- end}}
-
 {{- if .isPolicy }}
 type Conf struct {
 	// TODO add configuration fields
@@ -246,16 +224,16 @@ var pluginTemplate = template.Must(template.New("").Option("missingkey=error").P
 	`package {{ .version }}
 
 import (
-	"github.com/kumahq/kuma/v2/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
 
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	{{- if .generateTargetRef }}
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	{{- end}}
 	api "{{ .package }}"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -286,11 +264,11 @@ var validatorTemplate = template.Must(template.New("").Option("missingkey=error"
 	`package {{.version}}
 
 import (
-	{{- if or .generateTargetRef (or .generateTo .generateFrom) }}
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	{{- if or .generateTargetRef .generateTo }}
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	{{- end}}
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
 func (r *{{.name}}Resource) validate() error {
@@ -299,24 +277,13 @@ func (r *{{.name}}Resource) validate() error {
 	{{- if .generateTargetRef }}
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
 	{{- end }}
-	{{- if and .generateTo .generateFrom }}
-	if len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
-		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
-	}
-	{{- else if .generateTo }}
+	{{- if .generateTo }}
 	if len(pointer.Deref(r.Spec.To)) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
-	}
-	{{- else if .generateFrom }}
-	if len(pointer.Deref(r.Spec.From)) == 0 {
-		verr.AddViolationAt(path.Field("from"), "needs at least one item")
 	}
 	{{- end }}
 	{{- if .generateTo }}
 	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
-	{{- end }}
-	{{- if .generateFrom }}
-	verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
 	{{- end }}
 	return verr.OrNil()
 }
@@ -329,23 +296,6 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 		},
 	})
 	return targetRefErr
-}
-
-{{- end }}
-{{- if .generateFrom }}
-
-func validateFrom(from []From) validators.ValidationError {
-	var verr validators.ValidationError
-	for idx, fromItem := range from {
-		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.TargetRef, &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				// TODO add supported TargetRef for 'from' item
-			},
-		}))
-		verr.AddErrorAt(path.Field("default"), validateDefault(fromItem.Default))
-	}
-	return verr
 }
 
 {{- end }}

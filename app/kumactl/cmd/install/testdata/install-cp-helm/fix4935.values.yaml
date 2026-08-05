@@ -17,34 +17,6 @@ controlPlane:
     annotations:
       foo: '{"bar": "baz"}'
       service: "ingress"
-  globalZoneSyncService:
-    annotations:
-      foo: '{"bar": "baz"}'
-      service: "globalSync"
-ingress:
-  enabled: true
-  annotations:
-    foo: '{"bar": "baz"}'
-    pod: "zone-ingress"
-  podAnnotations:
-    foo: '{"bar": "baz"}'
-    pod2: "zone-ingress"
-  service:
-    annotations:
-      foo: '{"bar": "baz"}'
-      service: "zone-ingress"
-egress:
-  enabled: true
-  annotations:
-    foo: '{"bar": "baz"}'
-    pod: "zone-egress"
-  podAnnotations:
-    foo: '{"bar": "baz"}'
-    pod2: "zone-ingress"
-  service:
-    annotations:
-      foo: '{"bar": "baz"}'
-      service: "zone-egress"
 cni:
   enabled: true
   podAnnotations:

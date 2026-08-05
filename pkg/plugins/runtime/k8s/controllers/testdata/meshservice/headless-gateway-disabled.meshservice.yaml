@@ -1,2 +1,54 @@
-items: []
+items:
+- metadata:
+    labels:
+      k8s.kuma.io/is-headless-service: "true"
+      k8s.kuma.io/service-name: example
+      kuma.io/mesh: default
+    name: example-1-87ff74c98
+    namespace: demo
+    ownerReferences:
+    - apiVersion: v1
+      kind: Pod
+      name: example-1
+      uid: example-1-1
+    resourceVersion: "999"
+  spec:
+    ports:
+    - appProtocol: http
+      name: "80"
+      port: 80
+      targetPort: 8080
+    - appProtocol: tcp
+      name: "443"
+      port: 443
+      targetPort: 8443
+    selector:
+      dataplaneRef:
+        name: example-1.demo
+- metadata:
+    labels:
+      k8s.kuma.io/is-headless-service: "true"
+      k8s.kuma.io/service-name: example
+      kuma.io/mesh: default
+    name: example-2-87ff74c98
+    namespace: demo
+    ownerReferences:
+    - apiVersion: v1
+      kind: Pod
+      name: example-2
+      uid: example-2-1
+    resourceVersion: "999"
+  spec:
+    ports:
+    - appProtocol: http
+      name: "80"
+      port: 80
+      targetPort: 8080
+    - appProtocol: tcp
+      name: "443"
+      port: 443
+      targetPort: 8443
+    selector:
+      dataplaneRef:
+        name: example-2.demo
 metadata: {}

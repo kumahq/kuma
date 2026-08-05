@@ -20,7 +20,8 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes
+        labels:
+          kuma.io/display-name: mes
       default:
         http:
           numRetries: 4
@@ -32,13 +33,14 @@ mesh: mesh-1
 name: mr-3
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: kong_kong_svc_80
   to:
     - targetRef:
         kind: MeshExternalService
-        name: mes
+        labels:
+          kuma.io/display-name: mes
       default:
         http:
           backOff:

@@ -18,6 +18,9 @@ const (
 	K8sKumaIOPrefix = "k8s.kuma.io/"
 )
 
+// WildcardHostname matches any hostname when used in hostname-based matching.
+const WildcardHostname = "*"
+
 const (
 	KubeNamespaceTag = "k8s.kuma.io/namespace"
 	KubeServiceTag   = "k8s.kuma.io/service-name"
@@ -49,6 +52,11 @@ const (
 	EnvTag = "kuma.io/env"
 
 	MeshTag = "kuma.io/mesh"
+
+	// UnifiedNameTag is the io.kuma.tags listener key filled when tags are empty
+	// so listenerTags keeps matching: the destination KRI on an outbound, the
+	// contextual self-reference on an inbound.
+	UnifiedNameTag = "kuma.io/unified-name"
 
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
@@ -85,10 +93,6 @@ const (
 	// PolicyRoleLabel is a standard label that reflects the role of the policy. The value is automatically set by the
 	// Kuma CP based on the policy spec. Supported values are "producer", "consumer", "system" and "workload-owner".
 	PolicyRoleLabel = "kuma.io/policy-role"
-
-	// ProxyTypeLabel is a standard label that reflects the type of proxy. Supported values are "sidecar", "gateway",
-	// "zoneingress", "zoneegress"
-	ProxyTypeLabel = "kuma.io/proxy-type"
 
 	// ManagedByLabel is used when a MeshService is auto-generated
 	ManagedByLabel = "kuma.io/managed-by"
@@ -164,15 +168,6 @@ func (r PolicyRole) Compare(o PolicyRole) int {
 	return roleOrder[r] - roleOrder[o]
 }
 
-type ProxyTypeLabelValues string
-
-const (
-	SidecarLabel     ProxyTypeLabelValues = "sidecar"
-	GatewayLabel     ProxyTypeLabelValues = "gateway"
-	ZoneIngressLabel ProxyTypeLabelValues = "zoneingress"
-	ZoneEgressLabel  ProxyTypeLabelValues = "zoneegress"
-)
-
 type ProxyType string
 
 const (
@@ -190,12 +185,11 @@ func (t ProxyType) IsValid() error {
 }
 
 type InboundInterface struct {
-	DataplaneAdvertisedIP string
-	DataplaneIP           string
-	DataplanePort         uint32
-	WorkloadIP            string
-	WorkloadPort          uint32
-	InboundName           string
+	DataplaneIP   string
+	DataplanePort uint32
+	WorkloadIP    string
+	WorkloadPort  uint32
+	InboundName   string
 }
 
 // We need to implement TextMarshaler because InboundInterface is used
@@ -279,17 +273,6 @@ func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networkin
 	return oface
 }
 
-func (n *Dataplane_Networking) GetInboundInterface(service string) (*InboundInterface, error) {
-	for _, inbound := range n.Inbound {
-		if inbound.Tags[ServiceTag] != service {
-			continue
-		}
-		iface := n.ToInboundInterface(inbound)
-		return &iface, nil
-	}
-	return nil, errors.Errorf("Dataplane has no Inbound Interface for service %q", service)
-}
-
 func (n *Dataplane_Networking) GetInboundInterfaces() []InboundInterface {
 	if n == nil {
 		return nil
@@ -343,11 +326,6 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 	} else {
 		iface.DataplaneIP = n.Address
 	}
-	if n.AdvertisedAddress != "" {
-		iface.DataplaneAdvertisedIP = n.AdvertisedAddress
-	} else {
-		iface.DataplaneAdvertisedIP = iface.DataplaneIP
-	}
 	if inbound.ServiceAddress != "" {
 		iface.WorkloadIP = inbound.ServiceAddress
 	} else {
@@ -377,44 +355,27 @@ func (n *Dataplane_Networking) GetHealthyInbounds() []*Dataplane_Networking_Inbo
 }
 
 // Matches is simply an alias for MatchTags to make source code more aesthetic.
+// Only the gateway carries tags; regular inbounds are matched via labels.
 func (d *Dataplane) Matches(selector TagSelector) bool {
 	if d == nil {
 		return false
 	}
-	for _, inbound := range d.GetNetworking().GetInbound() {
-		if selector.Matches(inbound.Tags) {
-			return true
-		}
-	}
 	return selector.Matches(d.GetNetworking().GetGateway().GetTags())
 }
 
+// MatchTagsFuzzy fuzzy-matches the gateway's tags; regular inbounds are
+// matched via labels.
 func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
 	if d == nil {
 		return false
 	}
-	for _, inbound := range d.GetNetworking().GetInbound() {
-		if selector.MatchesFuzzy(inbound.Tags) {
-			return true
-		}
-	}
 	return selector.MatchesFuzzy(d.GetNetworking().GetGateway().GetTags())
 }
 
-// GetService returns a service represented by this inbound interface.
-//
-// The purpose of this method is to encapsulate implementation detail
-// that service is modeled as a tag rather than a separate field.
-func (d *Dataplane_Networking_Inbound) GetService() string {
-	if d == nil {
-		return ""
-	}
-	return d.Tags[ServiceTag]
-}
-
-// GetProtocolFallback returns a protocol supported by this inbound interface.
-// It first checks the Protocol field, then falls back to the protocol tag
-// for backward compatibility.
+// GetProtocolFallback returns the protocol supported by this inbound interface.
+// The kuma.io/protocol tag is still read as a fallback: protocol is a per-port
+// property that resource labels cannot express, so Universal dataplanes
+// persisted before the Protocol field existed carry it only as an inbound tag.
 func (d *Dataplane_Networking_Inbound) GetProtocolFallback() string {
 	if d == nil {
 		return ""
@@ -423,6 +384,23 @@ func (d *Dataplane_Networking_Inbound) GetProtocolFallback() string {
 		return d.Protocol
 	}
 	return d.Tags[ProtocolTag]
+}
+
+// GetServiceFallback returns the service this inbound belongs to, preferring
+// the legacy per-inbound kuma.io/service tag over the given Dataplane-scoped
+// fallback (its kuma.io/service label). A Dataplane carries a single service
+// label, so a Dataplane provisioned before the move to labels that exposes
+// several services can only be resolved per inbound, from the tag it still
+// declares. Without the tag every inbound would inherit one service and
+// per-service filtering would publish ports of unrelated services.
+func (d *Dataplane_Networking_Inbound) GetServiceFallback(fallback string) string {
+	if d == nil {
+		return fallback
+	}
+	if service := d.GetTags()[ServiceTag]; service != "" {
+		return service
+	}
+	return fallback
 }
 
 // GetSectionName returns either inbound name or stringified port value
@@ -631,17 +609,10 @@ func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
 	return set
 }
 
+// TagSet returns the gateway's tags; regular inbounds carry no tag-shaped
+// identity and are represented by Dataplane labels instead.
 func (d *Dataplane) TagSet() MultiValueTagSet {
 	tags := MultiValueTagSet{}
-	for _, inbound := range d.GetNetworking().GetInbound() {
-		for tag, value := range inbound.Tags {
-			_, exists := tags[tag]
-			if !exists {
-				tags[tag] = map[string]bool{}
-			}
-			tags[tag][value] = true
-		}
-	}
 	for tag, value := range d.GetNetworking().GetGateway().GetTags() {
 		_, exists := tags[tag]
 		if !exists {
@@ -652,11 +623,10 @@ func (d *Dataplane) TagSet() MultiValueTagSet {
 	return tags
 }
 
+// SingleValueTagSets returns the gateway's tag set; regular inbounds carry
+// no tag-shaped identity and are represented by Dataplane labels instead.
 func (d *Dataplane) SingleValueTagSets() []SingleValueTagSet {
 	var sets []SingleValueTagSet
-	for _, inbound := range d.GetNetworking().GetInbound() {
-		sets = append(sets, SingleValueTagSet(inbound.Tags))
-	}
 	if gateway := d.GetNetworking().GetGateway(); gateway != nil {
 		sets = append(sets, gateway.GetTags())
 	}
@@ -671,13 +641,6 @@ func (d *Dataplane) IsDelegatedGateway() bool {
 func (d *Dataplane) IsBuiltinGateway() bool {
 	return d.GetNetworking().GetGateway() != nil &&
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_BUILTIN
-}
-
-func (d *Dataplane) GetProxyType() ProxyTypeLabelValues {
-	if d.IsBuiltinGateway() {
-		return GatewayLabel
-	}
-	return SidecarLabel
 }
 
 func (t MultiValueTagSet) String() string {

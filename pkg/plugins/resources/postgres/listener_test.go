@@ -3,23 +3,26 @@ package postgres_test
 import (
 	"context"
 	"fmt"
+	"net"
+	"strconv"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	config_postgres "github.com/kumahq/kuma/v2/pkg/config/plugins/resources/postgres"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	kuma_events "github.com/kumahq/kuma/v2/pkg/events"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres/config"
-	events_postgres "github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres/events"
-	"github.com/kumahq/kuma/v2/pkg/util/channels"
+	config_postgres "github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	kuma_events "github.com/kumahq/kuma/v3/pkg/events"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	common_postgres "github.com/kumahq/kuma/v3/pkg/plugins/common/postgres"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
+	events_postgres "github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/events"
+	"github.com/kumahq/kuma/v3/pkg/test"
 )
 
 var _ = Describe("Events", func() {
@@ -33,9 +36,13 @@ var _ = Describe("Events", func() {
 			// given
 			listenerStopCh, listenerErrCh, eventBusStopCh, storeErrCh := setupChannels()
 			defer close(eventBusStopCh)
-			defer close(listenerErrCh)
-			listener := setupListeners(cfg, driverName, listenerErrCh, listenerStopCh)
-			go triggerNotifications(cfg, driverName, storeErrCh)
+			listener := setupListeners(cfg, driverName, listenerErrCh, listenerStopCh, 5*time.Second)
+			storeCtx, stopStore := context.WithCancel(context.Background())
+			storeDoneCh := triggerNotifications(storeCtx, cfg, driverName, storeErrCh)
+			defer func() {
+				stopStore()
+				Eventually(storeDoneCh, "5s", "10ms").Should(BeClosed())
+			}()
 
 			eventsChan := listener.Recv()
 
@@ -50,9 +57,7 @@ var _ = Describe("Events", func() {
 
 			// and shutdown gracefully
 			close(listenerStopCh)
-			close(storeErrCh)
 			Eventually(channelClosesWithoutErrors(listenerErrCh), "5s", "10ms").Should(BeTrue())
-			Eventually(channelClosesWithoutErrors(storeErrCh), "5s", "10ms").Should(BeTrue())
 		},
 		Entry("When using pgx", config_postgres.DriverNamePgx),
 	)
@@ -62,13 +67,28 @@ var _ = Describe("Events", func() {
 			// given
 			cfg, err := c.Config()
 			Expect(err).ToNot(HaveOccurred())
+			proxy, err := test.NewTCPProxy(net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port)))
+			Expect(err).ToNot(HaveOccurred())
+			defer func() {
+				Expect(proxy.Stop()).To(Succeed())
+			}()
+			cfg.Host = proxy.Host()
+			cfg.Port = proxy.Port()
+
 			ver, err := postgres.MigrateDb(cfg)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ver).To(Equal(dbVersion))
 			listenerStopCh, listenerErrCh, eventBusStopCh, storeErrCh := setupChannels()
 			defer close(eventBusStopCh)
-			listener := setupListeners(cfg, driverName, listenerErrCh, listenerStopCh)
-			go triggerNotifications(cfg, driverName, storeErrCh)
+			listener := setupListeners(cfg, driverName, listenerErrCh, listenerStopCh, 100*time.Millisecond)
+			storeCtx, stopStore := context.WithCancel(context.Background())
+			storeDoneCh := triggerNotifications(storeCtx, cfg, driverName, storeErrCh)
+			defer func() {
+				stopStore()
+				Eventually(storeDoneCh, "5s", "10ms").Should(BeClosed())
+				close(listenerStopCh)
+				Eventually(channelClosesWithoutErrors(listenerErrCh), "5s", "10ms").Should(BeTrue())
+			}()
 
 			eventsChan := listener.Recv()
 
@@ -80,10 +100,11 @@ var _ = Describe("Events", func() {
 			Expect(resourceChanged.Operation).To(Equal(kuma_events.Create))
 			Expect(resourceChanged.Type).To(Equal(model.ResourceType("Mesh")))
 
-			Expect(c.Stop()).To(Succeed())
-			Consistently(storeErrCh, "1s", "100ms").Should(Receive())
+			Expect(proxy.Stop()).To(Succeed())
+			Eventually(storeErrCh, "5s", "10ms").Should(Receive())
 
-			Expect(c.Start()).To(Succeed())
+			Expect(proxy.Start()).To(Succeed())
+			waitForPostgres(cfg)
 
 			Eventually(eventsChan, "5s").Should(Receive(&resourceChanged))
 			Expect(eventBusStopCh).ToNot(BeClosed())
@@ -99,7 +120,7 @@ func setupChannels() (chan struct{}, chan error, chan struct{}, chan error) {
 	listenerStopCh := make(chan struct{})
 	listenerErrCh := make(chan error)
 	eventBusStopCh := make(chan struct{})
-	storeErrCh := make(chan error)
+	storeErrCh := make(chan error, 1)
 
 	return listenerStopCh, listenerErrCh, eventBusStopCh, storeErrCh
 }
@@ -116,7 +137,13 @@ func setupStore(cfg config_postgres.PostgresStoreConfig, driverName string) stor
 	return pStore
 }
 
-func setupListeners(cfg config_postgres.PostgresStoreConfig, driverName string, listenerErrCh chan error, listenerStopCh chan struct{}) kuma_events.Listener {
+func setupListeners(
+	cfg config_postgres.PostgresStoreConfig,
+	driverName string,
+	listenerErrCh chan error,
+	listenerStopCh chan struct{},
+	restartBackoff time.Duration,
+) kuma_events.Listener {
 	cfg.DriverName = driverName
 	metrics, err := core_metrics.NewMetrics("")
 	Expect(err).ToNot(HaveOccurred())
@@ -124,7 +151,7 @@ func setupListeners(cfg config_postgres.PostgresStoreConfig, driverName string, 
 	Expect(err).ToNot(HaveOccurred())
 	listener := eventsBus.Subscribe()
 	l := events_postgres.NewListener(cfg, eventsBus)
-	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l, 5*time.Second, 1*time.Minute)
+	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l, restartBackoff, 1*time.Minute)
 	go func() {
 		listenerErrCh <- resilientListener.Start(listenerStopCh)
 	}()
@@ -132,15 +159,45 @@ func setupListeners(cfg config_postgres.PostgresStoreConfig, driverName string, 
 	return listener
 }
 
-func triggerNotifications(cfg config_postgres.PostgresStoreConfig, driverName string, storeErrCh chan error) {
-	pStore := setupStore(cfg, driverName)
-	defer GinkgoRecover()
-	for i := 0; !channels.IsClosed(storeErrCh); i++ {
-		err := pStore.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey(fmt.Sprintf("mesh-%d", i), ""))
-		if err != nil {
-			storeErrCh <- err
+func triggerNotifications(ctx context.Context, cfg config_postgres.PostgresStoreConfig, driverName string, storeErrCh chan<- error) <-chan struct{} {
+	doneCh := make(chan struct{})
+	go func() {
+		defer GinkgoRecover()
+		defer close(doneCh)
+
+		pStore := setupStore(cfg, driverName)
+		for i := 0; ; i++ {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			err := pStore.Create(ctx, mesh.NewMeshResource(), store.CreateByKey(fmt.Sprintf("mesh-%d", i), ""))
+			if err != nil {
+				select {
+				case storeErrCh <- err:
+				default:
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(10 * time.Millisecond):
+				}
+			}
 		}
-	}
+	}()
+	return doneCh
+}
+
+func waitForPostgres(cfg config_postgres.PostgresStoreConfig) {
+	Eventually(func() error {
+		db, err := common_postgres.ConnectToDb(cfg)
+		if err != nil {
+			return err
+		}
+		return db.Close()
+	}, "10s", "100ms").Should(Succeed())
 }
 
 func channelClosesWithoutErrors(listenerErrCh chan error) func() bool {

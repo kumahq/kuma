@@ -4,10 +4,10 @@ import (
 	"math"
 	"slices"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var log = core.Log.WithName("mesh-load-balancing-strategy")
@@ -122,7 +122,8 @@ func affinityTagPodLabels(labels map[string]string, conf api.Conf) map[string]st
 
 // resolveAffinityValues returns all values for an affinity tag key.
 // It prefers inbound tags but falls back to pod labels when tags are absent.
-// This is needed when KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED=true strips inbound tags.
+// Inbounds carry no tags in tag-free mode; pod labels are passed so the
+// endpoint side can fold them into envoy.lb metadata (see topology.endpointIdentity).
 func resolveAffinityValues(inboundTags mesh_proto.MultiValueTagSet, podLabels map[string]string, key string) []string {
 	if values := inboundTags.Values(key); len(values) > 0 {
 		return values

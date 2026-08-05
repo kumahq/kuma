@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func Policy() {
@@ -31,6 +31,7 @@ func Policy() {
 				WithArgs([]string{"echo", "--instance", "test-server"}),
 				WithServiceName("mesh-tls-test-server"),
 				WithDockerContainerName(testServerContainerName),
+				WithLabels(map[string]string{"kuma.io/service": "mesh-tls-test-server"}),
 			)).
 			Install(TestServerUniversal(
 				testServer2Name, meshName,
@@ -59,13 +60,11 @@ mesh: %s
 name: mesh-tls-policy
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: %s
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         mode: Permissive`, meshName, testServerName)
 		// when
 		// default strict mode on mesh
@@ -77,7 +76,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -87,7 +86,7 @@ spec:
 		// can access test-server-2 from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server-2"))
@@ -121,7 +120,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -129,7 +128,7 @@ spec:
 			// and
 			// can access test-server-2 from service in the mesh
 			responses, err = client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server-2"))
@@ -159,13 +158,11 @@ mesh: %s
 name: mesh-tls-policy
 spec:
   targetRef:
-    kind: MeshSubset
-    tags:
+    kind: Dataplane
+    labels:
       kuma.io/service: %s
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         mode: Strict`, meshName, testServerName)
 		// when
 		// default strict mode on mesh
@@ -177,7 +174,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -187,7 +184,7 @@ spec:
 		// can access test-server-2 from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server-2"))
@@ -221,7 +218,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -229,7 +226,7 @@ spec:
 			// and
 			// can access test-server-2 from service in the mesh
 			responses, err = client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server-2.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server-2"))
@@ -263,10 +260,8 @@ name: mesh-tls-policy
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         tlsVersion:
           min: TLS13
           max: TLS13`, meshName)
@@ -280,7 +275,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -302,7 +297,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -326,10 +321,8 @@ name: mesh-tls-policy
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         tlsVersion:
           min: TLS12
           max: TLS12
@@ -345,7 +338,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
@@ -375,7 +368,7 @@ spec:
 		// can access test-server from service in the mesh
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
-				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.mesh",
+				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))

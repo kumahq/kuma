@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 )
 
 var _ = Describe("GetCommoncore_meta.Protocol()", func() {
@@ -98,11 +98,6 @@ var _ = Describe("GetCommoncore_meta.Protocol()", func() {
 		}),
 		Entry("`grpc` and `tcp`", testCase{
 			one:      core_meta.ProtocolGRPC,
-			another:  core_meta.ProtocolTCP,
-			expected: core_meta.ProtocolTCP,
-		}),
-		Entry("`kafka` and `tcp`", testCase{
-			one:      core_meta.ProtocolKafka,
 			another:  core_meta.ProtocolTCP,
 			expected: core_meta.ProtocolTCP,
 		}),

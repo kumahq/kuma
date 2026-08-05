@@ -9,23 +9,25 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	conf "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	k8s_util "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/util"
-	inject "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks/injector"
-	"github.com/kumahq/kuma/v2/pkg/test/matchers"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	conf "github.com/kumahq/kuma/v3/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	k8s_util "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
+	inject "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/webhooks/injector"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
 
 var _ = Describe("Injector", func() {
 	systemNamespace := "kuma-system"
+	tproxyConfigMapName := "kuma-transparent-proxy-config"
 
 	caCertPath := filepath.Join(
 		"..", "..", "..", "..", "..", "..",
@@ -41,6 +43,20 @@ var _ = Describe("Injector", func() {
 
 	BeforeAll(func() {
 		err := k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: systemNamespace}})
+		Expect(err).ToNot(HaveOccurred())
+
+		// The transparent proxy ConfigMap is the single source of the base
+		// transparent proxy config. It mirrors the config shipped by the Helm
+		// chart in the kuma-system namespace.
+		err = k8sClient.Create(context.Background(), &kube_core.ConfigMap{
+			ObjectMeta: kube_meta.ObjectMeta{Name: tproxyConfigMapName, Namespace: systemNamespace},
+			Data: map[string]string{
+				"config.yaml": `
+kumaDPUser: "5678"
+ipFamilyMode: dualstack
+`,
+			},
+		})
 		Expect(err).ToNot(HaveOccurred())
 
 		cPatch := `
@@ -91,18 +107,14 @@ spec:
 			// setup
 			inputFile := filepath.Join("testdata", fmt.Sprintf("inject.%s.input.yaml", given.num))
 
-			run := func(sidecarsEnabled bool) {
-				var goldenFile string
-				if sidecarsEnabled {
-					goldenFile = filepath.Join("testdata", fmt.Sprintf("inject.sidecar-feature.%s.golden.yaml", given.num))
-				} else {
-					goldenFile = filepath.Join("testdata", fmt.Sprintf("inject.%s.golden.yaml", given.num))
-				}
+			run := func() {
+				goldenFile := filepath.Join("testdata", fmt.Sprintf("inject.%s.golden.yaml", given.num))
 
 				var cfg conf.Injector
 				Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 				cfg.CaCertFile = caCertPath
-				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, sidecarsEnabled, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, false)
+				cfg.TransparentProxyConfigMapName = tproxyConfigMapName
+				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				// and create mesh
@@ -134,13 +146,9 @@ spec:
 				err = injector.InjectKuma(context.Background(), pod)
 				// then
 				Expect(err).ToNot(HaveOccurred())
-				if !sidecarsEnabled {
-					Expect(pod.Spec.Containers[0].Name).To(BeEquivalentTo(k8s_util.KumaSidecarContainerName))
-				} else {
-					Expect(pod.Spec.InitContainers).To(ContainElement(
-						WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName))),
-					)
-				}
+				Expect(pod.Spec.InitContainers).To(ContainElement(
+					WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName))),
+				)
 
 				By("loading golden Pod")
 				// when
@@ -151,11 +159,8 @@ spec:
 				By("comparing actual against golden")
 				Expect(actual).To(matchers.MatchGoldenYAML(goldenFile))
 			}
-			It("injects as traditional sidecar container", func() {
-				run(false)
-			})
-			It("injects with sidecar containers feature", func() {
-				run(true)
+			It("injects with native sidecar containers", func() {
+				run()
 			})
 		},
 		Entry("01. Pod without init containers and annotations", testCase{
@@ -349,7 +354,6 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled
-                annotations:
                   kuma.io/mesh: mesh-name-from-ns`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -368,7 +372,6 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled
-                annotations:
                   kuma.io/mesh: mesh-name-from-ns`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -653,22 +656,6 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.builtindns.config.yaml",
 		}),
-		Entry("30. with ebpf", testCase{
-			num: "30",
-			mesh: `
-              apiVersion: kuma.io/v1alpha1
-              kind: Mesh
-              metadata:
-                name: default`,
-			namespace: `
-              apiVersion: v1
-              kind: Namespace
-              metadata:
-                name: default
-                labels:
-                  kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.ebpf.config.yaml",
-		}),
 		Entry("31. with duplicate container/sidecar uid", testCase{
 			num: "31",
 			mesh: `
@@ -854,22 +841,6 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config-cni.yaml",
 		}),
-		Entry("42. Pod with delta grpc", testCase{
-			num: "42",
-			mesh: `
-                apiVersion: kuma.io/v1alpha1
-                kind: Mesh
-                metadata:
-                  name: default`,
-			namespace: `
-                apiVersion: v1
-                kind: Namespace
-                metadata:
-                  name: default
-                  labels:
-                    kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.config.yaml",
-		}),
 		Entry("43. Pod with spire mount", testCase{
 			num: "43",
 			mesh: `
@@ -888,6 +859,64 @@ spec:
 		}),
 	)
 
+	It("falls back to init-container sidecar injection when native sidecars are unavailable", func() {
+		var cfg conf.Injector
+		Expect(config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
+		cfg.CaCertFile = caCertPath
+		cfg.TransparentProxyConfigMapName = tproxyConfigMapName
+		injector, err := inject.New(
+			cfg,
+			"http://kuma-control-plane.kuma-system:5681",
+			k8sClient,
+			false,
+			k8s.NewSimpleConverter(),
+			9901,
+			9902,
+			false,
+			systemNamespace,
+			nil,
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
+		mesh, _, err := decoder.Decode([]byte(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+`), nil, nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(k8sClient.Create(context.Background(), mesh.(kube_client.Object))).To(Succeed())
+
+		ns, _, err := decoder.Decode([]byte(`
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: default
+  labels:
+    kuma.io/sidecar-injection: enabled
+`), nil, nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(k8sClient.Update(context.Background(), ns.(kube_client.Object))).To(Succeed())
+
+		pod := &kube_core.Pod{}
+		input, err := os.ReadFile(filepath.Join("testdata", "inject.01.input.yaml"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(yaml.Unmarshal(input, pod)).To(Succeed())
+
+		Expect(injector.InjectKuma(context.Background(), pod)).To(Succeed())
+		Expect(pod.Spec.Containers).ToNot(BeEmpty())
+		Expect(pod.Spec.Containers[0].Name).To(Equal(k8s_util.KumaSidecarContainerName))
+		Expect(pod.Spec.Containers[0].RestartPolicy).To(BeNil())
+		Expect(pod.Spec.Containers[0].StartupProbe).To(BeNil())
+		Expect(pod.Spec.InitContainers).To(ContainElement(
+			WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaInitContainerName)),
+		))
+		Expect(pod.Spec.InitContainers).ToNot(ContainElement(
+			WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
+		))
+	})
+
 	DescribeTable("should not inject Kuma into a Pod",
 		func(given testCase) {
 			// setup
@@ -897,7 +926,8 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, false)
+			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1003,7 +1033,8 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, false)
+			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1080,19 +1111,19 @@ spec:
 			var cfg conf.Injector
 			ExpectWithOffset(1, config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
+			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
 
 			inj, err := inject.New(
 				cfg,
 				"http://kuma-control-plane.kuma-system:5681",
 				k8sClient,
-				false,
+				true,
 				k8s.NewSimpleConverter(),
 				9901,
 				9902,
 				false,
 				systemNamespace,
 				nil,
-				false,
 			)
 			ExpectWithOffset(1, err).ToNot(HaveOccurred())
 			return inj
@@ -1151,7 +1182,7 @@ spec:
 			pod := newPod(true, "ingress")
 
 			Expect(newInjector().InjectKuma(context.Background(), pod)).To(Succeed())
-			Expect(pod.Spec.Containers).To(ContainElement(
+			Expect(pod.Spec.InitContainers).To(ContainElement(
 				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
 			))
 		})
@@ -1162,7 +1193,7 @@ spec:
 			err := newInjector().InjectKuma(context.Background(), pod)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(`"default" not found`))
-			Expect(pod.Spec.Containers).ToNot(ContainElement(
+			Expect(pod.Spec.InitContainers).ToNot(ContainElement(
 				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
 			))
 		})
@@ -1174,7 +1205,7 @@ spec:
 			err := newInjector().InjectKuma(context.Background(), pod)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(`"default" not found`))
-			Expect(pod.Spec.Containers).ToNot(ContainElement(
+			Expect(pod.Spec.InitContainers).ToNot(ContainElement(
 				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
 			))
 		})
@@ -1193,7 +1224,7 @@ spec:
 			pod := newPod(false, "")
 
 			Expect(newInjector().InjectKuma(context.Background(), pod)).To(Succeed())
-			Expect(pod.Spec.Containers).To(ContainElement(
+			Expect(pod.Spec.InitContainers).To(ContainElement(
 				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
 			))
 		})
@@ -1206,124 +1237,34 @@ spec:
 			err := newInjector().InjectKuma(context.Background(), pod)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(`"default" not found`))
-			Expect(pod.Spec.Containers).ToNot(ContainElement(
+			Expect(pod.Spec.InitContainers).ToNot(ContainElement(
 				WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName)),
 			))
 		})
-	})
 
-	Describe("delta xDS injection", func() {
-		const (
-			defaultMesh = `
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: default`
-			defaultNamespace = `
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: default
-  labels:
-    kuma.io/sidecar-injection: enabled`
-		)
+		It("does not stack container-level resources onto a sidecar injected into a pod with pod-level resources", func() {
+			pod := newPod(true, "ingress")
+			pod.Spec.Resources = &kube_core.ResourceRequirements{
+				Requests: kube_core.ResourceList{
+					kube_core.ResourceCPU:    resource.MustParse("100m"),
+					kube_core.ResourceMemory: resource.MustParse("128Mi"),
+				},
+				Limits: kube_core.ResourceList{
+					kube_core.ResourceCPU:    resource.MustParse("500m"),
+					kube_core.ResourceMemory: resource.MustParse("256Mi"),
+				},
+			}
 
-		newInjector := func(deltaXdsEnabled bool) *inject.KumaInjector {
-			var cfg conf.Injector
-			ExpectWithOffset(1, config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
-			cfg.CaCertFile = caCertPath
-			inj, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, deltaXdsEnabled)
-			ExpectWithOffset(1, err).ToNot(HaveOccurred())
-			return inj
-		}
+			Expect(newInjector().InjectKuma(context.Background(), pod)).To(Succeed())
 
-		injectPod := func(injector *inject.KumaInjector, podYAML string) *kube_core.Pod {
-			decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
-
-			obj, _, err := decoder.Decode([]byte(defaultMesh), nil, nil)
-			ExpectWithOffset(1, err).ToNot(HaveOccurred())
-			ExpectWithOffset(1, k8sClient.Create(context.Background(), obj.(kube_client.Object))).To(Succeed())
-
-			ns, _, err := decoder.Decode([]byte(defaultNamespace), nil, nil)
-			ExpectWithOffset(1, err).ToNot(HaveOccurred())
-			ExpectWithOffset(1, k8sClient.Update(context.Background(), ns.(kube_client.Object))).To(Succeed())
-
-			pod := &kube_core.Pod{}
-			ExpectWithOffset(1, yaml.Unmarshal([]byte(podYAML), pod)).To(Succeed())
-			ExpectWithOffset(1, injector.InjectKuma(context.Background(), pod)).To(Succeed())
-			return pod
-		}
-
-		sidecarEnv := func(pod *kube_core.Pod) []kube_core.EnvVar {
-			for _, c := range pod.Spec.Containers {
-				if c.Name == k8s_util.KumaSidecarContainerName {
-					return c.Env
+			var sidecar *kube_core.Container
+			for i := range pod.Spec.InitContainers {
+				if pod.Spec.InitContainers[i].Name == k8s_util.KumaSidecarContainerName {
+					sidecar = &pod.Spec.InitContainers[i]
 				}
 			}
-			return nil
-		}
-
-		It("sets DELTA_GRPC transport on the injected sidecar", func() {
-			pod := injectPod(newInjector(true), `
-apiVersion: v1
-kind: Pod
-metadata:
-  name: busybox
-  labels:
-    run: busybox
-spec:
-  containers:
-  - name: busybox
-    image: busybox`)
-
-			Expect(sidecarEnv(pod)).To(ContainElement(kube_core.EnvVar{
-				Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
-				Value: "DELTA_GRPC",
-			}))
-		})
-
-		It("allows per-pod xds-transport-protocol-variant annotation to override deltaXds", func() {
-			// The per-pod annotation is applied after deltaXdsEnabled, so it takes precedence.
-			pod := injectPod(newInjector(true), `
-apiVersion: v1
-kind: Pod
-metadata:
-  name: busybox
-  annotations:
-    kuma.io/xds-transport-protocol-variant: "GRPC"
-  labels:
-    run: busybox
-spec:
-  containers:
-  - name: busybox
-    image: busybox`)
-
-			Expect(sidecarEnv(pod)).To(ContainElement(kube_core.EnvVar{
-				Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
-				Value: "GRPC",
-			}))
-		})
-
-		It("allows kuma.io/sidecar-env-vars to override the transport variant", func() {
-			// sidecar-env-vars runs after deltaXdsEnabled, so the annotation wins.
-			pod := injectPod(newInjector(true), `
-apiVersion: v1
-kind: Pod
-metadata:
-  name: busybox
-  annotations:
-    kuma.io/sidecar-env-vars: "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT=GRPC"
-  labels:
-    run: busybox
-spec:
-  containers:
-  - name: busybox
-    image: busybox`)
-
-			Expect(sidecarEnv(pod)).To(ContainElement(kube_core.EnvVar{
-				Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_XDS_TRANSPORT_PROTOCOL_VARIANT",
-				Value: "GRPC",
-			}))
+			Expect(sidecar).ToNot(BeNil())
+			Expect(sidecar.Resources).To(Equal(kube_core.ResourceRequirements{}))
 		})
 	})
 }, Ordered)

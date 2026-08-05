@@ -5,14 +5,14 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/jsonpatch"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/metadata"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_metadata "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/jsonpatch"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/metadata"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_metadata "github.com/kumahq/kuma/v3/pkg/xds/envoy/metadata/v3"
 )
 
 type listenerModificator api.ListenerMod
@@ -75,7 +75,7 @@ func (l *listenerModificator) listenerMatches(listener *core_xds.Resource) bool 
 	if l.Match == nil {
 		return true
 	}
-	if l.Match.Name != nil && *l.Match.Name != listener.Name {
+	if l.Match.Name != nil && !listenerNameMatches(*l.Match.Name, listener.Name) {
 		return false
 	}
 	if l.Match.Origin != nil && *l.Match.Origin != string(listener.Origin) {

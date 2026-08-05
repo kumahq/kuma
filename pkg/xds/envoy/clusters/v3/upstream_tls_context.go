@@ -4,23 +4,12 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
-	"github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_metadata "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 type UpstreamTLSContextConfigure struct {
 	Config *envoy_tls.UpstreamTlsContext
-	// ZoneMatches maps a zone name to the UpstreamTlsContext that endpoints in
-	// that zone must use. When non-empty, every entry is added as a
-	// transport_socket_match keyed on the kuma.io/zone endpoint metadata, while
-	// Config stays the cluster-wide default for endpoints that don't match any
-	// zone (local zone and zones that share the default SNI format).
-	ZoneMatches map[string]*envoy_tls.UpstreamTlsContext
 }
 
 var _ ClusterConfigurer = &UpstreamTLSContextConfigure{}
@@ -31,20 +20,6 @@ func (c *UpstreamTLSContextConfigure) Configure(cluster *envoy_cluster.Cluster) 
 		return err
 	}
 	cluster.TransportSocket = transportSocket
-
-	for _, zone := range maps.SortedKeys(c.ZoneMatches) {
-		ts, err := createTLSTransportSocket(c.ZoneMatches[zone])
-		if err != nil {
-			return err
-		}
-		cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, &envoy_cluster.Cluster_TransportSocketMatch{
-			Name: zone,
-			Match: &structpb.Struct{
-				Fields: envoy_metadata.MetadataFields(tags.Tags{mesh_proto.ZoneTag: zone}),
-			},
-			TransportSocket: ts,
-		})
-	}
 	return nil
 }
 

@@ -3,21 +3,22 @@ package xds
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
-	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
-	envoy_virtual_hosts "github.com/kumahq/kuma/v2/pkg/xds/envoy/virtualhosts"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
+	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
+	envoy_virtual_hosts "github.com/kumahq/kuma/v3/pkg/xds/envoy/virtualhosts"
 )
 
 type OutboundRoute struct {
-	Name                    string
-	Match                   api.Match
-	Filters                 []api.Filter
-	Split                   []envoy_common.Split
-	BackendRefToClusterName map[common_api.BackendRefHash]string
+	Name    string
+	Match   api.Match
+	Filters []api.Filter
+	// MirrorSplits contains splits of the clusters created for RequestMirror
+	// filters, keyed by the index of the filter in Filters
+	MirrorSplits map[int]envoy_common.Split
+	Split        []envoy_common.Split
 }
 
 type HttpOutboundRouteConfigurer struct {
@@ -34,11 +35,11 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 	for _, route := range c.Routes {
 		route := envoy_virtual_hosts.AddVirtualHostConfigurer(
 			&RoutesConfigurer{
-				Name:                    route.Name,
-				Match:                   route.Match,
-				Filters:                 route.Filters,
-				Split:                   route.Split,
-				BackendRefToClusterName: route.BackendRefToClusterName,
+				Name:         route.Name,
+				Match:        route.Match,
+				Filters:      route.Filters,
+				MirrorSplits: route.MirrorSplits,
+				Split:        route.Split,
 			})
 		virtualHostBuilder = virtualHostBuilder.Configure(route)
 	}

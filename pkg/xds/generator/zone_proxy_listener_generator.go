@@ -5,30 +5,30 @@ import (
 
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/naming"
-	core_resources "github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
-	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_sni "github.com/kumahq/kuma/v2/pkg/core/resources/sni"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	bldrs_common "github.com/kumahq/kuma/v2/pkg/envoy/builders/common"
-	bldrs_core "github.com/kumahq/kuma/v2/pkg/envoy/builders/core"
-	bldrs_tls "github.com/kumahq/kuma/v2/pkg/envoy/builders/tls"
-	plugins_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	meshhttproute_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/xds"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-	system_names "github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/zoneproxy"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
+	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	system_names "github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/zoneproxy"
 )
 
 var zoneProxyLog = core.Log.WithName("xds").WithName("zone-proxy-listener-generator")
@@ -47,13 +47,6 @@ func (g ZoneProxyListenerGenerator) Generate(
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
 	if !proxy.Dataplane.Spec.GetNetworking().HasZoneProxyListeners() {
-		return nil, nil
-	}
-
-	if xdsCtx.Mesh.Resource.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
-		zoneProxyLog.Info("skipping zone proxy listeners: MeshServices must be in Exclusive mode",
-			"mesh", xdsCtx.Mesh.Resource.GetMeta().GetName(),
-		)
 		return nil, nil
 	}
 
@@ -98,7 +91,6 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	listener *mesh_proto.Dataplane_Networking_Listener,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
-	cp := xdsCtx.ControlPlane
 	meshName := xdsCtx.Mesh.Resource.GetMeta().GetName()
 
 	address := listener.Address
@@ -129,24 +121,22 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 			[]core_resources.DestinationList{localMS, meshResources.MeshMultiZoneServices()},
 			core_resources.DestinationList.GetDestinations,
 		),
-		cp.SystemNamespace,
-		true,
 	)
 	dest := zoneproxy.MeshDestinations{BackendRefs: backendRefs}
 
-	services := zoneproxy.GetServices(dest, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, nil, true)
+	services := zoneproxy.GetServices(dest)
 	clusters := services.Clusters()
 	if len(clusters) == 0 {
 		return nil, nil
 	}
 
-	cds, err := zoneproxy.GenerateCDS(proxy, dest, services, meshName, metadata.OriginIngress, true)
+	cds, err := zoneproxy.GenerateCDS(proxy, services, meshName, metadata.OriginIngress)
 	if err != nil {
 		return nil, err
 	}
 	rs.AddSet(cds)
 
-	eds, err := zoneproxy.GenerateEDS(proxy, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, services, meshName, metadata.OriginIngress, true)
+	eds, err := zoneproxy.GenerateEDS(proxy, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, services, meshName, metadata.OriginIngress)
 	if err != nil {
 		return nil, err
 	}

@@ -4,10 +4,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("OriginalDstForwarderConfigurer", func() {
@@ -44,10 +45,7 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 			listenerAddress: "0.0.0.0",
 			listenerPort:    12345,
 			statsName:       "pass_through",
-			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-				envoy_common.WithService("pass_through"),
-				envoy_common.WithWeight(200),
-			)},
+			clusters:        []envoy_common.Cluster{plugins_xds.NewClusterBuilder().WithService("pass_through").Build()},
 			expected: `
             name: catch_all
             trafficDirection: OUTBOUND

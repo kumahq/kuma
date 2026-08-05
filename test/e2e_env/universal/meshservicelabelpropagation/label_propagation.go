@@ -4,10 +4,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func LabelPropagation() {
@@ -17,7 +17,7 @@ func LabelPropagation() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Exclusive")).
+			Install(MTLSMeshUniversal(meshName)).
 			Setup(universal.Cluster)).To(Succeed())
 		Expect(WaitForMesh(meshName, []Cluster{universal.Cluster})).To(Succeed())
 	})
@@ -39,6 +39,7 @@ name: lp-dp-1
 labels:
   color: blue
   kuma.io/owner: ignored
+  kuma.io/workload: lp-svc
 networking:
   address: 192.168.10.10
   inbound:
@@ -74,6 +75,7 @@ mesh: lp-mesh
 name: lp-dp-1
 labels:
   color: blue
+  kuma.io/workload: lp-svc
 networking:
   address: 192.168.10.10
   inbound:
@@ -101,6 +103,8 @@ networking:
 type: Dataplane
 mesh: lp-mesh
 name: lp-dp-1
+labels:
+  kuma.io/workload: lp-svc
 networking:
   address: 192.168.10.10
   inbound:

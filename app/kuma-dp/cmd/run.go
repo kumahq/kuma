@@ -14,37 +14,36 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/accesslogs"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/certificate"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/configfetcher"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/dnsproxy"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/dnsserver"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/envoy"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/meshmetrics"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/metrics"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelenv"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/otelreceiver"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/probes"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/readiness"
-	kuma_cmd "github.com/kumahq/kuma/v2/pkg/cmd"
-	"github.com/kumahq/kuma/v2/pkg/config"
-	kumadp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	dns_dpapi "github.com/kumahq/kuma/v2/pkg/dns/dpapi"
-	meshmetric_dpapi "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/dpapi"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
-	tproxy_dp "github.com/kumahq/kuma/v2/pkg/transparentproxy/config/dataplane"
-	kuma_net "github.com/kumahq/kuma/v2/pkg/util/net"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	"github.com/kumahq/kuma/v2/pkg/util/proto"
-	kuma_version "github.com/kumahq/kuma/v2/pkg/version"
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/accesslogs"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/certificate"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/configfetcher"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/dnsproxy"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/meshmetrics"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/metrics"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/otelenv"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/otelreceiver"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/probes"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/readiness"
+	kuma_cmd "github.com/kumahq/kuma/v3/pkg/cmd"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	kumadp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	dns_dpapi "github.com/kumahq/kuma/v3/pkg/dns/dpapi"
+	meshmetric_dpapi "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/dpapi"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
+	kuma_net "github.com/kumahq/kuma/v3/pkg/util/net"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
 var runLog = dataplaneLog.WithName("run")
@@ -125,7 +124,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					return errors.Wrap(err, "failed to load transparent proxy configuration from provided input")
 				}
 
-				tpCfg.Redirect.DNS.Port = tproxy_config.Port(cfg.DNS.EnvoyDNSPort)
+				tpCfg.Redirect.DNS.Port = tproxy_config.Port(cfg.DNS.ProxyPort)
 				tpCfg.Redirect.DNS.Enabled = cfg.DNS.Enabled
 			}
 			cfg.DataplaneRuntime.TransparentProxy = tpCfg
@@ -138,14 +137,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			runLog.Info("starting Data Plane", "version", kuma_version.Build.Version, "config", cfgForDisplay)
 
-			// Map the resource types that are acceptable depending on the value of the `--proxy-type` flag.
-			proxyTypeMap := map[string]model.ResourceType{
-				string(mesh_proto.DataplaneProxyType): mesh.DataplaneType,
-				string(mesh_proto.IngressProxyType):   mesh.ZoneIngressType,
-				string(mesh_proto.EgressProxyType):    mesh.ZoneEgressType,
-			}
-
-			if _, ok := proxyTypeMap[cfg.Dataplane.ProxyType]; !ok {
+			if cfg.Dataplane.ProxyType != string(mesh_proto.DataplaneProxyType) {
 				return errors.Errorf("invalid proxy type %q", cfg.Dataplane.ProxyType)
 			}
 
@@ -161,9 +153,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			if proxyResource != nil {
-				if resType := proxyTypeMap[cfg.Dataplane.ProxyType]; resType != proxyResource.Descriptor().Name {
+				if proxyResource.Descriptor().Name != mesh.DataplaneType {
 					return errors.Errorf("invalid proxy resource type %q, expected %s",
-						proxyResource.Descriptor().Name, resType)
+						proxyResource.Descriptor().Name, mesh.DataplaneType)
 				}
 
 				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {
@@ -174,22 +166,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.Dataplane.Name = proxyResource.GetMeta().GetName()
 			}
 
-			//nolint:staticcheck // SA1019 Backward compatibility: migrate deprecated ConfigDir to WorkDir
-			if cfg.DataplaneRuntime.WorkDir == "" && cfg.DataplaneRuntime.ConfigDir != "" {
-				runLog.Info("ConfigDir is deprecated, please use WorkDir instead")
-				//nolint:staticcheck // SA1019 Backward compatibility: migrate deprecated ConfigDir to WorkDir
-				cfg.DataplaneRuntime.WorkDir = cfg.DataplaneRuntime.ConfigDir
-			}
-			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for migration
-			if cfg.DataplaneRuntime.SocketDir != "" {
-				runLog.Info("SocketDir is deprecated, please use WorkDir instead")
-			} else {
-				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for migration
-				cfg.DataplaneRuntime.SocketDir = cfg.DataplaneRuntime.WorkDir
-			}
-
-			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for fallback
-			if cfg.DataplaneRuntime.WorkDir == "" || cfg.DataplaneRuntime.SocketDir == "" || cfg.DNS.ConfigDir == "" {
+			if cfg.DataplaneRuntime.WorkDir == "" {
 				tmpDir, err = os.MkdirTemp("", "kuma-dp-")
 				if err != nil {
 					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
@@ -204,27 +181,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					return err
 				}
 
-				if cfg.DataplaneRuntime.WorkDir == "" {
-					cfg.DataplaneRuntime.WorkDir = tmpDir
-				}
-
-				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for fallback
-				if cfg.DataplaneRuntime.SocketDir == "" {
-					//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for fallback
-					cfg.DataplaneRuntime.SocketDir = tmpDir
-				}
-
-				if cfg.DNS.ConfigDir == "" {
-					cfg.DNS.ConfigDir = tmpDir
-				}
+				cfg.DataplaneRuntime.WorkDir = tmpDir
 
 				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
-			}
-
-			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for migration
-			if cfg.DataplaneRuntime.SocketDir != "" && cfg.DataplaneRuntime.SocketDir != tmpDir {
-				if err := os.MkdirAll(cfg.DataplaneRuntime.SocketDir, 0o711); err != nil { // #nosec G302 -- deliberate: traverse-only for UDS access
-					runLog.Error(err, "unable to create socket directory")
+			} else {
+				if err := os.MkdirAll(cfg.DataplaneRuntime.WorkDir, 0o711); err != nil { // #nosec G302 -- deliberate: traverse-only for UDS access
+					runLog.Error(err, "unable to create work directory", "dir", cfg.DataplaneRuntime.WorkDir)
 					return err
 				}
 			}
@@ -255,10 +217,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureOtelViaKumaDp)
 			}
 
-			if cfg.DNS.ProxyPort != 0 {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureEmbeddedDNS)
-			}
-
 			if cfg.DataplaneRuntime.TransparentProxy != nil {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureTransparentProxyInDataplaneMetadata)
 			}
@@ -266,10 +224,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.BindOutbounds {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureBindOutbounds)
 			}
-			if cfg.DataplaneRuntime.EnvoyXdsTransportProtocolVariant == "DELTA_GRPC" {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureDeltaGRPC)
-			}
-
 			if cfg.DataplaneRuntime.UnifiedResourceNamingEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureUnifiedResourceNaming)
 			}
@@ -344,8 +298,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			opts.AdminSocketPath = adminSocketPath
 
 			confFetcher := configfetcher.NewConfigFetcher(
-				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
-				core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir),
+				core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.WorkDir),
 				time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
 				cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration,
 			)
@@ -357,44 +310,19 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			var dnsConfigReady <-chan struct{}
-			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
-				dnsOpts := &dnsserver.Opts{
-					Config:   *cfg,
-					Stdout:   cmd.OutOrStdout(),
-					Stderr:   cmd.OutOrStderr(),
-					OnFinish: cancelComponents,
+			if cfg.DNS.Enabled {
+				portStr := strconv.Itoa(int(cfg.DNS.ProxyPort))
+				addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, portStr)
+				runLog.Info("Running with embedded DNS proxy", "port", cfg.DNS.ProxyPort, "addresses", addresses)
+				dnsproxyServer, err := dnsproxy.NewServer(addresses)
+				if err != nil {
+					return err
 				}
-
-				if len(kumaSidecarConfiguration.Networking.CorefileTemplate) > 0 {
-					dnsOpts.ProvidedCorefileTemplate = kumaSidecarConfiguration.Networking.CorefileTemplate
+				if err := confFetcher.AddHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap); err != nil {
+					return err
 				}
-				if dnsOpts.Config.DNS.ProxyPort != 0 {
-					portStr := strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))
-					addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, portStr)
-					runLog.Info("Running with embedded DNS proxy", "port", dnsOpts.Config.DNS.ProxyPort, "addresses", addresses)
-					dnsproxyServer, err := dnsproxy.NewServer(addresses)
-					if err != nil {
-						return err
-					}
-					if err := confFetcher.AddHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap); err != nil {
-						return err
-					}
-					dnsConfigReady = dnsproxyServer.ConfigReady()
-					components = append(components, dnsproxyServer)
-				} else {
-					dnsServer, err := dnsserver.New(dnsOpts)
-					if err != nil {
-						return err
-					}
-
-					version, err := dnsServer.GetVersion()
-					if err != nil {
-						return err
-					}
-
-					rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
-					components = append(components, dnsServer)
-				}
+				dnsConfigReady = dnsproxyServer.ConfigReady()
+				components = append(components, dnsproxyServer)
 			}
 
 			envoyComponent, err := envoy.New(opts)
@@ -419,13 +347,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			readinessAddr := adminAddress
 			if readinessAddr == "" {
-				// When admin is on UDS, the readiness reporter also reverse-
-				// proxies read-only Envoy admin endpoints on this listener
-				// (mutating endpoints are blocked); see readiness.Reporter.
-				// On Kubernetes the listener must accept probes from the
-				// kubelet (podIP), so we bind wildcard. Outside Kubernetes
-				// we default to loopback to avoid exposing admin info on the
-				// host network. POD_NAME is set by the sidecar injector.
+				// The readiness reporter serves only /ready (see
+				// readiness.Reporter); no Envoy admin endpoint is exposed
+				// here. On Kubernetes the listener must accept probes from
+				// the kubelet (podIP), so we bind wildcard. Outside
+				// Kubernetes we default to loopback. POD_NAME is set by the
+				// sidecar injector.
 				_, inKubernetes := os.LookupEnv("POD_NAME")
 				ipv6 := kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address)
 				switch {
@@ -513,15 +440,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	}
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Name, "name", cfg.Dataplane.Name, "Name of the Dataplane")
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
-	cmd.PersistentFlags().StringVar(&cfg.Dataplane.ProxyType, "proxy-type", "dataplane", `type of the Dataplane ("dataplane", "ingress")`)
+	cmd.PersistentFlags().StringVar(&cfg.Dataplane.ProxyType, "proxy-type", "dataplane", `type of the Dataplane ("dataplane")`)
 	cmd.PersistentFlags().DurationVar(&cfg.Dataplane.DrainTime.Duration, "drain-time", cfg.Dataplane.DrainTime.Duration, `drain time for Envoy connections on Kuma DP shutdown`)
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.URL, "cp-address", cfg.ControlPlane.URL, "URL of the Control Plane Dataplane Server. Example: https://localhost:5678")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCertFile, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
 	cmd.PersistentFlags().BoolVar(&cfg.ControlPlane.TlsSkipVerify, "skip-verify", cfg.ControlPlane.TlsSkipVerify, "Skip TLS verification of the Control Plane certificate (insecure, for development/testing only)")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().Uint32Var(&cfg.DataplaneRuntime.Concurrency, "concurrency", cfg.DataplaneRuntime.Concurrency, "Number of Envoy worker threads")
-	//nolint:staticcheck // SA1019 Backward compatibility: preserve deprecated ConfigDir flag for migration
-	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.WorkDir, "work-dir", cfg.DataplaneRuntime.WorkDir, "Directory in which Kuma DP config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Token, "dataplane-token", cfg.DataplaneRuntime.Token, "Dataplane Token")
@@ -533,14 +458,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Metrics.CertPath, "metrics-cert-path", cfg.DataplaneRuntime.Metrics.CertPath, "A path to the certificate for metrics listener")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Metrics.KeyPath, "metrics-key-path", cfg.DataplaneRuntime.Metrics.KeyPath, "A path to the certificate key for metrics listener")
 	cmd.PersistentFlags().BoolVar(&cfg.DataplaneRuntime.BindOutbounds, "bind-outbounds", cfg.DataplaneRuntime.BindOutbounds, "If true then dataplane bind outbounds to real addresses")
-	cmd.PersistentFlags().BoolVar(&cfg.DNS.Enabled, "dns-enabled", cfg.DNS.Enabled, "If true then builtin DNS functionality is enabled and CoreDNS server is started")
-	cmd.PersistentFlags().Uint32Var(&cfg.DNS.EnvoyDNSPort, "dns-envoy-port", cfg.DNS.EnvoyDNSPort, "A port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one")
-	cmd.PersistentFlags().Uint32Var(&cfg.DNS.CoreDNSPort, "dns-coredns-port", cfg.DNS.CoreDNSPort, "A port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.")
-	cmd.PersistentFlags().StringVar(&cfg.DNS.CoreDNSBinaryPath, "dns-coredns-path", cfg.DNS.CoreDNSBinaryPath, "A path to CoreDNS binary.")
-	cmd.PersistentFlags().StringVar(&cfg.DNS.CoreDNSConfigTemplatePath, "dns-coredns-config-template-path", cfg.DNS.CoreDNSConfigTemplatePath, "A path to a CoreDNS config template.")
-	cmd.PersistentFlags().StringVar(&cfg.DNS.ConfigDir, "dns-server-config-dir", cfg.DNS.ConfigDir, "Directory in which DNS Server config will be generated")
-	cmd.PersistentFlags().Uint32Var(&cfg.DNS.PrometheusPort, "dns-prometheus-port", cfg.DNS.PrometheusPort, "A port for exposing Prometheus stats")
-	cmd.PersistentFlags().BoolVar(&cfg.DNS.CoreDNSLogging, "dns-enable-logging", cfg.DNS.CoreDNSLogging, "If true then CoreDNS logging is enabled")
+	cmd.PersistentFlags().BoolVar(&cfg.DNS.Enabled, "dns-enabled", cfg.DNS.Enabled, "If true then builtin DNS functionality is enabled and the embedded DNS proxy is started")
+	cmd.PersistentFlags().Uint32Var(&cfg.DNS.ProxyPort, "dns-proxy-port", cfg.DNS.ProxyPort, "A port on which the embedded DNS proxy listens. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.")
 
 	// Transparent Proxy
 	cmd.PersistentFlags().BoolVar(&tpEnabled, "transparent-proxy", tpEnabled, "Enable transparent proxy with default configuration")
@@ -554,10 +473,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			"Later values override earlier ones when merging. "+
 			"Use this flag to pass detailed transparent proxy settings to kuma-dp.",
 	)
-
-	if err := cmd.PersistentFlags().MarkDeprecated("config-dir", "use --work-dir instead"); err != nil {
-		runLog.Error(err, "could not mark config-dir as deprecated")
-	}
 
 	return cmd
 }
@@ -615,8 +530,7 @@ func setupObservability(
 	accessLogStreamer := component.NewResilientComponent(
 		runLog.WithName("access-log-streamer"),
 		accesslogs.NewAccessLogStreamer(
-			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
-			core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+			core_xds.AccessLogSocketName(cfg.DataplaneRuntime.WorkDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 		),
 		cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
 		cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
@@ -630,8 +544,7 @@ func setupObservability(
 		kuma_version.Build.Version,
 	)
 	metricsServer := metrics.New(
-		//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
-		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.WorkDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 		baseApplicationsToScrape,
 		tpEnabled,
 		openTelemetryProducer,

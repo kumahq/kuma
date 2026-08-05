@@ -7,7 +7,7 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/pkg/errors"
 
-	envoy_routes "github.com/kumahq/kuma/v2/pkg/xds/envoy/routes"
+	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
 )
 
 var _ FilterChainConfigurer = &HttpStaticRouteConfigurer{}
@@ -16,12 +16,6 @@ var _ FilterChainConfigurer = &HttpStaticRouteConfigurer{}
 // HttpConnectionManager in the filter chain.
 type HttpStaticRouteConfigurer struct {
 	Builder *envoy_routes.RouteConfigurationBuilder
-}
-
-func NewHttpStaticRouteConfigurer(builder *envoy_routes.RouteConfigurationBuilder) *HttpStaticRouteConfigurer {
-	return &HttpStaticRouteConfigurer{
-		Builder: builder,
-	}
 }
 
 func (c *HttpStaticRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {

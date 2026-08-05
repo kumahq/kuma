@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	motb_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 )
 
 // runtimeOption applies a configuration value to a SignalRuntime.

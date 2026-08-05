@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/printers"
-	"github.com/kumahq/kuma/v2/app/kumactl/pkg/output/table"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/printers"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 // CustomTablePrinters are used to define different ways to print entities in table format.
@@ -16,34 +16,18 @@ var CustomTablePrinters = map[model.ResourceType]RowPrinter{
 		Headers: []string{"MESH", "NAME", "TAGS", "ADDRESS", "AGE"},
 		RowFn: func(rootTime time.Time, item model.Resource) []string {
 			dataplane := item.(*mesh.DataplaneResource)
-			address := dataplane.Spec.GetNetworking().GetAdvertisedAddress()
-			if address == "" {
-				address = dataplane.Spec.GetNetworking().GetAddress()
-			}
+			address := dataplane.Spec.GetNetworking().GetAddress()
 			return []string{
 				dataplane.Meta.GetMesh(),         // MESH
 				dataplane.Meta.GetName(),         // NAME,
-				dataplane.Spec.TagSet().String(), // TAGS
+				dataplane.DisplayTags().String(), // TAGS
 				address,                          // ADDRESS
 				table.TimeSince(dataplane.Meta.GetModificationTime(), rootTime), // AGE
 			}
 		},
 	},
-	mesh.ExternalServiceType: {
-		Headers: []string{"MESH", "NAME", "TAGS", "ADDRESS", "AGE"},
-		RowFn: func(rootTime time.Time, item model.Resource) []string {
-			externalService := item.(*mesh.ExternalServiceResource)
-			return []string{
-				externalService.Meta.GetMesh(),                                        // MESH
-				externalService.Meta.GetName(),                                        // NAME,
-				externalService.Spec.TagSet().String(),                                // TAGS
-				externalService.Spec.Networking.Address,                               // ADDRESS
-				table.TimeSince(externalService.Meta.GetModificationTime(), rootTime), // AGE
-			}
-		},
-	},
 	model.ScopeMesh: {
-		Headers: []string{"NAME", "mTLS", "LOCALITY", "ZONEEGRESS", "AGE"},
+		Headers: []string{"NAME", "mTLS", "AGE"},
 		RowFn: func(rootTime time.Time, item model.Resource) []string {
 			mesh := item.(*mesh.MeshResource)
 
@@ -52,20 +36,9 @@ var CustomTablePrinters = map[model.ResourceType]RowPrinter{
 				backend := mesh.GetEnabledCertificateAuthorityBackend()
 				mtls = fmt.Sprintf("%s/%s", backend.Type, backend.Name)
 			}
-
-			locality := "off"
-			if mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() {
-				locality = "on"
-			}
-			zoneEgress := "off"
-			if mesh.Spec.GetRouting().GetZoneEgress() {
-				zoneEgress = "on"
-			}
 			return []string{
 				mesh.GetMeta().GetName(), // NAME
 				mtls,                     // mTLS
-				locality,                 // LOCALITY
-				zoneEgress,               // ZONEEGRESS
 				table.TimeSince(mesh.GetMeta().GetModificationTime(), rootTime), // AGE
 			}
 		},

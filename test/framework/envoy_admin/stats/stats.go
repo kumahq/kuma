@@ -2,6 +2,7 @@ package stats
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/onsi/gomega/types"
 )
@@ -13,6 +14,37 @@ type StatItem struct {
 
 type Stats struct {
 	Stats []StatItem `json:"stats"`
+}
+
+// SingleValue returns the numeric value of the one stat these Stats are
+// expected to contain. A filter that matches nothing reads as 0 (the counter
+// Envoy has not created yet), and matching more than one stat is an error
+// because the filter was meant to identify exactly one counter - the same
+// exactly-one invariant statMatcher enforces.
+func (s *Stats) SingleValue() (float64, error) {
+	switch len(s.Stats) {
+	case 0:
+		return 0, nil
+	case 1:
+		return s.Stats[0].floatValue()
+	default:
+		return 0, fmt.Errorf("stats filter matched %d stats, expected 1: %+q", len(s.Stats), s)
+	}
+}
+
+func (i StatItem) floatValue() (float64, error) {
+	switch v := i.Value.(type) {
+	case float64:
+		return v, nil
+	case string:
+		f, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return 0, fmt.Errorf("stat %q has non-numeric value %q: %w", i.Name, v, err)
+		}
+		return f, nil
+	default:
+		return 0, fmt.Errorf("stat %q has unexpected value type %T", i.Name, i.Value)
+	}
 }
 
 func BeEqual(expected any) types.GomegaMatcher {

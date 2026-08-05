@@ -6,18 +6,17 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	manager_dataplane "github.com/kumahq/kuma/v2/pkg/core/managers/apis/dataplane"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
-	meta "github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
-	"github.com/kumahq/kuma/v2/pkg/xds/generator/model"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	manager_dataplane "github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplane"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	meta "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/model"
 )
 
 // Transparent Proxy is based on having 1 IP for cluster (ex. ClusterIP of Service on K8S), so consuming apps by their IP
@@ -41,9 +40,6 @@ func (DirectAccessProxyGenerator) Generate(_ context.Context, _ *core_xds.Resour
 		return rs, nil
 	}
 
-	svc := proxy.Dataplane.IdentifyingName(xdsCtx.ControlPlane != nil && xdsCtx.ControlPlane.InboundTagsDisabled)
-	mesh := xdsCtx.Mesh.Resource.GetMeta().GetName()
-
 	endpoints, err := directAccessEndpoints(proxy.Dataplane, xdsCtx.Mesh.Resources.Dataplanes(), xdsCtx.Mesh.Resource)
 	if err != nil {
 		return nil, err
@@ -54,11 +50,8 @@ func (DirectAccessProxyGenerator) Generate(_ context.Context, _ *core_xds.Resour
 
 		cluster := xds.NewClusterBuilder().WithService(meta.DirectAccessClusterName).Build()
 
-		loggingBackend := xdsCtx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_meta.PassThroughServiceName])
-
 		filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.TcpProxyDeprecated(name, cluster)).
-			Configure(envoy_listeners.NetworkAccessLog(mesh, envoy_common.TrafficDirectionOutbound, svc, name, loggingBackend, proxy))
+			Configure(envoy_listeners.TcpProxyDeprecated(name, cluster))
 
 		listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, endpoint.Address, endpoint.Port, core_xds.SocketAddressProtocolTCP).
 			WithOverwriteName(name).
@@ -119,9 +112,9 @@ func directAccessEndpoints(dataplane *core_mesh.DataplaneResource, other *core_m
 		if err != nil {
 			return nil, err
 		}
+		dpService := dp.GetMeta().GetLabels()[mesh_proto.ServiceTag]
 		for _, inbound := range append(inbounds, dp.Spec.GetNetworking().GetInbound()...) {
-			service := inbound.Tags[mesh_proto.ServiceTag]
-			if services["*"] || services[service] {
+			if services["*"] || services[inbound.GetServiceFallback(dpService)] {
 				iface := dp.Spec.GetNetworking().ToInboundInterface(inbound)
 				endpoint := model.Endpoint{
 					Address: iface.DataplaneIP,

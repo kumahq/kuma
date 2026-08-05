@@ -7,15 +7,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	meshfaultinjection_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/zoneproxy"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	meshfaultinjection_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func zoneProxyMeshIdentity(meshName string) string {
@@ -128,12 +127,10 @@ func ZoneProxy() {
 	const ns = "mfi-zoneproxy"
 	const extNs = "mfi-zoneproxy-ext"
 	const mesh = "mfi-zoneproxy"
-	const workload = "zone-egress"
 	const targetedMES = "external-target-mfi-zoneproxy"
 	const untargetedMES = "external-other-mfi-zoneproxy"
 	const demoClient = "demo-client"
 	const externalServer = "external-server"
-	const egressPort = uint32(11102)
 
 	fromDemoClient := client.FromKubernetesPod(ns, demoClient)
 
@@ -196,8 +193,7 @@ func ZoneProxy() {
 			Install(Namespace(extNs)).
 			Install(Yaml(builders.Mesh().
 				WithName(mesh).
-				WithoutInitialPolicies().
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive))).
+				WithoutInitialPolicies())).
 			Install(YamlK8s(zoneProxyMeshTrafficPermission(mesh, targetedSNI, untargetedSNI))).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh)),
@@ -207,11 +203,9 @@ func ZoneProxy() {
 					testserver.WithEchoArgs("echo", "--instance", externalServer),
 				),
 				zoneproxy.Install(
-					zoneproxy.WithName("zp-meshfaultinjection"),
 					zoneproxy.WithNamespace(ns),
 					zoneproxy.WithMesh(mesh),
-					zoneproxy.WithWorkload(workload),
-					zoneproxy.WithEgressPort(egressPort),
+					zoneproxy.WithEgress(),
 				),
 			)).
 			Install(YamlK8s(zoneProxyMeshIdentity(mesh))).

@@ -6,11 +6,11 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/validators"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
 type FilterOp string
@@ -106,20 +106,11 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 					return false
 				}
 
-				if !dataplane.Spec.MatchTagsFuzzy(tags) {
+				if !dataplane.Spec.MatchTagsFuzzy(tags) && !mesh_proto.TagSelector(tags).MatchesFuzzy(dataplane.GetMeta().GetLabels()) {
 					return false
 				}
 
 				return true
-			}, nil
-		case mesh.ExternalServiceType:
-			tags := parseTags(request.QueryParameters("tag"))
-
-			return func(rs core_model.Resource) bool {
-				if genericFilter != nil && !genericFilter(rs) {
-					return false
-				}
-				return rs.(*mesh.ExternalServiceResource).Spec.MatchTagsFuzzy(tags)
 			}, nil
 		default:
 			return genericFilter, nil

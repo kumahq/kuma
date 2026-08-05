@@ -8,11 +8,11 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
-	core_config "github.com/kumahq/kuma/v2/pkg/config"
-	"github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
-	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	k8s_probes "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/probes"
-	tproxy_config "github.com/kumahq/kuma/v2/pkg/transparentproxy/config"
+	core_config "github.com/kumahq/kuma/v3/pkg/config"
+	"github.com/kumahq/kuma/v3/pkg/config/plugins/runtime/k8s"
+	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	k8s_probes "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/probes"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
 )
 
 const (
@@ -431,49 +431,6 @@ func ConfigForKubernetes(
 			if err := cfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", v)); err != nil {
 				return cfg, err
 			}
-		}
-	}
-
-	if v, exists, err := annotations.GetEnabled(k8s_metadata.KumaTransparentProxyingEbpf); err != nil {
-		return cfg, err
-	} else if exists {
-		cfg.Ebpf.Enabled = v
-	}
-
-	if cfg.Ebpf.Enabled {
-		if v, _ := annotations.GetStringWithDefault(
-			runtimeCfg.EBPF.BPFFSPath,
-			k8s_metadata.KumaTransparentProxyingEbpfBPFFSPath,
-		); v != "" {
-			cfg.Ebpf.BPFFSPath = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			runtimeCfg.EBPF.CgroupPath,
-			k8s_metadata.KumaTransparentProxyingEbpfCgroupPath,
-		); v != "" {
-			cfg.Ebpf.CgroupPath = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			runtimeCfg.EBPF.TCAttachIface,
-			k8s_metadata.KumaTransparentProxyingEbpfTCAttachIface,
-		); v != "" {
-			cfg.Ebpf.TCAttachIface = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			runtimeCfg.EBPF.InstanceIPEnvVarName,
-			k8s_metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName,
-		); v != "" {
-			cfg.Ebpf.InstanceIPEnvVarName = v
-		}
-
-		if v, _ := annotations.GetStringWithDefault(
-			runtimeCfg.EBPF.ProgramsSourcePath,
-			k8s_metadata.KumaTransparentProxyingEbpfProgramsSourcePath,
-		); v != "" {
-			cfg.Ebpf.ProgramsSourcePath = v
 		}
 	}
 

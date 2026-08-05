@@ -3,15 +3,15 @@ package globalinsight
 import (
 	"context"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	api_types "github.com/kumahq/kuma/v2/api/openapi/types"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 )
 
 type GlobalInsightService interface {
@@ -99,10 +99,14 @@ func (gis *defaultGlobalInsightService) aggregatePolicies(
 	globalInsight *api_types.GlobalInsightBase,
 ) {
 	for _, meshInsight := range meshInsights.GetItems() {
-		policies := meshInsight.GetSpec().(*mesh_proto.MeshInsight).GetPolicies()
+		resources := meshInsight.GetSpec().(*mesh_proto.MeshInsight).GetResources()
 
-		for _, policy := range policies {
-			globalInsight.Policies.Total += int(policy.GetTotal())
+		for resType, stat := range resources {
+			desc, err := registry.Global().DescriptorFor(core_model.ResourceType(resType))
+			if err != nil || !desc.IsPolicy {
+				continue
+			}
+			globalInsight.Policies.Total += int(stat.GetTotal())
 		}
 	}
 }

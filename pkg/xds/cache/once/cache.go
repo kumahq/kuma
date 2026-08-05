@@ -7,7 +7,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/kumahq/kuma/v2/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/metrics"
 )
 
 type Cache struct {

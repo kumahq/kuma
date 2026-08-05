@@ -5,16 +5,16 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
-	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_runtime "github.com/kumahq/kuma/v2/pkg/core/runtime"
-	secret_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
+	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 type Plugin any
@@ -94,8 +94,17 @@ type IdentityProviderPlugin interface {
 	NewIdentityProvider(PluginContext, PluginConfig) (providers.IdentityProvider, error)
 }
 
+// PolicyMatchingCacheAccessor is a thread-safe LRU cache for MatchedPolicies results.
+type PolicyMatchingCacheAccessor interface {
+	GetIfPresent(key string) (core_xds.TypedMatchingPolicies, bool)
+	Put(key string, value core_xds.TypedMatchingPolicies)
+}
+
 type MatchedPoliciesConfig struct {
 	IncludeShadow bool
+	// nil disables caching
+	Cache              PolicyMatchingCacheAccessor
+	PolicyMatchingHash string
 }
 
 func NewMatchedPoliciesConfig(opts ...MatchedPoliciesOption) *MatchedPoliciesConfig {
@@ -114,6 +123,13 @@ func IncludeShadow() MatchedPoliciesOption {
 	}
 }
 
+func WithCache(c PolicyMatchingCacheAccessor, policyMatchingHash string) MatchedPoliciesOption {
+	return func(cfg *MatchedPoliciesConfig) {
+		cfg.Cache = c
+		cfg.PolicyMatchingHash = policyMatchingHash
+	}
+}
+
 // PolicyPlugin a plugin to add a Policy to Kuma
 type PolicyPlugin interface {
 	Plugin
@@ -124,13 +140,6 @@ type PolicyPlugin interface {
 	// Apply to `rs` using the `ctx` and `proxy` the mutation for all policies of the type this plugin implements.
 	// You can access matching policies by using `proxy.Policies.Dynamic`.
 	Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error
-}
-
-type EgressPolicyPlugin interface {
-	PolicyPlugin
-	// EgressMatchedPolicies returns all the policies of the plugins' type matching the external service that
-	// should be applied on the zone egress.
-	EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error)
 }
 
 // ProxyPlugin a plugin to modify the proxy. This happens before any `PolicyPlugin` or any envoy generation. and it is applied both for Dataplanes and ZoneProxies

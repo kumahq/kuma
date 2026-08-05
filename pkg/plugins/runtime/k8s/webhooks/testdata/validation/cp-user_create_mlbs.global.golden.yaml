@@ -1,13 +1,16 @@
 Patches: null
-allowed: true
+allowed: false
 status:
-  code: 200
+  code: 422
+  details:
+    causes:
+    - field: spec.targetRef.kind
+      message: value 'MeshService' is not supported
+      reason: FieldValueInvalid
+    kind: MeshLoadBalancingStrategy
+    name: ring-hash
+  message: 'spec.targetRef.kind: value ''MeshService'' is not supported'
   metadata: {}
+  reason: Invalid
+  status: Failure
 uid: "12345"
-warnings:
-- configuration 'spec.to[0].default.loadBalancer.ringHash.hashPolicies' is deprecated,
-  use 'spec.to[0].default.hashPolicies' instead
-- SourceIP type for 'spec.to[0].default.loadBalancer.ringHash.hashPolicies[0].type'
-  is deprecated, use Connection instead
-- MeshService value for 'targetRef.kind' is deprecated, use Dataplane with labels
-  instead

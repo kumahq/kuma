@@ -4,28 +4,27 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 )
 
-func MustResolve(unifiedNaming bool, dest core.Destination, port core.Port) string {
-	name, err := Resolve(unifiedNaming, dest, port)
+func MustResolve(dest core.Destination, port core.Port) string {
+	name, err := Resolve(dest, port)
 	if err != nil {
 		panic(err)
 	}
 	return name
 }
 
-func Resolve(unifiedNaming bool, dest core.Destination, port core.Port) (string, error) {
+// Resolve returns the KRI of a destination port.
+func Resolve(dest core.Destination, port core.Port) (string, error) {
 	switch {
 	case dest == nil:
 		return "", errors.New("dest is nil: expected a non-nil dest implementing core.Destination")
 	case port == nil:
 		return "", errors.New("port is nil: expected a non-nil port implementing core.Port")
-	case unifiedNaming:
-		return kri.WithSectionName(kri.From(dest), port.GetName()).String(), nil
 	default:
-		return ResolveLegacyFromDestination(dest, port), nil
+		return kri.WithSectionName(kri.From(dest), port.GetName()).String(), nil
 	}
 }
 

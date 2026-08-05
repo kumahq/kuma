@@ -35,6 +35,7 @@ resources:
               routes:
               - match:
                   prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
                   cluster: backend
                   timeout: 0s
@@ -64,7 +65,7 @@ resources:
             - addressPrefix: ::1
               prefixLen: 128
           routeConfig:
-            name: outbound:backend
+            name: outbound:payment
             requestHeadersToAdd:
             - header:
                 key: x-kuma-tags
@@ -73,10 +74,11 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: backend
+              name: payment
               routes:
               - match:
                   prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
                   cluster: payment
                   hashPolicy:

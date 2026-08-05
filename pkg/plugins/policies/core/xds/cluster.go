@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 type Cluster struct {
@@ -13,7 +13,6 @@ type Cluster struct {
 	name              string
 	sni               string
 	tags              tags.Tags
-	mesh              string
 	isExternalService bool
 }
 
@@ -22,9 +21,6 @@ func (c *Cluster) Name() string    { return c.name }
 func (c *Cluster) SNI() string     { return c.sni }
 func (c *Cluster) Tags() tags.Tags { return c.tags }
 
-// Mesh returns a non-empty string only if the cluster is in a different mesh
-// from the context.
-func (c *Cluster) Mesh() string            { return c.mesh }
 func (c *Cluster) IsExternalService() bool { return c.isExternalService }
 func (c *Cluster) Hash() string            { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
 
@@ -80,13 +76,6 @@ func (b *ClusterBuilder) WithName(name string) *ClusterBuilder {
 func (b *ClusterBuilder) WithSNI(sni string) *ClusterBuilder {
 	b.opts = append(b.opts, newClusterOptFunc(func(cluster *Cluster) {
 		cluster.sni = sni
-	}))
-	return b
-}
-
-func (b *ClusterBuilder) WithMesh(mesh string) *ClusterBuilder {
-	b.opts = append(b.opts, newClusterOptFunc(func(cluster *Cluster) {
-		cluster.mesh = mesh
 	}))
 	return b
 }

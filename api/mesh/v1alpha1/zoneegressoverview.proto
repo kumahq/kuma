@@ -6,7 +6,7 @@ import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/zoneegress.proto";
 import "api/mesh/v1alpha1/zoneegressinsight.proto";
 
-option go_package = "github.com/kumahq/kuma/v2/api/mesh/v1alpha1";
+option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
 
 // ZoneEgressOverview defines the projected state of a ZoneEgress.
 message ZoneEgressOverview {
@@ -16,6 +16,7 @@ message ZoneEgressOverview {
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).skip_registration = true;
   option (kuma.mesh.resource).skip_kubernetes_wrappers = true;
+  option (kuma.mesh.resource).policy_matching_exempt = true;
 
   ZoneEgress zoneEgress = 1;
 

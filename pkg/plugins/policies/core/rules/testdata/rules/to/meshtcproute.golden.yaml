@@ -4,13 +4,16 @@ Rules:
     default:
       backendRefs:
       - kind: MeshService
-        name: backend-v1
+        labels:
+          kuma.io/display-name: backend-v1
         weight: 40
       - kind: MeshService
-        name: backend-v2
+        labels:
+          kuma.io/display-name: backend-v2
         weight: 40
       - kind: MeshService
-        name: backend-v3
+        labels:
+          kuma.io/display-name: backend-v3
         weight: 20
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"

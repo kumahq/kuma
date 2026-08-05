@@ -16,8 +16,9 @@ mesh: mesh-1
 name: mtp-2
 spec:
   targetRef:
-    kind: Mesh
-    proxyTypes: ["Gateway"]
+    kind: Dataplane
+    labels:
+      version: "v2"
   to:
     - targetRef:
         kind: Mesh
@@ -30,9 +31,8 @@ mesh: mesh-1
 name: mtp-3
 spec:
   targetRef:
-    kind: MeshSubset
-    proxyTypes: ["Sidecar"]
-    tags:
+    kind: Dataplane
+    labels:
       version: "v1"
   to:
     - targetRef:

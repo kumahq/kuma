@@ -8,16 +8,16 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/api/generic"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/util/maps"
-	xds_auth "github.com/kumahq/kuma/v2/pkg/xds/auth"
+	"github.com/kumahq/kuma/v3/api/generic"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/maps"
+	xds_auth "github.com/kumahq/kuma/v3/pkg/xds/auth"
 )
 
 var lifecycleLog = core.Log.WithName("xds").WithName("dp-lifecycle")
@@ -43,7 +43,6 @@ type DataplaneLifecycle struct {
 
 type proxyInfo struct {
 	mtx       sync.Mutex
-	proxyType mesh_proto.ProxyType
 	connected bool
 	deleted   bool
 }
@@ -70,6 +69,12 @@ func NewDataplaneLifecycle(
 }
 
 func (d *DataplaneLifecycle) OnProxyConnected(streamID core_xds.StreamID, proxyKey core_model.ResourceKey, ctx context.Context, md core_xds.DataplaneMetadata) error {
+	// Legacy ZoneIngress/ZoneEgress proxies are no longer supported. Reject them here,
+	// before registration and before the watchdog and the status sink start treating
+	// them as a Dataplane.
+	if pt := md.GetProxyType(); pt != mesh_proto.DataplaneProxyType {
+		return errors.Errorf("unsupported proxy type %q, only %q is supported", pt, mesh_proto.DataplaneProxyType)
+	}
 	if md.Resource == nil {
 		return nil
 	}
@@ -102,14 +107,11 @@ func (d *DataplaneLifecycle) register(
 	md core_xds.DataplaneMetadata,
 ) error {
 	log := lifecycleLog.
-		WithValues("proxyType", md.GetProxyType()).
 		WithValues("proxyKey", proxyKey).
 		WithValues("streamID", streamID).
 		WithValues("resource", md.Resource)
 
-	info, loaded := d.proxyInfos.LoadOrStore(proxyKey, &proxyInfo{
-		proxyType: md.GetProxyType(),
-	})
+	info, loaded := d.proxyInfos.LoadOrStore(proxyKey, &proxyInfo{})
 
 	info.mtx.Lock()
 	defer info.mtx.Unlock()
@@ -121,7 +123,7 @@ func (d *DataplaneLifecycle) register(
 
 	log.Info("register proxy")
 
-	err := manager.Upsert(ctx, d.resManager, core_model.MetaToResourceKey(md.Resource.GetMeta()), proxyResource(md.GetProxyType()), func(existing core_model.Resource) error {
+	err := manager.Upsert(ctx, d.resManager, core_model.MetaToResourceKey(md.Resource.GetMeta()), core_mesh.NewDataplaneResource(), func(existing core_model.Resource) error {
 		if err := d.validateUpsert(ctx, md.Resource); err != nil {
 			return errors.Wrap(err, "you are trying to override existing proxy to which you don't have an access.")
 		}
@@ -163,11 +165,9 @@ func (d *DataplaneLifecycle) deregister(
 	}
 
 	info.connected = false
-	proxyType := info.proxyType
 	info.mtx.Unlock()
 
 	log := lifecycleLog.
-		WithValues("proxyType", proxyType).
 		WithValues("proxyKey", proxyKey).
 		WithValues("streamID", streamID)
 
@@ -188,7 +188,7 @@ func (d *DataplaneLifecycle) deregister(
 		return
 	}
 
-	connected, err := d.proxyConnectedToAnotherCP(ctx, proxyType, proxyKey, log)
+	connected, err := d.proxyConnectedToAnotherCP(ctx, proxyKey, log)
 	if err != nil {
 		log.Error(err, "could not check if proxy connected to another CP")
 		return
@@ -196,7 +196,7 @@ func (d *DataplaneLifecycle) deregister(
 
 	if !connected {
 		log.Info("deregister proxy")
-		if err := d.resManager.Delete(ctx, proxyResource(proxyType), store.DeleteBy(proxyKey)); err != nil {
+		if err := d.resManager.Delete(ctx, core_mesh.NewDataplaneResource(), store.DeleteBy(proxyKey)); err != nil {
 			log.Error(err, "could not unregister proxy")
 		}
 	}
@@ -234,11 +234,10 @@ func (d *DataplaneLifecycle) validateProxyKey(proxyKey core_model.ResourceKey, p
 
 func (d *DataplaneLifecycle) proxyConnectedToAnotherCP(
 	ctx context.Context,
-	pt mesh_proto.ProxyType,
 	key core_model.ResourceKey,
 	log logr.Logger,
 ) (bool, error) {
-	insight := proxyInsight(pt)
+	insight := core_mesh.NewDataplaneInsightResource()
 
 	err := d.resManager.Get(ctx, insight, store.GetBy(key))
 	switch {
@@ -261,30 +260,4 @@ func (d *DataplaneLifecycle) proxyConnectedToAnotherCP(
 	}
 
 	return false, nil
-}
-
-func proxyResource(pt mesh_proto.ProxyType) core_model.Resource {
-	switch pt {
-	case mesh_proto.DataplaneProxyType:
-		return core_mesh.NewDataplaneResource()
-	case mesh_proto.IngressProxyType:
-		return core_mesh.NewZoneIngressResource()
-	case mesh_proto.EgressProxyType:
-		return core_mesh.NewZoneEgressResource()
-	default:
-		return nil
-	}
-}
-
-func proxyInsight(pt mesh_proto.ProxyType) core_model.Resource {
-	switch pt {
-	case mesh_proto.DataplaneProxyType:
-		return core_mesh.NewDataplaneInsightResource()
-	case mesh_proto.IngressProxyType:
-		return core_mesh.NewZoneIngressInsightResource()
-	case mesh_proto.EgressProxyType:
-		return core_mesh.NewZoneEgressInsightResource()
-	default:
-		return nil
-	}
 }

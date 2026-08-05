@@ -13,8 +13,8 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 const (
@@ -67,8 +67,8 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		"--namespace", t.ingressNamespace,
 		"--set", "controller.ingressController.watchNamespaces={"+watchNamespacesVal+"}",
 		"--set", "controller.ingressController.ingressClass="+t.name,
-		"--set", "controller.podAnnotations.kuma\\.io/mesh="+t.mesh,
-		"--set", "gateway.podAnnotations.kuma\\.io/mesh="+t.mesh,
+		"--set", "controller.podLabels.kuma\\.io/mesh="+t.mesh,
+		"--set", "gateway.podLabels.kuma\\.io/mesh="+t.mesh,
 		chartPath,
 	)
 	if err != nil {

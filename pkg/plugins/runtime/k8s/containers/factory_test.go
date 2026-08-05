@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 
-	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	runtime_k8s "github.com/kumahq/kuma/v3/pkg/config/plugins/runtime/k8s"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 )
 
 var _ = Describe("DataplaneProxyFactory", func() {

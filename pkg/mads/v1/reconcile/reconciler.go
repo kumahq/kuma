@@ -6,7 +6,7 @@ import (
 
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
 )
 
 func NewReconciler(cache envoy_cache.SnapshotCache, generator *SnapshotGenerator) Reconciler {
@@ -44,7 +44,7 @@ func (r *reconciler) Reconcile(ctx context.Context) error {
 		switch {
 		case oldSnapshot == nil:
 			snap = newSnapshot
-		case !util_xds_v3.SingleTypeSnapshotEqual(oldSnapshot, newSnapshot):
+		case !util_xds_v3.SingleTypeSnapshotEqual(newSnapshot, oldSnapshot):
 			snap = newSnapshot
 		default:
 			snap = oldSnapshot

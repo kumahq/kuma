@@ -5,16 +5,29 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func InboundPassthrough() {
 	const namespace = "inbound-passthrough"
 	const mesh = "inbound-passthrough"
+	const identityName = "inbound-passthrough-identity"
+
+	var zones []Cluster
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(mesh),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
 		localhostAddress := "127.0.0.1"
@@ -23,10 +36,12 @@ func InboundPassthrough() {
 			localhostAddress = "::1"
 			wildcardAddress = "::"
 		}
+		zones = []Cluster{multizone.KubeZone1, multizone.UniZone1}
 		// Global
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(mesh)).
-			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
+			Install(Yaml(builders.Mesh().WithName(mesh))).
+			Install(MeshIdentityBundled(mesh, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(mesh, MeshIdentityTrustDomains(mesh, zones...)...)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
@@ -67,6 +82,7 @@ func InboundPassthrough() {
 					BoundToContainerIp(),
 					WithServiceName("uni-test-server-containerip"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 
@@ -94,10 +110,13 @@ func InboundPassthrough() {
 					testserver.WithName("k8s-test-server-pod"),
 					testserver.WithEchoArgs("echo", "--instance", "k8s-bound-pod", "--ip", "$(POD_IP)"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 
 		Expect(group.Wait()).To(Succeed())
+
+		Expect(DistributeMeshTrusts(multizone.Global, mesh, identityName, zones...)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -127,11 +146,11 @@ func InboundPassthrough() {
 					g.Expect(response.Instance).To(Equal(expectedInstance))
 				}).Should(Succeed())
 			},
-			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough.svc.80.mesh", "k8s-bound-wildcard"),
-			Entry("on k8s binds to podip", "k8s-test-server-pod.inbound-passthrough.svc.80.mesh", "k8s-bound-pod"),
-			Entry("on universal binds to wildcard", "uni-test-server-wildcard.mesh", "uni-bound-wildcard"),
-			Entry("on universal binds to podip", "uni-test-server-containerip.mesh", "uni-bound-containerip"),
-			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.mesh", "uni-bound-wildcard-no-tp"),
+			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough.svc.cluster.local", "k8s-bound-wildcard"),
+			Entry("on k8s binds to podip", "k8s-test-server-pod.inbound-passthrough.svc.cluster.local", "k8s-bound-pod"),
+			Entry("on universal binds to wildcard", "uni-test-server-wildcard.svc.kuma-4.mesh.local", "uni-bound-wildcard"),
+			Entry("on universal binds to podip", "uni-test-server-containerip.svc.kuma-4.mesh.local", "uni-bound-containerip"),
+			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.svc.kuma-4.mesh.local", "uni-bound-wildcard-no-tp"),
 		)
 		DescribeTable("should fail when application",
 			func(url string) {
@@ -145,8 +164,8 @@ func InboundPassthrough() {
 					g.Expect(err).To(HaveOccurred())
 				}).Should(Succeed())
 			},
-			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough.svc.80.mesh"),
-			Entry("on universal binds to localhost", "uni-test-server-localhost.mesh"),
+			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough.svc.cluster.local"),
+			Entry("on universal binds to localhost", "uni-test-server-localhost.svc.kuma-4.mesh.local"),
 		)
 	})
 
@@ -162,11 +181,11 @@ func InboundPassthrough() {
 					g.Expect(response.Instance).To(Equal(expectedInstance))
 				}).Should(Succeed())
 			},
-			Entry("on universal binds to wildcard", "uni-test-server-wildcard.mesh", "uni-bound-wildcard"),
-			Entry("on universal binds to container ip", "uni-test-server-containerip.mesh", "uni-bound-containerip"),
-			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.mesh", "uni-bound-wildcard-no-tp"),
-			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough.svc.80.mesh", "k8s-bound-wildcard"),
-			Entry("on k8s binds to podip", "k8s-test-server-pod.inbound-passthrough.svc.80.mesh", "k8s-bound-pod"),
+			Entry("on universal binds to wildcard", "uni-test-server-wildcard.svc.mesh.local", "uni-bound-wildcard"),
+			Entry("on universal binds to container ip", "uni-test-server-containerip.svc.mesh.local", "uni-bound-containerip"),
+			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.svc.mesh.local", "uni-bound-wildcard-no-tp"),
+			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough.svc.kuma-1.mesh.local", "k8s-bound-wildcard"),
+			Entry("on k8s binds to podip", "k8s-test-server-pod.inbound-passthrough.svc.kuma-1.mesh.local", "k8s-bound-pod"),
 		)
 		DescribeTable("should fail when application",
 			func(url string) {
@@ -177,8 +196,8 @@ func InboundPassthrough() {
 					Expect(err).To(HaveOccurred())
 				}).Should(Succeed())
 			},
-			Entry("on universal binds to localhost", "uni-test-server-localhost.mesh"),
-			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough.svc.80.mesh"),
+			Entry("on universal binds to localhost", "uni-test-server-localhost.svc.mesh.local"),
+			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough.svc.kuma-1.mesh.local"),
 		)
 	})
 }

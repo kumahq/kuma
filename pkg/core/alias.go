@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 
-	kuma_log "github.com/kumahq/kuma/v2/pkg/log"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 )
 
 var (

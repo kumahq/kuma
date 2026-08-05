@@ -1,12 +1,11 @@
 package inbound
 
 import (
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/merge"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/merge"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 )
 
 type Rule struct {
@@ -37,77 +36,36 @@ type RuleEntry interface {
 	GetMatches() []common_api.Match
 }
 
-// ruleEntryAdapter is a helper struct that allows using any BaseEntry as RuleEntry. For example, this is needed to
-// provide backward compatibility for legacy FromEntries and use them as RuleEntries without match conditions.
-type ruleEntryAdapter[T common.BaseEntry] struct {
-	BaseEntry T
-}
-
-func newRuleEntryAdapter[T common.BaseEntry](base T) *ruleEntryAdapter[T] {
-	return &ruleEntryAdapter[T]{BaseEntry: base}
-}
-
-func (r *ruleEntryAdapter[T]) GetDefault() any {
-	return r.BaseEntry.GetDefault()
-}
-
-func (r *ruleEntryAdapter[T]) GetMatches() []common_api.Match {
-	return []common_api.Match{}
-}
-
 type PolicyWithRules interface {
 	core_model.Policy
 	GetRules() []RuleEntry
 }
 
 func BuildRules(policies core_model.ResourceList) ([]*Rule, error) {
-	entries, err := getEntries(policies)
-	if err != nil {
-		return []*Rule{}, err
-	}
+	entries := getEntries(policies)
 	return buildRules(entries)
 }
 
-func getEntries(resources core_model.ResourceList) ([]common.WithPolicyAttributes[RuleEntry], error) {
-	desc, err := registry.Global().DescriptorFor(resources.GetItemType())
-	if err != nil {
-		return nil, err
-	}
-
-	policies, ok := common.Cast[interface {
-		PolicyWithRules
-		core_model.PolicyWithFromList
-	}](resources.GetItems())
+func getEntries(resources core_model.ResourceList) []common.WithPolicyAttributes[RuleEntry] {
+	policies, ok := common.Cast[PolicyWithRules](resources.GetItems())
 	if !ok {
-		return nil, nil
+		return nil
 	}
 
 	entries := []common.WithPolicyAttributes[RuleEntry]{}
 
 	for i, policy := range policies {
-		switch {
-		case len(policy.GetRules()) > 0:
-			for j, rule := range policy.GetRules() {
-				entries = append(entries, common.WithPolicyAttributes[RuleEntry]{
-					Entry:     rule,
-					Meta:      resources.GetItems()[i].GetMeta(),
-					TopLevel:  policy.GetTargetRef(),
-					RuleIndex: j,
-				})
-			}
-		case desc.IsFromAsRules && len(policy.GetFromList()) > 0:
-			for j, fromEntry := range policy.GetFromList() {
-				entries = append(entries, common.WithPolicyAttributes[RuleEntry]{
-					Entry:     newRuleEntryAdapter(fromEntry),
-					Meta:      resources.GetItems()[i].GetMeta(),
-					TopLevel:  policy.GetTargetRef(),
-					RuleIndex: j,
-				})
-			}
+		for j, rule := range policy.GetRules() {
+			entries = append(entries, common.WithPolicyAttributes[RuleEntry]{
+				Entry:     rule,
+				Meta:      resources.GetItems()[i].GetMeta(),
+				TopLevel:  policy.GetTargetRef(),
+				RuleIndex: j,
+			})
 		}
 	}
 
-	return entries, nil
+	return entries
 }
 
 func buildRules[T interface {
@@ -150,12 +108,5 @@ func buildRules[T interface {
 
 func AffectsInbounds(p core_model.Policy) bool {
 	pr, ok := p.(PolicyWithRules)
-	if ok && len(pr.GetRules()) > 0 {
-		return true
-	}
-	pf, ok := p.(core_model.PolicyWithFromList)
-	if ok && len(pf.GetFromList()) > 0 {
-		return true
-	}
-	return false
+	return ok && len(pr.GetRules()) > 0
 }

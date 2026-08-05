@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v2/pkg/test"
-	. "github.com/kumahq/kuma/v2/pkg/util/watchdog"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	. "github.com/kumahq/kuma/v3/pkg/util/watchdog"
 )
 
 var _ = Describe("SimpleWatchdog", func() {

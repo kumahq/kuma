@@ -16,13 +16,13 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	core_system_names "github.com/kumahq/kuma/v2/pkg/core/system_names"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	"github.com/kumahq/kuma/v2/pkg/util/proto"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 type Configurer struct {
@@ -30,16 +30,14 @@ type Configurer struct {
 
 	// Opaque string which envoy will assign to tracer collector cluster, on those
 	// which support association of named "service" tags on traces. Consumed by datadog.
-	Service               string
-	TrafficDirection      envoy_core.TrafficDirection
-	Destination           string
-	IsGateway             bool
-	UnifiedResourceNaming bool
-	Mesh                  string
-	Zone                  string
-	WorkloadKRI           string
-	// ResolvedOtelName is the resolved backend name for OTel (from backendRef or inline endpoint).
-	// When empty, falls back to backend.OpenTelemetry.Endpoint for naming.
+	Service          string
+	TrafficDirection envoy_core.TrafficDirection
+	Destination      string
+	IsGateway        bool
+	Mesh             string
+	Zone             string
+	WorkloadKRI      string
+	// ResolvedOtelName is the resolved MeshOpenTelemetryBackend name for OTel, used for naming.
 	ResolvedOtelName string
 	// ResolvedOtelUseHTTP is true when the resolved backend uses HTTP protocol.
 	ResolvedOtelUseHTTP bool
@@ -64,7 +62,6 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	} else {
 		backend = backends[0]
 	}
-	getNameOrDefault := core_system_names.GetNameOrDefault(c.UnifiedResourceNaming)
 
 	return v3.UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
 		hcm.Tracing = &envoy_hcm.HttpConnectionManager_Tracing{
@@ -120,10 +117,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.Zipkin != nil {
-			name := getNameOrDefault(
-				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_zipkin", core_system_names.CleanName(backend.Zipkin.Url))),
-				GetTracingClusterName(ZipkinProviderName),
-			)
+			name := core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_zipkin", core_system_names.CleanName(backend.Zipkin.Url)))
 			tracing, err := c.zipkinConfig(name)
 			if err != nil {
 				return err
@@ -132,10 +126,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.Datadog != nil {
-			name := getNameOrDefault(
-				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_datadog", core_system_names.CleanName(backend.Datadog.Url))),
-				GetTracingClusterName(DatadogProviderName),
-			)
+			name := core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_datadog", core_system_names.CleanName(backend.Datadog.Url)))
 			tracing, err := c.datadogConfig(name)
 			if err != nil {
 				return err
@@ -144,14 +135,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.OpenTelemetry != nil && !c.SkipOpenTelemetry {
-			otelName := c.ResolvedOtelName
-			if otelName == "" {
-				otelName = backend.OpenTelemetry.Endpoint
-			}
-			name := getNameOrDefault(
-				core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(otelName))),
-				GetTracingClusterName(OpenTelemetryProviderName),
-			)
+			name := core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(c.ResolvedOtelName)))
 			var tracing *envoy_trace.Tracing_Http
 			var err error
 			if c.ResolvedOtelUseHTTP {
@@ -343,8 +327,4 @@ func mapHeaderTag(name string, header *api.HeaderTag) *tracingv3.CustomTag {
 			},
 		},
 	}
-}
-
-func GetTracingClusterName(provider string) string {
-	return "meshtrace:" + provider
 }

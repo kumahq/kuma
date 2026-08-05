@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,9 +23,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/test/framework/kumactl"
-	"github.com/kumahq/kuma/v2/test/framework/portforward"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/test/framework/kumactl"
+	"github.com/kumahq/kuma/v3/test/framework/portforward"
 )
 
 var _ ControlPlane = &K8sControlPlane{}
@@ -37,7 +38,6 @@ type K8sControlPlane struct {
 	kumactl    *kumactl.KumactlOptions
 	cluster    *K8sCluster
 	portFwd    portforward.Tunnel
-	madsFwd    portforward.Tunnel
 	verbose    bool
 	replicas   int
 	apiHeaders []string
@@ -103,20 +103,11 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 		return errors.Wrapf(err, "failed to start port-forward to API Server (port %d)", 5681)
 	}
 
-	if c.mode != core.Global {
-		if c.madsFwd, err = c.cluster.PortForward(k8s.ResourceTypeService, kumaCpSvc.Name, kumaCpSvc.Namespace, 5676); err != nil {
-			return errors.Wrapf(err, "failed to start port-forward to MADS (port: %d)", 5676)
-		}
-	}
-
 	return nil
 }
 
 func (c *K8sControlPlane) ClosePortForwards() {
 	c.portFwd.Close()
-	if c.mode != core.Global {
-		c.madsFwd.Close()
-	}
 }
 
 func (c *K8sControlPlane) RefreshPortForwards() error {
@@ -218,24 +209,18 @@ func (c *K8sControlPlane) PortFwd() portforward.Tunnel {
 	return c.portFwd
 }
 
-func (c *K8sControlPlane) MadsPortFwd() portforward.Tunnel {
-	return c.madsFwd
-}
-
 func (c *K8sControlPlane) FinalizeAdd() error {
 	if err := c.PortForwardKumaCP(); err != nil {
 		return err
 	}
 
-	return c.FinalizeAddWithPortFwd(c.portFwd, c.madsFwd)
+	return c.FinalizeAddWithPortFwd(c.portFwd)
 }
 
 func (c *K8sControlPlane) FinalizeAddWithPortFwd(
 	portFwd portforward.Tunnel,
-	madsPortForward portforward.Tunnel,
 ) error {
 	c.portFwd = portFwd
-	c.madsFwd = madsPortForward
 	if !c.cluster.opts.setupKumactl {
 		return nil
 	}
@@ -344,6 +329,56 @@ func (c *K8sControlPlane) GetAPIServerAddress() string {
 	panic("Port forward wasn't setup!")
 }
 
+// inspectEnvoyProxyTimeout bounds an inspect request. It is generous because
+// the call is routed client -> CP -> proxy over mTLS and can return a full
+// stats/config dump; the sibling GetMetrics uses the same budget. There is no
+// retry here, so callers wrap it in Eventually.
+const inspectEnvoyProxyTimeout = 30 * time.Second
+
+// InspectEnvoyProxy performs an authenticated GET against the control plane's
+// Envoy admin inspect API (e.g. /meshes/{mesh}/dataplanes/{name}/stats) and
+// returns the raw response body. This is how e2e reads a proxy's Envoy admin
+// state now that the kuma-dp readiness port no longer proxies admin: the CP
+// reaches the proxy over its own mTLS admin channel. The CP may reshape some
+// responses (config dump is sanitized before it is returned), so this is not
+// byte-for-byte identical to Envoy's admin output, but the stats/clusters/
+// config_dump parsers accept it.
+func (c *K8sControlPlane) InspectEnvoyProxy(inspectPath string, query url.Values) ([]byte, error) {
+	reqURL := c.GetAPIServerAddress() + inspectPath
+	if encoded := query.Encode(); encoded != "" {
+		reqURL += "?" + encoded
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), inspectEnvoyProxyTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	for _, header := range c.apiHeaders {
+		if kv := strings.SplitN(header, "=", 2); len(kv) == 2 {
+			req.Header.Set(kv[0], kv[1])
+		}
+	}
+
+	client := &http.Client{Timeout: inspectEnvoyProxyTimeout}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "inspect %q request failed", inspectPath)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("inspect %q returned %d: %s", inspectPath, resp.StatusCode, string(body))
+	}
+	return body, nil
+}
+
 func (c *K8sControlPlane) GetMetrics() (string, error) {
 	svc := c.GetKumaCPSvc()
 	tnl, err := c.cluster.PortForward(k8s.ResourceTypeService, svc.Name, svc.Namespace, 5680)
@@ -372,25 +407,6 @@ func (c *K8sControlPlane) GetMetrics() (string, error) {
 		return "", fmt.Errorf("CP metrics returned %d: %s", resp.StatusCode, string(body))
 	}
 	return string(body), nil
-}
-
-func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
-	if c.madsFwd.Endpoint == "" {
-		return "", errors.New("MADS port forward wasn't setup!")
-	}
-
-	return http_helper.HTTPDoWithRetryContextE(
-		c.t,
-		context.Background(),
-		http.MethodPost,
-		fmt.Sprintf("http://%s/v3/discovery:monitoringassignments", c.madsFwd.Endpoint),
-		fmt.Appendf(nil, `{"type_url": "type.googleapis.com/kuma.observability.v1.MonitoringAssignment","node": {"id": %q}}`, clientId),
-		map[string]string{"content-type": "application/json"},
-		200,
-		DefaultRetries,
-		DefaultTimeout,
-		&tls.Config{MinVersion: tls.VersionTLS12},
-	)
 }
 
 func (c *K8sControlPlane) Exec(cmd ...string) (string, string, error) {
@@ -451,18 +467,6 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service, workload string) (strin
 	}
 
 	return c.generateToken("", string(dataBytes))
-}
-
-func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`{"zone": %q, "scope": ["ingress"]}`, zone)
-
-	return c.generateToken("/zone", data)
-}
-
-func (c *K8sControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`{"zone": %q, "scope": ["egress"]}`, zone)
-
-	return c.generateToken("/zone", data)
 }
 
 func (c *K8sControlPlane) GenerateZoneToken(zone string, scope []string) (string, error) {

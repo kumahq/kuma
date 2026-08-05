@@ -57,21 +57,6 @@ Create chart name and version as used by the chart label.
 {{ printf "%s" (default $defaultSvcName .Values.controlPlane.service.name) }}
 {{- end }}
 
-{{- define "kuma.controlPlane.globalZoneSync.serviceName" -}}
-{{- $defaultSvcName := printf "%s-global-zone-sync" (include "kuma.name" .) -}}
-{{ printf "%s" (default $defaultSvcName .Values.controlPlane.globalZoneSyncService.name) }}
-{{- end }}
-
-{{- define "kuma.ingress.serviceName" -}}
-{{- $defaultSvcName := printf "%s-ingress" (include "kuma.name" .) -}}
-{{ printf "%s" (default $defaultSvcName .Values.ingress.service.name) }}
-{{- end }}
-
-{{- define "kuma.egress.serviceName" -}}
-{{- $defaultSvcName := printf "%s-egress" (include "kuma.name" .) -}}
-{{ printf "%s" (default $defaultSvcName .Values.egress.service.name) }}
-{{- end }}
-
 {{/*
 Common labels
 */}}
@@ -118,28 +103,6 @@ control plane deployment annotations
 {{- range $key, $value := $.Values.controlPlane.deploymentAnnotations }}
 {{ $key | quote }}: {{ $value | quote }}
 {{- end }}
-{{- end }}
-
-{{/*
-ingress labels
-*/}}
-{{- define "kuma.ingressLabels" -}}
-app: {{ include "kuma.name" . }}-ingress
-{{- range $key, $value := .Values.ingress.extraLabels }}
-{{ $key | quote }}: {{ $value | quote }}
-{{- end }}
-{{ include "kuma.labels" . }}
-{{- end }}
-
-{{/*
-egress labels
-*/}}
-{{- define "kuma.egressLabels" -}}
-app: {{ include "kuma.name" . }}-egress
-{{ range $key, $value := .Values.egress.extraLabels }}
-{{ $key | quote }}: {{ $value | quote }}
-{{ end }}
-{{- include "kuma.labels" . }}
 {{- end }}
 
 {{/*
@@ -250,7 +213,7 @@ env:
 - name: KUMA_DP_SERVER_HDS_ENABLED
   value: "false"
 - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
-  value: {{ .Values.controlPlane.madsServer.enabled | quote }}
+  value: "false"
 - name: KUMA_API_SERVER_READ_ONLY
   value: "true"
 - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
@@ -287,14 +250,8 @@ env:
   value: {{ .Values.dataPlane.validationContainer.resources.limits.cpu | default "0" | quote }}
 - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_MEMORY
   value: {{ .Values.dataPlane.validationContainer.resources.limits.memory | default "50M" | quote }}
-{{- if .Values.dataPlane.dnsLogging }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
-  value: "true"
-{{- end }}
-{{- if .Values.transparentProxy.configMap.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
   value: {{ include "kuma.transparentProxyConfigMapName" . | quote }}
-{{- end }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
   value: /var/run/secrets/kuma.io/tls-cert/ca.crt
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
@@ -315,12 +272,6 @@ env:
 - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
   value: /var/run/secrets/kuma.io/api-server-client-certs/
 {{- end }}
-{{- if and (eq .Values.controlPlane.mode "global") (or .Values.controlPlane.tls.kdsGlobalServer.secretName .Values.controlPlane.tls.kdsGlobalServer.create) }}
-- name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
-  value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.crt
-- name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
-  value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
-{{- end }}
 {{- if and (eq .Values.controlPlane.mode "zone") (or .Values.controlPlane.tls.kdsZoneClient.secretName .Values.controlPlane.tls.kdsZoneClient.create) }}
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
@@ -329,16 +280,6 @@ env:
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
   value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
-- name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-  value: {{ .Values.experimental.sidecarContainers | quote }}
-{{- if .Values.experimental.inboundTagsDisabled }}
-- name: KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED
-  value: "true"
-{{- end }}
-{{- if .Values.experimental.deltaXds }}
-- name: KUMA_EXPERIMENTAL_DELTA_XDS
-  value: "true"
-{{- end }}
 - name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
   value: {{ .Values.experimental.envoyAdminUnixSocket | quote }}
 {{- if and .Values.cni.enabled .Values.cni.taintController.enabled }}
@@ -349,30 +290,12 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_NAMESPACE
   value: {{ .Values.cni.namespace }}
 {{- end }}
-{{- if .Values.experimental.ebpf.enabled }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
-  value: "true"
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME
-  value: {{ .Values.experimental.ebpf.instanceIPEnvVarName }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
-  value: {{ .Values.experimental.ebpf.bpffsPath }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH
-  value: {{ .Values.experimental.ebpf.cgroupPath }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE
-  value: {{ .Values.experimental.ebpf.tcAttachIface }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
-  value: {{ .Values.experimental.ebpf.programsSourcePath }}
-{{- end }}
 {{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
 - name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
   value: "true"
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
-{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
-- name: KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES
-  value: true
-{{- end }}
 {{- if .Values.dataPlane.features.unifiedResourceNaming }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
   value: "true"
@@ -384,15 +307,6 @@ env:
 {{- end }}
 
 {{- define "kuma.universal.defaultEnv" -}}
-{{ if eq .Values.controlPlane.mode "zone" }}
-  {{ if .Values.ingress.enabled }}
-    {{ fail "Can't have ingress.enabled when running controlPlane.mode=='universal'" }}
-  {{ end }}
-  {{ if .Values.egress.enabled }}
-    {{ fail "Can't have egress.enabled when running controlPlane.mode=='universal'" }}
-  {{ end }}
-{{ end }}
-
 env:
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
@@ -406,6 +320,8 @@ env:
   value: "{{ .Values.postgres.port }}"
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
   value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
+- name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
+  value: {{ .Values.controlPlane.madsServer.enabled | quote }}
 {{ if and (eq .Values.controlPlane.mode "zone") .Values.controlPlane.tls.general.secretName }}
 - name: KUMA_GENERAL_TLS_CERT_FILE
   value: /var/run/secrets/kuma.io/tls-cert/tls.crt
@@ -439,12 +355,6 @@ env:
 {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
 - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
   value: /var/run/secrets/kuma.io/api-server-client-certs/
-{{- end }}
-{{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
-- name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
-  value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.crt
-- name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
-  value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
 {{- end }}
 - name: KUMA_STORE_POSTGRES_TLS_MODE
   value: {{ .Values.postgres.tls.mode }}

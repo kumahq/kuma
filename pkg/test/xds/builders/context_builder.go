@@ -3,14 +3,14 @@ package builders
 import (
 	. "github.com/onsi/gomega"
 
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v2/pkg/test/xds"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/v3/pkg/test/xds"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 type ContextBuilder struct {
@@ -54,12 +54,6 @@ func (mc *ContextBuilder) With(fn func(*xds_context.Context)) *ContextBuilder {
 
 func (mc *ContextBuilder) WithEndpointMap(endpointMap *EndpointMapBuilder) *ContextBuilder {
 	mc.res.Mesh.EndpointMap = endpointMap.Build()
-	mc.res.ControlPlane.CLACache.(*xds.DummyCLACache).OutboundTargets = endpointMap.Build()
-	return mc
-}
-
-func (mc *ContextBuilder) WithExternalServicesEndpointMap(endpointMap *EndpointMapBuilder) *ContextBuilder {
-	mc.res.Mesh.ExternalServicesEndpointMap = endpointMap.Build()
 	mc.res.ControlPlane.CLACache.(*xds.DummyCLACache).OutboundTargets = endpointMap.Build()
 	return mc
 }

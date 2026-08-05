@@ -7,18 +7,17 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/zoneproxy"
-	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
 func Matches() {
 	meshName := "mal-matches"
 	externalServiceName := "mal-matches-ext"
-	egressDP := "zone-proxy-egress"
+	egressDP := zoneproxy.EgressName(meshName)
 	demoClient1 := "demo-client-1"
 	demoClient2 := "demo-client-2"
 	testServer := "test-server"
@@ -37,8 +36,7 @@ func Matches() {
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().
 				WithName(meshName).
-				WithoutInitialPolicies().
-				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive))).
+				WithoutInitialPolicies())).
 			Install(YamlUniversal(fmt.Sprintf(`
 type: MeshIdentity
 name: identity
@@ -88,8 +86,7 @@ spec:
 `, meshName, externalServiceDockerName))).
 			Install(zoneproxy.Install(
 				zoneproxy.WithMesh(meshName),
-				zoneproxy.WithEgressPort(11102),
-				zoneproxy.WithWorkload(egressDP),
+				zoneproxy.WithEgress(),
 				zoneproxy.WithDpEnvs(dppEnvs),
 			)).
 			Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
@@ -131,7 +128,8 @@ mesh: %s
 spec:
   targetRef:
     kind: Dataplane
-    name: %s
+    labels:
+      kuma.io/workload: %s
   rules:
     - matches:
         - spiffeID:
@@ -173,7 +171,8 @@ mesh: %s
 spec:
   targetRef:
     kind: Dataplane
-    name: %s
+    labels:
+      kuma.io/workload: %s
   rules:
     - matches:
         - spiffeID:

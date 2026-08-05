@@ -11,7 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 type ResourceScope string
@@ -34,7 +34,6 @@ type PolicyConfig struct {
 	Path                         string
 	AlternativeNames             []string
 	HasTo                        bool
-	HasFrom                      bool
 	HasRules                     bool
 	RuleHasMatches               bool
 	HasStatus                    bool
@@ -46,7 +45,6 @@ type PolicyConfig struct {
 	Scope                        ResourceScope
 	AllowedOnSystemNamespaceOnly bool
 	KubebuilderMarkers           []string
-	IsFromAsRules                bool
 	RegisterGenerator            bool
 	Description                  string
 	Order                        int
@@ -182,7 +180,6 @@ func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map
 		SingularDisplayName: core_model.DisplayName(name),
 		PluralDisplayName:   core_model.PluralType(core_model.DisplayName(name)),
 		HasTo:               fields["To"],
-		HasFrom:             fields["From"],
 		HasRules:            fields["Rules"],
 		RuleHasMatches:      ruleFields["Matches"],
 		KubebuilderMarkers:  kubebuilderMarkers,
@@ -209,9 +206,6 @@ func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map
 	}
 	if v, ok := parseBool(markers, "kuma:policy:allowed_on_system_namespace_only"); ok {
 		res.AllowedOnSystemNamespaceOnly = v
-	}
-	if v, ok := parseBool(markers, "kuma:policy:is_from_as_rules"); ok {
-		res.IsFromAsRules = v
 	}
 	if v, ok := parseBool(markers, "kuma:policy:register_generator"); ok {
 		res.RegisterGenerator = v

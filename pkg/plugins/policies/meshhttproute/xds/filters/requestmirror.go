@@ -3,32 +3,33 @@ package filters
 import (
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 type RequestMirrorConfigurer struct {
-	requestMirror           api.RequestMirror
-	backendRefToClusterName map[common_api.BackendRefHash]string
+	requestMirror api.RequestMirror
+	split         envoy_common.Split
 }
 
-func NewRequestMirror(requestMirror api.RequestMirror, backendRefToClusterName map[common_api.BackendRefHash]string) *RequestMirrorConfigurer {
+func NewRequestMirror(requestMirror api.RequestMirror, split envoy_common.Split) *RequestMirrorConfigurer {
 	return &RequestMirrorConfigurer{
-		requestMirror:           requestMirror,
-		backendRefToClusterName: backendRefToClusterName,
+		requestMirror: requestMirror,
+		split:         split,
 	}
 }
 
 func (f *RequestMirrorConfigurer) Configure(envoyRoute *envoy_route.Route) error {
 	return UpdateRouteAction(envoyRoute, func(action *envoy_route.RouteAction) error {
-		clusterName, found := f.backendRefToClusterName[f.requestMirror.BackendRef.Hash()]
-		if !found {
-			// this should never happen because we create clusters for all backendRefs
-			return errors.Errorf("could not find cluster for backendRef %s", f.requestMirror.BackendRef.Hash())
+		// no split means no cluster was created for the mirror backendRef, because
+		// it points to a destination that doesn't exist or doesn't speak HTTP, so
+		// there is nothing to mirror to
+		if f.split == nil {
+			return nil
 		}
 
 		var runtimeFraction *envoy_config_core.RuntimeFractionalPercent
@@ -45,7 +46,7 @@ func (f *RequestMirrorConfigurer) Configure(envoyRoute *envoy_route.Route) error
 
 		action.RequestMirrorPolicies = append(action.RequestMirrorPolicies, &envoy_route.RouteAction_RequestMirrorPolicy{
 			RuntimeFraction: runtimeFraction,
-			Cluster:         clusterName,
+			Cluster:         f.split.ClusterName(),
 		})
 		return nil
 	})

@@ -7,12 +7,11 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/portforward"
-	"github.com/kumahq/kuma/v2/test/framework/report"
-	kssh "github.com/kumahq/kuma/v2/test/framework/ssh"
-	"github.com/kumahq/kuma/v2/test/framework/universal"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/report"
+	kssh "github.com/kumahq/kuma/v3/test/framework/ssh"
+	"github.com/kumahq/kuma/v3/test/framework/universal"
 )
 
 var (
@@ -57,10 +56,6 @@ func SetupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...KumaD
 	wg.Add(1)
 	options := []KumaDeploymentOption{
 		WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
-		WithIngress(),
-		WithIngressEnvoyAdminTunnel(),
-		WithEgress(),
-		WithEgressEnvoyAdminTunnel(),
 		WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
 		// Occasionally CP will lose a leader in the E2E test just because of this deadline,
 		// which does not make sense in such controlled environment (one k3d node, one instance of the CP).
@@ -88,8 +83,6 @@ func SetupRemoteUniZone(wg *sync.WaitGroup, clusterName string, remoteHost *kssh
 	options := append(
 		[]KumaDeploymentOption{
 			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
-			WithEgressEnvoyAdminTunnel(),
-			WithIngressEnvoyAdminTunnel(),
 			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES", "argocd.argoproj.io"),
@@ -109,8 +102,6 @@ func SetupRemoteUniZone(wg *sync.WaitGroup, clusterName string, remoteHost *kssh
 		defer wg.Done()
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone, options...)).
-			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressToken)).
-			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken, WithConcurrency(1))).
 			Setup(zone)
 		Expect(err).ToNot(HaveOccurred())
 	}()
@@ -146,16 +137,12 @@ func SetupAndGetState() []byte {
 
 	kubeZone2Options := append(
 		KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.KubeZone2),
-		WithEnv("KUMA_EXPERIMENTAL_DELTA_XDS", "true"),
 		WithMemoryLimit("512Mi"),
 		WithCNI(),
 	)
 	KubeZone2 = SetupKubeZone(&wg, Kuma2, kubeZone2Options...)
 
-	uniZone1Options := append(
-		KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.UniZone1),
-		WithEnv("KUMA_EXPERIMENTAL_DELTA_XDS", "true"),
-	)
+	uniZone1Options := KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.UniZone1)
 	UniZone1 = SetupUniZone(&wg, Kuma4, uniZone1Options...)
 
 	vipCIDROverride := "251.0.0.0/8"
@@ -185,37 +172,18 @@ func SetupAndGetState() []byte {
 		Expect(WaitForZoneOnline(Global, z)).To(Succeed())
 	}
 
-	zeSpec := portforward.Spec{
-		AppName:    Config.ZoneEgressApp,
-		Namespace:  Config.KumaNamespace,
-		RemotePort: 9902,
-	}
-
-	ziSpec := portforward.Spec{
-		AppName:    Config.ZoneIngressApp,
-		Namespace:  Config.KumaNamespace,
-		RemotePort: 9902,
-	}
-
 	state := State{
 		Global:   Global.GetUniversalNetworkingState(),
 		UniZone1: UniZone1.GetUniversalNetworkingState(),
 		UniZone2: UniZone2.GetUniversalNetworkingState(),
 		KubeZone1: K8sNetworkingState{
-			ZoneEgress:  KubeZone1.GetPortForward(zeSpec),
-			ZoneIngress: KubeZone1.GetPortForward(ziSpec),
-			KumaCp:      KubeZone1.GetKuma().(*K8sControlPlane).PortFwd(),
-			MADS:        KubeZone1.GetKuma().(*K8sControlPlane).MadsPortFwd(),
+			KumaCp: KubeZone1.GetKuma().(*K8sControlPlane).PortFwd(),
 		},
 		KubeZone2: K8sNetworkingState{
-			ZoneEgress:  KubeZone2.GetPortForward(zeSpec),
-			ZoneIngress: KubeZone2.GetPortForward(ziSpec),
-			KumaCp:      KubeZone2.GetKuma().(*K8sControlPlane).PortFwd(),
-			MADS:        KubeZone2.GetKuma().(*K8sControlPlane).MadsPortFwd(),
+			KumaCp: KubeZone2.GetKuma().(*K8sControlPlane).PortFwd(),
 		},
 	}
-	// govet complains of marshaling with mutex, we know what we're doing here
-	bytes, err := json.Marshal(state) //nolint:govet
+	bytes, err := json.Marshal(&state)
 	Expect(err).ToNot(HaveOccurred())
 	return bytes
 }
@@ -232,18 +200,8 @@ func restoreKubeZone(clusterName string, networkingState *K8sNetworkingState) *K
 		1,
 		nil,
 	)
-	Expect(kubeCp.FinalizeAddWithPortFwd(networkingState.KumaCp, networkingState.KumaCp)).To(Succeed())
+	Expect(kubeCp.FinalizeAddWithPortFwd(networkingState.KumaCp)).To(Succeed())
 	zone.SetCP(kubeCp)
-	zone.AddPortForward(networkingState.ZoneEgress, portforward.Spec{
-		AppName:    Config.ZoneEgressApp,
-		Namespace:  Config.KumaNamespace,
-		RemotePort: 9902,
-	})
-	zone.AddPortForward(networkingState.ZoneIngress, portforward.Spec{
-		AppName:    Config.ZoneIngressApp,
-		Namespace:  Config.KumaNamespace,
-		RemotePort: 9902,
-	})
 	return zone
 }
 
@@ -261,8 +219,6 @@ func restoreUniZone(clusterName string, networkingState *universal.NetworkingSta
 	)
 	Expect(err).ToNot(HaveOccurred())
 	zone.SetCp(cp)
-	Expect(zone.AddNetworking(&networkingState.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
-	Expect(zone.AddNetworking(&networkingState.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
 	return zone
 }
 

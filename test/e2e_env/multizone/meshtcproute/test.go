@@ -7,21 +7,34 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
+	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
 
 func Test() {
 	meshName := "meshtcproute"
+	identityName := "meshtcproute-identity"
+
+	var zones []Cluster
+
+	zoneIngress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithIngress(),
+		)
+	}
 
 	BeforeAll(func() {
+		zones = []Cluster{multizone.UniZone1, multizone.UniZone2}
 		// Global
 		err := NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(Yaml(builders.Mesh().WithName(meshName))).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(meshName, MeshIdentityTrustDomains(meshName, zones...)...)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -29,37 +42,40 @@ func Test() {
 		group := errgroup.Group{}
 		NewClusterSetup().
 			Install(Parallel(
-				DemoClientUniversal(AppModeDemoClient, meshName,
+				DemoClientUniversal(
+					AppModeDemoClient, meshName,
 					WithTransparentProxy(true),
+					WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}),
 				),
-				TestServerUniversal("test-server-echo-1", meshName,
+				TestServerUniversal(
+					"test-server-echo-1", meshName,
 					WithArgs([]string{"echo", "--instance", "zone1"}),
 					WithServiceVersion("v1"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
 
 		NewClusterSetup().
 			Install(Parallel(
-				TestServerUniversal("test-server-echo-2", meshName,
+				TestServerUniversal(
+					"test-server-echo-2", meshName,
 					WithArgs([]string{"echo", "--instance", "zone2"}),
 					WithServiceVersion("v2"),
 				),
-				TestServerUniversal("test-server-echo-3", meshName,
+				TestServerUniversal(
+					"test-server-echo-3", meshName,
 					WithArgs([]string{"echo", "--instance", "alias-zone2"}),
 					WithServiceName("alias-test-server"),
 					WithServiceVersion("v2"),
 				),
+				zoneIngress(),
 			)).
 			SetupInGroup(multizone.UniZone2, &group)
 
 		Expect(group.Wait()).To(Succeed())
 
-		Expect(DeleteMeshResources(
-			multizone.Global,
-			meshName,
-			core_mesh.TrafficRouteResourceTypeDescriptor,
-		)).To(Succeed())
+		Expect(DistributeMeshTrusts(multizone.Global, meshName, identityName, zones...)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
@@ -89,27 +105,31 @@ name: route-1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: Dataplane
+    labels:
+      kuma.io/service: demo-client
   to:
   - targetRef:
       kind: MeshService
-      name: test-server
+      labels:
+        kuma.io/display-name: test-server
+        kuma.io/zone: kuma-5
     rules:
     - default:
         backendRefs:
-        - kind: MeshServiceSubset
-          name: alias-test-server
-          weight: 100
-          tags:
+        - kind: MeshService
+          labels:
+            kuma.io/display-name: alias-test-server
             kuma.io/zone: kuma-5
+          port: 80
+          weight: 100
 `, meshName))(multizone.Global)).To(Succeed())
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectResponsesByInstance(
 				multizone.UniZone1,
 				"demo-client",
-				"test-server.mesh",
+				"test-server.svc.kuma-5.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response).To(And(

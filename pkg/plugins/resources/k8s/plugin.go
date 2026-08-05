@@ -3,11 +3,11 @@ package k8s
 import (
 	"github.com/pkg/errors"
 
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	k8s_runtime "github.com/kumahq/kuma/v2/pkg/plugins/extensions/k8s"
-	k8s_events "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/events"
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	k8s_runtime "github.com/kumahq/kuma/v3/pkg/plugins/extensions/k8s"
+	k8s_events "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/events"
 )
 
 var _ core_plugins.ResourceStorePlugin = &plugin{}
@@ -40,7 +40,11 @@ func (p *plugin) EventListener(pc core_plugins.PluginContext, writer events.Emit
 	if !ok {
 		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
-	if err := pc.ComponentManager().Add(k8s_events.NewListener(mgr, writer)); err != nil {
+	listener, err := k8s_events.NewListener(mgr, writer, pc.Metrics())
+	if err != nil {
+		return err
+	}
+	if err := pc.ComponentManager().Add(listener); err != nil {
 		return err
 	}
 	return nil

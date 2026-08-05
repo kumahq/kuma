@@ -18,10 +18,10 @@ import (
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/yaml"
 
-	meshzoneaddress_k8s "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/k8s/v1alpha1"
-	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
-	. "github.com/kumahq/kuma/v2/pkg/test/matchers"
-	yaml2 "github.com/kumahq/kuma/v2/pkg/util/yaml"
+	meshzoneaddress_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/k8s/v1alpha1"
+	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
+	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	yaml2 "github.com/kumahq/kuma/v3/pkg/util/yaml"
 )
 
 const (

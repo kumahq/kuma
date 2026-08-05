@@ -7,39 +7,40 @@ import (
 	"github.com/emicklei/go-restful/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
 
-	"github.com/kumahq/kuma/v2/pkg/api-server/authn"
-	"github.com/kumahq/kuma/v2/pkg/api-server/customization"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	core_ca "github.com/kumahq/kuma/v2/pkg/core/ca"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/datasource"
-	"github.com/kumahq/kuma/v2/pkg/core/dns/lookup"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	secret_store "github.com/kumahq/kuma/v2/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/v2/pkg/dp-server/server"
-	"github.com/kumahq/kuma/v2/pkg/envoy/admin"
-	"github.com/kumahq/kuma/v2/pkg/events"
-	"github.com/kumahq/kuma/v2/pkg/insights/globalinsight"
-	"github.com/kumahq/kuma/v2/pkg/intercp/client"
-	kds_context "github.com/kumahq/kuma/v2/pkg/kds/context"
-	reconcile_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/reconcile"
-	kds_server_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/server"
-	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
-	"github.com/kumahq/kuma/v2/pkg/multitenant"
-	"github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres/config"
-	runtime2 "github.com/kumahq/kuma/v2/pkg/test/runtime"
-	"github.com/kumahq/kuma/v2/pkg/tokens/builtin"
-	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
-	xds_runtime "github.com/kumahq/kuma/v2/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v2/pkg/xds/secrets"
+	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
+	"github.com/kumahq/kuma/v3/pkg/api-server/customization"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
+	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/datasource"
+	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/v3/pkg/dp-server/server"
+	"github.com/kumahq/kuma/v3/pkg/envoy/admin"
+	"github.com/kumahq/kuma/v3/pkg/events"
+	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
+	"github.com/kumahq/kuma/v3/pkg/intercp/client"
+	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
+	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
+	kds_server_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
+	runtime2 "github.com/kumahq/kuma/v3/pkg/test/runtime"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
+	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
+	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 type testRuntimeContext struct {
@@ -206,6 +207,10 @@ func (t *testRuntimeContext) APIWebServiceCustomize() func(*restful.WebService) 
 	return func(*restful.WebService) error { return nil }
 }
 
+func (t *testRuntimeContext) RouteMetadataProvider() runtime.RouteMetadataProvider {
+	return nil
+}
+
 func (t *testRuntimeContext) Ready() bool {
 	for _, c := range t.components {
 		if rc, ok := c.(component.ReadyComponent); ok && !rc.Ready() {
@@ -262,6 +267,8 @@ func NewTestRuntime(ctx context.Context, cfg kuma_cp.Config, store store.Resourc
 func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 	cfg := kuma_cp.DefaultConfig()
 	cfg.Mode = config_core.Global
+	cfg.Experimental.KDSEventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+	cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 	return &KdsServerBuilder{
 		rt:             NewTestRuntime(context.Background(), cfg, store),
 		providedMapper: reconcile_v2.NoopResourceMapper,
@@ -290,6 +297,6 @@ func (b *KdsServerBuilder) WithTypes(types []model.ResourceType) *KdsServerBuild
 }
 
 func (b *KdsServerBuilder) Delta() (delta.Server, error) {
-	srv, _, err := kds_server_v2.New(core.Log.WithName("kds-delta").WithName(b.rt.GetMode()), b.rt, b.providedTypes, b.rt.Config().Multizone.Zone.Name, 100*time.Millisecond, b.providedFilter, b.providedMapper, 1*time.Second)
+	srv, _, err := kds_server_v2.New(core.Log.WithName("kds-delta").WithName(b.rt.GetMode()), b.rt, b.providedTypes, b.rt.Config().Multizone.Zone.Name, b.providedFilter, b.providedMapper, 1*time.Second)
 	return srv, err
 }

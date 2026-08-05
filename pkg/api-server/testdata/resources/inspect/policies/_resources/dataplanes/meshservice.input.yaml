@@ -10,8 +10,9 @@ labels:
   kuma.io/env: universal
 spec:
   selector:
-    dataplaneTags:
-      kuma.io/service: test-server
+    dataplaneLabels:
+      matchLabels:
+        kuma.io/service: test-server
   ports:
     - port: 80
       targetPort: 80
@@ -21,6 +22,8 @@ spec:
 type: Dataplane
 name: ts-01
 mesh: default
+labels:
+  kuma.io/service: test-server
 networking:
   address: 127.0.0.1
   inbound:
@@ -31,6 +34,8 @@ networking:
 type: Dataplane
 name: ts-02
 mesh: default
+labels:
+  kuma.io/service: test-server
 networking:
   address: 127.0.0.2
   inbound:
@@ -41,6 +46,8 @@ networking:
 type: Dataplane
 name: not-ts-01
 mesh: default
+labels:
+  kuma.io/service: not-test-server
 networking:
   address: 127.0.0.2
   inbound:

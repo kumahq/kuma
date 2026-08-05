@@ -7,9 +7,9 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/v2/pkg/config"
-	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
-	"github.com/kumahq/kuma/v2/pkg/mads"
+	"github.com/kumahq/kuma/v3/pkg/config"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
+	"github.com/kumahq/kuma/v3/pkg/mads"
 )
 
 func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig {
@@ -29,7 +29,8 @@ func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig
 type MonitoringAssignmentServerConfig struct {
 	config.BaseConfig
 
-	// Enabled if true starts the MADS server.
+	// Enabled if true starts the MADS server. MADS is only supported in universal
+	// deployment mode; this flag is ignored on Kubernetes.
 	Enabled bool `json:"enabled" envconfig:"kuma_monitoring_assignment_server_enabled"`
 	// Port of the server that serves Monitoring Assignment Discovery Service (MADS)
 	// over both grpc and http.

@@ -10,12 +10,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/config/core"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/report"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/report"
 )
 
 func FederateKubeZoneCPToUniversalGlobal() {
@@ -41,8 +41,16 @@ func FederateKubeZoneCPToUniversalGlobal() {
 				WithHelmReleaseName(releaseName),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(MTLSMeshKubernetes("default")).
-			Install(MeshTrafficPermissionAllowAllKubernetes("default")).
+			Install(MeshKubernetes("default")).
+			Install(MeshIdentityBundledKubernetes("default", "identity-default")).
+			// Federating renames the zone: it runs standalone first, where
+			// {{ .Zone }} resolves to "default", and picks up its real name once
+			// it points at Global. Both trust domains have to be allowed or the
+			// re-issued certificates stop matching after federation.
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity("default",
+				"default.default.mesh.local",
+				fmt.Sprintf("default.%s.mesh.local", zone.ZoneName()),
+			)).
 			Install(Parallel(
 				democlient.Install(),
 				testserver.Install(),
@@ -57,6 +65,8 @@ func FederateKubeZoneCPToUniversalGlobal() {
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(global)
+		ControlPlaneAssertions(zone)
 		Expect(zone.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zone.DeleteKuma()).To(Succeed())
 		Expect(global.DeleteKuma()).To(Succeed())

@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/v2/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
 )
 
 func MeshProxyPatch() {
@@ -62,8 +62,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: test-client_mesh-proxy-patch_svc_80
+    kind: Mesh
   default:
     appendModifications:
       - httpFilter:
@@ -79,7 +78,7 @@ spec:
                 function envoy_on_request(request_handle)
                   request_handle:headers():add("X-Header", "test")
                 end
-`, Config.KumaNamespace, meshName)
+`, namespace, meshName)
 
 		// when
 		err := kubernetes.Cluster.Install(YamlK8s(meshProxyPatch))
@@ -87,7 +86,7 @@ spec:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func(g Gomega) {
-			responses, err := client.CollectResponses(kubernetes.Cluster, "test-client", "test-server_mesh-proxy-patch_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
+			responses, err := client.CollectResponses(kubernetes.Cluster, "test-client", "test-server.mesh-proxy-patch.svc.cluster.local", client.FromKubernetesPod(namespace, "test-client"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses[0].Received.Headers["X-Header"]).To(ContainElements("test"))
 		}, "30s", "1s").Should(Succeed())
@@ -105,8 +104,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: test-client_mesh-proxy-patch_svc_80
+    kind: Mesh
   default:
     appendModifications:
       - networkFilter:
@@ -121,7 +119,7 @@ spec:
                 header:
                   key: X-Header
                   value: test
-`, Config.KumaNamespace, meshName)
+`, namespace, meshName)
 
 		// when
 		err := kubernetes.Cluster.Install(YamlK8s(meshProxyPatch))
@@ -129,7 +127,7 @@ spec:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func(g Gomega) {
-			responses, err := client.CollectResponses(kubernetes.Cluster, "test-client", "test-server_mesh-proxy-patch_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
+			responses, err := client.CollectResponses(kubernetes.Cluster, "test-client", "test-server.mesh-proxy-patch.svc.cluster.local", client.FromKubernetesPod(namespace, "test-client"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses[0].Received.Headers["X-Header"]).To(ContainElements("test"))
 		}, "30s", "1s").Should(Succeed())

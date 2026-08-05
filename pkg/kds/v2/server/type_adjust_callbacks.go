@@ -3,12 +3,12 @@ package server
 import (
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 
-	"github.com/kumahq/kuma/v2/pkg/kds"
-	util_xds_v3 "github.com/kumahq/kuma/v2/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/v3/pkg/kds"
+	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
 )
 
 // We are using go-control-plane's server and cache for KDS exchange.
-// We are setting TypeURL for DeltaDiscoveryRequest/DeltaDiscoveryResponse for our resource name like "TrafficRoute" / "Mesh" etc.
+// We are setting TypeURL for DeltaDiscoveryRequest/DeltaDiscoveryResponse for our resource name like "MeshTimeout" / "Mesh" etc.
 // but the actual resource which we are sending is kuma.mesh.v1alpha1.KumaResource
 //
 // The function which is marshaling DeltaDiscoveryResponse

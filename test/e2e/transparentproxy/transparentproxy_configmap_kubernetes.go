@@ -8,14 +8,14 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	. "github.com/kumahq/kuma/v2/test/framework"
-	"github.com/kumahq/kuma/v2/test/framework/client"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/v2/test/framework/deployments/testserver"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	. "github.com/kumahq/kuma/v3/test/framework"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
 func TransparentProxyConfigMap() {
@@ -39,8 +39,10 @@ func TransparentProxyConfigMap() {
 		}, "90s", "3s").Should(Succeed())
 
 		Expect(NewClusterSetup().
-			Install(MTLSMeshKubernetes(meshName)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			Install(MeshKubernetes(meshName)).
+			Install(MeshIdentityBundledKubernetes(meshName, "identity-"+meshName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName,
+				fmt.Sprintf("%s.default.mesh.local", meshName))).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(namespaceExternal)).
 			Install(Parallel(
@@ -76,6 +78,7 @@ func TransparentProxyConfigMap() {
 	})
 
 	E2EAfterAll(func() {
+		ControlPlaneAssertions(cluster)
 		Expect(cluster.TriggerDeleteNamespace(namespaceExternal)).To(Succeed())
 		Expect(cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
@@ -114,10 +117,10 @@ func TransparentProxyConfigMap() {
 
 	It("should be able to connect to test-server", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectFailure(
+			_, err := client.CollectEchoResponse(
 				cluster,
 				"demo-client",
-				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
+				"test-server",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

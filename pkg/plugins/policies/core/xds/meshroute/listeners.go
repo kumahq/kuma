@@ -1,23 +1,22 @@
 package meshroute
 
 import (
-	"fmt"
-
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
-	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
-	plugins_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	util_slices "github.com/kumahq/kuma/v2/pkg/util/slices"
-	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
-	envoy_tags "github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
+	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 func MakeTCPSplit(
@@ -25,12 +24,10 @@ func MakeTCPSplit(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) []envoy_common.Split {
 	return makeSplits(
 		map[core_meta.Protocol]struct{}{
 			core_meta.ProtocolUnknown: {},
-			core_meta.ProtocolKafka:   {},
 			core_meta.ProtocolTCP:     {},
 			core_meta.ProtocolHTTP:    {},
 			core_meta.ProtocolHTTP2:   {},
@@ -40,7 +37,6 @@ func MakeTCPSplit(
 		servicesAcc,
 		refs,
 		meshCtx,
-		unifiedNaming,
 	)
 }
 
@@ -49,7 +45,6 @@ func MakeHTTPSplit(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) []envoy_common.Split {
 	return makeSplits(
 		map[core_meta.Protocol]struct{}{
@@ -61,7 +56,6 @@ func MakeHTTPSplit(
 		servicesAcc,
 		refs,
 		meshCtx,
-		unifiedNaming,
 	)
 }
 
@@ -71,17 +65,29 @@ type DestinationService struct {
 	KumaServiceTagValue string
 }
 
-// ConditionallyResolveKRIWithFallback returns the identifier for this DestinationService.
-// If provided condition is met and the Outbound has an associated real resource,
-// the identifier is derived from that resource (KRI). Otherwise, the given fallback
-// is returned
-func (ds *DestinationService) ConditionallyResolveKRIWithFallback(condition bool, fallback string) string {
-	if condition && ds.Outbound != nil {
+// ResolveKRIWithFallback returns the identifier for this DestinationService.
+// If the Outbound has an associated real resource, the identifier is derived
+// from that resource (KRI). Otherwise, the given fallback is returned.
+func (ds *DestinationService) ResolveKRIWithFallback(fallback string) string {
+	if ds.Outbound != nil {
 		if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
 			return id.String()
 		}
 	}
 	return fallback
+}
+
+// OutboundListenerTags returns the outbound listener's io.kuma.tags: real tags
+// without kuma.io/mesh for a legacy outbound, or the destination KRI under
+// kuma.io/unified-name for a resource-based one.
+func (ds *DestinationService) OutboundListenerTags() map[string]string {
+	if ds.Outbound == nil {
+		return nil
+	}
+	if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
+		return map[string]string{mesh_proto.UnifiedNameTag: id.String()}
+	}
+	return map[string]string(envoy_tags.Tags(ds.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))
 }
 
 func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
@@ -94,7 +100,9 @@ func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
 		return resolve.NewResolvedBackendRef(&resolve.LegacyBackendRef{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
-				Name: pointer.To(ds.Outbound.LegacyOutbound.GetService()),
+				Labels: &map[string]string{
+					mesh_proto.DisplayName: ds.Outbound.LegacyOutbound.GetService(),
+				},
 				Tags: pointer.To(ds.Outbound.LegacyOutbound.GetTags()),
 			},
 			Weight: pointer.To(uint(100)),
@@ -149,9 +157,17 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 			continue
 		}
 
-		// skip outbounds when no port matches SectionName
-		if port, ok = svc.FindPortByName(outbound.Resource.SectionName); !ok {
-			continue
+		if outbound.Resource.SectionName == "" {
+			ports := svc.GetPorts()
+			if len(ports) != 1 {
+				continue
+			}
+			port = ports[0]
+		} else {
+			// skip outbounds when no port matches SectionName
+			if port, ok = svc.FindPortByName(outbound.Resource.SectionName); !ok {
+				continue
+			}
 		}
 
 		// determine protocol, default to TCP if unspecified
@@ -164,7 +180,7 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 			DestinationService{
 				Outbound:            outbound,
 				Protocol:            protocol,
-				KumaServiceTagValue: destinationname.MustResolve(false, svc, port),
+				KumaServiceTagValue: destinationname.ResolveLegacyFromDestination(svc, port),
 			},
 		)
 	}
@@ -184,6 +200,14 @@ func DestinationPortFromRef(
 		return nil, nil, false
 	}
 
+	if ref.Resource.SectionName == "" {
+		ports := dest.GetPorts()
+		if len(ports) != 1 {
+			return nil, nil, false
+		}
+		return dest, ports[0], true
+	}
+
 	if port, ok = dest.FindPortByName(ref.Resource.SectionName); !ok {
 		return nil, nil, false
 	}
@@ -197,13 +221,12 @@ func makeSplits(
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) []envoy_common.Split {
 	var result []envoy_common.Split
 
 	splitFromRef := func(ref resolve.ResolvedBackendRef) envoy_common.Split {
 		if ref.ReferencesRealResource() {
-			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx, unifiedNaming)
+			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx)
 		}
 
 		return handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef(), meshCtx)
@@ -228,7 +251,6 @@ func handleRealResources(
 	servicesAcc envoy_common.ServicesAccumulator,
 	ref *resolve.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
-	unifiedNaming bool,
 ) envoy_common.Split {
 	if ref.Weight == 0 {
 		return nil
@@ -243,12 +265,13 @@ func handleRealResources(
 		return nil
 	}
 
-	service := destinationname.MustResolve(false, dest, port)
-
-	clusterName := service
-	if unifiedNaming {
-		clusterName = ref.Resource.String()
+	if common_api.TargetRefKind(ref.Resource.ResourceType) == common_api.MeshService && ref.Resource.SectionName == "" {
+		ref.Resource = kri.WithSectionName(ref.Resource, port.GetName())
 	}
+
+	service := destinationname.ResolveLegacyFromDestination(dest, port)
+
+	clusterName := ref.Resource.String()
 
 	isExternalService := ref.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType
 
@@ -292,7 +315,10 @@ func handleLegacyBackendRef(
 		return nil
 	}
 
-	service := pointer.Deref(ref.Name)
+	service := pointer.Deref(ref.Labels)[mesh_proto.DisplayName]
+	if service == "" {
+		service = pointer.Deref(ref.Tags)[mesh_proto.ServiceTag]
+	}
 	protocol := meshCtx.GetServiceProtocol(service)
 	if _, ok := protocols[protocol]; !ok {
 		return nil
@@ -300,14 +326,6 @@ func handleLegacyBackendRef(
 	clusterName, _ := envoy_tags.Tags(pointer.Deref(ref.Tags)).
 		WithTags(mesh_proto.ServiceTag, service).
 		DestinationClusterName(nil)
-
-	// The mesh tag is present here if this destination is generated
-	// from a cross-mesh MeshGateway listener virtual outbound.
-	// It is not part of the service tags.
-	if mesh, ok := pointer.Deref(ref.Tags)[mesh_proto.MeshTag]; ok {
-		// The name should be distinct to the service & mesh combination
-		clusterName = fmt.Sprintf("%s_%s", clusterName, mesh)
-	}
 
 	isExternalService := meshCtx.IsExternalService(service)
 	refHash := common_api.BackendRef(*ref).Hash()
@@ -333,13 +351,9 @@ func handleLegacyBackendRef(
 		WithService(service).
 		WithName(clusterName).
 		WithTags(envoy_tags.Tags(pointer.Deref(ref.Tags)).
-			WithTags(mesh_proto.ServiceTag, pointer.Deref(ref.Name)).
+			WithTags(mesh_proto.ServiceTag, service).
 			WithoutTags(mesh_proto.MeshTag)).
 		WithExternalService(isExternalService)
-
-	if mesh, ok := pointer.Deref(ref.Tags)[mesh_proto.MeshTag]; ok {
-		clusterBuilder.WithMesh(mesh)
-	}
 
 	servicesAcc.AddBackendRef(resolve.NewResolvedBackendRef(ref), clusterBuilder.Build())
 	return split

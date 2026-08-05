@@ -4,14 +4,13 @@ import (
 	"testing"
 	"time"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test"
-	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/test"
+	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
-func DefaultTimeout() *mesh_proto.Timeout_Conf {
-	return &mesh_proto.Timeout_Conf{
-		ConnectTimeout: util_proto.Duration(5 * time.Second),
+func DefaultTimeout() envoy_common.Timeouts {
+	return envoy_common.Timeouts{
+		Connect: 5 * time.Second,
 	}
 }
 

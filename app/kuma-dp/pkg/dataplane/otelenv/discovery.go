@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 )
 
 var envPrefix = map[core_xds.OtelSignal]string{

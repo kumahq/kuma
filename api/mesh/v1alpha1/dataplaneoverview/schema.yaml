@@ -5,25 +5,6 @@ components:
       properties:
         dataplane:
           properties:
-            metrics:
-              description: |-
-                Configuration for metrics that should be collected and exposed by the
-                data plane proxy.
-
-                Settings defined here will override their respective defaults
-                defined at a Mesh level.
-              properties:
-                conf:
-                  oneOf:
-                  - $ref: /specs/protoresources/prometheusmetricsbackendconfig/schema.yaml#/components/schemas/PrometheusMetricsBackendConfig
-                  type: object
-                name:
-                  description: Name of the backend, can be then used in Mesh.metrics.enabledBackend
-                  type: string
-                type:
-                  description: Type of the backend (Kuma ships with 'prometheus')
-                  type: string
-              type: object
             networking:
               description: |-
                 Networking describes inbound and outbound interfaces of the data plane
@@ -49,16 +30,6 @@ components:
                       description: Port on which Envoy Admin API server will be listening
                       type: integer
                   type: object
-                advertisedAddress:
-                  description: |-
-                    In some situations, a data plane proxy resides in a private network (e.g.
-                    Docker) and is not reachable via `address` to other data plane proxies.
-                    `advertisedAddress` is configured with a routable address for such data
-                    plane proxy so that other proxies in the mesh can connect to it over
-                    `advertisedAddress` and not via address.
-
-                    Envoy still binds to the `address`, not `advertisedAddress`.
-                  type: string
                 gateway:
                   description: Gateway describes a configuration of the gateway of
                     the data plane proxy.
@@ -300,12 +271,8 @@ components:
                           type: string
                         description: |-
                           Tags of consumed data plane proxies.
-                          `kuma.io/service` tag is required.
-                          These tags can then be referenced in `destinations` section of policies
-                          like TrafficRoute or in `to` section in policies like MeshAccessLog. It
-                          is recommended to only use `kuma.io/service`. If you need to consume
-                          specific data plane proxy of a service (for example: `version=v2`) the
-                          better practice is to use TrafficRoute.
+                          These tags can then be referenced in `to` section in policies like
+                          MeshAccessLog.
                         type: object
                     type: object
                   type: array
@@ -340,8 +307,8 @@ components:
                           items:
                             properties:
                               kind:
-                                description: "Type of the backend: MeshService or
-                                  MeshExternalService\n\n\t+required"
+                                description: "Type of the backend: MeshService, MeshExternalService
+                                  or MeshMultiZoneService\n\n\t+required"
                                 type: string
                               labels:
                                 additionalProperties:
@@ -361,15 +328,6 @@ components:
                             type: object
                           type: array
                       type: object
-                    reachableServices:
-                      description: |-
-                        List of reachable services (represented by the value of
-                        `kuma.io/service`) via transparent proxying. Setting an explicit list
-                        can dramatically improve the performance of the mesh. If not specified,
-                        all services in the mesh are reachable.
-                      items:
-                        type: string
-                      type: array
                     redirectPortInbound:
                       description: Port on which all inbound traffic is being transparently
                         redirected.
@@ -658,7 +616,7 @@ components:
                       dependencies:
                         additionalProperties:
                           type: string
-                        description: Versions of other dependencies, i.e. CoreDNS
+                        description: Versions of other dependencies
                         type: object
                       envoy:
                         description: Version of Envoy

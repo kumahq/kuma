@@ -16,15 +16,15 @@ import (
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/pkg/errors"
 
-	command_utils "github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/command"
-	"github.com/kumahq/kuma/v2/app/kuma-dp/pkg/dataplane/httpclient"
-	kuma_dp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v2/pkg/core/runtime/component"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/util/files"
-	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
+	command_utils "github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/command"
+	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/httpclient"
+	kuma_dp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/files"
+	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
 var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")

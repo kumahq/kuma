@@ -5,27 +5,26 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
-	"github.com/kumahq/kuma/v2/pkg/util/proto"
-	envoy_metadata "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
-	envoy_tls "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls/v3"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
+	envoy_metadata "github.com/kumahq/kuma/v3/pkg/xds/envoy/metadata/v3"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
+	envoy_tls "github.com/kumahq/kuma/v3/pkg/xds/envoy/tls/v3"
 )
 
 type ClientSideMTLSConfigurer struct {
-	SecretsTracker        core_xds.SecretsTracker
-	UpstreamMesh          *core_mesh.MeshResource
-	UpstreamService       string
-	LocalMesh             *core_mesh.MeshResource
-	Tags                  []tags.Tags
-	SNI                   string
-	UpstreamTLSReady      bool
-	VerifyIdentities      []string
-	UnifiedResourceNaming bool
-	UseMeshTrust          bool
+	SecretsTracker   core_xds.SecretsTracker
+	UpstreamMesh     *core_mesh.MeshResource
+	UpstreamService  string
+	LocalMesh        *core_mesh.MeshResource
+	Tags             []tags.Tags
+	SNI              string
+	UpstreamTLSReady bool
+	VerifyIdentities []string
+	UseMeshTrust     bool
 }
 
 var _ ClusterConfigurer = &ClientSideMTLSConfigurer{}
@@ -87,7 +86,7 @@ func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_cor
 	if c.VerifyIdentities != nil {
 		verifyIdentities = c.VerifyIdentities
 	}
-	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(identity, ca, c.UpstreamService, sni, verifyIdentities, c.UnifiedResourceNaming, c.UseMeshTrust)
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(identity, ca, c.UpstreamService, sni, verifyIdentities, c.UseMeshTrust)
 	if err != nil {
 		return nil, err
 	}

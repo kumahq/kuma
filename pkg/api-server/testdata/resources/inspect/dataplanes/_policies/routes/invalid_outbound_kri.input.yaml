@@ -1,8 +1,6 @@
 #/meshes/default/dataplanes/dp-1/_outbounds/invalid-kri/_routes/kri_mhttpr_default___the-http-route_/_policies 400
 type: Mesh
 name: default
-meshServices:
-  mode: Exclusive
 ---
 type: MeshService
 name: test-server-1
@@ -33,7 +31,8 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: the-http-route
+        labels:
+          kuma.io/display-name: the-http-route
       default:
         http:
           requestTimeout: 20s
@@ -41,6 +40,8 @@ spec:
 type: MeshHTTPRoute
 name: the-http-route
 mesh: default
+labels:
+  kuma.io/display-name: the-http-route
 spec:
   to:
     - targetRef:

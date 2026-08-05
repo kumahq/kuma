@@ -3,9 +3,10 @@ metadata:
   labels:
     app: example
     k8s.kuma.io/namespace: demo
+    kuma.io/display-name: example
     kuma.io/mesh: default
-    kuma.io/proxy-type: sidecar
     version: "0.1"
+  name: example
 spec:
   networking:
     address: 192.168.0.1
@@ -14,38 +15,11 @@ spec:
       port: 8080
       protocol: http
       state: NotReady
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: example
-        k8s.kuma.io/service-port: "80"
-        kuma.io/protocol: http
-        kuma.io/service: example_demo_svc_80
-        kuma.io/zone: zone-1
-        version: "0.1"
     - health: {}
       port: 8443
       protocol: tcp
       state: NotReady
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: example
-        k8s.kuma.io/service-port: "443"
-        kuma.io/protocol: tcp
-        kuma.io/service: example_demo_svc_443
-        kuma.io/zone: zone-1
-        version: "0.1"
     - health: {}
       port: 7070
       protocol: mongo
       state: NotReady
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: sample
-        k8s.kuma.io/service-port: "7071"
-        kuma.io/protocol: mongo
-        kuma.io/service: sample_playground_svc_7071
-        kuma.io/zone: zone-1
-        version: "0.1"

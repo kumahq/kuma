@@ -21,7 +21,126 @@ concurrency:
   group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name) }}
   cancel-in-progress: ${{ github.event_name == 'push' && false || true }}
 jobs:
+  release_sha_gate:
+    timeout-minutes: 5
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: "Verify tagged SHA has a trusted green push run"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${REF_TYPE}" != "tag" ]]; then
+            echo "Not a tag push; skipping release SHA gate."
+            exit 0
+          fi
+
+          WORKFLOW="build-test-distribute.yaml"
+
+          runs_ndjson="$(mktemp)"
+          if ! gh api --method GET "/repos/${REPO}/actions/workflows/${WORKFLOW}/runs" \
+              -f head_sha="${SHA}" -f status=completed -f event=push -f per_page=100 --paginate \
+              --jq '.workflow_runs[] | {id, conclusion, created_at, html_url}' \
+              > "${runs_ndjson}" 2>gate_runs_err.log; then
+            echo "::error title=release_sha_gate::gate could not query GitHub Actions for prior runs of ${WORKFLOW} on SHA ${SHA}: $(cat gate_runs_err.log)"
+            exit 1
+          fi
+
+          if ! selected_run="$(jq -s -r '
+              map(select(.conclusion == "success"))
+              | sort_by(.created_at)
+              | last
+              // empty
+            ' "${runs_ndjson}" 2>gate_runs_jq_err.log)"; then
+            echo "::error title=release_sha_gate::gate could not parse GitHub Actions run data for ${WORKFLOW} on SHA ${SHA}: $(cat gate_runs_jq_err.log)"
+            exit 1
+          fi
+
+          if [[ -z "${selected_run}" ]]; then
+            echo "::error title=release_sha_gate::No successful completed push run of ${WORKFLOW} found for tagged SHA ${SHA}. Every tag push requires a prior green branch push CI run for the tagged commit. Recovery: re-run the branch push CI on this SHA (re-tests and re-publishes the preview), then re-tag."
+            exit 1
+          fi
+
+          run_id="$(jq -r '.id' <<<"${selected_run}")"
+          run_url="$(jq -r '.html_url' <<<"${selected_run}")"
+
+          jobs_ndjson="$(mktemp)"
+          if ! gh api --method GET "/repos/${REPO}/actions/runs/${run_id}/jobs" -f per_page=100 --paginate \
+              --jq '.jobs[] | {name, conclusion}' \
+              > "${jobs_ndjson}" 2>gate_jobs_err.log; then
+            echo "::error title=release_sha_gate::gate could not query GitHub Actions for jobs of run ${run_url}: $(cat gate_jobs_err.log)"
+            exit 1
+          fi
+
+          if ! missing="$(jq -s -r '
+              def has_success($jobs; $pattern):
+                ($jobs | any(.[]; (.name | test($pattern)) and .conclusion == "success"));
+
+              . as $jobs
+              | [
+                  {label: "test / test_unit", pattern: "^test / test_unit$"},
+                  {label: "test / e2e ...", pattern: "^test / e2e"},
+                  {label: "build_publish / digest-images", pattern: "^build_publish / digest-images$"},
+                  {label: "build_publish / build-binaries", pattern: "^build_publish / build-binaries$"},
+                  {label: "build_publish / build-images ...", pattern: "^build_publish / build-images"},
+                  {label: "build_publish / publish-helm", pattern: "^build_publish / publish-helm$"}
+                ]
+              | map(select(has_success($jobs; .pattern) | not))
+              | map(.label)
+              | join(", ")
+            ' "${jobs_ndjson}" 2>gate_jobs_jq_err.log)"; then
+            echo "::error title=release_sha_gate::gate could not parse GitHub Actions job data for run ${run_url}: $(cat gate_jobs_jq_err.log)"
+            exit 1
+          fi
+
+          if [[ -n "${missing}" ]]; then
+            echo "::error title=release_sha_gate::Selected run ${run_url} is missing required successful job(s): ${missing}. Recovery: re-run the branch push CI on SHA ${SHA}, then re-tag."
+            exit 1
+          fi
+
+          echo "Trusted source run: ${run_url}"
+  meta:
+    needs: ["release_sha_gate"]
+    timeout-minutes: 5
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    env:
+      FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+    outputs:
+      FULL_MATRIX: ${{ env.FULL_MATRIX }}
+    steps:
+      - run: echo "FULL_MATRIX=${{ env.FULL_MATRIX }}"
+  build_check:
+    needs: ["release_sha_gate"]
+    timeout-minutes: 20
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
+        with:
+          version: 2026.7.11
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Cache Go build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-build-${{ runner.os }}-
+      - run: go build ./...
   check:
+    needs: ["release_sha_gate"]
     permissions:
       contents: write # needed to upload SBOM assets to GitHub releases
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
@@ -54,11 +173,12 @@ jobs:
           remove_android: true
           remove_dotnet: true
           remove_haskell: true
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: Detect changed files
-        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
         id: changes
         with:
           filters: |
@@ -90,7 +210,7 @@ jobs:
           echo "GOMEMLIMIT=${gomemlimit}" >> "$GITHUB_ENV"
           echo "Setting GOMEMLIMIT to $(numfmt --to=iec "$gomemlimit")"
       - name: Cache Go build
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cache/go-build
@@ -98,14 +218,13 @@ jobs:
           key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             go-build-${{ runner.os }}-
-      - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
+      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
-          # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
-          version: 2026.5.7
+          version: 2026.7.11
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
-        if: steps.changes.outputs.code == 'true'
+      - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        if: ${{ steps.changes.outputs.code == 'true' && github.ref_type != 'tag' }}
         env:
           GOGC: "80" # run GC more aggressively
         with:
@@ -113,9 +232,15 @@ jobs:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           only-new-issues: false
 
-      - run: |
+      # Lint and "make check" are redundant on a tag: release_sha_gate already
+      # requires a green branch push run for this exact tree/SHA. We
+      # intentionally keep metadata and SBOM/SCA on tag refs so release tags
+      # continue publishing security assets.
+      - if: ${{ github.ref_type != 'tag' }}
+        run: |
           make clean
-      - run: |
+      - if: ${{ github.ref_type != 'tag' }}
+        run: |
           make check
       - name: "Set metadata for downstream jobs"
         id: metadata
@@ -149,10 +274,12 @@ jobs:
           config: .syft.yaml
           upload-sbom-release-assets: true
   test:
-    needs: ["check"]
+    needs: ["meta", "build_check"]
     uses: ./.github/workflows/_test.yaml
     with:
-      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+      FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
+      IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+      IS_RELEASE_TAG: ${{ github.ref_type == 'tag' }}
       # Per-arch lookup (each side independent):
       #   1. fork PR                    -> free GitHub-hosted runners (security)
       #   2. vars.RUNS_ON_MASTER_<ARCH> -> per-branch + per-arch override
@@ -196,7 +323,7 @@ jobs:
       NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
       IMAGE_DIGESTS: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
   distributions:
-    needs: ["build_publish", "check", "test", "provenance"]
+    needs: ["release_sha_gate", "build_publish", "check", "test", "provenance"]
     permissions:
       id-token: write
     timeout-minutes: 10
@@ -240,17 +367,15 @@ jobs:
       - name: Get Cloudsmith OIDC token
         id: cloudsmith_token
         if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
-        uses: cloudsmith-io/cloudsmith-cli-action@159f1619275d5d3147f059c3cc110938ec221d16 # v2.0.3
+        uses: cloudsmith-io/cloudsmith-cli-action@db783de9f6e7a445e5e31d94f4210303b48a10a3 # v3.0.1
         with:
           oidc-namespace: kong
           oidc-service-slug: ${{ contains(needs.check.outputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
-          oidc-auth-only: true
       - name: Push security assets to cloudsmith
         id: push_security_assets
         if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
         uses: cloudsmith-io/action@7af394e0f8add4867bce109385962dafecad1b8d # v0.6.14
         with:
-          api-key: ${{ steps.cloudsmith_token.outputs.oidc-token }}
           command: "push"
           format: "raw"
           owner: "kong"
@@ -261,3 +386,4 @@ jobs:
           summary: "SLSA security artifacts for ${{ github.repository }}"
           description: "SBOM and Binary artifact Provenance for ${{ github.repository }}"
           use-executable: "false"
+          skip-install-cli: "true"

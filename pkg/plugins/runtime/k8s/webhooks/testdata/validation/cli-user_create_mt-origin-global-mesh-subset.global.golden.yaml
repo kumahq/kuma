@@ -1,8 +1,16 @@
 Patches: null
-allowed: true
+allowed: false
 status:
-  code: 200
+  code: 422
+  details:
+    causes:
+    - field: spec.targetRef.kind
+      message: value 'MeshSubset' is not supported
+      reason: FieldValueInvalid
+    kind: MeshTimeout
+    name: backend-v3
+  message: 'spec.targetRef.kind: value ''MeshSubset'' is not supported'
   metadata: {}
+  reason: Invalid
+  status: Failure
 uid: "12345"
-warnings:
-- MeshSubset value for 'targetRef.kind' is deprecated, use Dataplane with labels instead

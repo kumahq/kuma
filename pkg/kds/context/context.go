@@ -14,29 +14,27 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v2/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
-	"github.com/kumahq/kuma/v2/pkg/core"
-	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
-	"github.com/kumahq/kuma/v2/pkg/core/kri"
-	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
-	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v2/pkg/kds"
-	"github.com/kumahq/kuma/v2/pkg/kds/hash"
-	"github.com/kumahq/kuma/v2/pkg/kds/service"
-	"github.com/kumahq/kuma/v2/pkg/kds/util"
-	reconcile_v2 "github.com/kumahq/kuma/v2/pkg/kds/v2/reconcile"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
-	"github.com/kumahq/kuma/v2/pkg/util/rsa"
-	"github.com/kumahq/kuma/v2/pkg/version"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/core"
+	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
+	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/kds"
+	"github.com/kumahq/kuma/v3/pkg/kds/hash"
+	"github.com/kumahq/kuma/v3/pkg/kds/service"
+	"github.com/kumahq/kuma/v3/pkg/kds/util"
+	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
+	"github.com/kumahq/kuma/v3/pkg/util/rsa"
+	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
 const VersionHeader = "version"
@@ -316,12 +314,6 @@ func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilte
 				// if the actual role is not 'producer' then no syncing
 				if role != mesh_proto.ProducerPolicyRole {
 					return false
-				}
-				if policy.GetTargetRef().Kind == common_api.MeshSubset {
-					// if top-level targetRef has 'kuma.io/zone' then we can sync it only to required zone
-					if targetZone, ok := pointer.Deref(policy.GetTargetRef().Tags)[mesh_proto.ZoneTag]; ok && targetZone != zoneName {
-						return false
-					}
 				}
 			}
 
