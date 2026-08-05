@@ -192,8 +192,6 @@ var booleanAnnotations = map[string]bool{
 	metadata.KumaBuiltinDNS:                        true,
 	metadata.KumaGatewayAnnotation:                 true,
 	metadata.KumaSidecarInjectionAnnotation:        true,
-	metadata.KumaIngressAnnotation:                 true,
-	metadata.KumaEgressAnnotation:                  true,
 	metadata.KumaSidecarInjectedAnnotation:         true,
 	metadata.KumaTransparentProxyingAnnotation:     true,
 	metadata.KumaMetricsPrometheusAggregateEnabled: true,
