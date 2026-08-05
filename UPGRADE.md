@@ -1264,6 +1264,21 @@ spec:
 
 Zones without a `MeshZoneAddress` are not reachable cross-zone: their `MeshService` destinations get no endpoints in other zones. The control plane logs `no MeshZoneAddress found for zone` when this happens.
 
+### kuma-dp `configDir` / `socketDir` removed
+
+The deprecated `configDir` and `socketDir` `dataplaneRuntime` config fields (and their
+`KUMA_DATAPLANE_RUNTIME_CONFIG_DIR` / `KUMA_DATAPLANE_RUNTIME_SOCKET_DIR` environment
+variables) have been removed from `kuma-dp`. The `--config-dir` flag has also been removed.
+
+**Action required**
+
+Use `workDir` (`KUMA_DATAPLANE_RUNTIME_WORK_DIR` / `--work-dir`) instead. `--config-dir` now
+fails with `unknown flag`, so any script or deployment passing it will error immediately.
+`configDir`/`socketDir` in YAML config and `KUMA_DATAPLANE_RUNTIME_CONFIG_DIR` /
+`KUMA_DATAPLANE_RUNTIME_SOCKET_DIR` are silently ignored, since the config loader does not
+reject unknown fields — proxies still relying on them will silently fall back to a
+generated temporary directory instead of erroring.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.
