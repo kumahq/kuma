@@ -41,7 +41,7 @@ const (
 	zoneProxyEgressDP  = "zone-proxy-egress"
 )
 
-// zoneProxyDpEnvs pins the kuma-dp work directory to /tmp. Without this,
+// dppEnvs pins the kuma-dp work directory to /tmp. Without this,
 // kuma-dp creates a randomized /tmp/kuma-dp-<N>/ directory each run and that
 // random suffix would leak into the generated socket paths in the goldens,
 // making the test flaky.

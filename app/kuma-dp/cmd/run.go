@@ -186,7 +186,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
 			} else {
 				if err := os.MkdirAll(cfg.DataplaneRuntime.WorkDir, 0o711); err != nil { // #nosec G302 -- deliberate: traverse-only for UDS access
-					runLog.Error(err, "unable to create work directory")
+					runLog.Error(err, "unable to create work directory", "dir", cfg.DataplaneRuntime.WorkDir)
 					return err
 				}
 			}

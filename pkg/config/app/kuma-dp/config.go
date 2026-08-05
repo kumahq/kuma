@@ -189,7 +189,8 @@ type DataplaneRuntime struct {
 
 	// Path to Envoy binary.
 	BinaryPath string `json:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
-	// WorkDir is the directory to store auto-generated Envoy bootstrap config.
+	// WorkDir is the directory to store auto-generated Envoy bootstrap config,
+	// Unix domain sockets, and the dataplane token file.
 	WorkDir string `json:"workDir,omitempty" envconfig:"kuma_dataplane_runtime_work_dir"`
 	// Concurrency specifies how to generate the Envoy concurrency flag.
 	Concurrency uint32 `json:"concurrency,omitempty" envconfig:"kuma_dataplane_runtime_concurrency"`
