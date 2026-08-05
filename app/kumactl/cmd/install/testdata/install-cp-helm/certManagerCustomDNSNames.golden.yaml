@@ -166,19 +166,7 @@ rules:
       - zoneegressinsights
       - meshinsights
       - serviceinsights
-      - proxytemplates
-      - ratelimits
-      - trafficpermissions
-      - trafficroutes
-      - timeouts
-      - retries
-      - circuitbreakers
-      - virtualoutbounds
       - containerpatches
-      - faultinjections
-      - healthchecks
-      - trafficlogs
-      - traffictraces
       - meshaccesslogs
       - meshcircuitbreakers
       - meshfaultinjections
@@ -462,9 +450,6 @@ spec:
       name: https-admission-server
       targetPort: 5443
       appProtocol: https
-    - port: 5676
-      name: mads-server
-      appProtocol: https
     - port: 5678
       name: dp-server
       appProtocol: https
@@ -500,7 +485,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 1fa6f39d97a8aad47eff6f6670269d3333a30c2e107b0a9d14b2aa23e0f3bf24
-        checksum/tls-secrets: a537f75d45436c472e2808e1fce544a7bdfc3c2e894aae62ce9ff605b723308b
+        checksum/tls-secrets: d9516ca4e1a97842b76f8f94f479b7b6dc1a5efbe021dab6abdc407e6a459d0a
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -591,7 +576,7 @@ spec:
             - name: KUMA_MODE
               value: "zone"
             - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
-              value: "true"
+              value: "false"
             - name: KUMA_PLUGIN_POLICIES_ENABLED
               value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshpassthroughs,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtlses,meshtraces,meshtrafficpermissions"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
@@ -789,18 +774,6 @@ webhooks:
         operations:
           - CREATE
         resources:
-          - circuitbreakers
-          - faultinjections
-          - healthchecks
-          - proxytemplates
-          - ratelimits
-          - retries
-          - timeouts
-          - trafficlogs
-          - trafficpermissions
-          - trafficroutes
-          - traffictraces
-          - virtualoutbounds
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections
@@ -966,19 +939,8 @@ webhooks:
           - UPDATE
           - DELETE
         resources:
-          - circuitbreakers
           - dataplanes
-          - faultinjections
-          - healthchecks
           - meshes
-          - proxytemplates
-          - ratelimits
-          - retries
-          - trafficlogs
-          - trafficpermissions
-          - trafficroutes
-          - traffictraces
-          - virtualoutbounds
           - zones
           - containerpatches
           - meshaccesslogs

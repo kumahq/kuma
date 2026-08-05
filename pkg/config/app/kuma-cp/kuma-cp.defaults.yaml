@@ -113,7 +113,8 @@ bootstrapServer:
     xdsGrpcMaxReceiveMessageBytes: 4194304 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
-  # Whether the MADS server is enabled
+  # Whether the MADS server is enabled. MADS is only supported in universal
+  # deployment mode; this setting is ignored on Kubernetes.
   enabled: true # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
   # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
   port: 5676 # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_PORT

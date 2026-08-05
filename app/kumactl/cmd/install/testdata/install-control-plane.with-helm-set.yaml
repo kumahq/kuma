@@ -8342,18 +8342,6 @@ spec:
                                 to gRPC service
                               type: string
                           type: object
-                        healthyPanicThreshold:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          description: |-
-                            Allows to configure panic threshold for Envoy cluster. If not specified,
-                            the default is 50%. To disable panic mode, set to 0%.
-                            Either int or decimal represented as string.
-
-                            Deprecated: the setting has been moved to MeshCircuitBreaker policy,
-                            please use MeshCircuitBreaker policy instead.
-                          x-kubernetes-int-or-string: true
                         healthyThreshold:
                           description: |-
                             Number of consecutive healthy checks before considering a host healthy.
@@ -8626,19 +8614,7 @@ rules:
       - zoneegressinsights
       - meshinsights
       - serviceinsights
-      - proxytemplates
-      - ratelimits
-      - trafficpermissions
-      - trafficroutes
-      - timeouts
-      - retries
-      - circuitbreakers
-      - virtualoutbounds
       - containerpatches
-      - faultinjections
-      - healthchecks
-      - trafficlogs
-      - traffictraces
       - meshaccesslogs
       - meshcircuitbreakers
       - meshfaultinjections
@@ -8922,9 +8898,6 @@ spec:
       name: https-admission-server
       targetPort: 5443
       appProtocol: https
-    - port: 5676
-      name: mads-server
-      appProtocol: https
     - port: 5678
       name: dp-server
       appProtocol: https
@@ -8960,7 +8933,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 1fa6f39d97a8aad47eff6f6670269d3333a30c2e107b0a9d14b2aa23e0f3bf24
-        checksum/tls-secrets: e553765cc791cdd1dced7872505a2c7f6a1e034f9454ce4a107d9cc9a4f2b7c9
+        checksum/tls-secrets: 01c5dbaaff5e871deac824962de1b2f22ea141c03c2e5f3d8eb7dac089831a3a
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -9051,7 +9024,7 @@ spec:
             - name: KUMA_MODE
               value: "zone"
             - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
-              value: "true"
+              value: "false"
             - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
               value: "grpcs://foo.com"
             - name: KUMA_MULTIZONE_ZONE_NAME
@@ -9251,18 +9224,6 @@ webhooks:
         operations:
           - CREATE
         resources:
-          - circuitbreakers
-          - faultinjections
-          - healthchecks
-          - proxytemplates
-          - ratelimits
-          - retries
-          - timeouts
-          - trafficlogs
-          - trafficpermissions
-          - trafficroutes
-          - traffictraces
-          - virtualoutbounds
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections
@@ -9426,19 +9387,8 @@ webhooks:
           - UPDATE
           - DELETE
         resources:
-          - circuitbreakers
           - dataplanes
-          - faultinjections
-          - healthchecks
           - meshes
-          - proxytemplates
-          - ratelimits
-          - retries
-          - trafficlogs
-          - trafficpermissions
-          - trafficroutes
-          - traffictraces
-          - virtualoutbounds
           - zones
           - containerpatches
           - meshaccesslogs

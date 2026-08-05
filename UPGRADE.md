@@ -8,6 +8,34 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` removed
+
+The `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` environment variable
+has been removed. MeshTrafficPermission rule generation now always uses the
+cliques-based grouping algorithm.
+
+**Action required**
+
+Remove `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` from control
+plane deployments, Helm values, and any other runtime configuration before or
+after upgrading. Leaving it set no longer has any effect in Kuma 3.0.0.
+
+### MADS restricted to universal deployment mode
+
+The Monitoring Assignment Discovery Service (MADS) server no longer starts on
+Kubernetes control planes, regardless of `KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED`
+or `controlPlane.madsServer.enabled`. It remains fully supported in universal
+deployment mode, including universal-on-Kubernetes
+(`controlPlane.environment: universal`). The Helm chart no longer renders the
+`mads-server` Service port (5676) when `controlPlane.environment` is
+`kubernetes`.
+
+**Action required**
+
+Kubernetes users relying on MADS must migrate to `MeshMetric` with Prometheus
+Kubernetes service discovery before upgrading. `controlPlane.madsServer.enabled`
+now only applies when `controlPlane.environment` is `universal`.
+
 ### `advertisedAddress` removed from `Dataplane` networking
 
 The `networking.advertisedAddress` field has been removed from the `Dataplane` resource. Proxies behind NAT or a private network (e.g. Docker) that relied on it to advertise a routable address to other proxies must now be reachable directly via `networking.address`.
@@ -87,6 +115,16 @@ spec:
     - default:
         mode: Strict
 ```
+
+### `healthyPanicThreshold` removed from `MeshHealthCheck`
+
+The deprecated `to[].default.healthyPanicThreshold` field has been removed from the `MeshHealthCheck` policy. Use `to[].default.outlierDetection.healthyPanicThreshold` on the `MeshCircuitBreaker` policy instead.
+
+**Action required**
+
+Migrate any `MeshHealthCheck` resources using `to[].default.healthyPanicThreshold` to a `MeshCircuitBreaker` policy with `to[].default.outlierDetection.healthyPanicThreshold` before upgrading.
+
+**Warning**: Un-migrated `healthyPanicThreshold` settings are silently dropped after upgrade — the field no longer exists in the schema, so it is pruned by CRD validation on Kubernetes and discarded during deserialization on Universal. Affected clusters fall back to Envoy's default panic threshold of 50%.
 
 ### Legacy `ExternalService` resource removed
 
@@ -930,9 +968,10 @@ For every one of these types: the REST API endpoints (including the generic
 subcommands, KDS sync, and `MeshInsight`/`ServiceInsight` policy counters are
 gone, and the corresponding CRD is no longer installed on Kubernetes.
 
-The `ProxyTemplate` proto message and its default-profile machinery
-(`ProxyTemplateResolver`, profile imports) are unaffected — only the
-user-facing `ProxyTemplate` resource, API, and CRD are removed.
+The `ProxyTemplate` proto message and the template/profile indirection it fed
+(`ProxyTemplateResolver`, profile imports, `RegisterProfile`) are gone as well.
+The control plane now always generates the standard Envoy configuration for
+every data plane proxy.
 
 **Action required**
 
@@ -940,6 +979,21 @@ Delete any remaining resources of these types before upgrading — the control
 plane no longer accepts create/update requests for them, and stored resources
 of a removed type are not migrated. Remove any automation, dashboards, or
 kumactl scripts that reference these resource types, REST paths, or CRDs.
+
+### Legacy policy resources dropped from control plane RBAC and webhooks
+
+The control plane `ClusterRole` no longer grants access to the legacy policy
+CRDs removed above (`proxytemplates`, `ratelimits`, `trafficpermissions`,
+`trafficroutes`, `timeouts`, `retries`, `circuitbreakers`, `virtualoutbounds`,
+`faultinjections`, `healthchecks`, `trafficlogs`, `traffictraces`), and the
+`kuma.io` validating and owner-reference admission webhooks no longer register
+rules for them. Those CRDs are no longer installed, so the rules matched
+nothing.
+
+**Action required**
+
+None. If you copied the Kuma `ClusterRole` or webhook configuration into your
+own manifests, drop the same resource names from your copy.
 
 ### Built-in gateway API and CRDs removed
 
@@ -1225,6 +1279,21 @@ spec:
 `kuma.io/origin: zone` is required on a zone control plane federated to a global control plane. `kuma.io/zone` is stamped by the control plane; if you set it explicitly it must match the local zone name. `spec.address` accepts an IP or a DNS name; a DNS name is resolved by the control plane.
 
 Zones without a `MeshZoneAddress` are not reachable cross-zone: their `MeshService` destinations get no endpoints in other zones. The control plane logs `no MeshZoneAddress found for zone` when this happens.
+
+### kuma-dp `configDir` / `socketDir` removed
+
+The deprecated `configDir` and `socketDir` `dataplaneRuntime` config fields (and their
+`KUMA_DATAPLANE_RUNTIME_CONFIG_DIR` / `KUMA_DATAPLANE_RUNTIME_SOCKET_DIR` environment
+variables) have been removed from `kuma-dp`. The `--config-dir` flag has also been removed.
+
+**Action required**
+
+Use `workDir` (`KUMA_DATAPLANE_RUNTIME_WORK_DIR` / `--work-dir`) instead. `--config-dir` now
+fails with `unknown flag`, so any script or deployment passing it will error immediately.
+`configDir`/`socketDir` in YAML config and `KUMA_DATAPLANE_RUNTIME_CONFIG_DIR` /
+`KUMA_DATAPLANE_RUNTIME_SOCKET_DIR` are silently ignored, since the config loader does not
+reject unknown fields — proxies still relying on them will silently fall back to a
+generated temporary directory instead of erroring.
 
 ## Upgrade to `2.13.7`
 
@@ -2158,7 +2227,7 @@ Migrate any remaining `FaultInjection` resources to `MeshFaultInjection` before 
 
 #### Deprecation of `healthyPanicThreshold` for `MeshHealthCheck`
 
-The `healthyPanicThreshold` field in the `MeshHealthCheck` policy is deprecated and will be removed in a future release. It has been moved to the `MeshCircuitBreaker` policy.
+The `healthyPanicThreshold` field in the `MeshHealthCheck` policy is deprecated in favor of the `MeshCircuitBreaker` policy. It has since been removed — see [`healthyPanicThreshold` removed from `MeshHealthCheck`](#healthypanicthreshold-removed-from-meshhealthcheck).
 
 ### Changes on revoking dataplane tokens
 

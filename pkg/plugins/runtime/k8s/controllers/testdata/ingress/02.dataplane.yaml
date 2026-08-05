@@ -3,7 +3,6 @@ metadata:
     app: kuma-ingress
     k8s.kuma.io/namespace: kuma-system
     kuma.io/display-name: kuma-ingress
-    kuma.io/proxy-type: zoneingress
   name: kuma-ingress
 spec:
   networking:

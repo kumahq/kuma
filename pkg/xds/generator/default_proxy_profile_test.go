@@ -22,11 +22,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 )
 
-var _ = Describe("ProxyTemplateProfileSource", func() {
+var _ = Describe("DefaultProxyProfile", func() {
 	type testCase struct {
 		mesh      string
 		dataplane string
-		profile   string
 		expected  string
 		features  xds_types.Features
 	}
@@ -34,9 +33,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 	DescribeTable("Generate Envoy xDS resources",
 		func(given testCase) {
 			// setup
-			gen := &generator.ProxyTemplateProfileSource{
-				ProfileName: given.profile,
-			}
+			gen := generator.NewDefaultProxyProfile()
 
 			// given
 			outboundTargets := core_xds.EndpointMap{
@@ -145,9 +142,9 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 
 			// and output matches golden files
 
-			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "profile-source", given.expected)))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "default-proxy-profile", given.expected)))
 		},
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; readiness with TCP port 9903", testCase{
+		Entry("should generate the default proxy config; transparent_proxying=false; readiness with TCP port 9903", testCase{
 			mesh: `
             mtls:
               enabledBackend: builtin
@@ -171,10 +168,9 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 tags:
                   kuma.io/service: elastic
 `,
-			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "1-envoy-config.golden.yaml",
 		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; readiness with TCP port 9903", testCase{
+		Entry("should generate the default proxy config; transparent_proxying=true; readiness with TCP port 9903", testCase{
 			mesh: `
             mtls:
               enabledBackend: builtin
@@ -202,10 +198,9 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 redirectPortInbound: 15006
                 ipFamilyMode: IPv4
 `,
-			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "2-envoy-config.golden.yaml",
 		}),
-		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; unified naming", testCase{
+		Entry("should generate the default proxy config; transparent_proxying=false; unified naming", testCase{
 			mesh: `
             mtls:
               enabledBackend: builtin
@@ -229,7 +224,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 tags:
                   kuma.io/service: elastic
 `,
-			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "5-envoy-config.golden.yaml",
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,

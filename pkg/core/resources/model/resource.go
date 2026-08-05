@@ -180,10 +180,6 @@ type ResourceWithInsights interface {
 	NewOverviewList() ResourceList
 }
 
-type ProxyResource interface {
-	GetProxyType() mesh_proto.ProxyTypeLabelValues
-}
-
 type ResourceTypeDescriptor struct {
 	// Name identifier of this resourceType this maps to the k8s entity and universal name.
 	Name ResourceType
