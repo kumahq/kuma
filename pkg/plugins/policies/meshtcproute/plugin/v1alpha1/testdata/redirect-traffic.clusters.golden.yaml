@@ -8,3 +8,8 @@ resources:
         resourceApiVersion: V3
     name: kri_msvc_default___tcp-backend_tcp-port
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
