@@ -218,6 +218,8 @@ func validateHashPolicies(conf *[]HashPolicy) validators.ValidationError {
 			if policy.Connection == nil {
 				verr.AddViolationAt(path.Field("connection"), validators.MustBeDefined)
 			}
+		default:
+			verr.AddViolationAt(path.Field("type"), "unrecognized type")
 		}
 	}
 	return verr

@@ -323,6 +323,29 @@ to:
         - type: FilterState
 `),
 		ErrorCases(
+			"removed SourceIP hashPolicies type",
+			[]validators.Violation{
+				{
+					Field:   "spec.to[0].default.hashPolicies[0].type",
+					Message: "unrecognized type",
+				},
+			},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: svc-2
+    default:
+      hashPolicies:
+        - type: SourceIP
+`),
+		ErrorCases(
 			"MeshHTTPRoute with loadBalancer",
 			[]validators.Violation{
 				{
