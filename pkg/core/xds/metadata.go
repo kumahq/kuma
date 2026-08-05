@@ -217,9 +217,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", FieldDataplaneDataplaneResource, "value", value)
 		} else {
 			switch r := res.(type) {
-			case *core_mesh.DataplaneResource,
-				*core_mesh.ZoneIngressResource,
-				*core_mesh.ZoneEgressResource:
+			case *core_mesh.DataplaneResource:
 				metadata.Resource = r
 			default:
 				metadataLog.Error(err, "invalid dataplane resource type",
