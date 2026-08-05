@@ -1,6 +1,8 @@
 package connectivity
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -15,13 +17,17 @@ import (
 
 func ExcludeOutboundPort() {
 	meshName := "exclude-outbound-port"
+	identityName := "exclude-outbound-port-identity"
 	namespace := "exclude-outbound-port"
 	namespaceExternal := "exclude-outbound-port-external"
 
+	trustDomain := fmt.Sprintf("%s.default.mesh.local", meshName)
+
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshKubernetes(meshName)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			Install(MeshKubernetes(meshName)).
+			Install(MeshIdentityBundledKubernetes(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName, trustDomain)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(namespaceExternal)).
 			Install(testserver.Install(

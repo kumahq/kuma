@@ -17,7 +17,7 @@ func LabelPropagation() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
+			Install(MeshUniversal(meshName)).
 			Setup(universal.Cluster)).To(Succeed())
 		Expect(WaitForMesh(meshName, []Cluster{universal.Cluster})).To(Succeed())
 	})
