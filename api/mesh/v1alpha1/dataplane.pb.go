@@ -1445,12 +1445,12 @@ var File_api_mesh_v1alpha1_dataplane_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\n" +
-	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17validate/validate.proto\"\xcc\x1f\n" +
+	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17validate/validate.proto\"\xd2\x1f\n" +
 	"\tDataplane\x12H\n" +
 	"\n" +
 	"networking\x18\x01 \x01(\v2(.kuma.mesh.v1alpha1.Dataplane.NetworkingR\n" +
 	"networking\x12<\n" +
-	"\x06probes\x18\x03 \x01(\v2$.kuma.mesh.v1alpha1.Dataplane.ProbesR\x06probes\x1a\xf4\x1b\n" +
+	"\x06probes\x18\x03 \x01(\v2$.kuma.mesh.v1alpha1.Dataplane.ProbesR\x06probes\x1a\xfa\x1b\n" +
 	"\n" +
 	"Networking\x12\x18\n" +
 	"\aaddress\x18\x05 \x01(\tR\aaddress\x12J\n" +
@@ -1459,7 +1459,7 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\boutbound\x18\x02 \x03(\v21.kuma.mesh.v1alpha1.Dataplane.Networking.OutboundR\boutbound\x12o\n" +
 	"\x14transparent_proxying\x18\x04 \x01(\v2<.kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxyingR\x13transparentProxying\x124\n" +
 	"\x05admin\x18\b \x01(\v2\x1e.kuma.mesh.v1alpha1.EnvoyAdminR\x05admin\x12O\n" +
-	"\tlisteners\x18\t \x03(\v21.kuma.mesh.v1alpha1.Dataplane.Networking.ListenerR\tlisteners\x1a\xfb\x06\n" +
+	"\tlisteners\x18\t \x03(\v21.kuma.mesh.v1alpha1.Dataplane.Networking.ListenerR\tlisteners\x1a\x81\a\n" +
 	"\aInbound\x12\x12\n" +
 	"\x04port\x18\x03 \x01(\rR\x04port\x12 \n" +
 	"\vservicePort\x18\x04 \x01(\rR\vservicePort\x12&\n" +
@@ -1483,7 +1483,7 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\x05State\x12\t\n" +
 	"\x05Ready\x10\x00\x12\f\n" +
 	"\bNotReady\x10\x01\x12\v\n" +
-	"\aIgnored\x10\x02J\x04\b\x02\x10\x03\x1a\x88\x04\n" +
+	"\aIgnored\x10\x02J\x04\b\x02\x10\x03R\x04tags\x1a\x88\x04\n" +
 	"\bOutbound\x12\x18\n" +
 	"\aaddress\x18\x03 \x01(\tR\aaddress\x12\x12\n" +
 	"\x04port\x18\x04 \x01(\rR\x04port\x12O\n" +
