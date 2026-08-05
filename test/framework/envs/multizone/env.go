@@ -203,7 +203,7 @@ func restoreKubeZone(clusterName string, networkingState *K8sNetworkingState) *K
 		1,
 		nil,
 	)
-	Expect(kubeCp.FinalizeAddWithPortFwd(networkingState.KumaCp, networkingState.KumaCp)).To(Succeed())
+	Expect(kubeCp.FinalizeAddWithPortFwd(networkingState.KumaCp, networkingState.MADS)).To(Succeed())
 	zone.SetCP(kubeCp)
 	return zone
 }
