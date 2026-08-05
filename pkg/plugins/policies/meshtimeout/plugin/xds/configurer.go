@@ -77,7 +77,7 @@ func (c *DeprecatedListenerConfigurer) ConfigureListener(listener *envoy_listene
 			if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 				return err
 			}
-		case core_meta.ProtocolUnknown, core_meta.ProtocolTCP, core_meta.ProtocolKafka:
+		case core_meta.ProtocolUnknown, core_meta.ProtocolTCP:
 			if err := listeners_v3.UpdateTCPProxy(filterChain, tcpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 				return err
 			}

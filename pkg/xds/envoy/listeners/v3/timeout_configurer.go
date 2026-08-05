@@ -19,7 +19,7 @@ type TimeoutConfigurer struct {
 
 func (c *TimeoutConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	switch c.Protocol {
-	case core_meta.ProtocolUnknown, core_meta.ProtocolTCP, core_meta.ProtocolKafka:
+	case core_meta.ProtocolUnknown, core_meta.ProtocolTCP:
 		return UpdateTCPProxy(filterChain, func(proxy *envoy_tcp.TcpProxy) error {
 			proxy.IdleTimeout = util_proto.Duration(c.Conf.TcpIdle)
 			return nil
