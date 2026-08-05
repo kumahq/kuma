@@ -50,20 +50,16 @@ func upstreamHTTPOptions(protocol core_meta.Protocol) envoy_clusters.ClusterBuil
 	}
 }
 
-// GenerateClusters builds one EDS cluster per outbound destination. Every proxy
-// has a workload identity and every destination is reachable through a
-// mesh-scoped zone proxy, so a cluster originates mTLS towards the KRI SNI of
-// the destination port.
+// GenerateClusters builds one EDS cluster per outbound destination. Every
+// destination is reachable through a mesh-scoped zone proxy, so a cluster
+// originates mTLS towards the KRI SNI of the destination port once this proxy
+// has an identity to present and the destination can terminate TLS.
 func GenerateClusters(
 	proxy *core_xds.Proxy,
 	meshCtx xds_context.MeshContext,
 	services envoy_common.Services,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-
-	// A proxy without a workload identity has no certificate to present, which
-	// happens until the MeshIdentity matching it reports initialized, so it
-	// cannot originate mTLS towards any destination yet.
 	hasIdentity := proxy.WorkloadIdentity != nil
 
 	for _, serviceName := range services.Sorted() {
