@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/auth"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
 	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
 	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
@@ -113,8 +112,7 @@ func DefaultReconciler(
 ) xds_sync.SnapshotReconciler {
 	return &reconciler{
 		generator: &TemplateSnapshotGenerator{
-			ResourceSetHooks:      rt.XDS().Hooks.ResourceSetHooks(),
-			ProxyTemplateResolver: generator.DefaultTemplateResolver,
+			ResourceSetHooks: rt.XDS().Hooks.ResourceSetHooks(),
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
 		statsCallbacks: statsCallbacks,

@@ -22,12 +22,6 @@ func GrpcStats() FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.GrpcStatsConfigurer{})
 }
 
-func Kafka(statsName string) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.KafkaConfigurer{
-		StatsName: statsName,
-	})
-}
-
 func StaticEndpoints(ipv6Enabled bool, virtualHostName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.StaticEndpointsConfigurer{
 		VirtualHostName: virtualHostName,

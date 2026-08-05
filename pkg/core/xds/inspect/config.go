@@ -24,7 +24,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 	xds_hooks "github.com/kumahq/kuma/v3/pkg/xds/hooks"
 	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 	v3 "github.com/kumahq/kuma/v3/pkg/xds/server/v3"
@@ -46,8 +45,7 @@ func NewProxyConfigInspector(meshContext xds_context.MeshContext, dataplaneMetad
 		zone:        zone,
 		meshContext: meshContext,
 		snapshotGenerator: &v3.TemplateSnapshotGenerator{
-			ResourceSetHooks:      hooks,
-			ProxyTemplateResolver: generator.DefaultTemplateResolver,
+			ResourceSetHooks: hooks,
 		},
 		knownInternalAddresses: knownInternalAddresses,
 		dataplaneMetadata:      dataplaneMetadata,

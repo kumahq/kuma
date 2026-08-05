@@ -93,19 +93,7 @@ rules:
       - zoneegressinsights
       - meshinsights
       - serviceinsights
-      - proxytemplates
-      - ratelimits
-      - trafficpermissions
-      - trafficroutes
-      - timeouts
-      - retries
-      - circuitbreakers
-      - virtualoutbounds
       - containerpatches
-      - faultinjections
-      - healthchecks
-      - trafficlogs
-      - traffictraces
   {{- range $policy, $v := .Values.plugins.policies }}
   {{- if $v }}
       - {{ $policy }}

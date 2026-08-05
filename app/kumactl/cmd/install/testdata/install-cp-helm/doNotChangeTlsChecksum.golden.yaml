@@ -166,19 +166,7 @@ rules:
       - zoneegressinsights
       - meshinsights
       - serviceinsights
-      - proxytemplates
-      - ratelimits
-      - trafficpermissions
-      - trafficroutes
-      - timeouts
-      - retries
-      - circuitbreakers
-      - virtualoutbounds
       - containerpatches
-      - faultinjections
-      - healthchecks
-      - trafficlogs
-      - traffictraces
       - meshaccesslogs
       - meshcircuitbreakers
       - meshfaultinjections
@@ -786,18 +774,6 @@ webhooks:
         operations:
           - CREATE
         resources:
-          - circuitbreakers
-          - faultinjections
-          - healthchecks
-          - proxytemplates
-          - ratelimits
-          - retries
-          - timeouts
-          - trafficlogs
-          - trafficpermissions
-          - trafficroutes
-          - traffictraces
-          - virtualoutbounds
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections
@@ -961,19 +937,8 @@ webhooks:
           - UPDATE
           - DELETE
         resources:
-          - circuitbreakers
           - dataplanes
-          - faultinjections
-          - healthchecks
           - meshes
-          - proxytemplates
-          - ratelimits
-          - retries
-          - trafficlogs
-          - trafficpermissions
-          - trafficroutes
-          - traffictraces
-          - virtualoutbounds
           - zones
           - containerpatches
           - meshaccesslogs
