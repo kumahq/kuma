@@ -68,12 +68,12 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 	AddLoggingHandlers(mux, s.logRegistry)
 	var tlsConfig *tls.Config
 	if s.config.TlsEnabled {
-		certReloader, err := util_tls.NewKeyPairReloader(s.config.TlsCertFile, s.config.TlsKeyFile, diagnosticsServerLog)
+		getCertificate, err := util_tls.WatchKeyPair(s.config.TlsCertFile, s.config.TlsKeyFile, stop, diagnosticsServerLog)
 		if err != nil {
 			return err
 		}
 		tlsConfig = &tls.Config{
-			GetCertificate: certReloader.GetCertificate,
+			GetCertificate: getCertificate,
 			MinVersion:     tls.VersionTLS12, // Make gosec pass, (In practice it's always set after).
 		}
 		if tlsConfig.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {

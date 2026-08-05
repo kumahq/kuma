@@ -58,11 +58,11 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 	defer cancel()
 	var tlsConfig *tls.Config
 	if s.config.TlsEnabled {
-		certReloader, err := util_tls.NewKeyPairReloader(s.config.TlsCertFile, s.config.TlsKeyFile, log)
+		getCertificate, err := util_tls.WatchKeyPair(s.config.TlsCertFile, s.config.TlsKeyFile, stop, log)
 		if err != nil {
 			return err
 		}
-		tlsConfig = &tls.Config{GetCertificate: certReloader.GetCertificate, MinVersion: tls.VersionTLS12} // To make gosec happy
+		tlsConfig = &tls.Config{GetCertificate: getCertificate, MinVersion: tls.VersionTLS12} // To make gosec happy
 		if tlsConfig.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
 		}

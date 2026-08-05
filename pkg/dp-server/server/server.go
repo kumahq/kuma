@@ -147,11 +147,11 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 	defer close(d.done)
 
 	var err error
-	certReloader, err := util_tls.NewKeyPairReloader(d.config.TlsCertFile, d.config.TlsKeyFile, log)
+	getCertificate, err := util_tls.WatchKeyPair(d.config.TlsCertFile, d.config.TlsKeyFile, stop, log)
 	if err != nil {
 		return err
 	}
-	tlsConfig := &tls.Config{GetCertificate: certReloader.GetCertificate, MinVersion: tls.VersionTLS12} // To make gosec happy
+	tlsConfig := &tls.Config{GetCertificate: getCertificate, MinVersion: tls.VersionTLS12} // To make gosec happy
 	if tlsConfig.MinVersion, err = config_types.TLSVersion(d.config.TlsMinVersion); err != nil {
 		return err
 	}

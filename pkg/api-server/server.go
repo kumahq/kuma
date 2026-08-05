@@ -415,7 +415,7 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 		a.httpReady.Store(true)
 	}
 	if a.config.HTTPS.Enabled {
-		tlsConfig, err := configureTLS(a.config)
+		tlsConfig, err := configureTLS(a.config, stop)
 		if err != nil {
 			return err
 		}
@@ -457,13 +457,13 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {
-	certReloader, err := util_tls.NewKeyPairReloader(cfg.HTTPS.TlsCertFile, cfg.HTTPS.TlsKeyFile, log)
+func configureTLS(cfg api_server.ApiServerConfig, stop <-chan struct{}) (*tls.Config, error) {
+	getCertificate, err := util_tls.WatchKeyPair(cfg.HTTPS.TlsCertFile, cfg.HTTPS.TlsKeyFile, stop, log)
 	if err != nil {
 		return nil, err
 	}
 	tlsConfig := &tls.Config{
-		GetCertificate: certReloader.GetCertificate,
+		GetCertificate: getCertificate,
 		MinVersion:     tls.VersionTLS12, // to pass gosec (in practice it's always set after.
 	}
 	tlsConfig.MinVersion, err = config_types.TLSVersion(cfg.HTTPS.TlsMinVersion)

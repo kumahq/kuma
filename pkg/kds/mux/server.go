@@ -78,11 +78,11 @@ func (s *server) Start(stop <-chan struct{}) error {
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	if s.config.TlsCertFile != "" && s.config.TlsEnabled {
-		certReloader, err := util_tls.NewKeyPairReloader(s.config.TlsCertFile, s.config.TlsKeyFile, muxServerLog)
+		getCertificate, err := util_tls.WatchKeyPair(s.config.TlsCertFile, s.config.TlsKeyFile, stop, muxServerLog)
 		if err != nil {
 			return err
 		}
-		tlsCfg := &tls.Config{GetCertificate: certReloader.GetCertificate, MinVersion: tls.VersionTLS12}
+		tlsCfg := &tls.Config{GetCertificate: getCertificate, MinVersion: tls.VersionTLS12}
 		if tlsCfg.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
 		}

@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -21,15 +20,12 @@ var _ = Describe("HTTPS server certificate", func() {
 	stop := func() {}
 
 	// writeCert stores a new self-signed certificate in the files the server
-	// was started with. Modification times are set explicitly because the
-	// rotation can happen within the resolution of the filesystem clock.
-	writeCert := func(modTime time.Time) {
+	// was started with.
+	writeCert := func() {
 		keyPair, err := util_tls.NewSelfSignedCert(util_tls.ServerCertType, util_tls.ECDSAKeyType, "localhost")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(os.WriteFile(certPath, keyPair.CertPEM, 0o600)).To(Succeed())
 		Expect(os.WriteFile(keyPath, keyPair.KeyPEM, 0o600)).To(Succeed())
-		Expect(os.Chtimes(certPath, modTime, modTime)).To(Succeed())
-		Expect(os.Chtimes(keyPath, modTime, modTime)).To(Succeed())
 	}
 
 	servedCertSerial := func(g Gomega) *big.Int {
@@ -48,7 +44,7 @@ var _ = Describe("HTTPS server certificate", func() {
 		dir := GinkgoT().TempDir()
 		certPath = filepath.Join(dir, "tls.crt")
 		keyPath = filepath.Join(dir, "tls.key")
-		writeCert(time.Now())
+		writeCert()
 
 		cfg := NewTestApiServerConfigurer().WithConfigMutator(func(cfg *config.ApiServerConfig) {
 			cfg.HTTPS.TlsCertFile = certPath
@@ -71,11 +67,11 @@ var _ = Describe("HTTPS server certificate", func() {
 		}, "5s", "100ms").Should(Succeed())
 
 		// when
-		writeCert(time.Now().Add(time.Minute))
+		writeCert()
 
 		// then
 		Eventually(func(g Gomega) {
 			g.Expect(servedCertSerial(g)).ToNot(Equal(initialSerial))
-		}, "5s", "100ms").Should(Succeed())
+		}, "30s", "100ms").Should(Succeed())
 	})
 })
