@@ -51,6 +51,12 @@ var _ = Describe("Global Insight", func() {
 		Expect(err).ToNot(HaveOccurred())
 		err = createMeshService("svc-2-partial", "payments", 1, 1, 2, rs)
 		Expect(err).ToNot(HaveOccurred())
+		// connected to the CP but no inbound is ready, so the service is not serving traffic
+		err = createMeshService("svc-2-unhealthy", "payments", 2, 0, 2, rs)
+		Expect(err).ToNot(HaveOccurred())
+		// all proxies connected, only some of them with ready inbounds
+		err = createMeshService("svc-2-degraded", "payments", 2, 1, 2, rs)
+		Expect(err).ToNot(HaveOccurred())
 		err = createMeshExternalService("es-1", "default", rs)
 		Expect(err).ToNot(HaveOccurred())
 		err = createMeshExternalService("es-2", "payments", rs)

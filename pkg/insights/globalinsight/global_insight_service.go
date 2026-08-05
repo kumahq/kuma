@@ -181,7 +181,10 @@ func (gis *defaultGlobalInsightService) aggregateServices(
 	}
 	for _, meshService := range meshServices.Items {
 		proxies := meshService.Status.DataplaneProxies
-		updateServiceStatus(proxies.Connected, proxies.Total, &globalInsight.Services.Internal)
+		// A proxy is only serving traffic when it is both connected to the control plane
+		// and has all inbounds selected by this service ready. Connected and Healthy are
+		// independent counters, so their minimum is the tightest bound on that overlap.
+		updateServiceStatus(min(proxies.Connected, proxies.Healthy), proxies.Total, &globalInsight.Services.Internal)
 	}
 
 	externalServices := &meshexternalservice_api.MeshExternalServiceResourceList{}
