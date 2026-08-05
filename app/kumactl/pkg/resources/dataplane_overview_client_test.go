@@ -50,8 +50,8 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 			// and
 			Expect(list.Items).To(HaveLen(1))
 			Expect(list.Items[0].Meta.GetName()).To(Equal("one"))
-			Expect(list.Items[0].Spec.Dataplane.Networking.Inbound[0].Tags).To(HaveKeyWithValue("service", "mobile"))
-			Expect(list.Items[0].Spec.Dataplane.Networking.Inbound[0].Tags).To(HaveKeyWithValue("version", "v1"))
+			Expect(list.Items[0].Spec.Dataplane.Networking.Inbound[0].Port).To(Equal(uint32(8080)))
+			Expect(list.Items[0].Spec.Dataplane.Networking.Inbound[0].ServicePort).To(Equal(uint32(80)))
 
 			Expect(list.Items[0].Spec.DataplaneInsight.Subscriptions).To(HaveLen(2))
 		})

@@ -38,10 +38,6 @@ var _ = Describe("Global Sync", func() {
 				Address: "192.168.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 					Port: 1212,
-					Tags: map[string]string{
-						mesh_proto.ZoneTag:    zone,
-						mesh_proto.ServiceTag: service,
-					},
 				}},
 				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 					{
@@ -222,10 +218,6 @@ var _ = Describe("Global Sync", func() {
 					Address: "192.168.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 						Port: 1212,
-						Tags: map[string]string{
-							mesh_proto.ZoneTag:    "kuma-cluster-1",
-							mesh_proto.ServiceTag: "service-1",
-						},
 					}},
 					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 						{
@@ -265,10 +257,6 @@ var _ = Describe("Global Sync", func() {
 				Networking: &mesh_proto.Dataplane_Networking{
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 						Port: 1234,
-						Tags: map[string]string{
-							mesh_proto.ZoneTag:    "kuma-cluster-1",
-							mesh_proto.ServiceTag: "service-1",
-						},
 					}},
 					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 						{
