@@ -176,13 +176,7 @@ func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.
 	u := &url.URL{}
 
 	switch proxy.(type) {
-	case *core_mesh.DataplaneResource:
-		httpClient, err = a.buildHTTPClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-		u.Scheme = "https"
-	case *core_mesh.ZoneIngressResource, *core_mesh.ZoneEgressResource:
+	case *core_mesh.DataplaneResource, *core_mesh.ZoneIngressResource, *core_mesh.ZoneEgressResource:
 		httpClient, err = a.buildHTTPClient(ctx)
 		if err != nil {
 			return nil, err

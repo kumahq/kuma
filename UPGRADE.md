@@ -253,6 +253,31 @@ no equivalent there: `podAnnotations`, `annotations`, `logLevel`, `drainTime`,
 `dns.config`, `service.enabled` and `service.nodePort`. Drain time and probes
 are now control-plane-wide sidecar injector settings.
 
+### Standalone zone proxy inspect endpoints and `kumactl inspect` commands removed
+
+The Envoy admin inspect endpoints for standalone zone proxies are gone:
+`GET /zoneingresses/{name}/{xds,stats,clusters}` and
+`GET /zoneegresses/{name}/{xds,stats,clusters}` now return 404. So do the
+pre-2.6 overview aliases `GET /zoneingresses+insights[/{name}]` and
+`GET /zoneegressoverviews[/{name}]`, which have been redundant with
+`/zoneingresses[/{name}]/_overview` and `/zoneegresses[/{name}]/_overview` since
+2.6. Reading and listing the `ZoneIngress`/`ZoneEgress` resources themselves is
+unchanged.
+
+`kumactl inspect` loses `zoneingress`, `zoneingresses` (alias `zone-ingresses`),
+`zoneegress` and `zoneegresses`.
+
+**Action required**
+
+Mesh-scoped zone proxies are regular `Dataplane` resources, so inspect them with
+`kumactl inspect dataplane <name> --mesh <mesh>` and the
+`/meshes/{mesh}/dataplanes/{name}/{xds,stats,clusters}` endpoints. Update any
+automation or dashboard that still calls the removed paths.
+
+The GUI's zone ingress and zone egress XDS, stats and clusters tabs depend on the
+removed endpoints and stop working until the bundled GUI is updated. Overview and
+resource views are unaffected.
+
 ### ServiceInsight, MeshInsight, and inspect `_rules` no longer report kuma.io/service based data
 
 With `meshServices.mode` always `Exclusive`, `kuma.io/service`-tagged services and
