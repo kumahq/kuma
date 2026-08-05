@@ -35,14 +35,14 @@ func TestIncludesGateways(t *testing.T) {
 			},
 			expected: false,
 		},
-		"dataplane with a gateway proxy-type label still excludes gateways": {
+		"dataplane with arbitrary labels still excludes gateways": {
 			// Kind: Dataplane never distinguished gateways even when
-			// proxyTypes existed (the field was never valid on it), and
-			// this label doesn't resurrect that: a targetRef can no longer
-			// scope a policy's rules[]/to[] to gateways-only at all.
+			// proxyTypes existed, and labels do not change that: a targetRef
+			// can no longer scope a policy's rules[]/to[] to gateways-only
+			// at all.
 			ref: TargetRef{
 				Kind:   Dataplane,
-				Labels: &map[string]string{mesh_proto.ProxyTypeLabel: string(mesh_proto.GatewayLabel)},
+				Labels: &map[string]string{"app": "gateway"},
 			},
 			expected: false,
 		},

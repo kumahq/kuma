@@ -3,7 +3,6 @@ package labels
 import (
 	"fmt"
 	"maps"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -23,6 +22,8 @@ type Namespace struct {
 }
 
 var UnsetNamespace = Namespace{}
+
+const legacyProxyTypeLabel = "kuma.io/proxy-type"
 
 func NewNamespace(value string, system bool) Namespace {
 	return Namespace{
@@ -183,10 +184,7 @@ func Compute(
 	}
 
 	if rd.IsProxy {
-		proxy, ok := spec.(core_model.ProxyResource)
-		if ok {
-			set(mesh_proto.ProxyTypeLabel, strings.ToLower(string(proxy.GetProxyType())))
-		}
+		delete(labels, legacyProxyTypeLabel)
 		if dp, ok := spec.(*mesh_proto.Dataplane); ok {
 			hasIngress, hasEgress := false, false
 			for _, l := range dp.GetNetworking().GetListeners() {

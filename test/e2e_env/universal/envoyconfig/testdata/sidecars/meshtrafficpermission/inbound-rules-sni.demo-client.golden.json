@@ -447,7 +447,6 @@
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "demo-client",
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
@@ -457,7 +456,6 @@
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "demo-client",
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
@@ -496,7 +494,6 @@
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
                       "kuma.io/protocol": "http",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "test-server",
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
@@ -509,7 +506,6 @@
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
                       "kuma.io/protocol": "http",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "test-server",
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
@@ -861,7 +857,6 @@
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig",
               "kuma.io/origin": "zone",
-              "kuma.io/proxy-type": "sidecar",
               "kuma.io/workload": "demo-client",
               "kuma.io/zone": "kuma-3",
               "team": "client-owners"
