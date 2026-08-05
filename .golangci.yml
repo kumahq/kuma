@@ -177,12 +177,6 @@ linters:
         text: 'SA1019: cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.'
       - linters:
           - staticcheck
-        text: 'SA1019: .* is deprecated: use MinResyncInterval instead'
-      - linters:
-          - staticcheck
-        text: 'SA1019: .* is deprecated: use FullResyncInterval instead'
-      - linters:
-          - staticcheck
         text: 'SA1019: .* is deprecated: use common.WithPolicyAttributes instead'
       - linters:
           - staticcheck
