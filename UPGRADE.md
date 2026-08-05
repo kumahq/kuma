@@ -8,6 +8,18 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` removed
+
+The `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` environment variable
+has been removed. MeshTrafficPermission rule generation now always uses the
+cliques-based grouping algorithm.
+
+**Action required**
+
+Remove `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` from control
+plane deployments, Helm values, and any other runtime configuration before or
+after upgrading. Leaving it set no longer has any effect in Kuma 3.0.0.
+
 ### `advertisedAddress` removed from `Dataplane` networking
 
 The `networking.advertisedAddress` field has been removed from the `Dataplane` resource. Proxies behind NAT or a private network (e.g. Docker) that relied on it to advertise a routable address to other proxies must now be reachable directly via `networking.address`.
