@@ -1,7 +1,6 @@
 type: MeshExternalService
 name: mes-proxy-type
 mesh: multizone-label-validation
-labels:
 spec:
   match:
     type: HostnameGenerator

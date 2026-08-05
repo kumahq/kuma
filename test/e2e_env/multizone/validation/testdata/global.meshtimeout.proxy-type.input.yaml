@@ -1,7 +1,6 @@
 type: MeshTimeout
 name: mt-proxy-type
 mesh: multizone-label-validation
-labels:
 spec:
   targetRef:
     kind: Mesh
