@@ -91,7 +91,6 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	listener *mesh_proto.Dataplane_Networking_Listener,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
-	cp := xdsCtx.ControlPlane
 	meshName := xdsCtx.Mesh.Resource.GetMeta().GetName()
 
 	address := listener.Address
@@ -122,8 +121,6 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 			[]core_resources.DestinationList{localMS, meshResources.MeshMultiZoneServices()},
 			core_resources.DestinationList.GetDestinations,
 		),
-		cp.SystemNamespace,
-		true,
 	)
 	dest := zoneproxy.MeshDestinations{BackendRefs: backendRefs}
 

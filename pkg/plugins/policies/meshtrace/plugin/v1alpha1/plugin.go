@@ -213,7 +213,7 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 			if typ == envoy_resource.ListenerType {
 				for _, listener := range resources {
 					l := listener.Resource.(*envoy_listener.Listener)
-					if err := configureListener(ctx, rules, proxy, l, destinationname.MustResolve(false, service, port), l.TrafficDirection); err != nil {
+					if err := configureListener(ctx, rules, proxy, l, destinationname.ResolveLegacyFromDestination(service, port), l.TrafficDirection); err != nil {
 						return err
 					}
 				}

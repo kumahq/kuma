@@ -156,10 +156,6 @@ func FilterChainBuilder(
 			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 			Configure(envoy_listeners.GrpcStats()).
 			Configure(envoy_listeners.HttpInboundRoute(contextualName, contextualName, cluster))
-	case core_meta.ProtocolKafka:
-		filterChainBuilder.
-			Configure(envoy_listeners.Kafka(localClusterName)).
-			Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, cluster))
 	default:
 		// configuration for non-HTTP cases
 		filterChainBuilder.Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, cluster))

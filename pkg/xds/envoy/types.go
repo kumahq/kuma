@@ -17,7 +17,6 @@ type Cluster interface {
 	Service() string
 	Name() string
 	SNI() string
-	Mesh() string
 	Tags() tags.Tags
 	Hash() string
 	IsExternalService() bool
