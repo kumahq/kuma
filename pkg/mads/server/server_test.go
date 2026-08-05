@@ -147,6 +147,6 @@ var _ = Describe("MADS Server on Kubernetes", func() {
 		}
 
 		Expect(server.SetupServer(rt)).To(Succeed())
-		Expect(rt.components).To(HaveLen(0))
+		Expect(rt.components).To(BeEmpty())
 	})
 })
