@@ -73,6 +73,7 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/echo/v2"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/ext_authz/v2"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/kafka_broker/v2alpha1"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/local_rate_limit/v2alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/mongo_proxy/v2"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/mysql_proxy/v1alpha1"

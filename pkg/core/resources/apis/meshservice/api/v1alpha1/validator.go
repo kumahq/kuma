@@ -14,7 +14,7 @@ func (r *MeshServiceResource) validate() error {
 
 	portsPath := validators.RootedAt("spec").Field("ports")
 	for i, port := range r.Spec.Ports {
-		if port.AppProtocol != "" && !core_meta.SupportedProtocols.Contains(port.AppProtocol) {
+		if port.AppProtocol != "" && !core_meta.SupportedProtocols.Contains(core_meta.ParseProtocol(port.AppProtocol)) {
 			verr.AddViolationAt(portsPath.Index(i).Field("appProtocol"), validators.MustBeOneOf("appProtocol", core_meta.SupportedProtocols.Strings()...))
 		}
 	}

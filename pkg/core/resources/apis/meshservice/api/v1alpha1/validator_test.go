@@ -90,6 +90,17 @@ ports:
 			},
 		),
 		Entry(
+			"accepts supported port appProtocol regardless of case",
+			ResourceValidationCase{
+				Name: "meshservice",
+				Resource: `
+ports:
+  - port: 8080
+    appProtocol: TCP
+`,
+			},
+		),
+		Entry(
 			"accepts dataplaneRef selector",
 			ResourceValidationCase{
 				Name: "meshservice",
