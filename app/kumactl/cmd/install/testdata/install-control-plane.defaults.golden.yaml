@@ -8879,9 +8879,6 @@ spec:
       name: https-admission-server
       targetPort: 5443
       appProtocol: https
-    - port: 5676
-      name: mads-server
-      appProtocol: https
     - port: 5678
       name: dp-server
       appProtocol: https
@@ -9008,7 +9005,7 @@ spec:
             - name: KUMA_MODE
               value: "zone"
             - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
-              value: "true"
+              value: "false"
             - name: KUMA_PLUGIN_POLICIES_ENABLED
               value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshpassthroughs,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtlses,meshtraces,meshtrafficpermissions"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR

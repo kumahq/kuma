@@ -46,7 +46,6 @@ import (
 
 type K8sNetworkingState struct {
 	KumaCp portforward.Tunnel `json:"kumaCp"`
-	MADS   portforward.Tunnel `json:"mads"`
 }
 
 type K8sCluster struct {

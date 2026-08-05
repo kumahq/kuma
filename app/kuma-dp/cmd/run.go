@@ -166,22 +166,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.Dataplane.Name = proxyResource.GetMeta().GetName()
 			}
 
-			//nolint:staticcheck // SA1019 Backward compatibility: migrate deprecated ConfigDir to WorkDir
-			if cfg.DataplaneRuntime.WorkDir == "" && cfg.DataplaneRuntime.ConfigDir != "" {
-				runLog.Info("ConfigDir is deprecated, please use WorkDir instead")
-				//nolint:staticcheck // SA1019 Backward compatibility: migrate deprecated ConfigDir to WorkDir
-				cfg.DataplaneRuntime.WorkDir = cfg.DataplaneRuntime.ConfigDir
-			}
-			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for migration
-			if cfg.DataplaneRuntime.SocketDir != "" {
-				runLog.Info("SocketDir is deprecated, please use WorkDir instead")
-			} else {
-				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for migration
-				cfg.DataplaneRuntime.SocketDir = cfg.DataplaneRuntime.WorkDir
-			}
-
-			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for fallback
-			if cfg.DataplaneRuntime.WorkDir == "" || cfg.DataplaneRuntime.SocketDir == "" {
+			if cfg.DataplaneRuntime.WorkDir == "" {
 				tmpDir, err = os.MkdirTemp("", "kuma-dp-")
 				if err != nil {
 					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
@@ -196,23 +181,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					return err
 				}
 
-				if cfg.DataplaneRuntime.WorkDir == "" {
-					cfg.DataplaneRuntime.WorkDir = tmpDir
-				}
-
-				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for fallback
-				if cfg.DataplaneRuntime.SocketDir == "" {
-					//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for fallback
-					cfg.DataplaneRuntime.SocketDir = tmpDir
-				}
+				cfg.DataplaneRuntime.WorkDir = tmpDir
 
 				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
-			}
-
-			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir for migration
-			if cfg.DataplaneRuntime.SocketDir != "" && cfg.DataplaneRuntime.SocketDir != tmpDir {
-				if err := os.MkdirAll(cfg.DataplaneRuntime.SocketDir, 0o711); err != nil { // #nosec G302 -- deliberate: traverse-only for UDS access
-					runLog.Error(err, "unable to create socket directory")
+			} else {
+				if err := os.MkdirAll(cfg.DataplaneRuntime.WorkDir, 0o711); err != nil { // #nosec G302 -- deliberate: traverse-only for UDS access
+					runLog.Error(err, "unable to create work directory", "dir", cfg.DataplaneRuntime.WorkDir)
 					return err
 				}
 			}
@@ -324,8 +298,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			opts.AdminSocketPath = adminSocketPath
 
 			confFetcher := configfetcher.NewConfigFetcher(
-				//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
-				core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir),
+				core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.WorkDir),
 				time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
 				cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration,
 			)
@@ -474,8 +447,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&cfg.ControlPlane.TlsSkipVerify, "skip-verify", cfg.ControlPlane.TlsSkipVerify, "Skip TLS verification of the Control Plane certificate (insecure, for development/testing only)")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().Uint32Var(&cfg.DataplaneRuntime.Concurrency, "concurrency", cfg.DataplaneRuntime.Concurrency, "Number of Envoy worker threads")
-	//nolint:staticcheck // SA1019 Backward compatibility: preserve deprecated ConfigDir flag for migration
-	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.WorkDir, "work-dir", cfg.DataplaneRuntime.WorkDir, "Directory in which Kuma DP config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Token, "dataplane-token", cfg.DataplaneRuntime.Token, "Dataplane Token")
@@ -502,10 +473,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			"Later values override earlier ones when merging. "+
 			"Use this flag to pass detailed transparent proxy settings to kuma-dp.",
 	)
-
-	if err := cmd.PersistentFlags().MarkDeprecated("config-dir", "use --work-dir instead"); err != nil {
-		runLog.Error(err, "could not mark config-dir as deprecated")
-	}
 
 	return cmd
 }
@@ -563,8 +530,7 @@ func setupObservability(
 	accessLogStreamer := component.NewResilientComponent(
 		runLog.WithName("access-log-streamer"),
 		accesslogs.NewAccessLogStreamer(
-			//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
-			core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+			core_xds.AccessLogSocketName(cfg.DataplaneRuntime.WorkDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 		),
 		cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
 		cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
@@ -578,8 +544,7 @@ func setupObservability(
 		kuma_version.Build.Version,
 	)
 	metricsServer := metrics.New(
-		//nolint:staticcheck // SA1019 Backward compatibility: support deprecated SocketDir
-		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.WorkDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 		baseApplicationsToScrape,
 		tpEnabled,
 		openTelemetryProducer,

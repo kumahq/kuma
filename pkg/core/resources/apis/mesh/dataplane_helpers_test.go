@@ -544,10 +544,6 @@ var _ = Describe("Dataplane", func() {
 				tag:      "grpc",
 				expected: core_meta.ProtocolGRPC,
 			}),
-			Entry("kafka", testCase{
-				tag:      "kafka",
-				expected: core_meta.ProtocolKafka,
-			}),
 			Entry("mongo", testCase{
 				tag:      "mongo",
 				expected: core_meta.ProtocolUnknown,

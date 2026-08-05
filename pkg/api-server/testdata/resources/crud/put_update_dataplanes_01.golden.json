@@ -9,7 +9,6 @@
   "kuma.io/env": "universal",
   "kuma.io/mesh": "default",
   "kuma.io/origin": "zone",
-  "kuma.io/proxy-type": "sidecar",
   "kuma.io/zone": "default"
  },
  "kri": "kri_dp_default_default__dp-1_",
