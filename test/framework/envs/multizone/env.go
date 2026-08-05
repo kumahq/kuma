@@ -178,11 +178,9 @@ func SetupAndGetState() []byte {
 		UniZone2: UniZone2.GetUniversalNetworkingState(),
 		KubeZone1: K8sNetworkingState{
 			KumaCp: KubeZone1.GetKuma().(*K8sControlPlane).PortFwd(),
-			MADS:   KubeZone1.GetKuma().(*K8sControlPlane).MadsPortFwd(),
 		},
 		KubeZone2: K8sNetworkingState{
 			KumaCp: KubeZone2.GetKuma().(*K8sControlPlane).PortFwd(),
-			MADS:   KubeZone2.GetKuma().(*K8sControlPlane).MadsPortFwd(),
 		},
 	}
 	// govet complains of marshaling with mutex, we know what we're doing here
@@ -203,7 +201,7 @@ func restoreKubeZone(clusterName string, networkingState *K8sNetworkingState) *K
 		1,
 		nil,
 	)
-	Expect(kubeCp.FinalizeAddWithPortFwd(networkingState.KumaCp, networkingState.KumaCp)).To(Succeed())
+	Expect(kubeCp.FinalizeAddWithPortFwd(networkingState.KumaCp)).To(Succeed())
 	zone.SetCP(kubeCp)
 	return zone
 }
