@@ -69,10 +69,6 @@ func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.
 	return r.MeshLocalResources.listOrEmpty(resourceType)
 }
 
-func (r Resources) ServiceInsights() *core_mesh.ServiceInsightResourceList {
-	return r.ListOrEmpty(core_mesh.ServiceInsightType).(*core_mesh.ServiceInsightResourceList)
-}
-
 func (r Resources) ZoneIngresses() *core_mesh.ZoneIngressResourceList {
 	return r.ListOrEmpty(core_mesh.ZoneIngressType).(*core_mesh.ZoneIngressResourceList)
 }

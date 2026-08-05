@@ -8,6 +8,8 @@ import (
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -166,46 +168,40 @@ func addResourceTotal(resources map[string]api_types.ResourceStats, resourceName
 	resources[resourceName] = stats
 }
 
+// aggregateServices counts internal services from MeshService and external services
+// from MeshExternalService. Builtin/delegated gateways are not distinguishable from
+// regular services on MeshService, so they are counted as internal like everything else.
 func (gis *defaultGlobalInsightService) aggregateServices(
 	ctx context.Context,
 	globalInsight *api_types.GlobalInsightBase,
 ) error {
-	serviceInsights := &mesh.ServiceInsightResourceList{}
-	if err := gis.resourceStore.List(ctx, serviceInsights); err != nil {
+	meshServices := &meshservice_api.MeshServiceResourceList{}
+	if err := gis.resourceStore.List(ctx, meshServices); err != nil {
 		return err
 	}
-
-	for _, serviceInsight := range serviceInsights.GetItems() {
-		services := serviceInsight.GetSpec().(*mesh_proto.ServiceInsight).GetServices()
-
-		for _, service := range services {
-			switch service.GetServiceType() {
-			case mesh_proto.ServiceInsight_Service_internal:
-				updateServiceStatus(service.GetStatus(), &globalInsight.Services.Internal)
-			case mesh_proto.ServiceInsight_Service_external:
-				globalInsight.Services.External.Total += 1
-			case mesh_proto.ServiceInsight_Service_gateway_builtin:
-				updateServiceStatus(service.GetStatus(), &globalInsight.Services.GatewayBuiltin)
-			case mesh_proto.ServiceInsight_Service_gateway_delegated:
-				updateServiceStatus(service.GetStatus(), &globalInsight.Services.GatewayDelegated)
-			}
-		}
+	for _, meshService := range meshServices.Items {
+		proxies := meshService.Status.DataplaneProxies
+		updateServiceStatus(proxies.Connected, proxies.Total, &globalInsight.Services.Internal)
 	}
+
+	externalServices := &meshexternalservice_api.MeshExternalServiceResourceList{}
+	if err := gis.resourceStore.List(ctx, externalServices); err != nil {
+		return err
+	}
+	globalInsight.Services.External.Total = len(externalServices.GetItems())
 
 	return nil
 }
 
-func updateServiceStatus(serviceStatus mesh_proto.ServiceInsight_Service_Status, status *api_types.FullStatus) {
+func updateServiceStatus(online, total int, status *api_types.FullStatus) {
 	status.Total += 1
-	switch serviceStatus {
-	case mesh_proto.ServiceInsight_Service_online:
-		status.Online += 1
-	case mesh_proto.ServiceInsight_Service_offline:
+	switch {
+	case total == 0 || online == 0:
 		status.Offline += 1
-	case mesh_proto.ServiceInsight_Service_partially_degraded:
-		status.PartiallyDegraded += 1
+	case online == total:
+		status.Online += 1
 	default:
-		return
+		status.PartiallyDegraded += 1
 	}
 }
 

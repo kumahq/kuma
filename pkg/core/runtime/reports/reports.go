@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
@@ -88,20 +89,16 @@ func fetchNumPolicies(ctx context.Context, rt core_runtime.Runtime) (map[string]
 }
 
 func fetchNumOfServices(ctx context.Context, rt core_runtime.Runtime) (int, int, error) {
-	insights := mesh.ServiceInsightResourceList{}
-	if err := rt.ReadOnlyResourceManager().List(ctx, &insights); err != nil {
-		return 0, 0, errors.Wrap(err, "could not fetch service insights")
-	}
-	internalServices := 0
-	for _, insight := range insights.Items {
-		internalServices += len(insight.Spec.Services)
+	meshServicesList := meshservice_api.MeshServiceResourceList{}
+	if err := rt.ReadOnlyResourceManager().List(ctx, &meshServicesList); err != nil {
+		return 0, 0, errors.Wrap(err, "could not fetch mesh services")
 	}
 
 	externalServicesList := meshexternalservice_api.MeshExternalServiceResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(ctx, &externalServicesList); err != nil {
 		return 0, 0, errors.Wrap(err, "could not fetch mesh external services")
 	}
-	return internalServices, len(externalServicesList.Items), nil
+	return len(meshServicesList.Items), len(externalServicesList.Items), nil
 }
 
 func (b *reportsBuffer) marshall() (string, error) {

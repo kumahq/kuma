@@ -37,13 +37,6 @@ const (
 	foreignKeyViolationError = "violates foreign key constraint \"owner_fk\""
 )
 
-func ServiceInsightKey(mesh string) model.ResourceKey {
-	return model.ResourceKey{
-		Name: fmt.Sprintf("all-services-%s", mesh),
-		Mesh: mesh,
-	}
-}
-
 func MeshInsightKey(mesh string) model.ResourceKey {
 	return model.ResourceKey{
 		Name: mesh,
@@ -156,10 +149,7 @@ type resyncEvent struct {
 
 type actionFlag uint8
 
-const (
-	FlagMesh = 1 << iota
-	FlagService
-)
+const FlagMesh actionFlag = 1
 
 // eventBatch keeps all the outstanding changes. The idea is that we linger an entire batch for some amount of time and we flush the batch all at once
 type eventBatch struct {
@@ -339,10 +329,6 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				if resourceChanged.Operation != events.Update || resourceChanged.Type == core_mesh.DataplaneInsightType {
 					f |= FlagMesh
 				}
-				// Only a subset of types influence service insights
-				if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType {
-					f |= FlagService
-				}
 				if f != 0 {
 					batch.add(r.now(), resourceChanged.TenantID, meshName, f, []model.ResourceType{resourceChanged.Type}, ReasonEvent)
 				}
@@ -368,15 +354,6 @@ func (r *resyncer) processEvent(ctx context.Context, start time.Time, event resy
 	}
 
 	anyChanged := false
-	if event.flag&FlagService == FlagService {
-		err, changed := r.createOrUpdateServiceInsight(ctx, event.mesh, dpOverviews)
-		if err != nil {
-			return errors.Wrap(err, "unable to resync ServiceInsight")
-		}
-		if changed {
-			anyChanged = true
-		}
-	}
 	if event.flag&FlagMesh == FlagMesh {
 		err, changed := r.createOrUpdateMeshInsight(ctx, event.mesh, dpOverviews, event.types)
 		if err != nil {
@@ -418,122 +395,8 @@ func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tena
 		return
 	}
 	for _, mesh := range meshList.Items {
-		batch.add(time.Now(), tenantID, mesh.GetMeta().GetName(), FlagMesh|FlagService, r.allResourceTypes, reason)
+		batch.add(time.Now(), tenantID, mesh.GetMeta().GetName(), FlagMesh, r.allResourceTypes, reason)
 	}
-}
-
-func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status, backend string, addressPort string) {
-	if svcName == "" {
-		// Inbounds carry no kuma.io/service tag in tag-free mode, so
-		// there is no service to track here.
-		return
-	}
-	if _, ok := insight.Services[svcName]; !ok {
-		insight.Services[svcName] = &mesh_proto.ServiceInsight_Service{
-			IssuedBackends: map[string]uint32{},
-			Dataplanes:     &mesh_proto.ServiceInsight_Service_DataplaneStat{},
-			ServiceType:    serviceType,
-			AddressPort:    addressPort,
-		}
-	}
-	if backend != "" {
-		insight.Services[svcName].IssuedBackends[backend]++
-	}
-
-	dataplanes := insight.Services[svcName].Dataplanes
-
-	switch status {
-	case core_mesh.Online:
-		dataplanes.Online++
-	case core_mesh.Offline:
-		dataplanes.Offline++
-	case core_mesh.PartiallyDegraded:
-		dataplanes.Offline++
-	}
-}
-
-func (r *resyncer) createOrUpdateServiceInsight(
-	ctx context.Context,
-	mesh string,
-	dpOverviews []*core_mesh.DataplaneOverviewResource,
-) (error, bool) {
-	insight := &mesh_proto.ServiceInsight{
-		Services: map[string]*mesh_proto.ServiceInsight_Service{},
-	}
-
-	zonesMap := map[string]map[string]struct{}{}
-	addSvcToZones := func(svc, zone string) {
-		if zone == "" {
-			return
-		}
-		if _, ok := zonesMap[svc]; !ok {
-			zonesMap[svc] = map[string]struct{}{}
-		}
-		zonesMap[svc][zone] = struct{}{}
-	}
-	for _, dpOverview := range dpOverviews {
-		status, _ := dpOverview.Status()
-		networking := dpOverview.Spec.GetDataplane().GetNetworking()
-		backend := dpOverview.Spec.GetDataplaneInsight().GetMTLS().GetIssuedBackend()
-
-		gw := networking.GetGateway()
-		// Regular services (and builtin gateways) are represented by MeshService.
-		// Delegated gateways are never turned into MeshService, so they must
-		// still be reported here.
-		if gw == nil || gw.Type != mesh_proto.Dataplane_Networking_Gateway_DELEGATED {
-			continue
-		}
-		populateInsight(mesh_proto.ServiceInsight_Service_gateway_delegated, insight, gw.GetTags()[mesh_proto.ServiceTag], status, backend, "")
-		addSvcToZones(gw.GetTags()[mesh_proto.ServiceTag], gw.GetTags()[mesh_proto.ZoneTag])
-	}
-
-	for svcName, svc := range insight.Services {
-		online := svc.Dataplanes.Online
-		total := svc.Dataplanes.Online + svc.Dataplanes.Offline
-
-		switch {
-		case online == 0:
-			svc.Status = mesh_proto.ServiceInsight_Service_offline
-		case online == total:
-			svc.Status = mesh_proto.ServiceInsight_Service_online
-		case online < total:
-			svc.Status = mesh_proto.ServiceInsight_Service_partially_degraded
-		}
-		if zones, ok := zonesMap[svcName]; ok {
-			svc.Zones = util_maps.SortedKeys(zones)
-		}
-	}
-
-	return r.upsertServiceInsight(ctx, mesh, insight)
-}
-
-func (r *resyncer) upsertServiceInsight(ctx context.Context, mesh string, insight *mesh_proto.ServiceInsight) (error, bool) {
-	log := kuma_log.AddFieldsFromCtx(log, ctx, r.extensions).WithValues("mesh", mesh) // Add info
-	key := ServiceInsightKey(mesh)
-	changed := false
-	err := manager.Upsert(ctx, r.rm, key, core_mesh.NewServiceInsightResource(), func(resource model.Resource) error {
-		if resource.GetSpec() != nil && proto.Equal(resource.GetSpec().(proto.Message), insight) {
-			log.V(1).Info("no need to update ServiceInsight because the resource is the same")
-			return manager.ErrSkipUpsert
-		}
-		changed = true
-		return resource.SetSpec(insight)
-	})
-	if err != nil {
-		if manager.IsMeshNotFound(err) {
-			log.V(1).Info("ServiceInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
-			// handle the situation when the mesh is deleted and then allByType the resources connected with the Mesh allByType deleted.
-			// Mesh no longer exist so we cannot upsert the insight for it.
-			return nil, false
-		}
-		if store.IsAlreadyExists(err) || store.IsConflict(err) {
-			log.V(1).Info(err.Error())
-			return nil, false
-		}
-		return err, false
-	}
-	log.V(1).Info("ServiceInsights updated")
-	return nil, changed
 }
 
 func (r *resyncer) createOrUpdateMeshInsight(

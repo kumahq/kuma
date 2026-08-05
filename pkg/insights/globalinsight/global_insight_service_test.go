@@ -41,9 +41,19 @@ var _ = Describe("Global Insight", func() {
 		Expect(err).ToNot(HaveOccurred())
 		err = createMeshInsight("payments", rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createServiceInsight("si-1", "default", rs)
+		err = createMeshService("svc-1-online", "default", 1, 1, 1, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createServiceInsight("si-2", "payments", rs)
+		err = createMeshService("svc-1-offline", "default", 0, 0, 1, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createMeshService("svc-2-online", "payments", 1, 1, 1, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createMeshService("svc-2-offline", "payments", 0, 0, 1, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createMeshService("svc-2-partial", "payments", 1, 1, 2, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createMeshExternalService("es-1", "default", rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createMeshExternalService("es-2", "payments", rs)
 		Expect(err).ToNot(HaveOccurred())
 		err = createHostnameGenerator("default-hg", rs)
 		Expect(err).ToNot(HaveOccurred())
@@ -87,29 +97,18 @@ func createMeshInsight(name string, rs store.ResourceStore) error {
 		Create(rs)
 }
 
-func createServiceInsight(name string, mesh string, rs store.ResourceStore) error {
-	return builders.ServiceInsight().
+func createMeshService(name string, mesh string, connected, healthy, total int, rs store.ResourceStore) error {
+	return builders.MeshService().
 		WithName(name).
 		WithMesh(mesh).
-		AddService("test-service", &mesh_proto.ServiceInsight_Service{
-			ServiceType: mesh_proto.ServiceInsight_Service_internal,
-			Status:      mesh_proto.ServiceInsight_Service_online,
-		}).
-		AddService("test-service-2", &mesh_proto.ServiceInsight_Service{
-			ServiceType: mesh_proto.ServiceInsight_Service_internal,
-			Status:      mesh_proto.ServiceInsight_Service_offline,
-		}).
-		AddService("test-external-service", &mesh_proto.ServiceInsight_Service{
-			ServiceType: mesh_proto.ServiceInsight_Service_external,
-		}).
-		AddService("test-builtin-gateway", &mesh_proto.ServiceInsight_Service{
-			ServiceType: mesh_proto.ServiceInsight_Service_gateway_builtin,
-			Status:      mesh_proto.ServiceInsight_Service_partially_degraded,
-		}).
-		AddService("test-delegated-gateway", &mesh_proto.ServiceInsight_Service{
-			ServiceType: mesh_proto.ServiceInsight_Service_gateway_delegated,
-			Status:      mesh_proto.ServiceInsight_Service_offline,
-		}).
+		WithDataplaneProxies(connected, healthy, total).
+		Create(rs)
+}
+
+func createMeshExternalService(name string, mesh string, rs store.ResourceStore) error {
+	return builders.MeshExternalService().
+		WithName(name).
+		WithMesh(mesh).
 		Create(rs)
 }
 
