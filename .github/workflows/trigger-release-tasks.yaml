@@ -132,15 +132,14 @@ jobs:
     steps:
       - name: "Trigger downstream smoke test"
         env:
-          # smoke.yaml has no repository_dispatch trigger and cross-org
-          # workflow_dispatch needs a PAT with actions:write on the target repo
-          # that nobody's provisioned (see PR history). Reuse the
-          # repository_dispatch path pr-merged.yaml already proves works
-          # cross-org (NOTIFY_BOT_PAT_TOKEN/NOTIFY_OWNER) instead: kong-mesh-smoke
-          # listens for KUMA_SMOKE_TEST via dispatch-kuma-smoke.yaml and forwards
-          # to smoke.yaml with the default GITHUB_TOKEN (same-repo, no cross-org
-          # auth needed on that side).
-          GH_TOKEN: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
+          # smoke.yaml has no repository_dispatch trigger, so this dispatches
+          # via repository_dispatch to kong-mesh-smoke instead, which listens
+          # for KUMA_SMOKE_TEST via dispatch-kuma-smoke.yaml and forwards to
+          # smoke.yaml with the default GITHUB_TOKEN (same-repo, no cross-org
+          # auth needed on that side). Needs a classic PAT with `repo` scope,
+          # SSO-authorized for the Kong org - fine-grained PATs aren't enabled
+          # there for cross-org repo selection.
+          GH_TOKEN: ${{ secrets.KONG_MESH_SMOKE_DISPATCH_TOKEN }}
           NOTIFY_OWNER: ${{ secrets.NOTIFY_OWNER }}
           SMOKE_REPO: kong-mesh-smoke
           PRODUCT_VERSION: ${{ needs.guard.outputs.product_version }}
