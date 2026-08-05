@@ -12,8 +12,8 @@ import (
 
 // Annotations that can be used by the end users.
 const (
-	// KumaSidecarInjectionAnnotation defines a Pod/Namespace annotation that
-	// gives users an ability to enable or disable sidecar-injection
+	// KumaSidecarInjectionAnnotation defines the label that enables or disables
+	// sidecar injection on Pods and Namespaces.
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"
 
 	// KumaGatewayAnnotation allows to mark Gateway pod,
@@ -63,10 +63,6 @@ const (
 	// concurrency from the sidecar container resource limits. A value of 0 tells Envoy to try to use all the
 	// visible CPUs.
 	KumaSidecarConcurrencyAnnotation = "kuma.io/sidecar-proxy-concurrency"
-
-	// KumaBuiltinDNS the sidecar will use its builtin DNS
-	KumaBuiltinDNS     = "kuma.io/builtin-dns"
-	KumaBuiltinDNSPort = "kuma.io/builtin-dns-port"
 
 	// KumaTrafficTransparentProxyConfig is an annotation used to pass a YAML with the transparent proxy
 	// configuration in CNI mode, allowing the new logic to retrieve the config from the annotation
