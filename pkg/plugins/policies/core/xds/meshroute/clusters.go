@@ -1,6 +1,8 @@
 package meshroute
 
 import (
+	"slices"
+
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/pkg/errors"
 
@@ -20,6 +22,7 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
+	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
@@ -191,7 +194,9 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 		Build()
 }
 
-// meshServiceIdentities returns the SPIFFE IDs advertised by a MeshService.
+// meshServiceIdentities returns the SPIFFE IDs advertised by a MeshService. A
+// destination still issued a certificate off its kuma.io/service tag presents
+// spiffe://<mesh>/<service>, so that form is accepted next to the workload ID.
 func meshServiceIdentities(meshCtx xds_context.MeshContext, id kri.Identifier) []string {
 	ms, ok := meshCtx.GetServiceByKRI(id).(*meshservice_api.MeshServiceResource)
 	if !ok {
@@ -199,10 +204,14 @@ func meshServiceIdentities(meshCtx xds_context.MeshContext, id kri.Identifier) [
 	}
 	var identities []string
 	for _, identity := range pointer.Deref(ms.Spec.Identities) {
-		if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
+		switch identity.Type {
+		case meshservice_api.MeshServiceIdentitySpiffeIDType:
 			identities = append(identities, identity.Value)
+		case meshservice_api.MeshServiceIdentityServiceTagType:
+			identities = append(identities, tls.ServiceSpiffeID(meshCtx.Resource.Meta.GetName(), identity.Value))
 		}
 	}
+	slices.Sort(identities)
 	return identities
 }
 

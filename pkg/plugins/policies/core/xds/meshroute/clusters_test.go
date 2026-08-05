@@ -28,12 +28,13 @@ var _ = Describe("GenerateClusters", func() {
 	// destination's MeshService is TLS Ready, otherwise every request sent in
 	// the window between the two pushes is dropped.
 	type testCase struct {
-		tlsStatus   meshservice_api.TLSStatus
-		zoneOrigin  bool
-		noIdentity  bool
-		expectMTLS  bool
-		expectedSNI string
-		expectedSAN string
+		tlsStatus    meshservice_api.TLSStatus
+		zoneOrigin   bool
+		noIdentity   bool
+		serviceTag   bool
+		expectMTLS   bool
+		expectedSNI  string
+		expectedSANs []string
 	}
 
 	buildCluster := func(given testCase) *envoy_cluster.Cluster {
@@ -41,14 +42,17 @@ var _ = Describe("GenerateClusters", func() {
 		if !given.zoneOrigin {
 			labels[mesh_proto.ResourceOriginLabel] = string(mesh_proto.GlobalResourceOrigin)
 		}
-		ms := builders.MeshService().
+		msBuilder := builders.MeshService().
 			WithName("backend").
 			WithMesh("default").
 			WithLabels(labels).
 			AddIntPortWithName(80, 8080, core_meta.ProtocolHTTP, "http").
-			AddSpiffeIDIdentity("spiffe://default/backend").
-			WithTLSStatus(given.tlsStatus).
-			Build()
+			AddSpiffeIDIdentity("spiffe://default.zone-1.mesh.local/workload/backend").
+			WithTLSStatus(given.tlsStatus)
+		if given.serviceTag {
+			msBuilder = msBuilder.AddServiceTagIdentity("backend")
+		}
+		ms := msBuilder.Build()
 
 		meshCtx := xds_context.MeshContext{
 			Resource: builders.Mesh().Build(),
@@ -100,30 +104,44 @@ var _ = Describe("GenerateClusters", func() {
 			Expect(upstreamCtx.Sni).To(Equal(given.expectedSNI))
 
 			sans := upstreamCtx.GetCommonTlsContext().GetCombinedValidationContext().GetDefaultValidationContext().GetMatchTypedSubjectAltNames()
-			Expect(sans).To(HaveLen(1))
-			Expect(sans[0].GetMatcher().GetExact()).To(Equal(given.expectedSAN))
+			var exacts []string
+			for _, san := range sans {
+				exacts = append(exacts, san.GetMatcher().GetExact())
+			}
+			Expect(exacts).To(Equal(given.expectedSANs))
 		},
 		Entry("local destination not TLS ready", testCase{
 			tlsStatus:  meshservice_api.TLSNotReady,
 			zoneOrigin: true,
 		}),
 		Entry("local destination TLS ready", testCase{
-			tlsStatus:   meshservice_api.TLSReady,
-			zoneOrigin:  true,
-			expectMTLS:  true,
-			expectedSNI: "sni.msvc.default.zone-1.backend.http",
-			expectedSAN: "spiffe://default/backend",
+			tlsStatus:    meshservice_api.TLSReady,
+			zoneOrigin:   true,
+			expectMTLS:   true,
+			expectedSNI:  "sni.msvc.default.zone-1.backend.http",
+			expectedSANs: []string{"spiffe://default.zone-1.mesh.local/workload/backend"},
 		}),
 		Entry("synced destination is always reachable over TLS", testCase{
-			tlsStatus:   meshservice_api.TLSNotReady,
-			expectMTLS:  true,
-			expectedSNI: "sni.msvc.default.zone-1.backend.http",
-			expectedSAN: "spiffe://default/backend",
+			tlsStatus:    meshservice_api.TLSNotReady,
+			expectMTLS:   true,
+			expectedSNI:  "sni.msvc.default.zone-1.backend.http",
+			expectedSANs: []string{"spiffe://default.zone-1.mesh.local/workload/backend"},
 		}),
 		Entry("proxy without a workload identity cannot originate mTLS", testCase{
 			tlsStatus:  meshservice_api.TLSReady,
 			zoneOrigin: true,
 			noIdentity: true,
+		}),
+		Entry("destination on a service tag identity is accepted too", testCase{
+			tlsStatus:   meshservice_api.TLSReady,
+			zoneOrigin:  true,
+			serviceTag:  true,
+			expectMTLS:  true,
+			expectedSNI: "sni.msvc.default.zone-1.backend.http",
+			expectedSANs: []string{
+				"spiffe://default.zone-1.mesh.local/workload/backend",
+				"spiffe://default/backend",
+			},
 		}),
 	)
 })
