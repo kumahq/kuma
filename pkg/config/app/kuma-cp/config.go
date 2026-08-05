@@ -119,7 +119,7 @@ type ControlPlaneMetrics struct {
 }
 
 func (d *MeshMetrics) Validate() error {
-	if d.MinResyncInterval.Duration <= d.FullResyncInterval.Duration {
+	if d.FullResyncInterval.Duration <= d.MinResyncInterval.Duration {
 		return errors.New("FullResyncInterval should be greater than MinResyncInterval")
 	}
 	return nil
