@@ -24,7 +24,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.extraLabels | object | `{}` | Labels to add to resources in addition to default labels |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
 | controlPlane.logOutputPath | string | `""` | Kuma CP log output path: Defaults to /dev/stdout |
-| controlPlane.mode | string | `"zone"` | Kuma CP modes: one of zone,standalone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart |
+| controlPlane.mode | string | `"zone"` | Kuma CP modes: zone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |
@@ -45,7 +45,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Control Plane pods. This is rendered as a template, so you can use variables to generate match labels. |
 | controlPlane.priorityClassName | string | `""` | Priority Class Name of the Kuma Control Plane |
 | controlPlane.injectorFailurePolicy | string | `"Fail"` | Failure policy of the mutating webhook implemented by the Kuma Injector component |
-| controlPlane.madsServer.enabled | bool | `true` | Whether the Monitoring Assignment Discovery Service (MADS) server is enabled |
+| controlPlane.madsServer.enabled | bool | `true` | Whether the Monitoring Assignment Discovery Service (MADS) server is enabled. Only applies when controlPlane.environment is "universal" |
 | controlPlane.service.apiServer.http.nodePort | int | `30681` | Port on which Http api server Service is exposed on Node for service of type NodePort |
 | controlPlane.service.apiServer.https.nodePort | int | `30682` | Port on which Https api server Service is exposed on Node for service of type NodePort |
 | controlPlane.service.enabled | bool | `true` | Whether to create a service resource. |

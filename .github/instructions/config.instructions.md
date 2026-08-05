@@ -212,15 +212,13 @@ const (
 
 // Mode
 const (
-    Standalone CpMode = "standalone"  // Single-zone
-    Global     CpMode = "global"      // Multi-zone coordinator
-    Zone       CpMode = "zone"        // Multi-zone member
+    Global CpMode = "global"      // Multi-zone coordinator
+    Zone   CpMode = "zone"        // Multi-zone member
 )
 
 switch cfg.Mode {
 case core.Zone:      // Requires XdsServer, GlobalAddress
 case core.Global:    // Requires KDS server
-case core.Standalone:// No multizone deps
 }
 ```
 

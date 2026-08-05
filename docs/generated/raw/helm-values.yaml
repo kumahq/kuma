@@ -44,7 +44,7 @@ controlPlane:
   # -- Kuma CP log output path: Defaults to /dev/stdout
   logOutputPath: ""
 
-  # -- Kuma CP modes: one of zone,standalone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart
+  # -- Kuma CP modes: zone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart
   mode: "zone"
 
   # -- (string) Kuma CP zone, if running multizone
@@ -138,7 +138,7 @@ controlPlane:
   injectorFailurePolicy: Fail
 
   madsServer:
-    # -- Whether the Monitoring Assignment Discovery Service (MADS) server is enabled
+    # -- Whether the Monitoring Assignment Discovery Service (MADS) server is enabled. Only applies when controlPlane.environment is "universal"
     enabled: true
 
   service:

@@ -311,8 +311,8 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh
 			"stats":       ".txt",
 			"clusters":    ".txt",
 		} {
-			// zoneingress and zoneegress do not have policies nor config
-			if dpType != dataplaneType && slices.Contains([]string{"policies", "config"}, inspectType) {
+			// zoneingress and zoneegress have no `kumactl inspect` command, only `kumactl get`
+			if dpType != dataplaneType && inspectType != "get" {
 				continue
 			}
 

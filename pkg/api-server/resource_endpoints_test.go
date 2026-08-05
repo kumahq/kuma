@@ -329,7 +329,6 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.ZoneTag:             "default",
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
-			mesh_proto.ProxyTypeLabel:      string(mesh_proto.SidecarLabel),
 			mesh_proto.DisplayName:         "dpp-1",
 		}))
 	})

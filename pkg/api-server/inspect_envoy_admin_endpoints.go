@@ -8,15 +8,12 @@ import (
 	"github.com/emicklei/go-restful/v3"
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
-	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/envoy/admin"
 	"github.com/kumahq/kuma/v3/pkg/envoy/admin/access"
 )
@@ -33,7 +30,6 @@ type inspectClient struct {
 
 func addInspectEnvoyAdminEndpoints(
 	ws *restful.WebService,
-	cfg *kuma_cp.Config,
 	rm manager.ResourceManager,
 	adminAccess access.EnvoyAdminAccess,
 	envoyAdminClient admin.EnvoyAdminClient,
@@ -49,22 +45,6 @@ func addInspectEnvoyAdminEndpoints(
 			Doc("inspect dataplane configuration and stats").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
-			Param(ws.PathParameter("type", "type of configuration to inspect").DataType("string")),
-	)
-	ws.Route(
-		ws.GET("/zoneingresses/{zoneingress}/{type}").
-			To(cl.inspectZoneIngressAdmin(cfg.Mode, cfg.Multizone.Zone.Name)).
-			Doc("inspect zone ingresses XDS configuration").
-			Produces("application/json").
-			Param(ws.PathParameter("zoneingress", "zoneingress name").DataType("string")).
-			Param(ws.PathParameter("type", "type of configuration to inspect").DataType("string")),
-	)
-	ws.Route(
-		ws.GET("/zoneegresses/{zoneegress}/{type}").
-			To(cl.inspectZoneEgressAdmin(cfg.Mode, cfg.Multizone.Zone.Name)).
-			Doc("inspect zone egresses XDS configuration").
-			Produces("application/json").
-			Param(ws.PathParameter("zoneegress", "zoneegress name").DataType("string")).
 			Param(ws.PathParameter("type", "type of configuration to inspect").DataType("string")),
 	)
 }
@@ -94,55 +74,6 @@ func (cl *inspectClient) inspectDataplaneAdmin() restful.RouteFunction {
 			return
 		}
 		cl.inspectProxy(request, response, aType, dp)
-	}
-}
-
-func (cl *inspectClient) inspectZoneIngressAdmin(mode core.CpMode, localZone string) restful.RouteFunction {
-	return func(request *restful.Request, response *restful.Response) {
-		ctx := request.Request.Context()
-		zoneIngressName := request.PathParameter("zoneingress")
-
-		aType, err := cl.adminType(ctx, request.PathParameter("type"))
-		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
-			return
-		}
-
-		zi := core_mesh.NewZoneIngressResource()
-		if err := cl.rm.Get(ctx, zi, store.GetByKey(zoneIngressName, core_model.NoMesh)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get zone ingress resource")
-			return
-		}
-
-		if mode == core.Zone && zi.IsRemoteIngress(localZone) {
-			rest_errors.HandleError(request.Request.Context(), response, &validators.ValidationError{}, "Could not connect to zone ingress that resides in another zone")
-			return
-		}
-		cl.inspectProxy(request, response, aType, zi)
-	}
-}
-
-func (cl *inspectClient) inspectZoneEgressAdmin(mode core.CpMode, localZone string) restful.RouteFunction {
-	return func(request *restful.Request, response *restful.Response) {
-		ctx := request.Request.Context()
-		zoneEgressName := request.PathParameter("zoneegress")
-		aType, err := cl.adminType(ctx, request.PathParameter("type"))
-		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
-			return
-		}
-
-		ze := core_mesh.NewZoneEgressResource()
-		if err := cl.rm.Get(ctx, ze, store.GetByKey(zoneEgressName, core_model.NoMesh)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get zone ingress resource")
-			return
-		}
-
-		if mode == core.Zone && ze.IsRemoteEgress(localZone) {
-			rest_errors.HandleError(request.Request.Context(), response, &validators.ValidationError{}, "Could not connect to zone ingress that resides in another zone")
-			return
-		}
-		cl.inspectProxy(request, response, aType, ze)
 	}
 }
 
