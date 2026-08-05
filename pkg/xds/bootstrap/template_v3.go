@@ -129,14 +129,6 @@ func genConfig(parameters configParameters, enableReloadableTokens bool, meshRes
 					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^grpc.*streams_closed(_([0-9]+))"},
 				},
 				{
-					TagName:  "kafka_name",
-					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^kafka(\\.(\\S*[0-9]))\\."},
-				},
-				{
-					TagName:  "kafka_type",
-					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^kafka\\..*\\.(.*?(?=_duration|$))"},
-				},
-				{
 					TagName:  "worker",
 					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "(worker_([0-9]+)\\.)"},
 				},

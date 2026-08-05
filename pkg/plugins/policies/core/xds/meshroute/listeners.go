@@ -30,7 +30,6 @@ func MakeTCPSplit(
 	return makeSplits(
 		map[core_meta.Protocol]struct{}{
 			core_meta.ProtocolUnknown: {},
-			core_meta.ProtocolKafka:   {},
 			core_meta.ProtocolTCP:     {},
 			core_meta.ProtocolHTTP:    {},
 			core_meta.ProtocolHTTP2:   {},

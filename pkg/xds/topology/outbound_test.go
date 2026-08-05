@@ -424,6 +424,52 @@ var _ = Describe("TrafficRoute", func() {
 			}))
 		})
 
+		It("should not publish a legacy endpoint for a tag-free inbound", func() {
+			// given - a valid dataplane mixing a tag-free inbound with a tagged one
+			dp := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh:   "default",
+					Name:   "backend-1",
+					Labels: map[string]string{"app": "backend"},
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "192.168.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Port:        8080,
+								ServicePort: 18080,
+							},
+							{
+								Tags:        map[string]string{mesh_proto.ServiceTag: "backend"},
+								Port:        9090,
+								ServicePort: 19090,
+							},
+						},
+					},
+				},
+			}
+			dataplanes := []*core_mesh.DataplaneResource{dp}
+
+			// when
+			targets := BuildEdsEndpointMap(context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes, nil, nil, nil, dataSourceLoader, defaultMeshWithMTLS.MTLSEnabled(), nil)
+
+			// then - only the inbound carrying kuma.io/service is published
+			Expect(targets).NotTo(HaveKey(""))
+			Expect(targets).To(HaveLen(1))
+			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
+				{
+					Target: "192.168.0.1",
+					Port:   9090,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "backend",
+						"app":                 "backend",
+					},
+					Weight: 1,
+				},
+			}))
+		})
+
 		It("should fold the full set of kuma.io labels into endpoint tags", func() {
 			// given - the labels a real Dataplane carries, not a synthetic subset
 			dp := &core_mesh.DataplaneResource{

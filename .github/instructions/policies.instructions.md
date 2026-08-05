@@ -116,7 +116,7 @@ pkg/plugins/policies/<policy-name>/
 switch protocol {
 case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
     // HTTP-specific: listeners_v3.UpdateHTTPConnectionManager()
-case core_meta.ProtocolUnknown, core_meta.ProtocolTCP, core_meta.ProtocolKafka:
+case core_meta.ProtocolUnknown, core_meta.ProtocolTCP:
     // TCP-specific: listeners_v3.UpdateTCPProxy()
 }
 ```
