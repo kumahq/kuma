@@ -1353,6 +1353,16 @@ Use `Metrics.Mesh.MinResyncInterval` (`KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL`) a
 `MinResyncTimeout`/`MaxResyncTimeout` in YAML config and their environment variables are
 now silently ignored, since the config loader does not reject unknown fields.
 
+### Inbound `tags` removed from `Dataplane`
+
+The `networking.inbound[].tags` field has been removed from the `Dataplane` resource. Tags for an inbound must now be set through the `Dataplane`'s own `metadata.labels` (Kubernetes) or top-level `networking.inbound[].labels`-equivalent `labels` (Universal), not per-inbound. This only affects Universal: on Kubernetes the field was already ignored in favor of pod labels.
+
+**Action required**
+
+Move any per-inbound tags declared in hand-authored Universal `Dataplane` resources to `Dataplane` labels before upgrading.
+
+**Warning**: `networking.inbound[].tags` is silently dropped on deserialization, not rejected — the field is `reserved` in the proto and protos are unmarshalled with `AllowUnknownFields`, so it is simply ignored. Dataplanes still submitting it will upgrade without error, but any policy matching on those inbound tags stops matching, with nothing in the API to signal it.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.

@@ -349,8 +349,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                   - port: 8080
                     address: 192.168.0.2
-                    tags:
-                      kuma.io/service: backend
 `,
 				expected: "192.168.0.1",
 			}),
@@ -359,11 +357,7 @@ var _ = Describe("Dataplane", func() {
                 networking:
                   inbound:
                   - interface: x.y.z.0
-                    tags:
-                      kuma.io/service: backend-https
                   - interface: 192.168.0.1:80:8080
-                    tags:
-                      kuma.io/service: backend
 `,
 				expected: "",
 			}),
@@ -405,8 +399,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                   - port: 8080
                     address: 192.168.0.2
-                    tags:
-                      kuma.io/service: backend
 `,
 				expected: false,
 			}),
@@ -417,8 +409,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                   - port: 8080
                     address: 192.168.0.2
-                    tags:
-                      kuma.io/service: backend
 `,
 				expected: true,
 			}),
@@ -427,11 +417,7 @@ var _ = Describe("Dataplane", func() {
                 networking:
                   inbound:
                   - interface: x.y.z.0
-                    tags:
-                      kuma.io/service: backend-https
                   - interface: 192.168.0.1:80:8080
-                    tags:
-                      kuma.io/service: backend
 `,
 				expected: false,
 			}),

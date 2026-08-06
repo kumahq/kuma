@@ -80,7 +80,6 @@ func New(
 		Help: "Number of Dataplane label/tag keys dropped during MeshService generation.",
 	}, []string{"reason"})
 	droppedLabels.WithLabelValues("invalid")
-	droppedLabels.WithLabelValues("inbound_conflict")
 	if err := metrics.Register(droppedLabels); err != nil {
 		return nil, err
 	}
@@ -155,7 +154,7 @@ func (g *Generator) workloadMeshServiceForDataplane(dataplane *core_mesh.Datapla
 
 	contributions := map[string]map[string]string{}
 	if g.labelPropagationEnabled {
-		contributions[workloadName] = dpContribution(dataplane, inbounds, g.allowSet, g.droppedLabels, g.logger, workloadName)
+		contributions[workloadName] = dpContribution(dataplane, g.allowSet, g.droppedLabels, g.logger, workloadName)
 	}
 
 	return meshServicesResult{
