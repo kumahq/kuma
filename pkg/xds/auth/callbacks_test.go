@@ -26,33 +26,20 @@ import (
 )
 
 type testAuthenticator struct {
-	callCounter     int
-	zoneCallCounter int
+	callCounter int
 }
 
 var _ auth.Authenticator = &testAuthenticator{}
 
 func (t *testAuthenticator) Authenticate(_ context.Context, resource core_model.Resource, credential auth.Credential) error {
-	switch resource := resource.(type) {
-	case *core_mesh.DataplaneResource:
-		t.callCounter++
-		if credential == "pass" {
-			return nil
-		}
-	case *core_mesh.ZoneIngressResource:
-		t.zoneCallCounter++
-		if credential == "zone pass" {
-			return nil
-		}
-	case *core_mesh.ZoneEgressResource:
-		t.zoneCallCounter++
-		if credential == "zone pass" {
-			return nil
-		}
-	default:
+	if _, ok := resource.(*core_mesh.DataplaneResource); !ok {
 		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 
+	t.callCounter++
+	if credential == "pass" {
+		return nil
+	}
 	return errors.New("invalid credential")
 }
 
@@ -80,32 +67,6 @@ var _ = Describe("Auth Callbacks", func() {
 		},
 	}
 
-	zoneIngress := &core_mesh.ZoneIngressResource{
-		Meta: &test_model.ResourceMeta{
-			Name: "ingress",
-			Mesh: core_model.NoMesh,
-		},
-		Spec: &mesh_proto.ZoneIngress{
-			Networking: &mesh_proto.ZoneIngress_Networking{
-				Address: "1.1.1.1",
-				Port:    10001,
-			},
-		},
-	}
-
-	zoneEgress := &core_mesh.ZoneEgressResource{
-		Meta: &test_model.ResourceMeta{
-			Name: "egress",
-			Mesh: core_model.NoMesh,
-		},
-		Spec: &mesh_proto.ZoneEgress{
-			Networking: &mesh_proto.ZoneEgress_Networking{
-				Address: "1.1.1.1",
-				Port:    10002,
-			},
-		},
-	}
-
 	BeforeEach(func() {
 		memStore := memory.NewStore()
 		resManager = core_manager.NewResourceManager(memStore)
@@ -115,10 +76,6 @@ var _ = Describe("Auth Callbacks", func() {
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 		err = resManager.Create(context.Background(), dpRes, core_store.CreateByKey("web-01", "default"))
-		Expect(err).ToNot(HaveOccurred())
-		err = resManager.Create(context.Background(), zoneIngress, core_store.CreateBy(core_model.MetaToResourceKey(zoneIngress.GetMeta())))
-		Expect(err).ToNot(HaveOccurred())
-		err = resManager.Create(context.Background(), zoneEgress, core_store.CreateBy(core_model.MetaToResourceKey(zoneEgress.GetMeta())))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -287,67 +244,38 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).To(MatchError("authentication failed: invalid credential"))
 	})
 
-	It("should authenticate ingress", func() {
-		// given
-		ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "zone pass"}))
-		streamID := int64(1)
+	DescribeTable("should reject proxy types other than dataplane",
+		func(proxyType string) {
+			// given
+			ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "pass"}))
+			streamID := int64(1)
 
-		// when
-		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
+			// when
+			err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
+			// then
+			Expect(err).ToNot(HaveOccurred())
 
-		// when
-		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
-			Node: &envoy_core.Node{
-				Id: ".ingress",
-				Metadata: &structpb.Struct{
-					Fields: map[string]*structpb.Value{
-						"dataplane.proxyType": {
-							Kind: &structpb.Value_StringValue{
-								StringValue: "ingress",
+			// when
+			err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
+				Node: &envoy_core.Node{
+					Id: "default.web-01",
+					Metadata: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							"dataplane.proxyType": {
+								Kind: &structpb.Value_StringValue{
+									StringValue: proxyType,
+								},
 							},
 						},
 					},
 				},
-			},
-		})
+			})
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(testAuth.zoneCallCounter).To(Equal(1))
-	})
-
-	It("should authenticate egress", func() {
-		// given
-		ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "zone pass"}))
-		streamID := int64(1)
-
-		// when
-		err := callbacks.OnDeltaStreamOpen(ctx, streamID, "")
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		err = callbacks.OnStreamDeltaRequest(streamID, &envoy_sd.DeltaDiscoveryRequest{
-			Node: &envoy_core.Node{
-				Id: ".egress",
-				Metadata: &structpb.Struct{
-					Fields: map[string]*structpb.Value{
-						"dataplane.proxyType": {
-							Kind: &structpb.Value_StringValue{
-								StringValue: "egress",
-							},
-						},
-					},
-				},
-			},
-		})
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(testAuth.zoneCallCounter).To(Equal(1))
-	})
+			// then
+			Expect(err).To(MatchError(ContainSubstring("unsupported proxy type %q", proxyType)))
+		},
+		Entry("ingress", "ingress"),
+		Entry("egress", "egress"),
+	)
 })
