@@ -3,7 +3,14 @@ on:
   workflow_dispatch: {}
   schedule:
     - cron: 0 3 * * *
+<<<<<<< HEAD
 permissions: read-all
+=======
+permissions:
+  contents: read
+env:
+  MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
+>>>>>>> 3cb2a45d78 (ci(actions): drop read-all from dep update job (#17885))
 jobs:
   active-branches:
     uses: ./.github/workflows/_get-active-branches.yaml
