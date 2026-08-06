@@ -1355,6 +1355,19 @@ Use `kuma.bootstrapServer.params.adminPort` /
 the removed field or environment variable will have it silently ignored, since
 the config loader does not reject unknown fields.
 
+### `Metrics.Mesh.MinResyncTimeout` / `MaxResyncTimeout` removed
+
+The deprecated `Metrics.Mesh.MinResyncTimeout` (`KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT`) and
+`Metrics.Mesh.MaxResyncTimeout` (`KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT`) config fields have
+been removed.
+
+**Action required**
+
+Use `Metrics.Mesh.MinResyncInterval` (`KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL`) and
+`Metrics.Mesh.FullResyncInterval` (`KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL`) instead.
+`MinResyncTimeout`/`MaxResyncTimeout` in YAML config and their environment variables are
+now silently ignored, since the config loader does not reject unknown fields.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.
@@ -2265,10 +2278,10 @@ If you're using Kubernetes mode, and you did not specify `default.passthroughMod
 
 ### MeshLoadBalancingStrategy
 
-#### Deprecation of `hashPolicies.type: SourceIP` and `maglev.type: SourceIP`
+#### Removal of `hashPolicies.type: SourceIP`
 
-The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
-is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
+The `SourceIP` hash policy type has been removed. If you are using `type: SourceIP` in your `MeshLoadBalancingStrategy` policy, update it to use
+`type: Connection` with `connection.sourceIP: true` instead.
 
 ### Built-in MeshGateway policy targeting
 

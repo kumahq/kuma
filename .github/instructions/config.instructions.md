@@ -243,7 +243,7 @@ type Deprecation struct {
 }
 
 deprecations := []Deprecation{
-    {Env: "KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT", EnvMsg: "Use KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL"},
+    {Env: "KUMA_OLD_ENV_VAR", EnvMsg: "Use KUMA_NEW_ENV_VAR instead"},
 }
 config.PrintDeprecations(deprecations, cfg, stdout)
 ```
