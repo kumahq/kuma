@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	datasource_api "github.com/kumahq/kuma/v3/api/common/v1alpha1/datasource"
 	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
@@ -262,14 +262,17 @@ var _ = Describe("TrafficRoute", func() {
 											Value: "test.com",
 										},
 									},
-									CaCert: &common_api.DataSource{
-										InlineString: pointer.To("ca"),
+									CaCert: &datasource_api.SecureDataSource{
+										Type:           datasource_api.SecureDataSourceInline,
+										InsecureInline: &datasource_api.Inline{Value: "ca"},
 									},
-									ClientCert: &common_api.DataSource{
-										InlineString: pointer.To("cert"),
+									ClientCert: &datasource_api.SecureDataSource{
+										Type:           datasource_api.SecureDataSourceInline,
+										InsecureInline: &datasource_api.Inline{Value: "cert"},
 									},
-									ClientKey: &common_api.DataSource{
-										InlineString: pointer.To("key"),
+									ClientKey: &datasource_api.SecureDataSource{
+										Type:           datasource_api.SecureDataSourceInline,
+										InsecureInline: &datasource_api.Inline{Value: "key"},
 									},
 								},
 							},
@@ -431,14 +434,17 @@ var _ = Describe("TrafficRoute", func() {
 											Value: "test.com",
 										},
 									},
-									CaCert: &common_api.DataSource{
-										InlineString: pointer.To("ca"),
+									CaCert: &datasource_api.SecureDataSource{
+										Type:           datasource_api.SecureDataSourceInline,
+										InsecureInline: &datasource_api.Inline{Value: "ca"},
 									},
-									ClientCert: &common_api.DataSource{
-										InlineString: pointer.To("cert"),
+									ClientCert: &datasource_api.SecureDataSource{
+										Type:           datasource_api.SecureDataSourceInline,
+										InsecureInline: &datasource_api.Inline{Value: "cert"},
 									},
-									ClientKey: &common_api.DataSource{
-										InlineString: pointer.To("key"),
+									ClientKey: &datasource_api.SecureDataSource{
+										Type:           datasource_api.SecureDataSourceInline,
+										InsecureInline: &datasource_api.Inline{Value: "key"},
 									},
 								},
 							},

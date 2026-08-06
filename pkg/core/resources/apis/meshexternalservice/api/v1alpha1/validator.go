@@ -7,6 +7,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
+	datasource_api "github.com/kumahq/kuma/v3/api/common/v1alpha1/datasource"
 	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -74,8 +75,26 @@ func validateTls(tls *Tls) validators.ValidationError {
 		if tls.Verification.ClientCert == nil && tls.Verification.ClientKey != nil {
 			verr.AddViolation(path.Field("clientCert").String(), validators.MustBeDefined+" when clientKey is defined")
 		}
+
+		verr.Add(validateSecureDataSource(path.Field("caCert"), tls.Verification.CaCert))
+		verr.Add(validateSecureDataSource(path.Field("clientCert"), tls.Verification.ClientCert))
+		verr.Add(validateSecureDataSource(path.Field("clientKey"), tls.Verification.ClientKey))
 	}
 
+	return verr
+}
+
+func validateSecureDataSource(path validators.PathBuilder, sds *datasource_api.SecureDataSource) validators.ValidationError {
+	var verr validators.ValidationError
+	if sds == nil {
+		return verr
+	}
+	switch sds.Type {
+	case datasource_api.SecureDataSourceFile, datasource_api.SecureDataSourceEnvVar:
+		verr.AddViolationAt(path.Field("type"), validators.MustBeOneOf(string(sds.Type), string(datasource_api.SecureDataSourceSecretRef), string(datasource_api.SecureDataSourceInline)))
+	default:
+		verr.Add(sds.ValidateSecureDataSource(path))
+	}
 	return verr
 }
 
