@@ -103,7 +103,7 @@ jobs:
   check:
     needs: ["release_sha_gate"]
     permissions:
-      contents: read
+      contents: write # needed to upload SBOM assets to GitHub releases
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
     timeout-minutes: 25
     runs-on: ${{ vars.RUNS_ON_RELEASE_2_9_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
@@ -177,7 +177,7 @@ jobs:
     secrets: inherit
   build_publish:
     permissions:
-      contents: read
+      contents: write # needed to upload SBOM assets to GitHub releases
       id-token: write # Required for image signing
     needs: ["check", "test"]
     uses: ./.github/workflows/_build_publish.yaml
