@@ -275,7 +275,6 @@ var DefaultConfig = func() Config {
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
-			IngressTagFilters: []string{},
 			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
 				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
 				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
@@ -473,11 +472,6 @@ func DefaultDefaultsConfig() *Defaults {
 type ExperimentalConfig struct {
 	config.BaseConfig
 
-	// List of prefixes that will be used to filter out tags by keys from ingress' available services section.
-	// This can trim the size of the ZoneIngress object significantly.
-	// The drawback is that you cannot use filtered out tags for traffic routing.
-	// If empty, no filter is applied.
-	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
 	// KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
 	KDSEventBasedWatchdog ExperimentalKDSEventBasedWatchdog `json:"kdsEventBasedWatchdog"`
 }

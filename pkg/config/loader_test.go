@@ -371,7 +371,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Users).To(Equal([]string{"cp-admin1", "cp-admin2"}))
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Groups).To(Equal([]string{"cp-group1", "cp-group2"}))
 
-			Expect(cfg.Experimental.IngressTagFilters).To(ContainElements("kuma.io/service"))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
@@ -780,7 +779,6 @@ access:
       groups: ["cp-group1", "cp-group2"]
 experimental:
   cniApp: "kuma-cni"
-  ingressTagFilters: ["kuma.io/service"]
   kdsEventBasedWatchdog:
     flushInterval: 10s
     fullResyncInterval: 15s
@@ -1105,7 +1103,6 @@ meshService:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_USERS":                                          "cp-admin1,cp-admin2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS":                                         "cp-group1,cp-group2",
-				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",

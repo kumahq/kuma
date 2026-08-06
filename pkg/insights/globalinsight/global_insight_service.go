@@ -56,14 +56,9 @@ func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*
 		return nil, err
 	}
 
-	if err := gis.aggregateZoneIngresses(ctx, globalInsights); err != nil {
-		return nil, err
-	}
-
-	if err := gis.aggregateZoneEgresses(ctx, globalInsights); err != nil {
-		return nil, err
-	}
-
+	// zones.zoneIngresses and zones.zoneEgresses stay at zero: they were fed by
+	// ZoneIngressInsight/ZoneEgressInsight, and zone proxies are now Dataplanes
+	// with listeners, which MeshInsight does not break out yet.
 	return globalInsights, nil
 }
 
@@ -153,8 +148,6 @@ func globalResourceDescriptors() []core_model.ResourceTypeDescriptor {
 		core_model.Not(core_model.Named(
 			mesh.MeshType,
 			system.ZoneType,
-			mesh.ZoneIngressType,
-			mesh.ZoneEgressType,
 			system.ConfigType,
 		)),
 	)
@@ -222,44 +215,6 @@ func (gis *defaultGlobalInsightService) aggregateZoneControlPlanes(
 		globalInsight.Zones.ControlPlanes.Total += 1
 		if zoneInsight.GetSpec().(*system_proto.ZoneInsight).IsOnline() {
 			globalInsight.Zones.ControlPlanes.Online += 1
-		}
-	}
-
-	return nil
-}
-
-func (gis *defaultGlobalInsightService) aggregateZoneIngresses(
-	ctx context.Context,
-	globalInsight *api_types.GlobalInsightBase,
-) error {
-	zoneIngressInsights := &mesh.ZoneIngressInsightResourceList{}
-	if err := gis.resourceStore.List(ctx, zoneIngressInsights); err != nil {
-		return err
-	}
-
-	for _, zoneIngressInsight := range zoneIngressInsights.GetItems() {
-		globalInsight.Zones.ZoneIngresses.Total += 1
-		if zoneIngressInsight.GetSpec().(*mesh_proto.ZoneIngressInsight).IsOnline() {
-			globalInsight.Zones.ZoneIngresses.Online += 1
-		}
-	}
-
-	return nil
-}
-
-func (gis *defaultGlobalInsightService) aggregateZoneEgresses(
-	ctx context.Context,
-	globalInsight *api_types.GlobalInsightBase,
-) error {
-	zoneEgressInsights := &mesh.ZoneEgressInsightResourceList{}
-	if err := gis.resourceStore.List(ctx, zoneEgressInsights); err != nil {
-		return err
-	}
-
-	for _, zoneEgressInsight := range zoneEgressInsights.GetItems() {
-		globalInsight.Zones.ZoneEgresses.Total += 1
-		if zoneEgressInsight.GetSpec().(*mesh_proto.ZoneEgressInsight).IsOnline() {
-			globalInsight.Zones.ZoneEgresses.Online += 1
 		}
 	}
 

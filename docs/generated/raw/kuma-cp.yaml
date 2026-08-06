@@ -814,7 +814,6 @@ experimental:
   # This can trim the size of the ZoneIngress object significantly.
   # The drawback is that you cannot use filtered out tags for traffic routing.
   # If empty, no filter is applied.
-  ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
   # KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
   kdsEventBasedWatchdog:
     # How often we flush changes when experimental event based watchdog is used.

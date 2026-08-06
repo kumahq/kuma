@@ -8,6 +8,32 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `ZoneIngress` and `ZoneEgress` resources removed
+
+The standalone `ZoneIngress`, `ZoneEgress`, `ZoneIngressInsight` and `ZoneEgressInsight` resources are gone, together with their CRDs (`zoneingresses.kuma.io`, `zoneegresses.kuma.io`, `zoneingressinsights.kuma.io`, `zoneegressinsights.kuma.io`), their REST endpoints, their `kumactl get`/`kumactl inspect` subcommands and their KDS sync. A zone proxy is an ordinary `Dataplane` carrying zone proxy listeners, and its health is reported through `DataplaneInsight`.
+
+The control plane ClusterRole no longer grants access to these four CRDs, and the validating webhook no longer intercepts them.
+
+`globalInsight.zones.zoneIngresses` and `globalInsight.zones.zoneEgresses` are still present in the API response but report `0` until zone proxy counts are surfaced from `MeshInsight`.
+
+**Action required**
+
+Delete any remaining `ZoneIngress`/`ZoneEgress` resources before upgrading. On Kubernetes, delete the four CRDs after upgrading — Helm does not remove CRDs on upgrade, so the stale objects would otherwise stay in etcd:
+
+```sh
+kubectl delete crd zoneingresses.kuma.io zoneegresses.kuma.io zoneingressinsights.kuma.io zoneegressinsights.kuma.io
+```
+
+On Universal, `kumactl delete zone-ingress <name>` and `kumactl delete zone-egress <name>` are no longer available; remove the rows from the resource store directly if any are left.
+
+### `experimental.ingressTagFilters` removed
+
+The `experimental.ingressTagFilters` configuration field and its `KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS` environment variable are removed. They filtered tags out of `ZoneIngress.availableServices`, which no longer exists. Config loading is non-strict, so a leftover value is silently ignored rather than rejected.
+
+**Action required**
+
+Remove `experimental.ingressTagFilters` from `kuma-cp.yaml` and `KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS` from control plane deployments and Helm values.
+
 ### `multizone.zone.ingressUpdateInterval` removed
 
 The `multizone.zone.ingressUpdateInterval` configuration field and its `KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL` environment variable are removed. Nothing has read them since the control plane stopped maintaining `ZoneIngress.availableServices`. Config loading is non-strict, so a leftover value is silently ignored rather than rejected.
