@@ -31,9 +31,6 @@ type DataplaneTemplateData struct {
 	// Service probe
 	ServiceProbe bool
 
-	// Outbound configuration
-	Outbounds []OutboundConfig
-
 	// Transparent proxy configuration
 	TransparentProxy *TransparentProxyConfig
 
@@ -43,12 +40,6 @@ type DataplaneTemplateData struct {
 
 	// Additional raw YAML to append
 	AppendConfig string
-}
-
-// OutboundConfig represents an outbound configuration
-type OutboundConfig struct {
-	Port    string
-	Service string
 }
 
 // TransparentProxyConfig represents transparent proxy configuration
@@ -107,14 +98,6 @@ networking:
       kuma.io/service: {{ .ServiceName }}
 {{- if .Protocol }}
       kuma.io/protocol: {{ .Protocol }}
-{{- end }}
-{{- if .Outbounds }}
-  outbound:
-{{- range .Outbounds }}
-  - port: {{ .Port }}
-    tags:
-      kuma.io/service: {{ .Service }}
-{{- end }}
 {{- end }}
 {{- if .TransparentProxy }}
   transparentProxying:

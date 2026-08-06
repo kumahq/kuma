@@ -9,12 +9,10 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
@@ -57,10 +55,6 @@ func (p plugin) Apply(
 		return err
 	}
 
-	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds); err != nil {
-		return err
-	}
-
 	if err := applyToRealResources(ctx.Mesh, rs, policies.ToRules.ResourceRules); err != nil {
 		return err
 	}
@@ -98,39 +92,6 @@ func applyToInbounds(
 		if err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func applyToOutbounds(
-	rules core_rules.ToRules,
-	outboundClusters map[string]*envoy_cluster.Cluster,
-	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
-	outbounds xds_types.Outbounds,
-) error {
-	targetedClusters := policies_xds.GatherTargetedClusters(
-		outbounds,
-		outboundSplitClusters,
-		outboundClusters,
-	)
-
-	for cluster, serviceName := range targetedClusters {
-		if err := configure(rules.Rules, subsetutils.KumaServiceTagElement(serviceName), cluster); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func configure(
-	rules core_rules.Rules,
-	element subsetutils.Element,
-	cluster *envoy_cluster.Cluster,
-) error {
-	if computed := rules.Compute(element); computed != nil {
-		return plugin_xds.NewConfigurer(computed.Conf.(api.Conf)).ConfigureCluster(cluster)
 	}
 
 	return nil

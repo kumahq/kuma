@@ -163,7 +163,7 @@ func inspectPolicies(
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return
 			}
-			for policy, attachments := range inspect.GroupByPolicy(&proxy.Policies, dp.Spec.Networking) {
+			for policy, attachments := range inspect.GroupByPolicy(&proxy.Policies) {
 				if policy.Type != resType || policy.Key.Name != policyName || policy.Key.Mesh != meshName {
 					continue
 				}
@@ -191,7 +191,7 @@ func inspectPolicies(
 }
 
 func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *core_mesh.DataplaneResource) []*api_server_types.DataplaneInspectEntry {
-	attachmentMap := inspect.GroupByAttachment(matchedPolicies, dp.Spec.Networking)
+	attachmentMap := inspect.GroupByAttachment(matchedPolicies)
 
 	entries := make([]*api_server_types.DataplaneInspectEntry, 0, len(attachmentMap))
 	attachments := []inspect.Attachment{}

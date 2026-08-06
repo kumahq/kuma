@@ -195,30 +195,20 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 		result.AddViolation("address", "address has to be valid IP address")
 	}
 
-	switch {
-	case outbound.BackendRef != nil:
-		if _, allowed := allowedKinds[outbound.BackendRef.Kind]; !allowed {
-			result.AddViolation("backendRef.kind", fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
-		}
-		if outbound.BackendRef.Name == "" && len(outbound.BackendRef.Labels) == 0 {
-			result.AddViolation("backendRef", "either 'name' or 'labels' should be specified")
-		}
-		// for MeshExternalService the port does not matter because it's taken from endpoints
-		if outbound.BackendRef.Kind != string(common_api.MeshExternalService) {
-			result.Add(ValidatePort(validators.RootedAt("backendRef").Field("port"), outbound.BackendRef.Port))
-		}
-	case len(outbound.Tags) == 0:
-		if outbound.GetService() == "" {
-			result.AddViolationAt(validators.RootedAt("tags"), `mandatory tag "kuma.io/service" is missing`)
-		}
-	default:
-		result.Add(ValidateTags(validators.RootedAt("tags"), outbound.Tags, ValidateTagsOpts{
-			RequireService: true,
-		}))
+	if outbound.BackendRef == nil {
+		result.AddViolation("backendRef", "must be defined")
+		return result
 	}
 
-	if outbound.BackendRef != nil && (len(outbound.Tags) != 0 || outbound.GetService() != "") {
-		result.AddViolationAt(validators.RootedAt("backendRef"), "both backendRef and tags/service cannot be defined")
+	if _, allowed := allowedKinds[outbound.BackendRef.Kind]; !allowed {
+		result.AddViolation("backendRef.kind", fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
+	}
+	if outbound.BackendRef.Name == "" && len(outbound.BackendRef.Labels) == 0 {
+		result.AddViolation("backendRef", "either 'name' or 'labels' should be specified")
+	}
+	// for MeshExternalService the port does not matter because it's taken from endpoints
+	if outbound.BackendRef.Kind != string(common_api.MeshExternalService) {
+		result.Add(ValidatePort(validators.RootedAt("backendRef").Field("port"), outbound.BackendRef.Port))
 	}
 
 	return result

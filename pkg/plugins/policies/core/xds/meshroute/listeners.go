@@ -81,9 +81,8 @@ func (ds *DestinationService) ConditionallyResolveKRIWithFallback(condition bool
 	return fallback
 }
 
-// OutboundListenerTags returns the outbound listener's io.kuma.tags: real tags
-// without kuma.io/mesh for a legacy outbound, or the destination KRI under
-// kuma.io/unified-name for a resource-based one.
+// OutboundListenerTags returns the outbound listener's io.kuma.tags: the
+// destination KRI under kuma.io/unified-name.
 func (ds *DestinationService) OutboundListenerTags() map[string]string {
 	if ds.Outbound == nil {
 		return nil
@@ -91,38 +90,23 @@ func (ds *DestinationService) OutboundListenerTags() map[string]string {
 	if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
 		return map[string]string{mesh_proto.UnifiedNameTag: id.String()}
 	}
-	return map[string]string(envoy_tags.Tags(ds.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))
+	return nil
 }
 
 func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
-	if r, ok := ds.Outbound.AssociatedServiceResource(); ok {
-		return resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
-			Resource: r,
-			Weight:   100,
-		})
-	} else {
-		return resolve.NewResolvedBackendRef(&resolve.LegacyBackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Labels: &map[string]string{
-					mesh_proto.DisplayName: ds.Outbound.LegacyOutbound.GetService(),
-				},
-				Tags: pointer.To(ds.Outbound.LegacyOutbound.GetTags()),
-			},
-			Weight: pointer.To(uint(100)),
-		})
-	}
+	return resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
+		Resource: ds.Outbound.Resource,
+		Weight:   100,
+	})
 }
 
 // CollectServices builds a slice of DestinationService from proxy.Outbounds
 //
-// It handles two types of outbounds:
-// - Legacy outbounds: resolved using service name and protocol from mesh context
-// - Real-resource outbounds: resolved by matching KRI identifier and port name
+// Every outbound is resolved by matching its KRI identifier and port name.
 //
 // Skips outbounds that are incomplete or invalid:
 // - nil entries
-// - real-resource outbounds with missing resource reference
+// - outbounds with missing resource reference
 // - no service found for the given KRI
 // - no port matching the SectionName
 //
@@ -132,19 +116,6 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 
 	for _, outbound := range proxy.Outbounds {
 		if outbound == nil {
-			continue
-		}
-
-		if lo := outbound.LegacyOutbound; lo != nil {
-			result = append(
-				result,
-				DestinationService{
-					Outbound:            outbound,
-					Protocol:            meshCtx.GetServiceProtocol(lo.GetService()),
-					KumaServiceTagValue: lo.GetService(),
-				},
-			)
-
 			continue
 		}
 

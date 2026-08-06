@@ -17,8 +17,10 @@ networking:
       service: web
       version: STRIPPED_VERSION
   outbound:
-  - port: 3000
-    tags:
-      kuma.io/service: postgres
+  - backendRef:
+      kind: MeshService
+      name: postgres
+      port: 5432
+    port: 3000
 type: Dataplane
 

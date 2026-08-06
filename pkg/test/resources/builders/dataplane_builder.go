@@ -168,10 +168,13 @@ func (d *DataplaneBuilder) AddOutbounds(outbounds []*OutboundBuilder) *Dataplane
 }
 
 func (d *DataplaneBuilder) AddOutboundToService(service string) *DataplaneBuilder {
+	port := FirstOutboundPort + uint32(len(d.res.Spec.Networking.Outbound))
 	d.res.Spec.Networking.Outbound = append(d.res.Spec.Networking.Outbound, &mesh_proto.Dataplane_Networking_Outbound{
-		Port: FirstOutboundPort + uint32(len(d.res.Spec.Networking.Outbound)),
-		Tags: map[string]string{
-			mesh_proto.ServiceTag: service,
+		Port: port,
+		BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+			Kind: "MeshService",
+			Name: service,
+			Port: port,
 		},
 	})
 	return d
@@ -301,9 +304,7 @@ type OutboundBuilder struct {
 
 func Outbound() *OutboundBuilder {
 	return &OutboundBuilder{
-		res: &mesh_proto.Dataplane_Networking_Outbound{
-			Tags: map[string]string{},
-		},
+		res: &mesh_proto.Dataplane_Networking_Outbound{},
 	}
 }
 
@@ -317,18 +318,7 @@ func (b *OutboundBuilder) WithPort(port uint32) *OutboundBuilder {
 	return b
 }
 
-func (b *OutboundBuilder) WithTags(tags map[string]string) *OutboundBuilder {
-	maps.Copy(b.res.Tags, tags)
-	return b
-}
-
-func (b *OutboundBuilder) WithService(name string) *OutboundBuilder {
-	b.WithTags(map[string]string{mesh_proto.ServiceTag: name})
-	return b
-}
-
 func (b *OutboundBuilder) WithMeshService(name string, port uint32) *OutboundBuilder {
-	b.res.Tags = nil
 	b.res.BackendRef = &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 		Kind: "MeshService",
 		Name: name,
@@ -338,7 +328,6 @@ func (b *OutboundBuilder) WithMeshService(name string, port uint32) *OutboundBui
 }
 
 func (b *OutboundBuilder) WithMeshExternalService(name string, port uint32) *OutboundBuilder {
-	b.res.Tags = nil
 	b.res.BackendRef = &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 		Kind: "MeshExternalService",
 		Name: name,
@@ -348,7 +337,6 @@ func (b *OutboundBuilder) WithMeshExternalService(name string, port uint32) *Out
 }
 
 func (b *OutboundBuilder) WithMeshMultiZoneService(name string, port uint32) *OutboundBuilder {
-	b.res.Tags = nil
 	b.res.BackendRef = &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 		Kind: "MeshMultiZoneService",
 		Name: name,

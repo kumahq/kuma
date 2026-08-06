@@ -101,9 +101,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(rs, policies.FromRules, listeners.Inbound, proxy, ctx); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.FromRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds, ctx); err != nil {
-		return err
-	}
 	if err := applyToGateways(policies.GatewayRules, clusters.Gateway, ctx); err != nil {
 		return err
 	}
@@ -167,38 +164,6 @@ func applyToInbounds(
 				Origin:   metadata.OriginTransparent,
 				Resource: resource,
 			})
-		}
-	}
-
-	return nil
-}
-
-func applyToOutbounds(
-	fromRules core_rules.FromRules,
-	outboundClusters map[string]*envoy_cluster.Cluster,
-	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
-	outbounds xds_types.Outbounds,
-	ctx xds_context.Context,
-) error {
-	targetedClusters := policies_xds.GatherTargetedClusters(
-		outbounds.Filter(xds_types.NonBackendRefFilter),
-		outboundSplitClusters,
-		outboundClusters,
-	)
-	for cluster, serviceName := range targetedClusters {
-		// we shouldn't modify ExternalService
-		// MeshExternalService has different origin
-		if ctx.Mesh.IsExternalService(serviceName) {
-			continue
-		}
-		// there is only one rule always because we're in `Mesh/Mesh`
-		var conf api.Conf
-		for _, r := range fromRules.InboundRules {
-			conf = rules_inbound.MatchesAllIncomingTraffic[api.Conf](r)
-			break
-		}
-		if err := configureTLSParams(conf, cluster); err != nil {
-			return err
 		}
 	}
 

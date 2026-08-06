@@ -45,9 +45,10 @@ var (
 			Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 				{
 					Port: 1213,
-					Tags: map[string]string{
-						mesh_proto.ServiceTag:  "web",
-						mesh_proto.ProtocolTag: "http",
+					BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+						Kind: "MeshService",
+						Name: "web",
+						Port: 1213,
 					},
 				},
 			},
@@ -65,9 +66,10 @@ var (
 			Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 				{
 					Port: 1213,
-					Tags: map[string]string{
-						mesh_proto.ServiceTag:  "web",
-						mesh_proto.ProtocolTag: "http",
+					BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+						Kind: "MeshService",
+						Name: "web",
+						Port: 1213,
 					},
 				},
 			},
