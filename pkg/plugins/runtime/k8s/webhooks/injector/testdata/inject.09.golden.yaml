@@ -6,8 +6,6 @@ metadata:
     kuma.io/application-probe-proxy-port: "9000"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/sidecar-injected: "true"
-    kuma.io/virtual-probes: disabled
-    kuma.io/virtual-probes-port: "9000"
     prometheus.metrics.kuma.io/path: /custom-metrics
     prometheus.metrics.kuma.io/port: "5678"
     traffic.kuma.io/transparent-proxy-config: |
