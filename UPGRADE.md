@@ -1355,7 +1355,7 @@ now silently ignored, since the config loader does not reject unknown fields.
 
 ### Inbound `tags` removed from `Dataplane`
 
-The `networking.inbound[].tags` field has been removed from the `Dataplane` resource. Tags for an inbound must now be set through the `Dataplane`'s own `metadata.labels` (Kubernetes) or top-level `networking.inbound[].labels`-equivalent `labels` (Universal), not per-inbound. This only affects Universal: on Kubernetes the field was already ignored in favor of pod labels.
+The `networking.inbound[].tags` field has been removed from the `Dataplane` resource. Tags for an inbound must now be set through the `Dataplane`'s own `metadata.labels` (Kubernetes) or the `Dataplane`'s top-level `labels:` field (Universal), not per-inbound. This only affects Universal: on Kubernetes the field was already ignored in favor of pod labels.
 
 **Action required**
 
