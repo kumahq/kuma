@@ -73,8 +73,6 @@ func (c configurer) kumaDPUser() string {
 }
 
 func (c configurer) redirectPort(kind trafficKind) tproxy_config.Port {
-	var annotation string
-
 	var valueDefault tproxy_config.Port
 	var valueCurrent tproxy_config.Port
 	var valueRuntime tproxy_config.Port
@@ -83,17 +81,14 @@ func (c configurer) redirectPort(kind trafficKind) tproxy_config.Port {
 
 	switch kind {
 	case trafficKindOutbound:
-		annotation = k8s_metadata.KumaTransparentProxyingOutboundPortAnnotation
 		valueDefault = tproxy_config.DefaultConfig().Redirect.Outbound.Port
 		valueCurrent = c.config.Redirect.Outbound.Port
 		valueRuntime = tproxy_config.Port(c.runtime.SidecarContainer.RedirectPortOutbound)
 	case trafficKindInbound:
-		annotation = k8s_metadata.KumaTransparentProxyingInboundPortAnnotation
 		valueDefault = tproxy_config.DefaultConfig().Redirect.Inbound.Port
 		valueCurrent = c.config.Redirect.Inbound.Port
 		valueRuntime = tproxy_config.Port(c.runtime.SidecarContainer.RedirectPortInbound)
 	case trafficKindDNS:
-		annotation = k8s_metadata.KumaBuiltinDNSPort
 		valueDefault = tproxy_config.DefaultConfig().Redirect.DNS.Port
 		valueCurrent = c.config.Redirect.DNS.Port
 		valueRuntime = tproxy_config.Port(c.runtime.BuiltinDNS.Port)
@@ -112,12 +107,6 @@ func (c configurer) redirectPort(kind trafficKind) tproxy_config.Port {
 
 	if valueCurrent != valueRuntime && valueCurrent != valueDefault {
 		l.Info(warningTProxyConfigMismatch)
-	}
-
-	if v, exists, err := c.annotations.GetUint32(annotation); err != nil {
-		l.Info(warningInvalidAnnotationAndValueMismatch, annotation, err)
-	} else if exists && tproxy_config.Port(v) != valueRuntime {
-		l.Info(warningAnnotationValueMismatch, annotation, v)
 	}
 
 	return valueRuntime
@@ -306,8 +295,6 @@ func (c configurer) ipFamilyMode() (tproxy_config.IPFamilyMode, error) {
 }
 
 func (c configurer) redirectDNSEnabled() bool {
-	annotation := k8s_metadata.KumaBuiltinDNS
-
 	valueCurrent := c.config.Redirect.DNS.Enabled
 	valueDefault := tproxy_config.DefaultConfig().Redirect.DNS.Enabled
 	valueRuntime := c.runtime.BuiltinDNS.Enabled
@@ -323,12 +310,6 @@ func (c configurer) redirectDNSEnabled() bool {
 
 	if valueCurrent != valueRuntime && valueCurrent != valueDefault {
 		l.Info(warningTProxyConfigMismatch)
-	}
-
-	if v, exists, err := c.annotations.GetEnabled(annotation); err != nil {
-		l.Info(warningInvalidAnnotationAndValueMismatch, annotation, err)
-	} else if exists && v != valueRuntime {
-		l.Info(warningAnnotationValueMismatch, annotation, v)
 	}
 
 	return valueCurrent

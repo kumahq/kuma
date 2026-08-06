@@ -11,12 +11,24 @@ import (
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	rest_unversioned "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/unversioned"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/v3/pkg/insights"
 )
+
+// serviceInsightKey builds the key of the legacy per-mesh ServiceInsight resource.
+// The resyncer no longer writes ServiceInsight (services are now computed from
+// MeshService/MeshExternalService) and deletes the ones left over by older control
+// planes, so this resolves to a not-found read; it is kept only so the legacy REST
+// endpoint stays a valid, harmless no-op.
+func serviceInsightKey(mesh string) core_model.ResourceKey {
+	return core_model.ResourceKey{
+		Name: fmt.Sprintf("all-services-%s", mesh),
+		Mesh: mesh,
+	}
+}
 
 type serviceInsightEndpoints struct {
 	resourceEndpoints
@@ -40,7 +52,7 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 	}
 
 	serviceInsight := mesh.NewServiceInsightResource()
-	err = s.resManager.Get(request.Request.Context(), serviceInsight, store.GetBy(insights.ServiceInsightKey(meshName)))
+	err = s.resManager.Get(request.Request.Context(), serviceInsight, store.GetBy(serviceInsightKey(meshName)))
 	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 	} else {

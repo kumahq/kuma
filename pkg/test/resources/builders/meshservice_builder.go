@@ -137,6 +137,15 @@ func (m *MeshServiceBuilder) WithTLSStatus(status v1alpha1.TLSStatus) *MeshServi
 	return m
 }
 
+func (m *MeshServiceBuilder) WithDataplaneProxies(connected, healthy, total int) *MeshServiceBuilder {
+	m.res.Status.DataplaneProxies = v1alpha1.DataplaneProxies{
+		Connected: connected,
+		Healthy:   healthy,
+		Total:     total,
+	}
+	return m
+}
+
 func (m *MeshServiceBuilder) Build() *v1alpha1.MeshServiceResource {
 	if err := m.res.Validate(); err != nil {
 		panic(err)

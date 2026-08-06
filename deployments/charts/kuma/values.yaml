@@ -473,17 +473,6 @@ dataPlane:
         cpu: "0"
         memory: 512Mi
 
-  features:
-    # -- Enables automatic injection of the unified naming for Envoy resources and stats feature flag.
-    # When set to true, it sets the environment variable
-    # KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED=true in the control plane,
-    # which causes the sidecar injector to add
-    # KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true to each injected kuma-sidecar container.
-    # This option only automates setting the required flags and does not enable or disable the feature itself.
-    # You can still opt in manually by setting KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true
-    # in data plane proxies using a ContainerPatch
-    unifiedResourceNaming: true
-
 # Default pause container image for mesh-scoped zone proxy deployments.
 # Individual meshes[].ingress.image / meshes[].egress.image override per-mesh.
 # Override if registry.k8s.io is not reachable or mirrored elsewhere.

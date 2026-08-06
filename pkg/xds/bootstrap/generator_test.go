@@ -65,9 +65,6 @@ var _ = Describe("bootstrapGenerator", func() {
 						{
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 					Admin: &mesh_proto.EnvoyAdmin{},
@@ -252,10 +249,7 @@ var _ = Describe("bootstrapGenerator", func() {
       {
         "port": 22022,
         "servicePort": 8443,
-        "tags": {
-          "kuma.io/protocol": "http2",
-          "kuma.io/service": "backend"
-        }
+        "protocol": "http2"
       },
     ],
     "admin": {
@@ -420,10 +414,9 @@ var _ = Describe("bootstrapGenerator", func() {
 		}),
 	)
 
-	It("should use the workload label as cluster identity when inbound tags are empty", func() {
+	It("should use the workload label as cluster identity", func() {
 		// given
 		dp := defaultDataplane()
-		dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
 		err := resManager.Create(
 			context.Background(),
 			dp,
@@ -464,10 +457,9 @@ var _ = Describe("bootstrapGenerator", func() {
 		Expect(envoyBootstrap.GetNode().GetCluster()).To(Equal("backend-workload"))
 	})
 
-	It("should use unknown service as cluster identity when inbound tags and workload label are empty", func() {
+	It("should use unknown service as cluster identity when workload label is empty", func() {
 		// given
 		dp := defaultDataplane()
-		dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
 		err := resManager.Create(
 			context.Background(),
 			dp,

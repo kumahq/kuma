@@ -3,7 +3,6 @@ package injector
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -30,7 +29,6 @@ func (i *KumaInjector) preCheck(ctx context.Context, pod *kube_core.Pod, logger 
 		}
 	}
 	logYesNoDeprecations(pod.Annotations, logger)
-	logMetricsAggregateDeprecations(pod.Annotations, logger)
 
 	if inject, err := i.needToInject(pod, ns); err != nil {
 		return "", err
@@ -186,29 +184,14 @@ func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
 
 // these are all existing annotations that are supported by metadata.GetBooleanWithDefault
 var booleanAnnotations = map[string]bool{
-	metadata.KumaTrafficDropInvalidPackets:         true,
-	metadata.KumaTrafficIptablesLogs:               true,
-	metadata.KumaWaitForDataplaneReady:             true,
-	metadata.KumaBuiltinDNS:                        true,
-	metadata.KumaGatewayAnnotation:                 true,
-	metadata.KumaSidecarInjectionAnnotation:        true,
-	metadata.KumaIngressAnnotation:                 true,
-	metadata.KumaEgressAnnotation:                  true,
-	metadata.KumaSidecarInjectedAnnotation:         true,
-	metadata.KumaTransparentProxyingAnnotation:     true,
-	metadata.KumaMetricsPrometheusAggregateEnabled: true,
-	metadata.KumaIgnoreAnnotation:                  true,
-	metadata.KumaInitFirst:                         true,
-}
-
-var metricsAggregateAnnotationRegex = regexp.MustCompile(`^prometheus\.metrics\.kuma\.io/aggregate-`)
-
-func logMetricsAggregateDeprecations(podAnnotations map[string]string, logger logr.Logger) {
-	for key := range podAnnotations {
-		if metricsAggregateAnnotationRegex.MatchString(key) {
-			logger.Info("WARNING: using deprecated pod annotation, use MeshMetric policy instead", "key", key)
-		}
-	}
+	metadata.KumaTrafficDropInvalidPackets:     true,
+	metadata.KumaTrafficIptablesLogs:           true,
+	metadata.KumaWaitForDataplaneReady:         true,
+	metadata.KumaGatewayAnnotation:             true,
+	metadata.KumaSidecarInjectedAnnotation:     true,
+	metadata.KumaTransparentProxyingAnnotation: true,
+	metadata.KumaIgnoreAnnotation:              true,
+	metadata.KumaInitFirst:                     true,
 }
 
 func logYesNoDeprecations(podAnnotations map[string]string, logger logr.Logger) {

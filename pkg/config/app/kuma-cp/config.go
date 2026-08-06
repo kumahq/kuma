@@ -102,10 +102,6 @@ func (d *ZoneMetrics) Validate() error {
 type MeshMetrics struct {
 	config.BaseConfig
 
-	// Deprecated: use MinResyncInterval instead
-	MinResyncTimeout config_types.Duration `json:"minResyncTimeout" envconfig:"kuma_metrics_mesh_min_resync_timeout"`
-	// Deprecated: use FullResyncInterval instead
-	MaxResyncTimeout config_types.Duration `json:"maxResyncTimeout" envconfig:"kuma_metrics_mesh_max_resync_timeout"`
 	// BufferSize the size of the buffer between event creation and processing
 	BufferSize int `json:"bufferSize" envconfig:"kuma_metrics_mesh_buffer_size"`
 	// MinResyncInterval the minimum time between 2 refresh of insights.
@@ -123,10 +119,7 @@ type ControlPlaneMetrics struct {
 }
 
 func (d *MeshMetrics) Validate() error {
-	if d.MinResyncTimeout.Duration != 0 && d.MaxResyncTimeout.Duration <= d.MinResyncTimeout.Duration {
-		return errors.New("FullResyncInterval should be greater than MinResyncInterval")
-	}
-	if d.MinResyncInterval.Duration <= d.FullResyncInterval.Duration {
+	if d.FullResyncInterval.Duration <= d.MinResyncInterval.Duration {
 		return errors.New("FullResyncInterval should be greater than MinResyncInterval")
 	}
 	return nil

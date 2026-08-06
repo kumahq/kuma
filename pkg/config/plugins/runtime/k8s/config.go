@@ -108,7 +108,6 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
 			NodeLabelsToCopy:              []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"},
 			TransparentProxyConfigMapName: "kuma-transparent-proxy-config",
-			UnifiedResourceNamingEnabled:  true,
 			OtelPipeEnabled:               true,
 			Spire: Spire{
 				Enabled:        false,
@@ -249,10 +248,6 @@ type Injector struct {
 	// transparent proxy configuration. The sidecar injector reads it, merges it with pod annotations and injects the
 	// result. It defaults to "kuma-transparent-proxy-config" and the ConfigMap is expected to exist.
 	TransparentProxyConfigMapName string `json:"transparentProxyConfigMap" envconfig:"kuma_runtime_kubernetes_injector_transparent_proxy_configmap_name"`
-	// UnifiedResourceNamingEnabled enables automatic injection of the unified naming feature flag into all sidecar-injected workloads.
-	// When set to true, the injector will add the required environment variable directly to the `kuma-sidecar` container.
-	// This ensures that the data plane proxy uses the new unified naming format for Envoy resources and stats.
-	UnifiedResourceNamingEnabled bool `json:"unifiedResourceNamingEnabled" envconfig:"kuma_runtime_kubernetes_injector_unified_resource_naming_enabled"`
 	// OtelPipeEnabled controls whether kuma-dp pipe mode is enabled for OTel backends.
 	// When true (default), kuma-dp proxies OTel traffic through a Unix socket.
 	OtelPipeEnabled bool `json:"otelPipeEnabled" envconfig:"kuma_runtime_kubernetes_injector_otel_pipe_enabled"`
@@ -291,8 +286,6 @@ type DataplaneContainer struct {
 	UID int64 `json:"uid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_uid"`
 	// Group ID.
 	GID int64 `json:"gid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_gui"`
-	// Deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.
-	AdminPort uint32 `json:"adminPort,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_admin_port"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_drain_time"`
 	// Readiness probe.
@@ -587,9 +580,6 @@ func (c *SidecarContainer) Validate() error {
 	}
 	if 65535 < c.RedirectPortOutbound {
 		errs = multierr.Append(errs, errors.Errorf(".RedirectPortOutbound must be in the range [0, 65535]"))
-	}
-	if 65535 < c.AdminPort {
-		errs = multierr.Append(errs, errors.Errorf(".AdminPort must be in the range [0, 65535]"))
 	}
 	if c.DrainTime.Duration <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))

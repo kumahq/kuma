@@ -36,7 +36,7 @@ var _ = Describe("ServiceReconciler", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Name: "non-system-ns-without-sidecar-injection",
 					Labels: map[string]string{
-						metadata.KumaIngressAnnotation: metadata.AnnotationEnabled,
+						metadata.KumaGatewayAnnotation: metadata.AnnotationEnabled,
 					},
 				},
 			},

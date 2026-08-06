@@ -11,11 +11,6 @@ networking:
   - address: 1.1.1.1
     port: 80
     servicePort: 8080
-    tags:
-      env: production
-      kuma.io/service: web
-      service: web
-      version: STRIPPED_VERSION
   outbound:
   - port: 3000
     tags:
@@ -34,11 +29,6 @@ networking:
   - address: 1.1.1.1
     port: 80
     servicePort: 8080
-    tags:
-      env: staging
-      kuma.io/service: web
-      service: web
-      version: STRIPPED_VERSION
   outbound:
   - port: 3000
     tags:

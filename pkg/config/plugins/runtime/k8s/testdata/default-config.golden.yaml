@@ -79,7 +79,6 @@ injector:
     mountPath: /run/spire/sockets
     socketFileName: socket
   transparentProxyConfigMap: kuma-transparent-proxy-config
-  unifiedResourceNamingEnabled: true
   validationContainer:
     resources:
       limits:

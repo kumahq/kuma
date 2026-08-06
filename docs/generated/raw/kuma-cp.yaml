@@ -409,10 +409,6 @@ runtime:
       # transparent proxy configuration. The sidecar injector reads it, merges it with pod annotations and injects the
       # result. It defaults to "kuma-transparent-proxy-config" and the ConfigMap is expected to exist.
       transparentProxyConfigMap: "kuma-transparent-proxy-config" # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
-      # unifiedResourceNamingEnabled enables automatic injection of the unified naming feature flag into all sidecar-injected workloads.
-      # When set to true, the injector will add the required environment variable directly to the `kuma-sidecar` container.
-      # This ensures that the data plane proxy uses the new unified naming format for Envoy resources and stats.
-      unifiedResourceNamingEnabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
       # OtelPipeEnabled controls whether kuma-dp pipe mode is enabled for OTel backends.
       # When true (default), kuma-dp proxies OTel traffic through a Unix socket.
       otelPipeEnabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED
@@ -462,8 +458,6 @@ runtime:
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
     dataplaneCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE
-    # ZoneResourceCleanupAge defines how long ZoneIngress and ZoneEgress should be offline to be cleaned up by GC
-    zoneResourceCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE
     # Spire defines default configuration of the spire properties
     spire:
       # SocketPath is the location of the socket file one the host
@@ -618,9 +612,6 @@ multizone:
       logPayloads: false # ENV: KUMA_MULTIZONE_ZONE_KDS_LOG_PAYLOADS
     # disableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
     disableOriginLabelValidation: false # ENV: KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION
-    # IngressUpdateInterval is the interval between the CP updating the list of
-    # available services on ZoneIngress.
-    ingressUpdateInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL
 # Diagnostics configuration
 diagnostics:
   # Port of Diagnostic Server for checking health and readiness of the Control Plane

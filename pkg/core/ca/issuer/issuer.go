@@ -21,7 +21,7 @@ import (
 
 const (
 	DefaultAllowedClockSkew           = 10 * time.Second
-	DefaultWorkloadCertValidityPeriod = 24 * time.Hour
+	DefaultWorkloadCertValidityPeriod = 5 * 24 * time.Hour
 )
 
 type CertOptsFn = func(*x509.Certificate)

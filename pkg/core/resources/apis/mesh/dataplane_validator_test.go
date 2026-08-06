@@ -35,9 +35,6 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               inbound:
                 - port: 8080
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   tags:
@@ -53,9 +50,6 @@ var _ = Describe("Dataplane", func() {
                 - port: 8080
                   servicePort: 7777
                   address: 127.0.0.1
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   address: 127.0.0.1
@@ -72,30 +66,9 @@ var _ = Describe("Dataplane", func() {
                 - port: 8080
                   servicePort: 7777
                   address: ::1
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   address: ::1
-                  tags:
-                    kuma.io/service: redis`,
-		),
-		Entry("dataplane with legacy outbounds", `
-            type: Dataplane
-            name: dp-1
-            mesh: default
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 8080
-                  servicePort: 7777
-                  address: 127.0.0.1
-                  tags:
-                    kuma.io/service: backend
-              outbound:
-                - port: 3333
-                  address: 127.0.0.1
                   tags:
                     kuma.io/service: redis`,
 		),
@@ -139,9 +112,6 @@ var _ = Describe("Dataplane", func() {
               address: example.com
               inbound:
                 - port: 8080
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   tags:
@@ -159,9 +129,6 @@ var _ = Describe("Dataplane", func() {
                     interval: 1s
                     unhealthyThreshold: 5
                     tcp: {}
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   tags:
@@ -177,9 +144,6 @@ var _ = Describe("Dataplane", func() {
                 - port: 8080
                   servicePort: 7777
                   address: 127.0.0.1
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   address: 127.0.0.1
@@ -197,9 +161,6 @@ var _ = Describe("Dataplane", func() {
                 - port: 8080
                   servicePort: 7777
                   address: 192.168.0.1
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   address: 192.168.0.1
@@ -213,9 +174,6 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               inbound:
                 - port: 8080
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   backendRef:
@@ -231,9 +189,6 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               inbound:
                 - port: 8080
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   backendRef:
@@ -248,9 +203,6 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               inbound:
                 - port: 8080
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               transparentProxying:
                 reachableBackends:
                   refs:
@@ -272,9 +224,6 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               inbound:
                 - port: 8080
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   backendRef:
@@ -313,8 +262,6 @@ var _ = Describe("Dataplane", func() {
               inbound:
                 - port: 8080
                   name: http
-                  tags:
-                    kuma.io/service: backend
               listeners:
                 - type: ZoneIngress
                   address: 192.168.0.1
@@ -394,9 +341,7 @@ var _ = Describe("Dataplane", func() {
                 networking:
                   address: 0.0.0.0
                   inbound:
-                    - port: 8080
-                      tags:
-                        kuma.io/service: backend`,
+                    - port: 8080`,
 			expected: `
                 violations:
                 - field: networking.address
@@ -410,9 +355,7 @@ var _ = Describe("Dataplane", func() {
                 networking:
                   address: "::"
                   inbound:
-                    - port: 8080
-                      tags:
-                        kuma.io/service: backend`,
+                    - port: 8080`,
 			expected: `
                 violations:
                 - field: networking.address
@@ -447,9 +390,6 @@ var _ = Describe("Dataplane", func() {
                 networking:
                   inbound:
                     - port: 8080
-                      tags:
-                        kuma.io/service: backend
-                        version: "1"
                   outbound:
                     - port: 3333
                       tags:
@@ -468,9 +408,6 @@ var _ = Describe("Dataplane", func() {
                   address: ..>_<..
                   inbound:
                     - port: 8080
-                      tags:
-                        kuma.io/service: backend
-                        version: "1"
                   outbound:
                     - port: 3333
                       tags:
@@ -490,9 +427,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 8080
                       servicePort: 7777
-                      tags:
-                        kuma.io/service: backend
-                        version: "1"
                   gateway:
                     tags:
                       kuma.io/service: kong
@@ -554,8 +488,6 @@ var _ = Describe("Dataplane", func() {
                       kuma.io/service: kong
                   inbound:
                     - port: 3333
-                      tags:
-                        kuma.io/service: kong
                   listeners:
                     - type: ZoneEgress
                       address: 192.168.0.1
@@ -574,12 +506,8 @@ var _ = Describe("Dataplane", func() {
                 networking:
                   address: 192.168.0.1
                   inbound:
-                    - tags:
-                        kuma.io/service: backend
-                        version: "1"
+                    - {}
                     - port: 65536
-                      tags:
-                        kuma.io/service: sub-backend
                   outbound:
                     - port: 3333
                       tags:
@@ -601,8 +529,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 1234
                       servicePort: 65536
-                      tags:
-                        kuma.io/service: backend
                   outbound:
                     - port: 3333
                       tags:
@@ -622,8 +548,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 1234
                       address: invalid-address
-                      tags:
-                        kuma.io/service: backend
                   outbound:
                     - port: 3333
                       tags:
@@ -701,9 +625,6 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   inbound:
                     - port: 1234
-                      tags:
-                        kuma.io/service: backend
-                        version: "v1"
                   outbound:
                     - port: 3333`,
 			expected: `
@@ -720,9 +641,6 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   inbound:
                     - port: 1234
-                      tags:
-                        kuma.io/service: backend
-                        version: "v1"
                   outbound:
                     - port: 3333
                       tags:
@@ -741,9 +659,6 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   inbound:
                     - port: 1234
-                      tags:
-                        kuma.io/service: backend
-                        version: "v1"
                   outbound:
                     - tags:
                         kuma.io/service: redis
@@ -766,9 +681,6 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   inbound:
                     - port: 1234
-                      tags:
-                        kuma.io/service: backend
-                        version: "v1"
                   outbound:
                     - port: 3333
                       address: invalid
@@ -788,9 +700,6 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   inbound:
                     - port: 1234
-                      tags:
-                        kuma.io/service: backend
-                        version: "v1"
                   outbound:
                     - port: 3333
                       address: invalid
@@ -812,9 +721,7 @@ var _ = Describe("Dataplane", func() {
                     - port: 10001
                       serviceAddress: 192.168.0.2
                       servicePort: 5050
-                      address: 1.1.1.1
-                      tags:
-                        kuma.io/service: backend`,
+                      address: 1.1.1.1`,
 		}),
 		Entry("inbound service address invalid", testCase{
 			dataplane: `
@@ -825,9 +732,7 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   inbound:
                     - port: 10001
-                      serviceAddress: INVALID
-                      tags:
-                        kuma.io/service: backend`,
+                      serviceAddress: INVALID`,
 			expected: `
                 violations:
                 - field: networking.inbound[0].serviceAddress
@@ -842,9 +747,7 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   inbound:
                     - port: 10001
-                      serviceAddress: 192.168.0.1
-                      tags:
-                        kuma.io/service: backend`,
+                      serviceAddress: 192.168.0.1`,
 			expected: `
                 violations:
                 - field: networking.inbound[0].serviceAddress
@@ -860,9 +763,7 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 10001
                       address: 192.168.0.2
-                      serviceAddress: 192.168.0.2
-                      tags:
-                        kuma.io/service: backend`,
+                      serviceAddress: 192.168.0.2`,
 			expected: `
                 violations:
                 - field: networking.inbound[0].serviceAddress
@@ -879,9 +780,7 @@ var _ = Describe("Dataplane", func() {
                     - port: 10001
                       address: 192.168.0.2
                       serviceAddress: 192.168.0.2
-                      servicePort: 10002
-                      tags:
-                        kuma.io/service: backend`,
+                      servicePort: 10002`,
 		}),
 		Entry("dataplane with service probe", testCase{
 			dataplane: `
@@ -898,9 +797,6 @@ var _ = Describe("Dataplane", func() {
                     healthyThreshold: 5
                     unhealthyThreshold: 0
                     tcp: {}
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   tags:
@@ -925,9 +821,6 @@ var _ = Describe("Dataplane", func() {
                 - port: 8080
                   servicePort: 7777
                   address: 127.0.0.1
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   address: 127.0.0.1
@@ -951,9 +844,6 @@ var _ = Describe("Dataplane", func() {
                 - port: 8080
                   servicePort: 7777
                   address: 127.0.0.1
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   address: 127.0.0.1
@@ -975,9 +865,6 @@ var _ = Describe("Dataplane", func() {
                 - port: 8080
                   servicePort: 7777
                   address: 192.168.0.1
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   backendRef: {}`,
@@ -1001,9 +888,6 @@ var _ = Describe("Dataplane", func() {
                 - port: 8080
                   servicePort: 7777
                   address: 192.168.0.1
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               outbound:
                 - port: 3333
                   tags:
@@ -1038,9 +922,6 @@ var _ = Describe("Dataplane", func() {
                 - port: 8080
                   servicePort: 7777
                   address: 192.168.0.1
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
               transparentProxying:
                 reachableBackends:
                   refs:
@@ -1090,8 +971,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 8080
                       name: http
-                      tags:
-                        kuma.io/service: backend
                   listeners:
                     - type: ZoneIngress
                       port: 10001
@@ -1111,8 +990,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 8080
                       name: http
-                      tags:
-                        kuma.io/service: backend
                   listeners:
                     - type: ZoneIngress
                       address: 192.168.0.1
@@ -1133,8 +1010,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 8080
                       name: http
-                      tags:
-                        kuma.io/service: backend
                   listeners:
                     - type: ZoneIngress
                       address: 192.168.0.1
@@ -1155,8 +1030,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 8080
                       name: http
-                      tags:
-                        kuma.io/service: backend
                   listeners:
                     - type: ZoneIngress
                       address: not-valid!
@@ -1177,8 +1050,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 8080
                       name: http
-                      tags:
-                        kuma.io/service: backend
                   listeners:
                     - type: ZoneIngress
                       address: 192.168.0.1
@@ -1262,8 +1133,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 8080
                       name: http
-                      tags:
-                        kuma.io/service: backend
                   listeners:
                     - type: ZoneIngress
                       address: 192.168.0.1

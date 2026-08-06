@@ -59,24 +59,6 @@ var _ = Describe("annotation deprecation", func() {
 				Expect(deprecateMessage).To(Equal(-1))
 			}
 		},
-		Entry("kuma.io/sidecar-injection - yes", testCase{
-			annotationKey:            metadata.KumaSidecarInjectionAnnotation,
-			annotationValue:          "yes",
-			expectedValueDeprecated:  true,
-			expectedValueReplacement: "true",
-		}),
-		Entry("kuma.io/sidecar-injection - no", testCase{
-			annotationKey:            metadata.KumaSidecarInjectionAnnotation,
-			annotationValue:          "no",
-			expectedValueDeprecated:  true,
-			expectedValueReplacement: "false",
-		}),
-		Entry("kuma.io/sidecar-injection - enabled", testCase{
-			annotationKey:           metadata.KumaSidecarInjectionAnnotation,
-			annotationValue:         "enabled",
-			expectedKeyDeprecated:   false,
-			expectedValueDeprecated: false,
-		}),
 		Entry("kuma.io/gateway - enabled", testCase{
 			annotationKey:           metadata.KumaGatewayAnnotation,
 			annotationValue:         "enabled",
@@ -104,53 +86,12 @@ var _ = Describe("annotation deprecation", func() {
 				))
 			}
 		},
-		Entry("kuma.io/sidecar-injection - not deprecated", testCase{
-			annotationKey:         metadata.KumaSidecarInjectionAnnotation,
-			annotationValue:       "enabled",
-			expectedKeyDeprecated: false,
-		}),
-		Entry("prometheus.metrics.kuma.io/port - deprecated", testCase{
-			annotationKey:                 metadata.KumaMetricsPrometheusPort,
-			annotationValue:               "9090",
+		Entry("kuma.io/sidecar-injection - deprecated", testCase{
+			annotationKey:                 metadata.KumaSidecarInjectionAnnotation,
+			annotationValue:               "enabled",
 			expectedKeyDeprecated:         true,
-			expectedKeyDeprecationMessage: "WARNING: 'prometheus.metrics.kuma.io/port' is deprecated, use MeshMetric policy instead",
+			expectedKeyDeprecationMessage: "WARNING: you are using kuma.io/sidecar-injection as annotation. This is not supported you should use it as a label instead",
 		}),
-		Entry("prometheus.metrics.kuma.io/path - deprecated", testCase{
-			annotationKey:                 metadata.KumaMetricsPrometheusPath,
-			annotationValue:               "/metrics",
-			expectedKeyDeprecated:         true,
-			expectedKeyDeprecationMessage: "WARNING: 'prometheus.metrics.kuma.io/path' is deprecated, use MeshMetric policy instead",
-		}),
-	)
-
-	DescribeTable("metrics aggregate annotation deprecation",
-		func(annotationKey, annotationValue string) {
-			logSink := &fakeLogSink{root: &fakeLogSinkRoot{}}
-
-			pod := createPod(annotationKey, annotationValue)
-			_, err := i.preCheck(context.TODO(), pod, logr.New(logSink))
-
-			Expect(err).ToNot(HaveOccurred())
-			Expect(logSink.root.messages).To(ContainElement(
-				logInfo{
-					name: nil,
-					tags: []any{"key", annotationKey},
-					msg:  "WARNING: using deprecated pod annotation, use MeshMetric policy instead",
-				},
-			))
-		},
-		Entry("aggregate port annotation",
-			"prometheus.metrics.kuma.io/aggregate-app-port", "9000",
-		),
-		Entry("aggregate path annotation",
-			"prometheus.metrics.kuma.io/aggregate-app-path", "/stats",
-		),
-		Entry("aggregate enabled annotation",
-			"prometheus.metrics.kuma.io/aggregate-app-enabled", "true",
-		),
-		Entry("aggregate address annotation",
-			"prometheus.metrics.kuma.io/aggregate-app-address", "127.0.0.1",
-		),
 	)
 })
 
