@@ -155,17 +155,10 @@ func (a *authCallbacks) resource(ctx context.Context, md *core_xds.DataplaneMeta
 		return nil, errors.Wrap(err, "request must have a valid Proxy ID")
 	}
 
-	var resource model.Resource
-	switch md.GetProxyType() {
-	case mesh_proto.IngressProxyType:
-		resource = core_mesh.NewZoneIngressResource()
-	case mesh_proto.EgressProxyType:
-		resource = core_mesh.NewZoneEgressResource()
-	case mesh_proto.DataplaneProxyType:
-		resource = core_mesh.NewDataplaneResource()
-	default:
-		return nil, errors.Errorf("unsupported proxy type %q", md.GetProxyType())
+	if pt := md.GetProxyType(); pt != mesh_proto.DataplaneProxyType {
+		return nil, errors.Errorf("unsupported proxy type %q", pt)
 	}
+	var resource model.Resource = core_mesh.NewDataplaneResource()
 
 	backoff := retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff))
 	err = retry.Do(ctx, backoff, func(ctx context.Context) error {

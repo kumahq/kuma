@@ -7,9 +7,9 @@ import (
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
+	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
-	kds_server "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
-	kds_sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 )
 
 var (
@@ -38,7 +38,7 @@ func Setup(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	resourceSyncerV2, err := kds_sync_store_v2.NewResourceSyncer(kdsDeltaZoneLog, rt.ResourceStore(), rt.Transactions(), rt.Metrics(), rt.Extensions())
+	resourceSyncer, err := kds_sync_store.NewResourceSyncer(kdsDeltaZoneLog, rt.ResourceStore(), rt.Transactions(), rt.Metrics(), rt.Extensions())
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func Setup(rt core_runtime.Runtime) error {
 			rt.ReadOnlyResourceManager(),
 			rt.EnvoyAdminClient(),
 		),
-		resourceSyncerV2,
+		resourceSyncer,
 		rt,
 		deltaServer,
 	)

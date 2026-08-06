@@ -7,5 +7,5 @@ import (
 )
 
 func TestCache(t *testing.T) {
-	test.RunSpecs(t, "Cache Suite V2")
+	test.RunSpecs(t, "Cache Suite")
 }

@@ -25,8 +25,8 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/kds"
-	client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
-	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	test_grpc "github.com/kumahq/kuma/v3/pkg/test/grpc"
@@ -57,7 +57,7 @@ func newGlobalSink(t *testing.T, ctx context.Context, typ core_model.ResourceTyp
 
 	metrics, err := core_metrics.NewMetrics("")
 	g.Expect(err).ToNot(HaveOccurred())
-	syncer, err := sync_store_v2.NewResourceSyncer(core.Log.WithName("crosszone-syncer"), globalStore, store.NoTransactions{}, metrics, context.Background())
+	syncer, err := kds_sync_store.NewResourceSyncer(core.Log.WithName("crosszone-syncer"), globalStore, store.NoTransactions{}, metrics, context.Background())
 	g.Expect(err).ToNot(HaveOccurred())
 
 	// Counts resources whose zone attribution the global ingest rewrote because
@@ -68,13 +68,13 @@ func newGlobalSink(t *testing.T, ctx context.Context, typ core_model.ResourceTyp
 
 	clientStream := test_grpc.NewMockDeltaClientStream()
 	// The client-id drives attribution, not the in-band ControlPlane.Identifier.
-	kdsStream := client_v2.NewDeltaKDSStream(clientStream, connectingZone, connectingZone+"-instance", "", 1)
-	sink := client_v2.NewKDSSyncClient(
+	kdsStream := kds_client.NewDeltaKDSStream(clientStream, connectingZone, connectingZone+"-instance", "", 1)
+	sink := kds_client.NewKDSSyncClient(
 		core.Log.WithName("crosszone-global-sink"),
 		[]core_model.ResourceType{typ},
 		kdsStream,
-		sync_store_v2.GlobalSyncCallback(ctx, syncer, false, nil, "kuma-system", rewrites),
-		client_v2.SyncClientConfig{},
+		kds_sync_store.GlobalSyncCallback(ctx, syncer, false, nil, "kuma-system", rewrites),
+		kds_client.SyncClientConfig{},
 	)
 
 	done := make(chan struct{})
