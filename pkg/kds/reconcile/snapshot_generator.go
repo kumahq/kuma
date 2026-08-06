@@ -13,8 +13,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/kds"
+	kds_cache "github.com/kumahq/kuma/v3/pkg/kds/cache"
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
-	cache_kds_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/cache"
 )
 
 type (
@@ -94,7 +94,7 @@ type snapshotGenerator struct {
 func (s *snapshotGenerator) GenerateSnapshot(
 	ctx context.Context,
 	node *envoy_core.Node,
-	builder cache_kds_v2.SnapshotBuilder,
+	builder kds_cache.SnapshotBuilder,
 	resTypes map[model.ResourceType]struct{},
 ) (envoy_cache.ResourceSnapshot, error) {
 	for typ := range resTypes {

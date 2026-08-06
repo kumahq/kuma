@@ -25,10 +25,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
 	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
-	client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
-	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
@@ -59,7 +59,7 @@ var _ = Describe("Zone Delta Sync", func() {
 	}
 
 	var zoneStore store.ResourceStore
-	var zoneSyncer sync_store_v2.ResourceSyncer
+	var zoneSyncer kds_sync_store.ResourceSyncer
 	var globalStore store.ResourceStore
 	var closeFunc func()
 
@@ -94,17 +94,17 @@ var _ = Describe("Zone Delta Sync", func() {
 		zoneStore = memory.NewStore()
 		metrics, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
-		zoneSyncer, err = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, store.NoTransactions{}, metrics, context.Background())
+		zoneSyncer, err = kds_sync_store.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, store.NoTransactions{}, metrics, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 
 		wg.Go(func() {
-			kdsStream := client_v2.NewDeltaKDSStream(clientStream, zoneName, "zone-inst", "", len(kdsCtx.TypesSentByGlobal))
-			policySync := client_v2.NewKDSSyncClient(
+			kdsStream := kds_client.NewDeltaKDSStream(clientStream, zoneName, "zone-inst", "", len(kdsCtx.TypesSentByGlobal))
+			policySync := kds_client.NewKDSSyncClient(
 				core.Log.WithName("kds-sink"),
 				kdsCtx.TypesSentByGlobal,
 				kdsStream,
-				sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
-				client_v2.SyncClientConfig{},
+				kds_sync_store.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
+				kds_client.SyncClientConfig{},
 			)
 			_ = policySync.Receive()
 		})
@@ -371,7 +371,7 @@ var _ = Describe("KDSSyncClient logging", func() {
 		func(logPayloads bool, expected []string, unexpected []string) {
 			logBuf := &bytes.Buffer{}
 			clientStream := grpc.NewMockDeltaClientStream()
-			kdsStream := client_v2.NewDeltaKDSStream(clientStream, "zone-1", "zone-inst", "", 1)
+			kdsStream := kds_client.NewDeltaKDSStream(clientStream, "zone-1", "zone-inst", "", 1)
 			DeferCleanup(func() {
 				close(clientStream.RecvCh)
 				Expect(kdsStream.CloseSend()).To(Succeed())
@@ -385,16 +385,16 @@ var _ = Describe("KDSSyncClient logging", func() {
 				},
 			}
 
-			syncClient := client_v2.NewKDSSyncClient(
+			syncClient := kds_client.NewKDSSyncClient(
 				kuma_log.NewLoggerTo(logBuf, kuma_log.DebugLevel),
 				[]model.ResourceType{mesh.MeshType},
 				kdsStream,
-				&client_v2.Callbacks{
-					OnResourcesReceived: func(client_v2.UpstreamResponse) (error, error) {
+				&kds_client.Callbacks{
+					OnResourcesReceived: func(kds_client.UpstreamResponse) (error, error) {
 						return stderrors.New("stop processing"), nil
 					},
 				},
-				client_v2.SyncClientConfig{
+				kds_client.SyncClientConfig{
 					LogPayloads: logPayloads,
 				},
 			)

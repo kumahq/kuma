@@ -17,9 +17,9 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
-	client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
-	sync_store "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -50,19 +50,19 @@ var meshBuilder = func(idx int) *mesh.MeshResource {
 }
 
 var _ = Describe("SyncResourceStoreDelta", func() {
-	var syncer sync_store.ResourceSyncer
+	var syncer kds_sync_store.ResourceSyncer
 	var resourceStore store.ResourceStore
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
 		metrics, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
-		syncer, err = sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
+		syncer, err = kds_sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should create new resources in empty store", func() {
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_client.UpstreamResponse{}
 		upstream := &mesh.MeshResourceList{}
 		idxs := []int{1, 2, 3, 4}
 		for _, i := range idxs {
@@ -84,7 +84,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 	})
 
 	It("should delete all resources", func() {
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_client.UpstreamResponse{}
 		removedResources := []model.ResourceKey{}
 		for i := range 10 {
 			m := meshBuilder(i)
@@ -121,7 +121,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			err := upstream.AddItem(m)
 			Expect(err).ToNot(HaveOccurred())
 		}
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_client.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.RemovedResourcesKey = []model.ResourceKey{
@@ -162,7 +162,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			err := upstream.AddItem(m)
 			Expect(err).ToNot(HaveOccurred())
 		}
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_client.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.IsInitialRequest = true
@@ -184,12 +184,12 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		// given
 		upstream := &mesh.MeshResourceList{}
 		Expect(upstream.AddItem(meshBuilder(1))).To(Succeed())
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_client.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
 		// when
-		err, nackError := syncer.Sync(context.Background(), upstreamResponse, sync_store.PrefilterBy(func(r model.Resource) bool {
+		err, nackError := syncer.Sync(context.Background(), upstreamResponse, kds_sync_store.PrefilterBy(func(r model.Resource) bool {
 			return r.GetMeta().GetName() != "mesh-1"
 		}))
 
@@ -221,14 +221,14 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		Expect(upstream.AddItem(mesh1)).To(Succeed())
 		Expect(upstream.AddItem(mesh2)).To(Succeed())
 		Expect(upstream.AddItem(mesh3)).To(Succeed())
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_client.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
 		// when
-		err, nackError := syncer.Sync(context.Background(), upstreamResponse, sync_store.PrefilterBy(func(r model.Resource) bool {
+		err, nackError := syncer.Sync(context.Background(), upstreamResponse, kds_sync_store.PrefilterBy(func(r model.Resource) bool {
 			return r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] != "zone"
-		}), sync_store.SkipConflictResource())
+		}), kds_sync_store.SkipConflictResource())
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -252,7 +252,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		Expect(upstream.AddItem(mesh1)).To(Succeed())
 		Expect(upstream.AddItem(mesh2)).To(Succeed())
 		Expect(upstream.AddItem(mesh3)).To(Succeed())
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_client.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.InvalidResourcesKey = []model.ResourceKey{model.MetaToResourceKey(mesh2.GetMeta())}
@@ -282,7 +282,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstream := &mesh.MeshResourceList{}
 		Expect(upstream.AddItem(meshBuilder(1))).To(Succeed())
 
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_client.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
@@ -296,19 +296,19 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 })
 
 var _ = Describe("SyncResourceStoreDelta errors", func() {
-	var syncer sync_store.ResourceSyncer
+	var syncer kds_sync_store.ResourceSyncer
 	var resourceStore store.ResourceStore
 
 	BeforeEach(func() {
 		resourceStore = &test_store.FailingStore{CreateErr: errors.Join(store.ErrorResourceAlreadyExists(system.GlobalSecretType, "zone-token-signing-public-key-1", ""))}
 		metrics, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
-		syncer, err = sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
+		syncer, err = kds_sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should correctly recognize user errors", func() {
-		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse := kds_client.UpstreamResponse{}
 		upstream := &mesh.MeshResourceList{}
 		m := meshBuilder(1)
 		err := upstream.AddItem(m)
@@ -316,7 +316,7 @@ var _ = Describe("SyncResourceStoreDelta errors", func() {
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
-		err, nackError := syncer.Sync(context.Background(), upstreamResponse, sync_store.SkipConflictResource())
+		err, nackError := syncer.Sync(context.Background(), upstreamResponse, kds_sync_store.SkipConflictResource())
 		Expect(err).ToNot(HaveOccurred())
 		Expect(util.IsUserError(nackError)).To(BeTrue())
 		Expect(util.IsUserErrorMessage(nackError.Error())).To(BeTrue())
@@ -361,7 +361,7 @@ func (c *conflictingStore) Update(ctx context.Context, r model.Resource, fs ...s
 
 var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 	var resourceStore *conflictingStore
-	var syncer sync_store.ResourceSyncer
+	var syncer kds_sync_store.ResourceSyncer
 	var key model.ResourceKey
 
 	// meshBuilder(1) with a different spec, so syncing it against the stored copy
@@ -376,7 +376,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 	syncChangedMesh := func() (error, error) {
 		upstream := &mesh.MeshResourceList{}
 		Expect(upstream.AddItem(changedMesh())).To(Succeed())
-		return syncer.Sync(context.Background(), client_v2.UpstreamResponse{
+		return syncer.Sync(context.Background(), kds_client.UpstreamResponse{
 			Type:           upstream.GetItemType(),
 			AddedResources: upstream,
 		})
@@ -386,7 +386,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 		resourceStore = &conflictingStore{ResourceStore: memory.NewStore()}
 		metrics, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
-		syncer, err = sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
+		syncer, err = kds_sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 
 		res := meshBuilder(1)
@@ -439,7 +439,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 			m.Spec.Mtls.Backends[0].Name = "ca-changed"
 			Expect(upstream.AddItem(m)).To(Succeed())
 		}
-		err, nackError := syncer.Sync(context.Background(), client_v2.UpstreamResponse{
+		err, nackError := syncer.Sync(context.Background(), kds_client.UpstreamResponse{
 			Type:           upstream.GetItemType(),
 			AddedResources: upstream,
 		})
@@ -459,13 +459,13 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 
 var _ = Describe("SyncResourceStoreDelta write conflicts on zone-owned status", func() {
 	var resourceStore *conflictingStore
-	var syncer sync_store.ResourceSyncer
+	var syncer kds_sync_store.ResourceSyncer
 
 	BeforeEach(func() {
 		resourceStore = &conflictingStore{ResourceStore: memory.NewStore()}
 		metrics, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
-		syncer, err = sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
+		syncer, err = kds_sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(builders.MeshService().
@@ -492,10 +492,10 @@ var _ = Describe("SyncResourceStoreDelta write conflicts on zone-owned status", 
 			WithoutVIP().
 			Build())).To(Succeed())
 
-		err, nackError := syncer.Sync(context.Background(), client_v2.UpstreamResponse{
+		err, nackError := syncer.Sync(context.Background(), kds_client.UpstreamResponse{
 			Type:           upstream.GetItemType(),
 			AddedResources: upstream,
-		}, sync_store.IgnoreStatusChange())
+		}, kds_sync_store.IgnoreStatusChange())
 		Expect(err).ToNot(HaveOccurred())
 		Expect(nackError).ToNot(HaveOccurred())
 

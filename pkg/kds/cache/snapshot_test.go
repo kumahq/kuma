@@ -12,7 +12,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/kds/v2/cache"
+	"github.com/kumahq/kuma/v3/pkg/kds/cache"
 )
 
 var _ = Describe("Snapshot", func() {
