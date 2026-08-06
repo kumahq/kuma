@@ -23,8 +23,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/kds"
+	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
-	client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	resources_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
@@ -59,7 +59,7 @@ type ResourceSyncer interface {
 	// The second error is related to non-critical issues, such as `ResourceAlreadyExists`,
 	// which shouldn't prevent other resources from being stored.
 	// Instead, we return a NACK message with information for the user.
-	Sync(ctx context.Context, upstream client_v2.UpstreamResponse, fs ...SyncOptionFunc) (error, error)
+	Sync(ctx context.Context, upstream kds_client.UpstreamResponse, fs ...SyncOptionFunc) (error, error)
 }
 
 type SyncOption struct {
@@ -139,7 +139,7 @@ type OnUpdate struct {
 	opts []store.UpdateOptionsFunc
 }
 
-func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse client_v2.UpstreamResponse, fs ...SyncOptionFunc) (error, error) {
+func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse kds_client.UpstreamResponse, fs ...SyncOptionFunc) (error, error) {
 	now := core.Now()
 	defer func() {
 		s.metric.Observe(float64(time.Since(now).Milliseconds()) / 1000)
@@ -407,9 +407,9 @@ func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bo
 	return rv, nil
 }
 
-func ZoneSyncCallback(ctx context.Context, syncer ResourceSyncer, k8sStore bool, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *client_v2.Callbacks {
-	return &client_v2.Callbacks{
-		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) (error, error) {
+func ZoneSyncCallback(ctx context.Context, syncer ResourceSyncer, k8sStore bool, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *kds_client.Callbacks {
+	return &kds_client.Callbacks{
+		OnResourcesReceived: func(upstream kds_client.UpstreamResponse) (error, error) {
 			tDesc := upstream.AddedResources.NewItem().Descriptor()
 			if k8sStore && !tDesc.SkipKDSHash {
 				if err := addNamespaceSuffix(kubeFactory, upstream, systemNamespace); err != nil {
@@ -450,11 +450,11 @@ func GlobalSyncCallback(
 	kubeFactory resources_k8s.KubeFactory,
 	systemNamespace string,
 	rewrites *prometheus.CounterVec,
-) *client_v2.Callbacks {
+) *kds_client.Callbacks {
 	supportsHashSuffixes := kds.ContextHasFeature(ctx, kds.FeatureHashSuffix)
 
-	return &client_v2.Callbacks{
-		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) (error, error) {
+	return &kds_client.Callbacks{
+		OnResourcesReceived: func(upstream kds_client.UpstreamResponse) (error, error) {
 			if !supportsHashSuffixes {
 				// todo: remove in 2 releases after 2.6.x
 				upstream.RemovedResourcesKey = util.AddPrefixToResourceKeyNames(upstream.RemovedResourcesKey, upstream.ControlPlaneId)
@@ -562,7 +562,7 @@ func recordZoneRewrite(rewrites *prometheus.CounterVec, resType core_model.Resou
 	)
 }
 
-func addNamespaceSuffix(kubeFactory resources_k8s.KubeFactory, upstream client_v2.UpstreamResponse, ns string) error {
+func addNamespaceSuffix(kubeFactory resources_k8s.KubeFactory, upstream kds_client.UpstreamResponse, ns string) error {
 	// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
 	// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
 	kubeObject, err := kubeFactory.NewObject(upstream.AddedResources.NewItem())

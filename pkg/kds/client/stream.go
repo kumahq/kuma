@@ -14,8 +14,8 @@ import (
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/kds"
+	kds_cache "github.com/kumahq/kuma/v3/pkg/kds/cache"
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
-	cache_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/cache"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
 )
@@ -24,7 +24,7 @@ var _ DeltaKDSStream = &stream{}
 
 type latestReceived struct {
 	nonce         string
-	nameToVersion cache_v2.NameToVersion
+	nameToVersion kds_cache.NameToVersion
 }
 
 type stream struct {

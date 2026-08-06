@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/events"
-	"github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
+	kds_reconcile "github.com/kumahq/kuma/v3/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 )
@@ -21,7 +21,7 @@ import (
 type EventBasedWatchdog struct {
 	Node                *envoy_core.Node
 	EventBus            events.EventBus
-	Reconciler          reconcile.Reconciler
+	Reconciler          kds_reconcile.Reconciler
 	ProvidedTypes       map[model.ResourceType]struct{}
 	Metrics             *Metrics
 	Log                 logr.Logger

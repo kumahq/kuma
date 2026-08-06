@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v3/pkg/kds/v2/server"
-	"github.com/kumahq/kuma/v3/pkg/kds/v2/util"
+	"github.com/kumahq/kuma/v3/pkg/kds/server"
+	"github.com/kumahq/kuma/v3/pkg/kds/util"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 )
 

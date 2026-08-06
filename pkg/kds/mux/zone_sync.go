@@ -24,12 +24,12 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/events"
 	"github.com/kumahq/kuma/v3/pkg/kds"
+	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
 	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
+	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
-	kds_client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
-	kds_server_metrics "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
-	kds_sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
 	"github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
@@ -48,7 +48,7 @@ type serverStreamAdapter struct {
 func (serverStreamAdapter) CloseSend() error { return nil }
 
 type KDSSyncServiceServer struct {
-	filters    []kds_context.FilterV2
+	filters    []kds_context.Filter
 	extensions context.Context
 	eventBus   events.EventBus
 	mesh_proto.UnimplementedKDSSyncServiceServer
@@ -58,23 +58,23 @@ type KDSSyncServiceServer struct {
 	instanceID      string
 	deltaServer     delta.Server
 	typesSentByZone []core_model.ResourceType
-	resourceSyncer  kds_sync_store_v2.ResourceSyncer
+	resourceSyncer  kds_sync_store.ResourceSyncer
 	k8sStore        bool
 	systemNamespace string
 	responseBackoff time.Duration
 	logPayloads     bool
-	metrics         *kds_server_metrics.Metrics
+	metrics         *kds_server.Metrics
 }
 
 func NewKDSSyncServiceServer(
 	rt runtime.Runtime,
 	deltaServer delta.Server,
-	resourceSyncer kds_sync_store_v2.ResourceSyncer,
-	metrics *kds_server_metrics.Metrics,
+	resourceSyncer kds_sync_store.ResourceSyncer,
+	metrics *kds_server.Metrics,
 ) *KDSSyncServiceServer {
 	return &KDSSyncServiceServer{
 		context:         rt.AppContext(),
-		filters:         rt.KDSContext().GlobalServerFiltersV2,
+		filters:         rt.KDSContext().GlobalServerFilters,
 		extensions:      rt.Extensions(),
 		eventBus:        rt.EventBus(),
 		resManager:      rt.ResourceManager(),
@@ -220,8 +220,8 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 			processingErrorsCh <- errors.Wrap(err, "Global CP could not create a zone")
 			return
 		}
-		kdsStream := kds_client_v2.NewDeltaKDSStream(serverStreamAdapter{stream}, zone, g.instanceID, "", len(g.typesSentByZone))
-		cb := kds_sync_store_v2.GlobalSyncCallback(
+		kdsStream := kds_client.NewDeltaKDSStream(serverStreamAdapter{stream}, zone, g.instanceID, "", len(g.typesSentByZone))
+		cb := kds_sync_store.GlobalSyncCallback(
 			stream.Context(),
 			g.resourceSyncer,
 			g.k8sStore,
@@ -233,12 +233,12 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 		cb.OnNACK = func(resourceType core_model.ResourceType) {
 			g.metrics.KdsNackTotal.WithLabelValues(zoneName, string(resourceType)).Inc()
 		}
-		sink := kds_client_v2.NewKDSSyncClient(
+		sink := kds_client.NewKDSSyncClient(
 			logger,
 			g.typesSentByZone,
 			kdsStream,
 			cb,
-			kds_client_v2.SyncClientConfig{
+			kds_client.SyncClientConfig{
 				ResponseBackoff: g.responseBackoff,
 				LogPayloads:     g.logPayloads,
 			},
