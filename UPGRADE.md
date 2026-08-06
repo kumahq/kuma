@@ -22,7 +22,7 @@ A client proxy without a workload identity no longer gets a cluster for a `MeshE
 
 **Action required**
 
-Create a `MeshIdentity` that matches the client proxies in any mesh that uses `MeshExternalService`. Without one, the external service is now absent from the proxy's config dump instead of present but unroutable.
+Create a `MeshIdentity` that matches the client proxies in any mesh that uses `MeshExternalService`. Without one, only the cluster is dropped — the outbound listener and its endpoints are still generated, so requests now fail locally in the client's Envoy with a 503 (`cluster_not_found`) instead of being reset by the zone egress. Keeping the listener is deliberate: removing it would let the request fall through to the transparent proxy passthrough and reach the external service directly, bypassing the egress.
 
 ### `ZoneIngress` and `ZoneEgress` resources removed
 

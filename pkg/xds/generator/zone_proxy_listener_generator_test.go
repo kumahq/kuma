@@ -489,6 +489,145 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 				expected: "egress-meshexternalservice-tcp.envoy.golden.yaml",
 			}
 		}()),
+		Entry("egress: MeshExternalService with TLS and skipAll verification", func() testCase {
+			// MeshExternalService TLS settings are applied on the egress cluster,
+			// where the egress originates the connection to the external service.
+			mes := builders.MeshExternalService().WithKumaVIP("242.0.0.1").Build()
+			mesKRI := kri.From(mes)
+			unifiedSvcName := kri.WithSectionName(mesKRI, mes.Spec.Match.GetName()).String()
+
+			dp := samples.DataplaneBackendBuilder().
+				With(func(r *core_mesh.DataplaneResource) {
+					r.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
+						{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "10.0.0.1",
+							Port:    10002,
+							Name:    "zone-egress-port",
+						},
+					}
+				}).
+				Build()
+
+			return testCase{
+				proxy: &core_xds.Proxy{
+					Id:         *core_xds.BuildProxyId("default", "dp-1"),
+					APIVersion: envoy_common.APIV3,
+					Dataplane:  dp,
+					Metadata: &core_xds.DataplaneMetadata{
+						SystemCaPath: "/etc/ssl/certs/ca-certificates.crt",
+						Features: map[string]bool{
+							xds_types.FeatureUnifiedResourceNaming: true,
+						},
+					},
+					WorkloadIdentity:  testWorkloadIdentity,
+					InternalAddresses: DummyInternalAddresses,
+				},
+				meshContext: xds_context.MeshContext{
+					Resource: builders.Mesh().WithName("default").Build(),
+					DataplaneZoneEgressEndpointMap: core_xds.EgressEndpointMap{
+						unifiedSvcName: core_xds.EgressEndpointGroup{
+							Protocol:      core_meta.ProtocolHTTP,
+							OwnerResource: mesKRI,
+							Endpoints: []core_xds.Endpoint{
+								{
+									Target: "example.com",
+									Port:   10000,
+									Tags:   map[string]string{},
+									Weight: 1,
+									ExternalService: &core_xds.ExternalService{
+										Protocol:                 core_meta.ProtocolHTTP,
+										OwnerResource:            mesKRI,
+										TLSEnabled:               true,
+										SkipHostnameVerification: true,
+									},
+								},
+							},
+						},
+					},
+					Resources: xds_context.Resources{
+						MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
+								Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
+							},
+						},
+					},
+				},
+				expected: "egress-meshexternalservice-tls-skipall.envoy.golden.yaml",
+			}
+		}()),
+		Entry("egress: MeshExternalService with TLS and custom verification", func() testCase {
+			mes := builders.MeshExternalService().WithKumaVIP("242.0.0.1").Build()
+			mesKRI := kri.From(mes)
+			unifiedSvcName := kri.WithSectionName(mesKRI, mes.Spec.Match.GetName()).String()
+
+			dp := samples.DataplaneBackendBuilder().
+				With(func(r *core_mesh.DataplaneResource) {
+					r.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
+						{
+							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+							Address: "10.0.0.1",
+							Port:    10002,
+							Name:    "zone-egress-port",
+						},
+					}
+				}).
+				Build()
+
+			return testCase{
+				proxy: &core_xds.Proxy{
+					Id:         *core_xds.BuildProxyId("default", "dp-1"),
+					APIVersion: envoy_common.APIV3,
+					Dataplane:  dp,
+					Metadata: &core_xds.DataplaneMetadata{
+						SystemCaPath: "/etc/ssl/certs/ca-certificates.crt",
+						Features: map[string]bool{
+							xds_types.FeatureUnifiedResourceNaming: true,
+						},
+					},
+					WorkloadIdentity:  testWorkloadIdentity,
+					InternalAddresses: DummyInternalAddresses,
+				},
+				meshContext: xds_context.MeshContext{
+					Resource: builders.Mesh().WithName("default").Build(),
+					DataplaneZoneEgressEndpointMap: core_xds.EgressEndpointMap{
+						unifiedSvcName: core_xds.EgressEndpointGroup{
+							Protocol:      core_meta.ProtocolHTTP,
+							OwnerResource: mesKRI,
+							Endpoints: []core_xds.Endpoint{
+								{
+									Target: "example.com",
+									Port:   10000,
+									Tags:   map[string]string{},
+									Weight: 1,
+									ExternalService: &core_xds.ExternalService{
+										Protocol:      core_meta.ProtocolHTTP,
+										OwnerResource: mesKRI,
+										TLSEnabled:    true,
+										ServerName:    "example2.com",
+										CaCert:        []byte("ca"),
+										ClientCert:    []byte("cert"),
+										ClientKey:     []byte("key"),
+										SANs: []core_xds.SAN{
+											{MatchType: core_xds.SANMatchPrefix, Value: "example"},
+											{MatchType: core_xds.SANMatchExact, Value: "example2.com"},
+										},
+									},
+								},
+							},
+						},
+					},
+					Resources: xds_context.Resources{
+						MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
+								Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
+							},
+						},
+					},
+				},
+				expected: "egress-meshexternalservice-tls-custom.envoy.golden.yaml",
+			}
+		}()),
 		Entry("egress: empty endpoint group is skipped silently", func() testCase {
 			mes := builders.MeshExternalService().WithKumaVIP("242.0.0.1").Build()
 			mesKRI := kri.From(mes)
