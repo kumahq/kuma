@@ -297,8 +297,6 @@ type DataplaneContainer struct {
 	UID int64 `json:"uid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_uid"`
 	// Group ID.
 	GID int64 `json:"gid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_gui"`
-	// Deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.
-	AdminPort uint32 `json:"adminPort,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_admin_port"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_drain_time"`
 	// Readiness probe.
@@ -593,9 +591,6 @@ func (c *SidecarContainer) Validate() error {
 	}
 	if 65535 < c.RedirectPortOutbound {
 		errs = multierr.Append(errs, errors.Errorf(".RedirectPortOutbound must be in the range [0, 65535]"))
-	}
-	if 65535 < c.AdminPort {
-		errs = multierr.Append(errs, errors.Errorf(".AdminPort must be in the range [0, 65535]"))
 	}
 	if c.DrainTime.Duration <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
