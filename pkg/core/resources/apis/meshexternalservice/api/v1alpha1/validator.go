@@ -39,9 +39,11 @@ func (r *MeshExternalServiceResource) validate() error {
 			verr.AddErrorAt(path.Field("tls"), validateTls(r.Spec.Tls))
 		}
 	} else if r.Spec.Tls != nil && r.Spec.Tls.Verification != nil {
-		// an extension owns the rest of the tls validation, but never the data source types:
-		// File and EnvVar are read from the control plane process itself.
-		verr.AddErrorAt(path.Field("tls"), validateVerificationDataSourceTypes(r.Spec.Tls.Verification))
+		// an extension owns the rest of the tls validation, but never the data source
+		// shape: File/EnvVar are read from the control plane process itself, and the
+		// remaining types must still carry their required fields, or loadSecureBytes
+		// will silently drop the destination after write-time validation accepted it.
+		verr.AddErrorAt(path.Field("tls"), validateVerificationDataSources(r.Spec.Tls.Verification))
 	}
 
 	if r.Spec.Extension != nil && r.Spec.Extension.Type == "" {
@@ -88,12 +90,12 @@ func validateTls(tls *Tls) validators.ValidationError {
 	return verr
 }
 
-func validateVerificationDataSourceTypes(verification *Verification) validators.ValidationError {
+func validateVerificationDataSources(verification *Verification) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("verification")
-	verr.Add(validateSecureDataSourceType(path.Field("caCert"), verification.CaCert))
-	verr.Add(validateSecureDataSourceType(path.Field("clientCert"), verification.ClientCert))
-	verr.Add(validateSecureDataSourceType(path.Field("clientKey"), verification.ClientKey))
+	verr.Add(validateSecureDataSource(path.Field("caCert"), verification.CaCert))
+	verr.Add(validateSecureDataSource(path.Field("clientCert"), verification.ClientCert))
+	verr.Add(validateSecureDataSource(path.Field("clientKey"), verification.ClientKey))
 	return verr
 }
 
