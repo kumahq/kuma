@@ -10,7 +10,7 @@ concurrency:
   group: ${{github.workflow}}-${{ github.ref_name }} # group all runs by branch or tag
   cancel-in-progress: ${{ github.event_name == 'pull_request' }} # only cancel previous runs on PRs, we want each commit to build on branches
 permissions:
-  contents: write # needed to upload SBOM assets to GitHub releases
+  contents: read
 env:
   KUMA_DIR: "."
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
