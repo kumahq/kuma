@@ -212,6 +212,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			rootCtx.Features = []string{
 				xds_types.FeatureTCPAccessLogViaNamedPipe,
+				xds_types.FeatureUnifiedResourceNaming,
 			}
 			if cfg.DataplaneRuntime.OtelPipeEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureOtelViaKumaDp)
@@ -223,9 +224,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			if cfg.DataplaneRuntime.BindOutbounds {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureBindOutbounds)
-			}
-			if cfg.DataplaneRuntime.UnifiedResourceNamingEnabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureUnifiedResourceNaming)
 			}
 			if cfg.DataplaneRuntime.Spire.Supported {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureSpire)

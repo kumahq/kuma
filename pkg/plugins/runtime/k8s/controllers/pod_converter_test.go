@@ -423,7 +423,6 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 			// expect
 			Expect(inbounds).To(HaveLen(1))
 			Expect(inbounds[0].Port).To(Equal(uint32(8080)))
-			Expect(inbounds[0].Tags).To(Equal(map[string]string{}))
 			Expect(inbounds[0].State).To(Equal(mesh_proto.Dataplane_Networking_Inbound_Ready))
 			Expect(inbounds[0].Health).To(Equal(&mesh_proto.Dataplane_Networking_Inbound_Health{Ready: true}))
 			Expect(inbounds[0].Protocol).To(Equal(given.expected))

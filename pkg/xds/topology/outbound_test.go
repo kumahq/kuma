@@ -139,7 +139,6 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis_svc_6379", "version": "v1"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -154,12 +153,10 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
 										Port:        80,
 										ServicePort: 18080,
 									},
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8001", "app": "kong"},
 										Port:        8001,
 										ServicePort: 18001,
 									},

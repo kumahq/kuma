@@ -117,17 +117,13 @@ func deltaResponse(t *testing.T, typ core_model.ResourceType, controlPlaneID, na
 	}
 }
 
-// dataplaneWithZoneTag returns a Dataplane whose inbound carries the given kuma.io/zone tag.
-func dataplaneWithZoneTag(zone string) *mesh_proto.Dataplane {
+// dataplaneWithZoneTag returns a Dataplane whose metadata should be attributed to the connecting zone.
+func dataplaneWithZoneTag(_ string) *mesh_proto.Dataplane {
 	return &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Address: "192.168.0.1",
 			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 				Port: 1212,
-				Tags: map[string]string{
-					mesh_proto.ZoneTag:    zone,
-					mesh_proto.ServiceTag: "svc-a",
-				},
 			}},
 			Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{
 				Port: 10000,

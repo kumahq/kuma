@@ -687,27 +687,10 @@ var _ = Describe("PodReconciler", func() {
 					},
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 						{
-							Port:   8080,
-							Health: &mesh_proto.Dataplane_Networking_Inbound_Health{},
-							State:  mesh_proto.Dataplane_Networking_Inbound_NotReady,
-							Tags: map[string]string{
-								"app":                      "sample",
-								"kuma.io/protocol":         "http",
-								"kuma.io/service":          "example_demo_svc_80",
-								"k8s.kuma.io/service-name": "example",
-								"k8s.kuma.io/service-port": "80",
-								"k8s.kuma.io/namespace":    "demo",
-								"kuma.io/zone":             "zone-1",
-							},
-						},
-					},
-					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-						{
-							Address: "192.168.0.1",
-							Port:    80,
-							Tags: map[string]string{
-								"kuma.io/service": "example_demo_svc_80",
-							},
+							Port:     8080,
+							Health:   &mesh_proto.Dataplane_Networking_Inbound_Health{},
+							State:    mesh_proto.Dataplane_Networking_Inbound_NotReady,
+							Protocol: "http",
 						},
 					},
 				},
@@ -768,27 +751,10 @@ var _ = Describe("PodReconciler", func() {
 					Address: "192.168.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 						{
-							Port:   8080,
-							Health: &mesh_proto.Dataplane_Networking_Inbound_Health{},
-							State:  mesh_proto.Dataplane_Networking_Inbound_NotReady,
-							Tags: map[string]string{
-								"app":                      "sample",
-								"kuma.io/protocol":         "http",
-								"kuma.io/service":          "example_demo_svc_80",
-								"k8s.kuma.io/service-name": "example",
-								"k8s.kuma.io/service-port": "80",
-								"k8s.kuma.io/namespace":    "demo",
-								"kuma.io/zone":             "zone-1",
-							},
-						},
-					},
-					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-						{
-							Address: "192.168.0.1",
-							Port:    80,
-							Tags: map[string]string{
-								"kuma.io/service": "example_demo_svc_80",
-							},
+							Port:     8080,
+							Health:   &mesh_proto.Dataplane_Networking_Inbound_Health{},
+							State:    mesh_proto.Dataplane_Networking_Inbound_NotReady,
+							Protocol: "http",
 						},
 					},
 				},

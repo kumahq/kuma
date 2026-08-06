@@ -94,9 +94,9 @@ var _ = DescribeTable("dpContribution",
 			Expect(testutil.ToFloat64(c.WithLabelValues(reason))).To(Equal(0.0))
 		}
 	},
-	Entry("1: single inbound custom tag propagates",
-		nil,
-		[]map[string]string{{mesh_proto.ServiceTag: "backend", "appci": "jeffy"}},
+	Entry("1: single dataplane label propagates",
+		map[string]string{"appci": "jeffy"},
+		[]map[string]string{{mesh_proto.ServiceTag: "backend"}},
 		nil,
 		map[string]string{"appci": "jeffy"}, nil),
 	Entry("2: DP resource label propagates",
@@ -109,30 +109,30 @@ var _ = DescribeTable("dpContribution",
 		[]map[string]string{{mesh_proto.ServiceTag: "backend", "color": "red"}},
 		nil,
 		map[string]string{"color": "blu"}, nil),
-	Entry("4: two inbounds agree → propagate",
-		nil,
+	Entry("4: inbounds are ignored, dataplane label still propagates",
+		map[string]string{"appci": "jeffy"},
 		[]map[string]string{
 			{mesh_proto.ServiceTag: "backend", "appci": "jeffy"},
 			{mesh_proto.ServiceTag: "backend", "appci": "jeffy"},
 		},
 		nil,
 		map[string]string{"appci": "jeffy"}, nil),
-	Entry("5: two inbounds disagree → drop + metric",
+	Entry("5: disagreeing inbounds are ignored",
 		nil,
 		[]map[string]string{
 			{mesh_proto.ServiceTag: "backend", "appci": "jeffy"},
 			{mesh_proto.ServiceTag: "backend", "appci": "bob"},
 		},
 		nil,
-		map[string]string{}, map[string]float64{"inbound_conflict": 1.0}),
-	Entry("5b: two inbounds disagree on two keys → two drops",
+		map[string]string{}, nil),
+	Entry("5b: disagreeing inbounds on multiple keys are ignored",
 		nil,
 		[]map[string]string{
 			{mesh_proto.ServiceTag: "backend", "appci": "jeffy", "team": "blue"},
 			{mesh_proto.ServiceTag: "backend", "appci": "bob", "team": "red"},
 		},
 		nil,
-		map[string]string{}, map[string]float64{"inbound_conflict": 2.0}),
+		map[string]string{}, nil),
 	Entry("6: kuma.io/protocol reserved → not propagated",
 		nil,
 		[]map[string]string{{mesh_proto.ServiceTag: "backend", mesh_proto.ProtocolTag: "http"}},
@@ -143,19 +143,19 @@ var _ = DescribeTable("dpContribution",
 		[]map[string]string{{mesh_proto.ServiceTag: "backend", mesh_proto.KubeNamespaceTag: "foo"}},
 		nil,
 		map[string]string{}, nil),
-	Entry("8: invalid inbound key skipped, others propagate",
-		nil,
-		[]map[string]string{{mesh_proto.ServiceTag: "backend", "BAD!KEY": "x", "team": "payments"}},
+	Entry("8: invalid dataplane label key skipped, others propagate",
+		map[string]string{"BAD!KEY": "x", "team": "payments"},
+		[]map[string]string{{mesh_proto.ServiceTag: "backend"}},
 		nil,
 		map[string]string{"team": "payments"}, map[string]float64{"invalid": 1.0}),
-	Entry("8b: invalid inbound value → drop + metric",
-		nil,
-		[]map[string]string{{mesh_proto.ServiceTag: "backend", "appci": "bad value with space"}},
+	Entry("8b: invalid dataplane label value → drop + metric",
+		map[string]string{"appci": "bad value with space"},
+		[]map[string]string{{mesh_proto.ServiceTag: "backend"}},
 		nil,
 		map[string]string{}, map[string]float64{"invalid": 1.0}),
-	Entry("9: allow-list filters non-listed (no metric, debug-only)",
-		nil,
-		[]map[string]string{{mesh_proto.ServiceTag: "backend", "appci": "jeffy", "team": "payments"}},
+	Entry("9: allow-list filters non-listed dataplane labels (no metric, debug-only)",
+		map[string]string{"appci": "jeffy", "team": "payments"},
+		[]map[string]string{{mesh_proto.ServiceTag: "backend"}},
 		[]string{"appci"},
 		map[string]string{"appci": "jeffy"}, nil),
 	Entry("9a: reserved DP label does NOT override valid inbound",
@@ -168,9 +168,9 @@ var _ = DescribeTable("dpContribution",
 		[]map[string]string{{mesh_proto.ServiceTag: "backend", "color": "red"}},
 		nil,
 		map[string]string{"color": "blu"}, map[string]float64{"invalid": 1.0}),
-	Entry("9c: DP label outside allow-list dropped (no metric, debug-only), inbound allow-listed value wins",
-		map[string]string{"team": "infra"},
-		[]map[string]string{{mesh_proto.ServiceTag: "backend", "appci": "jeffy"}},
+	Entry("9c: DP label outside allow-list dropped (no metric, debug-only), allow-listed dataplane value wins",
+		map[string]string{"team": "infra", "appci": "jeffy"},
+		[]map[string]string{{mesh_proto.ServiceTag: "backend"}},
 		[]string{"appci"},
 		map[string]string{"appci": "jeffy"}, nil),
 	Entry("9d: invalid DP label value → drop + metric",
@@ -178,14 +178,14 @@ var _ = DescribeTable("dpContribution",
 		[]map[string]string{{mesh_proto.ServiceTag: "backend"}},
 		nil,
 		map[string]string{}, map[string]float64{"invalid": 1.0}),
-	Entry("9e: mixed invalid key + inbound conflict",
-		nil,
+	Entry("9e: mixed invalid dataplane key + valid dataplane label",
+		map[string]string{"BAD!KEY": "x", "appci": "jeffy"},
 		[]map[string]string{
 			{mesh_proto.ServiceTag: "backend", "BAD!KEY": "x", "appci": "jeffy"},
 			{mesh_proto.ServiceTag: "backend", "BAD!KEY": "x", "appci": "bob"},
 		},
 		nil,
-		map[string]string{}, map[string]float64{"invalid": 1.0, "inbound_conflict": 1.0}),
+		map[string]string{"appci": "jeffy"}, map[string]float64{"invalid": 1.0}),
 )
 
 var _ = DescribeTable("mergeAcrossDataplanes",
@@ -330,7 +330,7 @@ func tagsMap(tags []any) map[any]any {
 }
 
 var _ = Describe("log emission", func() {
-	It("emits warn-log on inbound_conflict", func() {
+	It("does not emit logs for ignored inbound tags", func() {
 		log, root := newFakeLogger()
 		c := newDroppedLabels()
 		ins := []*mesh_proto.Dataplane_Networking_Inbound{
@@ -340,27 +340,14 @@ var _ = Describe("log emission", func() {
 		dp := dpWith("dp-1", nil, time.Unix(0, 0), ins...)
 		_ = generate.DpContribution(dp, ins, nil, c, log, "backend")
 
-		Expect(root.messages).To(HaveLen(1))
-		entry := root.messages[0]
-		Expect(entry.msg).To(Equal("dropping label during MeshService generation"))
-		kv := tagsMap(entry.tags)
-		Expect(kv["reason"]).To(Equal("inbound_conflict"))
-		Expect(kv["dataplane"]).To(Equal("dp-1"))
-		Expect(kv["mesh"]).To(Equal(core_model.DefaultMesh))
-		Expect(kv["key"]).To(Equal("appci"))
-		// Enforce lowercase field names — no capital Dataplane/Mesh keys.
-		Expect(kv).ToNot(HaveKey("Dataplane"))
-		Expect(kv).ToNot(HaveKey("Mesh"))
+		Expect(root.messages).To(BeEmpty())
 	})
 
-	It("emits warn-log on invalid key", func() {
+	It("emits warn-log on invalid dataplane label key", func() {
 		log, root := newFakeLogger()
 		c := newDroppedLabels()
-		ins := []*mesh_proto.Dataplane_Networking_Inbound{
-			inboundWithTags(map[string]string{mesh_proto.ServiceTag: "backend", "BAD!KEY": "x"}),
-		}
-		dp := dpWith("dp-1", nil, time.Unix(0, 0), ins...)
-		_ = generate.DpContribution(dp, ins, nil, c, log, "backend")
+		dp := dpWith("dp-1", map[string]string{"BAD!KEY": "x"}, time.Unix(0, 0))
+		_ = generate.DpContribution(dp, nil, nil, c, log, "backend")
 
 		Expect(root.messages).To(HaveLen(1))
 		kv := tagsMap(root.messages[0].tags)
@@ -368,14 +355,11 @@ var _ = Describe("log emission", func() {
 		Expect(kv["key"]).To(Equal("BAD!KEY"))
 	})
 
-	It("emits warn-log on invalid value", func() {
+	It("emits warn-log on invalid dataplane label value", func() {
 		log, root := newFakeLogger()
 		c := newDroppedLabels()
-		ins := []*mesh_proto.Dataplane_Networking_Inbound{
-			inboundWithTags(map[string]string{mesh_proto.ServiceTag: "backend", "appci": "bad value with space"}),
-		}
-		dp := dpWith("dp-1", nil, time.Unix(0, 0), ins...)
-		_ = generate.DpContribution(dp, ins, nil, c, log, "backend")
+		dp := dpWith("dp-1", map[string]string{"appci": "bad value with space"}, time.Unix(0, 0))
+		_ = generate.DpContribution(dp, nil, nil, c, log, "backend")
 
 		Expect(root.messages).To(HaveLen(1))
 		kv := tagsMap(root.messages[0].tags)

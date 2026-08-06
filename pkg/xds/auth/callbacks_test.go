@@ -73,10 +73,7 @@ var _ = Describe("Auth Callbacks", func() {
 					{
 						Port:        8080,
 						ServicePort: 8081,
-						Tags: map[string]string{
-							"kuma.io/service":  "web",
-							"kuma.io/protocol": "http",
-						},
+						Protocol:    "http",
 					},
 				},
 			},

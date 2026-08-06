@@ -62,7 +62,11 @@ var _ = Describe("Authentication flow", func() {
 		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("demo"), "demo")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
-		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"), core_store.CreateWithLabels(map[string]string{"team": "web", "env": "prod"}))
+		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"), core_store.CreateWithLabels(map[string]string{
+			"team":                "web",
+			"env":                 "prod",
+			mesh_proto.ServiceTag: "web-api",
+		}))
 		Expect(err).ToNot(HaveOccurred())
 
 		dpResWithWorkload = *samples.DataplaneWebBuilder().
