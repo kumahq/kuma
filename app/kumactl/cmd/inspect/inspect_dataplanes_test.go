@@ -71,18 +71,10 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 								{
 									Port:        8080,
 									ServicePort: 80,
-									Tags: map[string]string{
-										mesh_proto.ServiceTag: "mobile",
-										"version":             "v1",
-									},
 								},
 								{
 									Port:        8090,
 									ServicePort: 90,
-									Tags: map[string]string{
-										mesh_proto.ServiceTag: "metrics",
-										"version":             "v1",
-									},
 								},
 							},
 						},
@@ -171,17 +163,11 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 								{
 									Port:        8080,
 									ServicePort: 80,
-									Tags: map[string]string{
-										mesh_proto.ServiceTag: "example",
-									},
 								},
 								{
 									Port:        9001,
 									ServicePort: 81,
 									Health:      &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false},
-									Tags: map[string]string{
-										mesh_proto.ServiceTag: "example",
-									},
 								},
 							},
 						},
@@ -271,17 +257,11 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									Port:        8080,
 									ServicePort: 80,
 									Health:      &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false},
-									Tags: map[string]string{
-										mesh_proto.ServiceTag: "example",
-									},
 								},
 								{
 									Port:        9001,
 									ServicePort: 81,
 									Health:      &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false},
-									Tags: map[string]string{
-										mesh_proto.ServiceTag: "example",
-									},
 								},
 							},
 						},
@@ -370,9 +350,6 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 								{
 									Port:        8080,
 									ServicePort: 80,
-									Tags: map[string]string{
-										"kuma.io/service": "example",
-									},
 								},
 							},
 						},

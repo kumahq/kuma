@@ -269,7 +269,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 			expected string
 		}
 
-		DescribeTable("should return the protocol field, ignoring the legacy tag",
+		DescribeTable("should return protocol from field",
 			func(given testCase) {
 				Expect(given.inbound.GetProtocol()).To(Equal(given.expected))
 			},
@@ -287,19 +287,6 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 				},
 				expected: "grpc",
 			}),
-			Entry("the kuma.io/protocol tag is not a source of protocol", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{ProtocolTag: "http"},
-				},
-				expected: "",
-			}),
-			Entry("protocol field wins over the tag", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Protocol: "grpc",
-					Tags:     map[string]string{ProtocolTag: "http"},
-				},
-				expected: "grpc",
-			}),
 		)
 	})
 
@@ -310,7 +297,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 			expected string
 		}
 
-		DescribeTable("should return the legacy inbound tag, falling back to the Dataplane's service",
+		DescribeTable("should return the provided fallback",
 			func(given testCase) {
 				Expect(given.inbound.GetServiceFallback(given.fallback)).To(Equal(given.expected))
 			},
@@ -319,31 +306,15 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 				fallback: "backend",
 				expected: "backend",
 			}),
-			Entry("inbound carries no tags", testCase{
+			Entry("inbound carries no service", testCase{
 				inbound:  &Dataplane_Networking_Inbound{},
 				fallback: "backend",
 				expected: "backend",
 			}),
-			Entry("inbound carries an empty service tag", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{ServiceTag: ""},
-				},
-				fallback: "backend",
-				expected: "backend",
-			}),
-			Entry("legacy inbound declares its own service", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{ServiceTag: "backend-api"},
-				},
-				fallback: "backend",
-				expected: "backend-api",
-			}),
-			Entry("legacy inbound on a Dataplane with no service at all", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{ServiceTag: "backend-api"},
-				},
+			Entry("empty fallback remains empty", testCase{
+				inbound:  &Dataplane_Networking_Inbound{},
 				fallback: "",
-				expected: "backend-api",
+				expected: "",
 			}),
 		)
 	})

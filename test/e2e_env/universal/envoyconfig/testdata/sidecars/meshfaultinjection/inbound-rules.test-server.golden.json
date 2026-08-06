@@ -689,7 +689,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "\u0026instance=1\u0026\u0026kuma.io/display-name=test-server\u0026\u0026kuma.io/env=universal\u0026\u0026kuma.io/mesh=envoyconfig\u0026\u0026kuma.io/origin=zone\u0026\u0026kuma.io/workload=test-server\u0026\u0026kuma.io/zone=kuma-3\u0026\u0026team=server-owners\u0026\u0026version=v1\u0026"
+                          "value": "\u0026instance=1\u0026\u0026kuma.io/display-name=test-server\u0026\u0026kuma.io/env=universal\u0026\u0026kuma.io/mesh=envoyconfig\u0026\u0026kuma.io/origin=zone\u0026\u0026kuma.io/service=test-server\u0026\u0026kuma.io/workload=test-server\u0026\u0026kuma.io/zone=kuma-3\u0026\u0026team=server-owners\u0026\u0026version=v1\u0026"
                         }
                       }
                     ],
@@ -1059,6 +1059,7 @@
               "kuma.io/mesh": "envoyconfig",
               "kuma.io/origin": "zone",
               "kuma.io/protocol": "http",
+              "kuma.io/service": "test-server",
               "kuma.io/workload": "test-server",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",

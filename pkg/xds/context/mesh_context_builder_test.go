@@ -483,8 +483,6 @@ networking:
   address: backend.dns.name
   inbound:
     - port: 8080
-      tags:
-        kuma.io/service: backend
 ---
 type: MeshService
 name: backend

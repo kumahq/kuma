@@ -39,15 +39,14 @@ name: lp-dp-1
 labels:
   color: blue
   kuma.io/owner: ignored
+  kuma.io/protocol: http
+  kuma.io/service: lp-svc
   kuma.io/workload: lp-svc
+  team: payments
 networking:
   address: 192.168.10.10
   inbound:
   - port: 80
-    tags:
-      kuma.io/service: lp-svc
-      kuma.io/protocol: http
-      team: payments
 `
 		Expect(YamlUniversal(dp)(universal.Cluster)).To(Succeed())
 
@@ -75,16 +74,15 @@ mesh: lp-mesh
 name: lp-dp-1
 labels:
   color: blue
+  kuma.io/protocol: http
+  kuma.io/service: lp-svc
   kuma.io/workload: lp-svc
+  team: platform
+  tier: backend
 networking:
   address: 192.168.10.10
   inbound:
   - port: 80
-    tags:
-      kuma.io/service: lp-svc
-      kuma.io/protocol: http
-      team: platform
-      tier: backend
 `
 		Expect(YamlUniversal(dpUpdated)(universal.Cluster)).To(Succeed())
 
@@ -104,14 +102,13 @@ type: Dataplane
 mesh: lp-mesh
 name: lp-dp-1
 labels:
+  kuma.io/protocol: http
+  kuma.io/service: lp-svc
   kuma.io/workload: lp-svc
 networking:
   address: 192.168.10.10
   inbound:
   - port: 80
-    tags:
-      kuma.io/service: lp-svc
-      kuma.io/protocol: http
 `
 		Expect(YamlUniversal(dpUpdated)(universal.Cluster)).To(Succeed())
 
