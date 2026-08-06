@@ -2,7 +2,7 @@ name: "release"
 run-name: Release${{ inputs.check && ' and check' || '' }} ${{ inputs.release }}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.release || '0.0.0' }}
   cancel-in-progress: false
 on:
   schedule:
@@ -72,13 +72,33 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         if: fromJSON(env.CHECK)
         run: |
-          release-tool release binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }}
+          max_retries=5
+          retry_count=0
+          until release-tool release binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }}; do
+            retry_count=$((retry_count + 1))
+            if [[ "$retry_count" -ge "$max_retries" ]]; then
+              echo "check-binaries failed after $max_retries attempts"
+              exit 1
+            fi
+            echo "Attempt $retry_count: check-binaries failed, retrying in 30 seconds..."
+            sleep 30
+          done
       - name: check-docker
         env:
           GITHUB_TOKEN: ${{ github.token }}
         if: fromJSON(env.CHECK)
         run: |
-          release-tool release docker --repo ${{ github.repository }} --release ${{ env.RELEASE }} --docker-repo ${{env.DOCKER_REPO }} --images ${{ env.DOCKER_IMAGES }}
+          max_retries=5
+          retry_count=0
+          until release-tool release docker --repo ${{ github.repository }} --release ${{ env.RELEASE }} --docker-repo ${{env.DOCKER_REPO }} --images ${{ env.DOCKER_IMAGES }}; do
+            retry_count=$((retry_count + 1))
+            if [[ "$retry_count" -ge "$max_retries" ]]; then
+              echo "check-docker failed after $max_retries attempts"
+              exit 1
+            fi
+            echo "Attempt $retry_count: check-docker failed, retrying in 30 seconds..."
+            sleep 30
+          done
       - name: update-active-branches.json
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
