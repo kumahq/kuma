@@ -147,28 +147,6 @@ var _ = Describe("Dataplane", func() {
                   tags:
                     kuma.io/service: redis`,
 		),
-		Entry("dataplane with probes", `
-            type: Dataplane
-            name: dp-1
-            mesh: default
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 8080
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
-              outbound:
-                - port: 3333
-                  tags:
-                    kuma.io/service: redis
-            probes:
-              port: 9000
-              endpoints:
-               - inboundPort: 8088
-                 inboundPath: /healthz
-                 path: /8080/healthz`,
-		),
 		Entry("dataplane with service probes", `
             type: Dataplane
             name: dp-1
@@ -582,13 +560,7 @@ var _ = Describe("Dataplane", func() {
                     - type: ZoneEgress
                       address: 192.168.0.1
                       port: 10002
-                      name: ze-port
-                probes:
-                  port: 0
-                  endpoints:
-                   - inboundPort: 8088
-                     inboundPath: /healthz
-                     path: /8080/healthz`,
+                      name: ze-port`,
 			expected: `
                 violations:
                 - field: networking.gateway.type
@@ -910,49 +882,6 @@ var _ = Describe("Dataplane", func() {
                       servicePort: 10002
                       tags:
                         kuma.io/service: backend`,
-		}),
-		Entry("dataplane with virtual probe", testCase{
-			dataplane: `
-            type: Dataplane
-            name: dp-1
-            mesh: default
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 8080
-                  tags:
-                    kuma.io/service: backend
-                    version: "1"
-              outbound:
-                - port: 3333
-                  tags:
-                    kuma.io/service: redis
-            probes:
-              port: 0
-              endpoints:
-               - inboundPort: 8088
-                 inboundPath: /healthz
-                 path: /8080/healthz
-               - inboundPort: 99999999
-                 inboundPath: healthz
-                 path: 8080/healthz
-               - inboundPort: 1000
-                 inboundPath:
-                 path: `,
-			expected: `
-                violations:
-                - field: probes.port
-                  message: port must be in the range [1, 65535]
-                - field: probes.endpoints[1].inboundPort
-                  message: port must be in the range [1, 65535]
-                - field: probes.endpoints[1].inboundPath
-                  message: should be a valid URL Path
-                - field: probes.endpoints[1].path
-                  message: should be a valid URL Path
-                - field: probes.endpoints[2].inboundPath
-                  message: should be a valid URL Path
-                - field: probes.endpoints[2].path
-                  message: should be a valid URL Path`,
 		}),
 		Entry("dataplane with service probe", testCase{
 			dataplane: `

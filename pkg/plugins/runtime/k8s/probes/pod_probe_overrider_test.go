@@ -28,10 +28,6 @@ var _ = Describe("ApplicationProbeProxyPort", func() {
 			"kuma.io/gateway": "enabled",
 		}, 10001, 0, ""),
 
-		Entry("virtual probes disabled and no proxy port", map[string]string{
-			"kuma.io/virtual-probes": "false",
-		}, 10001, 0, ""),
-
 		Entry("proxy port set", map[string]string{
 			"kuma.io/application-probe-proxy-port": "9001",
 		}, 10001, 9001, ""),

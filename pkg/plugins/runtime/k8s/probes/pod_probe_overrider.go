@@ -38,7 +38,7 @@ func SetupAppProbeProxies(pod *kube_core.Pod, log logr.Logger) error {
 	}
 	for _, c := range pod.Spec.Containers {
 		if c.Name != util.KumaSidecarContainerName {
-			// we don't want to create virtual probes for Envoy container, because we generate real listener which is not protected by mTLS
+			// we don't want to proxy probes for the Envoy container itself
 			containersNeedingProbes = append(containersNeedingProbes, c)
 		}
 	}

@@ -3,7 +3,6 @@ package mesh
 import (
 	"fmt"
 	"net"
-	"net/url"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -56,14 +55,12 @@ func (d *DataplaneResource) Validate() error {
 
 		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
-		err.Add(validateProbes(d.Spec.GetProbes()))
 
 	case d.Spec.IsBuiltinGateway():
 		err.AddViolationAt(net.Field("gateway").Field("type"), "BUILTIN gateways are no longer supported, use DELEGATED instead")
 
 	default:
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
-		err.Add(validateProbes(d.Spec.GetProbes()))
 		err.AddErrorAt(net.Field("listeners"), validateListeners(d.Spec.GetNetworking()))
 	}
 
@@ -88,26 +85,6 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		err.AddErrorAt(path.Field("outbound").Index(i), result)
 	}
 	err.AddErrorAt(path.Field("transparentProxing"), validateTransparentProxying(networking.GetTransparentProxying()))
-	return err
-}
-
-func validateProbes(probes *mesh_proto.Dataplane_Probes) validators.ValidationError {
-	if probes == nil {
-		return validators.ValidationError{}
-	}
-	var err validators.ValidationError
-	path := validators.RootedAt("probes")
-	err.Add(ValidatePort(path.Field("port"), probes.GetPort()))
-	for i, endpoint := range probes.Endpoints {
-		indexPath := path.Field("endpoints").Index(i)
-		err.Add(ValidatePort(indexPath.Field("inboundPort"), endpoint.GetInboundPort()))
-		if _, URIErr := url.ParseRequestURI(endpoint.InboundPath); URIErr != nil {
-			err.AddViolationAt(indexPath.Field("inboundPath"), `should be a valid URL Path`)
-		}
-		if _, URIErr := url.ParseRequestURI(endpoint.Path); URIErr != nil {
-			err.AddViolationAt(indexPath.Field("path"), `should be a valid URL Path`)
-		}
-	}
 	return err
 }
 
