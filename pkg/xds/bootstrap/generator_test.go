@@ -8,6 +8,7 @@ import (
 	"time"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	. "github.com/kumahq/kuma/v3/pkg/xds/bootstrap"
 	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
@@ -43,6 +45,7 @@ var defaultVersion = types.Version{
 
 var _ = Describe("bootstrapGenerator", func() {
 	var resManager core_manager.ResourceManager
+	var dpServerKeyPair *util_tls.Watcher
 
 	authEnabled := map[string]bool{
 		string(mesh_proto.DataplaneProxyType): true,
@@ -54,6 +57,14 @@ var _ = Describe("bootstrapGenerator", func() {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 			return now
 		}
+		ctx, cancel := context.WithCancel(context.Background())
+		DeferCleanup(cancel)
+		var err error
+		dpServerKeyPair, err = util_tls.NewWatchers(ctx, logr.Discard()).Watch(
+			filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
+		)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	defaultDataplane := func() *core_mesh.DataplaneResource {
@@ -102,7 +113,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				store.CreateWithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}))
 			Expect(err).ToNot(HaveOccurred())
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, dpServerKeyPair, given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -440,7 +451,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		generator, err := NewDefaultBootstrapGenerator(
 			resManager,
 			cfg,
-			filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			dpServerKeyPair,
 			map[string]bool{},
 			false,
 			false,
@@ -481,7 +492,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		generator, err := NewDefaultBootstrapGenerator(
 			resManager,
 			cfg,
-			filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			dpServerKeyPair,
 			map[string]bool{},
 			false,
 			false,
@@ -517,7 +528,7 @@ var _ = Describe("bootstrapGenerator", func() {
 
 			cfg := bootstrap_config.DefaultBootstrapServerConfig()
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, dpServerKeyPair, map[string]bool{}, false, true, 9901, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
