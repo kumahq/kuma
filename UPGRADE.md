@@ -35,7 +35,7 @@ after upgrading. Leaving it set no longer has any effect in Kuma 3.0.0.
 The `KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED` `kuma-dp`
 environment variable, the `KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED`
 control plane environment variable / `runtime.kubernetes.injector.unifiedResourceNamingEnabled`
-`kuma-cp.yaml` key, and the `sidecarContainer.unifiedResourceNaming` Helm value have
+`kuma-cp.yaml` key, and the `dataPlane.features.unifiedResourceNaming` Helm value have
 all been removed. `kuma-dp` now always advertises the unified naming feature to the
 control plane, and the sidecar injector no longer stamps the corresponding env var
 onto injected `kuma-sidecar` containers.
