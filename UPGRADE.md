@@ -8,6 +8,14 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Zone Token `ingress` and `egress` scopes removed
+
+`kumactl generate zone-token` no longer accepts `--scope ingress` or `--scope egress`, and the `POST /tokens/zone` endpoint no longer requires a `scope`. A zone proxy is an ordinary `Dataplane` and authenticates with a dataplane token, so these scopes identified components that no longer exist. Kuma itself defines no zone token scopes now; the token carries only the zone name unless a distribution registers its own.
+
+**Action required**
+
+Drop `--scope ingress`/`--scope egress` from any script calling `kumactl generate zone-token`. Zone proxies need a dataplane token — generate one with `kumactl generate dataplane-token`.
+
 ### `MeshExternalService` clusters require a `MeshIdentity`
 
 A client proxy without a workload identity no longer gets a cluster for a `MeshExternalService`. It previously got one that addressed the zone egress by the legacy `zone-egress` service SNI, but such traffic could never be served: a zone egress only generates its egress listener when it has a workload identity, and that listener matches filter chains on the KRI SNI only, so the legacy SNI matched nothing.
@@ -391,7 +399,7 @@ pre-2.6 overview aliases `GET /zoneingresses+insights[/{name}]` and
 `GET /zoneegressoverviews[/{name}]`, which have been redundant with
 `/zoneingresses[/{name}]/_overview` and `/zoneegresses[/{name}]/_overview` since
 2.6. Reading and listing the `ZoneIngress`/`ZoneEgress` resources themselves is
-unchanged.
+gone as well — the resources no longer exist, see the section above.
 
 `kumactl inspect` loses `zoneingress`, `zoneingresses` (alias `zone-ingresses`),
 `zoneegress` and `zoneegresses`.

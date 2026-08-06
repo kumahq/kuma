@@ -810,10 +810,6 @@ access:
       groups: ["mesh-system:unauthenticated", "mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS
 # Configuration of experimental features of Kuma
 experimental:
-  # List of prefixes that will be used to filter out tags by keys from ingress' available services section.
-  # This can trim the size of the ZoneIngress object significantly.
-  # The drawback is that you cannot use filtered out tags for traffic routing.
-  # If empty, no filter is applied.
   # KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
   kdsEventBasedWatchdog:
     # How often we flush changes when experimental event based watchdog is used.

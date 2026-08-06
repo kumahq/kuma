@@ -11,7 +11,7 @@ We have 3 shared environments each with their own package:
   * 2 Zone CPs deployed on Universal
   This setup should cover all scenarios of cross-cluster communication.
 
-All setups come with ZoneEgress by default.
+All setups come with a zone egress by default.
 
 All the test suits (for example `trafficlog`, `trafficpermissions`) are parallelized on multiple processes on one machine using [Ginkgo spec parallelization](https://onsi.github.io/ginkgo/#spec-parallelization). 
 Every test suite should run in their own mesh and namespace to not interfere with other tests.

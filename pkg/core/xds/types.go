@@ -347,7 +347,6 @@ func ParseProxyIdFromString(id string) (*ProxyId, error) {
 	}
 	parts := strings.SplitN(id, ".", 2)
 	mesh := parts[0]
-	// when proxy is an ingress mesh is empty
 	if len(parts) < 2 {
 		return nil, errors.New("the name should be provided after the dot")
 	}
