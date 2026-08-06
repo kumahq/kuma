@@ -135,7 +135,7 @@ func New(
 			cfg.SidecarContainer.DataplaneContainer,
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, envoyAdminUnixSocket,
 			sidecarContainersEnabled,
-			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
+			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort,
 			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
 		),
 		systemNamespace: systemNamespace,

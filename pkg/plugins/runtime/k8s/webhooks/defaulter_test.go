@@ -320,10 +320,7 @@ var _ = Describe("Defaulter", func() {
                   "address": "127.0.0.1",
                   "inbound": [
                     {
-                      "port": 11011,
-                      "tags": {
-                        "kuma.io/service": "backend"
-                      }
+                      "port": 11011
                     }
                   ]
                 }
@@ -342,7 +339,6 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/mesh": "demo",
                   "kuma.io/env": "kubernetes",
                   "kuma.io/origin": "zone",
-                  "kuma.io/proxy-type": "sidecar",
                   "kuma.io/zone": "zone-1"
                 },
                 "annotations": {
@@ -354,10 +350,7 @@ var _ = Describe("Defaulter", func() {
                   "address": "127.0.0.1",
                   "inbound": [
                     {
-                      "port": 11011,
-                      "tags": {
-                        "kuma.io/service": "backend"
-                      }
+                      "port": 11011
                     }
                   ]
                 }

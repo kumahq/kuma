@@ -25,7 +25,7 @@ func ResourceValidation() {
 	const mesh = "multizone-label-validation"
 
 	BeforeAll(func() {
-		Expect(multizone.Global.Install(MTLSMeshUniversal(mesh))).To(Succeed())
+		Expect(multizone.Global.Install(MeshUniversal(mesh))).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 	})
 

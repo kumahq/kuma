@@ -29,9 +29,6 @@ var _ = Describe("Noop Authenticator", func() {
 						{
 							Port:        8080,
 							ServicePort: 8081,
-							Tags: map[string]string{
-								"kuma.io/service": "web",
-							},
 						},
 					},
 				},

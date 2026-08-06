@@ -8,6 +8,66 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `kuma.io/protocol` inbound tag no longer sets the protocol
+
+The protocol of a `Dataplane` inbound is now read only from `networking.inbound[].protocol`. The `kuma.io/protocol` tag stays a regular tag — policies keep matching on it — but it is no longer used as a fallback when the field is unset. This only affects Universal: on Kubernetes the field is always derived from the `Service` port during conversion.
+
+**Action required**
+
+Set `networking.inbound[].protocol` on every Universal `Dataplane` that currently declares its protocol only through the `kuma.io/protocol` tag, before upgrading.
+
+**Warning**: an inbound without `protocol` is treated as an unknown protocol and served as plain TCP. Its listener loses the `kuma.io/protocol` tag and the L7 filters that depend on it — HTTP access log fields, `MeshTimeout` HTTP timeouts, `MeshFaultInjection`, `MeshRateLimit` HTTP limits, HTTP-aware routing — and the endpoint stops advertising a protocol, so `MeshService`-level protocol inference falls back to TCP as well. Nothing rejects the resource, so the change is silent.
+
+### `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` removed
+
+The `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` environment variable
+has been removed. MeshTrafficPermission rule generation now always uses the
+cliques-based grouping algorithm.
+
+**Action required**
+
+Remove `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` from control
+plane deployments, Helm values, and any other runtime configuration before or
+after upgrading. Leaving it set no longer has any effect in Kuma 3.0.0.
+
+### Unified resource naming opt-out removed
+
+The `KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED` `kuma-dp`
+environment variable, the `KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED`
+control plane environment variable / `runtime.kubernetes.injector.unifiedResourceNamingEnabled`
+`kuma-cp.yaml` key, and the `dataPlane.features.unifiedResourceNaming` Helm value have
+all been removed. `kuma-dp` now always advertises the unified naming feature to the
+control plane, and the sidecar injector no longer stamps the corresponding env var
+onto injected `kuma-sidecar` containers.
+
+**Action required**
+
+If you previously set any of these to `false` to opt out, unified naming is now
+always on: `kuma-dp` always advertises `FeatureUnifiedResourceNaming`, and the
+control plane generates unified Envoy resource and stat names regardless of any
+leftover config. Update automation, dashboards, or alerting that depend on the
+legacy names before upgrading. The leftover config values themselves are silently
+ignored rather than rejected: `kuma-cp` does not use strict YAML parsing outside of
+tests, `envconfig` ignores unknown environment variables, and Helm accepts unknown
+`--set` paths. Universal data planes fall back to legacy naming until they run a
+`kuma-dp` version that advertises `FeatureUnifiedResourceNaming` (Kuma 3.0+).
+
+### MADS restricted to universal deployment mode
+
+The Monitoring Assignment Discovery Service (MADS) server no longer starts on
+Kubernetes control planes, regardless of `KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED`
+or `controlPlane.madsServer.enabled`. It remains fully supported in universal
+deployment mode, including universal-on-Kubernetes
+(`controlPlane.environment: universal`). The Helm chart no longer renders the
+`mads-server` Service port (5676) when `controlPlane.environment` is
+`kubernetes`.
+
+**Action required**
+
+Kubernetes users relying on MADS must migrate to `MeshMetric` with Prometheus
+Kubernetes service discovery before upgrading. `controlPlane.madsServer.enabled`
+now only applies when `controlPlane.environment` is `universal`.
+
 ### `advertisedAddress` removed from `Dataplane` networking
 
 The `networking.advertisedAddress` field has been removed from the `Dataplane` resource. Proxies behind NAT or a private network (e.g. Docker) that relied on it to advertise a routable address to other proxies must now be reachable directly via `networking.address`.
@@ -118,8 +178,7 @@ rejects `mode=global` with `environment=kubernetes`, and it also rejects
 with `environment=universal` backed by a non-Kubernetes store such as
 PostgreSQL, even if `kuma-cp` itself is deployed on Kubernetes. The Helm chart
 no longer renders the `Service`/config needed for the old Kubernetes-native
-setup. Zone and Standalone control planes on Kubernetes (`mode`
-`zone`/`standalone`) are unaffected.
+setup. Zone control planes on Kubernetes (`mode` `zone`) are unaffected.
 
 **Action required**
 
@@ -127,8 +186,19 @@ If you currently run the Global control plane on Kubernetes, migrate it to
 Universal (non-Kubernetes) infrastructure before upgrading: deploy `kuma-cp`
 in `global` mode on Universal, backed by PostgreSQL, and keep your Kubernetes
 clusters as Zone control planes connecting to that Global control plane over
-KDS. Kubernetes clusters running `zone` or `standalone` mode require no
-changes.
+KDS. Kubernetes clusters running `zone` mode require no changes.
+
+### `standalone` mode removed
+
+The deprecated `standalone` control plane mode has been removed. `KUMA_MODE`/
+`controlPlane.mode` no longer accepts `standalone`: `kuma-cp` fails config
+validation at startup, and the Helm chart fails at template time.
+
+**Action required**
+
+Rename `standalone` to `zone` in `KUMA_MODE`, `controlPlane.mode`, and any
+other runtime configuration before upgrading. `standalone` and `zone` were
+already behaviourally identical, so no other changes are required.
 
 ### `meshServices` removed from the `Mesh` schema
 
@@ -252,6 +322,31 @@ no equivalent there: `podAnnotations`, `annotations`, `logLevel`, `drainTime`,
 `lifecycle`, `livenessProbe`, `readinessProbe`, `startupProbe`, `dns.policy`,
 `dns.config`, `service.enabled` and `service.nodePort`. Drain time and probes
 are now control-plane-wide sidecar injector settings.
+
+### Standalone zone proxy inspect endpoints and `kumactl inspect` commands removed
+
+The Envoy admin inspect endpoints for standalone zone proxies are gone:
+`GET /zoneingresses/{name}/{xds,stats,clusters}` and
+`GET /zoneegresses/{name}/{xds,stats,clusters}` now return 404. So do the
+pre-2.6 overview aliases `GET /zoneingresses+insights[/{name}]` and
+`GET /zoneegressoverviews[/{name}]`, which have been redundant with
+`/zoneingresses[/{name}]/_overview` and `/zoneegresses[/{name}]/_overview` since
+2.6. Reading and listing the `ZoneIngress`/`ZoneEgress` resources themselves is
+unchanged.
+
+`kumactl inspect` loses `zoneingress`, `zoneingresses` (alias `zone-ingresses`),
+`zoneegress` and `zoneegresses`.
+
+**Action required**
+
+Mesh-scoped zone proxies are regular `Dataplane` resources, so inspect them with
+`kumactl inspect dataplane <name> --mesh <mesh>` and the
+`/meshes/{mesh}/dataplanes/{name}/{xds,stats,clusters}` endpoints. Update any
+automation or dashboard that still calls the removed paths.
+
+The GUI's zone ingress and zone egress XDS, stats and clusters tabs depend on the
+removed endpoints and stop working until the bundled GUI is updated. Overview and
+resource views are unaffected.
 
 ### ServiceInsight, MeshInsight, and inspect `_rules` no longer report kuma.io/service based data
 
@@ -1252,6 +1347,49 @@ spec:
 
 Zones without a `MeshZoneAddress` are not reachable cross-zone: their `MeshService` destinations get no endpoints in other zones. The control plane logs `no MeshZoneAddress found for zone` when this happens.
 
+### kuma-dp `configDir` / `socketDir` removed
+
+The deprecated `configDir` and `socketDir` `dataplaneRuntime` config fields (and their
+`KUMA_DATAPLANE_RUNTIME_CONFIG_DIR` / `KUMA_DATAPLANE_RUNTIME_SOCKET_DIR` environment
+variables) have been removed from `kuma-dp`. The `--config-dir` flag has also been removed.
+
+**Action required**
+
+Use `workDir` (`KUMA_DATAPLANE_RUNTIME_WORK_DIR` / `--work-dir`) instead. `--config-dir` now
+fails with `unknown flag`, so any script or deployment passing it will error immediately.
+`configDir`/`socketDir` in YAML config and `KUMA_DATAPLANE_RUNTIME_CONFIG_DIR` /
+`KUMA_DATAPLANE_RUNTIME_SOCKET_DIR` are silently ignored, since the config loader does not
+reject unknown fields — proxies still relying on them will silently fall back to a
+generated temporary directory instead of erroring.
+
+### Injector sidecar container `adminPort` removed
+
+The deprecated `kuma.runtime.kubernetes.injector.sidecarContainer.adminPort`
+config field and `KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ADMIN_PORT`
+environment variable have been removed. The field was already dead — the
+injector always read the Envoy admin port from `bootstrapServer.params.adminPort`
+(`KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT`).
+
+**Action required**
+
+Use `kuma.bootstrapServer.params.adminPort` /
+`KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT` instead. Any deployment still setting
+the removed field or environment variable will have it silently ignored, since
+the config loader does not reject unknown fields.
+
+### `Metrics.Mesh.MinResyncTimeout` / `MaxResyncTimeout` removed
+
+The deprecated `Metrics.Mesh.MinResyncTimeout` (`KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT`) and
+`Metrics.Mesh.MaxResyncTimeout` (`KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT`) config fields have
+been removed.
+
+**Action required**
+
+Use `Metrics.Mesh.MinResyncInterval` (`KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL`) and
+`Metrics.Mesh.FullResyncInterval` (`KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL`) instead.
+`MinResyncTimeout`/`MaxResyncTimeout` in YAML config and their environment variables are
+now silently ignored, since the config loader does not reject unknown fields.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.
@@ -2162,10 +2300,10 @@ If you're using Kubernetes mode, and you did not specify `default.passthroughMod
 
 ### MeshLoadBalancingStrategy
 
-#### Deprecation of `hashPolicies.type: SourceIP` and `maglev.type: SourceIP`
+#### Removal of `hashPolicies.type: SourceIP`
 
-The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
-is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
+The `SourceIP` hash policy type has been removed. If you are using `type: SourceIP` in your `MeshLoadBalancingStrategy` policy, update it to use
+`type: Connection` with `connection.sourceIP: true` instead.
 
 ### Built-in MeshGateway policy targeting
 

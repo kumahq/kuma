@@ -35,7 +35,7 @@ spec:
       targetPort: {{ .Values.controlPlane.admissionServerPort | default "5443" }}
       appProtocol: https
     {{- end }}
-    {{- if .Values.controlPlane.madsServer.enabled }}
+    {{- if and (eq .Values.controlPlane.environment "universal") .Values.controlPlane.madsServer.enabled }}
     - port: 5676
       name: mads-server
       appProtocol: https

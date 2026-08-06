@@ -202,7 +202,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.UID).To(Equal(int64(100)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.GID).To(Equal(int64(1212)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Image).To(Equal("image:test"))
-			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort).To(Equal(uint32(1099)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.DrainTime.Duration).To(Equal(33 * time.Second))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Resources.Requests.Memory).To(Equal("4Gi"))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Resources.Requests.CPU).To(Equal("123m"))
@@ -227,7 +226,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels).To(Equal([]string{"x", "y"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.NodeLabelsToCopy).To(Equal([]string{"label-1", "label-2"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyConfigMapName).To(Equal("foo"))
-			Expect(cfg.Runtime.Kubernetes.Injector.UnifiedResourceNamingEnabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.OtelPipeEnabled).To(BeFalse())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.MountPath).To(Equal("/run/test"))
@@ -555,7 +553,6 @@ runtime:
         redirectPortOutbound: 1010
         uid: 100
         gid: 1212
-        adminPort: 1099
         drainTime: 33s
         resources:
           requests:
@@ -606,7 +603,6 @@ runtime:
       ignoredServiceSelectorLabels: ["x", "y"]
       nodeLabelsToCopy: ["label-1", "label-2"]
       transparentProxyConfigMap: foo
-      unifiedResourceNamingEnabled: true
       otelPipeEnabled: false
       spire:
         enabled: true
@@ -953,7 +949,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED":                                             "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS":                              "a:b,c:d",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_UID":                                   "100",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ADMIN_PORT":                            "1099",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_DRAIN_TIME":                            "33s",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_GUI":                                   "1212",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE":                                 "image:test",
@@ -976,7 +971,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS":                         "x,y",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME":                        "foo",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY":                                     "label-1,label-2",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED":                         "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED":                                       "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_ENABLED":                                           "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_MOUNT_PATH":                                        "/run/test",
@@ -1060,8 +1054,6 @@ meshService:
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
 				"KUMA_METRICS_ZONE_COMPACT_FINISHED_SUBSCRIPTIONS":                                         "true",
-				"KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT":                                                     "27s",
-				"KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT":                                                     "35s",
 				"KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL":                                                    "27s",
 				"KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL":                                                   "35s",
 				"KUMA_METRICS_MESH_BUFFER_SIZE":                                                            "23",

@@ -98,8 +98,6 @@ $ kumactl generate dataplane-token --mesh demo --workload backend --valid-for 24
 	}
 	cmd.Flags().StringVar(&ctx.args.name, "name", "", "name of the Dataplane")
 	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
-	cmd.Flags().StringVar(&ctx.args.proxyType, "type", "", `type of the Dataplane ("dataplane")`)
-	_ = cmd.Flags().MarkDeprecated("type", "please use --proxy-type instead")
 	cmd.Flags().StringVar(&ctx.args.proxyType, "proxy-type", "", `type of the Dataplane ("dataplane")`)
 	cmd.Flags().StringToStringVar(&ctx.args.tags, "tag", nil, "required tag values for dataplane (split values by comma to provide multiple values)")
 	cmd.Flags().StringVar(&ctx.args.workload, "workload", "", "required workload label value for dataplane")

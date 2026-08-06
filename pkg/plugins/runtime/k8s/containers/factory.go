@@ -27,20 +27,19 @@ func (a EnvVarsByName) Less(i, j int) bool {
 }
 
 type DataplaneProxyFactory struct {
-	ControlPlaneURL              string
-	ControlPlaneCACert           string
-	DefaultAdminPort             uint32
-	DefaultReadinessPort         uint32
-	ContainerConfig              runtime_k8s.DataplaneContainer
-	BuiltinDNS                   runtime_k8s.BuiltinDNS
-	WaitForDataplane             bool
-	envoyAdminUnixSocket         bool
-	sidecarContainersEnabled     bool
-	virtualProbesEnabled         bool
-	applicationProbeProxyPort    uint32
-	unifiedResourceNamingEnabled bool
-	otelPipeEnabled              bool
-	spireEnabled                 bool
+	ControlPlaneURL           string
+	ControlPlaneCACert        string
+	DefaultAdminPort          uint32
+	DefaultReadinessPort      uint32
+	ContainerConfig           runtime_k8s.DataplaneContainer
+	BuiltinDNS                runtime_k8s.BuiltinDNS
+	WaitForDataplane          bool
+	envoyAdminUnixSocket      bool
+	sidecarContainersEnabled  bool
+	virtualProbesEnabled      bool
+	applicationProbeProxyPort uint32
+	otelPipeEnabled           bool
+	spireEnabled              bool
 }
 
 func NewDataplaneProxyFactory(
@@ -55,25 +54,23 @@ func NewDataplaneProxyFactory(
 	sidecarContainersEnabled bool,
 	virtualProbesEnabled bool,
 	applicationProbeProxyPort uint32,
-	unifiedResourceNamingEnabled bool,
 	otelPipeEnabled bool,
 	spireEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
-		ControlPlaneURL:              controlPlaneURL,
-		ControlPlaneCACert:           controlPlaneCACert,
-		DefaultAdminPort:             defaultAdminPort,
-		DefaultReadinessPort:         defaultReadinessPort,
-		ContainerConfig:              containerConfig,
-		BuiltinDNS:                   builtinDNS,
-		WaitForDataplane:             waitForDataplane,
-		envoyAdminUnixSocket:         envoyAdminUnixSocket,
-		sidecarContainersEnabled:     sidecarContainersEnabled,
-		virtualProbesEnabled:         virtualProbesEnabled,
-		applicationProbeProxyPort:    applicationProbeProxyPort,
-		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
-		otelPipeEnabled:              otelPipeEnabled,
-		spireEnabled:                 spireEnabled,
+		ControlPlaneURL:           controlPlaneURL,
+		ControlPlaneCACert:        controlPlaneCACert,
+		DefaultAdminPort:          defaultAdminPort,
+		DefaultReadinessPort:      defaultReadinessPort,
+		ContainerConfig:           containerConfig,
+		BuiltinDNS:                builtinDNS,
+		WaitForDataplane:          waitForDataplane,
+		envoyAdminUnixSocket:      envoyAdminUnixSocket,
+		sidecarContainersEnabled:  sidecarContainersEnabled,
+		virtualProbesEnabled:      virtualProbesEnabled,
+		applicationProbeProxyPort: applicationProbeProxyPort,
+		otelPipeEnabled:           otelPipeEnabled,
+		spireEnabled:              spireEnabled,
 	}
 }
 
@@ -326,13 +323,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_COMPONENT_LOG_LEVEL"] = kube_core.EnvVar{
 			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_COMPONENT_LOG_LEVEL",
 			Value: complogLevel,
-		}
-	}
-
-	if i.unifiedResourceNamingEnabled {
-		envVars["KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED",
-			Value: "true",
 		}
 	}
 

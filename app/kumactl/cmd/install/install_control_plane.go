@@ -257,7 +257,7 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringVar(&args.Cni_bin_dir, "cni-bin-dir", args.Cni_bin_dir, "set the CNI binary directory")
 	cmd.Flags().StringVar(&args.Cni_conf_name, "cni-conf-name", args.Cni_conf_name, "set the CNI configuration name")
 	cmd.Flags().StringToStringVar(&args.Cni_nodeSelector, "cni-node-selector", args.Cni_nodeSelector, "node selector for CNI deployment")
-	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "zone"))
+	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "zone"))
 	cmd.Flags().StringVar(&args.ControlPlane_zone, "zone", args.ControlPlane_zone, "set the Kuma zone name")
 	cmd.Flags().BoolVar(&args.UseNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
 	cmd.Flags().StringToStringVar(&args.Hooks_nodeSelector, "hooks-node-selector", args.Hooks_nodeSelector, "node selector for Helm hooks")

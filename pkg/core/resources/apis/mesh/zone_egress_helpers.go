@@ -51,7 +51,3 @@ func (r *ZoneEgressResource) Hash() []byte {
 	_, _ = hasher.Write([]byte(r.Spec.GetNetworking().GetAddress()))
 	return hasher.Sum(nil)
 }
-
-func (r *ZoneEgressResource) IsRemoteEgress(localZone string) bool {
-	return r.Spec.GetZone() != "" && r.Spec.GetZone() != localZone
-}
