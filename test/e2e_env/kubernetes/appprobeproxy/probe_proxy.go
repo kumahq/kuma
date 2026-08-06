@@ -152,6 +152,7 @@ func ApplicationProbeProxy() {
 					dpName, "--mesh", meshName, "-oyaml")
 
 				g.Expect(err).ToNot(HaveOccurred(), "failed to get dataplane '%s'", dpName)
+				g.Expect(dpYAML).ToNot(ContainSubstring("probes:"), "legacy probes field should be absent")
 				dpRes, err := rest.YAML.UnmarshalCore([]byte(dpYAML))
 				g.Expect(err).ToNot(HaveOccurred(), "invalid dataplane object")
 				_, ok := dpRes.(*core_mesh.DataplaneResource)
