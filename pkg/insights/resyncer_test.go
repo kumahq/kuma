@@ -483,9 +483,6 @@ var _ = Describe("Insight Persistence", func() {
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 					{
 						Port: 5000,
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-						},
 					},
 				},
 			},
@@ -565,9 +562,6 @@ var _ = Describe("Insight Persistence", func() {
 						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
 							Ready: true,
 						},
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-						},
 					},
 				},
 			},
@@ -597,17 +591,11 @@ var _ = Describe("Insight Persistence", func() {
 						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
 							Ready: true,
 						},
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-						},
 					},
 					{
 						Port: 8888,
 						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
 							Ready: true,
-						},
-						Tags: map[string]string{
-							"kuma.io/service": "db",
 						},
 					},
 				},
@@ -638,17 +626,11 @@ var _ = Describe("Insight Persistence", func() {
 						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
 							Ready: true,
 						},
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-						},
 					},
 					{
 						Port: 8888,
 						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
 							Ready: false,
-						},
-						Tags: map[string]string{
-							"kuma.io/service": "db",
 						},
 					},
 				},
@@ -678,9 +660,6 @@ var _ = Describe("Insight Persistence", func() {
 						Port: 7777,
 						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
 							Ready: true,
-						},
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
 						},
 					},
 				},
@@ -734,9 +713,6 @@ var _ = Describe("Insight Persistence", func() {
 						Port: 7777,
 						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
 							Ready: true,
-						},
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
 						},
 					},
 				},

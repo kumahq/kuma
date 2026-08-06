@@ -666,6 +666,7 @@
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig",
               "kuma.io/origin": "zone",
+              "kuma.io/service": "demo-client",
               "kuma.io/workload": "demo-client",
               "kuma.io/zone": "kuma-3",
               "team": "client-owners"

@@ -320,10 +320,7 @@ var _ = Describe("Defaulter", func() {
                   "address": "127.0.0.1",
                   "inbound": [
                     {
-                      "port": 11011,
-                      "tags": {
-                        "kuma.io/service": "backend"
-                      }
+                      "port": 11011
                     }
                   ]
                 }
@@ -353,10 +350,7 @@ var _ = Describe("Defaulter", func() {
                   "address": "127.0.0.1",
                   "inbound": [
                     {
-                      "port": 11011,
-                      "tags": {
-                        "kuma.io/service": "backend"
-                      }
+                      "port": 11011
                     }
                   ]
                 }

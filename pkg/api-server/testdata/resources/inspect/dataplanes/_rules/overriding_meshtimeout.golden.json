@@ -13,9 +13,7 @@
     {
      "inbound": {
       "port": 8080,
-      "tags": {
-       "kuma.io/service": "foo"
-      }
+      "tags": null
      },
      "rules": [
       {

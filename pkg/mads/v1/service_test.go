@@ -235,21 +235,11 @@ var _ = Describe("MADS http service", func() {
 						{
 							Port:        80,
 							ServicePort: 8080,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-								"env":             "prod",
-								"version":         "v1",
-							},
 						},
 						{
 							Address:     "192.168.0.2",
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend-https",
-								"env":             "prod",
-								"version":         "v2",
-							},
 						},
 					},
 				},

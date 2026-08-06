@@ -372,20 +372,8 @@ func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
 	return selector.MatchesFuzzy(d.GetNetworking().GetGateway().GetTags())
 }
 
-// GetServiceFallback returns the service this inbound belongs to, preferring
-// the legacy per-inbound kuma.io/service tag over the given Dataplane-scoped
-// fallback (its kuma.io/service label). A Dataplane carries a single service
-// label, so a Dataplane provisioned before the move to labels that exposes
-// several services can only be resolved per inbound, from the tag it still
-// declares. Without the tag every inbound would inherit one service and
-// per-service filtering would publish ports of unrelated services.
+// GetServiceFallback returns the service this inbound belongs to.
 func (d *Dataplane_Networking_Inbound) GetServiceFallback(fallback string) string {
-	if d == nil {
-		return fallback
-	}
-	if service := d.GetTags()[ServiceTag]; service != "" {
-		return service
-	}
 	return fallback
 }
 
