@@ -79,7 +79,6 @@ func extractPropagatedKeys(labels map[string]string) func(string) bool {
 // It never mutates its inputs and always returns a non-nil map.
 func dpContribution(
 	dp *core_mesh.DataplaneResource,
-	inbounds []*mesh_proto.Dataplane_Networking_Inbound,
 	allowSet map[string]struct{},
 	droppedLabels *prometheus.CounterVec,
 	log logr.Logger,
@@ -110,9 +109,6 @@ func dpContribution(
 			"key", key,
 		)
 	}
-
-	// Inbound labels are gone; keep the parameter for the shared call shape.
-	_ = inbounds
 
 	// Validate and write DP resource labels.
 	for k, v := range dp.GetMeta().GetLabels() {
