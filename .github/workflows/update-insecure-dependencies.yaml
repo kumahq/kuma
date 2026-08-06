@@ -3,7 +3,8 @@ on:
   workflow_dispatch: {}
   schedule:
     - cron: 0 3 * * *
-permissions: read-all
+permissions:
+  contents: read
 jobs:
   build-matrix:
     timeout-minutes: 10
