@@ -1354,7 +1354,6 @@ spec:
                                 - Header
                                 - Cookie
                                 - Connection
-                                - SourceIP
                                 - QueryParameter
                                 - FilterState
                                 type: string

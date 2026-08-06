@@ -2250,10 +2250,10 @@ If you're using Kubernetes mode, and you did not specify `default.passthroughMod
 
 ### MeshLoadBalancingStrategy
 
-#### Deprecation of `hashPolicies.type: SourceIP` and `maglev.type: SourceIP`
+#### Removal of `hashPolicies.type: SourceIP`
 
-The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
-is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
+The `SourceIP` hash policy type has been removed. If you are using `type: SourceIP` in your `MeshLoadBalancingStrategy` policy, update it to use
+`type: Connection` with `connection.sourceIP: true` instead.
 
 ### Built-in MeshGateway policy targeting
 

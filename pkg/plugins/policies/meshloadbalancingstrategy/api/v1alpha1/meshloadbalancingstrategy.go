@@ -198,14 +198,13 @@ type RingHash struct {
 	MaxRingSize *uint32 `json:"maxRingSize,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=Header;Cookie;Connection;SourceIP;QueryParameter;FilterState
+// +kubebuilder:validation:Enum=Header;Cookie;Connection;QueryParameter;FilterState
 type HashPolicyType string
 
 const (
 	HeaderType         HashPolicyType = "Header"
 	CookieType         HashPolicyType = "Cookie"
 	ConnectionType     HashPolicyType = "Connection"
-	SourceIPType       HashPolicyType = "SourceIP"
 	QueryParameterType HashPolicyType = "QueryParameter"
 	FilterStateType    HashPolicyType = "FilterState"
 )
