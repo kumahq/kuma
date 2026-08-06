@@ -58,16 +58,22 @@ var _ = Describe("Global Insight", func() {
 		err = createMeshService("svc-2-degraded", "payments", 2, 1, 2, rs)
 		Expect(err).ToNot(HaveOccurred())
 		// two proxies of the same delegated gateway service, only one of them online
-		err = createGatewayDataplane("edge-gw-1", "default", "edge-gateway", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, true, rs)
+		err = createGatewayDataplane("edge-gw-1", "default", "edge-gateway", "edge-gw", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, true, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createGatewayDataplane("edge-gw-2", "default", "edge-gateway", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, false, rs)
+		err = createGatewayDataplane("edge-gw-2", "default", "edge-gateway", "edge-gw", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, false, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createGatewayDataplane("payments-gw", "payments", "payments-gateway", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, false, rs)
+		err = createGatewayDataplane("payments-gw", "payments", "payments-gateway", "payments-gw", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, false, rs)
 		Expect(err).ToNot(HaveOccurred())
 		// tag-free gateway, grouped by the workload it belongs to
-		err = createGatewayDataplane("shop-gw", "default", "", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, true, rs)
+		err = createGatewayDataplane("shop-gw", "default", "", "shop", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, true, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createGatewayDataplane("builtin-gw", "default", "builtin-gateway", mesh_proto.Dataplane_Networking_Gateway_BUILTIN, true, rs)
+		// neither a service tag nor a workload label, so each is its own service,
+		// grouped by the Dataplane name
+		err = createGatewayDataplane("bare-gw-1", "default", "", "", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, true, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createGatewayDataplane("bare-gw-2", "default", "", "", mesh_proto.Dataplane_Networking_Gateway_DELEGATED, false, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createGatewayDataplane("builtin-gw", "default", "builtin-gateway", "builtin-gw", mesh_proto.Dataplane_Networking_Gateway_BUILTIN, true, rs)
 		Expect(err).ToNot(HaveOccurred())
 		err = createMeshExternalService("es-1", "default", rs)
 		Expect(err).ToNot(HaveOccurred())
@@ -123,13 +129,16 @@ func createMeshService(name string, mesh string, connected, healthy, total int, 
 		Create(rs)
 }
 
-// createGatewayDataplane creates a gateway Dataplane along with its insight. The
-// resource is stored directly because BUILTIN gateways no longer pass Dataplane
-// validation, they only exist as legacy, pre-upgrade resources in the store.
+// createGatewayDataplane creates a gateway Dataplane along with its insight. An empty
+// service or workload is left out entirely, so gateways can be grouped by any of the
+// service tag, the workload label or the resource name. The resource is stored directly
+// because BUILTIN gateways no longer pass Dataplane validation, they only exist as
+// legacy, pre-upgrade resources in the store.
 func createGatewayDataplane(
 	name string,
 	mesh string,
 	service string,
+	workload string,
 	gatewayType mesh_proto.Dataplane_Networking_Gateway_GatewayType,
 	online bool,
 	rs store.ResourceStore,
@@ -137,6 +146,10 @@ func createGatewayDataplane(
 	tags := map[string]string{}
 	if service != "" {
 		tags[mesh_proto.ServiceTag] = service
+	}
+	labels := map[string]string{}
+	if workload != "" {
+		labels["kuma.io/workload"] = workload
 	}
 	dataplane := core_mesh.NewDataplaneResource()
 	dataplane.Spec = &mesh_proto.Dataplane{
@@ -150,7 +163,7 @@ func createGatewayDataplane(
 	}
 	if err := rs.Create(context.Background(), dataplane,
 		store.CreateByKey(name, mesh),
-		store.CreateWithLabels(map[string]string{"kuma.io/workload": name}),
+		store.CreateWithLabels(labels),
 	); err != nil {
 		return err
 	}

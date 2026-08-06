@@ -255,15 +255,16 @@ func (gis *defaultGlobalInsightService) aggregateGatewayServices(
 // gatewayServiceKey identifies the mesh-scoped service a gateway Dataplane belongs
 // to. Gateways carry no kuma.io/service tag in tag-free mode, so fall back to the
 // workload and finally to the Dataplane itself, which keeps every gateway counted.
+// Each tier is prefixed so that gateways grouped by different tiers never share a key.
 func gatewayServiceKey(overview *mesh.DataplaneOverviewResource) string {
-	name := overview.Spec.GetDataplane().GetNetworking().GetGateway().GetTags()[mesh_proto.ServiceTag]
-	if name == "" {
-		name = overview.GetMeta().GetLabels()[metadata.KumaWorkload]
+	key := "tag:" + overview.Spec.GetDataplane().GetNetworking().GetGateway().GetTags()[mesh_proto.ServiceTag]
+	if key == "tag:" {
+		key = "workload:" + overview.GetMeta().GetLabels()[metadata.KumaWorkload]
 	}
-	if name == "" {
-		name = overview.GetMeta().GetName()
+	if key == "workload:" {
+		key = "dataplane:" + overview.GetMeta().GetName()
 	}
-	return overview.GetMeta().GetMesh() + "/" + name
+	return overview.GetMeta().GetMesh() + "/" + key
 }
 
 func updateServiceStatus(online, total int, status *api_types.FullStatus) {

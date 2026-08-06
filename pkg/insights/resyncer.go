@@ -79,10 +79,6 @@ type resyncer struct {
 
 	allResourceTypes []model.ResourceType
 	extensions       context.Context
-
-	// meshes whose leftover ServiceInsight has already been removed, so the upgrade
-	// cleanup hits the store at most once per mesh instead of on every resync.
-	serviceInsightsCleaned sync.Map
 }
 
 // NewResyncer creates a new Component that periodically updates insights
@@ -352,10 +348,17 @@ func (r *resyncer) processEvent(ctx context.Context, start time.Time, event resy
 	r.idleTime.Observe(float64(startProcessingTime.Sub(start).Milliseconds()))
 	r.timeToProcessItem.Observe(float64(startProcessingTime.Sub(event.time).Milliseconds()))
 
-	// Not fatal for the rest of the resync: retried on the next event for this mesh.
-	if err := r.deleteLegacyServiceInsights(ctx, event.tenantId, event.mesh); err != nil && !errors.Is(err, context.Canceled) {
-		log := kuma_log.AddFieldsFromCtx(log, ctx, r.extensions).WithValues("mesh", event.mesh)
-		log.Error(err, "unable to delete leftover ServiceInsight")
+	// Only on a full resync of the mesh, not on every event: the cleanup costs a store
+	// round-trip, but it can't be done once per mesh either, because during a
+	// mixed-version rollout an old replica keeps recreating the resource.
+	_, fullResync := event.reasons[ReasonResync]
+	_, forced := event.reasons[ReasonForce]
+	if fullResync || forced {
+		// Not fatal for the rest of the resync: retried on the next resync of this mesh.
+		if err := r.deleteLegacyServiceInsights(ctx, event.mesh); err != nil && !errors.Is(err, context.Canceled) {
+			log := kuma_log.AddFieldsFromCtx(log, ctx, r.extensions).WithValues("mesh", event.mesh)
+			log.Error(err, "unable to delete leftover ServiceInsight")
+		}
 	}
 
 	dpOverviews, err := r.dpOverviews(ctx, event.mesh)
@@ -388,12 +391,7 @@ func (r *resyncer) processEvent(ctx context.Context, start time.Time, event resy
 // plane would keep serving the stale, permanently frozen object on the legacy
 // /meshes/{mesh}/service-insights endpoints, and operators couldn't remove it
 // themselves because the type is read-only in the API.
-func (r *resyncer) deleteLegacyServiceInsights(ctx context.Context, tenantID string, mesh string) error {
-	cacheKey := tenantID + ":" + mesh
-	if _, cleaned := r.serviceInsightsCleaned.Load(cacheKey); cleaned {
-		return nil
-	}
-
+func (r *resyncer) deleteLegacyServiceInsights(ctx context.Context, mesh string) error {
 	serviceInsights := &core_mesh.ServiceInsightResourceList{}
 	if err := r.rm.List(ctx, serviceInsights, store.ListByMesh(mesh)); err != nil {
 		return err
@@ -405,7 +403,6 @@ func (r *resyncer) deleteLegacyServiceInsights(ctx context.Context, tenantID str
 		}
 	}
 
-	r.serviceInsightsCleaned.Store(cacheKey, struct{}{})
 	return nil
 }
 
