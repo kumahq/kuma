@@ -30,6 +30,24 @@ Remove `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` from control
 plane deployments, Helm values, and any other runtime configuration before or
 after upgrading. Leaving it set no longer has any effect in Kuma 3.0.0.
 
+### Unified resource naming opt-out removed
+
+The `KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED` `kuma-dp`
+environment variable, the `KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED`
+control plane environment variable / `runtime.kubernetes.injector.unifiedResourceNamingEnabled`
+`kuma-cp.yaml` key, and the `sidecarContainer.unifiedResourceNaming` Helm value have
+all been removed. `kuma-dp` now always advertises the unified naming feature to the
+control plane, and the sidecar injector no longer stamps the corresponding env var
+onto injected `kuma-sidecar` containers.
+
+**Action required**
+
+None. Leftover values are silently ignored rather than rejected: `kuma-cp` does not
+use strict YAML parsing outside of tests, `envconfig` ignores unknown environment
+variables, and Helm accepts unknown `--set` paths. Universal data planes older than
+3.0 still fall back to legacy naming until they are upgraded to a `kuma-dp` version
+that advertises the feature unconditionally.
+
 ### MADS restricted to universal deployment mode
 
 The Monitoring Assignment Discovery Service (MADS) server no longer starts on
