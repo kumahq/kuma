@@ -361,115 +361,7 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(insight.Spec.Dataplanes.Total).To(Equal(uint32(1)))
 	})
 
-	It("should return correct statuses in service insights", func() {
-		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
-		Expect(err).ToNot(HaveOccurred())
-
-		// Regular kuma.io/service inbounds are represented by MeshService and never
-		// reach ServiceInsight, so the only service type still tracked here (and
-		// whose status/dataplane counts are still computed) is the delegated gateway.
-		newDelegatedGateway := func(address string) *core_mesh.DataplaneResource {
-			dp := core_mesh.NewDataplaneResource()
-			dp.Spec = &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: address,
-					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-						Tags: map[string]string{
-							"kuma.io/service": "backend-1",
-						},
-						Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-					},
-				},
-			}
-			return dp
-		}
-
-		dp1 := newDelegatedGateway("192.0.0.1")
-		err = rm.Create(context.Background(), dp1, store.CreateByKey("dp1", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		dpi1 := core_mesh.NewDataplaneInsightResource()
-		dpi1.Spec.Subscriptions = append(dpi1.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
-		})
-
-		err = rm.Create(context.Background(), dpi1, store.CreateByKey("dp1", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		dp2 := newDelegatedGateway("192.0.0.2")
-		err = rm.Create(context.Background(), dp2, store.CreateByKey("dp2", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		dpi2 := core_mesh.NewDataplaneInsightResource()
-		dpi2.Spec.Subscriptions = append(dpi2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
-		})
-
-		err = rm.Create(context.Background(), dpi2, store.CreateByKey("dp2", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		dp3 := newDelegatedGateway("192.0.0.3")
-		err = rm.Create(context.Background(), dp3, store.CreateByKey("dp3", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		dpi3 := core_mesh.NewDataplaneInsightResource()
-		dpi3.Spec.Subscriptions = append(dpi3.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
-			DisconnectTime: &timestamppb.Timestamp{
-				Seconds: 101,
-				Nanos:   202,
-			},
-		})
-
-		err = rm.Create(context.Background(), dpi3, store.CreateByKey("dp3", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		dp4 := newDelegatedGateway("192.0.0.4")
-		err = rm.Create(context.Background(), dp4, store.CreateByKey("dp4", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		dpi4 := core_mesh.NewDataplaneInsightResource()
-		dpi4.Spec.Subscriptions = append(dpi4.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
-			DisconnectTime: &timestamppb.Timestamp{
-				Seconds: 101,
-				Nanos:   202,
-			},
-		})
-
-		err = rm.Create(context.Background(), dpi4, store.CreateByKey("dp4", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		step(stepsToResync)
-
-		// when
-		Eventually(func(g Gomega) {
-			serviceInsight := core_mesh.NewServiceInsightResource()
-			err := rm.Get(context.Background(), serviceInsight, store.GetByKey("all-services-mesh-1", "mesh-1"))
-			g.Expect(err).ToNot(HaveOccurred())
-
-			service := serviceInsight.Spec.Services["backend-1"]
-			// then
-			g.Expect(service.ServiceType).To(Equal(mesh_proto.ServiceInsight_Service_gateway_delegated))
-			g.Expect(service.Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
-			g.Expect(service.Dataplanes.Online).To(Equal(uint32(2)))
-			g.Expect(service.Dataplanes.Offline).To(Equal(uint32(2)))
-		}).Should(Succeed())
-	})
-
-	It("should only compute delegated gateways", func() {
+	It("should not compute a services stat for gateway or regular dataplanes", func() {
 		// given a mesh
 		mesh := core_mesh.NewMeshResource()
 		err := rm.Create(context.Background(), mesh, store.CreateByKey("mesh-1", model.NoMesh))
@@ -534,18 +426,37 @@ var _ = Describe("Insight Persistence", func() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(meshInsight.Spec.Services).To(BeNil())
 		}).Should(Succeed())
+	})
 
-		// and the ServiceInsight only contains the delegated gateway
+	It("should delete a ServiceInsight left over by an older control plane", func() {
+		// given a mesh with a ServiceInsight written before the upgrade
+		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		serviceInsight := core_mesh.NewServiceInsightResource()
+		serviceInsight.Spec = &mesh_proto.ServiceInsight{
+			Services: map[string]*mesh_proto.ServiceInsight_Service{
+				"backend": {
+					Status:      mesh_proto.ServiceInsight_Service_online,
+					ServiceType: mesh_proto.ServiceInsight_Service_internal,
+					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{
+						Total:  1,
+						Online: 1,
+					},
+				},
+			},
+		}
+		err = rm.Create(context.Background(), serviceInsight, store.CreateByKey("all-services-mesh-1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		step(stepsToResync)
+
+		// then the stale resource is removed instead of being served forever
 		Eventually(func(g Gomega) {
-			serviceInsight := core_mesh.NewServiceInsightResource()
-			err := rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("mesh-1")))
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(serviceInsight.Spec.Services).To(HaveKey("delegated-gw"))
-			g.Expect(serviceInsight.Spec.Services["delegated-gw"].ServiceType).To(Equal(mesh_proto.ServiceInsight_Service_gateway_delegated))
-			g.Expect(serviceInsight.Spec.Services).ToNot(HaveKey("backend"))
-			g.Expect(serviceInsight.Spec.Services).ToNot(HaveKey("builtin-gw"))
-			g.Expect(serviceInsight.Spec.Services).ToNot(HaveKey("external-service"))
-		}).Should(Succeed())
+			serviceInsights := &core_mesh.ServiceInsightResourceList{}
+			g.Expect(rm.List(context.Background(), serviceInsights, store.ListByMesh("mesh-1"))).To(Succeed())
+			g.Expect(serviceInsights.Items).To(BeEmpty())
+		}, "10s", "100ms").Should(Succeed())
 	})
 
 	It("should return correct dataplanes statuses in mesh insights", func() {
@@ -814,70 +725,6 @@ var _ = Describe("Insight Persistence", func() {
 			g.Expect(meshInsight.Spec.Dataplanes.Online).To(Equal(uint32(1)))
 			g.Expect(meshInsight.Spec.Dataplanes.PartiallyDegraded).To(Equal(uint32(0)))
 			g.Expect(meshInsight.Spec.Dataplanes.Offline).To(Equal(uint32(2)))
-		}).Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			serviceInsight := core_mesh.NewServiceInsightResource()
-			err := rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("mesh-1")))
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(serviceInsight.Spec.Services).To(HaveKey("gateway"))
-			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Online).To(Equal(uint32(1)))
-			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Offline).To(Equal(uint32(2)))
-			g.Expect(serviceInsight.Spec.Services["gateway"].Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
-		}).Should(Succeed())
-	})
-
-	It("should return zones in service insights", func() {
-		// given: zones are still tracked for delegated gateways, the only service
-		// type still carried in ServiceInsight.
-		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("default", model.NoMesh))
-		Expect(err).ToNot(HaveOccurred())
-
-		newDelegatedGateway := func(address, zone string) *core_mesh.DataplaneResource {
-			dp := core_mesh.NewDataplaneResource()
-			dp.Spec = &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: address,
-					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-						Tags: map[string]string{"kuma.io/service": "backend", "kuma.io/zone": zone},
-						Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-					},
-				},
-			}
-			return dp
-		}
-
-		err = rm.Create(context.Background(), newDelegatedGateway("10.0.0.1", "east"), store.CreateByKey("dp-east-1", "default"))
-		Expect(err).ToNot(HaveOccurred())
-		err = rm.Create(context.Background(), newDelegatedGateway("10.0.0.2", "west"), store.CreateByKey("dp-west-1", "default"))
-		Expect(err).ToNot(HaveOccurred())
-		err = rm.Create(context.Background(), newDelegatedGateway("10.0.0.3", "west"), store.CreateByKey("dp-west-2", "default"))
-		Expect(err).ToNot(HaveOccurred())
-
-		noZoneGw := core_mesh.NewDataplaneResource()
-		noZoneGw.Spec = &mesh_proto.Dataplane{
-			Networking: &mesh_proto.Dataplane_Networking{
-				Address: "10.0.0.4",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "web"},
-					Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-				},
-			},
-		}
-		err = rm.Create(context.Background(), noZoneGw, store.CreateByKey("dp-web", "default"))
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		step(stepsToResync)
-
-		// then
-		Eventually(func(g Gomega) {
-			serviceInsight := core_mesh.NewServiceInsightResource()
-			err := rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("default")))
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(serviceInsight.Spec.Services).To(HaveKey("backend"))
-			g.Expect(serviceInsight.Spec.Services["backend"].Zones).To(Equal([]string{"east", "west"}))
-			g.Expect(serviceInsight.Spec.Services["web"].Zones).To(BeEmpty())
 		}).Should(Succeed())
 	})
 
