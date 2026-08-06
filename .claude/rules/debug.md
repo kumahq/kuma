@@ -35,7 +35,7 @@ make k3d/cluster/deploy/helm/upgrade k3d/cluster/deploy/wait/cp CLUSTER=kuma-1
 ```bash
 make k3d/cluster/deploy/helm CLUSTER=kuma-1 \
   K3D_HELM_DEPLOY_NO_CNI=true \
-  K3D_HELM_DEPLOY_ADDITIONAL_SETTINGS="dataPlane.features.unifiedResourceNaming=true"
+  K3D_HELM_DEPLOY_ADDITIONAL_SETTINGS="controlPlane.logLevel=debug"
 ```
 
 Other targets: `k3d/cluster/deploy/kumactl` (deploy via CLI), `k3d/cluster/deploy/demo` (demo app), `k3d/cluster/stop` (delete cluster), `k3d/destroy` (delete all clusters + network).
@@ -82,16 +82,6 @@ kubectl exec -n kuma-system deploy/kuma-control-plane -- \
 The CP REST API runs on port 5681. See `pkg/api-server/` for available endpoints.
 
 ## Common tasks
-
-### Enable unified resource naming
-
-Requires both helm value AND mesh patch:
-
-```bash
-# Set during deploy via K3D_HELM_DEPLOY_ADDITIONAL_SETTINGS, then:
-kubectl patch mesh default --type merge \
-  -p '{"spec":{"meshServices":{"mode":"Exclusive"}}}'
-```
 
 ### Test a policy change locally
 

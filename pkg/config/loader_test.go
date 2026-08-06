@@ -226,7 +226,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels).To(Equal([]string{"x", "y"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.NodeLabelsToCopy).To(Equal([]string{"label-1", "label-2"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyConfigMapName).To(Equal("foo"))
-			Expect(cfg.Runtime.Kubernetes.Injector.UnifiedResourceNamingEnabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.OtelPipeEnabled).To(BeFalse())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.MountPath).To(Equal("/run/test"))
@@ -604,7 +603,6 @@ runtime:
       ignoredServiceSelectorLabels: ["x", "y"]
       nodeLabelsToCopy: ["label-1", "label-2"]
       transparentProxyConfigMap: foo
-      unifiedResourceNamingEnabled: true
       otelPipeEnabled: false
       spire:
         enabled: true
@@ -973,7 +971,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS":                         "x,y",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME":                        "foo",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY":                                     "label-1,label-2",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED":                         "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED":                                       "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_ENABLED":                                           "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_MOUNT_PATH":                                        "/run/test",
