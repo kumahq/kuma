@@ -148,25 +148,6 @@ metadata:
 	)
 }
 
-func MTLSMeshKubernetes(name string) InstallFunc {
-	mesh := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-`, name)
-	return Combine(
-		YamlK8s(mesh),
-		WaitMeshKubernetesReady(name),
-	)
-}
-
 func WaitMeshKubernetesReady(name string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryContextE(
@@ -214,32 +195,9 @@ func WaitMeshKubernetesReady(name string) InstallFunc {
 	}
 }
 
-func MeshTrafficPermissionAllowAllKubernetes(name string) InstallFunc {
-	mtp := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshTrafficPermission
-metadata:
-  namespace: %[2]s
-  name: allow-all-%[1]s.%[2]s
-  labels:
-    kuma.io/mesh: %[1]s
-spec:
-  targetRef:
-    kind: Mesh
-  rules:
-    - default:
-        allow:
-          - spiffeID:
-              type: Prefix
-              value: "spiffe://%[1]s"`, name, Config.KumaNamespace)
-	return YamlK8s(mtp)
-}
-
-// MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity is the 'rules'-based
-// counterpart of MeshTrafficPermissionAllowAllKubernetes for meshes using
-// MeshIdentity, where the legacy 'from' form is ignored. See
-// MeshTrafficPermissionAllowAllUniversalWorkloadIdentity for the SPIFFE ID
-// prefix constraints.
+// MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity is the Kubernetes
+// counterpart of MeshTrafficPermissionAllowAllUniversalWorkloadIdentity, see
+// there for the SPIFFE ID prefix constraints.
 func MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(name string, trustDomains ...string) InstallFunc {
 	fns := make([]InstallFunc, 0, len(trustDomains))
 	for i, td := range trustDomains {
@@ -265,60 +223,13 @@ spec:
 	return Combine(fns...)
 }
 
-func MTLSMeshUniversal(name string) InstallFunc {
-	mesh := fmt.Sprintf(`
-type: Mesh
-name: %s
-mtls:
-  enabledBackend: ca-1
-  backends:
-    - name: ca-1
-      type: builtin
-`, name)
-	return YamlUniversal(mesh)
-}
-
-func MTLSMeshWithMeshServicesUniversal(name string, meshServicesEnabled string) InstallFunc {
-	mesh := fmt.Sprintf(`
-type: Mesh
-name: %s
-meshServices:
-  mode: %s
-mtls:
-  enabledBackend: ca-1
-  backends:
-    - name: ca-1
-      type: builtin
-`, name, meshServicesEnabled)
-	return YamlUniversal(mesh)
-}
-
-func MeshTrafficPermissionAllowAllUniversal(name string) InstallFunc {
-	mtp := fmt.Sprintf(`
-type: MeshTrafficPermission
-name: allow-all-%[1]s
-mesh: %[1]s
-spec:
-  targetRef:
-    kind: Mesh
-  rules:
-    - default:
-        allow:
-          - spiffeID:
-              type: Prefix
-              value: "spiffe://%[1]s"`, name)
-	return YamlUniversal(mtp)
-}
-
 // MeshTrafficPermissionAllowAllUniversalWorkloadIdentity installs an allow-all
-// MeshTrafficPermission using the 'rules' field. Under MeshIdentity the legacy
-// 'from' form is ignored, so meshes with MeshIdentity must use 'rules' with a
-// SPIFFE ID prefix. The value must be a valid SPIFFE ID, i.e. carry the full
-// trust domain and no trailing slash (a bare "spiffe://" or a trailing slash
-// fails validation). One MeshTrafficPermission is installed per trust domain
-// (they're merged anyway), which lets multizone meshes (per-zone trust domains)
-// and migrations (legacy mTLS trust domain "<mesh>" plus identity trust domains)
-// allow every expected client.
+// MeshTrafficPermission using the 'rules' field with a SPIFFE ID prefix. The
+// value must be a valid SPIFFE ID, i.e. carry the full trust domain and no
+// trailing slash (a bare "spiffe://" or a trailing slash fails validation). One
+// MeshTrafficPermission is installed per trust domain (they're merged anyway),
+// which lets multizone meshes with their per-zone trust domains allow every
+// expected client.
 func MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(name string, trustDomains ...string) InstallFunc {
 	fns := make([]InstallFunc, 0, len(trustDomains))
 	for i, td := range trustDomains {

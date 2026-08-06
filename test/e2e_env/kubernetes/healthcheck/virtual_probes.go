@@ -13,10 +13,12 @@ func VirtualProbes() {
 	const name = "test-server"
 	const namespace = "virtual-probes"
 	const mesh = "virtual-probes"
+	const identityName = "virtual-probes-identity"
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshKubernetes(mesh)).
+			Install(MeshKubernetes(mesh)).
+			Install(MeshIdentityBundledKubernetes(mesh, identityName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),

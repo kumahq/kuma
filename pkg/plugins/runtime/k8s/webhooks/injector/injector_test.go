@@ -558,7 +558,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.builtindns.config.yaml",
+			cfgFile: "inject.builtin-dns.config.yaml",
 		}),
 		Entry("24. sidecar with high concurrency", testCase{
 			num: "24",
@@ -574,7 +574,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.builtindns.config.yaml",
+			cfgFile: "inject.builtin-dns.config.yaml",
 		}),
 		Entry("25. sidecar with high resource limit", testCase{
 			num: "25",
@@ -654,7 +654,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.builtindns.config.yaml",
+			cfgFile: "inject.builtin-dns.config.yaml",
 		}),
 		Entry("31. with duplicate container/sidecar uid", testCase{
 			num: "31",

@@ -31,8 +31,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/v3/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
-	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
-	kds_server_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
+	kds_reconcile "github.com/kumahq/kuma/v3/pkg/kds/reconcile"
+	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
@@ -227,8 +227,8 @@ func (t *testRuntimeContext) Add(c ...component.Component) error {
 
 type KdsServerBuilder struct {
 	rt             *testRuntimeContext
-	providedMapper reconcile_v2.ResourceMapper
-	providedFilter reconcile_v2.ResourceFilter
+	providedMapper kds_reconcile.ResourceMapper
+	providedFilter kds_reconcile.ResourceFilter
 	providedTypes  []model.ResourceType
 }
 
@@ -271,9 +271,9 @@ func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 	cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 	return &KdsServerBuilder{
 		rt:             NewTestRuntime(context.Background(), cfg, store),
-		providedMapper: reconcile_v2.NoopResourceMapper,
+		providedMapper: kds_reconcile.NoopResourceMapper,
 		providedTypes:  registry.Global().ObjectTypes(model.SentFromGlobalToZone()),
-		providedFilter: reconcile_v2.Any,
+		providedFilter: kds_reconcile.Any,
 	}
 }
 
@@ -297,6 +297,6 @@ func (b *KdsServerBuilder) WithTypes(types []model.ResourceType) *KdsServerBuild
 }
 
 func (b *KdsServerBuilder) Delta() (delta.Server, error) {
-	srv, _, err := kds_server_v2.New(core.Log.WithName("kds-delta").WithName(b.rt.GetMode()), b.rt, b.providedTypes, b.rt.Config().Multizone.Zone.Name, b.providedFilter, b.providedMapper, 1*time.Second)
+	srv, _, err := kds_server.New(core.Log.WithName("kds-delta").WithName(b.rt.GetMode()), b.rt, b.providedTypes, b.rt.Config().Multizone.Zone.Name, b.providedFilter, b.providedMapper, 1*time.Second)
 	return srv, err
 }

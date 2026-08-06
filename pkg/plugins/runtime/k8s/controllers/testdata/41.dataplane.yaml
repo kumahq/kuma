@@ -5,7 +5,6 @@ metadata:
     k8s.kuma.io/namespace: demo
     kuma.io/display-name: zone-proxy
     kuma.io/mesh: default
-    kuma.io/proxy-type: sidecar
   name: zone-proxy
 spec:
   networking:

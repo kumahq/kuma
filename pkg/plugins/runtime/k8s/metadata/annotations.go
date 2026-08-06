@@ -12,8 +12,8 @@ import (
 
 // Annotations that can be used by the end users.
 const (
-	// KumaSidecarInjectionAnnotation defines a Pod/Namespace annotation that
-	// gives users an ability to enable or disable sidecar-injection
+	// KumaSidecarInjectionAnnotation defines the label that enables or disables
+	// sidecar injection on Pods and Namespaces.
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"
 
 	// KumaGatewayAnnotation allows to mark Gateway pod,
@@ -21,24 +21,8 @@ const (
 	// It can be used to mark a pod as providing a builtin gateway.
 	KumaGatewayAnnotation = "kuma.io/gateway"
 
-	// KumaIngressAnnotation allows to mark pod with Kuma Ingress
-	// which is crucial for Multizone communication
-	KumaIngressAnnotation = "kuma.io/ingress"
-
-	// KumaEgressAnnotation allows marking pod with Kuma Egress
-	// which is crucial for Multizone communication
-	KumaEgressAnnotation = "kuma.io/egress"
-
 	// KumaTagsAnnotation holds a JSON representation of desired tags
 	KumaTagsAnnotation = "kuma.io/tags"
-
-	// KumaIngressPublicAddressAnnotation allows to pick public address for Ingress
-	// If not defined, Kuma will try to pick this address from the Ingress Service
-	KumaIngressPublicAddressAnnotation = "kuma.io/ingress-public-address"
-
-	// KumaIngressPublicPortAnnotation allows to pick public port for Ingress
-	// If not defined, Kuma will try to pick this address from the Ingress Service
-	KumaIngressPublicPortAnnotation = "kuma.io/ingress-public-port"
 
 	// KumaDirectAccess defines a comma-separated list of Services that will be accessed directly
 	KumaDirectAccess = "kuma.io/direct-access-services"
@@ -63,16 +47,6 @@ const (
 	// concurrency from the sidecar container resource limits. A value of 0 tells Envoy to try to use all the
 	// visible CPUs.
 	KumaSidecarConcurrencyAnnotation = "kuma.io/sidecar-proxy-concurrency"
-
-	// KumaMetricsPrometheusPort allows to override `Mesh`-wide default port
-	KumaMetricsPrometheusPort = "prometheus.metrics.kuma.io/port"
-
-	// KumaMetricsPrometheusPath to override `Mesh`-wide default path
-	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
-
-	// KumaBuiltinDNS the sidecar will use its builtin DNS
-	KumaBuiltinDNS     = "kuma.io/builtin-dns"
-	KumaBuiltinDNSPort = "kuma.io/builtin-dns-port"
 
 	// KumaTrafficTransparentProxyConfig is an annotation used to pass a YAML with the transparent proxy
 	// configuration in CNI mode, allowing the new logic to retrieve the config from the annotation
@@ -105,17 +79,6 @@ const (
 	KumaEnvoyLogLevel          = "kuma.io/envoy-log-level"
 	KumaEnvoyComponentLogLevel = "kuma.io/envoy-component-log-level"
 
-	// KumaMetricsPrometheusAggregatePath allows to specify which path for specific app should request for metrics
-	KumaMetricsPrometheusAggregatePath = "prometheus.metrics.kuma.io/aggregate-%s-path"
-	// KumaMetricsPrometheusAggregateAddress allows to specify which address for specific app should request for metrics
-	KumaMetricsPrometheusAggregateAddress = "prometheus.metrics.kuma.io/aggregate-%s-address"
-	// KumaMetricsPrometheusAggregatePort allows to specify which port for specific app should request for metrics
-	KumaMetricsPrometheusAggregatePort = "prometheus.metrics.kuma.io/aggregate-%s-port"
-	// KumaMetricsPrometheusAggregateEnabled allows to specify if we want to enable specific scraping, default: true
-	KumaMetricsPrometheusAggregateEnabled = "prometheus.metrics.kuma.io/aggregate-%s-enabled"
-	// KumaMetricsPrometheusAggregatePattern allows to retrieve all the apps for which need to get port/path configuration
-	KumaMetricsPrometheusAggregatePattern = "^prometheus\\.metrics\\.kuma\\.io/aggregate-([a-zA-Z0-9-]+)-(port|path|enabled)$"
-
 	// KumaInitFirst allows to specify whether the init container should be prepended or appended to the existing
 	// list of init containers
 	KumaInitFirst = "kuma.io/init-first"
@@ -139,30 +102,11 @@ const (
 )
 
 var PodAnnotationDeprecations = []Deprecation{
-	NewReplaceByDeprecation("kuma.io/builtindns", KumaBuiltinDNS, true),
-	NewReplaceByDeprecation("kuma.io/builtindnsport", KumaBuiltinDNSPort, true),
-	NewReplaceByDeprecation("kuma.io/transparent-proxying-reachable-services", KumaReachableBackends, true),
-	{
-		Key:     KumaTransparentProxyingInboundPortAnnotation,
-		Message: "'kuma.io/transparent-proxying-inbound-port' is no longer supported and will be ignored, configure the redirect inbound port through the control plane's 'runtime.kubernetes.injector.sidecarContainer.redirectPortInbound' setting instead",
-	},
-	{
-		Key:     KumaTransparentProxyingOutboundPortAnnotation,
-		Message: "'kuma.io/transparent-proxying-outbound-port' is no longer supported and will be ignored, configure the redirect outbound port through the control plane's 'runtime.kubernetes.injector.sidecarContainer.redirectPortOutbound' setting instead",
-	},
 	NewDeprecation(KumaVirtualProbesAnnotation, false),
 	NewReplaceByDeprecation(KumaVirtualProbesPortAnnotation, KumaApplicationProbeProxyPortAnnotation, false),
 	{
 		Key:     KumaSidecarInjectionAnnotation,
 		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. This is not supported you should use it as a label instead",
-	},
-	{
-		Key:     KumaMetricsPrometheusPort,
-		Message: "WARNING: 'prometheus.metrics.kuma.io/port' is deprecated, use MeshMetric policy instead",
-	},
-	{
-		Key:     KumaMetricsPrometheusPath,
-		Message: "WARNING: 'prometheus.metrics.kuma.io/path' is deprecated, use MeshMetric policy instead",
 	},
 }
 
@@ -195,17 +139,15 @@ func NewDeprecation(old string, removed bool) Deprecation {
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
-	KumaSidecarInjectedAnnotation                 = "kuma.io/sidecar-injected"
-	KumaIgnoreAnnotation                          = "kuma.io/ignore"
-	KumaSidecarUID                                = "kuma.io/sidecar-uid"
-	KumaEnvoyAdminPort                            = "kuma.io/envoy-admin-port"
-	KumaTransparentProxyingAnnotation             = "kuma.io/transparent-proxying"
-	KumaTransparentProxyingInboundPortAnnotation  = "kuma.io/transparent-proxying-inbound-port"
-	KumaTransparentProxyingIPFamilyMode           = "kuma.io/transparent-proxying-ip-family-mode"
-	KumaTransparentProxyingOutboundPortAnnotation = "kuma.io/transparent-proxying-outbound-port"
-	KumaReachableBackends                         = "kuma.io/reachable-backends"
-	CNCFNetworkAnnotation                         = "k8s.v1.cni.cncf.io/networks"
-	KumaCNI                                       = "kuma-cni"
+	KumaSidecarInjectedAnnotation       = "kuma.io/sidecar-injected"
+	KumaIgnoreAnnotation                = "kuma.io/ignore"
+	KumaSidecarUID                      = "kuma.io/sidecar-uid"
+	KumaEnvoyAdminPort                  = "kuma.io/envoy-admin-port"
+	KumaTransparentProxyingAnnotation   = "kuma.io/transparent-proxying"
+	KumaTransparentProxyingIPFamilyMode = "kuma.io/transparent-proxying-ip-family-mode"
+	KumaReachableBackends               = "kuma.io/reachable-backends"
+	CNCFNetworkAnnotation               = "k8s.v1.cni.cncf.io/networks"
+	KumaCNI                             = "kuma-cni"
 )
 
 // Annotations related to the gateway

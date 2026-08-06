@@ -26,15 +26,19 @@ import (
 
 func ApplicationProbeProxy() {
 	meshName := "application-probe-proxy"
+	identityName := "application-probe-proxy-identity"
 	namespace := "application-probe-proxy"
 	httpAppName := "http-test-server"
 	gRPCAppName := "grpc-test-server"
 	tcpAppName := "tcp-test-server"
 
+	trustDomain := fmt.Sprintf("%s.default.mesh.local", meshName)
+
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshKubernetes(meshName)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			Install(MeshKubernetes(meshName)).
+			Install(MeshIdentityBundledKubernetes(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName, trustDomain)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
 				testserver.Install(

@@ -30,25 +30,18 @@ func KICKubernetes() {
 
 	namespace := "kic"
 	mesh := "kic"
+	identityName := "kic-identity"
 	namespaceOutsideMesh := "kic-external"
+
+	trustDomain := fmt.Sprintf("%s.default.mesh.local", mesh)
 
 	var kicIP string
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-`, mesh))).
-			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
+			Install(MeshKubernetes(mesh)).
+			Install(MeshIdentityBundledKubernetes(mesh, identityName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(mesh, trustDomain)).
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: v1
 kind: Namespace

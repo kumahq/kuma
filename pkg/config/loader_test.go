@@ -202,7 +202,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.UID).To(Equal(int64(100)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.GID).To(Equal(int64(1212)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Image).To(Equal("image:test"))
-			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort).To(Equal(uint32(1099)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.DrainTime.Duration).To(Equal(33 * time.Second))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Resources.Requests.Memory).To(Equal("4Gi"))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Resources.Requests.CPU).To(Equal("123m"))
@@ -227,7 +226,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels).To(Equal([]string{"x", "y"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.NodeLabelsToCopy).To(Equal([]string{"label-1", "label-2"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyConfigMapName).To(Equal("foo"))
-			Expect(cfg.Runtime.Kubernetes.Injector.UnifiedResourceNamingEnabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.OtelPipeEnabled).To(BeFalse())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.MountPath).To(Equal("/run/test"))
@@ -242,7 +240,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.WorkloadLabels).To(Equal([]string{"app.kubernetes.io/name", "app"}))
 
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
-			Expect(cfg.Runtime.Universal.ZoneResourceCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.Spire.SocketPath).To(Equal("/custom/path"))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
@@ -509,7 +506,6 @@ monitoringAssignmentServer:
 runtime:
   universal:
     dataplaneCleanupAge: 1h
-    zoneResourceCleanupAge: 1h
     spire:
       socketPath: /custom/path	  
     workload:
@@ -555,7 +551,6 @@ runtime:
         redirectPortOutbound: 1010
         uid: 100
         gid: 1212
-        adminPort: 1099
         drainTime: 33s
         resources:
           requests:
@@ -606,7 +601,6 @@ runtime:
       ignoredServiceSelectorLabels: ["x", "y"]
       nodeLabelsToCopy: ["label-1", "label-2"]
       transparentProxyConfigMap: foo
-      unifiedResourceNamingEnabled: true
       otelPipeEnabled: false
       spire:
         enabled: true
@@ -674,7 +668,6 @@ multizone:
       labels:
         skipPrefixes: ["argocd.argoproj.io"]
     disableOriginLabelValidation: true
-    ingressUpdateInterval: 2s
 dnsServer:
   domain: test-domain
   serviceVipPort: 9090
@@ -953,7 +946,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED":                                             "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS":                              "a:b,c:d",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_UID":                                   "100",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ADMIN_PORT":                            "1099",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_DRAIN_TIME":                            "33s",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_GUI":                                   "1212",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE":                                 "image:test",
@@ -976,7 +968,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS":                         "x,y",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME":                        "foo",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY":                                     "label-1,label-2",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED":                         "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED":                                       "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_ENABLED":                                           "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_MOUNT_PATH":                                        "/run/test",
@@ -993,7 +984,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_SKIP_MESH_OWNER_REFERENCE":                                        "true",
 				"KUMA_RUNTIME_KUBERNETES_WORKLOAD_LABELS":                                                  "app.kubernetes.io/name,app",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
-				"KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE":                                         "1h",
 				"KUMA_RUNTIME_UNIVERSAL_SPIRE_SOCKET_PATH":                                                 "/custom/path",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
@@ -1038,7 +1028,6 @@ meshService:
 				"KUMA_MULTIZONE_ZONE_KDS_LOG_PAYLOADS":                                                     "true",
 				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
 				"KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION":                                      "true",
-				"KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL":                                              "2s",
 				"KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES":                                             "argocd.argoproj.io",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
@@ -1060,8 +1049,6 @@ meshService:
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
 				"KUMA_METRICS_ZONE_COMPACT_FINISHED_SUBSCRIPTIONS":                                         "true",
-				"KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT":                                                     "27s",
-				"KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT":                                                     "35s",
 				"KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL":                                                    "27s",
 				"KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL":                                                   "35s",
 				"KUMA_METRICS_MESH_BUFFER_SIZE":                                                            "23",

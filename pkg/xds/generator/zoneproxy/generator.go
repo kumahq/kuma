@@ -122,7 +122,6 @@ func GetServices(
 			WithName(clusterName).
 			WithService(br.EndpointMapKey).
 			WithSNI(br.SNI).
-			WithMesh(br.Mesh).
 			Build()
 
 		acc.AddBackendRef(&br.ResolvedBackendRef, cluster)

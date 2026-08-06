@@ -106,11 +106,6 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	var lastEvent *events.WorkloadIdentityChangedEvent
 	var generation uint32
 
-	proxyType, err := core_mesh.ProxyTypeFromResourceType(s.dataplaneType)
-	if err != nil {
-		sinkLog.Error(err, "failed to create dataplaneInsightSink")
-		return
-	}
 	dataplaneID, _ := s.accessor.GetStatus()
 	listener := s.eventFactory.Subscribe(func(event events.Event) bool {
 		if e, ok := event.(events.WorkloadIdentityChangedEvent); ok && e.ResourceKey == dataplaneID {
@@ -142,7 +137,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 			}
 			lastEvent = event
 		default:
-			secretsInfo = s.secrets.Info(proxyType, dataplaneID)
+			secretsInfo = s.secrets.Info(mesh_proto.DataplaneProxyType, dataplaneID)
 		}
 		select {
 		case <-generationTicker.C:

@@ -114,7 +114,6 @@ proxy := sync.DefaultDataplaneProxyBuilder(*cfg, envoy.APIV3).Build(ctx, key, me
 **Envoy Admin** (`inspect_envoy_admin_endpoints.go`):
 ```go
 GET /meshes/{mesh}/dataplanes/{dp}/clusters|stats|config_dump|xds
-GET /zoneingresses/{zi}/{type}, /zoneegresses/{ze}/{type}
 
 type inspectClient struct {
     adminClient admin.EnvoyAdminClient; access access.EnvoyAdminAccess; rm manager.ResourceManager
@@ -256,7 +255,7 @@ proxy := sync.DefaultDataplaneProxyBuilder(*cfg, envoy.APIV3).Build(ctx, key, me
 |----------|-----------|------|
 | CRUD | GET/PUT/DELETE `/meshes/{mesh}/{resource}/{name}`, GET `/meshes/{mesh}/{resource}` | `resource_endpoints.go` |
 | Policy Inspection | `/{mesh}/{policy}/{name}/dataplanes`, `/{mesh}/dataplanes/{dp}/_config\|_policies\|_rules` | `resource_endpoints.go` |
-| Envoy Admin | `/{mesh}/dataplanes/{dp}/{type}`, `/zoneingresses/{zi}/{type}`, `/zoneegresses/{ze}/{type}` | `inspect_envoy_admin_endpoints.go` |
+| Envoy Admin | `/{mesh}/dataplanes/{dp}/{type}` | `inspect_envoy_admin_endpoints.go` |
 | MeshService | `/{mesh}/meshservices/{svc}/_resources/dataplanes`, `/{mesh}/{svcType}/{name}/_hostnames` | `inspect_mesh_service.go` |
 | Other | `/global-insights`, `/policies`, `/_kri/{kri}`, `/config`, `/who-am-i`, `/tokens/*`, `/gui/*` | Various |
 

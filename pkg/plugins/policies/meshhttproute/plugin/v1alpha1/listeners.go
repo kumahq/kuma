@@ -43,10 +43,10 @@ func GenerateOutboundListener(
 	legacyRouteConfigName := envoy_names.GetOutboundRouteName(svc.KumaServiceTagValue)
 	legacyListenerName := envoy_names.GetOutboundListenerName(address, port)
 
-	routeConfigName := svc.ConditionallyResolveKRIWithFallback(true, legacyRouteConfigName)
-	virtualHostName := svc.ConditionallyResolveKRIWithFallback(true, svc.KumaServiceTagValue)
-	listenerStatPrefix := svc.ConditionallyResolveKRIWithFallback(true, "")
-	listenerName := svc.ConditionallyResolveKRIWithFallback(true, legacyListenerName)
+	routeConfigName := svc.ResolveKRIWithFallback(legacyRouteConfigName)
+	virtualHostName := svc.ResolveKRIWithFallback(svc.KumaServiceTagValue)
+	listenerStatPrefix := svc.ResolveKRIWithFallback("")
+	listenerName := svc.ResolveKRIWithFallback(legacyListenerName)
 
 	route := &xds.HttpOutboundRouteConfigurer{
 		RouteConfigName: routeConfigName,

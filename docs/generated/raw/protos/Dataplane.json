@@ -118,13 +118,6 @@
                     "type": "string",
                     "description": "Address on which inbound listener will be exposed. Defaults to `networking.address`."
                 },
-                "tags": {
-                    "additionalProperties": {
-                        "type": "string"
-                    },
-                    "type": "object",
-                    "description": "Tags associated with an application this data plane proxy is deployed next to, e.g. `kuma.io/service=web`, `version=1.0`. You can then reference these tags in policies like MeshTrafficPermission. `kuma.io/service` tag is mandatory."
-                },
                 "health": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.Health",
                     "additionalProperties": true,
