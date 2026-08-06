@@ -1390,6 +1390,31 @@ Use `Metrics.Mesh.MinResyncInterval` (`KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL`) a
 `MinResyncTimeout`/`MaxResyncTimeout` in YAML config and their environment variables are
 now silently ignored, since the config loader does not reject unknown fields.
 
+### `MeshExternalService` TLS verification uses the `SecureDataSource` shape
+
+`spec.tls.verification.caCert`, `.clientCert` and `.clientKey` on `MeshExternalService` now
+use the same `SecureDataSource` type as `MeshIdentity`, instead of the old `DataSource` type.
+The old type has been removed from the API entirely.
+
+| Old field | New field |
+|---|---|
+| `type: Inline`, `inline.value` | `type: InsecureInline`, `insecureInline.value` |
+| `type: File`, `file.path` | not yet accepted, see below |
+| `type: EnvVar`, `envVar.name` | not yet accepted, see below |
+
+A `secretRef` (`type: Secret`, `secretRef.name`) works the same as before.
+
+**Action required**
+
+Rewrite any `MeshExternalService` using `inline` to `insecureInline` before upgrading.
+`File` and `EnvVar` are not yet accepted on `MeshExternalService`'s `caCert`, `clientCert`
+or `clientKey` — rewrite those to `insecureInline` or `secretRef` before upgrading.
+
+**Warning**: this is not validated at read time. A `MeshExternalService` still using the old
+field names, or `File`/`EnvVar`, is accepted by the API but silently dropped from the xDS
+config for the affected proxies, with an error logged on the control plane, rather than
+being rejected outright.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.
