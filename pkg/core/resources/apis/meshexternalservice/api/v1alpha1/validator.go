@@ -38,6 +38,10 @@ func (r *MeshExternalServiceResource) validate() error {
 		if r.Spec.Tls != nil {
 			verr.AddErrorAt(path.Field("tls"), validateTls(r.Spec.Tls))
 		}
+	} else if r.Spec.Tls != nil && r.Spec.Tls.Verification != nil {
+		// an extension owns the rest of the tls validation, but never the data source types:
+		// File and EnvVar are read from the control plane process itself.
+		verr.AddErrorAt(path.Field("tls"), validateVerificationDataSourceTypes(r.Spec.Tls.Verification))
 	}
 
 	if r.Spec.Extension != nil && r.Spec.Extension.Type == "" {
@@ -84,7 +88,18 @@ func validateTls(tls *Tls) validators.ValidationError {
 	return verr
 }
 
-func validateSecureDataSource(path validators.PathBuilder, sds *datasource_api.SecureDataSource) validators.ValidationError {
+func validateVerificationDataSourceTypes(verification *Verification) validators.ValidationError {
+	var verr validators.ValidationError
+	path := validators.RootedAt("verification")
+	verr.Add(validateSecureDataSourceType(path.Field("caCert"), verification.CaCert))
+	verr.Add(validateSecureDataSourceType(path.Field("clientCert"), verification.ClientCert))
+	verr.Add(validateSecureDataSourceType(path.Field("clientKey"), verification.ClientKey))
+	return verr
+}
+
+// validateSecureDataSourceType rejects the data source types that make the control plane read its
+// own filesystem or environment, which a MeshExternalService author must never be able to request.
+func validateSecureDataSourceType(path validators.PathBuilder, sds *datasource_api.SecureDataSource) validators.ValidationError {
 	var verr validators.ValidationError
 	if sds == nil {
 		return verr
@@ -92,9 +107,19 @@ func validateSecureDataSource(path validators.PathBuilder, sds *datasource_api.S
 	switch sds.Type {
 	case datasource_api.SecureDataSourceFile, datasource_api.SecureDataSourceEnvVar:
 		verr.AddViolationAt(path.Field("type"), validators.MustBeOneOf(string(sds.Type), string(datasource_api.SecureDataSourceSecretRef), string(datasource_api.SecureDataSourceInline)))
-	default:
-		verr.Add(sds.ValidateSecureDataSource(path))
 	}
+	return verr
+}
+
+func validateSecureDataSource(path validators.PathBuilder, sds *datasource_api.SecureDataSource) validators.ValidationError {
+	var verr validators.ValidationError
+	if sds == nil {
+		return verr
+	}
+	if typeErr := validateSecureDataSourceType(path, sds); typeErr.HasViolations() {
+		return typeErr
+	}
+	verr.Add(sds.ValidateSecureDataSource(path))
 	return verr
 }
 

@@ -1396,24 +1396,42 @@ now silently ignored, since the config loader does not reject unknown fields.
 use the same `SecureDataSource` type as `MeshIdentity`, instead of the old `DataSource` type.
 The old type has been removed from the API entirely.
 
+The old type had no discriminator: it was a flat object with `secret`, `inline` or
+`inlineString`. The new type requires a `type` discriminator and nests the value under a
+field matching it. Every old field has to be rewritten:
+
 | Old field | New field |
 |---|---|
-| `type: Inline`, `inline.value` | `type: InsecureInline`, `insecureInline.value` |
-| `type: File`, `file.path` | not yet accepted, see below |
-| `type: EnvVar`, `envVar.name` | not yet accepted, see below |
+| `inline: <base64>` | `type: InsecureInline`, `insecureInline.value: <plain text>` |
+| `inlineString: <text>` | `type: InsecureInline`, `insecureInline.value: <text>` |
+| `secret: <name>` | `type: Secret`, `secretRef: {kind: Secret, name: <name>}` |
 
-A `secretRef` (`type: Secret`, `secretRef.name`) works the same as before.
+`inline` was base64-encoded, `insecureInline.value` is plain text, so decode the old value
+when rewriting it. For example `inline: dGVzdA==` becomes:
+
+```yaml
+caCert:
+  type: InsecureInline
+  insecureInline:
+    value: test
+```
+
+`File` and `EnvVar`, the two other `SecureDataSource` types, are rejected on
+`MeshExternalService` — they read the control plane's own filesystem and environment. This
+also applies when `spec.extension` is set, even though an extension owns the rest of the
+`spec.tls` validation.
 
 **Action required**
 
-Rewrite any `MeshExternalService` using `inline` to `insecureInline` before upgrading.
-`File` and `EnvVar` are not yet accepted on `MeshExternalService`'s `caCert`, `clientCert`
-or `clientKey` — rewrite those to `insecureInline` or `secretRef` before upgrading.
+Rewrite `caCert`, `clientCert` and `clientKey` on every `MeshExternalService` to the new
+shape as part of the upgrade.
 
-**Warning**: this is not validated at read time. A `MeshExternalService` still using the old
-field names, or `File`/`EnvVar`, is accepted by the API but silently dropped from the xDS
-config for the affected proxies, with an error logged on the control plane, rather than
-being rejected outright.
+**Warning**: a `MeshExternalService` written in the old shape after the upgrade is rejected
+at write time, because the missing `type` discriminator is a validation violation. Resources
+already stored in the old shape are not rejected — the control plane cannot read their TLS
+material, so the destination is dropped from the xDS config of every proxy routing to it,
+with an error logged on the control plane. Plan the rewrite together with the upgrade to
+avoid an outage on those destinations.
 
 ## Upgrade to `2.13.7`
 

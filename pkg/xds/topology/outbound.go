@@ -461,18 +461,31 @@ func fillMeshExternalServicesOnEgress(
 }
 
 // loadSecureBytes resolves a SecureDataSource on the control plane. Secret references keep going
-// through the mesh-snapshot datasource.Loader so no additional store I/O is introduced; every
-// other type is resolved directly via SecureDataSource.ReadByControlPlane.
+// through the mesh-snapshot datasource.Loader so no additional store I/O is introduced; inline
+// values are resolved directly via SecureDataSource.ReadByControlPlane. File and EnvVar would read
+// the control plane's own filesystem and environment, so they are refused here as well as in the
+// validator - a MeshExternalService with an extension, or one synced from another zone, does not
+// necessarily go through validation.
 func loadSecureBytes(ctx context.Context, sds *datasource_api.SecureDataSource, mesh string, loader datasource.Loader) ([]byte, error) {
 	if sds == nil {
 		return nil, nil
 	}
-	if sds.Type == datasource_api.SecureDataSourceSecretRef {
+	switch sds.Type {
+	case datasource_api.SecureDataSourceSecretRef:
+		if sds.SecretRef == nil {
+			return nil, errors.New("secretRef must be defined")
+		}
 		return loader.Load(ctx, mesh, &system_proto.DataSource{
 			Type: &system_proto.DataSource_Secret{Secret: sds.SecretRef.Name},
 		})
+	case datasource_api.SecureDataSourceInline:
+		if sds.InsecureInline == nil {
+			return nil, errors.New("insecureInline must be defined")
+		}
+		return sds.ReadByControlPlane(ctx, nil, mesh)
+	default:
+		return nil, errors.Errorf("datasource type: %s is not supported on MeshExternalService", sds.Type)
 	}
-	return sds.ReadByControlPlane(ctx, nil, mesh)
 }
 
 const (

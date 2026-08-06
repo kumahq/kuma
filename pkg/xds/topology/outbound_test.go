@@ -395,6 +395,58 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
+			Entry("skips MeshExternalService reading a control plane local file", testCase{
+				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "file-mes",
+						},
+						Spec: &meshexternalservice_api.MeshExternalService{
+							Match: meshexternalservice_api.Match{
+								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Port:     10000,
+								Protocol: core_meta.ProtocolTCP,
+							},
+							// an extension owns tls validation, so File and EnvVar can only be
+							// stopped here
+							Extension: &meshexternalservice_api.Extension{Type: "example"},
+							Endpoints: &[]meshexternalservice_api.Endpoint{
+								{
+									Address: "example.com",
+									Port:    443,
+								},
+							},
+							Tls: &meshexternalservice_api.Tls{
+								Enabled: true,
+								Verification: &meshexternalservice_api.Verification{
+									Mode: meshexternalservice_api.TLSVerificationSecured,
+									CaCert: &datasource_api.SecureDataSource{
+										Type: datasource_api.SecureDataSourceFile,
+										File: &datasource_api.File{Path: "/etc/hosts"},
+									},
+								},
+							},
+						},
+					},
+				},
+				zoneEgresses: []*core_mesh.ZoneEgressResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "egress",
+							Mesh: "default",
+						},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{
+								Address: "1.1.1.1",
+								Port:    10002,
+							},
+						},
+					},
+				},
+				mesh:     defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{},
+			}),
 			Entry("uses MeshExternalService without egress", testCase{
 				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
 					{
