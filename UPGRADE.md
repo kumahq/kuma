@@ -42,11 +42,15 @@ onto injected `kuma-sidecar` containers.
 
 **Action required**
 
-None. Leftover values are silently ignored rather than rejected: `kuma-cp` does not
-use strict YAML parsing outside of tests, `envconfig` ignores unknown environment
-variables, and Helm accepts unknown `--set` paths. Universal data planes older than
-3.0 still fall back to legacy naming until they are upgraded to a `kuma-dp` version
-that advertises the feature unconditionally.
+If you previously set any of these to `false` to opt out, unified naming is now
+always on: `kuma-dp` always advertises `FeatureUnifiedResourceNaming`, and the
+control plane generates unified Envoy resource and stat names regardless of any
+leftover config. Update automation, dashboards, or alerting that depend on the
+legacy names before upgrading. The leftover config values themselves are silently
+ignored rather than rejected: `kuma-cp` does not use strict YAML parsing outside of
+tests, `envconfig` ignores unknown environment variables, and Helm accepts unknown
+`--set` paths. Universal data planes fall back to legacy naming until they run a
+`kuma-dp` version that advertises `FeatureUnifiedResourceNaming` (Kuma 3.0+).
 
 ### MADS restricted to universal deployment mode
 
