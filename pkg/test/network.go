@@ -13,7 +13,9 @@ import (
 // used to find it is closed, which makes two consecutive calls return the same
 // port every few thousand times on Linux. Tests that pick one port per server
 // then configure two servers with the same port, so ports already handed out in
-// this process are not returned again.
+// this process are not returned again. Ports are tracked regardless of the
+// address they were found on, because a port found on the wildcard address
+// conflicts with the same port on every specific one.
 var handedOutPorts = struct {
 	sync.Mutex
 	ports map[uint32]struct{}

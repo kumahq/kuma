@@ -17,7 +17,6 @@ import (
 var _ = Describe("HTTPS server certificate", func() {
 	var certPath, keyPath string
 	var httpsPort uint32
-	stop := func() {}
 
 	// writeCert stores a new self-signed certificate in the files the server
 	// was started with.
@@ -50,13 +49,9 @@ var _ = Describe("HTTPS server certificate", func() {
 			cfg.HTTPS.TlsCertFile = certPath
 			cfg.HTTPS.TlsKeyFile = keyPath
 		})
-		apiServer, _, stopFn := StartApiServer(cfg)
-		stop = stopFn
+		apiServer, _, stop := StartApiServer(cfg)
+		DeferCleanup(stop)
 		httpsPort = apiServer.Config().HTTPS.Port
-	})
-
-	AfterEach(func() {
-		stop()
 	})
 
 	It("should serve a certificate rotated on disk without a restart", func() {
