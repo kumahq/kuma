@@ -8,6 +8,21 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `multizone.zone.ingressUpdateInterval` removed
+
+The `multizone.zone.ingressUpdateInterval` configuration field and its `KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL` environment variable are removed. Nothing has read them since the control plane stopped maintaining `ZoneIngress.availableServices`. Config loading is non-strict, so a leftover value is silently ignored rather than rejected.
+
+**Action required**
+
+Remove `multizone.zone.ingressUpdateInterval` from `kuma-cp.yaml` and `KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL` from control plane deployments and Helm values.
+
+### `kuma.io/ingress` and `kuma.io/egress` Pod annotations removed
+
+The Pod controller no longer turns a Pod annotated with `kuma.io/ingress` or `kuma.io/egress` into a standalone `ZoneIngress`/`ZoneEgress`. Zone proxies are ordinary `Dataplane` resources carrying zone proxy listeners, built from a `Service` labelled `k8s.kuma.io/zone-proxy-type`. The Helm chart stopped emitting these annotations in 3.0, so only hand-rolled Pod manifests are affected. The `kuma.io/ingress-public-address` and `kuma.io/ingress-public-port` annotations are removed with them — the public address now comes from `MeshZoneAddress`.
+
+**Action required**
+
+Replace any hand-rolled ingress or egress Pod with the zone proxy Deployment shipped by the chart (`mesh-zoneproxy-*`), or label its `Service` with `k8s.kuma.io/zone-proxy-type`. A Pod that keeps the old annotations is reconciled as a regular `Dataplane` if it has a sidecar, and ignored otherwise — nothing rejects the annotation, so the change is silent.
 ### Zone proxy garbage collection folded into the Dataplane collector
 
 Universal zone proxies are ordinary `Dataplane` resources carrying zone proxy listeners, so they are collected by the existing Dataplane GC. The separate collector for `ZoneIngress`/`ZoneEgress` has been removed, along with the `runtime.universal.zoneResourceCleanupAge` configuration field and its `KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE` environment variable. Offline zone proxies are now cleaned up after `runtime.universal.dataplaneCleanupAge` (default 72h) instead.

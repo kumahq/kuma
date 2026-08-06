@@ -21,24 +21,8 @@ const (
 	// It can be used to mark a pod as providing a builtin gateway.
 	KumaGatewayAnnotation = "kuma.io/gateway"
 
-	// KumaIngressAnnotation allows to mark pod with Kuma Ingress
-	// which is crucial for Multizone communication
-	KumaIngressAnnotation = "kuma.io/ingress"
-
-	// KumaEgressAnnotation allows marking pod with Kuma Egress
-	// which is crucial for Multizone communication
-	KumaEgressAnnotation = "kuma.io/egress"
-
 	// KumaTagsAnnotation holds a JSON representation of desired tags
 	KumaTagsAnnotation = "kuma.io/tags"
-
-	// KumaIngressPublicAddressAnnotation allows to pick public address for Ingress
-	// If not defined, Kuma will try to pick this address from the Ingress Service
-	KumaIngressPublicAddressAnnotation = "kuma.io/ingress-public-address"
-
-	// KumaIngressPublicPortAnnotation allows to pick public port for Ingress
-	// If not defined, Kuma will try to pick this address from the Ingress Service
-	KumaIngressPublicPortAnnotation = "kuma.io/ingress-public-port"
 
 	// KumaDirectAccess defines a comma-separated list of Services that will be accessed directly
 	KumaDirectAccess = "kuma.io/direct-access-services"
