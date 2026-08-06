@@ -47,14 +47,15 @@ func Rotation() {
 	}
 
 	// xdsConnections is how many times the proxy has connected to the DP server,
-	// which does not change while its stream stays up.
-	xdsConnectionsRE := regexp.MustCompile(`cluster\.ads_cluster\.upstream_cx_total: (\d+)`)
+	// which does not change while its stream stays up. The cluster is named
+	// system_ads under unified resource naming and ads_cluster without it.
+	xdsConnectionsRE := regexp.MustCompile(`cluster\.(?:system_ads|ads_cluster)\.upstream_cx_total: (\d+)`)
 	xdsConnections := func(g Gomega, app string) int {
 		stats, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput(
 			"inspect", "dataplane", app, "--type", "stats", "--mesh", mesh)
 		g.Expect(err).ToNot(HaveOccurred())
 		matched := xdsConnectionsRE.FindStringSubmatch(stats)
-		g.Expect(matched).To(HaveLen(2), "no ads_cluster connection stat in %s", stats)
+		g.Expect(matched).To(HaveLen(2), "no ads cluster connection stat for %s", app)
 		connections, err := strconv.Atoi(matched[1])
 		g.Expect(err).ToNot(HaveOccurred())
 		return connections
