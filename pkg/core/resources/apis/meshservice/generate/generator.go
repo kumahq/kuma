@@ -77,7 +77,7 @@ func New(
 	}
 	droppedLabels := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "component_meshservice_generator_dropped_labels_total",
-		Help: "Number of Dataplane label/tag keys dropped during MeshService generation.",
+		Help: "Number of Dataplane label keys dropped during MeshService generation.",
 	}, []string{"reason"})
 	droppedLabels.WithLabelValues("invalid")
 	if err := metrics.Register(droppedLabels); err != nil {
