@@ -420,6 +420,33 @@ to:
                 tags:
                   version: v1
 `),
+		ErrorCases("missing port in requestMirror backendRef",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.port`,
+				Message: "must be defined with kind MeshMultiZoneService",
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshMultiZoneService
+                name: test-server
+`),
 		ErrorCases("invalid hostnames",
 			[]validators.Violation{
 				{
@@ -661,6 +688,54 @@ to:
         backendRefs:
           - kind: MeshService
             name: backend
+`),
+		Entry("requestMirror to real resources", `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - path:
+          value: /v1
+          type: PathPrefix
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshService
+                name: backend
+                port: 8080
+    - matches:
+      - path:
+          value: /v2
+          type: PathPrefix
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshMultiZoneService
+                name: backend
+                port: 8080
+    - matches:
+      - path:
+          value: /v3
+          type: PathPrefix
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshExternalService
+                name: example
+                port: 8080
 `),
 		Entry("MeshService and MeshMultiZoneService", `
 type: MeshHTTPRoute

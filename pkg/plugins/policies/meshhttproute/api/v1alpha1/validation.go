@@ -274,15 +274,19 @@ func validateFilters(topTargetRef common_api.TargetRef, filters *[]Filter, match
 				errs.AddViolationAt(path.Field("requestMirror"), validators.MustBeDefined)
 				continue
 			}
+			backendRefPath := path.Field("requestMirror").Field("backendRef")
 			errs.AddErrorAt(
-				path.Field("requestMirror").Field("backendRef"),
+				backendRefPath,
 				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef.TargetRef, &mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
 						common_api.MeshServiceSubset,
+						common_api.MeshExternalService,
+						common_api.MeshMultiZoneService,
 					},
 				}),
 			)
+			errs.AddErrorAt(backendRefPath, validators.ValidateBackendRef(filter.RequestMirror.BackendRef))
 		}
 	}
 
