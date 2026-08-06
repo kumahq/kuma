@@ -66,10 +66,6 @@ func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.
 	return r.MeshLocalResources.listOrEmpty(resourceType)
 }
 
-func (r Resources) ServiceInsights() *core_mesh.ServiceInsightResourceList {
-	return r.ListOrEmpty(core_mesh.ServiceInsightType).(*core_mesh.ServiceInsightResourceList)
-}
-
 func (r Resources) Dataplanes() *core_mesh.DataplaneResourceList {
 	return r.ListOrEmpty(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList)
 }
