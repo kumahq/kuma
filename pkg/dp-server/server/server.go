@@ -44,6 +44,7 @@ type Filter func(writer http.ResponseWriter, request *http.Request) bool
 
 type DpServer struct {
 	config           dp_server.DpServerConfig
+	certWatchers     *util_tls.Watchers
 	httpMux          *http.ServeMux
 	grpcServer       *grpc.Server
 	filter           Filter
@@ -65,7 +66,7 @@ type grpcStopper interface {
 	Stop()
 }
 
-func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics, filter Filter) (*DpServer, error) {
+func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics, certWatchers *util_tls.Watchers, filter Filter) (*DpServer, error) {
 	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
@@ -111,6 +112,7 @@ func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics, filte
 
 	return &DpServer{
 		config:           config,
+		certWatchers:     certWatchers,
 		httpMux:          http.NewServeMux(),
 		grpcServer:       grpcServer,
 		filter:           filter,
@@ -146,12 +148,11 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 	}
 	defer close(d.done)
 
-	var err error
-	getCertificate, err := util_tls.WatchKeyPair(d.config.TlsCertFile, d.config.TlsKeyFile, stop, log)
+	keyPair, err := d.certWatchers.Watch(d.config.TlsCertFile, d.config.TlsKeyFile)
 	if err != nil {
 		return err
 	}
-	tlsConfig := &tls.Config{GetCertificate: getCertificate, MinVersion: tls.VersionTLS12} // To make gosec happy
+	tlsConfig := &tls.Config{GetCertificate: keyPair.GetCertificate, MinVersion: tls.VersionTLS12} // To make gosec happy
 	if tlsConfig.MinVersion, err = config_types.TLSVersion(d.config.TlsMinVersion); err != nil {
 		return err
 	}

@@ -35,9 +35,10 @@ var log = core.Log.WithName("mads-server")
 // muxServer is a runtime component.Component that
 // serves MADs resources over HTTP
 type muxServer struct {
-	config  *mads_config.MonitoringAssignmentServerConfig
-	metrics core_metrics.Metrics
-	ready   atomic.Bool
+	config       *mads_config.MonitoringAssignmentServerConfig
+	certWatchers *util_tls.Watchers
+	metrics      core_metrics.Metrics
+	ready        atomic.Bool
 	mesh_proto.UnimplementedMultiplexServiceServer
 	rm        manager.ReadOnlyResourceManager
 	meshCache *mesh.Cache
@@ -58,11 +59,11 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 	defer cancel()
 	var tlsConfig *tls.Config
 	if s.config.TlsEnabled {
-		getCertificate, err := util_tls.WatchKeyPair(s.config.TlsCertFile, s.config.TlsKeyFile, stop, log)
+		keyPair, err := s.certWatchers.Watch(s.config.TlsCertFile, s.config.TlsKeyFile)
 		if err != nil {
 			return err
 		}
-		tlsConfig = &tls.Config{GetCertificate: getCertificate, MinVersion: tls.VersionTLS12} // To make gosec happy
+		tlsConfig = &tls.Config{GetCertificate: keyPair.GetCertificate, MinVersion: tls.VersionTLS12} // To make gosec happy
 		if tlsConfig.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
 		}
@@ -125,9 +126,10 @@ func SetupServer(rt core_runtime.Runtime) error {
 		return nil
 	}
 	return rt.Add(&muxServer{
-		meshCache: rt.MeshCache(),
-		rm:        rt.ReadOnlyResourceManager(),
-		config:    rt.Config().MonitoringAssignmentServer,
-		metrics:   rt.Metrics(),
+		meshCache:    rt.MeshCache(),
+		rm:           rt.ReadOnlyResourceManager(),
+		config:       rt.Config().MonitoringAssignmentServer,
+		certWatchers: rt.CertWatchers(),
+		metrics:      rt.Metrics(),
 	})
 }

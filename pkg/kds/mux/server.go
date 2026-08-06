@@ -32,6 +32,7 @@ var muxServerLog = core.Log.WithName("kds-mux-server")
 
 type server struct {
 	config               multizone.KdsServerConfig
+	certWatchers         *util_tls.Watchers
 	metrics              core_metrics.Metrics
 	serviceServer        *service.GlobalKDSServiceServer
 	kdsSyncServiceServer *KDSSyncServiceServer
@@ -48,12 +49,14 @@ func NewServer(
 	streamInterceptors []grpc.StreamServerInterceptor,
 	unaryInterceptors []grpc.UnaryServerInterceptor,
 	config multizone.KdsServerConfig,
+	certWatchers *util_tls.Watchers,
 	metrics core_metrics.Metrics,
 	serviceServer *service.GlobalKDSServiceServer,
 	kdsSyncServiceServer *KDSSyncServiceServer,
 ) component.Component {
 	return &server{
 		config:               config,
+		certWatchers:         certWatchers,
 		metrics:              metrics,
 		serviceServer:        serviceServer,
 		kdsSyncServiceServer: kdsSyncServiceServer,
@@ -78,11 +81,11 @@ func (s *server) Start(stop <-chan struct{}) error {
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	if s.config.TlsCertFile != "" && s.config.TlsEnabled {
-		getCertificate, err := util_tls.WatchKeyPair(s.config.TlsCertFile, s.config.TlsKeyFile, stop, muxServerLog)
+		keyPair, err := s.certWatchers.Watch(s.config.TlsCertFile, s.config.TlsKeyFile)
 		if err != nil {
 			return err
 		}
-		tlsCfg := &tls.Config{GetCertificate: getCertificate, MinVersion: tls.VersionTLS12}
+		tlsCfg := &tls.Config{GetCertificate: keyPair.GetCertificate, MinVersion: tls.VersionTLS12}
 		if tlsCfg.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
 		}

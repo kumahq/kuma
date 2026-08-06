@@ -37,6 +37,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
 	runtime2 "github.com/kumahq/kuma/v3/pkg/test/runtime"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
@@ -133,6 +134,10 @@ func (t *testRuntimeContext) Access() runtime.Access {
 
 func (t *testRuntimeContext) AppContext() context.Context {
 	return t.ctx
+}
+
+func (t *testRuntimeContext) CertWatchers() *util_tls.Watchers {
+	return util_tls.NewWatchers(t.ctx, core.Log.WithName("cert-watcher"))
 }
 
 func (t *testRuntimeContext) ExtraReportsFn() runtime.ExtraReportsFn {

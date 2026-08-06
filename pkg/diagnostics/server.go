@@ -27,11 +27,12 @@ import (
 var diagnosticsServerLog = core.Log.WithName("xds-server").WithName("diagnostics")
 
 type diagnosticsServer struct {
-	isReady     func() bool
-	config      *diagnostics_config.DiagnosticsConfig
-	metrics     metrics.Metrics
-	logRegistry *kuma_log.ComponentLevelRegistry
-	ready       atomic.Bool
+	isReady      func() bool
+	config       *diagnostics_config.DiagnosticsConfig
+	certWatchers *util_tls.Watchers
+	metrics      metrics.Metrics
+	logRegistry  *kuma_log.ComponentLevelRegistry
+	ready        atomic.Bool
 }
 
 func (s *diagnosticsServer) NeedLeaderElection() bool {
@@ -68,12 +69,12 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 	AddLoggingHandlers(mux, s.logRegistry)
 	var tlsConfig *tls.Config
 	if s.config.TlsEnabled {
-		getCertificate, err := util_tls.WatchKeyPair(s.config.TlsCertFile, s.config.TlsKeyFile, stop, diagnosticsServerLog)
+		keyPair, err := s.certWatchers.Watch(s.config.TlsCertFile, s.config.TlsKeyFile)
 		if err != nil {
 			return err
 		}
 		tlsConfig = &tls.Config{
-			GetCertificate: getCertificate,
+			GetCertificate: keyPair.GetCertificate,
 			MinVersion:     tls.VersionTLS12, // Make gosec pass, (In practice it's always set after).
 		}
 		if tlsConfig.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {

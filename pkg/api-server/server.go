@@ -59,10 +59,11 @@ import (
 var log = core.Log.WithName("api-server")
 
 type ApiServer struct {
-	mux        *http.ServeMux
-	config     api_server.ApiServerConfig
-	httpReady  atomic.Bool
-	httpsReady atomic.Bool
+	mux          *http.ServeMux
+	config       api_server.ApiServerConfig
+	certWatchers *util_tls.Watchers
+	httpReady    atomic.Bool
+	httpsReady   atomic.Bool
 }
 
 func (a *ApiServer) NeedLeaderElection() bool {
@@ -232,8 +233,9 @@ func NewApiServer(
 	container.Handle(guiPath, guiHandler)
 
 	newApiServer := &ApiServer{
-		mux:    container.ServeMux,
-		config: *serverConfig,
+		mux:          container.ServeMux,
+		config:       *serverConfig,
+		certWatchers: rt.CertWatchers(),
 	}
 
 	container.Filter(func(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
@@ -415,7 +417,7 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 		a.httpReady.Store(true)
 	}
 	if a.config.HTTPS.Enabled {
-		tlsConfig, err := configureTLS(a.config, stop)
+		tlsConfig, err := configureTLS(a.config, a.certWatchers)
 		if err != nil {
 			return err
 		}
@@ -457,13 +459,13 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func configureTLS(cfg api_server.ApiServerConfig, stop <-chan struct{}) (*tls.Config, error) {
-	getCertificate, err := util_tls.WatchKeyPair(cfg.HTTPS.TlsCertFile, cfg.HTTPS.TlsKeyFile, stop, log)
+func configureTLS(cfg api_server.ApiServerConfig, certWatchers *util_tls.Watchers) (*tls.Config, error) {
+	keyPair, err := certWatchers.Watch(cfg.HTTPS.TlsCertFile, cfg.HTTPS.TlsKeyFile)
 	if err != nil {
 		return nil, err
 	}
 	tlsConfig := &tls.Config{
-		GetCertificate: getCertificate,
+		GetCertificate: keyPair.GetCertificate,
 		MinVersion:     tls.VersionTLS12, // to pass gosec (in practice it's always set after.
 	}
 	tlsConfig.MinVersion, err = config_types.TLSVersion(cfg.HTTPS.TlsMinVersion)

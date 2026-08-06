@@ -71,6 +71,7 @@ func Setup(rt runtime.Runtime) error {
 		rt.KDSContext().ServerStreamInterceptors,
 		rt.KDSContext().ServerUnaryInterceptor,
 		*rt.Config().Multizone.Global.KDS,
+		rt.CertWatchers(),
 		rt.Metrics(),
 		service.NewGlobalKDSServiceServer(
 			rt.AppContext(),
