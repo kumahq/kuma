@@ -212,6 +212,18 @@ func (gis *defaultGlobalInsightService) aggregateGatewayServices(
 	if err := gis.resourceStore.List(ctx, dataplanes); err != nil {
 		return err
 	}
+
+	hasGateway := false
+	for _, dp := range dataplanes.Items {
+		if dp.Spec.GetNetworking().GetGateway() != nil {
+			hasGateway = true
+			break
+		}
+	}
+	if !hasGateway {
+		return nil
+	}
+
 	dataplaneInsights := &mesh.DataplaneInsightResourceList{}
 	if err := gis.resourceStore.List(ctx, dataplaneInsights); err != nil {
 		return err

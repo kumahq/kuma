@@ -336,14 +336,16 @@ legacy statistics:
 - `ServiceInsight` is no longer computed at all. The control plane never writes
   the resource, and it deletes any `ServiceInsight` left over by the previous
   version on every insight resync (every
-  `KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL`, 20s by default), so no stale data is
-  served, including during a rolling upgrade where an old replica still writes
-  the resource. Once the upgrade completes,
-  `GET /meshes/{mesh}/service-insights` returns an empty list
-  and `GET /meshes/{mesh}/service-insights/{name}` returns `404`. This also
-  covers delegated gateways, which used to be the last services reported there,
-  along with their per-service `zones` list. `kumactl inspect services` and the
-  GUI pages backed by that endpoint list nothing.
+  `KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL`, 20s by default). During a rolling
+  upgrade, an old replica can still write the resource between resync ticks on
+  an upgraded replica, so the legacy REST endpoints may briefly serve stale
+  data until the next resync deletes it again. Once every replica is upgraded
+  and a resync interval has elapsed, `GET /meshes/{mesh}/service-insights`
+  returns an empty list and `GET /meshes/{mesh}/service-insights/{name}`
+  returns `404`. This also covers delegated gateways, which used to be the
+  last services reported there, along with their per-service `zones` list.
+  `kumactl inspect services` and the GUI pages backed by that endpoint list
+  nothing.
 - `MeshInsight.services` (the `Total`/`Internal`/`External` service count
   stat) is no longer populated and is always absent from the response.
 - The Dataplane/MeshGateway inspect `_rules` endpoint no longer populates the
