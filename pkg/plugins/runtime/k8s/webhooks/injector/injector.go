@@ -135,7 +135,7 @@ func New(
 			cfg.SidecarContainer.DataplaneContainer,
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, envoyAdminUnixSocket,
 			sidecarContainersEnabled,
-			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
+			cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
 			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
 		),
 		systemNamespace: systemNamespace,
@@ -325,19 +325,8 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 
 	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
 
-	disabledAppProbeProxy, err := probes.ApplicationProbeProxyDisabled(pod)
-	if err != nil {
+	if err := probes.SetupAppProbeProxies(pod, log); err != nil {
 		return err
-	}
-
-	if disabledAppProbeProxy {
-		if err := i.overrideHTTPProbes(pod); err != nil {
-			return err
-		}
-	} else {
-		if err := probes.SetupAppProbeProxies(pod, log); err != nil {
-			return err
-		}
 	}
 
 	return nil

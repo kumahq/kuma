@@ -12,14 +12,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 )
 
-func ApplicationProbeProxyDisabled(pod *kube_core.Pod) (bool, error) {
-	appProbeProxyPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
-	if err != nil {
-		return false, err
-	}
-	return appProbeProxyPort == 0, nil
-}
-
 func SetupAppProbeProxies(pod *kube_core.Pod, log logr.Logger) error {
 	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
 	appProbeProxyPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
@@ -134,15 +126,6 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 		return fmt.Sprintf("%d", port)
 	}
 
-	// scenarios of switching between virtual probes (vp) and application probe proxy (proxy):
-	// vp           proxy    	result
-	// Y            Y      	     proxy
-	// Y            N            proxy (default)
-	// disabled     N      	     N (disabled)
-	// not set      N      	     proxy (default)
-	// not set      Y - config   proxy
-	// not set      Y - pod      proxy
-
 	proxyPortAnno, proxyPortAnnoExists, err := metadata.Annotations(podAnnotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return err
@@ -168,23 +151,11 @@ func GetApplicationProbeProxyPort(
 	annotations metadata.Annotations,
 	defaultAppProbeProxyPort uint32,
 ) (uint32, error) {
-	// metadata.KumaApplicationProbeProxyPortAnnotation
-
-	// scenarios of switching between virtual probes (vp) and application probe proxy (proxy):
-	// vp           proxy    	result
-	// Y            Y      	     proxy
-	// Y            N            proxy (default)
-	// disabled     N      	     N (disabled)
-	// not set      N      	     proxy (default)
-	// not set      Y - config   proxy
-	// not set      Y - pod      proxy
-
 	proxyPort, proxyPortExist, err := annotations.GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return 0, err
 	}
 
-	vpEnabled, vpExist, _ := annotations.GetEnabled(metadata.KumaVirtualProbesAnnotation)
 	gwEnabled, _, _ := annotations.GetEnabled(metadata.KumaGatewayAnnotation)
 
 	switch {
@@ -194,12 +165,6 @@ func GetApplicationProbeProxyPort(
 		return 0, nil
 	case proxyPortExist:
 		return proxyPort, nil
-	case vpExist && vpEnabled:
-		// If virtual probes are explicitly enabled, return default to support both
-		return defaultAppProbeProxyPort, nil
-	case vpExist && !vpEnabled:
-		// If virtual probes are explicitly disabled, disable app probe proxy
-		return 0, nil
 	default:
 		return defaultAppProbeProxyPort, nil
 	}
