@@ -42,25 +42,14 @@ var _ = Describe("Noop Authenticator", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should allow with any token for any zone ingress", func() {
+	It("should reject a zone ingress", func() {
 		// given
 		zoneIngress := core_mesh.ZoneIngressResource{
 			Spec: &mesh_proto.ZoneIngress{
 				Zone: "zone-1",
 				Networking: &mesh_proto.ZoneIngress_Networking{
-					Address:           "127.0.0.1",
-					AdvertisedAddress: "192.168.0.1",
-					Port:              10001,
-					AdvertisedPort:    10001,
-				},
-				AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
-					{
-						Tags: map[string]string{
-							"kuma.io/service": "web",
-						},
-						Instances: 1,
-						Mesh:      "default",
-					},
+					Address: "127.0.0.1",
+					Port:    10001,
 				},
 			},
 		}
@@ -69,10 +58,10 @@ var _ = Describe("Noop Authenticator", func() {
 		err := authenticator.Authenticate(context.Background(), &zoneIngress, "some-random-token")
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).To(MatchError("no matching authenticator for ZoneIngress resource"))
 	})
 
-	It("should allow with any token for any zone egress", func() {
+	It("should reject a zone egress", func() {
 		// given
 		zoneEgress := core_mesh.ZoneEgressResource{
 			Spec: &mesh_proto.ZoneEgress{
@@ -88,6 +77,6 @@ var _ = Describe("Noop Authenticator", func() {
 		err := authenticator.Authenticate(context.Background(), &zoneEgress, "some-random-token")
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).To(MatchError("no matching authenticator for ZoneEgress resource"))
 	})
 })

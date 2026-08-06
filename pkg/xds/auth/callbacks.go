@@ -63,7 +63,7 @@ func (d *authCallbacks) getDeltaStreams() map[core_xds.StreamID]stream {
 type stream struct {
 	// context of the stream that contains a credential
 	ctx context.Context
-	// Dataplane / ZoneIngress / ZoneEgress associated with this XDS stream.
+	// Dataplane associated with this XDS stream.
 	resource model.Resource
 	// nodeID of the stream. Has to be the same for the whole life of a stream.
 	nodeID        string
