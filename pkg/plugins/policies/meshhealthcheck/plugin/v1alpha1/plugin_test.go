@@ -166,6 +166,31 @@ var _ = Describe("MeshHealthCheck", func() {
 		Entry("HTTP HealthCheck", testCase{
 			resources: httpClusters,
 			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: subsetutils.Subset{},
+						Conf: api.Conf{
+							Interval:                     test.ParseDuration("10s"),
+							Timeout:                      test.ParseDuration("2s"),
+							UnhealthyThreshold:           pointer.To[int32](3),
+							HealthyThreshold:             pointer.To[int32](1),
+							UnhealthyInterval:            test.ParseDuration("17s"),
+							InitialJitter:                test.ParseDuration("13s"),
+							IntervalJitter:               test.ParseDuration("15s"),
+							IntervalJitterPercent:        pointer.To[int32](10),
+							HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
+							FailTrafficOnPanic:           pointer.To(true),
+							EventLogPath:                 pointer.To("/tmp/log.txt"),
+							AlwaysLogHealthCheckFailures: pointer.To(false),
+							NoTrafficInterval:            test.ParseDuration("16s"),
+							Http: &api.HttpHealthCheck{
+								Disabled: pointer.To(false),
+								Path:     pointer.To("/health"),
+								RequestHeadersToAdd: &api.HeaderModifier{
+									Add: &[]api.HeaderKeyValue{
+										{
+											Name:  "x-some-header",
+											Value: "value",
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					httpMeshServiceIdentifier: {
 						Conf: []any{

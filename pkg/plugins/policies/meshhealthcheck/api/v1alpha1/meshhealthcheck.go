@@ -32,6 +32,10 @@ type Conf struct {
 	// Interval between consecutive health checks.
 	// If not specified then the default value is 1m
 	Interval *k8s.Duration `json:"interval,omitempty"`
+	// UnhealthyInterval is the time between consecutive health checks while
+	// the endpoint is unhealthy. If not specified, Interval is used for
+	// unhealthy endpoints as well.
+	UnhealthyInterval *k8s.Duration `json:"unhealthyInterval,omitempty"`
 	// Maximum time to wait for a health check response.
 	// If not specified then the default value is 15s
 	Timeout *k8s.Duration `json:"timeout,omitempty"`
