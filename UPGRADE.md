@@ -426,18 +426,22 @@ legacy statistics:
 - `MeshInsight.services` (the `Total`/`Internal`/`External` service count
   stat) is removed from the API. Field number 6 is reserved and will not be
   reused.
-- The Dataplane/MeshGateway inspect `_rules` endpoint no longer populates the
-  legacy `toRules` field on each rule entry; it is always an empty array.
-  `toResourceRules`, `fromRules`, and `inboundRules` are unaffected.
+- The Dataplane/MeshGateway inspect `_rules` endpoint no longer returns the
+  legacy `toRules` and `fromRules` fields on each rule entry; both fields are
+  removed from the response. `toResourceRules` and `inboundRules` are
+  unaffected.
+- The legacy `GET /meshes/{mesh}/meshservices/{name}/_resources/dataplanes`
+  endpoint is removed. Use `GET /meshes/{mesh}/meshservices/{name}/_dataplanes`
+  instead.
 
 **Action required**
 
 Update any automation or dashboards that read `ServiceInsight.services`,
-`MeshInsight.services`, or the `_rules` `toRules` field to use
-`MeshService`/`MeshExternalService` status and `_rules` `toResourceRules`
-instead. For delegated gateways, which are never turned into a `MeshService`,
-use the `Dataplane`/`DataplaneOverview` endpoints filtered by gateway type;
-aggregated gateway service counts remain available under `services` in the
+`MeshInsight.services`, or the `_rules` `toRules`/`fromRules` fields to use
+`MeshService`/`MeshExternalService` status and `_rules` `toResourceRules`/
+`inboundRules` instead. For delegated gateways, which are never turned into a
+`MeshService`, use the `Dataplane`/`DataplaneOverview` endpoints filtered by
+gateway type; aggregated gateway service counts remain available under `services` in the
 global insight endpoint.
 
 ### Zone proxies authenticate with a dataplane token
