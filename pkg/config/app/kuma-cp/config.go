@@ -268,15 +268,13 @@ var DefaultConfig = func() Config {
 		Reports: &Reports{
 			Enabled: false,
 		},
-		General:     DefaultGeneralConfig(),
-		DNSServer:   dns_server.DefaultDNSServerConfig(),
-		Multizone:   multizone.DefaultMultizoneConfig(),
-		Diagnostics: diagnostics.DefaultDiagnosticsConfig(),
-		DpServer:    dp_server.DefaultDpServerConfig(),
-		Access:      access.DefaultAccessConfig(),
-		Experimental: ExperimentalConfig{
-			IngressTagFilters: []string{},
-		},
+		General:       DefaultGeneralConfig(),
+		DNSServer:     dns_server.DefaultDNSServerConfig(),
+		Multizone:     multizone.DefaultMultizoneConfig(),
+		Diagnostics:   diagnostics.DefaultDiagnosticsConfig(),
+		DpServer:      dp_server.DefaultDpServerConfig(),
+		Access:        access.DefaultAccessConfig(),
+		Experimental:  ExperimentalConfig{},
 		InterCp:       intercp.DefaultInterCpConfig(),
 		EventBus:      eventbus.Default(),
 		Policies:      policies.Default(),
@@ -467,12 +465,6 @@ func DefaultDefaultsConfig() *Defaults {
 
 type ExperimentalConfig struct {
 	config.BaseConfig
-
-	// List of prefixes that will be used to filter out tags by keys from ingress' available services section.
-	// This can trim the size of the ZoneIngress object significantly.
-	// The drawback is that you cannot use filtered out tags for traffic routing.
-	// If empty, no filter is applied.
-	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
 }
 
 type IPAMConfig struct {

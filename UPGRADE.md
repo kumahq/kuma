@@ -31,6 +31,47 @@ spec:
 ```
 
 Meshes on `mtls.backends[].mode: STRICT`, meshes with mTLS disabled, and meshes that already have a `MeshTLS` policy are unaffected. Note that a mesh using `MeshIdentity` already resolved to `Strict` without a `MeshTLS` policy.
+### Zone Token `ingress` and `egress` scopes removed
+
+`kumactl generate zone-token` no longer accepts `--scope ingress` or `--scope egress`, and the `POST /tokens/zone` endpoint no longer requires a `scope`. A zone proxy is an ordinary `Dataplane` and authenticates with a dataplane token, so these scopes identified components that no longer exist. Kuma itself defines no zone token scopes now; the token carries only the zone name unless a distribution registers its own.
+
+**Action required**
+
+Drop `--scope ingress`/`--scope egress` from any script calling `kumactl generate zone-token`. Zone proxies need a dataplane token — generate one with `kumactl generate dataplane-token`.
+
+### `MeshExternalService` clusters require a `MeshIdentity`
+
+A client proxy without a workload identity no longer gets a cluster for a `MeshExternalService`. It previously got one that addressed the zone egress by the legacy `zone-egress` service SNI, but such traffic could never be served: a zone egress only generates its egress listener when it has a workload identity, and that listener matches filter chains on the KRI SNI only, so the legacy SNI matched nothing.
+
+**Action required**
+
+Create a `MeshIdentity` that matches the client proxies in any mesh that uses `MeshExternalService`. Without one, only the cluster is dropped — the outbound listener and its endpoints are still generated, so requests now fail locally in the client's Envoy with a 503 (`cluster_not_found`) instead of being reset by the zone egress. Keeping the listener is deliberate: removing it would let the request fall through to the transparent proxy passthrough and reach the external service directly, bypassing the egress.
+
+### `ZoneIngress` and `ZoneEgress` resources removed
+
+The standalone `ZoneIngress`, `ZoneEgress`, `ZoneIngressInsight` and `ZoneEgressInsight` resources are gone, together with their CRDs (`zoneingresses.kuma.io`, `zoneegresses.kuma.io`, `zoneingressinsights.kuma.io`, `zoneegressinsights.kuma.io`), their REST endpoints, their `kumactl get`/`kumactl inspect` subcommands and their KDS sync. A zone proxy is an ordinary `Dataplane` carrying zone proxy listeners, and its health is reported through `DataplaneInsight`.
+
+The control plane ClusterRole no longer grants access to these four CRDs, and the validating webhook no longer intercepts them.
+
+`globalInsight.zones.zoneIngresses` and `globalInsight.zones.zoneEgresses` are still present in the API response but report `0` until zone proxy counts are surfaced from `MeshInsight`.
+
+**Action required**
+
+Delete any remaining `ZoneIngress`/`ZoneEgress` resources before upgrading. On Kubernetes, delete the four CRDs after upgrading — Helm does not remove CRDs on upgrade, so the stale objects would otherwise stay in etcd:
+
+```sh
+kubectl delete crd zoneingresses.kuma.io zoneegresses.kuma.io zoneingressinsights.kuma.io zoneegressinsights.kuma.io
+```
+
+On Universal, `kumactl delete zone-ingress <name>` and `kumactl delete zone-egress <name>` are no longer available; remove the rows from the resource store directly if any are left.
+
+### `experimental.ingressTagFilters` removed
+
+The `experimental.ingressTagFilters` configuration field and its `KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS` environment variable are removed. They filtered tags out of `ZoneIngress.availableServices`, which no longer exists. Config loading is non-strict, so a leftover value is silently ignored rather than rejected.
+
+**Action required**
+
+Remove `experimental.ingressTagFilters` from `kuma-cp.yaml` and `KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS` from control plane deployments and Helm values.
 
 ### `multizone.zone.ingressUpdateInterval` removed
 
@@ -411,7 +452,7 @@ pre-2.6 overview aliases `GET /zoneingresses+insights[/{name}]` and
 `GET /zoneegressoverviews[/{name}]`, which have been redundant with
 `/zoneingresses[/{name}]/_overview` and `/zoneegresses[/{name}]/_overview` since
 2.6. Reading and listing the `ZoneIngress`/`ZoneEgress` resources themselves is
-unchanged.
+gone as well — the resources no longer exist, see the section above.
 
 `kumactl inspect` loses `zoneingress`, `zoneingresses` (alias `zone-ingresses`),
 `zoneegress` and `zoneegresses`.
@@ -450,18 +491,22 @@ legacy statistics:
 - `MeshInsight.services` (the `Total`/`Internal`/`External` service count
   stat) is removed from the API. Field number 6 is reserved and will not be
   reused.
-- The Dataplane/MeshGateway inspect `_rules` endpoint no longer populates the
-  legacy `toRules` field on each rule entry; it is always an empty array.
-  `toResourceRules`, `fromRules`, and `inboundRules` are unaffected.
+- The Dataplane/MeshGateway inspect `_rules` endpoint no longer returns the
+  legacy `toRules` and `fromRules` fields on each rule entry; both fields are
+  removed from the response. `toResourceRules` and `inboundRules` are
+  unaffected.
+- The legacy `GET /meshes/{mesh}/meshservices/{name}/_resources/dataplanes`
+  endpoint is removed. Use `GET /meshes/{mesh}/meshservices/{name}/_dataplanes`
+  instead.
 
 **Action required**
 
 Update any automation or dashboards that read `ServiceInsight.services`,
-`MeshInsight.services`, or the `_rules` `toRules` field to use
-`MeshService`/`MeshExternalService` status and `_rules` `toResourceRules`
-instead. For delegated gateways, which are never turned into a `MeshService`,
-use the `Dataplane`/`DataplaneOverview` endpoints filtered by gateway type;
-aggregated gateway service counts remain available under `services` in the
+`MeshInsight.services`, or the `_rules` `toRules`/`fromRules` fields to use
+`MeshService`/`MeshExternalService` status and `_rules` `toResourceRules`/
+`inboundRules` instead. For delegated gateways, which are never turned into a
+`MeshService`, use the `Dataplane`/`DataplaneOverview` endpoints filtered by
+gateway type; aggregated gateway service counts remain available under `services` in the
 global insight endpoint.
 
 ### Zone proxies authenticate with a dataplane token

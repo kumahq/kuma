@@ -206,17 +206,13 @@ var _ = Describe("Inspect WS", func() {
 		}),
 	)
 
-	It("marshals empty meshgateway inspect rule slices as arrays", func() {
-		toRules := []api_common.Rule{}
-		fromRules := []api_common.FromRule{}
+	It("marshals empty InspectRule slice fields as arrays", func() {
 		inboundRules := []api_common.InboundRulesEntry{}
 		toResourceRules := []api_common.ResourceRule{}
 		warnings := []string{"warning"}
 
 		bytes, err := json.Marshal(api_common.InspectRule{
 			Type:            "MeshRetry",
-			ToRules:         &toRules,
-			FromRules:       &fromRules,
 			InboundRules:    &inboundRules,
 			ToResourceRules: &toResourceRules,
 			Warnings:        &warnings,
@@ -224,8 +220,6 @@ var _ = Describe("Inspect WS", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(bytes).To(MatchJSON(`{
 			"type": "MeshRetry",
-			"toRules": [],
-			"fromRules": [],
 			"inboundRules": [],
 			"toResourceRules": [],
 			"warnings": ["warning"]

@@ -393,25 +393,5 @@ var _ = Describe("Authentication flow", func() {
 			// when / then
 			Expect(authenticator.Authenticate(ctx, &zoneProxyRes, token)).To(Succeed())
 		})
-
-		It("should reject a standalone ZoneIngress resource", func() {
-			// given
-			ziRes := core_mesh.ZoneIngressResource{
-				Meta: &test_model.ResourceMeta{Name: "zi-1"},
-				Spec: &mesh_proto.ZoneIngress{
-					Networking: &mesh_proto.ZoneIngress_Networking{
-						Address: "127.0.0.1",
-					},
-				},
-			}
-			token, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{Mesh: "default"}, 24*time.Hour)
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			err = authenticator.Authenticate(ctx, &ziRes, token)
-
-			// then
-			Expect(err).To(MatchError(ContainSubstring("no matching authenticator for ZoneIngress resource")))
-		})
 	})
 })

@@ -257,8 +257,6 @@ controlPlane:
     apiServer:
       # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""
-      # -- Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
-      clientCertsSecretName: ""
     # - if not creating the zonal control plane, then do nothing
     # - if secretName is empty and create is false, then do nothing
     # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
