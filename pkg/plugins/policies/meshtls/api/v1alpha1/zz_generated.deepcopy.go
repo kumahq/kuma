@@ -48,7 +48,7 @@ func (in *MeshTLS) DeepCopyInto(out *MeshTLS) {
 	*out = *in
 	if in.TargetRef != nil {
 		in, out := &in.TargetRef, &out.TargetRef
-		*out = new(commonv1alpha1.TargetRef)
+		*out = new(commonv1alpha1.TopLevelTargetRef)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Rules != nil {

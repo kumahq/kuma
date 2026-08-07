@@ -314,7 +314,7 @@ var _ = Describe("DppSelectedByPolicy MeshHTTPRoute namespace scoping", func() {
 				},
 			},
 			Spec: &v1alpha1.MeshHTTPRoute{
-				TargetRef: pointer.To(common_api.TargetRef{
+				TargetRef: pointer.To(common_api.TopLevelTargetRef{
 					Kind:   common_api.Dataplane,
 					Labels: pointer.To(map[string]string{"app": appLabel}),
 				}),

@@ -18,7 +18,7 @@ var defaultMeshTimeoutResource = func() model.Resource {
 	const factor = 2
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
+			TargetRef: &common_api.TopLevelTargetRef{
 				Kind: common_api.Mesh,
 			},
 
@@ -53,12 +53,12 @@ var defaultMeshTimeoutResource = func() model.Resource {
 var defaultMeshTimeoutToResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
+			TargetRef: &common_api.TopLevelTargetRef{
 				Kind: common_api.Mesh,
 			},
 			To: &[]v1alpha1.To{
 				{
-					TargetRef: common_api.TargetRef{
+					TargetRef: common_api.OutboundTargetRef{
 						Kind: common_api.Mesh,
 					},
 					Default: v1alpha1.Conf{
