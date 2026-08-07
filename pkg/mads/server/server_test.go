@@ -8,6 +8,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/config"
@@ -22,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 )
@@ -54,6 +56,10 @@ func (t *testRuntime) Metrics() metrics.Metrics {
 
 func (t *testRuntime) MeshCache() *mesh.Cache {
 	return t.meshCache
+}
+
+func (t *testRuntime) CertWatchers() *util_tls.Watchers {
+	return util_tls.NewWatchers(context.Background(), logr.Discard())
 }
 
 var _ = Describe("MADS Server", func() {

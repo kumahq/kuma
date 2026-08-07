@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	diagnostics_config "github.com/kumahq/kuma/v3/pkg/config/diagnostics"
@@ -21,17 +20,19 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	kuma_srv "github.com/kumahq/kuma/v3/pkg/util/http/server"
 )
 
 var diagnosticsServerLog = core.Log.WithName("xds-server").WithName("diagnostics")
 
 type diagnosticsServer struct {
-	isReady     func() bool
-	config      *diagnostics_config.DiagnosticsConfig
-	metrics     metrics.Metrics
-	logRegistry *kuma_log.ComponentLevelRegistry
-	ready       atomic.Bool
+	isReady      func() bool
+	config       *diagnostics_config.DiagnosticsConfig
+	certWatchers *util_tls.Watchers
+	metrics      metrics.Metrics
+	logRegistry  *kuma_log.ComponentLevelRegistry
+	ready        atomic.Bool
 }
 
 func (s *diagnosticsServer) NeedLeaderElection() bool {
@@ -68,13 +69,13 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 	AddLoggingHandlers(mux, s.logRegistry)
 	var tlsConfig *tls.Config
 	if s.config.TlsEnabled {
-		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
+		keyPair, err := s.certWatchers.Watch(s.config.TlsCertFile, s.config.TlsKeyFile)
 		if err != nil {
-			return errors.Wrap(err, "failed to load TLS certificate")
+			return err
 		}
 		tlsConfig = &tls.Config{
-			Certificates: []tls.Certificate{cert},
-			MinVersion:   tls.VersionTLS12, // Make gosec pass, (In practice it's always set after).
+			GetCertificate: keyPair.GetCertificate,
+			MinVersion:     tls.VersionTLS12, // Make gosec pass, (In practice it's always set after).
 		}
 		if tlsConfig.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
