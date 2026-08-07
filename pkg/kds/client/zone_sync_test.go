@@ -250,7 +250,6 @@ var _ = Describe("Zone Delta Sync", func() {
 		excludeTypes := map[model.ResourceType]bool{
 			mesh.DataplaneInsightType:  true,
 			mesh.DataplaneOverviewType: true,
-			mesh.ServiceOverviewType:   true,
 			mesh.DataplaneType:         true,
 			workload_api.WorkloadType:  true,
 		}

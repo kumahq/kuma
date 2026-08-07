@@ -1,0 +1,10 @@
+# import config
+packagefile fmt=/Users/marcin.skalski/Library/Caches/go-build/64/645246a846c7b41d9402992c26ac969d84bbfd4f0013fb93bcc7785f85ba7268-d
+packagefile go/ast=/Users/marcin.skalski/Library/Caches/go-build/c8/c8ab5c95d1d8c35da38f9f4d574aacaa04233ecfbb7416977de40fb9ba9d2eb3-d
+packagefile go/parser=/Users/marcin.skalski/Library/Caches/go-build/81/81ceda7fe87957bce8089bb54a3f5e99ffe23dd41368c68886a90bedc989b164-d
+packagefile go/token=/Users/marcin.skalski/Library/Caches/go-build/53/53ac889c3997e086758a408c6dacaaec11e2e3b7cdaa2c328f20decf8826ecb0-d
+packagefile os=/Users/marcin.skalski/Library/Caches/go-build/21/215cb7f358606c6fb6a80af01e11bc7269960d20cc8a0a2b25907cb41a78ba28-d
+packagefile path/filepath=/Users/marcin.skalski/Library/Caches/go-build/78/788b952e0e8c3180076c6ab9c2f9ce1c2a341821ddb696e1c4cc20ec58a6ab56-d
+packagefile strconv=/Users/marcin.skalski/Library/Caches/go-build/4e/4e8f716bafbd523d3331ce6de1151ccd72b1b7113fba6c267bcddfaadd39ee71-d
+packagefile strings=/Users/marcin.skalski/Library/Caches/go-build/ad/ad4121e31fa32b8703295c944a27412fb363b0862b9487bfc1b44acea747327c-d
+packagefile runtime=/Users/marcin.skalski/Library/Caches/go-build/e9/e9f9b67dc2d6902014b9c4d7415707ae36bbc300228ef2ac71fc6792973de7f5-d
