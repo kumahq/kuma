@@ -182,13 +182,9 @@ apiServer:
     tlsCipherSuites: [] # ENV: KUMA_API_SERVER_HTTPS_TLS_CIPHER_SUITES
     # If true, then HTTPS connection will require client cert.
     requireClientCert: false # ENV: KUMA_API_SERVER_HTTPS_REQUIRE_CLIENT_CERT
-  # Authentication configuration for administrative endpoints like Dataplane Token or managing Secrets
-  auth:
-    # Directory of authorized client certificates (only validate in HTTPS)
-    clientCertsDir: "" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
   # Api Server Authentication configuration
   authn:
-    # Type of authentication mechanism (available values: "adminClientCerts", "tokens")
+    # Type of authentication mechanism ("tokens" is the built-in/default value; plugin-provided authn types may also be available)
     type: tokens # ENV: KUMA_API_SERVER_AUTHN_TYPE
     # Localhost is authenticated as a user admin of group admin
     localhostIsAdmin: true # ENV: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN

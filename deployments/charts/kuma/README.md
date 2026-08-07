@@ -78,7 +78,6 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.tls.general.certManager.issuerRef.kind | string | `"Issuer"` | Kind of the issuer: "Issuer" or "ClusterIssuer" |
 | controlPlane.tls.general.certManager.dnsNames | list | `["{{ include \"kuma.controlPlane.serviceName\" . }}.{{ .Release.Namespace }}","{{ include \"kuma.controlPlane.serviceName\" . }}.{{ .Release.Namespace }}.svc","{{ include \"kuma.controlPlane.serviceName\" . }}.{{ .Release.Namespace }}.svc.cluster.local"]` | DNS names to include in the certificate SANs. Supports Helm template strings (evaluated via tpl). |
 | controlPlane.tls.apiServer.secretName | string | `""` | Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS |
-| controlPlane.tls.apiServer.clientCertsSecretName | string | `""` | Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS |
 | controlPlane.tls.kdsZoneClient.secretName | string | `""` | Name of the K8s Secret resource that contains ca.crt which was used to sign the certificate of KDS Global Server. If you set this and don't set create=true, you have to create the secret manually. |
 | controlPlane.tls.kdsZoneClient.create | bool | `false` | Whether to create the TLS secret in helm. |
 | controlPlane.tls.kdsZoneClient.cert | string | `""` | CA bundle that was used to sign the certificate of KDS Global Server. |

@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -43,7 +42,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
-	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	secrets_k8s "github.com/kumahq/kuma/v3/pkg/plugins/secrets/k8s"
 	tokens_server "github.com/kumahq/kuma/v3/pkg/tokens/builtin/server"
@@ -474,31 +472,6 @@ func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {
 		return nil, err
 	}
 	clientCertPool := x509.NewCertPool()
-	if cfg.Auth.ClientCertsDir != "" {
-		log.Info("loading client certificates")
-		files, err := os.ReadDir(cfg.Auth.ClientCertsDir)
-		if err != nil {
-			return nil, err
-		}
-		for _, file := range files {
-			if file.IsDir() {
-				continue
-			}
-			if !strings.HasSuffix(file.Name(), ".pem") && !strings.HasSuffix(file.Name(), ".crt") {
-				log.Info("skipping file without .pem or .crt extension", "file", file.Name())
-				continue
-			}
-			log.Info("adding client certificate", "file", file.Name())
-			path := filepath.Join(cfg.Auth.ClientCertsDir, file.Name())
-			caCert, err := os.ReadFile(path)
-			if err != nil {
-				return nil, errors.Wrapf(err, "could not read certificate %q", path)
-			}
-			if !clientCertPool.AppendCertsFromPEM(caCert) {
-				return nil, errors.Errorf("failed to load PEM client certificate from %q", path)
-			}
-		}
-	}
 	if cfg.HTTPS.TlsCaFile != "" {
 		file, err := os.ReadFile(cfg.HTTPS.TlsCaFile)
 		if err != nil {
@@ -512,8 +485,6 @@ func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {
 	tlsConfig.ClientCAs = clientCertPool
 	if cfg.HTTPS.RequireClientCert {
 		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-	} else if cfg.Authn.Type == certs.PluginName {
-		tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints when using admin client cert
 	}
 	return tlsConfig, nil
 }
