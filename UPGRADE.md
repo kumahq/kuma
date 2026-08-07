@@ -391,10 +391,11 @@ legacy statistics:
   returns an empty list and `GET /meshes/{mesh}/service-insights/{name}`
   returns `404`. This also covers delegated gateways, which used to be the
   last services reported there, along with their per-service `zones` list.
-  `kumactl inspect services` and the GUI pages backed by that endpoint list
-  nothing.
+  The GUI pages backed by that endpoint list nothing. `kumactl inspect
+  services` is removed; use `kumactl get meshservices` instead.
 - `MeshInsight.services` (the `Total`/`Internal`/`External` service count
-  stat) is no longer populated and is always absent from the response.
+  stat) is removed from the API. Field number 6 is reserved and will not be
+  reused.
 - The Dataplane/MeshGateway inspect `_rules` endpoint no longer populates the
   legacy `toRules` field on each rule entry; it is always an empty array.
   `toResourceRules`, `fromRules`, and `inboundRules` are unaffected.

@@ -419,12 +419,11 @@ var _ = Describe("Insight Persistence", func() {
 
 		step(stepsToResync)
 
-		// then the MeshInsight is computed but reports no Services stat
+		// then the MeshInsight is computed
 		Eventually(func(g Gomega) {
 			meshInsight := core_mesh.NewMeshInsightResource()
 			err := rm.Get(context.Background(), meshInsight, store.GetBy(insights.MeshInsightKey("mesh-1")))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(meshInsight.Spec.Services).To(BeNil())
 		}).Should(Succeed())
 	})
 
@@ -644,8 +643,6 @@ var _ = Describe("Insight Persistence", func() {
 			err := rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(meshInsight.Spec.Dataplanes.Total).To(Equal(uint32(1)))
-			// then no Services stat is ever computed anymore, even with legacyMesh()
-			g.Expect(meshInsight.Spec.Services).To(BeNil())
 			// but MeshExternalService is still counted as a generic resource
 			g.Expect(meshInsight.Spec.Resources[string(meshexternalservice_api.MeshExternalServiceType)].Total).To(Equal(uint32(1)))
 		}).Should(Succeed())
