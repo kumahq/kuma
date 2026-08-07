@@ -49,7 +49,6 @@ func Setup(rt core_runtime.Runtime) error {
 		rt.Config().Multizone.Zone.GlobalAddress,
 		zone,
 		*rt.Config().Multizone.Zone.KDS,
-		rt.Config().Experimental,
 		rt.Metrics(),
 		service.NewEnvoyAdminProcessor(
 			rt.ReadOnlyResourceManager(),
