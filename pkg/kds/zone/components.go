@@ -33,6 +33,7 @@ func Setup(rt core_runtime.Runtime) error {
 		kdsCtx.ZoneProvidedFilter,
 		kdsCtx.ZoneResourceMapper,
 		rt.Config().Multizone.Zone.KDS.NackBackoff.Duration,
+		rt.Config().Multizone.Zone.KDS.EventBasedWatchdog.AsRuntimeConfig(),
 	)
 	if err != nil {
 		return err

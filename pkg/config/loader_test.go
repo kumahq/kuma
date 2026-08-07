@@ -372,9 +372,12 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Groups).To(Equal([]string{"cp-group1", "cp-group2"}))
 
 			Expect(cfg.Experimental.IngressTagFilters).To(ContainElements("kuma.io/service"))
-			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
-			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
-			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
+			Expect(cfg.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.EventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.EventBasedWatchdog.DelayFullResync).To(BeTrue())
+			Expect(cfg.Multizone.Zone.KDS.EventBasedWatchdog.FlushInterval.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.Multizone.Zone.KDS.EventBasedWatchdog.FullResyncInterval.Duration).To(Equal(16 * time.Second))
+			Expect(cfg.Multizone.Zone.KDS.EventBasedWatchdog.DelayFullResync).To(BeTrue())
 
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
 
@@ -781,12 +784,21 @@ access:
 experimental:
   cniApp: "kuma-cni"
   ingressTagFilters: ["kuma.io/service"]
-  kdsEventBasedWatchdog:
-    flushInterval: 10s
-    fullResyncInterval: 15s
-    delayFullResync: true
   generateMeshServices: true
   skipPersistedVIPs: true
+multizone:
+  global:
+    kds:
+      eventBasedWatchdog:
+        flushInterval: 10s
+        fullResyncInterval: 15s
+        delayFullResync: true
+  zone:
+    kds:
+      eventBasedWatchdog:
+        flushInterval: 11s
+        fullResyncInterval: 16s
+        delayFullResync: true
 eventBus:
   bufferSize: 30
 coreResources:
@@ -1106,9 +1118,12 @@ meshService:
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_USERS":                                          "cp-admin1,cp-admin2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS":                                         "cp-group1,cp-group2",
 				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",
-				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
-				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
-				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
+				"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                            "10s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                      "15s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                         "true",
+				"KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                              "11s",
+				"KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                        "16s",
+				"KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                           "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",

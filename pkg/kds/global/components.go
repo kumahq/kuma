@@ -34,6 +34,7 @@ func Setup(rt runtime.Runtime) error {
 		rt.KDSContext().GlobalProvidedFilter,
 		rt.KDSContext().GlobalResourceMapper,
 		rt.Config().Multizone.Global.KDS.NackBackoff.Duration,
+		rt.Config().Multizone.Global.KDS.EventBasedWatchdog.AsRuntimeConfig(),
 	)
 	if err != nil {
 		return err
