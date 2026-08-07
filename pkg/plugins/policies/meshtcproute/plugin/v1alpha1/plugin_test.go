@@ -20,6 +20,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -383,7 +384,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -444,7 +445,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			dp, proxy, backendMeshSvc := dppForMeshExternalService(&meshExtSvc)
-			mc := meshContextForMeshExternalService(dp.Build(), backendDataplane(), &meshExtSvc, zoneEgressDataplane(), backendMeshSvc)
+			mc := meshContextForMeshExternalService(dp.Build(), backendDataplane(), &meshExtSvc, zoneEgressDataplane(), zoneEgressIdentity(), backendMeshSvc)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -510,7 +511,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			dp, proxy, backendMeshSvc := dppForMeshExternalService(&meshExtSvc, &meshExtSvc2)
-			mc := meshContextForMeshExternalService(zoneEgressDataplane(), &meshExtSvc, &meshExtSvc2, dp.Build(), backendDataplane(), backendMeshSvc)
+			mc := meshContextForMeshExternalService(zoneEgressDataplane(), zoneEgressIdentity(), &meshExtSvc, &meshExtSvc2, dp.Build(), backendDataplane(), backendMeshSvc)
 
 			proxy.Policies = core_xds.MatchedPolicies{
 				Dynamic: core_xds.PluginOriginatedPolicies{},
@@ -575,7 +576,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -608,8 +609,8 @@ var _ = Describe("MeshTCPRoute", func() {
 					}},
 					Identities: &[]meshservice_api.MeshServiceIdentity{
 						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend",
 						},
 					},
 				},
@@ -633,7 +634,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -729,7 +730,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -854,7 +855,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -992,7 +993,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().
+				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -1059,6 +1060,7 @@ func zoneEgressDataplane() *core_mesh.DataplaneResource {
 	return builders.Dataplane().
 		WithName("zone-egress-01").
 		WithAddress("127.0.0.1").
+		WithLabels(map[string]string{"kuma.io/workload": "zone-egress"}).
 		With(func(d *core_mesh.DataplaneResource) {
 			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
 				Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
@@ -1122,7 +1124,7 @@ func dppForMeshExternalService(mesList ...*meshexternalservice_api.MeshExternalS
 		WithName("web-01").
 		WithAddress("192.168.0.2").
 		WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")
-	proxy := xds_builders.Proxy().
+	proxy := xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
 		WithDataplane(dp).
 		WithOutbounds(outbounds).
 		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
@@ -1133,4 +1135,13 @@ func dppForMeshExternalService(mesList ...*meshexternalservice_api.MeshExternalS
 		Build()
 
 	return dp, proxy, backendMeshSvc
+}
+
+// zoneEgressIdentity gives the zone egress dataplane a SPIFFE identity, which a
+// client verifies when it originates mTLS towards an external service.
+func zoneEgressIdentity() *meshidentity_api.MeshIdentityResource {
+	return builders.MeshIdentity().
+		WithBundledAutoGenerated().
+		WithInitializedStatus().
+		Build()
 }

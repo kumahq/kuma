@@ -12,10 +12,6 @@ import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
-	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
-	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
@@ -26,63 +22,19 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
-var _ = Describe("SniForBackendRef", func() {
-	DescribeTable("returns SNI built from resolved port",
-		func(sectionName string) {
-			ms := builders.MeshService().
-				WithName("backend").
-				WithMesh("default").
-				AddIntPortWithName(8080, 8080, core_meta.ProtocolHTTP, "http").
-				Build()
-
-			port, ok := ms.FindPortByName(sectionName)
-			Expect(ok).To(BeTrue())
-
-			id := kri.WithSectionName(kri.From(ms), sectionName)
-			ref := &resolve.RealResourceBackendRef{Resource: id}
-
-			sni := meshroute.SniForBackendRef(ref, ms, port, "")
-
-			Expect(sni).NotTo(BeEmpty())
-			Expect(sni).To(ContainSubstring(".8080."))
-		},
-		Entry("by port name", "http"),
-		Entry("by port value", "8080"),
-	)
-
-	It("uses SNIName for MeshService destination", func() {
-		ms := builders.MeshService().
-			WithName("backend").
-			WithMesh("default").
-			AddIntPortWithName(8080, 8080, core_meta.ProtocolHTTP, "http").
-			Build()
-
-		port, ok := ms.FindPortByName("http")
-		Expect(ok).To(BeTrue())
-
-		id := kri.WithSectionName(kri.From(ms), "http")
-		id.ResourceType = meshservice_api.MeshServiceType
-		ref := &resolve.RealResourceBackendRef{Resource: id}
-
-		sni := meshroute.SniForBackendRef(ref, ms, port, "kuma-system")
-
-		Expect(sni).To(ContainSubstring(ms.SNIName("kuma-system")))
-	})
-})
-
 var _ = Describe("GenerateClusters", func() {
 	// A proxy is given its own identity before the destination reports that it
 	// can terminate TLS, so an outbound cluster must stay on plaintext until the
-	// destination's MeshService is TLS Ready. Both the WorkloadIdentity and the
-	// legacy mTLS path have to agree on that, otherwise switching a mesh to mTLS
-	// drops every request sent in the window between the two pushes.
+	// destination's MeshService is TLS Ready, otherwise every request sent in
+	// the window between the two pushes is dropped.
 	type testCase struct {
-		tlsStatus        meshservice_api.TLSStatus
-		zoneOrigin       bool
-		workloadIdentity bool
-		permissiveMTLS   bool
-		expectMTLS       bool
-		expectedSNI      string
+		tlsStatus    meshservice_api.TLSStatus
+		zoneOrigin   bool
+		noIdentity   bool
+		serviceTag   bool
+		expectMTLS   bool
+		expectedSNI  string
+		expectedSANs []string
 	}
 
 	buildCluster := func(given testCase) *envoy_cluster.Cluster {
@@ -90,21 +42,20 @@ var _ = Describe("GenerateClusters", func() {
 		if !given.zoneOrigin {
 			labels[mesh_proto.ResourceOriginLabel] = string(mesh_proto.GlobalResourceOrigin)
 		}
-		ms := builders.MeshService().
+		msBuilder := builders.MeshService().
 			WithName("backend").
 			WithMesh("default").
 			WithLabels(labels).
 			AddIntPortWithName(80, 8080, core_meta.ProtocolHTTP, "http").
-			AddServiceTagIdentity("backend").
-			WithTLSStatus(given.tlsStatus).
-			Build()
-
-		meshBuilder := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1")
-		if given.permissiveMTLS {
-			meshBuilder = meshBuilder.WithPermissiveMTLSBackends()
+			AddSpiffeIDIdentity("spiffe://default.zone-1.mesh.local/workload/backend").
+			WithTLSStatus(given.tlsStatus)
+		if given.serviceTag {
+			msBuilder = msBuilder.AddServiceTagIdentity("backend")
 		}
+		ms := msBuilder.Build()
+
 		meshCtx := xds_context.MeshContext{
-			Resource: meshBuilder.Build(),
+			Resource: builders.Mesh().Build(),
 			BaseMeshContext: &xds_context.BaseMeshContext{
 				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{ms}),
 			},
@@ -119,23 +70,16 @@ var _ = Describe("GenerateClusters", func() {
 		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("backend").Build())
 
 		proxyBuilder := xds_builders.Proxy().
-			WithSecretsTracker(envoy_common.NewSecretsTracker(core_model.DefaultMesh, nil)).
 			WithDataplane(builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
 				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"))
-		if given.workloadIdentity {
-			proxyBuilder = proxyBuilder.WithWorkloadIdentity(&core_xds.WorkloadIdentity{
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"identity_cert:secret:default",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			})
+		if !given.noIdentity {
+			proxyBuilder = proxyBuilder.WithWorkloadIdentity(xds_builders.WorkloadIdentity())
 		}
+		proxy := proxyBuilder.Build()
 
-		rs, err := meshroute.GenerateClusters(proxyBuilder.Build(), meshCtx, services.Services(), "")
+		rs, err := meshroute.GenerateClusters(proxy, meshCtx, services.Services())
 		Expect(err).ToNot(HaveOccurred())
 
 		clusters := rs.Resources(envoy_resource.ClusterType)
@@ -157,38 +101,47 @@ var _ = Describe("GenerateClusters", func() {
 			Expect(cluster.TransportSocket).ToNot(BeNil())
 			upstreamCtx := &envoy_tls.UpstreamTlsContext{}
 			Expect(util_proto.UnmarshalAnyTo(cluster.TransportSocket.GetTypedConfig(), upstreamCtx)).To(Succeed())
-			if given.expectedSNI != "" {
-				Expect(upstreamCtx.Sni).To(Equal(given.expectedSNI))
+			Expect(upstreamCtx.Sni).To(Equal(given.expectedSNI))
+
+			sans := upstreamCtx.GetCommonTlsContext().GetCombinedValidationContext().GetDefaultValidationContext().GetMatchTypedSubjectAltNames()
+			var exacts []string
+			for _, san := range sans {
+				exacts = append(exacts, san.GetMatcher().GetExact())
 			}
+			Expect(exacts).To(Equal(given.expectedSANs))
 		},
-		Entry("workload identity, local destination not TLS ready", testCase{
-			tlsStatus:        meshservice_api.TLSNotReady,
-			zoneOrigin:       true,
-			workloadIdentity: true,
+		Entry("local destination not TLS ready", testCase{
+			tlsStatus:  meshservice_api.TLSNotReady,
+			zoneOrigin: true,
 		}),
-		Entry("workload identity, local destination TLS ready", testCase{
-			tlsStatus:        meshservice_api.TLSReady,
-			zoneOrigin:       true,
-			workloadIdentity: true,
-			expectMTLS:       true,
-			expectedSNI:      "sni.msvc.default.zone-1.backend.http",
+		Entry("local destination TLS ready", testCase{
+			tlsStatus:    meshservice_api.TLSReady,
+			zoneOrigin:   true,
+			expectMTLS:   true,
+			expectedSNI:  "sni.msvc.default.zone-1.backend.http",
+			expectedSANs: []string{"spiffe://default.zone-1.mesh.local/workload/backend"},
 		}),
-		Entry("workload identity, synced destination is always reachable over TLS", testCase{
-			tlsStatus:        meshservice_api.TLSNotReady,
-			workloadIdentity: true,
-			expectMTLS:       true,
-			expectedSNI:      "sni.msvc.default.zone-1.backend.http",
+		Entry("synced destination is always reachable over TLS", testCase{
+			tlsStatus:    meshservice_api.TLSNotReady,
+			expectMTLS:   true,
+			expectedSNI:  "sni.msvc.default.zone-1.backend.http",
+			expectedSANs: []string{"spiffe://default.zone-1.mesh.local/workload/backend"},
 		}),
-		Entry("permissive mTLS, local destination not TLS ready", testCase{
-			tlsStatus:      meshservice_api.TLSNotReady,
-			zoneOrigin:     true,
-			permissiveMTLS: true,
+		Entry("proxy without a workload identity cannot originate mTLS", testCase{
+			tlsStatus:  meshservice_api.TLSReady,
+			zoneOrigin: true,
+			noIdentity: true,
 		}),
-		Entry("permissive mTLS, local destination TLS ready", testCase{
-			tlsStatus:      meshservice_api.TLSReady,
-			zoneOrigin:     true,
-			permissiveMTLS: true,
-			expectMTLS:     true,
+		Entry("destination on a service tag identity is accepted too", testCase{
+			tlsStatus:   meshservice_api.TLSReady,
+			zoneOrigin:  true,
+			serviceTag:  true,
+			expectMTLS:  true,
+			expectedSNI: "sni.msvc.default.zone-1.backend.http",
+			expectedSANs: []string{
+				"spiffe://default.zone-1.mesh.local/workload/backend",
+				"spiffe://default/backend",
+			},
 		}),
 	)
 })

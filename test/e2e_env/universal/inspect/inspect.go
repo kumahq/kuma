@@ -15,6 +15,7 @@ func Inspect() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName)).
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "test-server"}))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -36,9 +37,9 @@ func Inspect() {
 			g.Expect(err).ToNot(HaveOccurred())
 
 			g.Expect(output).To(ContainSubstring(`"name": "system_envoy_admin"`))
-			g.Expect(output).To(ContainSubstring(`"name": "outbound:127.0.0.1:4000"`))
-			g.Expect(output).To(ContainSubstring(`"name": "outbound:127.0.0.1:4001"`))
-			g.Expect(output).To(ContainSubstring(`"name": "outbound:127.0.0.1:5000"`))
+			// The outbound is generated from the test-server MeshService, so it
+			// carries the KRI name rather than an address and port.
+			g.Expect(output).To(ContainSubstring(`kri_msvc_` + meshName + `_`))
 		}, "30s", "1s").Should(Succeed())
 	})
 

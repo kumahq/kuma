@@ -14,7 +14,7 @@ resources:
             defaultValidationContext:
               matchTypedSubjectAltNames:
               - matcher:
-                  exact: spiffe://default/outgoing
+                  prefix: spiffe://default/
                 sanType: URI
             validationContextSdsSecretConfig:
               name: system_mtls_ca_default

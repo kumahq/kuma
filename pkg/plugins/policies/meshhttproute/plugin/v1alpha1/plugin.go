@@ -69,7 +69,7 @@ func ApplyToOutbounds(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, xdsCtx xd
 
 	services := servicesAcc.Services()
 
-	clusters, err := meshroute.GenerateClusters(proxy, xdsCtx.Mesh, services, xdsCtx.ControlPlane.SystemNamespace)
+	clusters, err := meshroute.GenerateClusters(proxy, xdsCtx.Mesh, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate cluster resources")
 	}

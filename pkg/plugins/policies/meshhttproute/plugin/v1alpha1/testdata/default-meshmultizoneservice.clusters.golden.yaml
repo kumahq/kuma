@@ -21,16 +21,16 @@ resources:
                   exact: spiffe://default/backend
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
+              name: system_trust_bundle
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
+          - name: identity_cert:secret:default
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a6844c35bc637ba96.multi-backend.80.default.mzms
+        sni: sni.mzsvc.default.multi-backend.80
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
