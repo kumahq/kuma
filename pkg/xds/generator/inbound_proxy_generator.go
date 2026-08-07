@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
@@ -25,7 +24,7 @@ import (
 
 type InboundProxyGenerator struct{}
 
-func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceSet, _ xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	for i, endpoint := range proxy.Dataplane.Spec.Networking.GetInboundInterfaces() {
 		// we do not create inbounds for serviceless
@@ -34,24 +33,23 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		}
 
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
-		protocol := core_meta.ParseProtocol(iface.GetProtocolFallback())
-		unifiedName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.InboundName)
+		inboundProtocol := iface.GetProtocolFallback()
+		protocol := core_meta.ParseProtocol(inboundProtocol)
+		// the cluster, the listener and their stat prefixes all share this name
+		contextualName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.InboundName)
 
 		// generate CDS resource
-		localClusterName := unifiedName
-
-		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, localClusterName).
+		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, contextualName).
 			Configure(envoy_clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
 			Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
 		// localhost traffic is routed dirrectly to the application, in case of other interface we are going to set source address to
 		// 127.0.0.6 to avoid redirections and thanks to first iptables rule just return fast
 		if proxy.GetTransparentProxy().Enabled() && (endpoint.WorkloadIP != core_meta.LoopbackIPv4.String() && endpoint.WorkloadIP != core_meta.LoopbackIPv6.String()) {
-			switch net.IsAddressIPv6(endpoint.WorkloadIP) {
-			case true:
-				clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(metadata.TransparentInPassThroughIPv6, 0))
-			case false:
-				clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(metadata.TransparentInPassThroughIPv4, 0))
+			bindIP := metadata.TransparentInPassThroughIPv4
+			if net.IsAddressIPv6(endpoint.WorkloadIP) {
+				bindIP = metadata.TransparentInPassThroughIPv6
 			}
+			clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(bindIP, 0))
 		}
 
 		switch protocol {
@@ -62,42 +60,38 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		}
 		envoyCluster, err := clusterBuilder.Build()
 		if err != nil {
-			return nil, errors.Wrapf(err, "%s: could not generate cluster %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), localClusterName)
+			return nil, errors.Wrapf(err, "%s: could not generate cluster %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), contextualName)
 		}
 		resources.Add(&core_xds.Resource{
-			Name:     localClusterName,
+			Name:     contextualName,
 			Resource: envoyCluster,
 			Origin:   metadata.OriginInbound,
 		})
 
 		// generate LDS resource
-		inboundListenerName := unifiedName
-		statPrefix := unifiedName
-
 		listenerTags := maps.Clone(proxy.Dataplane.GetMeta().GetLabels())
 		if listenerTags == nil {
 			listenerTags = map[string]string{}
 		}
-		if protocol := iface.GetProtocolFallback(); protocol != "" {
-			listenerTags[mesh_proto.ProtocolTag] = protocol
+		if inboundProtocol != "" {
+			listenerTags[mesh_proto.ProtocolTag] = inboundProtocol
 		}
 
 		// the plain, non-TLS shape of the listener. When the proxy has an identity,
 		// the MeshTLS plugin replaces this listener with the Strict or Permissive
 		// topology - it is the sole owner of that decision.
-		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, inboundListenerName).
+		inboundListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion, contextualName).
 			Configure(envoy_listeners.InboundListener(endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
-			Configure(envoy_listeners.StatPrefix(statPrefix)).
+			Configure(envoy_listeners.StatPrefix(contextualName)).
 			Configure(envoy_listeners.TransparentProxying(proxy)).
-			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(listenerTags, unifiedName))).
-			Configure(envoy_listeners.FilterChain(FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, endpoint, nil, nil)))
-
-		inboundListener, err := listenerBuilder.Build()
+			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(listenerTags, contextualName))).
+			Configure(envoy_listeners.FilterChain(FilterChainBuilder(protocol, proxy, endpoint))).
+			Build()
 		if err != nil {
-			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), inboundListenerName)
+			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), contextualName)
 		}
 		resources.Add(&core_xds.Resource{
-			Name:     inboundListenerName,
+			Name:     contextualName,
 			Resource: inboundListener,
 			Origin:   metadata.OriginInbound,
 		})
@@ -105,19 +99,17 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 	return resources, nil
 }
 
+// FilterChainBuilder builds the plaintext filter chain of an inbound. Callers
+// that want the chain protected by Kuma's TLS - only the MeshTLS plugin does -
+// configure the transport socket on the returned builder.
 func FilterChainBuilder(
-	serverSideMTLS bool,
 	protocol core_meta.Protocol,
 	proxy *core_xds.Proxy,
-	localClusterName string,
-	xdsCtx xds_context.Context,
 	endpoint mesh_proto.InboundInterface,
-	tlsVersion *tls.Version,
-	ciphers []tls.TlsCipher,
 ) *envoy_listeners.FilterChainBuilder {
 	contextualName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.InboundName)
 
-	cluster := plugins_xds.NewClusterBuilder().WithName(localClusterName).Build()
+	cluster := plugins_xds.NewClusterBuilder().WithName(contextualName).Build()
 
 	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
 
@@ -125,25 +117,22 @@ func FilterChainBuilder(
 	// configuration for HTTP case
 	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
 		filterChainBuilder.
-			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
+			Configure(envoy_listeners.HttpConnectionManager(contextualName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 			Configure(envoy_listeners.HttpInboundRoute(contextualName, contextualName, cluster))
 	case core_meta.ProtocolGRPC:
 		filterChainBuilder.
-			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
+			Configure(envoy_listeners.HttpConnectionManager(contextualName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 			Configure(envoy_listeners.GrpcStats()).
 			Configure(envoy_listeners.HttpInboundRoute(contextualName, contextualName, cluster))
 	case core_meta.ProtocolKafka:
 		filterChainBuilder.
-			Configure(envoy_listeners.Kafka(localClusterName)).
-			Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, cluster))
+			Configure(envoy_listeners.Kafka(contextualName)).
+			Configure(envoy_listeners.TcpProxyDeprecated(contextualName, cluster))
 	default:
 		// configuration for non-HTTP cases
-		filterChainBuilder.Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, cluster))
+		filterChainBuilder.Configure(envoy_listeners.TcpProxyDeprecated(contextualName, cluster))
 	}
-	if serverSideMTLS {
-		filterChainBuilder.
-			Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, tlsVersion, ciphers, len(xdsCtx.Mesh.CAsByTrustDomain) > 0))
-	}
+
 	return filterChainBuilder.
 		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
 }

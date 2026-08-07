@@ -344,10 +344,6 @@ func configureListener(
 ) (envoy_common.NamedResource, error) {
 	inboundContextualID := naming.MustContextualInboundName(proxy.Dataplane, iface.InboundName)
 
-	listenerName := inboundContextualID
-	statPrefix := inboundContextualID
-	clusterName := inboundContextualID
-
 	listenerTags := maps.Clone(proxy.Dataplane.GetMeta().GetLabels())
 	if listenerTags == nil {
 		listenerTags = map[string]string{}
@@ -356,9 +352,9 @@ func configureListener(
 		listenerTags[mesh_proto.ProtocolTag] = protocol
 	}
 
-	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
+	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, inboundContextualID).
 		Configure(envoy_listeners.InboundListener(iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
-		Configure(envoy_listeners.StatPrefix(statPrefix)).
+		Configure(envoy_listeners.StatPrefix(inboundContextualID)).
 		Configure(envoy_listeners.TransparentProxying(proxy)).
 		Configure(envoy_listeners.TagsMetadata(generator.InboundListenerTags(listenerTags, inboundContextualID)))
 
@@ -368,34 +364,27 @@ func configureListener(
 	}
 
 	protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
-	ciphers := pointer.Deref(conf.TlsCiphers)
 
-	filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {
-		return generator.FilterChainBuilder(
-			serverSideMTLS,
-			protocol,
-			proxy,
-			clusterName,
-			xdsCtx,
-			iface,
+	filterChainKumaTLS := generator.FilterChainBuilder(protocol, proxy, iface).
+		Configure(envoy_listeners.ServerSideMTLS(
+			xdsCtx.Mesh.Resource,
+			proxy.SecretsTracker,
 			conf.TlsVersion,
-			ciphers,
-		)
-	}
-
-	filterChainKumaTLS := filterChainBuilder(true).
+			pointer.Deref(conf.TlsCiphers),
+			len(xdsCtx.Mesh.CAsByTrustDomain) > 0,
+		)).
 		Configure(envoy_listeners.DownstreamTlsContext(downstreamCtx))
 
 	if getMeshTLSMode(conf.Mode) == api.ModeStrict {
 		return listener.Configure(envoy_listeners.FilterChain(filterChainKumaTLS)).Build()
 	}
 
-	filterChainRawBuffer := filterChainBuilder(false).
+	filterChainRawBuffer := generator.FilterChainBuilder(protocol, proxy, iface).
 		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolRawBuffer))
 
 	// we need to differentiate between just TLS and Kuma's TLS, because with permissive mode the app
 	// itself might be protected by TLS
-	filterChainTLS := filterChainBuilder(false).
+	filterChainTLS := generator.FilterChainBuilder(protocol, proxy, iface).
 		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS))
 
 	filterChainKumaTLS.
