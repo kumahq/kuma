@@ -247,6 +247,21 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 		}
 	}
 
+	// When application probe proxying is disabled, K8s probes hit the
+	// application's own ports directly, so exclude those ports from
+	// inbound interception so probes don't need mTLS.
+	if appProbeProxyPort, err := probes.GetApplicationProbeProxyPort(
+		metadata.Annotations(pod.Annotations), i.cfg.ApplicationProbeProxyPort,
+	); err != nil {
+		return err
+	} else if appProbeProxyPort == 0 {
+		for _, port := range probes.RealProbePorts(pod) {
+			if err := tpCfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", port)); err != nil {
+				return err
+			}
+		}
+	}
+
 	pod.Spec.Volumes = append(pod.Spec.Volumes, volumeTPBase)
 
 	if v := pod.Annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {

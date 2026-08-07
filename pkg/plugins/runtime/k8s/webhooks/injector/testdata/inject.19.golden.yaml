@@ -18,6 +18,9 @@ metadata:
           skipConntrackZoneSplit: false
         inbound:
           enabled: true
+          excludePorts:
+          - 3001
+          - 8080
           port: 15006
         outbound:
           enabled: true
