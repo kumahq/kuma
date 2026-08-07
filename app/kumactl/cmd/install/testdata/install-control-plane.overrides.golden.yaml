@@ -533,8 +533,6 @@ spec:
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
-            - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-              value: "/var/run/secrets/kuma.io/api-server-client-certs/"
             - name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/api-server-tls-cert/tls.crt"
             - name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
@@ -676,9 +674,6 @@ spec:
             - name: api-server-tls-cert
               mountPath: /var/run/secrets/kuma.io/api-server-tls-cert
               readOnly: true
-            - name: api-server-client-certs
-              mountPath: /var/run/secrets/kuma.io/api-server-client-certs
-              readOnly: true
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
@@ -694,9 +689,6 @@ spec:
         - name: api-server-tls-cert
           secret:
             secretName: api-server-secret
-        - name: api-server-client-certs
-          secret:
-            secretName: api-server-client-secret
         - name: kds-client-tls-cert
           secret:
             secretName: kds-ca-secret

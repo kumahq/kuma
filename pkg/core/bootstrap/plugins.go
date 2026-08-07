@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	// force plugins to get initialized and registered
-	_ "github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/tokens"
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
 	_ "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/universal"

@@ -25,8 +25,6 @@ type ApiServerConfig struct {
 	HTTP ApiServerHTTPConfig `json:"http"`
 	// HTTPS configuration of the API Server
 	HTTPS ApiServerHTTPSConfig `json:"https"`
-	// Authentication configuration for administrative endpoints like Dataplane Token or managing Secrets
-	Auth ApiServerAuth `json:"auth"`
 	// Authentication configuration for API Server
 	Authn ApiServerAuthn `json:"authn"`
 	// BasePath the path to serve the API from
@@ -139,15 +137,9 @@ func (a *ApiServerHTTPSConfig) Validate() error {
 	return errs
 }
 
-// ApiServerAuth defines API Server authentication configuration
-type ApiServerAuth struct {
-	// Directory of authorized client certificates (only valid in HTTPS)
-	ClientCertsDir string `json:"clientCertsDir" envconfig:"kuma_api_server_auth_client_certs_dir"`
-}
-
 // ApiServerAuthn defines Api Server Authentication configuration
 type ApiServerAuthn struct {
-	// Type of authentication mechanism (available values: "clientCerts", "tokens")
+	// Type of authentication mechanism (available values: "tokens")
 	Type string `json:"type" envconfig:"kuma_api_server_authn_type"`
 	// Localhost is authenticated as a user admin of group admin
 	LocalhostIsAdmin bool `json:"localhostIsAdmin" envconfig:"kuma_api_server_authn_localhost_is_admin"`
@@ -258,9 +250,6 @@ func DefaultApiServerConfig() *ApiServerConfig {
 			TlsKeyFile:      "", // autoconfigured
 			TlsMinVersion:   "TLSv1_2",
 			TlsCipherSuites: []string{},
-		},
-		Auth: ApiServerAuth{
-			ClientCertsDir: "",
 		},
 		Authn: ApiServerAuthn{
 			Type:             "tokens",
