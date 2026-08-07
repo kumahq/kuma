@@ -22,7 +22,6 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	meshroute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
@@ -674,19 +673,6 @@ var _ = Describe("MeshAccessLog", func() {
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
-						},
-					}},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Conf: api.Conf{
@@ -727,19 +713,6 @@ var _ = Describe("MeshAccessLog", func() {
 					WithProtocol("http"),
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
-						},
-					}},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Conf: api.Conf{
@@ -778,19 +751,6 @@ var _ = Describe("MeshAccessLog", func() {
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
-						},
-					}},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Conf: api.Conf{

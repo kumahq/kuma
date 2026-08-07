@@ -554,7 +554,7 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 			}
 
 			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
-			if len(res.ToRules.Rules) == 0 && len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.Rules) == 0 && len(res.FromRules.InboundRules) == 0 && len(res.SingleItemRules.Rules) == 0 {
+			if len(res.ToRules.Rules) == 0 && len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.InboundRules) == 0 && len(res.SingleItemRules.Rules) == 0 {
 				continue
 			}
 			// Old 'ToRules' don't affect outbounds that were produced by real resources,
@@ -576,38 +576,9 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 				return nil
 			}
 
+			// The legacy subset-based 'from' view is no longer built, so this
+			// response field stays empty for every proxy.
 			fromRules := []api_common.FromRule{}
-			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
-			if len(res.FromRules.Rules) > 0 {
-				for inbound, rulesForInbound := range res.FromRules.Rules {
-					if len(rulesForInbound) == 0 {
-						continue
-					}
-					fromRulesForInbound := make([]api_common.Rule, len(rulesForInbound))
-					for i := range rulesForInbound {
-						fromRulesForInbound[i] = api_common.Rule{
-							Conf:     rulesForInbound[i].Conf,
-							Matchers: oapi_helpers.SubsetToRuleMatcher(rulesForInbound[i].Subset),
-							Origin:   oapi_helpers.ResourceMetaListToMetaList(res.Type, rulesForInbound[i].Origin),
-						}
-					}
-					var tags map[string]string
-					if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
-						tags = dp.Spec.Networking.Gateway.Tags
-					}
-					fromRules = append(fromRules, api_common.FromRule{
-						Inbound: api_common.Inbound{
-							Name: getInboundPortName(inbound.Port),
-							Tags: tags,
-							Port: int(inbound.Port),
-						},
-						Rules: fromRulesForInbound,
-					})
-				}
-				sort.SliceStable(fromRules, func(i, j int) bool {
-					return fromRules[i].Inbound.Port < fromRules[j].Inbound.Port
-				})
-			}
 
 			inboundRules := []api_common.InboundRulesEntry{}
 			for inbound, rulesForInbound := range res.FromRules.InboundRules {
