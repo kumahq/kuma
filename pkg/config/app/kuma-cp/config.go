@@ -501,6 +501,11 @@ type ExperimentalConfig struct {
 	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
 	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
 	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
+	// If true, the Envoy admin listener also serves /stats/prometheus without mTLS,
+	// so a Prometheus server can scrape Envoy stats off the proxy's IP. Only that
+	// path is added; the rest of the Admin API still requires mTLS. Mainly useful for
+	// scraping standalone ZoneIngress/ZoneEgress, which MeshMetric does not apply to.
+	ExposeEnvoyAdminStats bool `json:"exposeEnvoyAdminStats" envconfig:"KUMA_EXPERIMENTAL_EXPOSE_ENVOY_ADMIN_STATS"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {

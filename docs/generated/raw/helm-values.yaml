@@ -1188,6 +1188,11 @@ experimental:
   envoyAdminUnixSocket: true
   # -- If true, uses Delta xDS (incremental) protocol to deliver changes to sidecars instead of State of the World (SOTW).
   deltaXds: false
+  # -- If true, the Envoy admin listener also serves /stats/prometheus without mTLS, so
+  # Prometheus can scrape Envoy stats off the proxy IP. Only that path is added; the rest
+  # of the Admin API still requires mTLS. Useful for scraping ZoneIngress/ZoneEgress,
+  # which MeshMetric does not apply to.
+  exposeEnvoyAdminStats: false
 
 # Postgres' settings for universal control plane on k8s
 postgres:

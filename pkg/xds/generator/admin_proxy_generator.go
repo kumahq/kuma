@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -20,6 +21,8 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
 )
+
+const statsPrometheusPath = "/stats/prometheus"
 
 var staticEndpointPaths = []*envoy_common.StaticEndpointPath{
 	{
@@ -121,6 +124,21 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	for _, se := range staticEndpointPaths {
 		se.ClusterName = dppReadinessClusterName
 	}
+	plaintextEndpointPaths := staticEndpointPaths
+	if xdsCtx.ControlPlane.GetExposeEnvoyAdminStats() {
+		// Serve Envoy stats without mTLS so a Prometheus server can scrape them off
+		// the proxy's IP. This is the only Admin API path added to the plaintext filter
+		// chain: the route is a prefix match with an identity prefix rewrite, so nothing
+		// outside /stats/prometheus* can be reached through it.
+		//
+		// Appended to a fresh slice, never to staticEndpointPaths, so that enabling this
+		// for one proxy cannot leak into proxies generated afterwards.
+		plaintextEndpointPaths = append(slices.Clone(staticEndpointPaths), &envoy_common.StaticEndpointPath{
+			ClusterName: envoyAdminClusterName,
+			Path:        statsPrometheusPath,
+			RewritePath: statsPrometheusPath,
+		})
+	}
 	for _, se := range staticTlsEndpointPaths {
 		switch se.Path {
 		case "/ready":
@@ -140,7 +158,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		}
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
 			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-				Configure(envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), envoyAdminListenerName, staticEndpointPaths)),
+				Configure(envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), envoyAdminListenerName, plaintextEndpointPaths)),
 			),
 		}
 		filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).

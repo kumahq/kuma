@@ -33,6 +33,8 @@ var _ = Describe("AdminProxyGenerator", func() {
 		readinessPort    uint32
 		features         xds_types.Features
 		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
+		// exposeEnvoyAdminStats mirrors Experimental.ExposeEnvoyAdminStats on the CP.
+		exposeEnvoyAdminStats bool
 	}
 
 	DescribeTable("should generate envoy config",
@@ -46,6 +48,9 @@ var _ = Describe("AdminProxyGenerator", func() {
 			parseResource(bytes, dataplane)
 
 			ctx := xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					ExposeEnvoyAdminStats: given.exposeEnvoyAdminStats,
+				},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -160,6 +165,14 @@ var _ = Describe("AdminProxyGenerator", func() {
 			features: map[string]bool{
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
+		}),
+		Entry("should expose /stats/prometheus on the plaintext chain when ExposeEnvoyAdminStats is enabled", testCase{
+			dataplaneFile:         "02.dataplane.input.yaml",
+			expected:              "10.envoy-config.golden.yaml",
+			adminAddress:          "127.0.0.1",
+			readinessPort:         9902,
+			meshServicesMode:      mesh_proto.Mesh_MeshServices_Exclusive,
+			exposeEnvoyAdminStats: true,
 		}),
 	)
 

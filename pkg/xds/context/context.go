@@ -39,6 +39,18 @@ type ControlPlaneContext struct {
 	Zone                string
 	SystemNamespace     string
 	InboundTagsDisabled bool
+	// ExposeEnvoyAdminStats makes the Envoy admin listener serve /stats/prometheus
+	// without mTLS. Off by default.
+	ExposeEnvoyAdminStats bool
+}
+
+// GetExposeEnvoyAdminStats is nil-safe: generators can run with a Context that has
+// no ControlPlaneContext, and the feature stays off in that case.
+func (c *ControlPlaneContext) GetExposeEnvoyAdminStats() bool {
+	if c == nil {
+		return false
+	}
+	return c.ExposeEnvoyAdminStats
 }
 
 // GlobalContext holds resources that are Global
