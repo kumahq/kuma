@@ -13,12 +13,6 @@
   },
   "Zone": {
    "total": 2
-  },
-  "ZoneEgress": {
-   "total": 1
-  },
-  "ZoneIngress": {
-   "total": 2
   }
  }
 }

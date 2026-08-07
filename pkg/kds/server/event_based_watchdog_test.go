@@ -77,8 +77,7 @@ var _ = Describe("Event Based Watchdog", func() {
 			Reconciler: reconciler,
 			ProvidedTypes: map[core_model.ResourceType]struct{}{
 				meshexternalservice_api.MeshExternalServiceType: {},
-				mesh.DataplaneType:   {},
-				mesh.ZoneIngressType: {},
+				mesh.DataplaneType: {},
 			},
 			Metrics: kdsMetrics,
 			Log:     logr.Discard(),

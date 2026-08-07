@@ -42,41 +42,14 @@ var _ = Describe("Noop Authenticator", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should reject a zone ingress", func() {
+	It("should reject a resource that is not a Dataplane", func() {
 		// given
-		zoneIngress := core_mesh.ZoneIngressResource{
-			Spec: &mesh_proto.ZoneIngress{
-				Zone: "zone-1",
-				Networking: &mesh_proto.ZoneIngress_Networking{
-					Address: "127.0.0.1",
-					Port:    10001,
-				},
-			},
-		}
+		mesh := core_mesh.MeshResource{Spec: &mesh_proto.Mesh{}}
 
 		// when
-		err := authenticator.Authenticate(context.Background(), &zoneIngress, "some-random-token")
+		err := authenticator.Authenticate(context.Background(), &mesh, "some-random-token")
 
 		// then
-		Expect(err).To(MatchError("no matching authenticator for ZoneIngress resource"))
-	})
-
-	It("should reject a zone egress", func() {
-		// given
-		zoneEgress := core_mesh.ZoneEgressResource{
-			Spec: &mesh_proto.ZoneEgress{
-				Zone: "zone-1",
-				Networking: &mesh_proto.ZoneEgress_Networking{
-					Address: "127.0.0.1",
-					Port:    10002,
-				},
-			},
-		}
-
-		// when
-		err := authenticator.Authenticate(context.Background(), &zoneEgress, "some-random-token")
-
-		// then
-		Expect(err).To(MatchError("no matching authenticator for ZoneEgress resource"))
+		Expect(err).To(MatchError("no matching authenticator for Mesh resource"))
 	})
 })

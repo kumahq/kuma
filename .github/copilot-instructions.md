@@ -43,7 +43,7 @@ CNCF service mesh (Envoy-based) for K8s/VMs. L4-L7 connectivity, security, obser
 - **kumactl** - CLI
 - **kuma-cni** - CNI plugin
 
-**Multi-zone:** Global CP → Zone CPs via KDS • Zone Ingress/Egress for cross-zone • K8s + Universal (VMs)
+**Multi-zone:** Global CP → Zone CPs via KDS • Zone ingress/egress proxies for cross-zone • K8s + Universal (VMs)
 
 ### Core Concepts
 

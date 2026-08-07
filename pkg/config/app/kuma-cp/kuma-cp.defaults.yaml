@@ -815,12 +815,7 @@ access:
       # List of groups that are allowed to get control plane metadata
       groups: ["mesh-system:unauthenticated", "mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS
 # Configuration of experimental features of Kuma
-experimental:
-  # List of prefixes that will be used to filter out tags by keys from ingress' available services section.
-  # This can trim the size of the ZoneIngress object significantly.
-  # The drawback is that you cannot use filtered out tags for traffic routing.
-  # If empty, no filter is applied.
-  ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
+experimental: {}
 tracing:
   openTelemetry:
     endpoint: "" # e.g. otel-collector:4317
