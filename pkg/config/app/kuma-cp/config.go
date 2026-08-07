@@ -276,11 +276,6 @@ var DefaultConfig = func() Config {
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
 			IngressTagFilters: []string{},
-			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
-				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
-				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
-				DelayFullResync:    false,
-			},
 		},
 		InterCp:       intercp.DefaultInterCpConfig(),
 		EventBus:      eventbus.Default(),
@@ -478,17 +473,6 @@ type ExperimentalConfig struct {
 	// The drawback is that you cannot use filtered out tags for traffic routing.
 	// If empty, no filter is applied.
 	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
-	// KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
-	KDSEventBasedWatchdog ExperimentalKDSEventBasedWatchdog `json:"kdsEventBasedWatchdog"`
-}
-
-type ExperimentalKDSEventBasedWatchdog struct {
-	// How often we flush changes when experimental event based watchdog is used.
-	FlushInterval config_types.Duration `json:"flushInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL"`
-	// How often we schedule full KDS resync when experimental event based watchdog is used.
-	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL"`
-	// If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
-	DelayFullResync bool `json:"delayFullResync" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC"`
 }
 
 type IPAMConfig struct {

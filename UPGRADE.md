@@ -391,10 +391,11 @@ legacy statistics:
   returns an empty list and `GET /meshes/{mesh}/service-insights/{name}`
   returns `404`. This also covers delegated gateways, which used to be the
   last services reported there, along with their per-service `zones` list.
-  `kumactl inspect services` and the GUI pages backed by that endpoint list
-  nothing.
+  The GUI pages backed by that endpoint list nothing. `kumactl inspect
+  services` is removed; use `kumactl get meshservices` instead.
 - `MeshInsight.services` (the `Total`/`Internal`/`External` service count
-  stat) is no longer populated and is always absent from the response.
+  stat) is removed from the API. Field number 6 is reserved and will not be
+  reused.
 - The Dataplane/MeshGateway inspect `_rules` endpoint no longer populates the
   legacy `toRules` field on each rule entry; it is always an empty array.
   `toResourceRules`, `fromRules`, and `inboundRules` are unaffected.
@@ -859,8 +860,21 @@ The following configuration has been removed:
 **Action required**
 
 Remove the settings above from your control plane config and environment if
-set. KDS snapshot generation is event-driven, with periodic full resync
-controlled by `experimental.kdsEventBasedWatchdog.fullResyncInterval`.
+set. KDS snapshot generation remains event-driven, but the timing config moved
+to the stable multizone KDS config:
+
+- Global control plane: `multizone.global.kds.eventBasedWatchdog.flushInterval`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL`),
+  `multizone.global.kds.eventBasedWatchdog.fullResyncInterval`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL`), and
+  `multizone.global.kds.eventBasedWatchdog.delayFullResync`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC`).
+- Zone control plane: `multizone.zone.kds.eventBasedWatchdog.flushInterval`
+  (`KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL`),
+  `multizone.zone.kds.eventBasedWatchdog.fullResyncInterval`
+  (`KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL`), and
+  `multizone.zone.kds.eventBasedWatchdog.delayFullResync`
+  (`KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC`).
 
 ### `TrafficTrace` no longer affects generated Envoy config
 
@@ -1399,6 +1413,21 @@ fails with `unknown flag`, so any script or deployment passing it will error imm
 `KUMA_DATAPLANE_RUNTIME_SOCKET_DIR` are silently ignored, since the config loader does not
 reject unknown fields — proxies still relying on them will silently fall back to a
 generated temporary directory instead of erroring.
+
+### Virtual probes removed
+
+The legacy Virtual Probes feature, deprecated since 2.9 in favor of Application Probe Proxy, has been removed. The following are gone:
+
+- Pod annotations `kuma.io/virtual-probes` and `kuma.io/virtual-probes-port`
+- Control plane configuration keys `runtime.kubernetes.injector.virtualProbesEnabled` and `runtime.kubernetes.injector.virtualProbesPort`
+- Environment variables `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED` and `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT`
+- The `probes` field on `Dataplane` resources (Kubernetes and Universal)
+
+**Action required**
+
+Re-inject every pod after upgrading — the injector no longer rewrites pod probes to a virtual probes listener, and any pod injected by a pre-3.0.0 webhook keeps stale `kuma.io/virtual-probes*` annotations and a probes-listener sidecar config until it is redeployed. Application Probe Proxy (`kuma.io/application-probe-proxy-port`) is now the only supported probe-rewriting path on Kubernetes and is enabled by default.
+
+**Warning**: `probes:` submitted on a Universal `Dataplane` is now silently dropped — the field no longer exists on the resource, so it is accepted and discarded rather than rejected. Setting `kuma.io/application-probe-proxy-port: "0"` no longer falls back to virtual probes; it now leaves the pod's original probes untouched. Pods relying on the old fallback must either remove the annotation to keep using Application Probe Proxy, or exclude their probe ports from inbound traffic redirection if they need probes served without mTLS.
 
 ### Injector sidecar container `adminPort` removed
 

@@ -33,6 +33,7 @@ func Setup(rt core_runtime.Runtime) error {
 		kdsCtx.ZoneProvidedFilter,
 		kdsCtx.ZoneResourceMapper,
 		rt.Config().Multizone.Zone.KDS.NackBackoff.Duration,
+		rt.Config().Multizone.Zone.KDS.EventBasedWatchdog.AsRuntimeConfig(),
 	)
 	if err != nil {
 		return err
@@ -48,7 +49,6 @@ func Setup(rt core_runtime.Runtime) error {
 		rt.Config().Multizone.Zone.GlobalAddress,
 		zone,
 		*rt.Config().Multizone.Zone.KDS,
-		rt.Config().Experimental,
 		rt.Metrics(),
 		service.NewEnvoyAdminProcessor(
 			rt.ReadOnlyResourceManager(),

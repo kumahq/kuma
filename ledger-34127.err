@@ -1,0 +1,2 @@
+Error: unknown command "services" for "kumactl inspect"
+exit status 1

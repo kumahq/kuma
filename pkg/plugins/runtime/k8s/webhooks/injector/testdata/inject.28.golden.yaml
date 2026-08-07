@@ -9,8 +9,6 @@ metadata:
     kuma.io/envoy-log-level: trace
     kuma.io/sidecar-drain-time: 10s
     kuma.io/sidecar-injected: "true"
-    kuma.io/virtual-probes: disabled
-    kuma.io/virtual-probes-port: "9000"
     traffic.kuma.io/transparent-proxy-config: |
       ipFamilyMode: dualstack
       kumaDPUser: "5678"
