@@ -56,6 +56,23 @@ Do not use this in production.
 
 ## Upgrade to `2.14.x`
 
+### `KUMA_EXPERIMENTAL_EXPOSE_ZONE_PROXY_METRICS` exists only on 2.14
+
+`KUMA_EXPERIMENTAL_EXPOSE_ZONE_PROXY_METRICS` (helm: `experimental.exposeZoneProxyMetrics`)
+makes the Envoy admin listener on standalone `ZoneIngress`/`ZoneEgress` serve
+`/stats/prometheus` without mTLS. It is off by default and exists because `MeshMetric`
+does not apply to those proxies.
+
+It is not present in 2.15 and later. There, zone proxies are regular `Dataplane`
+resources that `MeshMetric` matches, so the capability is covered by policy instead.
+
+**Action required:**
+
+None while on 2.14. If you set this flag, drop it when upgrading past 2.14 and scrape zone
+proxies with `MeshMetric` instead. The flag goes silently inert rather than failing:
+envconfig ignores unknown environment variables, and Helm will happily set a value nothing
+reads. Nothing breaks, but the endpoint stops being served.
+
 ### Inbound listeners now use SO_REUSEPORT by default
 
 The data plane now advertises the `feature-reuse-port` capability to the control plane, which causes inbound Envoy listeners to be generated with `enable_reuse_port: true`. This lets each Envoy worker thread own its own listen socket, improving connection distribution under load.

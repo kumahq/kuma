@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -20,6 +21,8 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
 )
+
+const statsPrometheusPath = "/stats/prometheus"
 
 var staticEndpointPaths = []*envoy_common.StaticEndpointPath{
 	{
@@ -121,6 +124,33 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	for _, se := range staticEndpointPaths {
 		se.ClusterName = dppReadinessClusterName
 	}
+	plaintextEndpointPaths := staticEndpointPaths
+	if xdsCtx.ControlPlane.GetExposeZoneProxyMetrics() && isZoneProxy(proxy) {
+		// Serve Envoy stats without mTLS so a Prometheus server can scrape them off the
+		// proxy's IP. This is the only Admin API path added to the plaintext filter chain.
+		//
+		// Why no other Admin API endpoint becomes reachable: the prefix match guarantees
+		// every forwarded path starts with /stats/prometheus, and Envoy's admin server
+		// selects handlers by raw prefix. This HCM does not set normalize_path, so a
+		// request like /stats/prometheus/../../quitquitquit does match the route and is
+		// forwarded with the dot segments intact; the admin server still resolves no
+		// handler other than the stats one for it. The guarantee is the prefix plus admin
+		// handler matching, not path normalization.
+		//
+		// Restricted to zone proxies: they are not mesh-scoped, so MeshMetric never
+		// matches them and there is no other way to scrape their stats. Data plane
+		// proxies are left alone because MeshMetric already covers them.
+		//
+		// append() targets a fresh slice so it cannot write into the spare capacity of
+		// staticEndpointPaths. The clone is shallow though: the /ready element is still
+		// the shared pointer that the loop above writes ClusterName into, so the
+		// isolation here covers the appended element only.
+		plaintextEndpointPaths = append(slices.Clone(staticEndpointPaths), &envoy_common.StaticEndpointPath{
+			ClusterName: envoyAdminClusterName,
+			Path:        statsPrometheusPath,
+			RewritePath: statsPrometheusPath,
+		})
+	}
 	for _, se := range staticTlsEndpointPaths {
 		switch se.Path {
 		case "/ready":
@@ -140,7 +170,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		}
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
 			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-				Configure(envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), envoyAdminListenerName, staticEndpointPaths)),
+				Configure(envoy_listeners.StaticEndpoints(proxy.Metadata.GetIPv6Enabled(), envoyAdminListenerName, plaintextEndpointPaths)),
 			),
 		}
 		filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
@@ -200,6 +230,12 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	})
 
 	return resources, nil
+}
+
+// isZoneProxy reports whether the proxy is a standalone zone ingress or zone egress
+// rather than a data plane proxy.
+func isZoneProxy(proxy *core_xds.Proxy) bool {
+	return proxy.ZoneIngressProxy != nil || proxy.ZoneEgressProxy != nil
 }
 
 func (g AdminProxyGenerator) getAddress(proxy *core_xds.Proxy) string {

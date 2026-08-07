@@ -339,6 +339,10 @@ env:
 - name: KUMA_EXPERIMENTAL_DELTA_XDS
   value: "true"
 {{- end }}
+{{- if .Values.experimental.exposeZoneProxyMetrics }}
+- name: KUMA_EXPERIMENTAL_EXPOSE_ZONE_PROXY_METRICS
+  value: "true"
+{{- end }}
 - name: KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET
   value: {{ .Values.experimental.envoyAdminUnixSocket | quote }}
 {{- if and .Values.cni.enabled .Values.cni.taintController.enabled }}
