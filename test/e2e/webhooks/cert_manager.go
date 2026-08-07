@@ -169,12 +169,6 @@ apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   name: test-mesh
-spec:
-  mtls:
-    enabledBackend: ca-1
-    backends:
-    - name: ca-1
-      type: builtin
 `
 		err := k8s.KubectlApplyFromStringContextE(
 			cluster.GetTesting(), context.Background(),

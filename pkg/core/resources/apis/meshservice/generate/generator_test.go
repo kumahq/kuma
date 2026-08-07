@@ -188,7 +188,7 @@ var _ = Describe("MeshService generator", func() {
 					WithPort(builders.FirstInboundPort).
 					WithServicePort(builders.FirstInboundServicePort).
 					WithName("main").
-					WithTags(map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.ProtocolTag: "tcp"}),
+					WithProtocol("tcp"),
 			))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -228,10 +228,7 @@ var _ = Describe("MeshService generator", func() {
 			AddInbound(
 				builders.Inbound().
 					WithPort(81).
-					WithServicePort(81).
-					WithTags(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-					}),
+					WithServicePort(81),
 			))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -731,9 +728,8 @@ var _ = Describe("MeshService generator", func() {
 				WithoutInbounds().
 				AddInbound(builders.Inbound().
 					WithPort(80).
-					WithServicePort(8080).
-					WithTags(map[string]string{mesh_proto.ServiceTag: "backend", "appci": "jeffy"}),
-				), map[string]string{metadata.KumaWorkload: "backend"})
+					WithServicePort(8080),
+				), map[string]string{metadata.KumaWorkload: "backend", "appci": "jeffy"})
 			Expect(err).ToNot(HaveOccurred())
 
 			ms := meshservice_api.NewMeshServiceResource()
@@ -744,8 +740,9 @@ var _ = Describe("MeshService generator", func() {
 
 			dp := core_mesh.NewDataplaneResource()
 			Expect(resManager.Get(context.Background(), dp, store.GetByKey("dp-1", model.DefaultMesh))).To(Succeed())
-			delete(dp.Spec.Networking.Inbound[0].Tags, "appci")
-			Expect(resManager.Update(context.Background(), dp)).To(Succeed())
+			Expect(resManager.Update(context.Background(), dp, store.UpdateWithLabels(map[string]string{
+				metadata.KumaWorkload: "backend",
+			}))).To(Succeed())
 
 			// The reconciler tracks which keys were propagated via kuma.io/pkey-N
 			// labels; when a key is absent from the current vote it is removed.
@@ -766,12 +763,8 @@ var _ = Describe("MeshService generator", func() {
 				WithoutInbounds().
 				AddInbound(builders.Inbound().
 					WithPort(80).
-					WithServicePort(8080).
-					WithTags(map[string]string{
-						mesh_proto.ServiceTag:  "backend",
-						"app.example.com/tier": "gold",
-					}),
-				), map[string]string{metadata.KumaWorkload: "backend"})
+					WithServicePort(8080),
+				), map[string]string{metadata.KumaWorkload: "backend", "app.example.com/tier": "gold"})
 			Expect(err).ToNot(HaveOccurred())
 
 			ms := meshservice_api.NewMeshServiceResource()
@@ -782,8 +775,9 @@ var _ = Describe("MeshService generator", func() {
 
 			dp := core_mesh.NewDataplaneResource()
 			Expect(resManager.Get(context.Background(), dp, store.GetByKey("dp-1", model.DefaultMesh))).To(Succeed())
-			delete(dp.Spec.Networking.Inbound[0].Tags, "app.example.com/tier")
-			Expect(resManager.Update(context.Background(), dp)).To(Succeed())
+			Expect(resManager.Update(context.Background(), dp, store.UpdateWithLabels(map[string]string{
+				metadata.KumaWorkload: "backend",
+			}))).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
@@ -800,8 +794,7 @@ var _ = Describe("MeshService generator", func() {
 				WithoutInbounds().
 				AddInbound(builders.Inbound().
 					WithPort(80).
-					WithServicePort(8080).
-					WithTags(map[string]string{mesh_proto.ServiceTag: "backend"}),
+					WithServicePort(8080),
 				).
 				Build()
 			Expect(resManager.Create(context.Background(), dp,
@@ -852,20 +845,15 @@ var _ = Describe("MeshService generator", func() {
 				WithoutInbounds().
 				AddInbound(builders.Inbound().
 					WithPort(80).
-					WithServicePort(8080).
-					WithTags(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						"appci":               "jeffy",
-						mesh_proto.ZoneTag:    "user-zone",
-					}),
-				), map[string]string{metadata.KumaWorkload: "backend"})
+					WithServicePort(8080),
+				), map[string]string{metadata.KumaWorkload: "backend", "appci": "jeffy", mesh_proto.ZoneTag: "user-zone"})
 			Expect(err).ToNot(HaveOccurred())
 
 			ms := meshservice_api.NewMeshServiceResource()
 			Eventually(func(g Gomega) {
 				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue("appci", "jeffy"))
-				// kuma.io/zone is a system label — present but set by the generator, not from the inbound tag
+				// kuma.io/zone is a system label — present but set by the generator, not from the Dataplane label
 				g.Expect(ms.GetMeta().GetLabels()).To(HaveKeyWithValue(mesh_proto.ZoneTag, "zone"))
 				g.Expect(ms.GetMeta().GetLabels()).ToNot(HaveKeyWithValue(mesh_proto.ZoneTag, "user-zone"))
 			}, "2s", "100ms").Should(Succeed())
@@ -884,8 +872,10 @@ var _ = Describe("MeshService generator", func() {
 
 			dp := core_mesh.NewDataplaneResource()
 			Expect(resManager.Get(context.Background(), dp, store.GetByKey("dp-1", model.DefaultMesh))).To(Succeed())
-			dp.Spec.Networking.Inbound[0].Tags["appci"] = "jeffy"
-			Expect(resManager.Update(context.Background(), dp)).To(Succeed())
+			Expect(resManager.Update(context.Background(), dp, store.UpdateWithLabels(map[string]string{
+				metadata.KumaWorkload: "backend",
+				"appci":               "jeffy",
+			}))).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				g.Expect(countingMgr.updates.Load()).To(BeNumerically(">", baseline))
@@ -919,13 +909,8 @@ var _ = Describe("MeshService generator", func() {
 				WithoutInbounds().
 				AddInbound(builders.Inbound().
 					WithPort(80).
-					WithServicePort(8080).
-					WithTags(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						"appci":               "jeffy",
-						"team":                "blue",
-					}),
-				), map[string]string{metadata.KumaWorkload: "backend"})
+					WithServicePort(8080),
+				), map[string]string{metadata.KumaWorkload: "backend", "appci": "jeffy", "team": "blue"})
 			Expect(err).ToNot(HaveOccurred())
 
 			ms := meshservice_api.NewMeshServiceResource()
@@ -937,35 +922,20 @@ var _ = Describe("MeshService generator", func() {
 		})
 
 		It("registers component_meshservice_generator_dropped_labels_total before the first drop and increments by reason", func() {
-			for _, reason := range []string{"invalid", "inbound_conflict"} {
+			for _, reason := range []string{"invalid"} {
 				m := test_metrics.FindMetric(metrics, "component_meshservice_generator_dropped_labels_total", "reason", reason)
 				Expect(m).ToNot(BeNil())
 				Expect(m.GetCounter().GetValue()).To(Equal(0.0))
 			}
 
-			err := createDataplaneWithLabels(builders.Dataplane().WithName("dp-conflict").WithAddress("10.0.0.1").
+			// Colon is rejected by IsValidLabelValue, triggering drop("invalid", "appci").
+			err := createDataplaneWithLabels(builders.Dataplane().WithName("dp-invalid").WithAddress("10.0.0.2").
 				WithoutInbounds().
-				AddInbound(builders.Inbound().WithPort(80).WithServicePort(8080).
-					WithTags(map[string]string{mesh_proto.ServiceTag: "svc-conflict", "appci": "a"})).
-				AddInbound(builders.Inbound().WithPort(81).WithServicePort(8081).
-					WithTags(map[string]string{mesh_proto.ServiceTag: "svc-conflict", "appci": "b"})),
-				map[string]string{metadata.KumaWorkload: "svc-conflict"})
-			Expect(err).ToNot(HaveOccurred())
-
-			// Colon is valid in Kuma tag values but rejected by IsValidLabelValue,
-			// triggering drop("invalid", "appci") in step 2 of dpContribution.
-			err = createDataplaneWithLabels(builders.Dataplane().WithName("dp-invalid").WithAddress("10.0.0.2").
-				WithoutInbounds().
-				AddInbound(builders.Inbound().WithPort(80).WithServicePort(8080).
-					WithTags(map[string]string{mesh_proto.ServiceTag: "svc-invalid", "appci": "colon:invalid"})),
-				map[string]string{metadata.KumaWorkload: "svc-invalid"})
+				AddInbound(builders.Inbound().WithPort(80).WithServicePort(8080)),
+				map[string]string{metadata.KumaWorkload: "svc-invalid", "appci": "colon:invalid"})
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) {
-				mConflict := test_metrics.FindMetric(metrics, "component_meshservice_generator_dropped_labels_total", "reason", "inbound_conflict")
-				g.Expect(mConflict).ToNot(BeNil())
-				g.Expect(mConflict.GetCounter().GetValue()).To(BeNumerically(">=", 1.0))
-
 				mInvalid := test_metrics.FindMetric(metrics, "component_meshservice_generator_dropped_labels_total", "reason", "invalid")
 				g.Expect(mInvalid).ToNot(BeNil())
 				g.Expect(mInvalid.GetCounter().GetValue()).To(BeNumerically(">=", 1.0))
@@ -1048,13 +1018,8 @@ var _ = Describe("MeshService generator", func() {
 					WithoutInbounds().
 					AddInbound(builders.Inbound().
 						WithPort(80).
-						WithServicePort(8080).
-						WithTags(map[string]string{
-							mesh_proto.ServiceTag: "backend",
-							"appci":               "jeffy",
-							"team":                "blue",
-						}),
-					), map[string]string{metadata.KumaWorkload: "backend"})
+						WithServicePort(8080),
+					), map[string]string{metadata.KumaWorkload: "backend", "appci": "jeffy", "team": "blue"})
 				Expect(err).ToNot(HaveOccurred())
 
 				ms := meshservice_api.NewMeshServiceResource()

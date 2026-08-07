@@ -5510,21 +5510,6 @@ components:
                     oneOf:
                       - type: string
                       - type: integer
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: >-
-                      Tags associated with an application this data plane proxy
-                      is deployed
-
-                      next to, e.g. `kuma.io/service=web`, `version=1.0`. You
-                      can then
-
-                      reference these tags in policies like
-                      MeshTrafficPermission.
-
-                      `kuma.io/service` tag is mandatory.
-                    type: object
                 type: object
               type: array
             listeners:
@@ -5726,63 +5711,6 @@ components:
                     redirected.
                   type: integer
               type: object
-          type: object
-        probes:
-          description: >-
-            Probes describe a list of endpoints that will be exposed without
-            mTLS.
-
-            This is useful to expose the health endpoints of the application so
-            the
-
-            orchestration system (e.g. Kubernetes) can still health check the
-
-            application.
-
-
-            See
-
-            https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
-
-            for more information.
-
-            Deprecated: this feature will be removed for Universal; on
-            Kubernetes, it's
-
-            not needed anymore.
-          properties:
-            endpoints:
-              description: List of endpoints to expose without mTLS.
-              items:
-                properties:
-                  inboundPath:
-                    description: >-
-                      Inbound path is a path of the application from which we
-                      expose the
-
-                      endpoint. It is recommended to be as specific as possible.
-                    type: string
-                  inboundPort:
-                    description: >-
-                      Inbound port is a port of the application from which we
-                      expose the
-
-                      endpoint.
-                    type: integer
-                  path:
-                    description: >-
-                      Path is a path on which we expose inbound path on the
-                      probes port.
-                    type: string
-                type: object
-              type: array
-            port:
-              description: >-
-                Port on which the probe endpoints will be exposed. This cannot
-                overlap
-
-                with any other ports.
-              type: integer
           type: object
         type:
           type: string
@@ -9526,7 +9454,6 @@ components:
                                 - Header
                                 - Cookie
                                 - Connection
-                                - SourceIP
                                 - QueryParameter
                                 - FilterState
                               type: string
@@ -14168,21 +14095,6 @@ components:
                         oneOf:
                           - type: string
                           - type: integer
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags associated with an application this data plane
-                          proxy is deployed
-
-                          next to, e.g. `kuma.io/service=web`, `version=1.0`.
-                          You can then
-
-                          reference these tags in policies like
-                          MeshTrafficPermission.
-
-                          `kuma.io/service` tag is mandatory.
-                        type: object
                     type: object
                   type: array
                 listeners:
@@ -14390,65 +14302,6 @@ components:
                         transparently redirected.
                       type: integer
                   type: object
-              type: object
-            probes:
-              description: >-
-                Probes describe a list of endpoints that will be exposed without
-                mTLS.
-
-                This is useful to expose the health endpoints of the application
-                so the
-
-                orchestration system (e.g. Kubernetes) can still health check
-                the
-
-                application.
-
-
-                See
-
-                https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
-
-                for more information.
-
-                Deprecated: this feature will be removed for Universal; on
-                Kubernetes, it's
-
-                not needed anymore.
-              properties:
-                endpoints:
-                  description: List of endpoints to expose without mTLS.
-                  items:
-                    properties:
-                      inboundPath:
-                        description: >-
-                          Inbound path is a path of the application from which
-                          we expose the
-
-                          endpoint. It is recommended to be as specific as
-                          possible.
-                        type: string
-                      inboundPort:
-                        description: >-
-                          Inbound port is a port of the application from which
-                          we expose the
-
-                          endpoint.
-                        type: integer
-                      path:
-                        description: >-
-                          Path is a path on which we expose inbound path on the
-                          probes port.
-                        type: string
-                    type: object
-                  type: array
-                port:
-                  description: >-
-                    Port on which the probe endpoints will be exposed. This
-                    cannot overlap
-
-                    with any other ports.
-                  type: integer
               type: object
           type: object
         dataplaneInsight:
@@ -15032,44 +14885,140 @@ components:
                     caCert:
                       description: CaCert defines a certificate of CA.
                       properties:
-                        inline:
-                          description: Data source is inline bytes.
-                          format: byte
+                        envVar:
+                          properties:
+                            name:
+                              type: string
+                          required:
+                            - name
+                          type: object
+                        file:
+                          properties:
+                            path:
+                              type: string
+                          required:
+                            - path
+                          type: object
+                        insecureInline:
+                          properties:
+                            value:
+                              type: string
+                          required:
+                            - value
+                          type: object
+                        secretRef:
+                          properties:
+                            kind:
+                              enum:
+                                - Secret
+                              type: string
+                            name:
+                              type: string
+                          required:
+                            - kind
+                            - name
+                          type: object
+                        type:
+                          enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                           type: string
-                        inlineString:
-                          description: Data source is inline string`
-                          type: string
-                        secret:
-                          description: Data source is a secret with given Secret key.
-                          type: string
+                      required:
+                        - type
                       type: object
                     clientCert:
                       description: ClientCert defines a certificate of a client.
                       properties:
-                        inline:
-                          description: Data source is inline bytes.
-                          format: byte
+                        envVar:
+                          properties:
+                            name:
+                              type: string
+                          required:
+                            - name
+                          type: object
+                        file:
+                          properties:
+                            path:
+                              type: string
+                          required:
+                            - path
+                          type: object
+                        insecureInline:
+                          properties:
+                            value:
+                              type: string
+                          required:
+                            - value
+                          type: object
+                        secretRef:
+                          properties:
+                            kind:
+                              enum:
+                                - Secret
+                              type: string
+                            name:
+                              type: string
+                          required:
+                            - kind
+                            - name
+                          type: object
+                        type:
+                          enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                           type: string
-                        inlineString:
-                          description: Data source is inline string`
-                          type: string
-                        secret:
-                          description: Data source is a secret with given Secret key.
-                          type: string
+                      required:
+                        - type
                       type: object
                     clientKey:
                       description: ClientKey defines a client private key.
                       properties:
-                        inline:
-                          description: Data source is inline bytes.
-                          format: byte
+                        envVar:
+                          properties:
+                            name:
+                              type: string
+                          required:
+                            - name
+                          type: object
+                        file:
+                          properties:
+                            path:
+                              type: string
+                          required:
+                            - path
+                          type: object
+                        insecureInline:
+                          properties:
+                            value:
+                              type: string
+                          required:
+                            - value
+                          type: object
+                        secretRef:
+                          properties:
+                            kind:
+                              enum:
+                                - Secret
+                              type: string
+                            name:
+                              type: string
+                          required:
+                            - kind
+                            - name
+                          type: object
+                        type:
+                          enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                           type: string
-                        inlineString:
-                          description: Data source is inline string`
-                          type: string
-                        secret:
-                          description: Data source is a secret with given Secret key.
-                          type: string
+                      required:
+                        - type
                       type: object
                     mode:
                       default: Secured

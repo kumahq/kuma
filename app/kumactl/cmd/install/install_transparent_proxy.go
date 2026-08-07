@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -20,13 +19,12 @@ import (
 )
 
 const (
-	flagHelp                       = "help"
-	flagDryRun                     = "dry-run"
-	flagTransparentProxyConfig     = "config"
-	flagTransparentProxyConfigFile = "config-file"
-	flagIptablesExecutables        = "iptables-executables"
-	flagRedirectDNS                = "redirect-dns"
-	flagRedirectAllDNSTraffic      = "redirect-all-dns-traffic"
+	flagHelp                   = "help"
+	flagDryRun                 = "dry-run"
+	flagTransparentProxyConfig = "config"
+	flagIptablesExecutables    = "iptables-executables"
+	flagRedirectDNS            = "redirect-dns"
+	flagRedirectAllDNSTraffic  = "redirect-all-dns-traffic"
 )
 
 const (
@@ -35,7 +33,6 @@ const (
 
 func newInstallTransparentProxy() *cobra.Command {
 	var configValues []string
-	var configFile string
 
 	cfg := config.DefaultConfig()
 	cfgLoader := core_config.NewLoader(&cfg).WithEnvVarsLoading("KUMA_TRANSPARENT_PROXY")
@@ -115,7 +112,7 @@ runuser -u kuma-dp -- \
 
 			parseConfigFlags := func(flag *pflag.Flag, value string) error {
 				switch flag.Name {
-				case flagHelp, flagDryRun, flagTransparentProxyConfig, flagTransparentProxyConfigFile,
+				case flagHelp, flagDryRun, flagTransparentProxyConfig,
 					flagRedirectDNS, flagRedirectAllDNSTraffic:
 					return flag.Value.Set(value)
 				default:
@@ -123,8 +120,8 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			// To ensure the correct order of precedence, we first need to parse the `--config` and
-			// `--config-file` flags if they are set. Additionally, since `DisableFlagParsing`
+			// To ensure the correct order of precedence, we first need to parse the `--config`
+			// flag if it is set. Additionally, since `DisableFlagParsing`
 			// is enabled, we must handle the `--help` flag manually. During this parsing, if any
 			// unknown flag errors are encountered, we wrap the error with a usage message because
 			// the automatic usage display is disabled to prevent it from appearing for other
@@ -158,7 +155,7 @@ runuser -u kuma-dp -- \
 
 			// After parsing the config flags, we load the configuration, which involves parsing
 			// the provided YAML or JSON, and including environment variables if present
-			if err := cfgLoader.Load(cmd.InOrStdin(), slices.Concat([]string{configFile}, configValues)...); err != nil {
+			if err := cfgLoader.Load(cmd.InOrStdin(), configValues...); err != nil {
 				return errors.Wrap(err, "failed to load configuration from provided input")
 			}
 
@@ -217,7 +214,6 @@ runuser -u kuma-dp -- \
 	cmd.Flags().Var(&cfg.Redirect.Inbound.ExcludePorts, "exclude-inbound-ports", "a comma separated list of inbound ports to exclude from redirect to Envoy")
 	cmd.Flags().Var(&cfg.Redirect.Outbound.ExcludePorts, "exclude-outbound-ports", "a comma separated list of outbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&cfg.KumaDPUser, "kuma-dp-user", cfg.KumaDPUser, fmt.Sprintf("the username or UID of the user that will run kuma-dp. If not provided, the system will search for a user with the default UID ('%s') or the default username ('%s')", consts.OwnerDefaultUID, consts.OwnerDefaultUsername))
-	cmd.Flags().StringVar(&cfg.KumaDPUser, "kuma-dp-uid", cfg.KumaDPUser, "the uid of the user that will run kuma-dp")
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.Enabled, flagRedirectDNS, cfg.Redirect.DNS.Enabled, "redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port")
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.CaptureAll, flagRedirectAllDNSTraffic, cfg.Redirect.DNS.CaptureAll, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
 	cmd.Flags().Var(&cfg.Redirect.DNS.Port, "redirect-dns-port", "the port where the DNS agent is listening")
@@ -270,9 +266,8 @@ runuser -u kuma-dp -- \
 		&cfg.Executables,
 		flagIptablesExecutables,
 		fmt.Sprintf(
-			"specify custom paths for iptables executables in the format name:path[,name:path...]. Valid names are 'iptables', 'iptables-save', 'iptables-restore', 'ip6tables', 'ip6tables-save', and 'ip6tables-restore'. You must provide all three executables for each IP version you want to customize (IPv4 or IPv6), meaning if you configure one for IPv6 (e.g., 'ip6tables'), you must also specify 'ip6tables-save' and 'ip6tables-restore'. Partial configurations for either IPv4 or IPv6 are not allowed. Configuration values can be set through a combination of sources: config file (via --%s or --%s), environment variables, and the '--%s' flag. For example, you can specify 'ip6tables' in the config file, 'ip6tables-save' as an environment variable, and 'ip6tables-restore' via the '--%[3]s' flag. [WARNING] Provided paths are not extensively validated, so ensure you specify correct paths and that the executables are actual iptables binaries to avoid misconfigurations and unexpected behavior",
+			"specify custom paths for iptables executables in the format name:path[,name:path...]. Valid names are 'iptables', 'iptables-save', 'iptables-restore', 'ip6tables', 'ip6tables-save', and 'ip6tables-restore'. You must provide all three executables for each IP version you want to customize (IPv4 or IPv6), meaning if you configure one for IPv6 (e.g., 'ip6tables'), you must also specify 'ip6tables-save' and 'ip6tables-restore'. Partial configurations for either IPv4 or IPv6 are not allowed. Configuration values can be set through a combination of sources: config file (via --%s), environment variables, and the '--%s' flag. For example, you can specify 'ip6tables' in the config file, 'ip6tables-save' as an environment variable, and 'ip6tables-restore' via the '--%[2]s' flag. [WARNING] Provided paths are not extensively validated, so ensure you specify correct paths and that the executables are actual iptables binaries to avoid misconfigurations and unexpected behavior",
 			flagTransparentProxyConfig,
-			flagTransparentProxyConfigFile,
 			flagIptablesExecutables,
 		),
 	)
@@ -287,12 +282,6 @@ runuser -u kuma-dp -- \
 			"Later values override earlier ones when merging. "+
 			"Use this flag to pass detailed transparent proxy settings to kuma-dp.",
 	)
-	cmd.Flags().StringVar(&configFile, flagTransparentProxyConfigFile, configFile, "path to the file containing the transparent proxy configuration in YAML or JSON format")
-
-	_ = cmd.Flags().MarkDeprecated(flagTransparentProxyConfigFile, fmt.Sprintf("please use --%s", flagTransparentProxyConfig))
-
-	_ = cmd.Flags().MarkDeprecated("kuma-dp-uid", "please use --kuma-dp-user, which accepts both UIDs and usernames")
-
 	// Manually define the `--help` flag since we are handling flag parsing ourselves due to
 	// `DisableFlagParsing` being set
 	_ = cmd.Flags().BoolP(flagHelp, "h", false, "show this help message")

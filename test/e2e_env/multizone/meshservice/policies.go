@@ -304,8 +304,6 @@ metadata:
 spec:
   targetRef:
     kind: Dataplane
-    labels:
-      kuma.io/proxy-type: sidecar
   rules:
     - default:
           http:

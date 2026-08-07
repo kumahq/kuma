@@ -19,7 +19,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
-	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/grpc"
@@ -32,16 +32,12 @@ var _ = Describe("Global Sync", func() {
 	var globalStore store.ResourceStore
 	var closeFunc func()
 
-	dataplaneFunc := func(zone, service string) *mesh_proto.Dataplane {
+	dataplaneFunc := func() *mesh_proto.Dataplane {
 		return &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 					Port: 1212,
-					Tags: map[string]string{
-						mesh_proto.ZoneTag:    zone,
-						mesh_proto.ServiceTag: service,
-					},
 				}},
 				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 					{
@@ -58,7 +54,7 @@ var _ = Describe("Global Sync", func() {
 
 	VerifyResourcesWereSynchronizedToGlobal := func() {
 		for i := range 10 {
-			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
+			dp := dataplaneFunc()
 			err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
@@ -73,13 +69,13 @@ var _ = Describe("Global Sync", func() {
 
 	VerifyResourcesWereSynchronizedIndependentlyForEachZone := func() {
 		for i := range 10 {
-			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
+			dp := dataplaneFunc()
 			err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
 
 		for i := range 10 {
-			dp := dataplaneFunc("kuma-cluster-2", fmt.Sprintf("service-2-%d", i))
+			dp := dataplaneFunc()
 			err := zoneStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-2-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
@@ -108,11 +104,11 @@ var _ = Describe("Global Sync", func() {
 	}
 
 	VerifySupportForTheSameNameOfDataplanesInDifferentClusters := func() {
-		dp1 := dataplaneFunc("kuma-cluster-1", "backend")
+		dp1 := dataplaneFunc()
 		err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp1}, store.CreateByKey("dp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		dp2 := dataplaneFunc("kuma-cluster-2", "web")
+		dp2 := dataplaneFunc()
 		err = zoneStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp2}, store.CreateByKey("dp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -129,7 +125,6 @@ var _ = Describe("Global Sync", func() {
 			mesh.DataplaneInsightType:  true,
 			mesh.DataplaneType:         true,
 			mesh.DataplaneOverviewType: true,
-			mesh.ServiceOverviewType:   true,
 			workload_api.WorkloadType:  true,
 		}
 
@@ -152,7 +147,7 @@ var _ = Describe("Global Sync", func() {
 	}
 
 	Context("Delta KDS", func() {
-		var globalSyncer sync_store_v2.ResourceSyncer
+		var globalSyncer kds_sync_store.ResourceSyncer
 
 		BeforeEach(func() {
 			const numOfZones = 2
@@ -186,7 +181,7 @@ var _ = Describe("Global Sync", func() {
 			globalStore = memory.NewStore()
 			metrics, err := core_metrics.NewMetrics("")
 			Expect(err).ToNot(HaveOccurred())
-			globalSyncer, err = sync_store_v2.NewResourceSyncer(core.Log, globalStore, store.NoTransactions{}, metrics, context.Background())
+			globalSyncer, err = kds_sync_store.NewResourceSyncer(core.Log, globalStore, store.NoTransactions{}, metrics, context.Background())
 			Expect(err).ToNot(HaveOccurred())
 			stopCh := make(chan struct{})
 			clientStreams := []*grpc.MockDeltaClientStream{}
@@ -197,7 +192,7 @@ var _ = Describe("Global Sync", func() {
 				// it drives attribution on the global ingest path.
 				zoneNames = append(zoneNames, fmt.Sprintf(zoneName, i))
 			}
-			kds_setup.StartDeltaClient(clientStreams, zoneNames, []model.ResourceType{mesh.DataplaneType}, stopCh, sync_store_v2.GlobalSyncCallback(context.Background(), globalSyncer, false, nil, "kuma-system", nil))
+			kds_setup.StartDeltaClient(clientStreams, zoneNames, []model.ResourceType{mesh.DataplaneType}, stopCh, kds_sync_store.GlobalSyncCallback(context.Background(), globalSyncer, false, nil, "kuma-system", nil))
 
 			// Create Zone resources for each Kuma CP Zone
 			for i := range numOfZones {
@@ -222,10 +217,6 @@ var _ = Describe("Global Sync", func() {
 					Address: "192.168.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 						Port: 1212,
-						Tags: map[string]string{
-							mesh_proto.ZoneTag:    "kuma-cluster-1",
-							mesh_proto.ServiceTag: "service-1",
-						},
 					}},
 					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 						{
@@ -265,10 +256,6 @@ var _ = Describe("Global Sync", func() {
 				Networking: &mesh_proto.Dataplane_Networking{
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 						Port: 1234,
-						Tags: map[string]string{
-							mesh_proto.ZoneTag:    "kuma-cluster-1",
-							mesh_proto.ServiceTag: "service-1",
-						},
 					}},
 					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 						{

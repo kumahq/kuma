@@ -121,6 +121,10 @@ func SetupServer(rt core_runtime.Runtime) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}
+	if rt.Config().Environment == config_core.KubernetesEnvironment {
+		log.Info("MADS is not supported on Kubernetes, use MeshMetric with Prometheus Kubernetes service discovery instead")
+		return nil
+	}
 	if !rt.Config().MonitoringAssignmentServer.Enabled {
 		log.Info("MADS server is disabled")
 		return nil

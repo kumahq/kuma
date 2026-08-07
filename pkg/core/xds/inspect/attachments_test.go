@@ -95,25 +95,16 @@ var _ = Describe("GroupByAttachment", func() {
 						Address:     "192.168.0.1",
 						Port:        80,
 						ServicePort: 81,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "web",
-						},
 					},
 					{
 						Address:     "192.168.0.2",
 						Port:        80,
 						ServicePort: 81,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "web-api",
-						},
 					},
 					{
 						Address:     "192.168.0.2",
 						Port:        90,
 						ServicePort: 91,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "web-admin",
-						},
 					},
 				},
 			},
@@ -313,25 +304,16 @@ var _ = Describe("GroupByPolicy", func() {
 						Address:     "192.168.0.1",
 						Port:        80,
 						ServicePort: 81,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "web",
-						},
 					},
 					{
 						Address:     "192.168.0.2",
 						Port:        90,
 						ServicePort: 91,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "web-api",
-						},
 					},
 					{
 						Address:     "192.168.0.3",
 						Port:        80,
 						ServicePort: 81,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "web-admin",
-						},
 					},
 				},
 			},
@@ -428,17 +410,11 @@ var _ = Describe("GroupByPolicy", func() {
 						Address:     "192.168.0.1",
 						Port:        80,
 						ServicePort: 81,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "web",
-						},
 					},
 					{
 						Address:     "192.168.0.2",
 						Port:        80,
 						ServicePort: 81,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "web-api",
-						},
 					},
 				},
 				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{

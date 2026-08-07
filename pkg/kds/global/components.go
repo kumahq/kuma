@@ -10,9 +10,9 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
+	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
-	kds_server "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
-	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 )
 
 var (
@@ -34,6 +34,7 @@ func Setup(rt runtime.Runtime) error {
 		rt.KDSContext().GlobalProvidedFilter,
 		rt.KDSContext().GlobalResourceMapper,
 		rt.Config().Multizone.Global.KDS.NackBackoff.Duration,
+		rt.Config().Multizone.Global.KDS.EventBasedWatchdog.AsRuntimeConfig(),
 	)
 	if err != nil {
 		return err
@@ -45,7 +46,7 @@ func Setup(rt runtime.Runtime) error {
 	}
 
 	var streamInterceptors []service.StreamInterceptor
-	for _, filter := range rt.KDSContext().GlobalServerFiltersV2 {
+	for _, filter := range rt.KDSContext().GlobalServerFilters {
 		streamInterceptors = append(streamInterceptors, filter)
 	}
 

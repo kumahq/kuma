@@ -144,9 +144,6 @@ var _ = Describe("Bootstrap Server", func() {
 						{
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 					Admin: &mesh_proto.EnvoyAdmin{},
@@ -247,9 +244,6 @@ var _ = Describe("Bootstrap Server", func() {
 						{
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 				},
@@ -286,9 +280,6 @@ var _ = Describe("Bootstrap Server", func() {
 						{
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 				},

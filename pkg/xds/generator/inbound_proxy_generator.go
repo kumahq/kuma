@@ -35,7 +35,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		}
 
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
-		protocol := core_meta.ParseProtocol(iface.GetProtocolFallback())
+		protocol := core_meta.ParseProtocol(iface.GetProtocol())
 		unifiedName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.InboundName)
 
 		// generate CDS resource
@@ -79,7 +79,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		if listenerTags == nil {
 			listenerTags = map[string]string{}
 		}
-		if protocol := iface.GetProtocolFallback(); protocol != "" {
+		if protocol := iface.GetProtocol(); protocol != "" {
 			listenerTags[mesh_proto.ProtocolTag] = protocol
 		}
 
@@ -156,10 +156,6 @@ func FilterChainBuilder(
 			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 			Configure(envoy_listeners.GrpcStats()).
 			Configure(envoy_listeners.HttpInboundRoute(contextualName, contextualName, cluster))
-	case core_meta.ProtocolKafka:
-		filterChainBuilder.
-			Configure(envoy_listeners.Kafka(localClusterName)).
-			Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, cluster))
 	default:
 		// configuration for non-HTTP cases
 		filterChainBuilder.Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, cluster))

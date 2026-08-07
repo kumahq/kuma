@@ -94,10 +94,6 @@ const (
 	// Kuma CP based on the policy spec. Supported values are "producer", "consumer", "system" and "workload-owner".
 	PolicyRoleLabel = "kuma.io/policy-role"
 
-	// ProxyTypeLabel is a standard label that reflects the type of proxy. Supported values are "sidecar", "gateway",
-	// "zoneingress", "zoneegress"
-	ProxyTypeLabel = "kuma.io/proxy-type"
-
 	// ManagedByLabel is used when a MeshService is auto-generated
 	ManagedByLabel = "kuma.io/managed-by"
 
@@ -172,29 +168,15 @@ func (r PolicyRole) Compare(o PolicyRole) int {
 	return roleOrder[r] - roleOrder[o]
 }
 
-type ProxyTypeLabelValues string
-
-const (
-	SidecarLabel     ProxyTypeLabelValues = "sidecar"
-	GatewayLabel     ProxyTypeLabelValues = "gateway"
-	ZoneIngressLabel ProxyTypeLabelValues = "zoneingress"
-	ZoneEgressLabel  ProxyTypeLabelValues = "zoneegress"
-)
-
 type ProxyType string
 
-const (
-	DataplaneProxyType ProxyType = "dataplane"
-	IngressProxyType   ProxyType = "ingress"
-	EgressProxyType    ProxyType = "egress"
-)
+const DataplaneProxyType ProxyType = "dataplane"
 
 func (t ProxyType) IsValid() error {
-	switch t {
-	case DataplaneProxyType, IngressProxyType, EgressProxyType:
-		return nil
+	if t != DataplaneProxyType {
+		return errors.Errorf("%s is not a valid proxy type", t)
 	}
-	return errors.Errorf("%s is not a valid proxy type", t)
+	return nil
 }
 
 type InboundInterface struct {
@@ -385,34 +367,8 @@ func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
 	return selector.MatchesFuzzy(d.GetNetworking().GetGateway().GetTags())
 }
 
-// GetProtocolFallback returns the protocol supported by this inbound interface.
-// The kuma.io/protocol tag is still read as a fallback: protocol is a per-port
-// property that resource labels cannot express, so Universal dataplanes
-// persisted before the Protocol field existed carry it only as an inbound tag.
-func (d *Dataplane_Networking_Inbound) GetProtocolFallback() string {
-	if d == nil {
-		return ""
-	}
-	if d.Protocol != "" {
-		return d.Protocol
-	}
-	return d.Tags[ProtocolTag]
-}
-
-// GetServiceFallback returns the service this inbound belongs to, preferring
-// the legacy per-inbound kuma.io/service tag over the given Dataplane-scoped
-// fallback (its kuma.io/service label). A Dataplane carries a single service
-// label, so a Dataplane provisioned before the move to labels that exposes
-// several services can only be resolved per inbound, from the tag it still
-// declares. Without the tag every inbound would inherit one service and
-// per-service filtering would publish ports of unrelated services.
+// GetServiceFallback returns the service this inbound belongs to.
 func (d *Dataplane_Networking_Inbound) GetServiceFallback(fallback string) string {
-	if d == nil {
-		return fallback
-	}
-	if service := d.GetTags()[ServiceTag]; service != "" {
-		return service
-	}
 	return fallback
 }
 
@@ -654,13 +610,6 @@ func (d *Dataplane) IsDelegatedGateway() bool {
 func (d *Dataplane) IsBuiltinGateway() bool {
 	return d.GetNetworking().GetGateway() != nil &&
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_BUILTIN
-}
-
-func (d *Dataplane) GetProxyType() ProxyTypeLabelValues {
-	if d.IsBuiltinGateway() {
-		return GatewayLabel
-	}
-	return SidecarLabel
 }
 
 func (t MultiValueTagSet) String() string {

@@ -1,4 +1,0 @@
-{
- "title": "Method is not allowed",
- "details": "It it not possible to inspect envoy config dump on Global CP. Please consider using Zone CP of the corresponding zone"
-}

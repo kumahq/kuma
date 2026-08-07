@@ -1,8 +1,6 @@
 package meshroute
 
 import (
-	"fmt"
-
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
@@ -30,7 +28,6 @@ func MakeTCPSplit(
 	return makeSplits(
 		map[core_meta.Protocol]struct{}{
 			core_meta.ProtocolUnknown: {},
-			core_meta.ProtocolKafka:   {},
 			core_meta.ProtocolTCP:     {},
 			core_meta.ProtocolHTTP:    {},
 			core_meta.ProtocolHTTP2:   {},
@@ -68,12 +65,11 @@ type DestinationService struct {
 	KumaServiceTagValue string
 }
 
-// ConditionallyResolveKRIWithFallback returns the identifier for this DestinationService.
-// If provided condition is met and the Outbound has an associated real resource,
-// the identifier is derived from that resource (KRI). Otherwise, the given fallback
-// is returned
-func (ds *DestinationService) ConditionallyResolveKRIWithFallback(condition bool, fallback string) string {
-	if condition && ds.Outbound != nil {
+// ResolveKRIWithFallback returns the identifier for this DestinationService.
+// If the Outbound has an associated real resource, the identifier is derived
+// from that resource (KRI). Otherwise, the given fallback is returned.
+func (ds *DestinationService) ResolveKRIWithFallback(fallback string) string {
+	if ds.Outbound != nil {
 		if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
 			return id.String()
 		}
@@ -184,7 +180,7 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 			DestinationService{
 				Outbound:            outbound,
 				Protocol:            protocol,
-				KumaServiceTagValue: destinationname.MustResolve(false, svc, port),
+				KumaServiceTagValue: destinationname.ResolveLegacyFromDestination(svc, port),
 			},
 		)
 	}
@@ -273,7 +269,7 @@ func handleRealResources(
 		ref.Resource = kri.WithSectionName(ref.Resource, port.GetName())
 	}
 
-	service := destinationname.MustResolve(false, dest, port)
+	service := destinationname.ResolveLegacyFromDestination(dest, port)
 
 	clusterName := ref.Resource.String()
 
@@ -331,14 +327,6 @@ func handleLegacyBackendRef(
 		WithTags(mesh_proto.ServiceTag, service).
 		DestinationClusterName(nil)
 
-	// The mesh tag is present here if this destination is generated
-	// from a cross-mesh MeshGateway listener virtual outbound.
-	// It is not part of the service tags.
-	if mesh, ok := pointer.Deref(ref.Tags)[mesh_proto.MeshTag]; ok {
-		// The name should be distinct to the service & mesh combination
-		clusterName = fmt.Sprintf("%s_%s", clusterName, mesh)
-	}
-
 	isExternalService := meshCtx.IsExternalService(service)
 	refHash := common_api.BackendRef(*ref).Hash()
 
@@ -366,10 +354,6 @@ func handleLegacyBackendRef(
 			WithTags(mesh_proto.ServiceTag, service).
 			WithoutTags(mesh_proto.MeshTag)).
 		WithExternalService(isExternalService)
-
-	if mesh, ok := pointer.Deref(ref.Tags)[mesh_proto.MeshTag]; ok {
-		clusterBuilder.WithMesh(mesh)
-	}
 
 	servicesAcc.AddBackendRef(resolve.NewResolvedBackendRef(ref), clusterBuilder.Build())
 	return split

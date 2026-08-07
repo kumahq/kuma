@@ -64,6 +64,14 @@ var _ = Describe("MeshExternalService", func() {
 				name: "external-service",
 				file: "minimal-invalid-extension",
 			}),
+			Entry("extension does not allow File/EnvVar data sources", testCase{
+				name: "external-service",
+				file: "extension-with-local-datasource-invalid",
+			}),
+			Entry("extension does not bypass required data source fields", testCase{
+				name: "external-service",
+				file: "extension-with-incomplete-datasource-invalid",
+			}),
 			Entry("missing client-cert", testCase{
 				name: "external-service",
 				file: "missing-client-cert-invalid",

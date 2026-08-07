@@ -21,10 +21,7 @@ var _ = Describe("Dataplane", func() {
           - port: 80
             servicePort: 8080
             address: 2.2.2.2
-            tags:
-              kuma.io/service: mobile
-              version: "0.1"
-              env: production
+            protocol: http
           outbound:
           - port: 30000
             tags:
@@ -43,10 +40,7 @@ var _ = Describe("Dataplane", func() {
 		Expect(dataplane.Networking.Inbound[0].Port).To(Equal(uint32(80)))
 		Expect(dataplane.Networking.Inbound[0].ServicePort).To(Equal(uint32(8080)))
 		Expect(dataplane.Networking.Inbound[0].Address).To(Equal("2.2.2.2"))
-		Expect(dataplane.Networking.Inbound[0].Tags).To(HaveLen(3))
-		Expect(dataplane.Networking.Inbound[0].Tags).To(HaveKeyWithValue("kuma.io/service", "mobile"))
-		Expect(dataplane.Networking.Inbound[0].Tags).To(HaveKeyWithValue("version", "0.1"))
-		Expect(dataplane.Networking.Inbound[0].Tags).To(HaveKeyWithValue("env", "production"))
+		Expect(dataplane.Networking.Inbound[0].Protocol).To(Equal("http"))
 		Expect(dataplane.Networking.Outbound).To(HaveLen(2))
 		Expect(dataplane.Networking.Outbound[0].Port).To(Equal(uint32(30000)))
 		Expect(dataplane.Networking.Outbound[0].GetService()).To(Equal("postgres"))
@@ -90,9 +84,8 @@ var _ = Describe("Dataplane", func() {
                     tags:
                       kuma.io/service: backend
                   inbound:
-                  - tags:
-                      kuma.io/service: backend
-                    port: 8080
+                  - port: 8080
+                    protocol: http
                   address: 192.168.0.1
 `,
 				expected: `{
@@ -101,9 +94,7 @@ var _ = Describe("Dataplane", func() {
     "inbound": [
       {
         "port": 8080,
-        "tags": {
-          "kuma.io/service": "backend"
-        }
+        "protocol": "http"
       }
     ],
     "outbound": [

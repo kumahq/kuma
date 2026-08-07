@@ -146,55 +146,6 @@ var _ = Describe("Inspect WS", func() {
 			},
 			contentType: restful.MIME_JSON,
 		}),
-		Entry("inspect xds for local zone ingress", testCase{
-			path:    "/zoneingresses/zi-1/xds",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_local_zoneingress.json")),
-			resources: []core_model.Resource{
-				builders.ZoneIngress().
-					WithName("zi-1").
-					WithZone("").
-					WithAdminPort(2201).
-					WithAddress("2.2.2.2").
-					WithPort(8080).
-					WithAdvertisedAddress("3.3.3.3").
-					WithAdvertisedPort(80).
-					Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect xds for zone ingress from another zone", testCase{
-			path:    "/zoneingresses/zi-1/xds",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_remote_zoneingress.json")),
-			resources: []core_model.Resource{
-				builders.ZoneIngress().
-					WithName("zi-1").
-					WithZone("not-local-zone").
-					WithAdminPort(2201).
-					WithAddress("2.2.2.2").
-					WithPort(8080).
-					WithAdvertisedAddress("3.3.3.3").
-					WithAdvertisedPort(80).
-					Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect xds for zone ingress on global", testCase{
-			global:  true,
-			path:    "/zoneingresses/zi-1/xds",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_local_zoneingress.json")),
-			resources: []core_model.Resource{
-				builders.ZoneIngress().
-					WithName("zi-1").
-					WithZone(""). // local zone ingress has empty "zone" field
-					WithAdminPort(2201).
-					WithAddress("2.2.2.2").
-					WithPort(8080).
-					WithAdvertisedAddress("3.3.3.3").
-					WithAdvertisedPort(80).
-					Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
 		Entry("inspect xds for dataplane on global", testCase{
 			global:  true,
 			path:    "/meshes/mesh-1/dataplanes/backend-1/xds",
@@ -202,14 +153,6 @@ var _ = Describe("Inspect WS", func() {
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
 				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithAdminPort(3301).WithAddress("1.1.1.1").WithServices("backend").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect xds for zone egress", testCase{
-			path:    "/zoneegresses/ze-1/xds",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_zoneegress.json")),
-			resources: []core_model.Resource{
-				builders.ZoneEgress().WithName("ze-1").WithAddress("4.4.4.4").WithPort(8080).WithAdminPort(4321).Build(),
 			},
 			contentType: restful.MIME_JSON,
 		}),

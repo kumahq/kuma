@@ -183,26 +183,7 @@ spec:
     singular: dataplane
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - description: Service tag of the first inbound
-      jsonPath: .spec.networking.inbound[0].tags['kuma\.io/service']
-      name: kuma.io/service
-      type: string
-    - description: Service tag of the second inbound
-      jsonPath: .spec.networking.inbound[1].tags['kuma\.io/service']
-      name: kuma.io/service
-      type: string
-    - description: Service tag of the third inbound
-      jsonPath: .spec.networking.inbound[2].tags['kuma\.io/service']
-      name: kuma.io/service
-      priority: 1
-      type: string
-    - description: Service tag of the fourth inbound
-      jsonPath: .spec.networking.inbound[3].tags['kuma\.io/service']
-      name: kuma.io/service
-      priority: 1
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -234,7 +215,6 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -1777,47 +1757,140 @@ spec:
                       caCert:
                         description: CaCert defines a certificate of CA.
                         properties:
-                          inline:
-                            description: Data source is inline bytes.
-                            format: byte
+                          envVar:
+                            properties:
+                              name:
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          file:
+                            properties:
+                              path:
+                                type: string
+                            required:
+                            - path
+                            type: object
+                          insecureInline:
+                            properties:
+                              value:
+                                type: string
+                            required:
+                            - value
+                            type: object
+                          secretRef:
+                            properties:
+                              kind:
+                                enum:
+                                - Secret
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          type:
+                            enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                             type: string
-                          inlineString:
-                            description: Data source is inline string`
-                            type: string
-                          secret:
-                            description: Data source is a secret with given Secret
-                              key.
-                            type: string
+                        required:
+                        - type
                         type: object
                       clientCert:
                         description: ClientCert defines a certificate of a client.
                         properties:
-                          inline:
-                            description: Data source is inline bytes.
-                            format: byte
+                          envVar:
+                            properties:
+                              name:
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          file:
+                            properties:
+                              path:
+                                type: string
+                            required:
+                            - path
+                            type: object
+                          insecureInline:
+                            properties:
+                              value:
+                                type: string
+                            required:
+                            - value
+                            type: object
+                          secretRef:
+                            properties:
+                              kind:
+                                enum:
+                                - Secret
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          type:
+                            enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                             type: string
-                          inlineString:
-                            description: Data source is inline string`
-                            type: string
-                          secret:
-                            description: Data source is a secret with given Secret
-                              key.
-                            type: string
+                        required:
+                        - type
                         type: object
                       clientKey:
                         description: ClientKey defines a client private key.
                         properties:
-                          inline:
-                            description: Data source is inline bytes.
-                            format: byte
+                          envVar:
+                            properties:
+                              name:
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          file:
+                            properties:
+                              path:
+                                type: string
+                            required:
+                            - path
+                            type: object
+                          insecureInline:
+                            properties:
+                              value:
+                                type: string
+                            required:
+                            - value
+                            type: object
+                          secretRef:
+                            properties:
+                              kind:
+                                enum:
+                                - Secret
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          type:
+                            enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                             type: string
-                          inlineString:
-                            description: Data source is inline string`
-                            type: string
-                          secret:
-                            description: Data source is a secret with given Secret
-                              key.
-                            type: string
+                        required:
+                        - type
                         type: object
                       mode:
                         default: Secured
@@ -3771,7 +3844,6 @@ spec:
                                 - Header
                                 - Cookie
                                 - Connection
-                                - SourceIP
                                 - QueryParameter
                                 - FilterState
                                 type: string

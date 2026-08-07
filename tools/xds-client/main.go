@@ -76,13 +76,9 @@ func newRunCmd() *cobra.Command {
 						},
 					}
 					for j := 0; j < args.inbounds; j++ {
-						service := fmt.Sprintf("service-%d", rand.Int()%args.services) // #nosec G404 -- that's just a test tool
 						dpSpec.Networking.Inbound = append(dpSpec.Networking.Inbound, &v1alpha1.Dataplane_Networking_Inbound{
-							Port: uint32(8080 + j),
-							Tags: map[string]string{
-								v1alpha1.ServiceTag:  service,
-								v1alpha1.ProtocolTag: "http",
-							},
+							Port:     uint32(8080 + j),
+							Protocol: "http",
 						})
 					}
 					for j := 0; j < args.outbounds; j++ {

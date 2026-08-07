@@ -23,8 +23,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/kds"
 	"github.com/kumahq/kuma/v3/pkg/kds/context"
 	"github.com/kumahq/kuma/v3/pkg/kds/hash"
+	kds_reconcile "github.com/kumahq/kuma/v3/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
-	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
@@ -37,7 +37,7 @@ import (
 var _ = Describe("Context", func() {
 	Describe("ZoneResourceMapper", func() {
 		var rm manager.ResourceManager
-		var mapper reconcile_v2.ResourceMapper
+		var mapper kds_reconcile.ResourceMapper
 
 		type testCase struct {
 			resource model.Resource
@@ -222,7 +222,7 @@ var _ = Describe("Context", func() {
 	})
 	Describe("GlobalProvidedFilter", func() {
 		var rm manager.ResourceManager
-		var predicate reconcile_v2.ResourceFilter
+		var predicate kds_reconcile.ResourceFilter
 
 		clusterID := "cluster-id"
 

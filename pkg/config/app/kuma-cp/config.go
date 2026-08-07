@@ -102,10 +102,6 @@ func (d *ZoneMetrics) Validate() error {
 type MeshMetrics struct {
 	config.BaseConfig
 
-	// Deprecated: use MinResyncInterval instead
-	MinResyncTimeout config_types.Duration `json:"minResyncTimeout" envconfig:"kuma_metrics_mesh_min_resync_timeout"`
-	// Deprecated: use FullResyncInterval instead
-	MaxResyncTimeout config_types.Duration `json:"maxResyncTimeout" envconfig:"kuma_metrics_mesh_max_resync_timeout"`
 	// BufferSize the size of the buffer between event creation and processing
 	BufferSize int `json:"bufferSize" envconfig:"kuma_metrics_mesh_buffer_size"`
 	// MinResyncInterval the minimum time between 2 refresh of insights.
@@ -123,10 +119,7 @@ type ControlPlaneMetrics struct {
 }
 
 func (d *MeshMetrics) Validate() error {
-	if d.MinResyncTimeout.Duration != 0 && d.MaxResyncTimeout.Duration <= d.MinResyncTimeout.Duration {
-		return errors.New("FullResyncInterval should be greater than MinResyncInterval")
-	}
-	if d.MinResyncInterval.Duration <= d.FullResyncInterval.Duration {
+	if d.FullResyncInterval.Duration <= d.MinResyncInterval.Duration {
 		return errors.New("FullResyncInterval should be greater than MinResyncInterval")
 	}
 	return nil
@@ -142,7 +135,7 @@ type Config struct {
 	General *GeneralConfig `json:"general,omitempty"`
 	// Environment Type, can be either "kubernetes" or "universal"
 	Environment core.EnvironmentType `json:"environment,omitempty" envconfig:"kuma_environment"`
-	// Mode in which Kuma CP is running. Available values are: "standalone", "global", "zone"
+	// Mode in which Kuma CP is running. Available values are: "global", "zone"
 	Mode core.CpMode `json:"mode" envconfig:"kuma_mode"`
 	// Resource Store configuration
 	Store *store.StoreConfig `json:"store,omitempty"`
@@ -283,11 +276,6 @@ var DefaultConfig = func() Config {
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
 			IngressTagFilters: []string{},
-			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
-				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
-				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
-				DelayFullResync:    false,
-			},
 		},
 		InterCp:       intercp.DefaultInterCpConfig(),
 		EventBus:      eventbus.Default(),
@@ -485,17 +473,6 @@ type ExperimentalConfig struct {
 	// The drawback is that you cannot use filtered out tags for traffic routing.
 	// If empty, no filter is applied.
 	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
-	// KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
-	KDSEventBasedWatchdog ExperimentalKDSEventBasedWatchdog `json:"kdsEventBasedWatchdog"`
-}
-
-type ExperimentalKDSEventBasedWatchdog struct {
-	// How often we flush changes when experimental event based watchdog is used.
-	FlushInterval config_types.Duration `json:"flushInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL"`
-	// How often we schedule full KDS resync when experimental event based watchdog is used.
-	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL"`
-	// If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
-	DelayFullResync bool `json:"delayFullResync" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC"`
 }
 
 type IPAMConfig struct {
