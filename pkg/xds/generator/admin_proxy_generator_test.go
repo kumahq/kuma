@@ -169,10 +169,10 @@ var _ = Describe("AdminProxyGenerator", func() {
 		// ExposeZoneProxyMetrics is scoped to zone proxies, so a data plane proxy must
 		// generate byte-identical config to the same case with the flag off (02).
 		Entry("should not expose /stats/prometheus on a data plane proxy when ExposeZoneProxyMetrics is enabled", testCase{
-			dataplaneFile:         "02.dataplane.input.yaml",
-			expected:              "02.envoy-config.golden.yaml",
-			adminAddress:          "127.0.0.1",
-			readinessPort:         9902,
+			dataplaneFile:          "02.dataplane.input.yaml",
+			expected:               "02.envoy-config.golden.yaml",
+			adminAddress:           "127.0.0.1",
+			readinessPort:          9902,
 			exposeZoneProxyMetrics: true,
 		}),
 	)
