@@ -8087,7 +8087,6 @@ components:
                                     description: Kind of the referenced resource
                                     enum:
                                       - Mesh
-                                      - MeshSubset
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -8127,9 +8126,9 @@ components:
                                       type: string
                                     description: >-
                                       Tags used to select a subset of proxies by
-                                      tags. Can only be used with kinds
+                                      tags. Can only be used with kind
 
-                                      `MeshSubset` and `MeshServiceSubset`
+                                      `MeshServiceSubset`
                                     type: object
                                   weight:
                                     default: 1
@@ -8208,7 +8207,6 @@ components:
                                             description: Kind of the referenced resource
                                             enum:
                                               - Mesh
-                                              - MeshSubset
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
@@ -8248,9 +8246,9 @@ components:
                                               type: string
                                             description: >-
                                               Tags used to select a subset of proxies
-                                              by tags. Can only be used with kinds
+                                              by tags. Can only be used with kind
 
-                                              `MeshSubset` and `MeshServiceSubset`
+                                              `MeshServiceSubset`
                                             type: object
                                           weight:
                                             default: 1
@@ -11943,7 +11941,6 @@ components:
                                     description: Kind of the referenced resource
                                     enum:
                                       - Mesh
-                                      - MeshSubset
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -11983,9 +11980,9 @@ components:
                                       type: string
                                     description: >-
                                       Tags used to select a subset of proxies by
-                                      tags. Can only be used with kinds
+                                      tags. Can only be used with kind
 
-                                      `MeshSubset` and `MeshServiceSubset`
+                                      `MeshServiceSubset`
                                     type: object
                                   weight:
                                     default: 1
