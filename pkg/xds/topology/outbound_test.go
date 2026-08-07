@@ -120,7 +120,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"default_redis___msvc_6379": []core_xds.Endpoint{
+					"kri_msvc_default___redis_6379": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
@@ -185,7 +185,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"default_redis___msvc_6379": []core_xds.Endpoint{
+					"kri_msvc_default___redis_6379": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.1",
 							Port:     6379,
@@ -194,7 +194,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"default_redis-0___msvc_6379": []core_xds.Endpoint{
+					"kri_msvc_default___redis-0_6379": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.1",
 							Port:     6379,
@@ -203,7 +203,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"default_kong.kong-system___msvc_8080": []core_xds.Endpoint{
+					"kri_msvc_default___kong.kong-system_8080": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
 							Port:     80,
@@ -212,7 +212,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"default_kong.kong-system___msvc_8081": []core_xds.Endpoint{
+					"kri_msvc_default___kong.kong-system_8081": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
 							Port:     8001,
@@ -334,7 +334,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"default_another-mes___extsvc_10000": []core_xds.Endpoint{
+					"kri_extsvc_default___another-mes_10000": []core_xds.Endpoint{
 						{
 							Target: "1.1.1.1",
 							Port:   10002,
@@ -357,7 +357,7 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 					},
-					"default_example-mes___extsvc_10000": []core_xds.Endpoint{
+					"kri_extsvc_default___example-mes_10000": []core_xds.Endpoint{
 						{
 							Target:   "1.1.1.1",
 							Port:     10002,
@@ -535,7 +535,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"default_backend___msvc_80": []core_xds.Endpoint{
+					"kri_msvc_default___backend_80": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
 							Port:   80,
@@ -545,19 +545,19 @@ var _ = Describe("TrafficRoute", func() {
 							Weight: 1,
 						},
 					},
-					"default_backend__east_msvc_80": []core_xds.Endpoint{
+					"kri_msvc_default_east__backend_80": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags: map[string]string{
-								"kuma.io/service": "default_backend__east_msvc_80",
+								"kuma.io/service": "kri_msvc_default_east__backend_80",
 								"kuma.io/zone":    "east",
 							},
 							Weight:   1,
 							Locality: &core_xds.Locality{Zone: "east", SubZone: "", Priority: 1, Weight: 0},
 						},
 					},
-					"default_backend___mzsvc_80": []core_xds.Endpoint{
+					"kri_mzsvc_default___backend_80": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
 							Port:   80,
@@ -570,7 +570,7 @@ var _ = Describe("TrafficRoute", func() {
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags: map[string]string{
-								"kuma.io/service": "default_backend__east_msvc_80",
+								"kuma.io/service": "kri_msvc_default_east__backend_80",
 								"kuma.io/zone":    "east",
 							},
 							Weight:   1,
@@ -603,7 +603,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"default_ext-svc___extsvc_10000": []core_xds.Endpoint{
+					"kri_extsvc_default___ext-svc_10000": []core_xds.Endpoint{
 						{
 							Target: "10.42.0.11",
 							Port:   10002,
@@ -657,7 +657,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"default_ext-svc___extsvc_10000": []core_xds.Endpoint{
+					"kri_extsvc_default___ext-svc_10000": []core_xds.Endpoint{
 						{
 							Target: "10.42.0.11",
 							Port:   10002,

@@ -18,7 +18,6 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
@@ -117,11 +116,6 @@ var _ = Describe("MeshTimeout", func() {
 			WithPolicies(
 				xds_builders.MatchedPolicies().WithPolicy(api.MeshTimeoutType, given.toRules, given.fromRules),
 			)
-		// Outbounds are always built from real resources, so every proxy here
-		// supports unified resource naming.
-		proxyBuilder = proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{
-			Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-		})
 		proxy := proxyBuilder.Build()
 
 		// when
@@ -276,7 +270,7 @@ var _ = Describe("MeshTimeout", func() {
 					}},
 				},
 			},
-			expectedClusters:  []string{"basic_inbound_cluster_unified_naming.golden.yaml"},
+			expectedClusters:  []string{"basic_inbound_cluster_resource_name.golden.yaml"},
 			expectedListeners: []string{"basic_inbound_listener.golden.yaml"},
 		}),
 		Entry("basic inbound route without defaults", sidecarTestCase{

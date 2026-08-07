@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
@@ -62,19 +63,8 @@ func MakeHTTPSplit(
 type DestinationService struct {
 	Outbound            *xds_types.Outbound
 	Protocol            core_meta.Protocol
+	DestinationResource string
 	KumaServiceTagValue string
-}
-
-// ResolveKRIWithFallback returns the identifier for this DestinationService.
-// If the Outbound has an associated real resource, the identifier is derived
-// from that resource (KRI). Otherwise, the given fallback is returned.
-func (ds *DestinationService) ResolveKRIWithFallback(fallback string) string {
-	if ds.Outbound != nil {
-		if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
-			return id.String()
-		}
-	}
-	return fallback
 }
 
 // OutboundListenerTags returns the outbound listener's io.kuma.tags: the
@@ -151,12 +141,30 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 			DestinationService{
 				Outbound:            outbound,
 				Protocol:            protocol,
-				KumaServiceTagValue: destinationname.ResolveLegacyFromDestination(svc, port),
+				DestinationResource: outbound.Resource.String(),
+				KumaServiceTagValue: kumaServiceTagValue(svc),
 			},
 		)
 	}
 
 	return result
+}
+
+func kumaServiceTagValue(dest core.Destination) string {
+	switch d := dest.(type) {
+	case *meshservice_api.MeshServiceResource:
+		for _, identity := range pointer.Deref(d.Spec.Identities) {
+			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
+				return identity.Value
+			}
+		}
+	}
+
+	if serviceTag := dest.GetMeta().GetLabels()[mesh_proto.ServiceTag]; serviceTag != "" {
+		return serviceTag
+	}
+
+	return dest.GetMeta().GetName()
 }
 
 func DestinationPortFromRef(
@@ -240,7 +248,7 @@ func handleRealResources(
 		ref.Resource = kri.WithSectionName(ref.Resource, port.GetName())
 	}
 
-	service := destinationname.ResolveLegacyFromDestination(dest, port)
+	service := destinationname.MustResolve(dest, port)
 
 	clusterName := ref.Resource.String()
 

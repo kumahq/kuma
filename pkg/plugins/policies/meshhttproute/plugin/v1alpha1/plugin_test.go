@@ -67,11 +67,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 		Mesh:         "default",
 		Name:         "example",
 	}
-	unifiedNaming := func() *core_xds.DataplaneMetadata {
-		return &core_xds.DataplaneMetadata{
-			Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-		}
-	}
+	unifiedNaming := func() *core_xds.DataplaneMetadata { return &core_xds.DataplaneMetadata{} }
 
 	type outboundsTestCase struct {
 		proxy      *core_xds.Proxy
@@ -544,11 +540,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Port:     9000,
 					}}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithMetadata(&core_xds.DataplaneMetadata{
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
-					}).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithWorkloadIdentity(&core_xds.WorkloadIdentity{
 						IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
 							return bldrs_tls.SdsSecretConfigSource(

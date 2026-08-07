@@ -19,7 +19,6 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
@@ -135,11 +134,6 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						WithAddress("127.0.0.1").
 						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend"),
 				)
-			// Outbounds are always built from real resources, so every proxy here
-			// supports unified resource naming.
-			proxy = proxy.WithMetadata(&core_xds.DataplaneMetadata{
-				Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-			})
 			if !given.withoutPolicy {
 				proxy = proxy.WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, given.fromRules),
@@ -312,7 +306,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					}},
 				},
 			},
-			expectedCluster: []string{"inbound_cluster_connection_limits_unified_naming.golden.yaml"},
+			expectedCluster: []string{"inbound_cluster_connection_limits_resource_name.golden.yaml"},
 		}),
 		Entry("basic inbound cluster with outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{

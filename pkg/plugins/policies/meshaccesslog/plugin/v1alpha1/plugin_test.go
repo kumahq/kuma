@@ -165,9 +165,6 @@ var _ = Describe("MeshAccessLog", func() {
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithMetadata(&core_xds.DataplaneMetadata{
 					WorkDir: "/tmp",
-					// Outbounds are always built from real resources, so every
-					// proxy here supports unified resource naming.
-					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
 				}).
 				WithDataplane(dpBuilder).
 				WithPolicies(
@@ -345,7 +342,7 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			},
-			expectedListeners: []string{"basic_outbound_meshhttproute_unified_naming.listener.golden.yaml"},
+			expectedListeners: []string{"basic_outbound_meshhttproute_resource_name.listener.golden.yaml"},
 		}),
 		Entry("disable MAL for MeshHTTPRoute", sidecarTestCase{
 			resources: []core_xds.Resource{
@@ -1221,7 +1218,8 @@ func outboundRealServiceTCPListener(serviceResourceKRI kri.Identifier, port int3
 				Port:     uint32(port),
 				Resource: destinationKRI(serviceResourceKRI, port),
 			},
-			Protocol: core_meta.ProtocolTCP,
+			Protocol:            core_meta.ProtocolTCP,
+			DestinationResource: destinationName(serviceResourceKRI, port),
 		},
 		[]envoy_common.Split{
 			xds.NewSplitBuilder().WithClusterName(destinationName(serviceResourceKRI, port)).Build(),
@@ -1242,7 +1240,8 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 				Port:     uint32(port),
 				Resource: destinationKRI(serviceResourceKRI, port),
 			},
-			Protocol: core_meta.ProtocolHTTP,
+			Protocol:            core_meta.ProtocolHTTP,
+			DestinationResource: destinationName(serviceResourceKRI, port),
 		},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
