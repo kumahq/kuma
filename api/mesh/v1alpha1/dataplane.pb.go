@@ -298,18 +298,7 @@ type Dataplane struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Networking describes inbound and outbound interfaces of the data plane
 	// proxy.
-	Networking *Dataplane_Networking `protobuf:"bytes,1,opt,name=networking,proto3" json:"networking,omitempty"`
-	// Probes describe a list of endpoints that will be exposed without mTLS.
-	// This is useful to expose the health endpoints of the application so the
-	// orchestration system (e.g. Kubernetes) can still health check the
-	// application.
-	//
-	// See
-	// https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
-	// for more information.
-	// Deprecated: this feature will be removed for Universal; on Kubernetes, it's
-	// not needed anymore.
-	Probes        *Dataplane_Probes `protobuf:"bytes,3,opt,name=probes,proto3" json:"probes,omitempty"`
+	Networking    *Dataplane_Networking `protobuf:"bytes,1,opt,name=networking,proto3" json:"networking,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -347,13 +336,6 @@ func (*Dataplane) Descriptor() ([]byte, []int) {
 func (x *Dataplane) GetNetworking() *Dataplane_Networking {
 	if x != nil {
 		return x.Networking
-	}
-	return nil
-}
-
-func (x *Dataplane) GetProbes() *Dataplane_Probes {
-	if x != nil {
-		return x.Probes
 	}
 	return nil
 }
@@ -474,61 +456,6 @@ func (x *Dataplane_Networking) GetListeners() []*Dataplane_Networking_Listener {
 	return nil
 }
 
-type Dataplane_Probes struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Port on which the probe endpoints will be exposed. This cannot overlap
-	// with any other ports.
-	Port uint32 `protobuf:"varint,1,opt,name=port,proto3" json:"port,omitempty"`
-	// List of endpoints to expose without mTLS.
-	Endpoints     []*Dataplane_Probes_Endpoint `protobuf:"bytes,2,rep,name=endpoints,proto3" json:"endpoints,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Dataplane_Probes) Reset() {
-	*x = Dataplane_Probes{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Dataplane_Probes) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Dataplane_Probes) ProtoMessage() {}
-
-func (x *Dataplane_Probes) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Dataplane_Probes.ProtoReflect.Descriptor instead.
-func (*Dataplane_Probes) Descriptor() ([]byte, []int) {
-	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 1}
-}
-
-func (x *Dataplane_Probes) GetPort() uint32 {
-	if x != nil {
-		return x.Port
-	}
-	return 0
-}
-
-func (x *Dataplane_Probes) GetEndpoints() []*Dataplane_Probes_Endpoint {
-	if x != nil {
-		return x.Endpoints
-	}
-	return nil
-}
-
 // Inbound describes a service implemented by the data plane proxy.
 // All incoming traffic to a data plane proxy are going through inbound
 // listeners. For every defined Inbound there is a corresponding Envoy
@@ -584,7 +511,7 @@ type Dataplane_Networking_Inbound struct {
 
 func (x *Dataplane_Networking_Inbound) Reset() {
 	*x = Dataplane_Networking_Inbound{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[3]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -596,7 +523,7 @@ func (x *Dataplane_Networking_Inbound) String() string {
 func (*Dataplane_Networking_Inbound) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Inbound) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[3]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -695,7 +622,7 @@ type Dataplane_Networking_Outbound struct {
 
 func (x *Dataplane_Networking_Outbound) Reset() {
 	*x = Dataplane_Networking_Outbound{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[4]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -707,7 +634,7 @@ func (x *Dataplane_Networking_Outbound) String() string {
 func (*Dataplane_Networking_Outbound) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Outbound) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[4]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -770,7 +697,7 @@ type Dataplane_Networking_Gateway struct {
 
 func (x *Dataplane_Networking_Gateway) Reset() {
 	*x = Dataplane_Networking_Gateway{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[5]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -782,7 +709,7 @@ func (x *Dataplane_Networking_Gateway) String() string {
 func (*Dataplane_Networking_Gateway) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Gateway) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[5]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -837,7 +764,7 @@ type Dataplane_Networking_TransparentProxying struct {
 
 func (x *Dataplane_Networking_TransparentProxying) Reset() {
 	*x = Dataplane_Networking_TransparentProxying{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[6]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -849,7 +776,7 @@ func (x *Dataplane_Networking_TransparentProxying) String() string {
 func (*Dataplane_Networking_TransparentProxying) ProtoMessage() {}
 
 func (x *Dataplane_Networking_TransparentProxying) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[6]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -925,7 +852,7 @@ type Dataplane_Networking_Listener struct {
 
 func (x *Dataplane_Networking_Listener) Reset() {
 	*x = Dataplane_Networking_Listener{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[7]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -937,7 +864,7 @@ func (x *Dataplane_Networking_Listener) String() string {
 func (*Dataplane_Networking_Listener) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Listener) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[7]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1000,7 +927,7 @@ type Dataplane_Networking_Inbound_Health struct {
 
 func (x *Dataplane_Networking_Inbound_Health) Reset() {
 	*x = Dataplane_Networking_Inbound_Health{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[8]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1012,7 +939,7 @@ func (x *Dataplane_Networking_Inbound_Health) String() string {
 func (*Dataplane_Networking_Inbound_Health) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Inbound_Health) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[8]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1056,7 +983,7 @@ type Dataplane_Networking_Inbound_ServiceProbe struct {
 
 func (x *Dataplane_Networking_Inbound_ServiceProbe) Reset() {
 	*x = Dataplane_Networking_Inbound_ServiceProbe{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[9]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1068,7 +995,7 @@ func (x *Dataplane_Networking_Inbound_ServiceProbe) String() string {
 func (*Dataplane_Networking_Inbound_ServiceProbe) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Inbound_ServiceProbe) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[9]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1127,7 +1054,7 @@ type Dataplane_Networking_Inbound_ServiceProbe_Tcp struct {
 
 func (x *Dataplane_Networking_Inbound_ServiceProbe_Tcp) Reset() {
 	*x = Dataplane_Networking_Inbound_ServiceProbe_Tcp{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[10]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1139,7 +1066,7 @@ func (x *Dataplane_Networking_Inbound_ServiceProbe_Tcp) String() string {
 func (*Dataplane_Networking_Inbound_ServiceProbe_Tcp) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Inbound_ServiceProbe_Tcp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[10]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1173,7 +1100,7 @@ type Dataplane_Networking_Outbound_BackendRef struct {
 
 func (x *Dataplane_Networking_Outbound_BackendRef) Reset() {
 	*x = Dataplane_Networking_Outbound_BackendRef{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[11]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1185,7 +1112,7 @@ func (x *Dataplane_Networking_Outbound_BackendRef) String() string {
 func (*Dataplane_Networking_Outbound_BackendRef) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Outbound_BackendRef) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[11]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1257,7 +1184,7 @@ type Dataplane_Networking_TransparentProxying_ReachableBackendRef struct {
 
 func (x *Dataplane_Networking_TransparentProxying_ReachableBackendRef) Reset() {
 	*x = Dataplane_Networking_TransparentProxying_ReachableBackendRef{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[14]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1269,7 +1196,7 @@ func (x *Dataplane_Networking_TransparentProxying_ReachableBackendRef) String() 
 func (*Dataplane_Networking_TransparentProxying_ReachableBackendRef) ProtoMessage() {}
 
 func (x *Dataplane_Networking_TransparentProxying_ReachableBackendRef) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[14]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1329,7 +1256,7 @@ type Dataplane_Networking_TransparentProxying_ReachableBackends struct {
 
 func (x *Dataplane_Networking_TransparentProxying_ReachableBackends) Reset() {
 	*x = Dataplane_Networking_TransparentProxying_ReachableBackends{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[15]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1341,7 +1268,7 @@ func (x *Dataplane_Networking_TransparentProxying_ReachableBackends) String() st
 func (*Dataplane_Networking_TransparentProxying_ReachableBackends) ProtoMessage() {}
 
 func (x *Dataplane_Networking_TransparentProxying_ReachableBackends) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[15]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1364,81 +1291,15 @@ func (x *Dataplane_Networking_TransparentProxying_ReachableBackends) GetRefs() [
 	return nil
 }
 
-type Dataplane_Probes_Endpoint struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Inbound port is a port of the application from which we expose the
-	// endpoint.
-	InboundPort uint32 `protobuf:"varint,1,opt,name=inbound_port,json=inboundPort,proto3" json:"inbound_port,omitempty"`
-	// Inbound path is a path of the application from which we expose the
-	// endpoint. It is recommended to be as specific as possible.
-	InboundPath string `protobuf:"bytes,2,opt,name=inbound_path,json=inboundPath,proto3" json:"inbound_path,omitempty"`
-	// Path is a path on which we expose inbound path on the probes port.
-	Path          string `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Dataplane_Probes_Endpoint) Reset() {
-	*x = Dataplane_Probes_Endpoint{}
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[17]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Dataplane_Probes_Endpoint) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Dataplane_Probes_Endpoint) ProtoMessage() {}
-
-func (x *Dataplane_Probes_Endpoint) ProtoReflect() protoreflect.Message {
-	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[17]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Dataplane_Probes_Endpoint.ProtoReflect.Descriptor instead.
-func (*Dataplane_Probes_Endpoint) Descriptor() ([]byte, []int) {
-	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 1, 0}
-}
-
-func (x *Dataplane_Probes_Endpoint) GetInboundPort() uint32 {
-	if x != nil {
-		return x.InboundPort
-	}
-	return 0
-}
-
-func (x *Dataplane_Probes_Endpoint) GetInboundPath() string {
-	if x != nil {
-		return x.InboundPath
-	}
-	return ""
-}
-
-func (x *Dataplane_Probes_Endpoint) GetPath() string {
-	if x != nil {
-		return x.Path
-	}
-	return ""
-}
-
 var File_api_mesh_v1alpha1_dataplane_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\n" +
-	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17validate/validate.proto\"\xd4\x1e\n" +
+	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x17validate/validate.proto\"\xd2\x1c\n" +
 	"\tDataplane\x12H\n" +
 	"\n" +
 	"networking\x18\x01 \x01(\v2(.kuma.mesh.v1alpha1.Dataplane.NetworkingR\n" +
-	"networking\x12<\n" +
-	"\x06probes\x18\x03 \x01(\v2$.kuma.mesh.v1alpha1.Dataplane.ProbesR\x06probes\x1a\xfc\x1a\n" +
+	"networking\x1a\xfc\x1a\n" +
 	"\n" +
 	"Networking\x12\x18\n" +
 	"\aaddress\x18\x05 \x01(\tR\aaddress\x12J\n" +
@@ -1531,16 +1392,9 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"ZoneEgress\x10\x02\" \n" +
 	"\x05State\x12\t\n" +
 	"\x05Ready\x10\x00\x12\f\n" +
-	"\bNotReady\x10\x01J\x04\b\x06\x10\aJ\x04\b\a\x10\b\x1a\xcf\x01\n" +
-	"\x06Probes\x12\x12\n" +
-	"\x04port\x18\x01 \x01(\rR\x04port\x12K\n" +
-	"\tendpoints\x18\x02 \x03(\v2-.kuma.mesh.v1alpha1.Dataplane.Probes.EndpointR\tendpoints\x1ad\n" +
-	"\bEndpoint\x12!\n" +
-	"\finbound_port\x18\x01 \x01(\rR\vinboundPort\x12!\n" +
-	"\finbound_path\x18\x02 \x01(\tR\vinboundPath\x12\x12\n" +
-	"\x04path\x18\x03 \x01(\tR\x04path:_\xaa\x8c\x89\xa6\x01Y\n" +
+	"\bNotReady\x10\x01J\x04\b\x06\x10\aJ\x04\b\a\x10\b:_\xaa\x8c\x89\xa6\x01Y\n" +
 	"\x11DataplaneResource\x12\tDataplane\"\x04mesh:\v\n" +
-	"\tdataplaneR\x16model.ZoneToGlobalFlagX\x01\x90\x01\x01\x9a\x01\x02dp\xa0\x01\x01\xa8\x01\x01J\x04\b\x02\x10\x03R\ametricsB-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
+	"\tdataplaneR\x16model.ZoneToGlobalFlagX\x01\x90\x01\x01\x9a\x01\x02dp\xa0\x01\x01\xa8\x01\x01J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04R\ametricsR\x06probesB-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_dataplane_proto_rawDescOnce sync.Once
@@ -1555,7 +1409,7 @@ func file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP() []byte {
 }
 
 var file_api_mesh_v1alpha1_dataplane_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_api_mesh_v1alpha1_dataplane_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_api_mesh_v1alpha1_dataplane_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_api_mesh_v1alpha1_dataplane_proto_goTypes = []any{
 	(Dataplane_Networking_Inbound_State)(0),                    // 0: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.State
 	(Dataplane_Networking_Gateway_GatewayType)(0),              // 1: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.GatewayType
@@ -1564,60 +1418,56 @@ var file_api_mesh_v1alpha1_dataplane_proto_goTypes = []any{
 	(Dataplane_Networking_Listener_State)(0),                   // 4: kuma.mesh.v1alpha1.Dataplane.Networking.Listener.State
 	(*Dataplane)(nil),                                          // 5: kuma.mesh.v1alpha1.Dataplane
 	(*Dataplane_Networking)(nil),                               // 6: kuma.mesh.v1alpha1.Dataplane.Networking
-	(*Dataplane_Probes)(nil),                                   // 7: kuma.mesh.v1alpha1.Dataplane.Probes
-	(*Dataplane_Networking_Inbound)(nil),                       // 8: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound
-	(*Dataplane_Networking_Outbound)(nil),                      // 9: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound
-	(*Dataplane_Networking_Gateway)(nil),                       // 10: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway
-	(*Dataplane_Networking_TransparentProxying)(nil),           // 11: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying
-	(*Dataplane_Networking_Listener)(nil),                      // 12: kuma.mesh.v1alpha1.Dataplane.Networking.Listener
-	(*Dataplane_Networking_Inbound_Health)(nil),                // 13: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.Health
-	(*Dataplane_Networking_Inbound_ServiceProbe)(nil),          // 14: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe
-	(*Dataplane_Networking_Inbound_ServiceProbe_Tcp)(nil),      // 15: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.Tcp
-	(*Dataplane_Networking_Outbound_BackendRef)(nil),           // 16: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef
-	nil, // 17: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef.LabelsEntry
-	nil, // 18: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.TagsEntry
-	(*Dataplane_Networking_TransparentProxying_ReachableBackendRef)(nil), // 19: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef
-	(*Dataplane_Networking_TransparentProxying_ReachableBackends)(nil),   // 20: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends
-	nil,                               // 21: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.LabelsEntry
-	(*Dataplane_Probes_Endpoint)(nil), // 22: kuma.mesh.v1alpha1.Dataplane.Probes.Endpoint
-	(*EnvoyAdmin)(nil),                // 23: kuma.mesh.v1alpha1.EnvoyAdmin
-	(*durationpb.Duration)(nil),       // 24: google.protobuf.Duration
-	(*wrapperspb.UInt32Value)(nil),    // 25: google.protobuf.UInt32Value
+	(*Dataplane_Networking_Inbound)(nil),                       // 7: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound
+	(*Dataplane_Networking_Outbound)(nil),                      // 8: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound
+	(*Dataplane_Networking_Gateway)(nil),                       // 9: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway
+	(*Dataplane_Networking_TransparentProxying)(nil),           // 10: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying
+	(*Dataplane_Networking_Listener)(nil),                      // 11: kuma.mesh.v1alpha1.Dataplane.Networking.Listener
+	(*Dataplane_Networking_Inbound_Health)(nil),                // 12: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.Health
+	(*Dataplane_Networking_Inbound_ServiceProbe)(nil),          // 13: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe
+	(*Dataplane_Networking_Inbound_ServiceProbe_Tcp)(nil),      // 14: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.Tcp
+	(*Dataplane_Networking_Outbound_BackendRef)(nil),           // 15: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef
+	nil, // 16: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef.LabelsEntry
+	nil, // 17: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.TagsEntry
+	(*Dataplane_Networking_TransparentProxying_ReachableBackendRef)(nil), // 18: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef
+	(*Dataplane_Networking_TransparentProxying_ReachableBackends)(nil),   // 19: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends
+	nil,                            // 20: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.LabelsEntry
+	(*EnvoyAdmin)(nil),             // 21: kuma.mesh.v1alpha1.EnvoyAdmin
+	(*durationpb.Duration)(nil),    // 22: google.protobuf.Duration
+	(*wrapperspb.UInt32Value)(nil), // 23: google.protobuf.UInt32Value
 }
 var file_api_mesh_v1alpha1_dataplane_proto_depIdxs = []int32{
 	6,  // 0: kuma.mesh.v1alpha1.Dataplane.networking:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking
-	7,  // 1: kuma.mesh.v1alpha1.Dataplane.probes:type_name -> kuma.mesh.v1alpha1.Dataplane.Probes
-	10, // 2: kuma.mesh.v1alpha1.Dataplane.Networking.gateway:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Gateway
-	8,  // 3: kuma.mesh.v1alpha1.Dataplane.Networking.inbound:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound
-	9,  // 4: kuma.mesh.v1alpha1.Dataplane.Networking.outbound:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound
-	11, // 5: kuma.mesh.v1alpha1.Dataplane.Networking.transparent_proxying:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying
-	23, // 6: kuma.mesh.v1alpha1.Dataplane.Networking.admin:type_name -> kuma.mesh.v1alpha1.EnvoyAdmin
-	12, // 7: kuma.mesh.v1alpha1.Dataplane.Networking.listeners:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Listener
-	22, // 8: kuma.mesh.v1alpha1.Dataplane.Probes.endpoints:type_name -> kuma.mesh.v1alpha1.Dataplane.Probes.Endpoint
-	13, // 9: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.health:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.Health
-	14, // 10: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.serviceProbe:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe
-	0,  // 11: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.state:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.State
-	16, // 12: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.backendRef:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef
-	18, // 13: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.tags:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.TagsEntry
-	1,  // 14: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.type:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.GatewayType
-	2,  // 15: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ip_family_mode:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.IpFamilyMode
-	20, // 16: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.reachable_backends:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends
-	3,  // 17: kuma.mesh.v1alpha1.Dataplane.Networking.Listener.type:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Listener.Type
-	4,  // 18: kuma.mesh.v1alpha1.Dataplane.Networking.Listener.state:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Listener.State
-	24, // 19: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.interval:type_name -> google.protobuf.Duration
-	24, // 20: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.timeout:type_name -> google.protobuf.Duration
-	25, // 21: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.unhealthy_threshold:type_name -> google.protobuf.UInt32Value
-	25, // 22: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.healthy_threshold:type_name -> google.protobuf.UInt32Value
-	15, // 23: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.tcp:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.Tcp
-	17, // 24: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef.labels:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef.LabelsEntry
-	25, // 25: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.port:type_name -> google.protobuf.UInt32Value
-	21, // 26: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.labels:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.LabelsEntry
-	19, // 27: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends.refs:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef
-	28, // [28:28] is the sub-list for method output_type
-	28, // [28:28] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	9,  // 1: kuma.mesh.v1alpha1.Dataplane.Networking.gateway:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Gateway
+	7,  // 2: kuma.mesh.v1alpha1.Dataplane.Networking.inbound:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound
+	8,  // 3: kuma.mesh.v1alpha1.Dataplane.Networking.outbound:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound
+	10, // 4: kuma.mesh.v1alpha1.Dataplane.Networking.transparent_proxying:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying
+	21, // 5: kuma.mesh.v1alpha1.Dataplane.Networking.admin:type_name -> kuma.mesh.v1alpha1.EnvoyAdmin
+	11, // 6: kuma.mesh.v1alpha1.Dataplane.Networking.listeners:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Listener
+	12, // 7: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.health:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.Health
+	13, // 8: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.serviceProbe:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe
+	0,  // 9: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.state:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.State
+	15, // 10: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.backendRef:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef
+	17, // 11: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.tags:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.TagsEntry
+	1,  // 12: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.type:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.GatewayType
+	2,  // 13: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ip_family_mode:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.IpFamilyMode
+	19, // 14: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.reachable_backends:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends
+	3,  // 15: kuma.mesh.v1alpha1.Dataplane.Networking.Listener.type:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Listener.Type
+	4,  // 16: kuma.mesh.v1alpha1.Dataplane.Networking.Listener.state:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Listener.State
+	22, // 17: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.interval:type_name -> google.protobuf.Duration
+	22, // 18: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.timeout:type_name -> google.protobuf.Duration
+	23, // 19: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.unhealthy_threshold:type_name -> google.protobuf.UInt32Value
+	23, // 20: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.healthy_threshold:type_name -> google.protobuf.UInt32Value
+	14, // 21: kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.tcp:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.Tcp
+	16, // 22: kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef.labels:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef.LabelsEntry
+	23, // 23: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.port:type_name -> google.protobuf.UInt32Value
+	20, // 24: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.labels:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef.LabelsEntry
+	18, // 25: kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends.refs:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef
+	26, // [26:26] is the sub-list for method output_type
+	26, // [26:26] is the sub-list for method input_type
+	26, // [26:26] is the sub-list for extension type_name
+	26, // [26:26] is the sub-list for extension extendee
+	0,  // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_api_mesh_v1alpha1_dataplane_proto_init() }
@@ -1632,7 +1482,7 @@ func file_api_mesh_v1alpha1_dataplane_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_mesh_v1alpha1_dataplane_proto_rawDesc), len(file_api_mesh_v1alpha1_dataplane_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   18,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

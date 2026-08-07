@@ -2,6 +2,7 @@ package probes
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -12,25 +13,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 )
 
-func ApplicationProbeProxyDisabled(pod *kube_core.Pod) (bool, error) {
-	appProbeProxyPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
-	if err != nil {
-		return false, err
-	}
-	return appProbeProxyPort == 0, nil
-}
-
-func SetupAppProbeProxies(pod *kube_core.Pod, log logr.Logger) error {
-	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
-	appProbeProxyPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
-	if err != nil {
-		return err
-	}
-	if appProbeProxyPort == 0 {
-		log.V(1).Info("skipping adding application probe proxies, because it's disabled")
-		return err
-	}
-
+func containersNeedingProbes(pod *kube_core.Pod) []kube_core.Container {
 	var containersNeedingProbes []kube_core.Container
 
 	var initContainerComesAfterKumaSidecar bool
@@ -46,11 +29,79 @@ func SetupAppProbeProxies(pod *kube_core.Pod, log logr.Logger) error {
 	}
 	for _, c := range pod.Spec.Containers {
 		if c.Name != util.KumaSidecarContainerName {
-			// we don't want to create virtual probes for Envoy container, because we generate real listener which is not protected by mTLS
+			// we don't want to proxy probes for the Envoy container itself
 			containersNeedingProbes = append(containersNeedingProbes, c)
 		}
 	}
-	for _, c := range containersNeedingProbes {
+	return containersNeedingProbes
+}
+
+// RealProbePorts returns the ports the pod's own containers use for their
+// Liveness/Readiness/Startup probes, resolving named container ports. It is
+// used to exclude those ports from mTLS interception when application probe
+// proxying is disabled, since in that case K8s probes hit them directly.
+// Unlike SetupAppProbeProxies, it doesn't mutate the pod's probes.
+func RealProbePorts(pod *kube_core.Pod) []uint32 {
+	var ports []uint32
+	seen := map[uint32]struct{}{}
+	for _, c := range containersNeedingProbes(pod) {
+		for _, probe := range []*kube_core.Probe{c.LivenessProbe, c.ReadinessProbe, c.StartupProbe} {
+			if probe == nil {
+				continue
+			}
+			port, ok := resolveProbePort(probe.ProbeHandler, c.Ports)
+			if !ok {
+				continue
+			}
+			if _, ok := seen[port]; ok {
+				continue
+			}
+			seen[port] = struct{}{}
+			ports = append(ports, port)
+		}
+	}
+	slices.Sort(ports)
+	return ports
+}
+
+// resolveProbePort returns the port a probe handler targets, resolving named
+// container ports, without mutating the probe.
+func resolveProbePort(handler kube_core.ProbeHandler, containerPorts []kube_core.ContainerPort) (uint32, bool) {
+	var portStr intstr.IntOrString
+	switch {
+	case handler.HTTPGet != nil:
+		portStr = handler.HTTPGet.Port
+	case handler.TCPSocket != nil:
+		portStr = handler.TCPSocket.Port
+	case handler.GRPC != nil:
+		return uint32(handler.GRPC.Port), true
+	default:
+		return 0, false
+	}
+
+	if portStr.IntValue() != 0 {
+		return uint32(portStr.IntValue()), true
+	}
+	for _, containerPort := range containerPorts {
+		if containerPort.Name != "" && containerPort.Name == portStr.String() {
+			return uint32(containerPort.ContainerPort), true
+		}
+	}
+	return 0, false
+}
+
+func SetupAppProbeProxies(pod *kube_core.Pod, log logr.Logger) error {
+	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
+	appProbeProxyPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
+	if err != nil {
+		return err
+	}
+	if appProbeProxyPort == 0 {
+		log.V(1).Info("skipping adding application probe proxies, because it's disabled")
+		return err
+	}
+
+	for _, c := range containersNeedingProbes(pod) {
 		portResolver := namedPortResolver(c.Ports)
 		if err := overrideProbe(c.LivenessProbe, appProbeProxyPort,
 			portResolver, c.Name, "liveness", log); err != nil {
@@ -134,15 +185,6 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 		return fmt.Sprintf("%d", port)
 	}
 
-	// scenarios of switching between virtual probes (vp) and application probe proxy (proxy):
-	// vp           proxy    	result
-	// Y            Y      	     proxy
-	// Y            N            proxy (default)
-	// disabled     N      	     N (disabled)
-	// not set      N      	     proxy (default)
-	// not set      Y - config   proxy
-	// not set      Y - pod      proxy
-
 	proxyPortAnno, proxyPortAnnoExists, err := metadata.Annotations(podAnnotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return err
@@ -168,23 +210,11 @@ func GetApplicationProbeProxyPort(
 	annotations metadata.Annotations,
 	defaultAppProbeProxyPort uint32,
 ) (uint32, error) {
-	// metadata.KumaApplicationProbeProxyPortAnnotation
-
-	// scenarios of switching between virtual probes (vp) and application probe proxy (proxy):
-	// vp           proxy    	result
-	// Y            Y      	     proxy
-	// Y            N            proxy (default)
-	// disabled     N      	     N (disabled)
-	// not set      N      	     proxy (default)
-	// not set      Y - config   proxy
-	// not set      Y - pod      proxy
-
 	proxyPort, proxyPortExist, err := annotations.GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return 0, err
 	}
 
-	vpEnabled, vpExist, _ := annotations.GetEnabled(metadata.KumaVirtualProbesAnnotation)
 	gwEnabled, _, _ := annotations.GetEnabled(metadata.KumaGatewayAnnotation)
 
 	switch {
@@ -194,12 +224,6 @@ func GetApplicationProbeProxyPort(
 		return 0, nil
 	case proxyPortExist:
 		return proxyPort, nil
-	case vpExist && vpEnabled:
-		// If virtual probes are explicitly enabled, return default to support both
-		return defaultAppProbeProxyPort, nil
-	case vpExist && !vpEnabled:
-		// If virtual probes are explicitly disabled, disable app probe proxy
-		return 0, nil
 	default:
 		return defaultAppProbeProxyPort, nil
 	}

@@ -59,12 +59,6 @@ var _ = Describe("annotation deprecation", func() {
 				Expect(deprecateMessage).To(Equal(-1))
 			}
 		},
-		Entry("kuma.io/virtual-probes - yes", testCase{
-			annotationKey:            metadata.KumaVirtualProbesAnnotation,
-			annotationValue:          "yes",
-			expectedValueDeprecated:  true,
-			expectedValueReplacement: "true",
-		}),
 		Entry("kuma.io/gateway - enabled", testCase{
 			annotationKey:           metadata.KumaGatewayAnnotation,
 			annotationValue:         "enabled",
@@ -92,12 +86,6 @@ var _ = Describe("annotation deprecation", func() {
 				))
 			}
 		},
-		Entry("kuma.io/virtual-probes - deprecated", testCase{
-			annotationKey:                 metadata.KumaVirtualProbesAnnotation,
-			annotationValue:               "enabled",
-			expectedKeyDeprecated:         true,
-			expectedKeyDeprecationMessage: fmt.Sprintf("'%s' will be removed in a future release", metadata.KumaVirtualProbesAnnotation),
-		}),
 		Entry("kuma.io/sidecar-injection - deprecated", testCase{
 			annotationKey:                 metadata.KumaSidecarInjectionAnnotation,
 			annotationValue:               "enabled",

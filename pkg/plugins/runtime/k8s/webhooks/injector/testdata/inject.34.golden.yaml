@@ -9,8 +9,6 @@ metadata:
     kuma.io/init-first: "true"
     kuma.io/sidecar-injected: "true"
     kuma.io/transparent-proxying-ip-family-mode: ipv4
-    kuma.io/virtual-probes: disabled
-    kuma.io/virtual-probes-port: "9000"
     traffic.kuma.io/transparent-proxy-config: |
       cniMode: true
       ipFamilyMode: ipv4

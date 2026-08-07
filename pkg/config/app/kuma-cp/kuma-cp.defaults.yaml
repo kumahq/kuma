@@ -269,12 +269,6 @@ runtime:
         labels:
           openshift.io/build.name: "*"
           openshift.io/deployer-pod-for.name: "*"
-      # (Deprecated, set ApplicationProbeProxyPort to 0 to disable probe proxying) VirtualProbesEnabled enables automatic converting HttpGet probes to virtual.
-      #	Virtual probe serves on sub-path of insecure port 'virtualProbesPort',
-      #	i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
-      virtualProbesEnabled: false # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED
-      # (Deprecated, use ApplicationProbeProxyPort instead) VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
-      virtualProbesPort: 9000 # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT
       # ApplicationProbeProxyPort is a port for proxying application probes, it is not secured by mTLS. By setting to 0, probe proxying will be disabled.
       applicationProbeProxyPort: 9001 # ENV: KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT
       # CaCertFile is CA certificate which will be used to verify a connection to the control plane.
@@ -589,6 +583,14 @@ multizone:
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF
       # If true, Global CP logs full DeltaDiscoveryResponse payloads received from Zone CPs at V(1) instead of compact summaries.
       logPayloads: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_LOG_PAYLOADS
+      # Event-based snapshot watchdog timing for Global KDS.
+      eventBasedWatchdog:
+        # How often changed resources are flushed to a KDS snapshot.
+        flushInterval: 1s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
+        # How often a full KDS resync is scheduled.
+        fullResyncInterval: 1s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
+        # If true, the initial full resync is delayed by a random duration up to FullResyncInterval.
+        delayFullResync: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
       tracing:
         # Defines whether tracing is enabled for all gRPC methods
         # of GlobalKDSServer and KDSSyncService or completely disabled
@@ -616,6 +618,14 @@ multizone:
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF
       # If true, Zone CP logs full DeltaDiscoveryResponse payloads received from Global CP at V(1) instead of compact summaries.
       logPayloads: false # ENV: KUMA_MULTIZONE_ZONE_KDS_LOG_PAYLOADS
+      # Event-based snapshot watchdog timing for Zone KDS.
+      eventBasedWatchdog:
+        # How often changed resources are flushed to a KDS snapshot.
+        flushInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
+        # How often a full KDS resync is scheduled.
+        fullResyncInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
+        # If true, the initial full resync is delayed by a random duration up to FullResyncInterval.
+        delayFullResync: false # ENV: KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
     # disableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
     disableOriginLabelValidation: false # ENV: KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION
 # Diagnostics configuration
@@ -815,14 +825,6 @@ experimental:
   # The drawback is that you cannot use filtered out tags for traffic routing.
   # If empty, no filter is applied.
   ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
-  # KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
-  kdsEventBasedWatchdog:
-    # How often we flush changes when experimental event based watchdog is used.
-    flushInterval: 1s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
-    # How often we schedule full KDS resync when experimental event based watchdog is used.
-    fullResyncInterval: 1s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
-    # If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
-    delayFullResync: false # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
 tracing:
   openTelemetry:
     endpoint: "" # e.g. otel-collector:4317

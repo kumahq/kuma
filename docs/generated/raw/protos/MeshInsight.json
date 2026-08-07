@@ -17,10 +17,6 @@
                     "additionalProperties": true,
                     "description": "mTLS statistics"
                 },
-                "services": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.ServiceStat",
-                    "additionalProperties": true
-                },
                 "dataplanesByType": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplanesByType",
                     "additionalProperties": true
@@ -138,23 +134,6 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Resource Stat"
-        },
-        "kuma.mesh.v1alpha1.MeshInsight.ServiceStat": {
-            "properties": {
-                "total": {
-                    "type": "integer"
-                },
-                "internal": {
-                    "type": "integer"
-                },
-                "external": {
-                    "type": "integer"
-                }
-            },
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Service Stat",
-            "description": "ServiceStat defines statistics of mesh services"
         }
     }
 }

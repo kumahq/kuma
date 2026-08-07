@@ -4,9 +4,6 @@ metadata:
   labels:
     app: example
     version: "0.1"
-  annotations:
-    kuma.io/virtual-probes: enabled
-    kuma.io/virtual-probes-port: 19000
 spec:
   containers:
     - readinessProbe:

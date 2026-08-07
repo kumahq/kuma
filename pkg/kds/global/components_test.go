@@ -126,7 +126,6 @@ var _ = Describe("Global Sync", func() {
 			mesh.DataplaneInsightType:  true,
 			mesh.DataplaneType:         true,
 			mesh.DataplaneOverviewType: true,
-			mesh.ServiceOverviewType:   true,
 			workload_api.WorkloadType:  true,
 		}
 
