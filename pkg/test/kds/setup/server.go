@@ -280,6 +280,8 @@ func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 func (b *KdsServerBuilder) AsZone(name string) *KdsServerBuilder {
 	b.rt.cfg.Multizone.Zone.Name = name
 	b.rt.cfg.Mode = config_core.Zone
+	b.rt.cfg.Multizone.Zone.KDS.EventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+	b.rt.cfg.Multizone.Zone.KDS.EventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 	b.providedTypes = registry.Global().ObjectTypes(model.SentFromZoneToGlobal())
 	b.rt.RuntimeInfo = runtime.NewRuntimeInfo("zone-cp", b.rt.cfg.Mode)
 	return b
