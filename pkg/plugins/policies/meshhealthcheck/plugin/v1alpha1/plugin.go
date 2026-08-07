@@ -6,16 +6,11 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
-	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/plugin/xds"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -41,12 +36,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	clusters := policies_xds.GatherClusters(rs)
-
-	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds, proxy.Dataplane, ctx.Mesh); err != nil {
-		return err
-	}
-
 	if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh, labelTagSet(proxy.Dataplane)); err != nil {
 		return err
 	}
@@ -63,53 +52,6 @@ func labelTagSet(dataplane *core_mesh.DataplaneResource) mesh_proto.MultiValueTa
 		data[key] = []string{value}
 	}
 	return mesh_proto.MultiValueTagSetFrom(data)
-}
-
-func applyToOutbounds(
-	rules core_rules.ToRules,
-	outboundClusters map[string]*envoy_cluster.Cluster,
-	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
-	outbounds xds_types.Outbounds,
-	dataplane *core_mesh.DataplaneResource,
-	meshCtx xds_context.MeshContext,
-) error {
-	targetedClusters := policies_xds.GatherTargetedClusters(
-		outbounds,
-		outboundSplitClusters,
-		outboundClusters,
-	)
-
-	for cluster, serviceName := range targetedClusters {
-		if err := configure(dataplane, rules.Rules, subsetutils.KumaServiceTagElement(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func configure(
-	dataplane *core_mesh.DataplaneResource,
-	rules core_rules.Rules,
-	element subsetutils.Element,
-	protocol core_meta.Protocol,
-	cluster *envoy_cluster.Cluster,
-) error {
-	conf := core_rules.ComputeConf[api.Conf](rules, element)
-	if conf == nil {
-		return nil
-	}
-
-	configurer := plugin_xds.Configurer{
-		Conf:     *conf,
-		Protocol: protocol,
-		Tags:     labelTagSet(dataplane),
-	}
-
-	if err := configurer.Configure(cluster); err != nil {
-		return err
-	}
-	return nil
 }
 
 func applyToRealResource(meshCtx xds_context.MeshContext, rules outbound.ResourceRules, tagSet mesh_proto.MultiValueTagSet, uri kri.Identifier, resourcesByType core_xds.ResourcesByType) error {

@@ -45,13 +45,12 @@ var (
 var _ = Describe("GroupByAttachment", func() {
 	type testCase struct {
 		matchedPolicies *core_xds.MatchedPolicies
-		dpNetworking    *mesh_proto.Dataplane_Networking
 		expected        inspect.AttachmentMap
 	}
 
 	DescribeTable("should generate attachmentMap based on MatchedPolicies",
 		func(given testCase) {
-			actual := inspect.GroupByAttachment(given.matchedPolicies, given.dpNetworking)
+			actual := inspect.GroupByAttachment(given.matchedPolicies)
 			for k := range actual {
 				Expect(actual[k]).To(Equal(given.expected[k]), fmt.Sprintf("attachement %+v", k))
 			}
@@ -89,25 +88,6 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 			},
-			dpNetworking: &mesh_proto.Dataplane_Networking{
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-					{
-						Address:     "192.168.0.1",
-						Port:        80,
-						ServicePort: 81,
-					},
-					{
-						Address:     "192.168.0.2",
-						Port:        80,
-						ServicePort: 81,
-					},
-					{
-						Address:     "192.168.0.2",
-						Port:        90,
-						ServicePort: 91,
-					},
-				},
-			},
 			// Inbound attachments no longer carry a Service label (inbound
 			// tags are no longer read), so it's empty for every Inbound key.
 			expected: inspect.AttachmentMap{
@@ -135,45 +115,6 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 		}),
 		Entry("group by outbounds", testCase{
-			dpNetworking: &mesh_proto.Dataplane_Networking{
-				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-					{
-						Address: "192.168.0.1",
-						Port:    80,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "redis",
-						},
-					},
-					{
-						Address: "192.168.0.2",
-						Port:    80,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "postgres",
-						},
-					},
-					{
-						Address: "192.168.0.2",
-						Port:    90,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "mysql",
-						},
-					},
-					{
-						Address: "192.168.0.3",
-						Port:    90,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "elastic",
-						},
-					},
-					{
-						Address: "192.168.0.4",
-						Port:    90,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "cockroachdb",
-						},
-					},
-				},
-			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					meshexternalservice_api.MeshExternalServiceType: {
@@ -209,22 +150,22 @@ var _ = Describe("GroupByAttachment", func() {
 				},
 			},
 			expected: inspect.AttachmentMap{
-				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"}: {
+				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.1:80"}: {
 					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
 						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta1},
 					},
 				},
-				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:80", Service: "postgres"}: {
+				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:80"}: {
 					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
 						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta2},
 					},
 				},
-				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:90", Service: "mysql"}: {
+				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:90"}: {
 					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
 						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta3},
 					},
 				},
-				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.4:90", Service: "cockroachdb"}: {
+				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.4:90"}: {
 					core_mesh.ZoneIngressType: []core_model.Resource{
 						&core_mesh.ZoneIngressResource{Meta: meta6},
 					},
@@ -238,7 +179,6 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 		}),
 		Entry("group by service", testCase{
-			dpNetworking: &mesh_proto.Dataplane_Networking{},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					core_mesh.ZoneIngressType: {
@@ -282,13 +222,12 @@ var _ = Describe("GroupByAttachment", func() {
 var _ = Describe("GroupByPolicy", func() {
 	type testCase struct {
 		matchedPolicies *core_xds.MatchedPolicies
-		dpNetworking    *mesh_proto.Dataplane_Networking
 		expected        inspect.AttachmentsByPolicy
 	}
 
 	DescribeTable("should generate AttachmentsByPolicy map based on MatchedPolicies",
 		func(given testCase) {
-			actual := inspect.GroupByPolicy(given.matchedPolicies, given.dpNetworking)
+			actual := inspect.GroupByPolicy(given.matchedPolicies)
 			for k := range given.expected {
 				Expect(actual[k]).To(Equal(given.expected[k]), fmt.Sprintf("policy %+v", k))
 			}
@@ -298,25 +237,6 @@ var _ = Describe("GroupByPolicy", func() {
 			expected:        inspect.AttachmentsByPolicy{},
 		}),
 		Entry("group by inbound policies", testCase{
-			dpNetworking: &mesh_proto.Dataplane_Networking{
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-					{
-						Address:     "192.168.0.1",
-						Port:        80,
-						ServicePort: 81,
-					},
-					{
-						Address:     "192.168.0.2",
-						Port:        90,
-						ServicePort: 91,
-					},
-					{
-						Address:     "192.168.0.3",
-						Port:        80,
-						ServicePort: 81,
-					},
-				},
-			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					meshexternalservice_api.MeshExternalServiceType: {
@@ -357,24 +277,6 @@ var _ = Describe("GroupByPolicy", func() {
 			},
 		}),
 		Entry("group by outbound policies", testCase{
-			dpNetworking: &mesh_proto.Dataplane_Networking{
-				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-					{
-						Address: "192.168.0.1",
-						Port:    80,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "redis",
-						},
-					},
-					{
-						Address: "192.168.0.2",
-						Port:    90,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "postgres",
-						},
-					},
-				},
-			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					meshexternalservice_api.MeshExternalServiceType: {
@@ -398,42 +300,12 @@ var _ = Describe("GroupByPolicy", func() {
 					Type: meshexternalservice_api.MeshExternalServiceType,
 					Key:  core_model.ResourceKey{Name: "t-1", Mesh: "mesh-1"},
 				}: {
-					{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"},
-					{Type: inspect.Outbound, Name: "192.168.0.2:90", Service: "postgres"},
+					{Type: inspect.Outbound, Name: "192.168.0.1:80"},
+					{Type: inspect.Outbound, Name: "192.168.0.2:90"},
 				},
 			},
 		}),
 		Entry("group by policy that exists both for inbounds and outbounds", testCase{
-			dpNetworking: &mesh_proto.Dataplane_Networking{
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-					{
-						Address:     "192.168.0.1",
-						Port:        80,
-						ServicePort: 81,
-					},
-					{
-						Address:     "192.168.0.2",
-						Port:        80,
-						ServicePort: 81,
-					},
-				},
-				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-					{
-						Address: "192.168.0.3",
-						Port:    80,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "redis",
-						},
-					},
-					{
-						Address: "192.168.0.4",
-						Port:    80,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "postgres",
-						},
-					},
-				},
-			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					core_mesh.ZoneIngressType: {
@@ -460,7 +332,7 @@ var _ = Describe("GroupByPolicy", func() {
 					Key:  core_model.ResourceKey{Name: "rl-3", Mesh: "mesh-1"},
 				}: {
 					{Type: inspect.Inbound, Name: "192.168.0.1:80:81"},
-					{Type: inspect.Outbound, Name: "192.168.0.3:80", Service: "redis"},
+					{Type: inspect.Outbound, Name: "192.168.0.3:80"},
 				},
 			},
 		}),

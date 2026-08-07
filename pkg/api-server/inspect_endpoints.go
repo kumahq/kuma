@@ -100,7 +100,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 		}
 
 		inner := api_server_types.NewDataplaneInspectEntryList()
-		inner.Items = append(inner.Items, newDataplaneInspectResponse(&proxy.Policies, proxy.Dataplane)...)
+		inner.Items = append(inner.Items, newDataplaneInspectResponse(&proxy.Policies)...)
 		inner.Total = uint32(len(inner.Items))
 		result := api_server_types.NewDataplaneInspectResponse(inner)
 		if err := response.WriteAsJson(result); err != nil {
@@ -163,7 +163,7 @@ func inspectPolicies(
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return
 			}
-			for policy, attachments := range inspect.GroupByPolicy(&proxy.Policies, dp.Spec.Networking) {
+			for policy, attachments := range inspect.GroupByPolicy(&proxy.Policies) {
 				if policy.Type != resType || policy.Key.Name != policyName || policy.Key.Mesh != meshName {
 					continue
 				}
@@ -190,8 +190,8 @@ func inspectPolicies(
 	}
 }
 
-func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *core_mesh.DataplaneResource) []*api_server_types.DataplaneInspectEntry {
-	attachmentMap := inspect.GroupByAttachment(matchedPolicies, dp.Spec.Networking)
+func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies) []*api_server_types.DataplaneInspectEntry {
+	attachmentMap := inspect.GroupByAttachment(matchedPolicies)
 
 	entries := make([]*api_server_types.DataplaneInspectEntry, 0, len(attachmentMap))
 	attachments := []inspect.Attachment{}
