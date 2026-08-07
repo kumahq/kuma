@@ -865,6 +865,12 @@ experimental:
   # The drawback is that you cannot use filtered out tags for traffic routing.
   # If empty, no filter is applied.
   ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
+  # If true, the Envoy admin listener on zone proxies also serves /stats/prometheus without mTLS,
+  # so Prometheus can scrape Envoy stats off the proxy IP. Only that path is added, the rest of the
+  # Admin API still requires mTLS. Mainly for standalone ZoneIngress/ZoneEgress, which MeshMetric
+  # does not apply to. The stats dump lists every upstream cluster name and is rendered on Envoy's
+  # main thread, so restrict the admin port at the network level when enabling this.
+  exposeEnvoyAdminStats: false # ENV: KUMA_EXPERIMENTAL_EXPOSE_ENVOY_ADMIN_STATS
   # KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
   kdsEventBasedWatchdog:
     # If true, then experimental event based watchdog to generate KDS snapshot is used.

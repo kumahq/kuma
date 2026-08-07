@@ -126,17 +126,25 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	}
 	plaintextEndpointPaths := staticEndpointPaths
 	if xdsCtx.ControlPlane.GetExposeEnvoyAdminStats() && isZoneProxy(proxy) {
-		// Serve Envoy stats without mTLS so a Prometheus server can scrape them off
-		// the proxy's IP. This is the only Admin API path added to the plaintext filter
-		// chain: the route is a prefix match with an identity prefix rewrite, so nothing
-		// outside /stats/prometheus* can be reached through it.
+		// Serve Envoy stats without mTLS so a Prometheus server can scrape them off the
+		// proxy's IP. This is the only Admin API path added to the plaintext filter chain.
+		//
+		// Why no other Admin API endpoint becomes reachable: the prefix match guarantees
+		// every forwarded path starts with /stats/prometheus, and Envoy's admin server
+		// selects handlers by raw prefix. This HCM does not set normalize_path, so a
+		// request like /stats/prometheus/../../quitquitquit does match the route and is
+		// forwarded with the dot segments intact; the admin server still resolves no
+		// handler other than the stats one for it. The guarantee is the prefix plus admin
+		// handler matching, not path normalization.
 		//
 		// Restricted to zone proxies: they are not mesh-scoped, so MeshMetric never
 		// matches them and there is no other way to scrape their stats. Data plane
 		// proxies are left alone because MeshMetric already covers them.
 		//
-		// Appended to a fresh slice, never to staticEndpointPaths, so that enabling this
-		// for one proxy cannot leak into proxies generated afterwards.
+		// append() targets a fresh slice so it cannot write into the spare capacity of
+		// staticEndpointPaths. The clone is shallow though: the /ready element is still
+		// the shared pointer that the loop above writes ClusterName into, so the
+		// isolation here covers the appended element only.
 		plaintextEndpointPaths = append(slices.Clone(staticEndpointPaths), &envoy_common.StaticEndpointPath{
 			ClusterName: envoyAdminClusterName,
 			Path:        statsPrometheusPath,

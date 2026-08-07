@@ -501,10 +501,18 @@ type ExperimentalConfig struct {
 	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
 	// If true, inbound tags are disabled. CP runs without relying on inbound tags.
 	InboundTagsDisabled bool `json:"inboundTagsDisabled" envconfig:"KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED"`
-	// If true, the Envoy admin listener also serves /stats/prometheus without mTLS,
-	// so a Prometheus server can scrape Envoy stats off the proxy's IP. Only that
-	// path is added; the rest of the Admin API still requires mTLS. Mainly useful for
-	// scraping standalone ZoneIngress/ZoneEgress, which MeshMetric does not apply to.
+	// If true, the Envoy admin listener on zone proxies also serves /stats/prometheus
+	// without mTLS, so a Prometheus server can scrape Envoy stats off the proxy's IP.
+	// Only that path is added; the rest of the Admin API still requires mTLS. Mainly
+	// useful for scraping standalone ZoneIngress/ZoneEgress, which MeshMetric does not
+	// apply to.
+	//
+	// Two costs to weigh before enabling: the stats dump enumerates every upstream
+	// cluster name, so effectively every service in the mesh, to anyone who can reach
+	// the zone proxy on the admin port; and Envoy renders it on the main dispatcher
+	// thread, so an unauthenticated request loop is real CPU cost on a zone ingress
+	// fronting a large mesh. Restrict access to the admin port at the network level
+	// (on Kubernetes, a NetworkPolicy scoped to your Prometheus).
 	ExposeEnvoyAdminStats bool `json:"exposeEnvoyAdminStats" envconfig:"KUMA_EXPERIMENTAL_EXPOSE_ENVOY_ADMIN_STATS"`
 }
 
