@@ -112,7 +112,6 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 
 // inspectMeshServiceDataplanes provides standardized /_dataplanes endpoint following MeshGateway/MeshGatewayRoute pattern.
 // Uses exact tag matching via meshservice.MatchesDataplane() to fix multizone aggregation issues.
-// Legacy endpoint /meshes/{mesh}/meshservices/{name}/_resources/dataplanes (inspect_mesh_service.go:38) remains for backward compatibility.
 func inspectMeshServiceDataplanes(
 	rm manager.ResourceManager,
 	resourceAccess access.ResourceAccess,
