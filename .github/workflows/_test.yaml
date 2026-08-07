@@ -10,6 +10,9 @@ on:
       IS_RELEASE_TAG:
         required: true
         type: boolean
+      IS_PULL_REQUEST:
+        required: true
+        type: boolean
 permissions:
   contents: read
 env:
@@ -23,6 +26,8 @@ jobs:
     timeout-minutes: 30
     if: ${{ !(contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || inputs.IS_RELEASE_TAG) }}
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    env:
+      UNIT_CLEAN_TESTCACHE: ${{ inputs.IS_PULL_REQUEST && 'false' || 'true' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -33,6 +38,16 @@ jobs:
           version: 2026.5.7
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      - name: Cache Go build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-test-race-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-test-race-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-
+            go-test-race-${{ runner.os }}-
       - run: |
           make test
   gen_e2e_matrix:
