@@ -4,9 +4,6 @@ metadata:
   name: busybox
   labels:
     run: busybox
-  annotations:
-    prometheus.metrics.kuma.io/path: /custom-metrics
-    prometheus.metrics.kuma.io/port: "5678"
 spec:
   volumes:
   - name: default-token-w7dxf

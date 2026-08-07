@@ -21,17 +21,6 @@ func (r *ZoneIngressResource) UsesInboundInterface(address net.IP, port uint32) 
 	return false
 }
 
-func (r *ZoneIngressResource) IsRemoteIngress(localZone string) bool {
-	return r.Spec.GetZone() != "" && r.Spec.GetZone() != localZone
-}
-
-func (r *ZoneIngressResource) HasPublicAddress() bool {
-	if r == nil {
-		return false
-	}
-	return r.Spec.GetNetworking().GetAdvertisedAddress() != "" && r.Spec.GetNetworking().GetAdvertisedPort() != 0
-}
-
 func (r *ZoneIngressResource) AdminAddress(defaultAdminPort uint32) string {
 	if r == nil {
 		return ""

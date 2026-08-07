@@ -23,19 +23,19 @@ func (r *MeshRateLimitResource) validate() error {
 		verr.AddViolationAt(path, "at least one of 'to' or 'rules' has to be defined")
 	}
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
-	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
+	topLevel := r.Spec.TargetRef.ToTargetRef()
 	verr.AddErrorAt(path, validateRules(topLevel, pointer.Deref(r.Spec.Rules)))
 	verr.AddErrorAt(path, validateTo(topLevel, pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
-func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TopLevelTargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
 	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.Dataplane,
@@ -44,7 +44,7 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, isI
 			IsInboundPolicy:            isInboundPolicy,
 		})
 	default:
-		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.Dataplane,

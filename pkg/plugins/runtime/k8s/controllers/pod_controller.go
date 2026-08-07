@@ -24,7 +24,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
@@ -70,24 +69,6 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 		}
 		log.Error(err, "unable to fetch Pod")
 		return kube_ctrl.Result{}, err
-	}
-
-	// for Pods marked with ingress annotation special type of Dataplane will be injected
-	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaIngressAnnotation)
-	if err != nil {
-		return kube_ctrl.Result{}, err
-	}
-	if exist && enabled {
-		return kube_ctrl.Result{}, r.reconcileZoneIngress(ctx, pod, log)
-	}
-
-	// for Pods marked with egress annotation special type of Dataplane will be injected
-	egressEnabled, egressExist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaEgressAnnotation)
-	if err != nil {
-		return kube_ctrl.Result{}, err
-	}
-	if egressExist && egressEnabled {
-		return kube_ctrl.Result{}, r.reconcileZoneEgress(ctx, pod, log)
 	}
 
 	// only Pods with injected Kuma need a Dataplane descriptor
@@ -153,50 +134,6 @@ func (r *PodReconciler) deleteObjectIfExist(ctx context.Context, object k8s_mode
 		return errors.Wrapf(err, "could not delete %v %s/%s", object.GetObjectKind(), object.GetName(), object.GetNamespace())
 	}
 	log.Info("Object deleted")
-	return nil
-}
-
-func (r *PodReconciler) reconcileZoneIngress(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
-	if pod.Status.PodIP == "" {
-		zi := &mesh_k8s.ZoneIngress{
-			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
-		}
-		return r.deleteObjectIfExist(ctx, zi, "pod IP is empty", log)
-	}
-
-	if pod.Namespace != r.SystemNamespace {
-		return errors.Errorf("Ingress can only be deployed in system namespace %q", r.SystemNamespace)
-	}
-	services, err := r.findMatchingServices(ctx, pod)
-	if err != nil {
-		return err
-	}
-	err = r.createOrUpdateIngress(ctx, pod, services)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *PodReconciler) reconcileZoneEgress(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
-	if pod.Status.PodIP == "" {
-		zi := &mesh_k8s.ZoneEgress{
-			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
-		}
-		return r.deleteObjectIfExist(ctx, zi, "pod IP is empty", log)
-	}
-
-	if pod.Namespace != r.SystemNamespace {
-		return errors.Errorf("Egress can only be deployed in system namespace %q", r.SystemNamespace)
-	}
-	services, err := r.findMatchingServices(ctx, pod)
-	if err != nil {
-		return err
-	}
-	err = r.createOrUpdateEgress(ctx, pod, services)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -304,74 +241,6 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	case kube_controllerutil.OperationResultUpdated:
 		log.V(1).Info("Dataplane updated")
 		r.Eventf(pod, nil, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Update", "Updated Kuma Dataplane: %s", pod.Name)
-	}
-	return nil
-}
-
-func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) error {
-	ingress := &mesh_k8s.ZoneIngress{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace: pod.Namespace,
-			Name:      pod.Name,
-		},
-		Mesh: model.NoMesh,
-	}
-	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ingress, func() error {
-		if err := r.PodConverter.PodToIngress(ctx, ingress, pod, services); err != nil {
-			return errors.Wrap(err, "unable to translate a Pod into a Ingress")
-		}
-		if err := kube_controllerutil.SetControllerReference(pod, ingress, r.Scheme); err != nil {
-			return errors.Wrap(err, "unable to set Ingress's controller reference to Pod")
-		}
-		return nil
-	})
-	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
-	if err != nil {
-		log.Error(err, "unable to create/update Ingress", "operationResult", operationResult)
-		r.Eventf(pod, nil, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "FailedToGenerate", "Failed to generate Kuma Ingress: %s", err.Error())
-		return err
-	}
-	switch operationResult {
-	case kube_controllerutil.OperationResultCreated:
-		log.Info("ZoneIngress created")
-		r.Eventf(pod, nil, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Create", "Created Kuma Ingress: %s", pod.Name)
-	case kube_controllerutil.OperationResultUpdated:
-		log.Info("ZoneIngress updated")
-		r.Eventf(pod, nil, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Update", "Updated Kuma Ingress: %s", pod.Name)
-	}
-	return nil
-}
-
-func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) error {
-	egress := &mesh_k8s.ZoneEgress{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace: pod.Namespace,
-			Name:      pod.Name,
-		},
-		Mesh: model.NoMesh,
-	}
-	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, egress, func() error {
-		if err := r.PodConverter.PodToEgress(ctx, egress, pod, services); err != nil {
-			return errors.Wrap(err, "unable to translate a Pod into a Egress")
-		}
-		if err := kube_controllerutil.SetControllerReference(pod, egress, r.Scheme); err != nil {
-			return errors.Wrap(err, "unable to set Egress's controller reference to Pod")
-		}
-		return nil
-	})
-	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
-	if err != nil {
-		log.Error(err, "unable to create/update Egress", "operationResult", operationResult)
-		r.Eventf(pod, nil, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "FailedToGenerate", "Failed to generate Kuma Egress: %s", err.Error())
-		return err
-	}
-	switch operationResult {
-	case kube_controllerutil.OperationResultCreated:
-		log.Info("ZoneEgress created")
-		r.Eventf(pod, nil, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Create", "Created Kuma Egress: %s", pod.Name)
-	case kube_controllerutil.OperationResultUpdated:
-		log.Info("ZoneEgress updated")
-		r.Eventf(pod, nil, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Update", "Updated Kuma Egress: %s", pod.Name)
 	}
 	return nil
 }

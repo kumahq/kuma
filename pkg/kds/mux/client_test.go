@@ -22,7 +22,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
-	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	kds_setup "github.com/kumahq/kuma/v3/pkg/test/kds/setup"
@@ -150,7 +150,7 @@ var _ = Describe("Client", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			zoneStore := memory.NewStore()
-			resourceSyncer, err := sync_store_v2.NewResourceSyncer(
+			resourceSyncer, err := kds_sync_store.NewResourceSyncer(
 				core.Log.WithName("syncer"),
 				zoneStore,
 				store.NoTransactions{},
@@ -164,7 +164,6 @@ var _ = Describe("Client", func() {
 				"grpc://"+lis.Addr().String(),
 				"zone-1",
 				*rt.Config().Multizone.Zone.KDS,
-				rt.Config().Experimental,
 				metrics,
 				service.NewEnvoyAdminProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient()),
 				resourceSyncer,

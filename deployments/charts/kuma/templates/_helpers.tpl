@@ -213,7 +213,7 @@ env:
 - name: KUMA_DP_SERVER_HDS_ENABLED
   value: "false"
 - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
-  value: {{ .Values.controlPlane.madsServer.enabled | quote }}
+  value: "false"
 - name: KUMA_API_SERVER_READ_ONLY
   value: "true"
 - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
@@ -296,10 +296,6 @@ env:
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
-{{- if .Values.dataPlane.features.unifiedResourceNaming }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
-  value: "true"
-{{- end }}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}
@@ -320,6 +316,8 @@ env:
   value: "{{ .Values.postgres.port }}"
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
   value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
+- name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
+  value: {{ .Values.controlPlane.madsServer.enabled | quote }}
 {{ if and (eq .Values.controlPlane.mode "zone") .Values.controlPlane.tls.general.secretName }}
 - name: KUMA_GENERAL_TLS_CERT_FILE
   value: /var/run/secrets/kuma.io/tls-cert/tls.crt

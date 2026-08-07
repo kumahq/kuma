@@ -1058,7 +1058,7 @@ var _ = Describe("MeshTrace on mixed Dataplane with sectionName targetRef", func
 		mt := &api.MeshTraceResource{
 			Meta: &test_model.ResourceMeta{Mesh: "default", Name: "mt-section"},
 			Spec: &api.MeshTrace{
-				TargetRef: &common_api.TargetRef{
+				TargetRef: &common_api.TopLevelTargetRef{
 					Kind:        common_api.Dataplane,
 					SectionName: pointer.To("ze-port"),
 				},

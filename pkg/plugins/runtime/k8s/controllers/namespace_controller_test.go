@@ -127,7 +127,7 @@ var _ = Describe("NamespaceReconciler", func() {
 		Expect(nads.Items[0].Name).To(Equal("kuma-cni"))
 	})
 
-	It("should delete NetworkAttachmentDefinition when injection annotation is no longer on the namespace", func() {
+	It("should delete NetworkAttachmentDefinition when injection label is no longer on the namespace", func() {
 		// setup CustomResourceDefinition
 		crd := &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: kube_meta.ObjectMeta{
@@ -147,7 +147,7 @@ var _ = Describe("NamespaceReconciler", func() {
 		err = kubeClient.Create(context.Background(), nad)
 		Expect(err).ToNot(HaveOccurred())
 
-		// given namespace without kuma.io/sidecar-injection annotation
+		// given namespace without the kuma.io/sidecar-injection label
 		req := kube_ctrl.Request{
 			NamespacedName: kube_types.NamespacedName{
 				Namespace: "non-system-ns-without-sidecar-injection",

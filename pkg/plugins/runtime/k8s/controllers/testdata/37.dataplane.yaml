@@ -5,7 +5,6 @@ metadata:
     k8s.kuma.io/namespace: demo
     kuma.io/display-name: mixed-proxy
     kuma.io/mesh: default
-    kuma.io/proxy-type: sidecar
   name: mixed-proxy
 spec:
   networking:

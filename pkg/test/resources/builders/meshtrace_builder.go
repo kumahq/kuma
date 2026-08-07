@@ -5,6 +5,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	meshtrace_proto "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type MeshTraceBuilder struct {
@@ -26,7 +27,7 @@ func MeshTrace() *MeshTraceBuilder {
 }
 
 func (m *MeshTraceBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshTraceBuilder {
-	m.res.Spec.TargetRef = &targetRef
+	m.res.Spec.TargetRef = pointer.To(ToTopLevelTargetRef(targetRef))
 	return m
 }
 

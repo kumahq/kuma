@@ -21,10 +21,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
 	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
-	kds_client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
-	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/grpc"
@@ -109,7 +109,6 @@ var _ = Describe("Zone Sync", func() {
 		excludeTypes := map[model.ResourceType]bool{
 			mesh.DataplaneInsightType:  true,
 			mesh.DataplaneOverviewType: true,
-			mesh.ServiceOverviewType:   true,
 			mesh.DataplaneType:         true,
 			workload_api.WorkloadType:  true,
 		}
@@ -178,7 +177,7 @@ var _ = Describe("Zone Sync", func() {
 	}
 
 	Context("GlobalToZone", func() {
-		var zoneSyncer sync_store_v2.ResourceSyncer
+		var zoneSyncer kds_sync_store.ResourceSyncer
 
 		BeforeEach(func() {
 			globalStore = memory.NewStore()
@@ -210,20 +209,20 @@ var _ = Describe("Zone Sync", func() {
 			zoneStore = memory.NewStore()
 			metrics, err := core_metrics.NewMetrics("")
 			Expect(err).ToNot(HaveOccurred())
-			zoneSyncer, err = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, store.NoTransactions{}, metrics, context.Background())
+			zoneSyncer, err = kds_sync_store.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, store.NoTransactions{}, metrics, context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			wg.Add(1)
 			go func() {
 				defer GinkgoRecover()
 				defer wg.Done()
-				kdsStream := kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, "global-inst", "", len(kdsCtx.TypesSentByGlobal))
-				syncClient := kds_client_v2.NewKDSSyncClient(
+				kdsStream := kds_client.NewDeltaKDSStream(clientStream, zoneName, "global-inst", "", len(kdsCtx.TypesSentByGlobal))
+				syncClient := kds_client.NewKDSSyncClient(
 					core.Log.WithName("kds-sink"),
 					kdsCtx.TypesSentByGlobal,
 					kdsStream,
-					sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
-					kds_client_v2.SyncClientConfig{},
+					kds_sync_store.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
+					kds_client.SyncClientConfig{},
 				)
 				_ = syncClient.Receive()
 			}()

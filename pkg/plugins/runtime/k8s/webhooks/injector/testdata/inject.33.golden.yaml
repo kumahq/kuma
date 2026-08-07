@@ -7,8 +7,6 @@ metadata:
     kuma.io/envoy-admin-port: "9901"
     kuma.io/sidecar-injected: "true"
     kuma.io/transparent-proxying-ip-family-mode: ipv4
-    kuma.io/virtual-probes: disabled
-    kuma.io/virtual-probes-port: "9000"
     traffic.kuma.io/transparent-proxy-config: |
       ipFamilyMode: ipv4
       kumaDPUser: "5678"

@@ -18,11 +18,11 @@ func (r *MeshLoadBalancingStrategyResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.TopLevelTargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
-	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.Dataplane,
@@ -36,7 +36,7 @@ func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		errs := mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
+		errs := mesh.ValidateTargetRef(toItem.TargetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
@@ -214,10 +214,12 @@ func validateHashPolicies(conf *[]HashPolicy) validators.ValidationError {
 			if policy.FilterState == nil {
 				verr.AddViolationAt(path.Field("filterState"), validators.MustBeDefined)
 			}
-		case ConnectionType, SourceIPType:
+		case ConnectionType:
 			if policy.Connection == nil {
 				verr.AddViolationAt(path.Field("connection"), validators.MustBeDefined)
 			}
+		default:
+			verr.AddViolationAt(path.Field("type"), "unrecognized type")
 		}
 	}
 	return verr

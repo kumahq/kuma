@@ -20,13 +20,13 @@ func (r *MeshTCPRouteResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshTCPRouteResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshTCPRouteResource) validateTop(targetRef *common_api.TopLevelTargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
 	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.Dataplane,
@@ -34,7 +34,7 @@ func (r *MeshTCPRouteResource) validateTop(targetRef *common_api.TargetRef) vali
 			GatewayListenerTagsAllowed: true,
 		})
 	default:
-		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.Dataplane,
@@ -43,8 +43,8 @@ func (r *MeshTCPRouteResource) validateTop(targetRef *common_api.TargetRef) vali
 	}
 }
 
-func validateToRef(targetRef common_api.TargetRef) validators.ValidationError {
-	return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+func validateToRef(targetRef common_api.OutboundTargetRef) validators.ValidationError {
+	return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.MeshService,
 			common_api.MeshExternalService,

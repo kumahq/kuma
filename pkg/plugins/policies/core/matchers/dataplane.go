@@ -189,7 +189,7 @@ func DppSelectedByPolicy(
 		for _, mhr := range mhrs {
 			selectedInbounds, delegatedGateway, err := DppSelectedByPolicy(
 				mhr.Meta,
-				pointer.DerefOr(mhr.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}),
+				mhr.Spec.TargetRef.ToTargetRef(),
 				dpp,
 				referencableResources,
 			)

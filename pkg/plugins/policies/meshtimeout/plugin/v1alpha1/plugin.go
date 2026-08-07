@@ -17,7 +17,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
@@ -62,10 +61,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToZoneProxyListeners(policies, listeners, clusters, proxy); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, ctx.Mesh); err != nil {
-		return err
-	}
-
 	for serviceName, cluster := range clusters.Outbound {
 		if err := applyToClusters(policies.ToRules.Rules, serviceName, ctx.Mesh.GetServiceProtocol(serviceName), cluster); err != nil {
 			return err
@@ -104,7 +99,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			continue
 		}
 
-		protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
+		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
 
 		inboundRules := fromRules.InboundRules[listenerKey]
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
@@ -130,36 +125,6 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			if err := clusterConfigurer.Configure(cluster); err != nil {
 				return err
 			}
-		}
-	}
-
-	return nil
-}
-
-func applyToOutbounds(
-	rules core_rules.ToRules,
-	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
-	outbounds xds_types.Outbounds,
-	dataplane *core_mesh.DataplaneResource,
-	meshCtx xds_context.MeshContext,
-) error {
-	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
-		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
-
-		listener, ok := outboundListeners[oface]
-		if !ok {
-			continue
-		}
-
-		serviceName := outbound.LegacyOutbound.GetService()
-		configurer := plugin_xds.DeprecatedListenerConfigurer{
-			Rules:    rules.Rules,
-			Protocol: meshCtx.GetServiceProtocol(serviceName),
-			Element:  subsetutils.KumaServiceTagElement(serviceName),
-		}
-
-		if err := configurer.ConfigureListener(listener); err != nil {
-			return err
 		}
 	}
 

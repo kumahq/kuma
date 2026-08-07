@@ -33,7 +33,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		}
 
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
-		inboundProtocol := iface.GetProtocolFallback()
+		inboundProtocol := iface.GetProtocol()
 		protocol := core_meta.ParseProtocol(inboundProtocol)
 		// the cluster, the listener and their stat prefixes all share this name
 		contextualName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.InboundName)
@@ -124,10 +124,6 @@ func FilterChainBuilder(
 			Configure(envoy_listeners.HttpConnectionManager(contextualName, true, proxy.InternalAddresses, proxy.Metadata.GetIPv6Enabled())).
 			Configure(envoy_listeners.GrpcStats()).
 			Configure(envoy_listeners.HttpInboundRoute(contextualName, contextualName, cluster))
-	case core_meta.ProtocolKafka:
-		filterChainBuilder.
-			Configure(envoy_listeners.Kafka(contextualName)).
-			Configure(envoy_listeners.TcpProxyDeprecated(contextualName, cluster))
 	default:
 		// configuration for non-HTTP cases
 		filterChainBuilder.Configure(envoy_listeners.TcpProxyDeprecated(contextualName, cluster))
