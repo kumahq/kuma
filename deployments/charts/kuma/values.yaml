@@ -181,6 +181,9 @@ controlPlane:
     pathType: ImplementationSpecific
     # -- Port from kuma-cp to use to expose API and GUI. Switch to 5682 to expose TLS port
     servicePort: 5681
+    # -- TLS configuration for the Ingress, rendered verbatim under spec.tls.
+    # Each entry follows the networking.k8s.io/v1 IngressTLS schema (hosts, secretName).
+    tls: []
 
   serviceMonitor:
     # -- Install CoreOS ServiceMonitor custom resource that configures metrics scraping.
