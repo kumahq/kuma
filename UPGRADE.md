@@ -433,10 +433,11 @@ legacy statistics:
   returns an empty list and `GET /meshes/{mesh}/service-insights/{name}`
   returns `404`. This also covers delegated gateways, which used to be the
   last services reported there, along with their per-service `zones` list.
-  `kumactl inspect services` and the GUI pages backed by that endpoint list
-  nothing.
+  The GUI pages backed by that endpoint list nothing. `kumactl inspect
+  services` is removed; use `kumactl get meshservices` instead.
 - `MeshInsight.services` (the `Total`/`Internal`/`External` service count
-  stat) is no longer populated and is always absent from the response.
+  stat) is removed from the API. Field number 6 is reserved and will not be
+  reused.
 - The Dataplane/MeshGateway inspect `_rules` endpoint no longer populates the
   legacy `toRules` field on each rule entry; it is always an empty array.
   `toResourceRules`, `fromRules`, and `inboundRules` are unaffected.
@@ -901,8 +902,21 @@ The following configuration has been removed:
 **Action required**
 
 Remove the settings above from your control plane config and environment if
-set. KDS snapshot generation is event-driven, with periodic full resync
-controlled by `experimental.kdsEventBasedWatchdog.fullResyncInterval`.
+set. KDS snapshot generation remains event-driven, but the timing config moved
+to the stable multizone KDS config:
+
+- Global control plane: `multizone.global.kds.eventBasedWatchdog.flushInterval`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL`),
+  `multizone.global.kds.eventBasedWatchdog.fullResyncInterval`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL`), and
+  `multizone.global.kds.eventBasedWatchdog.delayFullResync`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC`).
+- Zone control plane: `multizone.zone.kds.eventBasedWatchdog.flushInterval`
+  (`KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL`),
+  `multizone.zone.kds.eventBasedWatchdog.fullResyncInterval`
+  (`KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL`), and
+  `multizone.zone.kds.eventBasedWatchdog.delayFullResync`
+  (`KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC`).
 
 ### `TrafficTrace` no longer affects generated Envoy config
 
@@ -1442,6 +1456,21 @@ fails with `unknown flag`, so any script or deployment passing it will error imm
 reject unknown fields — proxies still relying on them will silently fall back to a
 generated temporary directory instead of erroring.
 
+### Virtual probes removed
+
+The legacy Virtual Probes feature, deprecated since 2.9 in favor of Application Probe Proxy, has been removed. The following are gone:
+
+- Pod annotations `kuma.io/virtual-probes` and `kuma.io/virtual-probes-port`
+- Control plane configuration keys `runtime.kubernetes.injector.virtualProbesEnabled` and `runtime.kubernetes.injector.virtualProbesPort`
+- Environment variables `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED` and `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT`
+- The `probes` field on `Dataplane` resources (Kubernetes and Universal)
+
+**Action required**
+
+Re-inject every pod after upgrading — the injector no longer rewrites pod probes to a virtual probes listener, and any pod injected by a pre-3.0.0 webhook keeps stale `kuma.io/virtual-probes*` annotations and a probes-listener sidecar config until it is redeployed. Application Probe Proxy (`kuma.io/application-probe-proxy-port`) is now the only supported probe-rewriting path on Kubernetes and is enabled by default.
+
+**Warning**: `probes:` submitted on a Universal `Dataplane` is now silently dropped — the field no longer exists on the resource, so it is accepted and discarded rather than rejected. Setting `kuma.io/application-probe-proxy-port: "0"` no longer falls back to virtual probes; it now leaves the pod's original probes untouched. Pods relying on the old fallback must either remove the annotation to keep using Application Probe Proxy, or exclude their probe ports from inbound traffic redirection if they need probes served without mTLS.
+
 ### Injector sidecar container `adminPort` removed
 
 The deprecated `kuma.runtime.kubernetes.injector.sidecarContainer.adminPort`
@@ -1469,6 +1498,49 @@ Use `Metrics.Mesh.MinResyncInterval` (`KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL`) a
 `Metrics.Mesh.FullResyncInterval` (`KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL`) instead.
 `MinResyncTimeout`/`MaxResyncTimeout` in YAML config and their environment variables are
 now silently ignored, since the config loader does not reject unknown fields.
+
+### `MeshExternalService` TLS verification uses the `SecureDataSource` shape
+
+`spec.tls.verification.caCert`, `.clientCert` and `.clientKey` on `MeshExternalService` now
+use the same `SecureDataSource` type as `MeshIdentity`, instead of the old `DataSource` type.
+The old type has been removed from the API entirely.
+
+The old type had no discriminator: it was a flat object with `secret`, `inline` or
+`inlineString`. The new type requires a `type` discriminator and nests the value under a
+field matching it. Every old field has to be rewritten:
+
+| Old field | New field |
+|---|---|
+| `inline: <base64>` | `type: InsecureInline`, `insecureInline.value: <plain text>` |
+| `inlineString: <text>` | `type: InsecureInline`, `insecureInline.value: <text>` |
+| `secret: <name>` | `type: Secret`, `secretRef: {kind: Secret, name: <name>}` |
+
+`inline` was base64-encoded, `insecureInline.value` is plain text, so decode the old value
+when rewriting it. For example `inline: dGVzdA==` becomes:
+
+```yaml
+caCert:
+  type: InsecureInline
+  insecureInline:
+    value: test
+```
+
+`File` and `EnvVar`, the two other `SecureDataSource` types, are rejected on
+`MeshExternalService` — they read the control plane's own filesystem and environment. This
+also applies when `spec.extension` is set, even though an extension owns the rest of the
+`spec.tls` validation.
+
+**Action required**
+
+Rewrite `caCert`, `clientCert` and `clientKey` on every `MeshExternalService` to the new
+shape as part of the upgrade.
+
+**Warning**: a `MeshExternalService` written in the old shape after the upgrade is rejected
+at write time, because the missing `type` discriminator is a validation violation. Resources
+already stored in the old shape are not rejected — the control plane cannot read their TLS
+material, so the destination is dropped from the xDS config of every proxy routing to it,
+with an error logged on the control plane. Plan the rewrite together with the upgrade to
+avoid an outage on those destinations.
 
 ### Inbound `tags` removed from `Dataplane`
 

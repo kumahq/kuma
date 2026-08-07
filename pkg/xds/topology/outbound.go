@@ -9,9 +9,10 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
+	datasource_api "github.com/kumahq/kuma/v3/api/common/v1alpha1/datasource"
 	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
@@ -301,18 +302,18 @@ func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, 
 	var err error
 	if tls.Verification != nil {
 		if tls.Verification.CaCert != nil {
-			caCert, err = loadBytes(ctx, tls.Verification.CaCert.ConvertToProto(), meshName, loader)
+			caCert, err = loadSecureBytes(ctx, tls.Verification.CaCert, meshName, loader)
 			if err != nil {
 				return errors.Wrap(err, "could not load caCert")
 			}
 			es.CaCert = caCert
 		}
 		if tls.Verification.ClientKey != nil && tls.Verification.ClientCert != nil {
-			clientCert, err = loadBytes(ctx, tls.Verification.ClientCert.ConvertToProto(), meshName, loader)
+			clientCert, err = loadSecureBytes(ctx, tls.Verification.ClientCert, meshName, loader)
 			if err != nil {
 				return errors.Wrap(err, "could not load clientCert")
 			}
-			clientKey, err = loadBytes(ctx, tls.Verification.ClientKey.ConvertToProto(), meshName, loader)
+			clientKey, err = loadSecureBytes(ctx, tls.Verification.ClientKey, meshName, loader)
 			if err != nil {
 				return errors.Wrap(err, "could not load clientKey")
 			}
@@ -459,11 +460,32 @@ func fillMeshExternalServicesOnEgress(
 	}
 }
 
-func loadBytes(ctx context.Context, ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {
-	if ds == nil {
+// loadSecureBytes resolves a SecureDataSource on the control plane. Secret references keep going
+// through the mesh-snapshot datasource.Loader so no additional store I/O is introduced; inline
+// values are resolved directly via SecureDataSource.ReadByControlPlane. File and EnvVar would read
+// the control plane's own filesystem and environment, so they are refused here as well as in the
+// validator - a MeshExternalService with an extension, or one synced from another zone, does not
+// necessarily go through validation.
+func loadSecureBytes(ctx context.Context, sds *datasource_api.SecureDataSource, mesh string, loader datasource.Loader) ([]byte, error) {
+	if sds == nil {
 		return nil, nil
 	}
-	return loader.Load(ctx, mesh, ds)
+	switch sds.Type {
+	case datasource_api.SecureDataSourceSecretRef:
+		if sds.SecretRef == nil {
+			return nil, errors.New("secretRef must be defined")
+		}
+		return loader.Load(ctx, mesh, &system_proto.DataSource{
+			Type: &system_proto.DataSource_Secret{Secret: sds.SecretRef.Name},
+		})
+	case datasource_api.SecureDataSourceInline:
+		if sds.InsecureInline == nil {
+			return nil, errors.New("insecureInline must be defined")
+		}
+		return sds.ReadByControlPlane(ctx, nil, mesh)
+	default:
+		return nil, errors.Errorf("datasource type: %s is not supported on MeshExternalService", sds.Type)
+	}
 }
 
 const (

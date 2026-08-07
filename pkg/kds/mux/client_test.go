@@ -164,7 +164,6 @@ var _ = Describe("Client", func() {
 				"grpc://"+lis.Addr().String(),
 				"zone-1",
 				*rt.Config().Multizone.Zone.KDS,
-				rt.Config().Experimental,
 				metrics,
 				service.NewEnvoyAdminProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient()),
 				resourceSyncer,

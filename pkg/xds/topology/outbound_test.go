@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	datasource_api "github.com/kumahq/kuma/v3/api/common/v1alpha1/datasource"
 	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
@@ -254,14 +254,17 @@ var _ = Describe("TrafficRoute", func() {
 											Value: "test.com",
 										},
 									},
-									CaCert: &common_api.DataSource{
-										InlineString: pointer.To("ca"),
+									CaCert: &datasource_api.SecureDataSource{
+										Type:           datasource_api.SecureDataSourceInline,
+										InsecureInline: &datasource_api.Inline{Value: "ca"},
 									},
-									ClientCert: &common_api.DataSource{
-										InlineString: pointer.To("cert"),
+									ClientCert: &datasource_api.SecureDataSource{
+										Type:           datasource_api.SecureDataSourceInline,
+										InsecureInline: &datasource_api.Inline{Value: "cert"},
 									},
-									ClientKey: &common_api.DataSource{
-										InlineString: pointer.To("key"),
+									ClientKey: &datasource_api.SecureDataSource{
+										Type:           datasource_api.SecureDataSourceInline,
+										InsecureInline: &datasource_api.Inline{Value: "key"},
 									},
 								},
 							},
@@ -373,6 +376,47 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
+			Entry("skips MeshExternalService reading a control plane local file", testCase{
+				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "file-mes",
+						},
+						Spec: &meshexternalservice_api.MeshExternalService{
+							Match: meshexternalservice_api.Match{
+								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Port:     10000,
+								Protocol: core_meta.ProtocolTCP,
+							},
+							// an extension owns tls validation, so File and EnvVar can only be
+							// stopped here
+							Extension: &meshexternalservice_api.Extension{Type: "example"},
+							Endpoints: &[]meshexternalservice_api.Endpoint{
+								{
+									Address: "example.com",
+									Port:    443,
+								},
+							},
+							Tls: &meshexternalservice_api.Tls{
+								Enabled: true,
+								Verification: &meshexternalservice_api.Verification{
+									Mode: meshexternalservice_api.TLSVerificationSecured,
+									CaCert: &datasource_api.SecureDataSource{
+										Type: datasource_api.SecureDataSourceFile,
+										File: &datasource_api.File{Path: "/etc/hosts"},
+									},
+								},
+							},
+						},
+					},
+				},
+				zoneEgressAddresses: []core_xds.ZoneEgressInstance{
+					{Address: "1.1.1.1", Port: 10002},
+				},
+				mesh:     defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{},
+			}),
 			Entry("uses MeshExternalService without egress", testCase{
 				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
 					{
@@ -412,14 +456,17 @@ var _ = Describe("TrafficRoute", func() {
 											Value: "test.com",
 										},
 									},
-									CaCert: &common_api.DataSource{
-										InlineString: pointer.To("ca"),
+									CaCert: &datasource_api.SecureDataSource{
+										Type:           datasource_api.SecureDataSourceInline,
+										InsecureInline: &datasource_api.Inline{Value: "ca"},
 									},
-									ClientCert: &common_api.DataSource{
-										InlineString: pointer.To("cert"),
+									ClientCert: &datasource_api.SecureDataSource{
+										Type:           datasource_api.SecureDataSourceInline,
+										InsecureInline: &datasource_api.Inline{Value: "cert"},
 									},
-									ClientKey: &common_api.DataSource{
-										InlineString: pointer.To("key"),
+									ClientKey: &datasource_api.SecureDataSource{
+										Type:           datasource_api.SecureDataSourceInline,
+										InsecureInline: &datasource_api.Inline{Value: "key"},
 									},
 								},
 							},

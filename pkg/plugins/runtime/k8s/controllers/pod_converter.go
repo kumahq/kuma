@@ -223,12 +223,6 @@ func (p *PodConverter) dataplaneFor(
 		}
 	}
 
-	probes, err := ProbesFor(pod)
-	if err != nil {
-		return nil, err
-	}
-	dataplane.Probes = probes
-
 	adminPort, exist, err := annotations.GetUint32(metadata.KumaEnvoyAdminPort)
 	if err != nil {
 		return nil, err

@@ -185,8 +185,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeOutboundPorts).To(Equal([]uint32{4321, 8765}))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeInboundIPs).To(Equal([]string{"192.168.0.1", "172.32.16.8/16", "a81b:a033:6399:73c7:72b6:aa8c:6f22:7098", "fe80::/10"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeOutboundIPs).To(Equal([]string{"10.0.0.1", "172.16.0.0/16", "fe80::1", "fe80::/10"}))
-			Expect(cfg.Runtime.Kubernetes.Injector.VirtualProbesEnabled).To(BeFalse())
-			Expect(cfg.Runtime.Kubernetes.Injector.VirtualProbesPort).To(Equal(uint32(1111)))
 			Expect(cfg.Runtime.Kubernetes.Injector.ApplicationProbeProxyPort).To(Equal(uint32(1112)))
 			Expect(cfg.Runtime.Kubernetes.Injector.CNIEnabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.ContainerPatches).To(Equal([]string{"patch1", "patch2"}))
@@ -371,9 +369,12 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Users).To(Equal([]string{"cp-admin1", "cp-admin2"}))
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Groups).To(Equal([]string{"cp-group1", "cp-group2"}))
 
-			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
-			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
-			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
+			Expect(cfg.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.EventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.EventBasedWatchdog.DelayFullResync).To(BeTrue())
+			Expect(cfg.Multizone.Zone.KDS.EventBasedWatchdog.FlushInterval.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.Multizone.Zone.KDS.EventBasedWatchdog.FullResyncInterval.Duration).To(Equal(16 * time.Second))
+			Expect(cfg.Multizone.Zone.KDS.EventBasedWatchdog.DelayFullResync).To(BeTrue())
 
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
 
@@ -530,8 +531,6 @@ runtime:
           openshift.io/deployer-pod-for.name: value2
       cniEnabled: true
       caCertFile: /tmp/ca.crt
-      virtualProbesEnabled: false
-      virtualProbesPort: 1111
       applicationProbeProxyPort: 1112
       containerPatches: ["patch1", "patch2"]
       initContainer:
@@ -645,6 +644,10 @@ multizone:
       nackBackoff: 11s
       responseBackoff: 1s
       logPayloads: true
+      eventBasedWatchdog:
+        flushInterval: 10s
+        fullResyncInterval: 15s
+        delayFullResync: true
       zoneHealthCheck:
         pollInterval: 11s
         timeout: 110s
@@ -663,6 +666,10 @@ multizone:
       nackBackoff: 21s
       responseBackoff: 2s
       logPayloads: true
+      eventBasedWatchdog:
+        flushInterval: 11s
+        fullResyncInterval: 16s
+        delayFullResync: true
       tlsSkipVerify: true
       labels:
         skipPrefixes: ["argocd.argoproj.io"]
@@ -779,10 +786,6 @@ access:
       groups: ["cp-group1", "cp-group2"]
 experimental:
   cniApp: "kuma-cni"
-  kdsEventBasedWatchdog:
-    flushInterval: 10s
-    fullResyncInterval: 15s
-    delayFullResync: true
   generateMeshServices: true
   skipPersistedVIPs: true
 eventBus:
@@ -970,8 +973,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_ENABLED":                                           "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_MOUNT_PATH":                                        "/run/test",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_SOCKET_FILE_NAME":                                  "my-socket",
-				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                                           "false",
-				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                                              "1111",
 				"KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT":                                     "1112",
 				"KUMA_RUNTIME_KUBERNETES_EXCEPTIONS_LABELS":                                                "openshift.io/build.name:value1,openshift.io/deployer-pod-for.name:value2",
 				"KUMA_RUNTIME_KUBERNETES_CONTROLLERS_CONCURRENCY_POD_CONTROLLER":                           "10",
@@ -1103,9 +1104,12 @@ meshService:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_USERS":                                          "cp-admin1,cp-admin2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS":                                         "cp-group1,cp-group2",
-				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
-				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
-				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
+				"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                            "10s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                      "15s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                         "true",
+				"KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                              "11s",
+				"KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                        "16s",
+				"KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                           "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",

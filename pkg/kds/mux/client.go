@@ -22,7 +22,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config"
-	config_kumacp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/config/multizone"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -46,7 +45,6 @@ type client struct {
 	globalURL           string
 	clientID            string
 	config              multizone.KdsClientConfig
-	experimantalConfig  config_kumacp.ExperimentalConfig
 	metrics             metrics.Metrics
 	ctx                 context.Context
 	envoyAdminProcessor service.EnvoyAdminProcessor
@@ -61,7 +59,6 @@ func NewClient(
 	globalURL string,
 	clientID string,
 	config multizone.KdsClientConfig,
-	experimantalConfig config_kumacp.ExperimentalConfig,
 	metrics metrics.Metrics,
 	envoyAdminProcessor service.EnvoyAdminProcessor,
 	resourceSyncer kds_sync_store.ResourceSyncer,
@@ -73,7 +70,6 @@ func NewClient(
 		globalURL:           globalURL,
 		clientID:            clientID,
 		config:              config,
-		experimantalConfig:  experimantalConfig,
 		metrics:             metrics,
 		envoyAdminProcessor: envoyAdminProcessor,
 		resourceSyncer:      resourceSyncer,

@@ -190,7 +190,6 @@ var booleanAnnotations = map[string]bool{
 	metadata.KumaGatewayAnnotation:             true,
 	metadata.KumaSidecarInjectedAnnotation:     true,
 	metadata.KumaTransparentProxyingAnnotation: true,
-	metadata.KumaVirtualProbesAnnotation:       true,
 	metadata.KumaIgnoreAnnotation:              true,
 	metadata.KumaInitFirst:                     true,
 }
