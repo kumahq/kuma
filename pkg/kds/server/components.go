@@ -14,7 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/events"
@@ -35,6 +35,7 @@ func New(
 	filter kds_reconcile.ResourceFilter,
 	mapper kds_reconcile.ResourceMapper,
 	nackBackoff time.Duration,
+	eventBasedWatchdogCfg multizone.EventBasedWatchdogConfig,
 ) (delta.Server, *Metrics, error) {
 	hasher, cache := newKDSContext(log)
 	generator := kds_reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), filter, mapper)
@@ -47,7 +48,7 @@ func New(
 		kds_reconcile.NewReconciler(hasher, cache, generator, rt.GetMode(), statsCallbacks, rt.Tenants(), providedTypes),
 		rt.Metrics(),
 		rt.EventBus(),
-		rt.Config().Experimental.KDSEventBasedWatchdog,
+		eventBasedWatchdogCfg,
 		rt.Extensions(),
 	)
 	if err != nil {
@@ -74,7 +75,7 @@ func newSyncTracker(
 	reconciler kds_reconcile.Reconciler,
 	metrics core_metrics.Metrics,
 	eventBus events.EventBus,
-	experimentalWatchdogCfg kuma_cp.ExperimentalKDSEventBasedWatchdog,
+	eventBasedWatchdogCfg multizone.EventBasedWatchdogConfig,
 	extensions context.Context,
 ) (envoy_xds.Callbacks, *Metrics, error) {
 	kdsMetrics, err := NewMetrics(metrics)
@@ -96,16 +97,16 @@ func newSyncTracker(
 			Metrics:       kdsMetrics,
 			Log:           log,
 			NewFlushTicker: func() *time.Ticker {
-				return time.NewTicker(experimentalWatchdogCfg.FlushInterval.Duration)
+				return time.NewTicker(eventBasedWatchdogCfg.FlushInterval.Duration)
 			},
 			NewFullResyncTicker: func() (*time.Ticker, context.CancelFunc) {
-				return newFullResyncTicker(experimentalWatchdogCfg)
+				return newFullResyncTicker(eventBasedWatchdogCfg)
 			},
 		}, nil
 	}), kdsMetrics, nil
 }
 
-func newFullResyncTicker(cfg kuma_cp.ExperimentalKDSEventBasedWatchdog) (*time.Ticker, context.CancelFunc) {
+func newFullResyncTicker(cfg multizone.EventBasedWatchdogConfig) (*time.Ticker, context.CancelFunc) {
 	if !cfg.DelayFullResync {
 		return time.NewTicker(cfg.FullResyncInterval.Duration), func() {}
 	}

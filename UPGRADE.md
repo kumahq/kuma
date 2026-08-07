@@ -859,8 +859,21 @@ The following configuration has been removed:
 **Action required**
 
 Remove the settings above from your control plane config and environment if
-set. KDS snapshot generation is event-driven, with periodic full resync
-controlled by `experimental.kdsEventBasedWatchdog.fullResyncInterval`.
+set. KDS snapshot generation remains event-driven, but the timing config moved
+to the stable multizone KDS config:
+
+- Global control plane: `multizone.global.kds.eventBasedWatchdog.flushInterval`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL`),
+  `multizone.global.kds.eventBasedWatchdog.fullResyncInterval`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL`), and
+  `multizone.global.kds.eventBasedWatchdog.delayFullResync`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC`).
+- Zone control plane: `multizone.zone.kds.eventBasedWatchdog.flushInterval`
+  (`KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL`),
+  `multizone.zone.kds.eventBasedWatchdog.fullResyncInterval`
+  (`KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL`), and
+  `multizone.zone.kds.eventBasedWatchdog.delayFullResync`
+  (`KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC`).
 
 ### `TrafficTrace` no longer affects generated Envoy config
 

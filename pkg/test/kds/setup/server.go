@@ -267,8 +267,8 @@ func NewTestRuntime(ctx context.Context, cfg kuma_cp.Config, store store.Resourc
 func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 	cfg := kuma_cp.DefaultConfig()
 	cfg.Mode = config_core.Global
-	cfg.Experimental.KDSEventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
-	cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+	cfg.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+	cfg.Multizone.Global.KDS.EventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 	return &KdsServerBuilder{
 		rt:             NewTestRuntime(context.Background(), cfg, store),
 		providedMapper: kds_reconcile.NoopResourceMapper,
@@ -280,6 +280,8 @@ func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 func (b *KdsServerBuilder) AsZone(name string) *KdsServerBuilder {
 	b.rt.cfg.Multizone.Zone.Name = name
 	b.rt.cfg.Mode = config_core.Zone
+	b.rt.cfg.Multizone.Zone.KDS.EventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+	b.rt.cfg.Multizone.Zone.KDS.EventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 	b.providedTypes = registry.Global().ObjectTypes(model.SentFromZoneToGlobal())
 	b.rt.RuntimeInfo = runtime.NewRuntimeInfo("zone-cp", b.rt.cfg.Mode)
 	return b
@@ -297,6 +299,10 @@ func (b *KdsServerBuilder) WithTypes(types []model.ResourceType) *KdsServerBuild
 }
 
 func (b *KdsServerBuilder) Delta() (delta.Server, error) {
-	srv, _, err := kds_server.New(core.Log.WithName("kds-delta").WithName(b.rt.GetMode()), b.rt, b.providedTypes, b.rt.Config().Multizone.Zone.Name, b.providedFilter, b.providedMapper, 1*time.Second)
+	watchdogCfg := b.rt.Config().Multizone.Global.KDS.EventBasedWatchdog.AsRuntimeConfig()
+	if b.rt.Config().Mode == config_core.Zone {
+		watchdogCfg = b.rt.Config().Multizone.Zone.KDS.EventBasedWatchdog.AsRuntimeConfig()
+	}
+	srv, _, err := kds_server.New(core.Log.WithName("kds-delta").WithName(b.rt.GetMode()), b.rt, b.providedTypes, b.rt.Config().Multizone.Zone.Name, b.providedFilter, b.providedMapper, 1*time.Second, watchdogCfg)
 	return srv, err
 }

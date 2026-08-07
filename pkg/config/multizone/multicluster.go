@@ -46,6 +46,11 @@ func DefaultGlobalConfig() *GlobalConfig {
 			TlsCipherSuites:          []string{},
 			NackBackoff:              config_types.Duration{Duration: 5 * time.Second},
 			LogPayloads:              false,
+			EventBasedWatchdog: GlobalEventBasedWatchdogConfig{
+				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
+				DelayFullResync:    false,
+			},
 			Tracing: KDSServerTracing{
 				Enabled: true,
 			},
@@ -124,6 +129,11 @@ func DefaultZoneConfig() *ZoneConfig {
 			MsgSendTimeout: config_types.Duration{Duration: 60 * time.Second},
 			NackBackoff:    config_types.Duration{Duration: 5 * time.Second},
 			LogPayloads:    false,
+			EventBasedWatchdog: ZoneEventBasedWatchdogConfig{
+				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
+				DelayFullResync:    false,
+			},
 		},
 		DisableOriginLabelValidation: false,
 	}
