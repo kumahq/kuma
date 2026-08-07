@@ -90,7 +90,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 				}
 			}
 			if hasSNIMatch(inboundRules) {
-				if err := ensureTLSInspector(listener); err != nil {
+				if err := envoy_listeners_v3.EnsureTLSInspector(listener); err != nil {
 					return err
 				}
 			}
@@ -172,15 +172,6 @@ func hasSNIMatch(rules []*inbound.Rule) bool {
 		}
 	}
 	return false
-}
-
-func ensureTLSInspector(listener *envoy_listener.Listener) error {
-	for _, lf := range listener.ListenerFilters {
-		if lf.Name == envoy_listeners_v3.TlsInspectorName {
-			return nil
-		}
-	}
-	return (&envoy_listeners_v3.TLSInspectorConfigurer{}).Configure(listener)
 }
 
 func (p plugin) denyRules() core_rules.Rules {

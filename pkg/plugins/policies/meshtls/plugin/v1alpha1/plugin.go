@@ -83,17 +83,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	log.V(1).Info("applying")
 
 	policies := proxy.Policies.Dynamic[api.MeshTLSType]
-	// Check if MeshTLS policy or workload identity applies to this Dataplane
-	// - proxy.WorkloadIdentity != nil means the Dataplane has an assigned workload identity
-	// - non empty FromRules or GatewayRules mean a MeshTLS policy applies
-	// If neither condition is true, skip processing to avoid generating unused xDS config
-	switch {
-	case proxy.WorkloadIdentity != nil:
-	case len(policies.FromRules.InboundRules) > 0:
-	case len(policies.GatewayRules.InboundRules) > 0:
-	default:
-		return nil
-	}
 
 	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
@@ -305,19 +294,22 @@ func configureInboundPassthroughListener(
 	conf api.Conf,
 	ipv6 bool,
 ) (envoy_common.NamedResource, error) {
+	// mirror the conditions under which TransparentProxyGenerator emits the
+	// passthrough listener, otherwise we replace a listener that doesn't exist
+	// and point it at a cluster that was never generated
 	tpCfg := proxy.GetTransparentProxy()
-	if tpCfg == nil {
+	if tpCfg == nil || !tpCfg.Redirect.Outbound.Enabled || proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
 		return nil, nil
 	}
-	caBackend := xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend()
-	if caBackend == nil && proxy.WorkloadIdentity == nil && !proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts) {
+	if ipv6 && !tpCfg.EnabledIPv6() {
 		return nil, nil
 	}
-	tlsMode := getMeshTLSMode(
-		conf.Mode,
-		proxy.WorkloadIdentity,
-		caBackend,
-	)
+	if xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend() == nil &&
+		proxy.WorkloadIdentity == nil &&
+		!proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts) {
+		return nil, nil
+	}
+	tlsMode := getMeshTLSMode(conf.Mode)
 	address := metadata.TransparentAllIPv4
 	inboundName := naming.ContextualTransparentProxyName("inbound", 4)
 	if ipv6 {
@@ -394,11 +386,7 @@ func configureListener(
 	filterChainKumaTLS := filterChainBuilder(true).
 		Configure(envoy_listeners.DownstreamTlsContext(downstreamCtx))
 
-	if getMeshTLSMode(
-		conf.Mode,
-		proxy.WorkloadIdentity,
-		xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend(),
-	) == api.ModeStrict {
+	if getMeshTLSMode(conf.Mode) == api.ModeStrict {
 		return listener.Configure(envoy_listeners.FilterChain(filterChainKumaTLS)).Build()
 	}
 
@@ -492,22 +480,11 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 		Build()
 }
 
-func getMeshTLSMode(
-	confMode *api.Mode,
-	workloadIdentity *core_xds.WorkloadIdentity,
-	caBackend *mesh_proto.CertificateAuthorityBackend,
-) api.Mode {
-	switch {
-	case confMode != nil:
-		// Use the mode defined in the MeshTLS policy configuration
+// getMeshTLSMode resolves the TLS mode of an inbound. Only a MeshTLS policy can
+// select Permissive, everything else defaults to Strict.
+func getMeshTLSMode(confMode *api.Mode) api.Mode {
+	if confMode != nil {
 		return *confMode
-	case workloadIdentity != nil:
-		// If no confMode is set but the workload has an identity, default to strict mode
-		return api.ModeStrict
-	case caBackend != nil && caBackend.Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
-		// If the CA backend is configured as permissive, use permissive mode
-		return api.ModePermissive
-	default:
-		return api.ModeStrict
 	}
+	return api.ModeStrict
 }

@@ -372,7 +372,7 @@ func configureListenerFromRules(
 		return err
 	}
 	if hasSNIMatch(rules) {
-		return ensureTLSInspector(listener)
+		return listeners_v3.EnsureTLSInspector(listener)
 	}
 	return nil
 }
@@ -384,15 +384,6 @@ func hasSNIMatch(rules []*rules_inbound.Rule) bool {
 		}
 	}
 	return false
-}
-
-func ensureTLSInspector(listener *envoy_listener.Listener) error {
-	for _, lf := range listener.ListenerFilters {
-		if lf.Name == listeners_v3.TlsInspectorName {
-			return nil
-		}
-	}
-	return (&listeners_v3.TLSInspectorConfigurer{}).Configure(listener)
 }
 
 func applyToRealResource(

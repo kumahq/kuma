@@ -20,7 +20,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	xds_tls "github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -83,38 +82,15 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 			listenerTags[mesh_proto.ProtocolTag] = protocol
 		}
 
+		// the plain, non-TLS shape of the listener. When the proxy has an identity,
+		// the MeshTLS plugin replaces this listener with the Strict or Permissive
+		// topology - it is the sole owner of that decision.
 		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion, inboundListenerName).
 			Configure(envoy_listeners.InboundListener(endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 			Configure(envoy_listeners.StatPrefix(statPrefix)).
 			Configure(envoy_listeners.TransparentProxying(proxy)).
-			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(listenerTags, unifiedName)))
-
-		switch xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
-		case mesh_proto.CertificateAuthorityBackend_STRICT:
-			listenerBuilder.
-				Configure(envoy_listeners.FilterChain(FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, endpoint, nil, nil)))
-		case mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
-			listenerBuilder.
-				Configure(envoy_listeners.TLSInspector()).
-				Configure(envoy_listeners.FilterChain(
-					FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, endpoint, nil, nil).Configure(
-						envoy_listeners.MatchTransportProtocol("raw_buffer"))),
-				).
-				Configure(envoy_listeners.FilterChain(
-					// we need to differentiate between just TLS and Kuma's TLS, because with permissive mode
-					// TLS might protect the app itself.
-					FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, endpoint, nil, nil).Configure(
-						envoy_listeners.MatchTransportProtocol("tls"))),
-				).
-				Configure(envoy_listeners.FilterChain(
-					FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, endpoint, nil, nil).Configure(
-						envoy_listeners.MatchTransportProtocol("tls"),
-						envoy_listeners.MatchApplicationProtocols(xds_tls.KumaALPNProtocols...),
-					)),
-				)
-		default:
-			return nil, errors.New("unknown mode for CA backend")
-		}
+			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(listenerTags, unifiedName))).
+			Configure(envoy_listeners.FilterChain(FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, endpoint, nil, nil)))
 
 		inboundListener, err := listenerBuilder.Build()
 		if err != nil {

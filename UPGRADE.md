@@ -8,6 +8,30 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `mtls.backends[].mode: PERMISSIVE` no longer makes inbounds permissive
+
+`MeshTLS` is now the only thing that decides whether an inbound accepts plaintext. The inbound listener is built once, and the mode is resolved from the `MeshTLS` policy alone — the `mode` of the enabled `Mesh` CA backend is no longer consulted. A mesh that sets `mtls.backends[].mode: PERMISSIVE` and has no `MeshTLS` policy now gets `Strict` inbounds, and plaintext traffic to those inbounds is rejected.
+
+**Action required**
+
+Before upgrading, author a `MeshTLS` policy with `default.mode: Permissive` for every mesh that relies on `mtls.backends[].mode: PERMISSIVE`:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTLS
+metadata:
+  name: permissive
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  rules:
+    - default:
+        mode: Permissive
+```
+
+Meshes on `mtls.backends[].mode: STRICT`, meshes with mTLS disabled, and meshes that already have a `MeshTLS` policy are unaffected. Note that a mesh using `MeshIdentity` already resolved to `Strict` without a `MeshTLS` policy.
+
 ### `advertisedAddress` removed from `Dataplane` networking
 
 The `networking.advertisedAddress` field has been removed from the `Dataplane` resource. Proxies behind NAT or a private network (e.g. Docker) that relied on it to advertise a routable address to other proxies must now be reachable directly via `networking.address`.
