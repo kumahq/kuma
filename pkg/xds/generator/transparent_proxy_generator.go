@@ -182,11 +182,16 @@ func (TransparentProxyGenerator) generate(
 		return nil, err
 	}
 
+	// mirrors the MeshTLS mode resolution: a proxy with a workload identity defaults
+	// to strict, otherwise the legacy CA backend mode decides
+	caBackend := ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend()
+	strictTLS := proxy.WorkloadIdentity != nil ||
+		(caBackend != nil && caBackend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT)
+
 	useStrictInboundPorts := proxy.Dataplane != nil &&
 		proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts) &&
 		proxy.Dataplane.Spec.Networking != nil &&
-		ctx.Mesh.Resource.MTLSEnabled() &&
-		ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_STRICT
+		strictTLS
 
 	inboundListener, err := CreateInboundPassthroughListener(proxy, inboundName, allIP, tpCfg.Redirect.Inbound.Port.Uint32(), useStrictInboundPorts, inboundName)
 	if err != nil {

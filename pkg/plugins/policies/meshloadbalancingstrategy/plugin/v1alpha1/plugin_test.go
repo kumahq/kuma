@@ -401,6 +401,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithMeshBuilder(samples.MeshMTLSBuilder()).
 				Build(),
 		}),
+		// cross-zone endpoints address the remote zone directly, so a zone egress in
+		// the mesh does not change their locality
 		Entry("locality_aware_basic_egress_enabled", testCase{
 			resources: []core_xds.Resource{
 				{

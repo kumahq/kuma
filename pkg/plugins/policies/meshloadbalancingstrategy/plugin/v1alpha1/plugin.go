@@ -19,7 +19,6 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/core/xds/origin"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	bldrs_clusters "github.com/kumahq/kuma/v3/pkg/envoy/builders/cluster"
 	. "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
@@ -127,10 +126,9 @@ func (p plugin) configureDPP(
 	}
 
 	clusterModifier := func(cluster *envoy_cluster.Cluster, conf api.Conf) error {
-		egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
 		return NewModifier(cluster).
 			Configure(clusterConfigurer(conf)).
-			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, generator_metadata.OriginOutbound))).
+			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone))).
 			Modify()
 	}
 
@@ -147,9 +145,8 @@ func (p plugin) configureDPP(
 				return err
 			}
 		}
-		egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
 		for _, cla := range endpoints[serviceName] {
-			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, generator_metadata.OriginOutbound)).Modify(); err != nil {
+			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone)).Modify(); err != nil {
 				return err
 			}
 		}
@@ -205,20 +202,20 @@ func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Con
 		}
 		return NewModifier(envoyResource).
 			Configure(clusterConfigurer(conf)).
-			Configure(If(!isEgress && envoyResource.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound))).
+			Configure(If(!isEgress && envoyResource.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone))).
 			Modify()
 	case *envoy_endpoint.ClusterLoadAssignment:
 		return NewModifier(envoyResource).
-			Configure(claConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, false, generator_metadata.OriginOutbound)).
+			Configure(claConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone)).
 			Modify()
 	}
 	return nil
 }
 
-func staticCLAConfigurer(conf api.Conf, tags mesh_proto.MultiValueTagSet, podLabels map[string]string, localZone string, egressEnabled bool, origin origin.Origin) Configurer[envoy_cluster.Cluster] {
+func staticCLAConfigurer(conf api.Conf, tags mesh_proto.MultiValueTagSet, podLabels map[string]string, localZone string) Configurer[envoy_cluster.Cluster] {
 	return func(c *envoy_cluster.Cluster) error {
 		return NewModifier(c.LoadAssignment).
-			Configure(claConfigurer(conf, tags, podLabels, localZone, egressEnabled, origin)).
+			Configure(claConfigurer(conf, tags, podLabels, localZone)).
 			Modify()
 	}
 }
@@ -256,13 +253,13 @@ func clusterConfigurer(conf api.Conf) Configurer[envoy_cluster.Cluster] {
 	}
 }
 
-func claConfigurer(conf api.Conf, tags mesh_proto.MultiValueTagSet, podLabels map[string]string, localZone string, egressEnabled bool, origin origin.Origin) Configurer[envoy_endpoint.ClusterLoadAssignment] {
+func claConfigurer(conf api.Conf, tags mesh_proto.MultiValueTagSet, podLabels map[string]string, localZone string) Configurer[envoy_endpoint.ClusterLoadAssignment] {
 	return func(cla *envoy_endpoint.ClusterLoadAssignment) error {
 		atLeastOneLocalityGroup := conf.LocalityAwareness != nil && (conf.LocalityAwareness.LocalZone != nil || conf.LocalityAwareness.CrossZone != nil)
 		isLocalityAware := conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled)
 		return NewModifier(cla).
 			Configure(bldrs_endpoint.NonLocalPriority(isLocalityAware, localZone)).
-			Configure(If(atLeastOneLocalityGroup, bldrs_endpoint.Endpoints(NewEndpoints(cla.Endpoints, tags, podLabels, pointer.To(conf), localZone, egressEnabled, origin)))).
+			Configure(If(atLeastOneLocalityGroup, bldrs_endpoint.Endpoints(NewEndpoints(cla.Endpoints, tags, podLabels, pointer.To(conf), localZone)))).
 			Configure(If(atLeastOneLocalityGroup, bldrs_endpoint.OverprovisioningFactor(overprovisioningFactor(conf)))).
 			Modify()
 	}
@@ -385,7 +382,6 @@ func (p plugin) configureGateway(
 	}
 
 	affinityLabels := proxy.Dataplane.GetMeta().GetLabels()
-	egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
 
 	for listenerKey, listener := range gatewayListeners {
 		toRules, ok := gatewayRules.ToRules.ByListener[listenerKey]
@@ -413,7 +409,7 @@ func (p plugin) configureGateway(
 
 			if err := NewModifier(cluster).
 				Configure(clusterConfigurer(*conf)).
-				Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(*conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, gateway_metadata.OriginGateway))).
+				Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(*conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone))).
 				Modify(); err != nil {
 				return err
 			}
@@ -421,7 +417,7 @@ func (p plugin) configureGateway(
 
 		for serviceName, conf := range serviceConfs {
 			for _, cla := range gatewayEndpoints[serviceName] {
-				if err := NewModifier(cla).Configure(claConfigurer(*conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, gateway_metadata.OriginGateway)).Modify(); err != nil {
+				if err := NewModifier(cla).Configure(claConfigurer(*conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone)).Modify(); err != nil {
 					return err
 				}
 			}

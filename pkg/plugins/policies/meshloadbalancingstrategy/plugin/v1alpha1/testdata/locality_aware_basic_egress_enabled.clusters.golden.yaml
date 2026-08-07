@@ -24,23 +24,6 @@ resources:
         - endpoint:
             address:
               socketAddress:
-                address: 192.168.0.5
-                portValue: 8080
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-                kuma.io/zone: zone-2
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
-                kuma.io/zone: zone-2
-        locality:
-          zone: egress_JXegjD3U
-        priority: 1
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
           metadata:
@@ -71,6 +54,23 @@ resources:
         loadBalancingWeight: 1
         locality:
           zone: zone-1
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.0.5
+                portValue: 8080
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                kuma.io/zone: zone-2
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                kuma.io/zone: zone-2
+        locality:
+          zone: zone-2
+        priority: 1
       policy:
         overprovisioningFactor: 200
     name: payment

@@ -204,7 +204,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		resources.MeshZoneAddresses().Items,
 		zoneEgresses,
 		loader,
-		mtlsEnabled(mesh, resources.MeshIdentities()),
+		workloadIdentityEnabled(mesh, resources.MeshIdentities()),
 		zoneEgressList,
 	)
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
@@ -408,12 +408,12 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	return list, nil
 }
 
-// if we have identities or mtlsEnabled let's assume mTLS is enabled
-func mtlsEnabled(mesh *core_mesh.MeshResource, identities *meshidentity_api.MeshIdentityResourceList) bool {
-	if mesh.MTLSEnabled() || len(identities.Items) > 0 {
-		return true
-	}
-	return false
+// workloadIdentityEnabled tells whether the mesh hands a workload identity to its
+// proxies, either through the legacy Mesh.mtls backend or through a MeshIdentity.
+// This is the mesh level question, the per proxy one is answered by
+// core_xds.Proxy.WorkloadIdentity.
+func workloadIdentityEnabled(mesh *core_mesh.MeshResource, identities *meshidentity_api.MeshIdentityResourceList) bool {
+	return mesh.MTLSEnabled() || len(identities.Items) > 0
 }
 
 // takes a resourceList and modify it as needed
