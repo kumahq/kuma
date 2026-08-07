@@ -139,7 +139,7 @@ func (a *ApiServerHTTPSConfig) Validate() error {
 
 // ApiServerAuthn defines Api Server Authentication configuration
 type ApiServerAuthn struct {
-	// Type of authentication mechanism (available values: "tokens")
+	// Type of authentication mechanism ("tokens" is the built-in/default value; plugin-provided authn types may also be available)
 	Type string `json:"type" envconfig:"kuma_api_server_authn_type"`
 	// Localhost is authenticated as a user admin of group admin
 	LocalhostIsAdmin bool `json:"localhostIsAdmin" envconfig:"kuma_api_server_authn_localhost_is_admin"`
