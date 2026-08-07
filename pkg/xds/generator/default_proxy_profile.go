@@ -15,7 +15,6 @@ func NewDefaultProxyProfile() core.ResourceGenerator {
 		TransparentProxyGenerator{},
 		InboundProxyGenerator{},
 		DirectAccessProxyGenerator{},
-		ProbeProxyGenerator{},
 		DNSGenerator{},
 		ZoneProxyListenerGenerator{},
 		policies_generator.NewGenerator(),

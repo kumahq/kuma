@@ -8,8 +8,6 @@ metadata:
     kuma.io/envoy-admin-port: "9901"
     kuma.io/sidecar-env-vars: KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123
     kuma.io/sidecar-injected: "true"
-    kuma.io/virtual-probes: disabled
-    kuma.io/virtual-probes-port: "9000"
     traffic.kuma.io/transparent-proxy-config: |
       ipFamilyMode: dualstack
       kumaDPUser: "5678"
