@@ -33,8 +33,8 @@ var _ = Describe("AdminProxyGenerator", func() {
 		readinessPort    uint32
 		features         xds_types.Features
 		meshServicesMode mesh_proto.Mesh_MeshServices_Mode
-		// exposeEnvoyAdminStats mirrors Experimental.ExposeEnvoyAdminStats on the CP.
-		exposeEnvoyAdminStats bool
+		// exposeZoneProxyMetrics mirrors Experimental.ExposeZoneProxyMetrics on the CP.
+		exposeZoneProxyMetrics bool
 	}
 
 	DescribeTable("should generate envoy config",
@@ -49,7 +49,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
-					ExposeEnvoyAdminStats: given.exposeEnvoyAdminStats,
+					ExposeZoneProxyMetrics: given.exposeZoneProxyMetrics,
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
@@ -166,14 +166,14 @@ var _ = Describe("AdminProxyGenerator", func() {
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
 		}),
-		// ExposeEnvoyAdminStats is scoped to zone proxies, so a data plane proxy must
+		// ExposeZoneProxyMetrics is scoped to zone proxies, so a data plane proxy must
 		// generate byte-identical config to the same case with the flag off (02).
-		Entry("should not expose /stats/prometheus on a data plane proxy when ExposeEnvoyAdminStats is enabled", testCase{
+		Entry("should not expose /stats/prometheus on a data plane proxy when ExposeZoneProxyMetrics is enabled", testCase{
 			dataplaneFile:         "02.dataplane.input.yaml",
 			expected:              "02.envoy-config.golden.yaml",
 			adminAddress:          "127.0.0.1",
 			readinessPort:         9902,
-			exposeEnvoyAdminStats: true,
+			exposeZoneProxyMetrics: true,
 		}),
 	)
 
@@ -316,7 +316,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 		return proxy
 	}
 
-	// MeshMetric never matches zone proxies, so ExposeEnvoyAdminStats is the only way to
+	// MeshMetric never matches zone proxies, so ExposeZoneProxyMetrics is the only way to
 	// scrape their stats.
 	//
 	// Golden files rather than substring matching, because the two ways this feature can
@@ -325,14 +325,14 @@ var _ = Describe("AdminProxyGenerator", func() {
 	// (Prometheus then needs a client cert), and pointing it at the readiness cluster
 	// instead of the admin cluster (returns 404, no stats). The goldens pin the filter
 	// chain, the target cluster and the route order relative to /ready.
-	DescribeTable("should expose /stats/prometheus on zone proxies when ExposeEnvoyAdminStats is enabled",
+	DescribeTable("should expose /stats/prometheus on zone proxies when ExposeZoneProxyMetrics is enabled",
 		func(kind string, expected string) {
 			proxy := zoneProxyFor(kind, &xds.DataplaneMetadata{
 				AdminPort:     9901,
 				ReadinessPort: 9902,
 			})
 			ctx := xds_context.Context{
-				ControlPlane: &xds_context.ControlPlaneContext{ExposeEnvoyAdminStats: true},
+				ControlPlane: &xds_context.ControlPlaneContext{ExposeZoneProxyMetrics: true},
 			}
 
 			resources, err := generator.Generate(context.Background(), nil, ctx, proxy)
@@ -349,14 +349,14 @@ var _ = Describe("AdminProxyGenerator", func() {
 		Entry("zone egress", "egress", "11.zone-egress.envoy-config.golden.yaml"),
 	)
 
-	DescribeTable("should not expose /stats/prometheus on zone proxies when ExposeEnvoyAdminStats is disabled",
+	DescribeTable("should not expose /stats/prometheus on zone proxies when ExposeZoneProxyMetrics is disabled",
 		func(kind string) {
 			proxy := zoneProxyFor(kind, &xds.DataplaneMetadata{
 				AdminPort:     9901,
 				ReadinessPort: 9902,
 			})
 			ctx := xds_context.Context{
-				ControlPlane: &xds_context.ControlPlaneContext{ExposeEnvoyAdminStats: false},
+				ControlPlane: &xds_context.ControlPlaneContext{ExposeZoneProxyMetrics: false},
 			}
 
 			resources, err := generator.Generate(context.Background(), nil, ctx, proxy)

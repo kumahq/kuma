@@ -1195,7 +1195,7 @@ experimental:
   # every upstream cluster name, so effectively every service in the mesh, and Envoy
   # renders it on the main dispatcher thread, so unauthenticated request loops cost CPU on
   # a busy zone ingress. Restrict the admin port with a NetworkPolicy scoped to Prometheus.
-  exposeEnvoyAdminStats: false
+  exposeZoneProxyMetrics: false
 
 # Postgres' settings for universal control plane on k8s
 postgres:

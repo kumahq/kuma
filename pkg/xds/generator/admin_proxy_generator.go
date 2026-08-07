@@ -125,7 +125,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		se.ClusterName = dppReadinessClusterName
 	}
 	plaintextEndpointPaths := staticEndpointPaths
-	if xdsCtx.ControlPlane.GetExposeEnvoyAdminStats() && isZoneProxy(proxy) {
+	if xdsCtx.ControlPlane.GetExposeZoneProxyMetrics() && isZoneProxy(proxy) {
 		// Serve Envoy stats without mTLS so a Prometheus server can scrape them off the
 		// proxy's IP. This is the only Admin API path added to the plaintext filter chain.
 		//

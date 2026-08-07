@@ -98,7 +98,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		SystemNamespace:     systemNamespace,
 		InboundTagsDisabled: rt.Config().Experimental.InboundTagsDisabled,
 
-		ExposeEnvoyAdminStats: rt.Config().Experimental.ExposeEnvoyAdminStats,
+		ExposeZoneProxyMetrics: rt.Config().Experimental.ExposeZoneProxyMetrics,
 	}
 
 	if err := v3.RegisterXDS(statsCallbacks, rt.XDS().Metrics, envoyCpCtx, rt); err != nil {

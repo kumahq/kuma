@@ -870,7 +870,7 @@ experimental:
   # Admin API still requires mTLS. Mainly for standalone ZoneIngress/ZoneEgress, which MeshMetric
   # does not apply to. The stats dump lists every upstream cluster name and is rendered on Envoy's
   # main thread, so restrict the admin port at the network level when enabling this.
-  exposeEnvoyAdminStats: false # ENV: KUMA_EXPERIMENTAL_EXPOSE_ENVOY_ADMIN_STATS
+  exposeZoneProxyMetrics: false # ENV: KUMA_EXPERIMENTAL_EXPOSE_ZONE_PROXY_METRICS
   # KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
   kdsEventBasedWatchdog:
     # If true, then experimental event based watchdog to generate KDS snapshot is used.

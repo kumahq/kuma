@@ -56,9 +56,9 @@ Do not use this in production.
 
 ## Upgrade to `2.14.x`
 
-### `KUMA_EXPERIMENTAL_EXPOSE_ENVOY_ADMIN_STATS` exists only on 2.14
+### `KUMA_EXPERIMENTAL_EXPOSE_ZONE_PROXY_METRICS` exists only on 2.14
 
-`KUMA_EXPERIMENTAL_EXPOSE_ENVOY_ADMIN_STATS` (helm: `experimental.exposeEnvoyAdminStats`)
+`KUMA_EXPERIMENTAL_EXPOSE_ZONE_PROXY_METRICS` (helm: `experimental.exposeZoneProxyMetrics`)
 makes the Envoy admin listener on standalone `ZoneIngress`/`ZoneEgress` serve
 `/stats/prometheus` without mTLS. It is off by default and exists because `MeshMetric`
 does not apply to those proxies.
