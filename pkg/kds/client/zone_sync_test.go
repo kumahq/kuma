@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	stderrors "errors"
-	"fmt"
 	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -39,24 +38,6 @@ import (
 
 var _ = Describe("Zone Delta Sync", func() {
 	zoneName := "zone-1"
-
-	ingressFunc := func(zone string) *mesh_proto.ZoneIngress {
-		return &mesh_proto.ZoneIngress{
-			Zone: zone,
-			Networking: &mesh_proto.ZoneIngress_Networking{
-				Address: "192.168.0.1",
-				Port:    1212,
-			},
-			AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
-				{
-					Tags: map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    fmt.Sprintf("not-%s", zone),
-					},
-				},
-			},
-		}
-	}
 
 	var zoneStore store.ResourceStore
 	var zoneSyncer kds_sync_store.ResourceSyncer
@@ -218,33 +199,6 @@ var _ = Describe("Zone Delta Sync", func() {
 			g.Expect(actual.Items).To(BeEmpty())
 		}, "5s", "100ms").Should(Succeed())
 	})
-	labelFn := func(zoneName string) map[string]string {
-		return map[string]string{
-			mesh_proto.ZoneTag:             zoneName,
-			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
-		}
-	}
-
-	It("should sync ingresses", func() {
-		// create Ingress for current zone, shouldn't be synced
-		err := globalStore.Create(context.Background(), &mesh.ZoneIngressResource{Spec: ingressFunc(zoneName)}, store.CreateByKey("dp-1", model.NoMesh), store.CreateWithLabels(labelFn(zoneName)))
-		Expect(err).ToNot(HaveOccurred())
-		err = globalStore.Create(context.Background(), &mesh.ZoneIngressResource{Spec: ingressFunc("another-zone-1")}, store.CreateByKey("dp-2", model.NoMesh), store.CreateWithLabels(labelFn("another-zone-1")))
-		Expect(err).ToNot(HaveOccurred())
-		err = globalStore.Create(context.Background(), &mesh.ZoneIngressResource{Spec: ingressFunc("another-zone-2")}, store.CreateByKey("dp-3", model.NoMesh), store.CreateWithLabels(labelFn("another-zone-2")))
-		Expect(err).ToNot(HaveOccurred())
-
-		Eventually(func() int {
-			actual := mesh.ZoneIngressResourceList{}
-			err := zoneStore.List(context.Background(), &actual)
-			Expect(err).ToNot(HaveOccurred())
-			return len(actual.Items)
-		}, "5s", "100ms").Should(Equal(2))
-
-		actual := mesh.ZoneIngressResourceList{}
-		err = zoneStore.List(context.Background(), &actual)
-		Expect(err).ToNot(HaveOccurred())
-	})
 
 	It("should have up to date list of consumed types", func() {
 		excludeTypes := map[model.ResourceType]bool{
@@ -262,7 +216,6 @@ var _ = Describe("Zone Delta Sync", func() {
 		// plus the global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
-			mesh.ZoneIngressType,
 			system.ConfigType,
 			system.GlobalSecretType,
 			hostnamegenerator_api.HostnameGeneratorType,

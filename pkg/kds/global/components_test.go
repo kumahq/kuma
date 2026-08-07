@@ -137,7 +137,6 @@ var _ = Describe("Global Sync", func() {
 		// plus the global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
-			mesh.ZoneIngressType,
 			system.ConfigType,
 			system.GlobalSecretType,
 			hostnamegenerator_api.HostnameGeneratorType,

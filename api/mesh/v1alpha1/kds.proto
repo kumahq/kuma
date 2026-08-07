@@ -69,12 +69,11 @@ message XDSConfigRequest {
   // on one stream.
   string request_id = 1;
 
-  // Type of resource (Dataplane, ZoneIngress, ZoneEgress)
+  // Type of resource (Dataplane)
   string resource_type = 2;
   // Name of the resource on which we execute config dump.
   string resource_name = 3;
-  // Mesh of the resource on which we execute config dump. Should be empty for
-  // ZoneIngress, ZoneEgress.
+  // Mesh of the resource on which we execute config dump.
   string resource_mesh = 4;
   // whether we include eds or not
   bool include_eds = 5;
@@ -100,12 +99,11 @@ message StatsRequest {
   // on one stream.
   string request_id = 1;
 
-  // Type of resource (Dataplane, ZoneIngress, ZoneEgress)
+  // Type of resource (Dataplane)
   string resource_type = 2;
   // Name of the resource on which we execute kuma-dp stats request.
   string resource_name = 3;
   // Mesh of the resource on which we execute kuma-dp stats request.
-  // Should be empty for ZoneIngress, ZoneEgress.
   string resource_mesh = 4;
   // format is the format in which we return the clusters.
   AdminOutputFormat format = 5;
@@ -138,12 +136,11 @@ message ClustersRequest {
   // on one stream.
   string request_id = 1;
 
-  // Type of resource (Dataplane, ZoneIngress, ZoneEgress)
+  // Type of resource (Dataplane)
   string resource_type = 2;
   // Name of the resource on which we execute kuma-dp clusters request.
   string resource_name = 3;
   // Mesh of the resource on which we execute kuma-dp clusters request.
-  // Should be empty for ZoneIngress, ZoneEgress.
   string resource_mesh = 4;
   // format is the format in which we return the clusters.
   AdminOutputFormat format = 5;

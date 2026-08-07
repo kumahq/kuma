@@ -79,10 +79,10 @@ var _ = Describe("GroupByAttachment", func() {
 							},
 						},
 					},
-					core_mesh.ZoneIngressType: {
+					core_mesh.MeshType: {
 						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
 							inbound("192.168.0.2", 90, 91): {
-								&core_mesh.ZoneIngressResource{Meta: meta5},
+								&core_mesh.MeshResource{Meta: meta5},
 							},
 						},
 					},
@@ -105,8 +105,8 @@ var _ = Describe("GroupByAttachment", func() {
 					meshexternalservice_api.MeshExternalServiceType: []core_model.Resource{
 						&meshexternalservice_api.MeshExternalServiceResource{Meta: meta3},
 					},
-					core_mesh.ZoneIngressType: []core_model.Resource{
-						&core_mesh.ZoneIngressResource{Meta: meta5},
+					core_mesh.MeshType: []core_model.Resource{
+						&core_mesh.MeshResource{Meta: meta5},
 					},
 					core_mesh.DataplaneType: []core_model.Resource{
 						&core_mesh.DataplaneResource{Meta: meta4},
@@ -140,10 +140,10 @@ var _ = Describe("GroupByAttachment", func() {
 							},
 						},
 					},
-					core_mesh.ZoneIngressType: {
+					core_mesh.MeshType: {
 						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
 							outbound("192.168.0.4", 90): {
-								&core_mesh.ZoneIngressResource{Meta: meta6},
+								&core_mesh.MeshResource{Meta: meta6},
 							},
 						},
 					},
@@ -166,8 +166,8 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.4:90"}: {
-					core_mesh.ZoneIngressType: []core_model.Resource{
-						&core_mesh.ZoneIngressResource{Meta: meta6},
+					core_mesh.MeshType: []core_model.Resource{
+						&core_mesh.MeshResource{Meta: meta6},
 					},
 					core_mesh.DataplaneType: []core_model.Resource{
 						&core_mesh.DataplaneResource{Meta: meta6},
@@ -181,10 +181,10 @@ var _ = Describe("GroupByAttachment", func() {
 		Entry("group by service", testCase{
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.ZoneIngressType: {
+					core_mesh.MeshType: {
 						ServicePolicies: map[core_xds.ServiceName][]core_model.Resource{
 							"redis": {
-								&core_mesh.ZoneIngressResource{Meta: meta6},
+								&core_mesh.MeshResource{Meta: meta6},
 							},
 						},
 					},
@@ -192,8 +192,8 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 			expected: inspect.AttachmentMap{
 				inspect.Attachment{Type: inspect.Service, Name: "redis", Service: "redis"}: {
-					core_mesh.ZoneIngressType: []core_model.Resource{
-						&core_mesh.ZoneIngressResource{Meta: meta6},
+					core_mesh.MeshType: []core_model.Resource{
+						&core_mesh.MeshResource{Meta: meta6},
 					},
 				},
 			},
@@ -308,17 +308,17 @@ var _ = Describe("GroupByPolicy", func() {
 		Entry("group by policy that exists both for inbounds and outbounds", testCase{
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.ZoneIngressType: {
+					core_mesh.MeshType: {
 						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
 							inbound("192.168.0.1", 80, 81): {
-								&core_mesh.ZoneIngressResource{
+								&core_mesh.MeshResource{
 									Meta: &test_model.ResourceMeta{Name: "rl-3", Mesh: "mesh-1"},
 								},
 							},
 						},
 						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
 							outbound("192.168.0.3", 80): {
-								&core_mesh.ZoneIngressResource{
+								&core_mesh.MeshResource{
 									Meta: &test_model.ResourceMeta{Name: "rl-3", Mesh: "mesh-1"},
 								},
 							},
@@ -328,7 +328,7 @@ var _ = Describe("GroupByPolicy", func() {
 			},
 			expected: inspect.AttachmentsByPolicy{
 				inspect.PolicyKey{
-					Type: core_mesh.ZoneIngressType,
+					Type: core_mesh.MeshType,
 					Key:  core_model.ResourceKey{Name: "rl-3", Mesh: "mesh-1"},
 				}: {
 					{Type: inspect.Inbound, Name: "192.168.0.1:80:81"},

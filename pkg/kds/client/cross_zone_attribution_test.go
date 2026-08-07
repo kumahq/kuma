@@ -152,22 +152,6 @@ func gatewayDataplaneWithDivergentZoneTag() *mesh_proto.Dataplane {
 	}
 }
 
-func zoneIngressWithDivergentZoneTags() *mesh_proto.ZoneIngress {
-	return &mesh_proto.ZoneIngress{
-		Zone: otherZone,
-		Networking: &mesh_proto.ZoneIngress_Networking{
-			Address: "10.0.0.1",
-			Port:    10001,
-		},
-		AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{{
-			Tags: map[string]string{
-				mesh_proto.ServiceTag: "svc-a",
-				mesh_proto.ZoneTag:    otherZone,
-			},
-		}},
-	}
-}
-
 // hashSuffixCtx advertises the hash-suffix feature, as every currently
 // supported zone does, so the modern (non-prefixing) global ingest path runs.
 func hashSuffixCtx() context.Context {
@@ -187,23 +171,9 @@ func storedDataplane(t *testing.T, s store.ResourceStore, ctx context.Context) *
 	return stored
 }
 
-func storedZoneIngress(t *testing.T, s store.ResourceStore, ctx context.Context) *core_mesh.ZoneIngressResource {
-	t.Helper()
-	g := NewWithT(t)
-	var stored *core_mesh.ZoneIngressResource
-	g.Eventually(func(g Gomega) {
-		list := core_mesh.ZoneIngressResourceList{}
-		g.Expect(s.List(ctx, &list)).To(Succeed())
-		g.Expect(list.Items).To(HaveLen(1))
-		stored = list.Items[0]
-	}, "5s", "50ms").Should(Succeed())
-	return stored
-}
-
 // TestZoneToGlobalSyncAttribution asserts the top-level attribution (kuma.io/zone
-// label, ZoneIngress.Spec.Zone) and the in-spec zone tags (ZoneIngress
-// AvailableServices, Dataplane gateway) all resolve to the connecting
-// zone's client-id, and that a matching zone is a no-op.
+// label) and the in-spec zone tags (Dataplane gateway) all resolve to the
+// connecting zone's client-id, and that a matching zone is a no-op.
 func TestZoneToGlobalSyncAttribution(t *testing.T) {
 	t.Run("DataplaneGateway", func(t *testing.T) {
 		g := NewWithT(t)
@@ -219,26 +189,6 @@ func TestZoneToGlobalSyncAttribution(t *testing.T) {
 			"Dataplane gateway kuma.io/zone tag must resolve to the connecting zone's client-id %q, not the sender-provided zone %q", connectingZone, gatewayZone)
 
 		g.Expect(testutil.ToFloat64(rewrites.WithLabelValues(string(core_mesh.DataplaneType)))).To(Equal(1.0))
-	})
-
-	t.Run("ZoneIngress", func(t *testing.T) {
-		g := NewWithT(t)
-		ctx := hashSuffixCtx()
-		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.ZoneIngressType)
-		defer cleanup()
-
-		clientStream.RecvCh <- deltaResponse(t, core_mesh.ZoneIngressType, otherZone, "zi-1", "", zoneIngressWithDivergentZoneTags())
-
-		stored := storedZoneIngress(t, globalStore, ctx)
-		g.Expect(stored.Spec.GetZone()).To(Equal(connectingZone),
-			"ZoneIngress.Spec.Zone must be the connecting zone's client-id %q, not the sender-provided zone %q", connectingZone, stored.Spec.GetZone())
-		g.Expect(stored.GetMeta().GetLabels()[mesh_proto.ZoneTag]).To(Equal(connectingZone))
-
-		svcZone := stored.Spec.GetAvailableServices()[0].GetTags()[mesh_proto.ZoneTag]
-		g.Expect(svcZone).To(Equal(connectingZone),
-			"ZoneIngress AvailableServices kuma.io/zone tag must resolve to the connecting zone's client-id %q, not the sender-provided zone %q", connectingZone, svcZone)
-
-		g.Expect(testutil.ToFloat64(rewrites.WithLabelValues(string(core_mesh.ZoneIngressType)))).To(Equal(1.0))
 	})
 
 	// When the sender's values already match the connecting zone (ordinary
