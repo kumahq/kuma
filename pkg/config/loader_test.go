@@ -649,6 +649,10 @@ multizone:
       nackBackoff: 11s
       responseBackoff: 1s
       logPayloads: true
+      eventBasedWatchdog:
+        flushInterval: 10s
+        fullResyncInterval: 15s
+        delayFullResync: true
       zoneHealthCheck:
         pollInterval: 11s
         timeout: 110s
@@ -667,6 +671,10 @@ multizone:
       nackBackoff: 21s
       responseBackoff: 2s
       logPayloads: true
+      eventBasedWatchdog:
+        flushInterval: 11s
+        fullResyncInterval: 16s
+        delayFullResync: true
       tlsSkipVerify: true
       labels:
         skipPrefixes: ["argocd.argoproj.io"]
@@ -786,19 +794,6 @@ experimental:
   ingressTagFilters: ["kuma.io/service"]
   generateMeshServices: true
   skipPersistedVIPs: true
-multizone:
-  global:
-    kds:
-      eventBasedWatchdog:
-        flushInterval: 10s
-        fullResyncInterval: 15s
-        delayFullResync: true
-  zone:
-    kds:
-      eventBasedWatchdog:
-        flushInterval: 11s
-        fullResyncInterval: 16s
-        delayFullResync: true
 eventBus:
   bufferSize: 30
 coreResources:
