@@ -22,6 +22,7 @@ import (
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -108,6 +109,11 @@ func DefaultContext(
 		kds_reconcile.If(
 			kds_reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
+		reconcile_v2.If(
+			// MeshTrust status only carries CP-local bookkeeping (e.g. whether it was
+			// generated from a local MeshIdentity), so it shouldn't be synced to Global.
+			reconcile_v2.TypeIs(meshtrust_api.MeshTrustType),
+			RemoveStatus()),
 		HashSuffixMapper(false, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
 	}
 	ctx = metadata.AppendToOutgoingContext(ctx, VersionHeader, version.Build.Version)
