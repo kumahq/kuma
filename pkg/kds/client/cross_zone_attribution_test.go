@@ -42,7 +42,7 @@ const (
 
 // newGlobalSink wires the global-CP KDS ingest as pkg/kds/mux/zone_sync.go does,
 // over a memory store; the connecting peer's client-id is connectingZone.
-func newGlobalSink(t *testing.T, ctx context.Context, typ core_model.ResourceType) (store.ResourceStore, *test_grpc.MockDeltaClientStream, *prometheus.CounterVec, func()) {
+func newGlobalSink(t *testing.T, ctx context.Context, typ core_model.ResourceType, ingressTagFilters []string) (store.ResourceStore, *test_grpc.MockDeltaClientStream, *prometheus.CounterVec, func()) {
 	t.Helper()
 	g := NewWithT(t)
 
@@ -73,7 +73,7 @@ func newGlobalSink(t *testing.T, ctx context.Context, typ core_model.ResourceTyp
 		core.Log.WithName("crosszone-global-sink"),
 		[]core_model.ResourceType{typ},
 		kdsStream,
-		kds_sync_store.GlobalSyncCallback(ctx, syncer, false, nil, "kuma-system", rewrites),
+		kds_sync_store.GlobalSyncCallback(ctx, syncer, false, nil, "kuma-system", ingressTagFilters, rewrites),
 		kds_client.SyncClientConfig{},
 	)
 
@@ -163,6 +163,8 @@ func zoneIngressWithDivergentZoneTags() *mesh_proto.ZoneIngress {
 			Tags: map[string]string{
 				mesh_proto.ServiceTag: "svc-a",
 				mesh_proto.ZoneTag:    otherZone,
+				"version":             "v1",
+				"team":                "payments",
 			},
 		}},
 	}
@@ -208,7 +210,7 @@ func TestZoneToGlobalSyncAttribution(t *testing.T) {
 	t.Run("DataplaneGateway", func(t *testing.T) {
 		g := NewWithT(t)
 		ctx := hashSuffixCtx()
-		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.DataplaneType)
+		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.DataplaneType, nil)
 		defer cleanup()
 
 		clientStream.RecvCh <- deltaResponse(t, core_mesh.DataplaneType, otherZone, "gw-dp-1", "default", gatewayDataplaneWithDivergentZoneTag())
@@ -224,7 +226,7 @@ func TestZoneToGlobalSyncAttribution(t *testing.T) {
 	t.Run("ZoneIngress", func(t *testing.T) {
 		g := NewWithT(t)
 		ctx := hashSuffixCtx()
-		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.ZoneIngressType)
+		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.ZoneIngressType, nil)
 		defer cleanup()
 
 		clientStream.RecvCh <- deltaResponse(t, core_mesh.ZoneIngressType, otherZone, "zi-1", "", zoneIngressWithDivergentZoneTags())
@@ -241,12 +243,28 @@ func TestZoneToGlobalSyncAttribution(t *testing.T) {
 		g.Expect(testutil.ToFloat64(rewrites.WithLabelValues(string(core_mesh.ZoneIngressType)))).To(Equal(1.0))
 	})
 
+	t.Run("ZoneIngressTagFilters", func(t *testing.T) {
+		g := NewWithT(t)
+		ctx := hashSuffixCtx()
+		globalStore, clientStream, _, cleanup := newGlobalSink(t, ctx, core_mesh.ZoneIngressType, []string{"version"})
+		defer cleanup()
+
+		clientStream.RecvCh <- deltaResponse(t, core_mesh.ZoneIngressType, otherZone, "zi-filtered", "", zoneIngressWithDivergentZoneTags())
+
+		stored := storedZoneIngress(t, globalStore, ctx)
+		tags := stored.Spec.GetAvailableServices()[0].GetTags()
+		g.Expect(tags).To(HaveKeyWithValue(mesh_proto.ServiceTag, "svc-a"))
+		g.Expect(tags).To(HaveKeyWithValue(mesh_proto.ZoneTag, connectingZone))
+		g.Expect(tags).To(HaveKeyWithValue("team", "payments"))
+		g.Expect(tags).NotTo(HaveKey("version"))
+	})
+
 	// When the sender's values already match the connecting zone (ordinary
 	// sync), nothing is rewritten and the counter stays at zero.
 	t.Run("MatchingZoneIsNoOp", func(t *testing.T) {
 		g := NewWithT(t)
 		ctx := hashSuffixCtx()
-		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.DataplaneType)
+		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.DataplaneType, nil)
 		defer cleanup()
 
 		clientStream.RecvCh <- deltaResponse(t, core_mesh.DataplaneType, connectingZone, "dp-ok", "default", dataplaneWithZoneTag(connectingZone))

@@ -449,6 +449,7 @@ func GlobalSyncCallback(
 	k8sStore bool,
 	kubeFactory resources_k8s.KubeFactory,
 	systemNamespace string,
+	ingressTagFilters []string,
 	rewrites *prometheus.CounterVec,
 ) *kds_client.Callbacks {
 	supportsHashSuffixes := kds.ContextHasFeature(ctx, kds.FeatureHashSuffix)
@@ -487,6 +488,7 @@ func GlobalSyncCallback(
 					rejected = pinZone(&zi.Spec.Zone, clientID, rejected)
 					for _, svc := range zi.Spec.GetAvailableServices() {
 						rejected = pinZoneTag(svc.GetTags(), clientID, rejected)
+						filterTagsByPrefix(svc.GetTags(), ingressTagFilters)
 					}
 					recordZoneRewrite(rewrites, upstream.Type, zi.GetMeta(), clientID, rejected)
 				}
@@ -516,6 +518,24 @@ func GlobalSyncCallback(
 				return hasOldStylePrefix || hasZoneLabel
 			}), Zone(upstream.ControlPlaneId))
 		},
+	}
+}
+
+func filterTagsByPrefix(tags map[string]string, filteredPrefixes []string) {
+	if len(tags) == 0 || len(filteredPrefixes) == 0 {
+		return
+	}
+	for tag := range tags {
+		for _, prefix := range filteredPrefixes {
+			prefix = strings.TrimSpace(prefix)
+			if prefix == "" {
+				continue
+			}
+			if strings.HasPrefix(tag, prefix) {
+				delete(tags, tag)
+				break
+			}
+		}
 	}
 }
 

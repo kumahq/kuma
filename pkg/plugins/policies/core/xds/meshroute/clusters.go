@@ -51,19 +51,19 @@ func GenerateClusters(
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 			if meshCtx.IsExternalService(serviceName) {
 				realResourceRef := service.BackendRef().RealResourceBackendRef()
-				dest, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
+				_, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
 				if !ok {
 					continue
 				}
+				// The destination advertises its SNI from the resolved port
+				// name, so normalize a numeric backend-ref section (named port
+				// targeted by number) to the port name before deriving the KRI SNI.
+				kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
+				if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+					continue
+				}
+				sni := core_sni.FromKRI(kriID)
 				if proxy.WorkloadIdentity != nil {
-					// The destination advertises its SNI from the resolved port
-					// name, so normalize a numeric backend-ref section (named port
-					// targeted by number) to the port name before deriving the KRI SNI.
-					kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
-					if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
-						continue
-					}
-					sni := core_sni.FromKRI(kriID)
 					// we only want to route when are mesh-scoped zone egresses
 					if len(meshCtx.ZoneEgresses) == 0 {
 						continue
@@ -80,7 +80,6 @@ func GenerateClusters(
 						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 				} else {
-					sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
