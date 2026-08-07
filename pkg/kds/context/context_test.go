@@ -32,6 +32,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
@@ -350,13 +351,10 @@ var _ = Describe("Context", func() {
 					},
 				},
 				Spec: &meshtimeout_api.MeshTimeout{
-					TargetRef: &targetRef,
+					TargetRef: pointer.To(builders.ToTopLevelTargetRef(targetRef)),
 					To: &[]meshtimeout_api.To{
 						{
-							TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{
-								mesh_proto.DisplayName:      "backend",
-								mesh_proto.KubeNamespaceTag: "kuma-demo",
-							}, ""),
+							TargetRef: builders.ToOutboundTargetRef(builders.TargetRefMeshService("backend", "kuma-demo", "")),
 						},
 					},
 				},
