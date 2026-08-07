@@ -18,44 +18,32 @@ var _ = Describe("InboundListenerTags", func() {
 		}
 	}
 
-	It("keeps the Dataplane labels and adds the protocol", func() {
+	It("keeps the Dataplane labels", func() {
 		// when
 		out := generator.InboundListenerTags(
 			dataplaneWithLabels(map[string]string{"k8s.kuma.io/namespace": "kuma-demo"}),
-			"http",
 			"self_inbound_dp_http",
 		)
 
 		// then
-		Expect(out).To(Equal(map[string]string{
-			"k8s.kuma.io/namespace": "kuma-demo",
-			mesh_proto.ProtocolTag:  "http",
-		}))
+		Expect(out).To(Equal(map[string]string{"k8s.kuma.io/namespace": "kuma-demo"}))
 	})
 
-	It("does not mutate the Dataplane labels", func() {
+	It("does not hand out the Dataplane's own label map", func() {
 		// given
 		labels := map[string]string{"k8s.kuma.io/namespace": "kuma-demo"}
-		dataplane := dataplaneWithLabels(labels)
 
 		// when
-		generator.InboundListenerTags(dataplane, "http", "self_inbound_dp_http")
+		out := generator.InboundListenerTags(dataplaneWithLabels(labels), "self_inbound_dp_http")
+		out["mutated"] = "yes"
 
 		// then
 		Expect(labels).To(Equal(map[string]string{"k8s.kuma.io/namespace": "kuma-demo"}))
 	})
 
-	It("keeps the protocol alone when the Dataplane has no labels", func() {
+	It("writes the contextual name under kuma.io/unified-name when there are no labels", func() {
 		// when
-		out := generator.InboundListenerTags(dataplaneWithLabels(nil), "grpc", "self_inbound_dp_grpc")
-
-		// then
-		Expect(out).To(Equal(map[string]string{mesh_proto.ProtocolTag: "grpc"}))
-	})
-
-	It("writes the contextual name under kuma.io/unified-name when there is nothing else", func() {
-		// when
-		out := generator.InboundListenerTags(dataplaneWithLabels(nil), "", "self_inbound_dp_8080")
+		out := generator.InboundListenerTags(dataplaneWithLabels(nil), "self_inbound_dp_8080")
 
 		// then
 		Expect(out).To(Equal(map[string]string{mesh_proto.UnifiedNameTag: "self_inbound_dp_8080"}))

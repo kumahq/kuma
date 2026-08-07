@@ -71,7 +71,7 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/protocol: http
+          kuma.io/unified-name: self_inbound_dp_9000
     name: self_inbound_dp_9000
     statPrefix: self_inbound_dp_9000
     trafficDirection: INBOUND

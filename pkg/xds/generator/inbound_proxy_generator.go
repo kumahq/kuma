@@ -34,8 +34,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		}
 
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
-		inboundProtocol := iface.GetProtocol()
-		protocol := core_meta.ParseProtocol(inboundProtocol)
+		protocol := core_meta.ParseProtocol(iface.GetProtocol())
 		// the cluster, the listener and their stat prefixes all share this name
 		contextualName := naming.MustContextualInboundName(proxy.Dataplane, endpoint.InboundName)
 
@@ -77,7 +76,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 			Configure(envoy_listeners.InboundListener(endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 			Configure(envoy_listeners.StatPrefix(contextualName)).
 			Configure(envoy_listeners.TransparentProxying(proxy)).
-			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(proxy.Dataplane, inboundProtocol, contextualName))).
+			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(proxy.Dataplane, contextualName))).
 			Configure(envoy_listeners.FilterChain(FilterChainBuilder(protocol, proxy, endpoint))).
 			Build()
 		if err != nil {
@@ -126,22 +125,15 @@ func FilterChainBuilder(
 		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
 }
 
-// InboundListenerTags builds the listener metadata of an inbound out of the
-// Dataplane's labels and the inbound's protocol - inbounds carry no tags of
-// their own. When both are empty, which happens on a Universal Dataplane with
-// no labels, it falls back to the contextual name (self_inbound_dp_<section>)
-// under kuma.io/unified-name so the listener stays selectable. That name
-// carries no Dataplane identity, so it survives Pod churn a KRI would not.
-func InboundListenerTags(dataplane *core_mesh.DataplaneResource, protocol string, contextualName string) map[string]string {
-	tags := maps.Clone(dataplane.GetMeta().GetLabels())
-	if tags == nil {
-		tags = map[string]string{}
+// InboundListenerTags is the listener metadata of an inbound: the Dataplane's
+// labels - inbounds carry no tags of their own. A Universal Dataplane may have
+// no labels at all, and then it falls back to the contextual name
+// (self_inbound_dp_<section>) under kuma.io/unified-name so the listener stays
+// selectable, the same key an outbound listener carries. That name holds no
+// Dataplane identity, so it survives Pod churn a KRI would not.
+func InboundListenerTags(dataplane *core_mesh.DataplaneResource, contextualName string) map[string]string {
+	if tags := maps.Clone(dataplane.GetMeta().GetLabels()); len(tags) > 0 {
+		return tags
 	}
-	if protocol != "" {
-		tags[mesh_proto.ProtocolTag] = protocol
-	}
-	if len(tags) == 0 {
-		return map[string]string{mesh_proto.UnifiedNameTag: contextualName}
-	}
-	return tags
+	return map[string]string{mesh_proto.UnifiedNameTag: contextualName}
 }
