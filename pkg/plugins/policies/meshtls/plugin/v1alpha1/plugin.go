@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"maps"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -309,19 +307,11 @@ func configureListener(
 ) (envoy_common.NamedResource, error) {
 	inboundContextualID := naming.MustContextualInboundName(proxy.Dataplane, iface.InboundName)
 
-	listenerTags := maps.Clone(proxy.Dataplane.GetMeta().GetLabels())
-	if listenerTags == nil {
-		listenerTags = map[string]string{}
-	}
-	if protocol := inbound.GetProtocol(); protocol != "" {
-		listenerTags[mesh_proto.ProtocolTag] = protocol
-	}
-
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, inboundContextualID).
 		Configure(envoy_listeners.InboundListener(iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 		Configure(envoy_listeners.StatPrefix(inboundContextualID)).
 		Configure(envoy_listeners.TransparentProxying(proxy)).
-		Configure(envoy_listeners.TagsMetadata(generator.InboundListenerTags(listenerTags, inboundContextualID)))
+		Configure(envoy_listeners.TagsMetadata(generator.InboundListenerTags(proxy.Dataplane, inbound.GetProtocol(), inboundContextualID)))
 
 	downstreamCtx, err := downstreamTLSContext(xdsCtx, proxy, conf)
 	if err != nil {

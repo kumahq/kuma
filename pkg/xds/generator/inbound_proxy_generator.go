@@ -9,6 +9,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -68,23 +69,15 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 			Origin:   metadata.OriginInbound,
 		})
 
-		// generate LDS resource
-		listenerTags := maps.Clone(proxy.Dataplane.GetMeta().GetLabels())
-		if listenerTags == nil {
-			listenerTags = map[string]string{}
-		}
-		if inboundProtocol != "" {
-			listenerTags[mesh_proto.ProtocolTag] = inboundProtocol
-		}
-
-		// the plain, non-TLS shape of the listener. When the proxy has an identity,
-		// the MeshTLS plugin replaces this listener with the Strict or Permissive
-		// topology - it is the sole owner of that decision.
+		// generate LDS resource: the plain, non-TLS shape of the listener. When
+		// the proxy has an identity, the MeshTLS plugin replaces this listener
+		// with the Strict or Permissive topology - it is the sole owner of that
+		// decision.
 		inboundListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion, contextualName).
 			Configure(envoy_listeners.InboundListener(endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
 			Configure(envoy_listeners.StatPrefix(contextualName)).
 			Configure(envoy_listeners.TransparentProxying(proxy)).
-			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(listenerTags, contextualName))).
+			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(proxy.Dataplane, inboundProtocol, contextualName))).
 			Configure(envoy_listeners.FilterChain(FilterChainBuilder(protocol, proxy, endpoint))).
 			Build()
 		if err != nil {
@@ -133,13 +126,22 @@ func FilterChainBuilder(
 		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
 }
 
-// InboundListenerTags keeps the inbound's own tags, or when they are empty
-// falls back to the contextual name (self_inbound_dp_<sectionName>) under
-// kuma.io/unified-name so the listener stays selectable. The name carries no
-// Dataplane identity, so it survives Pod churn that a Dataplane KRI would not.
-func InboundListenerTags(tags map[string]string, contextualName string) map[string]string {
-	if len(tags) > 0 {
-		return tags
+// InboundListenerTags builds the listener metadata of an inbound out of the
+// Dataplane's labels and the inbound's protocol - inbounds carry no tags of
+// their own. When both are empty, which happens on a Universal Dataplane with
+// no labels, it falls back to the contextual name (self_inbound_dp_<section>)
+// under kuma.io/unified-name so the listener stays selectable. That name
+// carries no Dataplane identity, so it survives Pod churn a KRI would not.
+func InboundListenerTags(dataplane *core_mesh.DataplaneResource, protocol string, contextualName string) map[string]string {
+	tags := maps.Clone(dataplane.GetMeta().GetLabels())
+	if tags == nil {
+		tags = map[string]string{}
 	}
-	return map[string]string{mesh_proto.UnifiedNameTag: contextualName}
+	if protocol != "" {
+		tags[mesh_proto.ProtocolTag] = protocol
+	}
+	if len(tags) == 0 {
+		return map[string]string{mesh_proto.UnifiedNameTag: contextualName}
+	}
+	return tags
 }
