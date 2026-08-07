@@ -30,7 +30,7 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: afce62f771ed74b78.example.9090.default.mes
+        sni: sni.extsvc.default.example.9090
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
