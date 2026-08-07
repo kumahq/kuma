@@ -157,7 +157,7 @@ var _ = Describe("Updater", func() {
 		}, "10s", "100ms").Should(Succeed())
 	})
 
-	It("should derive identity from the workload label when inbound tags are absent", func() {
+	It("should derive identity from the workload label", func() {
 		// when
 		Expect(builders.MeshService().
 			WithName("backend").
@@ -167,7 +167,6 @@ var _ = Describe("Updater", func() {
 			AddIntPort(int32(builders.FirstInboundPort), int32(builders.FirstInboundPort), "http").
 			Create(resManager)).To(Succeed())
 		taglessDpp := samples.DataplaneBackendBuilder().Build()
-		taglessDpp.Spec.Networking.Inbound[0].Tags = map[string]string{}
 		Expect(resManager.Create(context.TODO(), taglessDpp, store.CreateByKey("dp-1", model.DefaultMesh), store.CreateWithLabels(map[string]string{
 			metadata.KumaWorkload: "backend",
 		}))).To(Succeed())

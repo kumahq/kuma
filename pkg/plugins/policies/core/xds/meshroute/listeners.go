@@ -1,8 +1,6 @@
 package meshroute
 
 import (
-	"fmt"
-
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
@@ -30,7 +28,6 @@ func MakeTCPSplit(
 	return makeSplits(
 		map[core_meta.Protocol]struct{}{
 			core_meta.ProtocolUnknown: {},
-			core_meta.ProtocolKafka:   {},
 			core_meta.ProtocolTCP:     {},
 			core_meta.ProtocolHTTP:    {},
 			core_meta.ProtocolHTTP2:   {},
@@ -68,12 +65,11 @@ type DestinationService struct {
 	KumaServiceTagValue string
 }
 
-// ConditionallyResolveKRIWithFallback returns the identifier for this DestinationService.
-// If provided condition is met and the Outbound has an associated real resource,
-// the identifier is derived from that resource (KRI). Otherwise, the given fallback
-// is returned
-func (ds *DestinationService) ConditionallyResolveKRIWithFallback(condition bool, fallback string) string {
-	if condition && ds.Outbound != nil {
+// ResolveKRIWithFallback returns the identifier for this DestinationService.
+// If the Outbound has an associated real resource, the identifier is derived
+// from that resource (KRI). Otherwise, the given fallback is returned.
+func (ds *DestinationService) ResolveKRIWithFallback(fallback string) string {
+	if ds.Outbound != nil {
 		if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
 			return id.String()
 		}
@@ -81,9 +77,8 @@ func (ds *DestinationService) ConditionallyResolveKRIWithFallback(condition bool
 	return fallback
 }
 
-// OutboundListenerTags returns the outbound listener's io.kuma.tags: real tags
-// without kuma.io/mesh for a legacy outbound, or the destination KRI under
-// kuma.io/unified-name for a resource-based one.
+// OutboundListenerTags returns the outbound listener's io.kuma.tags: the
+// destination KRI under kuma.io/unified-name.
 func (ds *DestinationService) OutboundListenerTags() map[string]string {
 	if ds.Outbound == nil {
 		return nil
@@ -91,38 +86,23 @@ func (ds *DestinationService) OutboundListenerTags() map[string]string {
 	if id, ok := ds.Outbound.AssociatedServiceResource(); ok {
 		return map[string]string{mesh_proto.UnifiedNameTag: id.String()}
 	}
-	return map[string]string(envoy_tags.Tags(ds.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag))
+	return nil
 }
 
 func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
-	if r, ok := ds.Outbound.AssociatedServiceResource(); ok {
-		return resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
-			Resource: r,
-			Weight:   100,
-		})
-	} else {
-		return resolve.NewResolvedBackendRef(&resolve.LegacyBackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Labels: &map[string]string{
-					mesh_proto.DisplayName: ds.Outbound.LegacyOutbound.GetService(),
-				},
-				Tags: pointer.To(ds.Outbound.LegacyOutbound.GetTags()),
-			},
-			Weight: pointer.To(uint(100)),
-		})
-	}
+	return resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
+		Resource: ds.Outbound.Resource,
+		Weight:   100,
+	})
 }
 
 // CollectServices builds a slice of DestinationService from proxy.Outbounds
 //
-// It handles two types of outbounds:
-// - Legacy outbounds: resolved using service name and protocol from mesh context
-// - Real-resource outbounds: resolved by matching KRI identifier and port name
+// Every outbound is resolved by matching its KRI identifier and port name.
 //
 // Skips outbounds that are incomplete or invalid:
 // - nil entries
-// - real-resource outbounds with missing resource reference
+// - outbounds with missing resource reference
 // - no service found for the given KRI
 // - no port matching the SectionName
 //
@@ -132,19 +112,6 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 
 	for _, outbound := range proxy.Outbounds {
 		if outbound == nil {
-			continue
-		}
-
-		if lo := outbound.LegacyOutbound; lo != nil {
-			result = append(
-				result,
-				DestinationService{
-					Outbound:            outbound,
-					Protocol:            meshCtx.GetServiceProtocol(lo.GetService()),
-					KumaServiceTagValue: lo.GetService(),
-				},
-			)
-
 			continue
 		}
 
@@ -184,7 +151,7 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 			DestinationService{
 				Outbound:            outbound,
 				Protocol:            protocol,
-				KumaServiceTagValue: destinationname.MustResolve(false, svc, port),
+				KumaServiceTagValue: destinationname.ResolveLegacyFromDestination(svc, port),
 			},
 		)
 	}
@@ -273,7 +240,7 @@ func handleRealResources(
 		ref.Resource = kri.WithSectionName(ref.Resource, port.GetName())
 	}
 
-	service := destinationname.MustResolve(false, dest, port)
+	service := destinationname.ResolveLegacyFromDestination(dest, port)
 
 	clusterName := ref.Resource.String()
 
@@ -331,14 +298,6 @@ func handleLegacyBackendRef(
 		WithTags(mesh_proto.ServiceTag, service).
 		DestinationClusterName(nil)
 
-	// The mesh tag is present here if this destination is generated
-	// from a cross-mesh MeshGateway listener virtual outbound.
-	// It is not part of the service tags.
-	if mesh, ok := pointer.Deref(ref.Tags)[mesh_proto.MeshTag]; ok {
-		// The name should be distinct to the service & mesh combination
-		clusterName = fmt.Sprintf("%s_%s", clusterName, mesh)
-	}
-
 	isExternalService := meshCtx.IsExternalService(service)
 	refHash := common_api.BackendRef(*ref).Hash()
 
@@ -366,10 +325,6 @@ func handleLegacyBackendRef(
 			WithTags(mesh_proto.ServiceTag, service).
 			WithoutTags(mesh_proto.MeshTag)).
 		WithExternalService(isExternalService)
-
-	if mesh, ok := pointer.Deref(ref.Tags)[mesh_proto.MeshTag]; ok {
-		clusterBuilder.WithMesh(mesh)
-	}
 
 	servicesAcc.AddBackendRef(resolve.NewResolvedBackendRef(ref), clusterBuilder.Build())
 	return split

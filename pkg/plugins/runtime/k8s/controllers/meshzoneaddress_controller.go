@@ -32,6 +32,17 @@ const (
 	NoPublicAddressForZoneProxyReason = "NoPublicAddress"
 )
 
+// List of priority for picking IP when Service that selects a zone proxy is of type NodePort
+// We first try to find ExternalIP and then InternalIP.
+// ExternalIP will be available in public clouds like GCP, but not on Kind or Minikube.
+// On the other hand, on Kind with multizone, there is a connectivity between clusters using InternalIP.
+// Technically there is a risk that we will pick InternalIP and other cluster will try to access it without connectivity between them.
+// However, in most cases, LoadBalancer will be used anyways, therefore we accept this risk.
+var NodePortAddressPriority = []kube_core.NodeAddressType{
+	kube_core.NodeExternalIP,
+	kube_core.NodeInternalIP,
+}
+
 // MeshZoneAddressReconciler watches Services labeled with
 // k8s.kuma.io/zone-proxy-type=ingress and maintains a MeshZoneAddress
 // resource holding the public address and port for cross-zone routing.

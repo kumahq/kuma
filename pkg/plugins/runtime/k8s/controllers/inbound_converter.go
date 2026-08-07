@@ -78,7 +78,6 @@ func (ic *InboundConverter) inboundForService(pod *kube_core.Pod, service *kube_
 		ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 			Port:     uint32(containerPort),
 			Name:     portName,
-			Tags:     map[string]string{},
 			State:    state,
 			Health:   &health, // write health for backwards compatibility with Kuma 2.5 and older
 			Protocol: ProtocolTagFor(service, &svcPort),
@@ -125,7 +124,6 @@ func (ic *InboundConverter) inboundForServiceless(pod *kube_core.Pod) *mesh_prot
 
 	return &mesh_proto.Dataplane_Networking_Inbound{
 		Port:     mesh_proto.TCPPortReserved,
-		Tags:     map[string]string{},
 		State:    state,
 		Health:   &health, // write health for backwards compatibility with Kuma 2.5 and older
 		Protocol: string(core_meta.ProtocolTCP),

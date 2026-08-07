@@ -20,19 +20,6 @@ func (r *ZoneEgressResource) UsesInboundInterface(address net.IP, port uint32) b
 	return false
 }
 
-func (r *ZoneEgressResource) IsIPv6() bool {
-	if r == nil {
-		return false
-	}
-
-	ip := net.ParseIP(r.Spec.GetNetworking().GetAddress())
-	if ip == nil {
-		return false
-	}
-
-	return ip.To4() == nil
-}
-
 func (r *ZoneEgressResource) AdminAddress(defaultAdminPort uint32) string {
 	if r == nil {
 		return ""
@@ -50,8 +37,4 @@ func (r *ZoneEgressResource) Hash() []byte {
 	_, _ = hasher.Write(model.HashMeta(r))
 	_, _ = hasher.Write([]byte(r.Spec.GetNetworking().GetAddress()))
 	return hasher.Sum(nil)
-}
-
-func (r *ZoneEgressResource) IsRemoteEgress(localZone string) bool {
-	return r.Spec.GetZone() != "" && r.Spec.GetZone() != localZone
 }

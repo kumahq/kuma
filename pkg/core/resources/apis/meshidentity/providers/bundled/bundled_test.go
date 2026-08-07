@@ -180,7 +180,7 @@ var _ = Describe("Bundled Providers Test", func() {
 						metadata.KumaServiceAccount: "my-sa",
 						mesh_proto.KubeNamespaceTag: "my-ns",
 					}).
-					WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+					WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
 				Build()
 
 			// create identity
@@ -241,7 +241,7 @@ var _ = Describe("Bundled Providers Test", func() {
 						metadata.KumaWorkload: "my-backend",
 						"app":                 "test-app",
 					}).
-					WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+					WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
 				Build()
 
 			// create identity
@@ -297,7 +297,7 @@ var _ = Describe("Bundled Providers Test", func() {
 						mesh_proto.KubeNamespaceTag: "ns-1",
 						"app":                       "app-1",
 					}).
-					WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+					WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
 				Build()
 
 			// create proxy for second identity
@@ -310,7 +310,7 @@ var _ = Describe("Bundled Providers Test", func() {
 						mesh_proto.KubeNamespaceTag: "ns-2",
 						"app":                       "app-2",
 					}).
-					WithInboundOfTags(mesh_proto.ServiceTag, "api", mesh_proto.ProtocolTag, "http")).
+					WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "api")).
 				Build()
 
 			// when - create identities

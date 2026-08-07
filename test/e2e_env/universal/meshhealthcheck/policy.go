@@ -323,16 +323,17 @@ spec:
 	}, Ordered)
 
 	Context("TCP with permissive mTLS", func() {
-		mtlsPermissiveMesh := func(mesh string) InstallFunc {
+		permissiveMeshTLS := func(mesh string) InstallFunc {
 			return YamlUniversal(fmt.Sprintf(`
-type: Mesh
-name: %s
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-    mode: PERMISSIVE
+type: MeshTLS
+name: permissive
+mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        mode: Permissive
 `, mesh))
 		}
 		healthCheck := func(mesh, serviceName, send, recv string) string {
@@ -383,9 +384,12 @@ spec:
               consecutive: 100`, mesh, serviceName)
 		}
 		meshName := "meshhealthcheck-mtls-permissive-tcp"
+		identityName := "meshhealthcheck-mtls-permissive-tcp-identity"
 		BeforeAll(func() {
 			err := NewClusterSetup().
-				Install(mtlsPermissiveMesh(meshName)).
+				Install(MeshUniversal(meshName)).
+				Install(permissiveMeshTLS(meshName)).
+				Install(MeshIdentityBundled(meshName, identityName)).
 				Install(YamlUniversal(disablePanic(meshName, "test-server-mtls"))).
 				Install(
 					DemoClientUniversal("dp-demo-client-mtls", meshName,
@@ -397,7 +401,10 @@ spec:
 						WithProtocol(core_meta.ProtocolTCP),
 						WithServiceName("test-server-mtls")),
 				).
-				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+				Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+					meshName,
+					MeshIdentityTrustDomain(meshName, universal.Cluster),
+				)).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -483,7 +490,6 @@ spec:
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
-				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Install(YamlUniversal(healthCheck(meshName))).
 				Install(YamlUniversal(disablePanic(meshName))).
 				Install(TestServerUniversal(

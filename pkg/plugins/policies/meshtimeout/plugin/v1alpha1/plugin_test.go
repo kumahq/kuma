@@ -104,7 +104,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
 			WithRouting(
 				xds_builders.Routing().
 					WithOutboundTargets(
@@ -621,7 +621,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().
 				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
 					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
@@ -707,7 +707,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().
 				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
 					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
@@ -781,7 +781,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().
 				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
 					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
@@ -861,7 +861,7 @@ var _ = Describe("MeshTimeout", func() {
 			Labels: map[string]string{},
 		})
 		meshTimeout.Spec = &api.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
+			TargetRef: &common_api.TopLevelTargetRef{
 				Kind:        common_api.Dataplane,
 				SectionName: pointer.To("ze-port"),
 			},
@@ -941,7 +941,7 @@ var _ = Describe("MeshTimeout", func() {
 			Labels: map[string]string{},
 		})
 		meshTimeout.Spec = &api.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
+			TargetRef: &common_api.TopLevelTargetRef{
 				Kind:        common_api.Dataplane,
 				SectionName: pointer.To("ze-port"),
 			},

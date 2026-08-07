@@ -40,11 +40,10 @@ var DefaultConfig = func() Config {
 			DynamicConfiguration: DynamicConfiguration{
 				RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			},
-			IPv6Enabled:                  true,
-			StrictInboundPortsEnabled:    true,
-			OtelPipeEnabled:              true,
-			ReusePortEnabled:             true,
-			UnifiedResourceNamingEnabled: true,
+			IPv6Enabled:               true,
+			StrictInboundPortsEnabled: true,
+			OtelPipeEnabled:           true,
+			ReusePortEnabled:          true,
 		},
 		DNS: DNS{
 			Enabled:   true,
@@ -189,13 +188,9 @@ type DataplaneRuntime struct {
 
 	// Path to Envoy binary.
 	BinaryPath string `json:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
-	// ConfigDir was used to store Envoy bootstrap config.
-	//
-	// Deprecated: use WorkDir instead.
-	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir" deprecated:"use WorkDir instead"`
-	// WorkDir is the directory to store auto-generated Envoy bootstrap config.
-	// It overrides values from deprecated ConfigDir and SocketDir.
-	WorkDir string `json:"workDir,omitempty" envconfig:"kuma_dataplane_runtime_work_dir" overrides:"ConfigDir,SocketDir"`
+	// WorkDir is the directory to store auto-generated Envoy bootstrap config,
+	// Unix domain sockets, and the dataplane token file.
+	WorkDir string `json:"workDir,omitempty" envconfig:"kuma_dataplane_runtime_work_dir"`
 	// Concurrency specifies how to generate the Envoy concurrency flag.
 	Concurrency uint32 `json:"concurrency,omitempty" envconfig:"kuma_dataplane_runtime_concurrency"`
 	// Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)
@@ -217,10 +212,6 @@ type DataplaneRuntime struct {
 	EnvoyComponentLogLevel string `json:"envoyComponentLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_component_log_level"`
 	// Resources defines the resources for this proxy.
 	Resources DataplaneResources `json:"resources,omitempty"`
-	// SocketDir dir to store socket used between Envoy and the dp process
-	//
-	// Deprecated: use WorkDir instead
-	SocketDir string `json:"socketDir,omitempty" envconfig:"kuma_dataplane_runtime_socket_dir"`
 	// Metrics defines properties of metrics
 	Metrics Metrics `json:"metrics,omitempty"`
 	// DynamicConfiguration defines properties of dataplane dynamic configuration
@@ -233,12 +224,6 @@ type DataplaneRuntime struct {
 	TransparentProxy *tproxy_config.DataplaneConfig `json:"transparentProxy,omitempty" envconfig:"kuma_dataplane_runtime_transparent_proxy"`
 	// BindOutbounds configure dataplane to bind to real loopback addresses
 	BindOutbounds bool `json:"bindOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_bind_outbounds"`
-	// UnifiedResourceNamingEnabled enables the new naming format for Envoy resource and stat names.
-	// When set to true, the data plane proxy uses:
-	// - KRI-based format for resources tied to distinct Kuma resources
-	// - System format for internal Kuma resources that users typically don't need to care about unless debugging Kuma
-	// - Contextual format for proxy-scoped resources like inbounds and transparent proxy passthrough
-	UnifiedResourceNamingEnabled bool `json:"unifiedResourceNamingEnabled,omitempty" envconfig:"kuma_dataplane_runtime_unified_resource_naming_enabled"`
 	// IPv6Enabled indicates if IPv6 support is enabled on the machine. By default, dataplane will check if support is enabled
 	// on machine and adjust this config accordingly
 	IPv6Enabled bool `json:"IPv6Enabled" envconfig:"kuma_dataplane_runtime_ipv6_enabled"`

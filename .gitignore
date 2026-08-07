@@ -24,3 +24,6 @@ build/
 
 # Used to download manifests for k3d
 /test/k3d
+
+# Local GOCACHE
+/.gocache/

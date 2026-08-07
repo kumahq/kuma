@@ -183,43 +183,21 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 			casByTrustDomain[meshName] = append(casByTrustDomain[meshName], ca)
 		}
 	}
-	zoneIngresses := resources.ZoneIngresses().Items
-	zoneEgresses := resources.ZoneEgresses().Items
 	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
-	if len(zoneEgressList) == 0 {
-		// Do not mix legacy zone egresses with dataplane listeners in one pool because
-		// they may carry different TLS identities and break SAN validation.
-		// Fallback to legacy only when no dataplane-based instances were resolved.
-		zoneEgressList = resolveLegacyZoneEgresses(zoneEgresses)
-	}
-	endpointMap := xds_topology.BuildEdsEndpointMap(
+	endpointMap := xds_topology.BuildDataplaneEndpointMap(
 		ctx,
-		mesh,
 		m.zone,
 		meshServices,
 		meshMultiZoneServices,
 		meshExternalServices,
 		dataplanes,
-		zoneIngresses,
 		resources.MeshZoneAddresses().Items,
-		zoneEgresses,
 		loader,
 		workloadIdentityEnabled(mesh, resources.MeshIdentities()),
 		zoneEgressList,
 	)
-	crossMeshEndpointMap := map[string]xds.EndpointMap{}
-	for _, otherMesh := range resources.OtherMeshes(meshName).Items {
-		crossMeshEndpointMap[otherMesh.GetMeta().GetName()] = xds_topology.BuildCrossMeshEndpointMap(
-			mesh,
-			otherMesh,
-			m.zone,
-			zoneIngresses,
-			zoneEgresses,
-		)
-	}
 
 	dpZoneIngressEndpointMap := xds_topology.BuildDataplaneZoneIngressEndpointMap(
-		mesh,
 		meshServices,
 		meshMultiZoneServices,
 		dataplanes,
@@ -239,7 +217,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		BaseMeshContext:                 baseMeshContext,
 		DataplanesByName:                dataplanesByName,
 		EndpointMap:                     endpointMap,
-		CrossMeshEndpoints:              crossMeshEndpointMap,
 		VIPDomains:                      domains,
 		VIPOutbounds:                    outbounds,
 		ServicesInformation:             m.generateServicesInformation(mesh, meshServices, endpointMap),
@@ -340,24 +317,12 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	default:
 		return nil, fmt.Errorf("unknown resource scope:%s", desc.Scope)
 	}
-	// For some resources we apply extra filters
-	if resType == core_mesh.ServiceInsightType {
-		if mesh == nil {
-			return desc.NewList(), nil
-		}
-		// ServiceInsights in XDS generation are only used to check whether the destination is ready to receive mTLS traffic.
-		// This information is only useful when mTLS is enabled with PERMISSIVE mode.
-		// Not including this into mesh hash for other cases saves us unnecessary XDS config generations.
-		if backend := mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
-			return desc.NewList(), nil
-		}
-	}
 	listOptsFunc = append(listOptsFunc, core_store.ListOrdered())
 	list := desc.NewList()
 	if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {
 		return nil, err
 	}
-	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType && resType != meshzoneaddress_api.MeshZoneAddressType {
+	if resType != core_mesh.DataplaneType && resType != meshzoneaddress_api.MeshZoneAddressType {
 		// No post processing stuff so return the list as is
 		return list, nil
 	}
@@ -375,18 +340,6 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 				return nil, nil
 			}
 			return resolvedMeshZoneAddress, nil
-		case core_mesh.ZoneIngressType:
-			zi, ok := resource.(*core_mesh.ZoneIngressResource)
-			if !ok {
-				return nil, errors.New("entry is not a zoneIngress this shouldn't happen")
-			}
-
-			resolvedZoneIngress, err := xds_topology.ResolveZoneIngressPublicAddress(m.ipFunc, zi)
-			if err != nil {
-				l.Error(err, "failed to resolve zoneIngress's domain name, ignoring zoneIngress", "name", zi.GetMeta().GetName())
-				return nil, nil
-			}
-			return resolvedZoneIngress, nil
 		case core_mesh.DataplaneType:
 			dp, ok := resource.(*core_mesh.DataplaneResource)
 			if !ok {
@@ -481,7 +434,7 @@ func (m *meshContextBuilder) resolveTLSReadiness(
 
 	for _, ms := range meshServices {
 		for _, port := range ms.Spec.Ports {
-			svc := destinationname.MustResolve(false, ms, port)
+			svc := destinationname.ResolveLegacyFromDestination(ms, port)
 			serviceInfo := getServiceInformation(servicesInformation, svc)
 			serviceInfo.TLSReadiness = ms.Status.TLS.Status == meshservice_api.TLSReady
 			servicesInformation[svc] = serviceInfo
@@ -496,11 +449,6 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	_, _ = hasher.Write(baseMeshContext.hash)
 	for _, resType := range managedTypes {
 		_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
-	}
-
-	for _, m := range maps.SortedKeys(resources.CrossMeshResources) {
-		_, _ = hasher.Write([]byte(m))
-		_, _ = hasher.Write(resources.CrossMeshResources[m].Hash())
 	}
 	return hasher.Sum(nil)
 }
@@ -531,15 +479,6 @@ func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalCont
 	for _, resType := range managedTypes {
 		if affectsPolicyMatching(resType) {
 			_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
-		}
-	}
-	for _, meshName := range maps.SortedKeys(resources.CrossMeshResources) {
-		_, _ = hasher.Write([]byte(meshName))
-		crossMesh := resources.CrossMeshResources[meshName]
-		for _, resType := range maps.SortedKeys(crossMesh) {
-			if affectsPolicyMatching(resType) {
-				_, _ = hasher.Write(resourceListXDSHash(crossMesh[resType]))
-			}
 		}
 	}
 	return hasher.Sum(nil)
@@ -609,15 +548,6 @@ func resolveZoneEgresses(
 		}
 	}
 	return dpEgresses
-}
-
-func resolveLegacyZoneEgresses(zoneEgresses []*core_mesh.ZoneEgressResource) []xds.ZoneEgressInstance {
-	var legacyEgresses []xds.ZoneEgressInstance
-	for _, ze := range zoneEgresses {
-		n := ze.Spec.GetNetworking()
-		legacyEgresses = append(legacyEgresses, xds.ZoneEgressInstance{Address: n.GetAddress(), Port: n.GetPort()})
-	}
-	return legacyEgresses
 }
 
 func getCAsByTrustDomain(trusts []*meshtrust_api.MeshTrustResource) map[string][]PEMBytes {
