@@ -166,12 +166,13 @@ var _ = Describe("AdminProxyGenerator", func() {
 				xds_types.FeatureUnifiedResourceNaming: true,
 			},
 		}),
-		Entry("should expose /stats/prometheus on the plaintext chain when ExposeEnvoyAdminStats is enabled", testCase{
+		// ExposeEnvoyAdminStats is scoped to zone proxies, so a data plane proxy must
+		// generate byte-identical config to the same case with the flag off (02).
+		Entry("should not expose /stats/prometheus on a data plane proxy when ExposeEnvoyAdminStats is enabled", testCase{
 			dataplaneFile:         "02.dataplane.input.yaml",
-			expected:              "10.envoy-config.golden.yaml",
+			expected:              "02.envoy-config.golden.yaml",
 			adminAddress:          "127.0.0.1",
 			readinessPort:         9902,
-			meshServicesMode:      mesh_proto.Mesh_MeshServices_Exclusive,
 			exposeEnvoyAdminStats: true,
 		}),
 	)
@@ -284,5 +285,67 @@ var _ = Describe("AdminProxyGenerator", func() {
 		},
 		Entry("legacy naming", false, "kuma:envoy:admin"),
 		Entry("unified naming", true, "system_envoy_admin"),
+	)
+
+	// MeshMetric never matches zone proxies, so ExposeEnvoyAdminStats is the only way to
+	// scrape their stats. Assert the route shows up on the plaintext chain for both zone
+	// proxy kinds when enabled, and not at all when disabled.
+	DescribeTable("should expose /stats/prometheus on zone proxies only when ExposeEnvoyAdminStats is enabled",
+		func(exposeEnvoyAdminStats bool, shouldExpose bool) {
+			metadata := &xds.DataplaneMetadata{
+				AdminPort:     9901,
+				ReadinessPort: 9902,
+			}
+			ctx := xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					ExposeEnvoyAdminStats: exposeEnvoyAdminStats,
+				},
+			}
+
+			zoneIngressProxy := &xds.Proxy{
+				Id:         *xds.BuildProxyId("default", "zone-ingress"),
+				APIVersion: envoy_common.APIV3,
+				ZoneIngressProxy: &xds.ZoneIngressProxy{
+					ZoneIngressResource: &core_mesh.ZoneIngressResource{
+						Meta: &test_model.ResourceMeta{Name: "zone-ingress"},
+						Spec: &mesh_proto.ZoneIngress{
+							Networking: &mesh_proto.ZoneIngress_Networking{Address: "10.0.0.1"},
+						},
+					},
+				},
+				Metadata: metadata,
+			}
+			zoneEgressProxy := &xds.Proxy{
+				Id:         *xds.BuildProxyId("default", "zone-egress"),
+				APIVersion: envoy_common.APIV3,
+				ZoneEgressProxy: &xds.ZoneEgressProxy{
+					ZoneEgressResource: &core_mesh.ZoneEgressResource{
+						Meta: &test_model.ResourceMeta{Name: "zone-egress"},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{Address: "10.0.0.2"},
+						},
+					},
+				},
+				Metadata: metadata,
+			}
+
+			for _, proxy := range []*xds.Proxy{zoneIngressProxy, zoneEgressProxy} {
+				resources, err := generator.Generate(context.Background(), nil, ctx, proxy)
+				Expect(err).ToNot(HaveOccurred())
+
+				listeners := resources.ListOf(envoy_resource.ListenerType)
+				Expect(listeners).To(HaveLen(1))
+				actual, err := util_proto.ToYAML(listeners[0].Resource)
+				Expect(err).ToNot(HaveOccurred())
+
+				if shouldExpose {
+					Expect(actual).To(ContainSubstring("/stats/prometheus"))
+				} else {
+					Expect(actual).ToNot(ContainSubstring("/stats/prometheus"))
+				}
+			}
+		},
+		Entry("disabled", false, false),
+		Entry("enabled", true, true),
 	)
 })

@@ -125,11 +125,15 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		se.ClusterName = dppReadinessClusterName
 	}
 	plaintextEndpointPaths := staticEndpointPaths
-	if xdsCtx.ControlPlane.GetExposeEnvoyAdminStats() {
+	if xdsCtx.ControlPlane.GetExposeEnvoyAdminStats() && isZoneProxy(proxy) {
 		// Serve Envoy stats without mTLS so a Prometheus server can scrape them off
 		// the proxy's IP. This is the only Admin API path added to the plaintext filter
 		// chain: the route is a prefix match with an identity prefix rewrite, so nothing
 		// outside /stats/prometheus* can be reached through it.
+		//
+		// Restricted to zone proxies: they are not mesh-scoped, so MeshMetric never
+		// matches them and there is no other way to scrape their stats. Data plane
+		// proxies are left alone because MeshMetric already covers them.
 		//
 		// Appended to a fresh slice, never to staticEndpointPaths, so that enabling this
 		// for one proxy cannot leak into proxies generated afterwards.
@@ -218,6 +222,12 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	})
 
 	return resources, nil
+}
+
+// isZoneProxy reports whether the proxy is a standalone zone ingress or zone egress
+// rather than a data plane proxy.
+func isZoneProxy(proxy *core_xds.Proxy) bool {
+	return proxy.ZoneIngressProxy != nil || proxy.ZoneEgressProxy != nil
 }
 
 func (g AdminProxyGenerator) getAddress(proxy *core_xds.Proxy) string {
