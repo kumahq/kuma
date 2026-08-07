@@ -127,9 +127,10 @@ func dataplaneWithZoneTag(_ string) *mesh_proto.Dataplane {
 			}},
 			Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{
 				Port: 10000,
-				Tags: map[string]string{
-					mesh_proto.ServiceTag:  "web",
-					mesh_proto.ProtocolTag: "http",
+				BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+					Kind: "MeshService",
+					Name: "web",
+					Port: 80,
 				},
 			}},
 		},
@@ -171,9 +172,8 @@ func storedDataplane(t *testing.T, s store.ResourceStore, ctx context.Context) *
 }
 
 // TestZoneToGlobalSyncAttribution asserts the top-level attribution (kuma.io/zone
-// label, ZoneIngress.Spec.Zone) and the in-spec zone tags (ZoneIngress
-// AvailableServices, Dataplane gateway) all resolve to the connecting
-// zone's client-id, and that a matching zone is a no-op.
+// label) and the in-spec zone tags (Dataplane gateway) all resolve to the
+// connecting zone's client-id, and that a matching zone is a no-op.
 func TestZoneToGlobalSyncAttribution(t *testing.T) {
 	t.Run("DataplaneGateway", func(t *testing.T) {
 		g := NewWithT(t)

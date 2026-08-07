@@ -214,10 +214,6 @@ func (i OutboundInterface) String() string {
 		strconv.FormatUint(uint64(i.DataplanePort), 10))
 }
 
-func NonBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
-	return outbound.BackendRef == nil
-}
-
 func BackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
 	return outbound.BackendRef != nil
 }
@@ -385,17 +381,6 @@ func (l *Dataplane_Networking_Listener) GetSectionName() string {
 		return l.Name
 	}
 	return strconv.Itoa(int(l.Port))
-}
-
-// GetService returns a service name represented by this outbound interface.
-//
-// The purpose of this method is to encapsulate implementation detail
-// that service is modeled as a tag rather than a separate field.
-func (d *Dataplane_Networking_Outbound) GetService() string {
-	if d == nil || d.GetTags() == nil {
-		return ""
-	}
-	return d.GetTags()[ServiceTag]
 }
 
 const MatchAllTag = "*"

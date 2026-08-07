@@ -290,17 +290,10 @@
                     "type": "integer",
                     "description": "Port on which the consumed service will be available to this data plane proxy. When transparent proxying is not used, Envoy will bind to this port."
                 },
-                "tags": {
-                    "additionalProperties": {
-                        "type": "string"
-                    },
-                    "type": "object",
-                    "description": "Tags of consumed data plane proxies. These tags can then be referenced in `to` section in policies like MeshAccessLog."
-                },
                 "backendRef": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef",
                     "additionalProperties": true,
-                    "description": "BackendRef is a way to target MeshService. Experimental. Do not use on production yet."
+                    "description": "BackendRef is a way to target MeshService."
                 }
             },
             "additionalProperties": true,

@@ -11,7 +11,9 @@ networking:
         kuma.io/protocol: http
   outbound:
     - port: 33033
-      tags:
-        kuma.io/service: redis
+      backendRef:
+        kind: MeshService
+        name: redis
+        port: 6379
   admin:
     port: 9901

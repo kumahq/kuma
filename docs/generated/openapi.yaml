@@ -5385,9 +5385,7 @@ components:
                       Headless Service. Defaults to 127.0.0.1
                     type: string
                   backendRef:
-                    description: |-
-                      BackendRef is a way to target MeshService.
-                      Experimental. Do not use on production yet.
+                    description: BackendRef is a way to target MeshService.
                     properties:
                       kind:
                         description: >-
@@ -5424,17 +5422,6 @@ components:
 
                       port.
                     type: integer
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: >-
-                      Tags of consumed data plane proxies.
-
-                      These tags can then be referenced in `to` section in
-                      policies like
-
-                      MeshAccessLog.
-                    type: object
                 type: object
               type: array
             transparentProxying:
@@ -13829,9 +13816,7 @@ components:
                           Headless Service. Defaults to 127.0.0.1
                         type: string
                       backendRef:
-                        description: |-
-                          BackendRef is a way to target MeshService.
-                          Experimental. Do not use on production yet.
+                        description: BackendRef is a way to target MeshService.
                         properties:
                           kind:
                             description: >-
@@ -13869,17 +13854,6 @@ components:
 
                           port.
                         type: integer
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags of consumed data plane proxies.
-
-                          These tags can then be referenced in `to` section in
-                          policies like
-
-                          MeshAccessLog.
-                        type: object
                     type: object
                   type: array
                 transparentProxying:
