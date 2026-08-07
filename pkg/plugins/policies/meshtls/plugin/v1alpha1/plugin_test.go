@@ -52,6 +52,8 @@ var _ = Describe("MeshTLS", func() {
 		// noPolicy exercises a mesh without any MeshTLS policy, where the mode
 		// falls back to Strict
 		noPolicy bool
+		// ipFamilyMode of the transparent proxy, "ipv4" when empty
+		ipFamilyMode string
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -70,6 +72,11 @@ var _ = Describe("MeshTLS", func() {
 				fromRules = getRulesAsFromRules(pointer.Deref(getPolicy(given.caseName).Spec.Rules))
 			}
 
+			ipFamilyMode := given.ipFamilyMode
+			if ipFamilyMode == "" {
+				ipFamilyMode = "ipv4"
+			}
+
 			proxyBuilder := xds_builders.Proxy().
 				WithSecretsTracker(secretsTracker).
 				WithWorkloadIdentity(given.workloadIdentity).
@@ -79,7 +86,7 @@ var _ = Describe("MeshTLS", func() {
 						WithName("test").
 						WithMesh("default").
 						WithAddress("127.0.0.1").
-						WithTransparentProxying(15006, 15001, "ipv4").
+						WithTransparentProxying(15006, 15001, ipFamilyMode).
 						AddOutbound(
 							builders.Outbound().
 								WithAddress("127.0.0.1").
@@ -275,6 +282,11 @@ var _ = Describe("MeshTLS", func() {
 					)
 				},
 			},
+		}),
+		Entry("dualstack tproxy = ipv4 and ipv6 passthrough listeners", testCase{
+			caseName:     "permissive-with-dualstack-tproxy",
+			meshBuilder:  samples.MeshMTLSBuilder(),
+			ipFamilyMode: "dualstack",
 		}),
 		Entry("no policy + strict mesh = strict", testCase{
 			caseName:    "no-policy-with-strict-mtls",
