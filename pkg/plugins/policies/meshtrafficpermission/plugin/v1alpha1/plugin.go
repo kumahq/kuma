@@ -186,7 +186,7 @@ func ensureTLSInspector(listener *envoy_listener.Listener) error {
 func (p plugin) denyRules() core_rules.Rules {
 	return core_rules.Rules{
 		&core_rules.Rule{ //nolint:staticcheck // SA1019 Zone egress uses old Rule format
-			Subset: subsetutils.MeshSubset(),
+			Subset: subsetutils.MatchAll(),
 			Conf: api.Conf{
 				Action: &api.Deny,
 			},

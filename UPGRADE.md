@@ -692,6 +692,13 @@ Before upgrading, migrate every policy that uses one of these top-level
 After the migration, verify the intended policy coverage in every Zone before
 upgrading Zone control planes.
 
+The `spec.to[].targetRef` field of a policy is a separate, narrower selector
+and is affected too: it rejects `kind: MeshSubset`, `kind: MeshServiceSubset`,
+and `kind: MeshGateway`. The accepted kinds for `spec.to[].targetRef` are
+`Mesh`, `MeshService`, `MeshExternalService`, `MeshMultiZoneService`, and
+`MeshHTTPRoute`. `MeshServiceSubset` remains valid only as a route
+`backendRefs[].kind`, not as a top-level or `to[]` `targetRef.kind`.
+
 ### `from` removed from `MeshTimeout`
 
 The deprecated `spec.from` array has been removed from `MeshTimeout`. Timeouts

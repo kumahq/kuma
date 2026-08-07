@@ -420,10 +420,10 @@ var _ = Describe("Context", func() {
 			)
 		})
 
-		It("should not filter out a producer policy solely due to a top-level MeshSubset zone tag mismatch", func() {
+		It("should not filter out a producer policy solely due to a top-level Dataplane zone label mismatch", func() {
 			ctx := stdcontext.Background()
 			// given
-			targetRef := builders.TargetRefMeshSubset(mesh_proto.ZoneTag, "different-zone")
+			targetRef := builders.TargetRefDataplaneLabels(mesh_proto.ZoneTag, "different-zone")
 			resource := &meshtimeout_api.MeshTimeoutResource{
 				Meta: &test_model.ResourceMeta{
 					Mesh: "default",

@@ -99,10 +99,10 @@ type TargetRef struct {
 	UsesSyntacticSugar bool `json:"-"`
 
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
+	// +kubebuilder:validation:Enum=Mesh;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
 	Kind TargetRefKind `json:"kind"`
-	// Tags used to select a subset of proxies by tags. Can only be used with kinds
-	// `MeshSubset` and `MeshServiceSubset`
+	// Tags used to select a subset of proxies by tags. Can only be used with kind
+	// `MeshServiceSubset`
 	Tags *map[string]string `json:"tags,omitempty"`
 	// Labels are used to select referenced real resources and to carry legacy
 	// service identity when a common TargetRef must still target old
