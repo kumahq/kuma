@@ -12,9 +12,11 @@ networking:
     port: 80
     servicePort: 8080
   outbound:
-  - port: 3000
-    tags:
-      kuma.io/service: postgres
+  - backendRef:
+      kind: MeshService
+      name: postgres
+      port: 5432
+    port: 3000
 type: Dataplane
 
 # Secret

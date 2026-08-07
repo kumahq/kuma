@@ -14,7 +14,7 @@ type Identity struct {
 	Scope []string
 }
 
-// TokenIssuer issues Zone Tokens used then for proving identity of the zone egresses.
+// TokenIssuer issues Zone Tokens used then for proving identity of a zone.
 // Issued token can be bound by the zone name and the scope.
 type TokenIssuer interface {
 	Generate(ctx context.Context, identity Identity, validFor time.Duration) (tokens.Token, error)

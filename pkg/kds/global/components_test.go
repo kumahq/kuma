@@ -42,9 +42,10 @@ var _ = Describe("Global Sync", func() {
 				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 					{
 						Port: 10000,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag:  "web",
-							mesh_proto.ProtocolTag: "http",
+						BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+							Kind: "MeshService",
+							Name: "web",
+							Port: 80,
 						},
 					},
 				},
@@ -125,7 +126,6 @@ var _ = Describe("Global Sync", func() {
 			mesh.DataplaneInsightType:  true,
 			mesh.DataplaneType:         true,
 			mesh.DataplaneOverviewType: true,
-			mesh.ServiceOverviewType:   true,
 			workload_api.WorkloadType:  true,
 		}
 
@@ -137,7 +137,6 @@ var _ = Describe("Global Sync", func() {
 		// plus the global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
-			mesh.ZoneIngressType,
 			system.ConfigType,
 			system.GlobalSecretType,
 			hostnamegenerator_api.HostnameGeneratorType,
@@ -221,9 +220,10 @@ var _ = Describe("Global Sync", func() {
 					}},
 					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 						{
-							Tags: map[string]string{
-								mesh_proto.ServiceTag:  "web",
-								mesh_proto.ProtocolTag: "http",
+							BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+								Kind: "MeshService",
+								Name: "web",
+								Port: 80,
 							},
 						},
 					},
@@ -261,9 +261,10 @@ var _ = Describe("Global Sync", func() {
 					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 						{
 							Port: 1234,
-							Tags: map[string]string{
-								mesh_proto.ServiceTag:  "web",
-								mesh_proto.ProtocolTag: "http",
+							BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+								Kind: "MeshService",
+								Name: "web",
+								Port: 80,
 							},
 						},
 					},

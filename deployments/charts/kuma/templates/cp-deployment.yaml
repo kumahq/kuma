@@ -289,11 +289,6 @@ spec:
               mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/tls.key
               readOnly: true
           {{- end }}
-          {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
-            - name: api-server-client-certs
-              mountPath: /var/run/secrets/kuma.io/api-server-client-certs
-              readOnly: true
-          {{- end }}
           {{- if $kdsZoneClientTLSSecretName }}
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
@@ -375,11 +370,6 @@ spec:
         - name: postgres-tls-cert
           secret:
             secretName: {{ .Values.postgres.tls.secretName }}
-        {{- end }}
-        {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
-        - name: api-server-client-certs
-          secret:
-            secretName: {{ .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
         {{- end }}
         {{- if $kdsZoneClientTLSSecretName }}
         - name: kds-client-tls-cert

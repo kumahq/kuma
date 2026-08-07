@@ -148,7 +148,6 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 	if t.config.HTTPS.TlsKeyFile == "" {
 		t.config.HTTPS.TlsKeyFile = filepath.Join("..", "..", "test", "certs", "server-key.pem")
 		t.config.HTTPS.TlsCertFile = filepath.Join("..", "..", "test", "certs", "server-cert.pem")
-		t.config.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
 	}
 
 	cfg := kuma_cp.DefaultConfig()

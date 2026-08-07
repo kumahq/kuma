@@ -5,18 +5,13 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/plugin/xds"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -45,12 +40,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	listeners := xds.GatherListeners(rs)
-
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, ctx.Mesh); err != nil {
-		return err
-	}
-
 	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
 	for _, r := range util_slices.Filter(rs.List(), core_xds.HasAssociatedServiceResource) {
 		svcCtx := rctx.
@@ -61,36 +50,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			return err
 		}
 	}
-	return nil
-}
-
-func applyToOutbounds(
-	rules core_rules.ToRules,
-	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
-	outbounds xds_types.Outbounds,
-	dataplane *core_mesh.DataplaneResource,
-	meshCtx xds_context.MeshContext,
-) error {
-	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
-		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
-		serviceName := outbound.LegacyOutbound.GetService()
-
-		configurer := plugin_xds.DeprecatedConfigurer{
-			Element:  subsetutils.KumaServiceTagElement(serviceName),
-			Rules:    rules.Rules,
-			Protocol: meshCtx.GetServiceProtocol(serviceName),
-		}
-
-		listener, ok := outboundListeners[oface]
-		if !ok {
-			continue
-		}
-
-		if err := configurer.ConfigureListener(listener); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 

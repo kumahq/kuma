@@ -3367,154 +3367,6 @@ _kumactl_get_zone()
     noun_aliases=()
 }
 
-_kumactl_get_zoneegress()
-{
-    last_command="kumactl_get_zoneegress"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_get_zoneegresses()
-{
-    last_command="kumactl_get_zoneegresses"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--offset=")
-    two_word_flags+=("--offset")
-    flags+=("--size=")
-    two_word_flags+=("--size")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_get_zoneingress()
-{
-    last_command="kumactl_get_zoneingress"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_get_zoneingresses()
-{
-    last_command="kumactl_get_zoneingresses"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--offset=")
-    two_word_flags+=("--offset")
-    flags+=("--size=")
-    two_word_flags+=("--size")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_get_zones()
 {
     last_command="kumactl_get_zones"
@@ -3855,26 +3707,6 @@ _kumactl_get()
     if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
         command_aliases+=("")
         aliashash[""]="zone"
-    fi
-    commands+=("zoneegress")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="zoneegress"
-    fi
-    commands+=("zoneegresses")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="zoneegresses"
-    fi
-    commands+=("zoneingress")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("zone-ingress")
-        aliashash["zone-ingress"]="zoneingress"
-    fi
-    commands+=("zoneingresses")
-    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("zone-ingresses")
-        aliashash["zone-ingresses"]="zoneingresses"
     fi
     commands+=("zones")
     if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
@@ -4656,41 +4488,6 @@ _kumactl_inspect_meshtrafficpermission()
     noun_aliases=()
 }
 
-_kumactl_inspect_services()
-{
-    last_command="kumactl_inspect_services"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--context=")
-    two_word_flags+=("--context")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_inspect_zones()
 {
     last_command="kumactl_inspect_zones"
@@ -4749,7 +4546,6 @@ _kumactl_inspect()
     commands+=("meshtls")
     commands+=("meshtrace")
     commands+=("meshtrafficpermission")
-    commands+=("services")
     commands+=("zones")
 
     flags=()
@@ -4894,10 +4690,6 @@ _kumactl_install_control-plane()
     local_nonpersistent_flags+=("--set=")
     flags+=("--skip-crds")
     local_nonpersistent_flags+=("--skip-crds")
-    flags+=("--tls-api-server-client-certs-secret=")
-    two_word_flags+=("--tls-api-server-client-certs-secret")
-    local_nonpersistent_flags+=("--tls-api-server-client-certs-secret")
-    local_nonpersistent_flags+=("--tls-api-server-client-certs-secret=")
     flags+=("--tls-api-server-secret=")
     two_word_flags+=("--tls-api-server-secret")
     local_nonpersistent_flags+=("--tls-api-server-secret")

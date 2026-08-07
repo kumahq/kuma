@@ -556,10 +556,6 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 			if len(res.ToRules.Rules) == 0 && len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.InboundRules) == 0 && len(res.SingleItemRules.Rules) == 0 {
 				continue
 			}
-			// Old 'ToRules' don't affect outbounds that were produced by real resources,
-			// which is all outbounds now that meshServices.mode is always Exclusive, so
-			// the legacy 'ToRules' response field is always empty.
-			toRules := []api_common.Rule{}
 			var proxyRule *api_common.ProxyRule
 			if len(res.SingleItemRules.Rules) > 0 {
 				proxyRule = &api_common.ProxyRule{
@@ -574,10 +570,6 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 				}
 				return nil
 			}
-
-			// The legacy subset-based 'from' view is no longer built, so this
-			// response field stays empty for every proxy.
-			fromRules := []api_common.FromRule{}
 
 			inboundRules := []api_common.InboundRulesEntry{}
 			for inbound, rulesForInbound := range res.FromRules.InboundRules {
@@ -622,7 +614,7 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
 			})
 
-			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 && len(inboundRules) == 0 && len(res.Warnings) == 0 {
+			if proxyRule == nil && len(toResourceRules) == 0 && len(inboundRules) == 0 && len(res.Warnings) == 0 {
 				// No matches for this policy, keep going...
 				continue
 			}
@@ -632,9 +624,7 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 			}
 			rules = append(rules, api_common.InspectRule{
 				Type:            string(res.Type),
-				ToRules:         &toRules,
 				ToResourceRules: &toResourceRules,
-				FromRules:       &fromRules,
 				InboundRules:    &inboundRules,
 				ProxyRule:       proxyRule,
 				Warnings:        &warnings,

@@ -160,10 +160,6 @@ rules:
       - meshes
       - zones
       - zoneinsights
-      - zoneingresses
-      - zoneingressinsights
-      - zoneegresses
-      - zoneegressinsights
       - meshinsights
       - serviceinsights
       - containerpatches
@@ -485,7 +481,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 345e5805076edc29201056aff714082e531755a43278703503620812d06dd10f
-        checksum/tls-secrets: a61fbd96437b68a94c5f764d22d1bf29d8234865c084f29e3a91e74b22e87957
+        checksum/tls-secrets: 9c02da5d6f044014fcabd1f25d80bd1660fec9c1048522188d84766e740c72f2
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -533,8 +529,6 @@ spec:
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
-            - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-              value: "/var/run/secrets/kuma.io/api-server-client-certs/"
             - name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/api-server-tls-cert/tls.crt"
             - name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
@@ -676,9 +670,6 @@ spec:
             - name: api-server-tls-cert
               mountPath: /var/run/secrets/kuma.io/api-server-tls-cert
               readOnly: true
-            - name: api-server-client-certs
-              mountPath: /var/run/secrets/kuma.io/api-server-client-certs
-              readOnly: true
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
@@ -694,9 +685,6 @@ spec:
         - name: api-server-tls-cert
           secret:
             secretName: api-server-secret
-        - name: api-server-client-certs
-          secret:
-            secretName: api-server-client-secret
         - name: kds-client-tls-cert
           secret:
             secretName: kds-ca-secret
@@ -745,10 +733,6 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - zoneingresses
-          - zoneingressinsights
-          - zoneegresses
-          - zoneegressinsights
           - serviceinsights
           - zone
           - zoneinsights

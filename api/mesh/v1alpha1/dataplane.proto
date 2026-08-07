@@ -146,13 +146,10 @@ message Dataplane {
       // port.
       uint32 port = 4;
 
-      // Tags of consumed data plane proxies.
-      // These tags can then be referenced in `to` section in policies like
-      // MeshAccessLog.
-      map<string, string> tags = 5;
+      reserved 5;
+      reserved "tags"; // Formerly kuma.io/service based outbounds, see #17808
 
       // BackendRef is a way to target MeshService.
-      // Experimental. Do not use on production yet.
       BackendRef backendRef = 6;
 
       message BackendRef {

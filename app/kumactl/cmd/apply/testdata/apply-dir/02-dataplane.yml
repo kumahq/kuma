@@ -9,5 +9,7 @@ networking:
     servicePort: 8080
   outbound:
   - port: 3000
-    tags:
-      kuma.io/service: postgres
+    backendRef:
+      kind: MeshService
+      name: postgres
+      port: 5432

@@ -132,9 +132,7 @@ func DumpState(cluster Cluster, mesh string, namespaces ...string) {
 	debugCPLogs(cluster)
 	errs = multierr.Combine(
 		debugExport(cluster, &kumactlOpts),
-		inspectDataplane(&kumactlOpts, cluster, mesh, dataplaneType),
-		inspectDataplane(&kumactlOpts, cluster, mesh, zoneegressType),
-		inspectDataplane(&kumactlOpts, cluster, mesh, zoneingressType),
+		inspectDataplane(&kumactlOpts, cluster, mesh),
 	)
 	switch cluster.(type) {
 	case *K8sCluster:
@@ -272,34 +270,15 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 	return errs
 }
 
-type dpType string
-
-const (
-	dataplaneType   dpType = "dataplane"
-	zoneegressType  dpType = "zoneegress"
-	zoneingressType dpType = "zoneingress"
-)
-
-func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh string, dpType dpType) error {
+func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh string) error {
 	var errs error
-	var args []string
-	switch dpType {
-	case dataplaneType:
-		args = []string{"get", "dataplanes", "--mesh", mesh, "-ojson"}
-	case zoneegressType:
-		args = []string{"get", "zoneegresses", "-ojson"}
-	case zoneingressType:
-		args = []string{"get", "zone-ingresses", "-ojson"}
-	default:
-		panic("unknown dp type " + string(dpType))
-	}
-	dpListJson, err := kumactlOpts.RunKumactlAndGetOutput(args...)
+	dpListJson, err := kumactlOpts.RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh, "-ojson")
 	if err != nil {
-		return fmt.Errorf("failed to retrieve dps of type %q, %w", dpType, err)
+		return fmt.Errorf("failed to retrieve dataplanes, %w", err)
 	}
 	dpResp := dataplaneListResponse{}
 	if jsonErr := json.Unmarshal([]byte(dpListJson), &dpResp); jsonErr != nil {
-		return fmt.Errorf("failed to unmarshall dps of type %q, %w", dpType, err)
+		return fmt.Errorf("failed to unmarshall dataplanes, %w", jsonErr)
 	}
 
 	for _, dpObj := range dpResp.Items {
@@ -311,23 +290,12 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh
 			"stats":       ".txt",
 			"clusters":    ".txt",
 		} {
-			// zoneingress and zoneegress have no `kumactl inspect` command, only `kumactl get`
-			if dpType != dataplaneType && inspectType != "get" {
-				continue
-			}
-
 			dpName := dpObj.Name
-			args := []string{"inspect", string(dpType), dpName, "--type", inspectType}
+			args := []string{"inspect", "dataplane", dpName, "--type", inspectType}
 			if inspectType == "get" {
-				if dpType == zoneingressType {
-					args = []string{"get", "zone-ingress", dpName, "-oyaml"}
-				} else {
-					args = []string{"get", string(dpType), dpName, "-oyaml"}
-				}
+				args = []string{"get", "dataplane", dpName, "-oyaml"}
 			}
-			if dpType == dataplaneType {
-				args = append(args, "--mesh", mesh)
-			}
+			args = append(args, "--mesh", mesh)
 			inspectResp, err := kumactlOpts.RunKumactlAndGetOutput(args...)
 
 			if err != nil {
