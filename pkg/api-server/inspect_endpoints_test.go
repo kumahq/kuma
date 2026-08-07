@@ -206,7 +206,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 	)
 
-	It("marshals empty meshgateway inspect rule slices as arrays", func() {
+	It("marshals empty InspectRule slice fields as arrays", func() {
 		inboundRules := []api_common.InboundRulesEntry{}
 		toResourceRules := []api_common.ResourceRule{}
 		warnings := []string{"warning"}
