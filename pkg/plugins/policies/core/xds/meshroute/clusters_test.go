@@ -192,7 +192,7 @@ var _ = Describe("GenerateClusters", func() {
 		}),
 	)
 
-	It("uses KRI SNI for MeshExternalService without WorkloadIdentity", func() {
+	It("uses KRI SNI for MeshExternalService with WorkloadIdentity", func() {
 		mes := builders.MeshExternalService().
 			WithName("external-backend").
 			WithMesh("default").
@@ -204,6 +204,11 @@ var _ = Describe("GenerateClusters", func() {
 			BaseMeshContext: &xds_context.BaseMeshContext{
 				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{mes}),
 			},
+			ZoneEgresses: []core_xds.ZoneEgressInstance{{
+				Address: "10.0.0.1",
+				Port:    10002,
+				SAN:     "spiffe://default/zone-egress",
+			}},
 			ServicesInformation: map[string]*xds_context.ServiceInformation{
 				"external-backend": {
 					Protocol:          core_meta.ProtocolHTTP,
@@ -226,6 +231,14 @@ var _ = Describe("GenerateClusters", func() {
 					WithName("web-01").
 					WithAddress("192.168.0.2").
 					WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{
+					IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+						return bldrs_tls.SdsSecretConfigSource(
+							"identity_cert:secret:default",
+							bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+						)
+					},
+				}).
 				Build(),
 			meshCtx,
 			services.Services(),

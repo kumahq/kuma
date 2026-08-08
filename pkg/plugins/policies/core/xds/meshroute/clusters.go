@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
@@ -55,6 +54,13 @@ func GenerateClusters(
 				if !ok {
 					continue
 				}
+				// A MeshExternalService is only reachable through a zone egress,
+				// and the egress listener is generated only when the proxy has a
+				// WorkloadIdentity (see ZoneProxyListenerGenerator). Without one
+				// there is nothing to terminate the connection, so skip the cluster.
+				if proxy.WorkloadIdentity == nil {
+					continue
+				}
 				// The destination advertises its SNI from the resolved port
 				// name, so normalize a numeric backend-ref section (named port
 				// targeted by number) to the port name before deriving the KRI SNI.
@@ -63,35 +69,21 @@ func GenerateClusters(
 					continue
 				}
 				sni := core_sni.FromKRI(kriID)
-				if proxy.WorkloadIdentity != nil {
-					// we only want to route when are mesh-scoped zone egresses
-					if len(meshCtx.ZoneEgresses) == 0 {
-						continue
-					}
-					egressSANs := meshCtx.ZoneEgressSANs()
-					if len(egressSANs) == 0 {
-						continue
-					}
-					upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
-					if err != nil {
-						return nil, err
-					}
-					edsClusterBuilder.
-						Configure(envoy_clusters.EdsCluster()).
-						Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
-				} else {
-					edsClusterBuilder.
-						Configure(envoy_clusters.EdsCluster()).
-						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
-							proxy.SecretsTracker,
-							meshCtx.Resource,
-							mesh_proto.ZoneEgressServiceName,
-							true,
-							sni,
-							false,
-						))
+				// we only want to route when are mesh-scoped zone egresses
+				if len(meshCtx.ZoneEgresses) == 0 {
+					continue
 				}
-
+				egressSANs := meshCtx.ZoneEgressSANs()
+				if len(egressSANs) == 0 {
+					continue
+				}
+				upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
+				if err != nil {
+					return nil, err
+				}
+				edsClusterBuilder.
+					Configure(envoy_clusters.EdsCluster()).
+					Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 				switch protocol {
 				case core_meta.ProtocolHTTP:
 					edsClusterBuilder.Configure(envoy_clusters.Http())
