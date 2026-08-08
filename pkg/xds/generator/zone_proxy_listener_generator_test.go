@@ -17,7 +17,6 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
 	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
@@ -54,11 +53,6 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 			Id:         *core_xds.BuildProxyId("default", "dp-1"),
 			APIVersion: envoy_common.APIV3,
 			Dataplane:  samples.DataplaneBackend(),
-			Metadata: &core_xds.DataplaneMetadata{
-				Features: map[string]bool{
-					xds_types.FeatureUnifiedResourceNaming: true,
-				},
-			},
 		}
 
 		rs, err := gen.Generate(context.Background(), nil, xds_context.Context{
@@ -94,8 +88,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 			ms := samples.MeshServiceBackendBuilder().
 				WithLabels(map[string]string{mesh_proto.ZoneTag: cpZone}).
 				Build()
-			// endpoint map key for default/backend/zone=east/port=80: default_backend__east_msvc_80
-			const endpointMapKey = "default_backend__east_msvc_80"
+			endpointMapKey := kri.WithSectionName(kri.From(ms), ms.Spec.Ports[0].GetName()).String()
 
 			dp := samples.DataplaneBackendBuilder().
 				With(func(r *core_mesh.DataplaneResource) {
@@ -112,14 +105,9 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 
 			return testCase{
 				proxy: &core_xds.Proxy{
-					Id:         *core_xds.BuildProxyId("default", "dp-1"),
-					APIVersion: envoy_common.APIV3,
-					Dataplane:  dp,
-					Metadata: &core_xds.DataplaneMetadata{
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
-					},
+					Id:                *core_xds.BuildProxyId("default", "dp-1"),
+					APIVersion:        envoy_common.APIV3,
+					Dataplane:         dp,
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
@@ -149,8 +137,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 			ms := samples.MeshServiceBackendBuilder().
 				WithLabels(map[string]string{mesh_proto.ZoneTag: cpZone}).
 				Build()
-			// endpoint map key for default/backend/zone=east/port=80: default_backend__east_msvc_80
-			const endpointMapKey = "default_backend__east_msvc_80"
+			endpointMapKey := kri.WithSectionName(kri.From(ms), ms.Spec.Ports[0].GetName()).String()
 
 			dp := samples.DataplaneBackendBuilder().
 				With(func(r *core_mesh.DataplaneResource) {
@@ -167,14 +154,9 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 
 			return testCase{
 				proxy: &core_xds.Proxy{
-					Id:         *core_xds.BuildProxyId("default", "dp-1"),
-					APIVersion: envoy_common.APIV3,
-					Dataplane:  dp,
-					Metadata: &core_xds.DataplaneMetadata{
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
-					},
+					Id:                *core_xds.BuildProxyId("default", "dp-1"),
+					APIVersion:        envoy_common.APIV3,
+					Dataplane:         dp,
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
@@ -231,14 +213,9 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 
 			return testCase{
 				proxy: &core_xds.Proxy{
-					Id:         *core_xds.BuildProxyId("default", "dp-1"),
-					APIVersion: envoy_common.APIV3,
-					Dataplane:  dp,
-					Metadata: &core_xds.DataplaneMetadata{
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
-					},
+					Id:                *core_xds.BuildProxyId("default", "dp-1"),
+					APIVersion:        envoy_common.APIV3,
+					Dataplane:         dp,
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
@@ -272,10 +249,8 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 				AddIntPort(80, core_meta.ProtocolHTTP).
 				Build()
 
-			// endpoint map key: default_global-svc___mzsvc_80
-			// Cluster name (unified naming): kri_mzsvc_default___global-svc_80
 			// Filter chain SNI: sni.mzsvc.default.global-svc.80
-			const mzsEndpointMapKey = "default_global-svc___mzsvc_80"
+			mzsEndpointMapKey := kri.WithSectionName(kri.From(mzs), mzs.Spec.Ports[0].GetName()).String()
 
 			dp := samples.DataplaneBackendBuilder().
 				With(func(r *core_mesh.DataplaneResource) {
@@ -292,14 +267,9 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 
 			return testCase{
 				proxy: &core_xds.Proxy{
-					Id:         *core_xds.BuildProxyId("default", "dp-1"),
-					APIVersion: envoy_common.APIV3,
-					Dataplane:  dp,
-					Metadata: &core_xds.DataplaneMetadata{
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
-					},
+					Id:                *core_xds.BuildProxyId("default", "dp-1"),
+					APIVersion:        envoy_common.APIV3,
+					Dataplane:         dp,
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
@@ -341,14 +311,9 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 
 			return testCase{
 				proxy: &core_xds.Proxy{
-					Id:         *core_xds.BuildProxyId("default", "dp-1"),
-					APIVersion: envoy_common.APIV3,
-					Dataplane:  dp,
-					Metadata: &core_xds.DataplaneMetadata{
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
-					},
+					Id:                *core_xds.BuildProxyId("default", "dp-1"),
+					APIVersion:        envoy_common.APIV3,
+					Dataplane:         dp,
 					InternalAddresses: DummyInternalAddresses,
 				},
 				meshContext: xds_context.MeshContext{
@@ -364,7 +329,6 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 		Entry("egress: MeshExternalService with WorkloadIdentity", func() testCase {
 			mes := builders.MeshExternalService().WithKumaVIP("242.0.0.1").Build()
 			mesKRI := kri.From(mes)
-			// UnifiedName (unified naming enabled + Exclusive mesh): kri_extsvc_default___example_9000
 			unifiedSvcName := kri.WithSectionName(mesKRI, mes.Spec.Match.GetName()).String()
 
 			dp := samples.DataplaneBackendBuilder().
@@ -387,9 +351,6 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					Dataplane:  dp,
 					Metadata: &core_xds.DataplaneMetadata{
 						SystemCaPath: "/etc/ssl/certs/ca-certificates.crt",
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
 					},
 					WorkloadIdentity:  testWorkloadIdentity,
 					InternalAddresses: DummyInternalAddresses,
@@ -428,7 +389,6 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 		Entry("egress: MeshExternalService TCP with WorkloadIdentity", func() testCase {
 			mes := builders.MeshExternalService().WithKumaVIP("242.0.0.1").Build()
 			mesKRI := kri.From(mes)
-			// UnifiedName (unified naming enabled + Exclusive mesh): kri_extsvc_default___example_9000
 			unifiedSvcName := kri.WithSectionName(mesKRI, mes.Spec.Match.GetName()).String()
 
 			dp := samples.DataplaneBackendBuilder().
@@ -451,9 +411,6 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					Dataplane:  dp,
 					Metadata: &core_xds.DataplaneMetadata{
 						SystemCaPath: "/etc/ssl/certs/ca-certificates.crt",
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
 					},
 					WorkloadIdentity:  testWorkloadIdentity,
 					InternalAddresses: DummyInternalAddresses,
@@ -516,9 +473,6 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					Dataplane:  dp,
 					Metadata: &core_xds.DataplaneMetadata{
 						SystemCaPath: "/etc/ssl/certs/ca-certificates.crt",
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
 					},
 					WorkloadIdentity:  testWorkloadIdentity,
 					InternalAddresses: DummyInternalAddresses,
@@ -581,9 +535,6 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					Dataplane:  dp,
 					Metadata: &core_xds.DataplaneMetadata{
 						SystemCaPath: "/etc/ssl/certs/ca-certificates.crt",
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
 					},
 					WorkloadIdentity:  testWorkloadIdentity,
 					InternalAddresses: DummyInternalAddresses,
@@ -653,9 +604,6 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 					Dataplane:  dp,
 					Metadata: &core_xds.DataplaneMetadata{
 						SystemCaPath: "/etc/ssl/certs/ca-certificates.crt",
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
 					},
 					WorkloadIdentity:  testWorkloadIdentity,
 					InternalAddresses: DummyInternalAddresses,

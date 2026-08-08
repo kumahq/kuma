@@ -20,13 +20,11 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	clusters_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters/v3"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 )
 
@@ -38,27 +36,16 @@ func RegisterBootstrapCluster(c string) string {
 }
 
 var (
-	adsClusterName                 = RegisterBootstrapCluster(names.GetAdsClusterName())
-	accessLogSinkClusterName       = RegisterBootstrapCluster(names.GetAccessLogSinkClusterName())
 	systemAdsClusterName           = RegisterBootstrapCluster(system_names.MustBeSystemName("ads"))
 	systemAccessLogSinkClusterName = RegisterBootstrapCluster(system_names.MustBeSystemName("access_log_sink"))
 )
 
-func genConfig(parameters configParameters, enableReloadableTokens bool, meshResource *core_mesh.MeshResource) (*envoy_bootstrap_v3.Bootstrap, error) {
-	unifiedNamingEnabled := unified_naming.Enabled(&core_xds.DataplaneMetadata{Features: parameters.Features}, meshResource)
-
-	adsName := adsClusterName
-	accessLogSinkName := accessLogSinkClusterName
-	if unifiedNamingEnabled {
-		adsName = systemAdsClusterName
-		accessLogSinkName = systemAccessLogSinkClusterName
-	}
-
+func genConfig(parameters configParameters, enableReloadableTokens bool, _ *core_mesh.MeshResource) (*envoy_bootstrap_v3.Bootstrap, error) {
 	staticClusters, err := buildStaticClusters(
 		parameters,
 		enableReloadableTokens,
-		adsName,
-		accessLogSinkName,
+		systemAdsClusterName,
+		systemAccessLogSinkClusterName,
 	)
 	if err != nil {
 		return nil, err
@@ -154,7 +141,7 @@ func genConfig(parameters configParameters, enableReloadableTokens bool, meshRes
 				TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 				SetNodeOnFirstMessageOnly: true,
 				GrpcServices: []*envoy_core_v3.GrpcService{
-					buildGrpcService(parameters, enableReloadableTokens, adsName),
+					buildGrpcService(parameters, enableReloadableTokens, systemAdsClusterName),
 				},
 			},
 		},
@@ -182,7 +169,7 @@ func genConfig(parameters configParameters, enableReloadableTokens bool, meshRes
 		},
 	}
 	for _, r := range res.StaticResources.Clusters {
-		if r.Name == adsName {
+		if r.Name == systemAdsClusterName {
 			transport := &envoy_tls.UpstreamTlsContext{
 				Sni: parameters.XdsHost,
 				CommonTlsContext: &envoy_tls.CommonTlsContext{
@@ -214,7 +201,7 @@ func genConfig(parameters configParameters, enableReloadableTokens bool, meshRes
 			TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 			SetNodeOnFirstMessageOnly: true,
 			GrpcServices: []*envoy_core_v3.GrpcService{
-				buildGrpcService(parameters, enableReloadableTokens, adsName),
+				buildGrpcService(parameters, enableReloadableTokens, systemAdsClusterName),
 			},
 		}
 	}
