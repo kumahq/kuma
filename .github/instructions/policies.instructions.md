@@ -62,7 +62,10 @@ pkg/plugins/policies/<policy-name>/
 - Validate targetRef with `mesh.ValidateTargetRef()`
 - Support policy roles (System vs User) with different TargetRef rules
 - Helper functions: `validateFrom()`, `validateTo()`, `validateRules()`, `validateDefault()`
-- All TargetRef kinds: `Mesh`, `MeshService`, `MeshSubset`, `MeshServiceSubset`
+- Top-level targetRef kinds: `Mesh`, `Dataplane`. Outbound (`to[].targetRef`) kinds:
+  `Mesh`, `MeshService`, `MeshExternalService`, `MeshMultiZoneService`,
+  `MeshHTTPRoute`. `MeshServiceSubset` is valid only as a route
+  `backendRefs[].kind`
 - Inbound (`from`) and outbound (`to`) rules if applicable
 
 **Testing (validator_test.go):**
