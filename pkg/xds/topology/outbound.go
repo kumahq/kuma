@@ -206,6 +206,7 @@ func fillRemoteMeshServices(
 			}
 			continue
 		}
+		serviceTag := meshServiceTagValue(ms)
 		for _, port := range ms.Spec.Ports {
 			serviceName := destinationname.MustResolve(ms, port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
@@ -215,7 +216,7 @@ func fillRemoteMeshServices(
 					Priority: priorityRemote,
 				}
 				ep.Tags = map[string]string{
-					mesh_proto.ServiceTag: serviceName,
+					mesh_proto.ServiceTag: serviceTag,
 					mesh_proto.ZoneTag:    msZone,
 				}
 				outbound[serviceName] = append(outbound[serviceName], ep)
@@ -238,6 +239,20 @@ func endpointIdentity(dataplane *core_mesh.DataplaneResource, inbound *mesh_prot
 		tags[mesh_proto.ProtocolTag] = protocol
 	}
 	return tags
+}
+
+func meshServiceTagValue(ms *meshservice_api.MeshServiceResource) string {
+	for _, identity := range pointer.Deref(ms.Spec.Identities) {
+		if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
+			return identity.Value
+		}
+	}
+
+	if serviceTag := ms.GetMeta().GetLabels()[mesh_proto.ServiceTag]; serviceTag != "" {
+		return serviceTag
+	}
+
+	return ms.GetMeta().GetName()
 }
 
 // fillLocalMeshServices adds one endpoint per healthy inbound backing a MeshService of this

@@ -520,7 +520,7 @@ var _ = Describe("TrafficRoute", func() {
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags: map[string]string{
-								"kuma.io/service": "kri_msvc_default_east__backend_80",
+								"kuma.io/service": "backend-4v44xv7dwv4v8z2d",
 								"kuma.io/zone":    "east",
 							},
 							Weight:   1,
@@ -540,7 +540,7 @@ var _ = Describe("TrafficRoute", func() {
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags: map[string]string{
-								"kuma.io/service": "kri_msvc_default_east__backend_80",
+								"kuma.io/service": "backend-4v44xv7dwv4v8z2d",
 								"kuma.io/zone":    "east",
 							},
 							Weight:   1,
