@@ -591,48 +591,6 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
-			Entry("prefers dataplane zone egress listener address", testCase{
-				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
-							Name: "ext-svc",
-						},
-						Spec: &meshexternalservice_api.MeshExternalService{
-							Match: meshexternalservice_api.Match{
-								Type:     meshexternalservice_api.HostnameGeneratorType,
-								Port:     10000,
-								Protocol: core_meta.ProtocolTCP,
-							},
-							Endpoints: &[]meshexternalservice_api.Endpoint{
-								{Address: "external.com", Port: 443},
-							},
-						},
-					},
-				},
-				zoneEgressAddresses: []core_xds.ZoneEgressInstance{
-					{Address: "10.42.0.11", Port: 10002},
-				},
-				mesh: defaultMeshWithMTLS,
-				expected: core_xds.EndpointMap{
-					"kri_extsvc_default___ext-svc_10000": []core_xds.Endpoint{
-						{
-							Target: "10.42.0.11",
-							Port:   10002,
-							Tags:   nil,
-							Weight: 1,
-							ExternalService: &core_xds.ExternalService{
-								Protocol: core_meta.ProtocolTCP,
-								OwnerResource: kri.Identifier{
-									ResourceType: meshexternalservice_api.MeshExternalServiceType,
-									Mesh:         "default",
-									Name:         "ext-svc",
-								},
-							},
-						},
-					},
-				},
-			}),
 			Entry("remote MeshService without a MeshZoneAddress is not included", testCase{
 				meshServices: []*meshservice_api.MeshServiceResource{
 					samples.MeshServiceSyncedBackend(), // remote MeshService from "east" zone

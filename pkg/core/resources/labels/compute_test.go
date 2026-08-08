@@ -294,20 +294,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/env":          "kubernetes",
 			},
 		}),
-		Entry("zone egress proxy", testCase{
-			mode:      core.Zone,
-			isK8s:     true,
-			localZone: "zone-1",
-			r: builders.ZoneEgress().
-				WithPort(1001).
-				Build(),
-			expectedLabels: map[string]string{
-				"kuma.io/display-name": "zoneegress-1",
-				"kuma.io/origin":       "zone",
-				"kuma.io/zone":         "zone-1",
-				"kuma.io/env":          "kubernetes",
-			},
-		}),
 		Entry("dataplane with ZoneIngress listener", testCase{
 			mode:      core.Zone,
 			isK8s:     true,

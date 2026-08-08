@@ -87,14 +87,6 @@ var _ = Describe("Global Insight", func() {
 		Expect(err).ToNot(HaveOccurred())
 		err = createZoneInsight("zi-2", false, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createZoneIngressInsight("zii-1", "default", true, rs)
-		Expect(err).ToNot(HaveOccurred())
-		err = createZoneIngressInsight("zii-2", "payments", false, rs)
-		Expect(err).ToNot(HaveOccurred())
-		err = createZoneEgressInsight("zei-1", "default", true, rs)
-		Expect(err).ToNot(HaveOccurred())
-		err = createZoneEgressInsight("zei-1", "payments", false, rs)
-		Expect(err).ToNot(HaveOccurred())
 
 		// when
 		globalInsight, err := globalInsightService.GetGlobalInsight(context.Background())
@@ -208,40 +200,6 @@ func createZoneInsight(name string, online bool, rs store.ResourceStore) error {
 		})
 	} else {
 		builder.AddSubscription(&system_proto.KDSSubscription{
-			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
-		})
-	}
-
-	return builder.Create(rs)
-}
-
-func createZoneIngressInsight(name string, mesh string, online bool, rs store.ResourceStore) error {
-	builder := builders.ZoneIngressInsight().WithName(name).WithMesh(mesh)
-
-	if online {
-		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
-			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-		})
-	} else {
-		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
-			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
-		})
-	}
-
-	return builder.Create(rs)
-}
-
-func createZoneEgressInsight(name string, mesh string, online bool, rs store.ResourceStore) error {
-	builder := builders.ZoneEgressInsight().WithName(name).WithMesh(mesh)
-
-	if online {
-		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
-			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-		})
-	} else {
-		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
 			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
 			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
 		})

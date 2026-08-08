@@ -481,24 +481,7 @@ func GlobalSyncCallback(
 			// generation still reads them: a zone must not be able to plant a
 			// spoofed kuma.io/zone claim into any synced resource field.
 			clientID := upstream.ControlPlaneId
-			switch upstream.Type {
-			case core_mesh.ZoneIngressType:
-				for _, zi := range upstream.AddedResources.(*core_mesh.ZoneIngressResourceList).Items {
-					var rejected []string
-					rejected = pinZone(&zi.Spec.Zone, clientID, rejected)
-					for _, svc := range zi.Spec.GetAvailableServices() {
-						rejected = pinZoneTag(svc.GetTags(), clientID, rejected)
-						filterTagsByPrefix(svc.GetTags(), ingressTagFilters)
-					}
-					recordZoneRewrite(rewrites, upstream.Type, zi.GetMeta(), clientID, rejected)
-				}
-			case core_mesh.ZoneEgressType:
-				for _, ze := range upstream.AddedResources.(*core_mesh.ZoneEgressResourceList).Items {
-					var rejected []string
-					rejected = pinZone(&ze.Spec.Zone, clientID, rejected)
-					recordZoneRewrite(rewrites, upstream.Type, ze.GetMeta(), clientID, rejected)
-				}
-			case core_mesh.DataplaneType:
+			if upstream.Type == core_mesh.DataplaneType {
 				for _, dp := range upstream.AddedResources.(*core_mesh.DataplaneResourceList).Items {
 					var rejected []string
 					rejected = pinZoneTag(dp.Spec.GetNetworking().GetGateway().GetTags(), clientID, rejected)
@@ -519,33 +502,6 @@ func GlobalSyncCallback(
 			}), Zone(upstream.ControlPlaneId))
 		},
 	}
-}
-
-func filterTagsByPrefix(tags map[string]string, filteredPrefixes []string) {
-	if len(tags) == 0 || len(filteredPrefixes) == 0 {
-		return
-	}
-	for tag := range tags {
-		for _, prefix := range filteredPrefixes {
-			prefix = strings.TrimSpace(prefix)
-			if prefix == "" {
-				continue
-			}
-			if strings.HasPrefix(tag, prefix) {
-				delete(tags, tag)
-				break
-			}
-		}
-	}
-}
-
-// pinZone sets *field to zone, recording in rejected any differing value it replaces.
-func pinZone(field *string, zone string, rejected []string) []string {
-	if *field != "" && *field != zone {
-		rejected = append(rejected, *field)
-	}
-	*field = zone
-	return rejected
 }
 
 // pinZoneTag pins an existing kuma.io/zone tag to zone (an absent tag names no

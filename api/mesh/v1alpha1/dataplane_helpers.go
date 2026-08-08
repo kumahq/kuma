@@ -172,13 +172,6 @@ type ProxyType string
 
 const DataplaneProxyType ProxyType = "dataplane"
 
-func (t ProxyType) IsValid() error {
-	if t != DataplaneProxyType {
-		return errors.Errorf("%s is not a valid proxy type", t)
-	}
-	return nil
-}
-
 type InboundInterface struct {
 	DataplaneIP   string
 	DataplanePort uint32
@@ -645,17 +638,6 @@ func (n *Dataplane_Networking) HasZoneProxyListeners() bool {
 // no regular inbounds and no gateway, meaning it acts exclusively as a zone proxy.
 func (n *Dataplane_Networking) IsZoneProxyOnly() bool {
 	return n.HasZoneProxyListeners() && len(n.GetInbound()) == 0 && n.GetGateway() == nil
-}
-
-// GetReadyZoneIngressListeners returns all listeners of type ZoneIngress in Ready state.
-func (n *Dataplane_Networking) GetReadyZoneIngressListeners() []*Dataplane_Networking_Listener {
-	var result []*Dataplane_Networking_Listener
-	for _, l := range n.GetListeners() {
-		if l.Type == Dataplane_Networking_Listener_ZoneIngress && l.State == Dataplane_Networking_Listener_Ready {
-			result = append(result, l)
-		}
-	}
-	return result
 }
 
 // GetReadyZoneEgressListeners returns all listeners of type ZoneEgress in Ready state.
