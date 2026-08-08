@@ -1,4 +1,18 @@
 resources:
+- name: kri_extsvc_default___external-service_8085
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: kri_extsvc_default___external-service_8085
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: kri_msvc_default___backend_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster

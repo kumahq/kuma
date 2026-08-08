@@ -86,7 +86,6 @@ func NewKDSSyncServiceServer(
 		resourceSyncer:    resourceSyncer,
 		k8sStore:          rt.Config().Store.Type == config_store.KubernetesStore,
 		systemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
-		ingressTagFilters: rt.Config().Experimental.IngressTagFilters,
 		responseBackoff:   rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
 		logPayloads:       rt.Config().Multizone.Global.KDS.LogPayloads,
 		metrics:           metrics,
