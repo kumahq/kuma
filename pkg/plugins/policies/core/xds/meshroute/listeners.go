@@ -151,8 +151,7 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 }
 
 func kumaServiceTagValue(dest core.Destination) string {
-	switch d := dest.(type) {
-	case *meshservice_api.MeshServiceResource:
+	if d, ok := dest.(*meshservice_api.MeshServiceResource); ok {
 		for _, identity := range pointer.Deref(d.Spec.Identities) {
 			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
 				return identity.Value
