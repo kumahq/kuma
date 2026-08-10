@@ -1,4 +1,3 @@
-//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -22,7 +21,6 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -238,26 +236,6 @@ var _ = Describe("MeshTimeout", func() {
 				},
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{
-						Address: "127.0.0.1",
-						Port:    80,
-					}: []*core_rules.Rule{
-						{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								ConnectionTimeout: test.ParseDuration("10s"),
-								IdleTimeout:       test.ParseDuration("1h"),
-								Http: &api.Http{
-									RequestTimeout:        test.ParseDuration("5s"),
-									StreamIdleTimeout:     test.ParseDuration("1s"),
-									MaxStreamDuration:     test.ParseDuration("10m"),
-									MaxConnectionDuration: test.ParseDuration("10m"),
-								},
-							},
-						},
-					},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{
 						Address: "127.0.0.1",
@@ -292,14 +270,7 @@ var _ = Describe("MeshTimeout", func() {
 					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))),
 				},
 			},
-			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{
-						Address: "127.0.0.1",
-						Port:    80,
-					}: []*core_rules.Rule{},
-				},
-			},
+			fromRules:         core_rules.FromRules{},
 			expectedClusters:  []string{"basic_without_defaults_inbound_cluster.golden.yaml"},
 			expectedListeners: []string{"basic_without_defaults_inbound_listener.golden.yaml"},
 		}),
@@ -405,26 +376,6 @@ var _ = Describe("MeshTimeout", func() {
 				},
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{
-						Address: "127.0.0.1",
-						Port:    80,
-					}: []*core_rules.Rule{
-						{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								ConnectionTimeout: test.ParseDuration("10s"),
-								IdleTimeout:       test.ParseDuration("1h"),
-								Http: &api.Http{
-									RequestTimeout:        test.ParseDuration("5s"),
-									StreamIdleTimeout:     test.ParseDuration("1s"),
-									MaxStreamDuration:     test.ParseDuration("10m"),
-									MaxConnectionDuration: test.ParseDuration("10m"),
-								},
-							},
-						},
-					},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{
 						Address: "127.0.0.1",

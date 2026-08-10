@@ -509,7 +509,6 @@ var _ = Describe("Rules", func() {
 				listener: samePolicyTypesToList(policies),
 			})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(actual.Rules).To(BeEmpty())
 			Expect(actual.InboundRules).To(HaveLen(1))
 			Expect(actual.InboundRules).To(HaveKey(listener))
 			Expect(actual.InboundRules[listener]).To(HaveLen(3))

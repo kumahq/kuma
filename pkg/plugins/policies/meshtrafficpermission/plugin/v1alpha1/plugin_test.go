@@ -16,7 +16,6 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	policies_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	meshtrafficpermission "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -24,7 +23,6 @@ import (
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
@@ -33,7 +31,7 @@ import (
 
 var _ = Describe("RBAC", func() {
 	Context("for Dataplane", func() {
-		It("should enrich matching listener with RBAC filter", func() {
+		It("should default-deny every mTLS inbound listener with no rules", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
@@ -106,22 +104,7 @@ var _ = Describe("RBAC", func() {
 				).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
-						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
-							Rules: map[core_rules.InboundListener]core_rules.Rules{
-								{
-									Address: "192.168.0.1", Port: 8080,
-								}: {
-									{
-										Subset: []subsetutils.Tag{
-											{Key: mesh_proto.ServiceTag, Value: "frontend"},
-										},
-										Conf: policies_api.Conf{
-											Action: pointer.To[policies_api.Action]("Allow"),
-										},
-									},
-								},
-							},
-						}),
+						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{}),
 				).
 				Build()
 			// when
@@ -137,7 +120,7 @@ var _ = Describe("RBAC", func() {
 			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply.golden.yaml")))
 		})
 
-		It("should ignore legacy 'from' MTP and default-deny under WorkloadIdentity", func() {
+		It("should default-deny under WorkloadIdentity when no rules match", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
@@ -162,16 +145,7 @@ var _ = Describe("RBAC", func() {
 				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
-						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
-							Rules: map[core_rules.InboundListener]core_rules.Rules{
-								{Address: "192.168.0.1", Port: 8080}: {
-									{
-										Subset: []subsetutils.Tag{{Key: mesh_proto.ServiceTag, Value: "frontend"}},
-										Conf:   policies_api.Conf{Action: pointer.To[policies_api.Action]("Allow")},
-									},
-								},
-							},
-						}),
+						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{}),
 				).
 				Build()
 

@@ -1,4 +1,3 @@
-//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -23,7 +22,6 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test"
@@ -296,16 +294,6 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
-						{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								ConnectionLimits: genConnectionLimits(),
-							},
-						},
-					},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
 						Conf: api.Conf{ConnectionLimits: genConnectionLimits()},
@@ -323,14 +311,6 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
-						{
-							Subset: subsetutils.Subset{},
-							Conf:   api.Conf{OutlierDetection: genOutlierDetection(false)},
-						},
-					},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
 						Conf: api.Conf{OutlierDetection: genOutlierDetection(false)},
@@ -348,16 +328,6 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
-						{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								OutlierDetection: genOutlierDetection(true),
-							},
-						},
-					},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
 						Conf: api.Conf{
@@ -377,17 +347,6 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
-						{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								ConnectionLimits: genConnectionLimits(),
-								OutlierDetection: genOutlierDetection(false),
-							},
-						},
-					},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
 						Conf: api.Conf{
@@ -408,17 +367,6 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
-						{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								ConnectionLimits: genConnectionLimits(),
-								OutlierDetection: genOutlierDetection(true),
-							},
-						},
-					},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
 						Conf: api.Conf{
