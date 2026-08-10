@@ -6,6 +6,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test"
 )
 
-func TestTls(t *testing.T) {
+func TestTLS(t *testing.T) {
 	test.RunSpecs(t, "TLS Suite")
 }

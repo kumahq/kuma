@@ -19,6 +19,31 @@ A rotation is transparent only when the new certificate is issued by the CA the 
 **Action required**
 
 If you rotate control plane certificates, issue them from a CA and point proxies at that CA with `kuma-dp run --ca-cert-file=/path/ca.pem` (or `KUMA_CONTROL_PLANE_CA_CERT_FILE`), then rotate leaves under it. This is required for a certificate issued by cert-manager or Vault in any case: such a leaf has `CA:FALSE`, and the control plane rejects a bootstrap request for it with `NotCA` unless the proxy supplies the CA itself.
+
+### `mtls.backends[].mode: PERMISSIVE` no longer makes inbounds permissive
+
+`MeshTLS` is now the only thing that decides whether an inbound accepts plaintext. The inbound listener is built once, and the mode is resolved from the `MeshTLS` policy alone — the `mode` of the enabled `Mesh` CA backend is no longer consulted. A mesh that sets `mtls.backends[].mode: PERMISSIVE` and has no `MeshTLS` policy now gets `Strict` inbounds, and plaintext traffic to those inbounds is rejected.
+
+**Action required**
+
+Before upgrading, author a `MeshTLS` policy with `default.mode: Permissive` for every mesh that relies on `mtls.backends[].mode: PERMISSIVE`:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTLS
+metadata:
+  name: permissive
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  rules:
+    - default:
+        mode: Permissive
+```
+
+Meshes on `mtls.backends[].mode: STRICT`, meshes with mTLS disabled, and meshes that already have a `MeshTLS` policy are unaffected. Note that a mesh using `MeshIdentity` already resolved to `Strict` without a `MeshTLS` policy.
+
 ### Zone Token `ingress` and `egress` scopes removed
 
 `kumactl generate zone-token` no longer accepts `--scope ingress` or `--scope egress`, and the `POST /tokens/zone` endpoint no longer requires a `scope`. A zone proxy is an ordinary `Dataplane` and authenticates with a dataplane token, so these scopes identified components that no longer exist. Kuma itself defines no zone token scopes now; the token carries only the zone name unless a distribution registers its own.

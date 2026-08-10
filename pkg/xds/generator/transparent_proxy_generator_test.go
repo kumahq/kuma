@@ -26,6 +26,11 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		tlsMode  *mesh_proto.CertificateAuthorityBackend_Mode
 	}
 
+	withWorkloadIdentity := func(proxy *model.Proxy) *model.Proxy {
+		proxy.WorkloadIdentity = &model.WorkloadIdentity{}
+		return proxy
+	}
+
 	strictInboundPortsProxy := func(inboundPorts []uint32) *model.Proxy {
 		inbounds := make([]*mesh_proto.Dataplane_Networking_Inbound, len(inboundPorts))
 		for i, port := range inboundPorts {
@@ -179,6 +184,14 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			proxy:    strictInboundPortsProxy([]uint32{8080}),
 			tlsMode:  mesh_proto.CertificateAuthorityBackend_STRICT.Enum(),
 			expected: "06.envoy.golden.yaml",
+		}),
+		Entry("transparent_proxying=true,inbound_filter,workload identity,no mtls", testCase{
+			proxy:    withWorkloadIdentity(strictInboundPortsProxy([]uint32{8080})),
+			expected: "06.envoy.golden.yaml",
+		}),
+		Entry("transparent_proxying=true,inbound_filter,no identity,no mtls", testCase{
+			proxy:    strictInboundPortsProxy([]uint32{8080}),
+			expected: "08.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,inbound_filter,permissive", testCase{
 			proxy:    strictInboundPortsProxy([]uint32{8080, 9000}),

@@ -49,6 +49,11 @@ var _ = Describe("MeshTLS", func() {
 		workloadIdentity *core_xds.WorkloadIdentity
 		casByTrustDomain map[string][]xds_context.PEMBytes
 		features         xds_types.Features
+		// noPolicy exercises a mesh without any MeshTLS policy, where the mode
+		// falls back to Strict
+		noPolicy bool
+		// ipFamilyMode of the transparent proxy, "ipv4" when empty
+		ipFamilyMode string
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -62,7 +67,15 @@ var _ = Describe("MeshTLS", func() {
 			secretsTracker := envoy_common.NewSecretsTracker("default", nil)
 			resourceSet.Add(getMeshServiceResources(secretsTracker, mesh)...)
 
-			policy := getPolicy(given.caseName)
+			fromRules := core_rules.FromRules{}
+			if !given.noPolicy {
+				fromRules = getRulesAsFromRules(pointer.Deref(getPolicy(given.caseName).Spec.Rules))
+			}
+
+			ipFamilyMode := given.ipFamilyMode
+			if ipFamilyMode == "" {
+				ipFamilyMode = "ipv4"
+			}
 
 			proxyBuilder := xds_builders.Proxy().
 				WithSecretsTracker(secretsTracker).
@@ -73,7 +86,7 @@ var _ = Describe("MeshTLS", func() {
 						WithName("test").
 						WithMesh("default").
 						WithAddress("127.0.0.1").
-						WithTransparentProxying(15006, 15001, "ipv4").
+						WithTransparentProxying(15006, 15001, ipFamilyMode).
 						AddOutbound(
 							builders.Outbound().
 								WithAddress("127.0.0.1").
@@ -93,7 +106,7 @@ var _ = Describe("MeshTLS", func() {
 								WithService("frontend"),
 						),
 				).
-				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getRulesAsFromRules(pointer.Deref(policy.Spec.Rules))))
+				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, fromRules))
 
 			features := xds_types.Features{}
 			maps.Copy(features, given.features)
@@ -267,6 +280,21 @@ var _ = Describe("MeshTLS", func() {
 					)
 				},
 			},
+		}),
+		Entry("dualstack tproxy = ipv4 and ipv6 passthrough listeners", testCase{
+			caseName:     "permissive-with-dualstack-tproxy",
+			meshBuilder:  samples.MeshMTLSBuilder(),
+			ipFamilyMode: "dualstack",
+		}),
+		Entry("no policy + strict mesh = strict", testCase{
+			caseName:    "no-policy-with-strict-mtls",
+			meshBuilder: samples.MeshMTLSBuilder(),
+			noPolicy:    true,
+		}),
+		Entry("no policy + permissive mesh = strict", testCase{
+			caseName:    "no-policy-with-permissive-mtls",
+			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
+			noPolicy:    true,
 		}),
 		Entry("strict inbound ports feature = port filtering", testCase{
 			caseName:    "strict-with-feature-strict-inbound-ports",
