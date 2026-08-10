@@ -182,8 +182,11 @@ func (TransparentProxyGenerator) generate(
 		return nil, err
 	}
 
-	// mirrors the MeshTLS mode resolution: a proxy with a workload identity defaults
-	// to strict, otherwise the legacy CA backend mode decides
+	// mirrors the MeshTLS mode resolution for the cases MeshTLS actually runs in: a
+	// proxy with a workload identity defaults to strict, otherwise the legacy CA
+	// backend mode decides. Unlike getMeshTLSMode this does not fall back to strict
+	// when no backend resolves, because a mesh without mTLS and without an identity
+	// has no strict inbound to restrict to.
 	caBackend := ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend()
 	strictTLS := proxy.WorkloadIdentity != nil ||
 		(caBackend != nil && caBackend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT)

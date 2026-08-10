@@ -1170,6 +1170,105 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		Expect(routeAction.HashPolicy[0].GetTerminal()).To(BeTrue())
 	})
 
+	It("keeps per-zone locality on a gateway CLA when the mesh runs an egress", func() {
+		gatewayListener := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
+			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+				Configure(HttpConnectionManager("192.168.0.1:8080", false, nil, true)).
+				Configure(HttpDynamicRoute("gateway-route")),
+			)).
+			MustBuild()
+		gatewayCluster := clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
+			Configure(clusters.EdsCluster()).
+			MustBuild()
+		gatewayEndpoints := endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
+			createEndpointWith("zone-1", "192.168.1.1", map[string]string{}),
+			createEndpointWith("zone-2", "192.168.1.2", map[string]string{}),
+		})
+		gatewayRoute := &envoy_route.RouteConfiguration{
+			Name: "gateway-route",
+			VirtualHosts: []*envoy_route.VirtualHost{{
+				Name:    "*",
+				Domains: []string{"*"},
+				Routes: []*envoy_route.Route{{
+					Match: &envoy_route.RouteMatch{
+						PathSpecifier: &envoy_route.RouteMatch_Prefix{Prefix: "/"},
+					},
+					Action: &envoy_route.Route_Route{
+						Route: &envoy_route.RouteAction{
+							ClusterSpecifier: &envoy_route.RouteAction_Cluster{Cluster: "backend"},
+						},
+					},
+				}},
+			}},
+		}
+
+		resources := core_xds.NewResourceSet()
+		resources.Add(&core_xds.Resource{
+			Name:     "gateway-listener",
+			Origin:   gateway_metadata.OriginGateway,
+			Resource: gatewayListener,
+		})
+		resources.Add(&core_xds.Resource{
+			Name:     "backend",
+			Origin:   gateway_metadata.OriginGateway,
+			Resource: gatewayCluster,
+		})
+		resources.Add(&core_xds.Resource{
+			Name:     "backend",
+			Origin:   gateway_metadata.OriginGateway,
+			Resource: gatewayEndpoints,
+		})
+		resources.Add(&core_xds.Resource{
+			Name:     "gateway-route",
+			Origin:   gateway_metadata.OriginGateway,
+			Resource: gatewayRoute,
+		})
+
+		proxy := &core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+			Zone:       "zone-1",
+			Dataplane: builders.Dataplane().
+				WithName("sample-gateway").
+				WithAddress("192.168.0.1").
+				WithDelegatedGateway("sample-gateway").
+				Build(),
+			Policies: *xds_builders.MatchedPolicies().
+				WithGatewayPolicy(api.MeshLoadBalancingStrategyType, core_rules.GatewayRules{
+					ToRules: core_rules.GatewayToRules{
+						ByListener: map[core_rules.InboundListener]core_rules.ToRules{
+							{Address: "192.168.0.1", Port: 8080}: {
+								Rules: core_rules.Rules{{
+									Subset: subsetutils.MeshService("backend"),
+									Conf: api.Conf{
+										LocalityAwareness: &api.LocalityAwareness{
+											CrossZone: &api.CrossZone{
+												Failover: &[]api.Failover{{
+													To: api.ToZone{
+														Type:  api.Only,
+														Zones: &[]string{"zone-2"},
+													},
+												}},
+											},
+										},
+									},
+								}},
+							},
+						},
+					},
+				}).
+				Build(),
+		}
+
+		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(resources, contextWithEgressEnabled(), proxy)).To(Succeed())
+
+		// cross-zone endpoints address the remote zone directly, so an egress in the
+		// mesh must not collapse them into a single synthetic locality
+		Expect(gatewayEndpoints.Endpoints).To(HaveLen(2))
+		Expect(gatewayEndpoints.Endpoints[1].GetLocality().GetZone()).To(Equal("zone-2"))
+		Expect(gatewayEndpoints.Endpoints[1].Priority).To(Equal(uint32(1)))
+	})
+
 	It("applies gateway hash policies only to routes for the targeted service", func() {
 		gatewayListener := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -1565,6 +1664,17 @@ func zoneProxyDataplane() *core_mesh.DataplaneResource {
 			},
 		},
 	}
+}
+
+func contextWithEgressEnabled() xds_context.Context {
+	return *xds_builders.Context().
+		WithMeshBuilder(samples.MeshMTLSBuilder()).
+		With(func(ctx *xds_context.Context) {
+			ctx.Mesh.ZoneEgresses = []core_xds.ZoneEgressInstance{
+				{Address: "10.0.0.1", Port: 10002},
+			}
+		}).
+		Build()
 }
 
 func createEndpointWith(zone string, ip string, extraTags map[string]string) core_xds.Endpoint {

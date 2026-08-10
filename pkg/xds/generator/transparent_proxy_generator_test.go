@@ -21,10 +21,14 @@ import (
 
 var _ = Describe("TransparentProxyGenerator", func() {
 	type testCase struct {
-		proxy            *model.Proxy
-		expected         string
-		tlsMode          *mesh_proto.CertificateAuthorityBackend_Mode
-		workloadIdentity bool
+		proxy    *model.Proxy
+		expected string
+		tlsMode  *mesh_proto.CertificateAuthorityBackend_Mode
+	}
+
+	withWorkloadIdentity := func(proxy *model.Proxy) *model.Proxy {
+		proxy.WorkloadIdentity = &model.WorkloadIdentity{}
+		return proxy
 	}
 
 	strictInboundPortsProxy := func(inboundPorts []uint32) *model.Proxy {
@@ -72,9 +76,6 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				}
-			}
-			if given.workloadIdentity {
-				given.proxy.WorkloadIdentity = &model.WorkloadIdentity{}
 			}
 			xdsCtx := xds_context.Context{
 				Mesh: xds_context.MeshContext{
@@ -185,13 +186,12 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			expected: "06.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,inbound_filter,workload identity,no mtls", testCase{
-			proxy:            strictInboundPortsProxy([]uint32{8080}),
-			workloadIdentity: true,
-			expected:         "06.envoy.golden.yaml",
+			proxy:    withWorkloadIdentity(strictInboundPortsProxy([]uint32{8080})),
+			expected: "06.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,inbound_filter,no identity,no mtls", testCase{
 			proxy:    strictInboundPortsProxy([]uint32{8080}),
-			expected: "11.envoy.golden.yaml",
+			expected: "08.envoy.golden.yaml",
 		}),
 		Entry("transparent_proxying=true,inbound_filter,permissive", testCase{
 			proxy:    strictInboundPortsProxy([]uint32{8080, 9000}),

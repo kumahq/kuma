@@ -228,8 +228,9 @@ func (s *StatusUpdater) buildTLS(
 	meshIdentities []*meshidentity_api.MeshIdentityResource,
 	trustDomains map[string]struct{},
 ) meshservice_api.TLS {
+	mtlsEnabled := mesh.MTLSEnabled()
 	// a workload identity comes either from the legacy Mesh.mtls backend or from a MeshIdentity
-	workloadIdentityEnabled := mesh.MTLSEnabled() || len(meshIdentities) > 0
+	workloadIdentityEnabled := mtlsEnabled || len(meshIdentities) > 0
 	if !workloadIdentityEnabled {
 		return meshservice_api.TLS{
 			Status: meshservice_api.TLSNotReady,
@@ -245,7 +246,7 @@ func (s *StatusUpdater) buildTLS(
 
 	tlsReadyDpps := 0
 	for _, dpp := range dpps {
-		if mesh.MTLSEnabled() {
+		if mtlsEnabled {
 			// Cert issued by any backend means that mTLS cert was issued to the DP
 			// We don't want to check specific backend value, because we might be in a middle of CA rotation.
 			if insight := insightsByName[core_model.MetaToResourceKey(dpp.Meta)]; insight != nil &&
@@ -277,7 +278,7 @@ func (s *StatusUpdater) hasReadyIdentity(
 	trustDomains map[string]struct{},
 ) bool {
 	identity, matches := meshidentity_api.BestMatched(dpp.Meta.GetLabels(), meshIdentities)
-	if !matches || !identity.Status.IsInitialized() {
+	if !matches || identity.Status == nil || !identity.Status.IsInitialized() {
 		return false
 	}
 	// spire manages trusts so we don't need to validate if trustDomain is supported
