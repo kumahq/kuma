@@ -2,19 +2,14 @@ package v1alpha1
 
 import (
 	"fmt"
-	"strings"
 
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/core/xds/origin"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
-	"github.com/kumahq/kuma/v3/pkg/xds/cache/sha256"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/endpoints/v3"
 	envoy_metadata "github.com/kumahq/kuma/v3/pkg/xds/envoy/metadata/v3"
-	generator_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 const defaultOverprovisioningFactor uint32 = 200
@@ -25,8 +20,6 @@ func NewEndpoints(
 	podLabels map[string]string,
 	conf *api.Conf,
 	localZone string,
-	egressEnabled bool,
-	origin origin.Origin,
 ) []*envoy_endpoint.LocalityLbEndpoints {
 	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, tags, podLabels, localZone)
 	var endpointsList []core_xds.Endpoint
@@ -35,12 +28,8 @@ func NewEndpoints(
 			ed := createEndpoint(lbEndpoint, localZone)
 			zoneName := ed.Tags[mesh_proto.ZoneTag]
 
-			//nolint:gocritic
 			if zoneName == localZone {
 				configureLocalZoneEndpointLocality(localPriorityGroups, &ed, localZone)
-				endpointsList = append(endpointsList, ed)
-			} else if egressEnabled && origin != generator_metadata.OriginEgress {
-				ed.Locality = egressLocality(crossZonePriorityGroups)
 				endpointsList = append(endpointsList, ed)
 			} else if configureCrossZoneEndpointLocality(crossZonePriorityGroups, &ed, zoneName) {
 				endpointsList = append(endpointsList, ed)
@@ -119,27 +108,5 @@ func configureLocalZoneEndpointLocality(localPriorityGroups []LocalLbGroup, endp
 			}
 			break
 		}
-	}
-}
-
-func egressLocality(crossZoneGroups []CrossZoneLbGroup) *core_xds.Locality {
-	builder := strings.Builder{}
-	for _, group := range crossZoneGroups {
-		switch group.Type {
-		case api.Only:
-			fmt.Fprintf(&builder, "%d:%s", group.Priority, strings.Join(util_maps.SortedKeys(group.Zones), ","))
-		case api.Any:
-			fmt.Fprintf(&builder, "%d:%s", group.Priority, group.Type)
-		case api.AnyExcept:
-			fmt.Fprintf(&builder, "%d:%s:%s", group.Priority, group.Type, strings.Join(util_maps.SortedKeys(group.Zones), ","))
-		default:
-			continue
-		}
-		builder.WriteString(";")
-	}
-
-	return &core_xds.Locality{
-		Zone:     fmt.Sprintf("egress_%s", sha256.Hash(builder.String())[:8]),
-		Priority: 1,
 	}
 }

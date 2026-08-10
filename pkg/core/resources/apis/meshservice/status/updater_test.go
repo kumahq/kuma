@@ -350,6 +350,26 @@ var _ = Describe("Updater", func() {
 			existingTLSStatus:      "",
 			expectedTLSStatus:      meshservice_api.TLSNotReady,
 		}),
+		Entry("should set TLS to Ready when mTLS is on but the DPP takes its identity from MeshIdentity", testCase{
+			meshBuilder: samples.MeshMTLSBuilder(),
+			meshIdentities: []*meshidentity_api.MeshIdentityResource{
+				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
+					MatchLabels: &map[string]string{
+						"app": "test",
+					},
+				}).WithInitializedStatus().Build(),
+			},
+			meshTrusts: []*meshtrust_api.MeshTrustResource{
+				builders.MeshTrust().WithTrustDomain("test.east.mesh.local").Build(),
+			},
+			dppLabels: map[string]string{
+				"app":                         "test",
+				"k8s.kuma.io/service-account": "default",
+			},
+			dpInsightIssuedBackend: "",
+			existingTLSStatus:      "",
+			expectedTLSStatus:      meshservice_api.TLSReady,
+		}),
 		Entry("should preserve TLS Ready even through we did not issue certs to all DPPs with MeshIdentity", testCase{
 			meshBuilder: samples.MeshDefaultBuilder(),
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{
