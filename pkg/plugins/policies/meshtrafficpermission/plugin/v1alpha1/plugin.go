@@ -163,12 +163,3 @@ func hasSNIMatch(rules []*inbound.Rule) bool {
 	}
 	return false
 }
-
-func ensureTLSInspector(listener *envoy_listener.Listener) error {
-	for _, lf := range listener.ListenerFilters {
-		if lf.Name == envoy_listeners_v3.TlsInspectorName {
-			return nil
-		}
-	}
-	return (&envoy_listeners_v3.TLSInspectorConfigurer{}).Configure(listener)
-}
