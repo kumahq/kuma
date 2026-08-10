@@ -268,7 +268,7 @@ func (d *k8sDeployment) Deploy(cluster framework.Cluster) error {
 // the ingress address. Waiting on the pods is not enough: the controller only
 // creates the resource once the Service has a ready endpoint, and drops it again
 // whenever the endpoints go away. Without this gate other zones can still be
-// routing to the legacy ZoneIngress when the assertions start.
+// routing to the previous ingress address when the assertions start.
 func (d *k8sDeployment) waitMeshZoneAddress() framework.InstallFunc {
 	// kumactl reports a Kubernetes resource under "{name}.{namespace}".
 	name := d.ingressName() + "." + d.opts.Namespace

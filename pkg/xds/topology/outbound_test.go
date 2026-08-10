@@ -55,7 +55,6 @@ var _ = Describe("TrafficRoute", func() {
 			meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource
 			meshMultiZoneService []*meshmzservice_api.MeshMultiZoneServiceResource
 			meshZoneAddresses    []*meshzoneaddress_api.MeshZoneAddressResource
-			zoneEgresses         []*core_mesh.ZoneEgressResource
 			zoneEgressAddresses  []core_xds.ZoneEgressInstance
 			mesh                 *core_mesh.MeshResource
 			expected             core_xds.EndpointMap
@@ -63,14 +62,7 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				egressAddresses := given.zoneEgressAddresses
-				if egressAddresses == nil {
-					for _, ze := range given.zoneEgresses {
-						n := ze.Spec.GetNetworking()
-						egressAddresses = append(egressAddresses, core_xds.ZoneEgressInstance{Address: n.GetAddress(), Port: n.GetPort()})
-					}
-				}
-				endpoints := BuildDataplaneEndpointMap(context.Background(), "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.meshZoneAddresses, dataSourceLoader, given.mesh.MTLSEnabled(), egressAddresses)
+				endpoints := BuildDataplaneEndpointMap(context.Background(), "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.meshZoneAddresses, dataSourceLoader, given.mesh.MTLSEnabled(), given.zoneEgressAddresses)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
@@ -120,7 +112,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"default_redis___msvc_6379": []core_xds.Endpoint{
+					"kri_msvc_default___redis_6379": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
@@ -185,7 +177,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"default_redis___msvc_6379": []core_xds.Endpoint{
+					"kri_msvc_default___redis_6379": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.1",
 							Port:     6379,
@@ -194,7 +186,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"default_redis-0___msvc_6379": []core_xds.Endpoint{
+					"kri_msvc_default___redis-0_6379": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.1",
 							Port:     6379,
@@ -203,7 +195,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"default_kong.kong-system___msvc_8080": []core_xds.Endpoint{
+					"kri_msvc_default___kong.kong-system_8080": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
 							Port:     80,
@@ -212,7 +204,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"default_kong.kong-system___msvc_8081": []core_xds.Endpoint{
+					"kri_msvc_default___kong.kong-system_8081": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
 							Port:     8001,
@@ -318,23 +310,12 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				zoneEgresses: []*core_mesh.ZoneEgressResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Name: "egress",
-							Mesh: "default",
-						},
-						Spec: &mesh_proto.ZoneEgress{
-							Networking: &mesh_proto.ZoneEgress_Networking{
-								Address: "1.1.1.1",
-								Port:    10002,
-							},
-						},
-					},
+				zoneEgressAddresses: []core_xds.ZoneEgressInstance{
+					{Address: "1.1.1.1", Port: 10002},
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"default_another-mes___extsvc_10000": []core_xds.Endpoint{
+					"kri_extsvc_default___another-mes_10000": []core_xds.Endpoint{
 						{
 							Target: "1.1.1.1",
 							Port:   10002,
@@ -357,7 +338,7 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 					},
-					"default_example-mes___extsvc_10000": []core_xds.Endpoint{
+					"kri_extsvc_default___example-mes_10000": []core_xds.Endpoint{
 						{
 							Target:   "1.1.1.1",
 							Port:     10002,
@@ -430,19 +411,8 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				zoneEgresses: []*core_mesh.ZoneEgressResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Name: "egress",
-							Mesh: "default",
-						},
-						Spec: &mesh_proto.ZoneEgress{
-							Networking: &mesh_proto.ZoneEgress_Networking{
-								Address: "1.1.1.1",
-								Port:    10002,
-							},
-						},
-					},
+				zoneEgressAddresses: []core_xds.ZoneEgressInstance{
+					{Address: "1.1.1.1", Port: 10002},
 				},
 				mesh:     defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{},
@@ -535,7 +505,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"default_backend___msvc_80": []core_xds.Endpoint{
+					"kri_msvc_default___backend_80": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
 							Port:   80,
@@ -545,19 +515,19 @@ var _ = Describe("TrafficRoute", func() {
 							Weight: 1,
 						},
 					},
-					"default_backend__east_msvc_80": []core_xds.Endpoint{
+					"kri_msvc_default_east__backend_80": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags: map[string]string{
-								"kuma.io/service": "default_backend__east_msvc_80",
+								"kuma.io/service": "backend-4v44xv7dwv4v8z2d",
 								"kuma.io/zone":    "east",
 							},
 							Weight:   1,
 							Locality: &core_xds.Locality{Zone: "east", SubZone: "", Priority: 1, Weight: 0},
 						},
 					},
-					"default_backend___mzsvc_80": []core_xds.Endpoint{
+					"kri_mzsvc_default___backend_80": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
 							Port:   80,
@@ -570,7 +540,7 @@ var _ = Describe("TrafficRoute", func() {
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags: map[string]string{
-								"kuma.io/service": "default_backend__east_msvc_80",
+								"kuma.io/service": "backend-4v44xv7dwv4v8z2d",
 								"kuma.io/zone":    "east",
 							},
 							Weight:   1,
@@ -579,49 +549,118 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
-			Entry("uses MeshExternalService with dataplane zone egress listener (no legacy ZoneEgressResource)", testCase{
-				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
-							Name: "ext-svc",
-						},
-						Spec: &meshexternalservice_api.MeshExternalService{
-							Match: meshexternalservice_api.Match{
-								Type:     meshexternalservice_api.HostnameGeneratorType,
-								Port:     10000,
-								Protocol: core_meta.ProtocolTCP,
+			Entry("uses MeshMultiZoneService when matched MeshService port names differ", func() testCase {
+				localMs := builders.MeshService().
+					WithName("backend").
+					WithLabels(map[string]string{
+						mesh_proto.DisplayName: "backend",
+					}).
+					WithDataplaneLabelsSelector(map[string]string{
+						"kuma.io/workload": "backend",
+					}).
+					WithKumaVIP("240.0.0.1").
+					AddIntPortWithName(80, 80, "http", "main").
+					Build()
+				remoteMs := builders.MeshService().
+					WithName("backend-k8s-east").
+					WithLabels(map[string]string{
+						mesh_proto.DisplayName:         "backend",
+						mesh_proto.ZoneTag:             "east",
+						mesh_proto.ResourceOriginLabel: "global",
+					}).
+					WithDataplaneLabelsSelector(map[string]string{
+						"kuma.io/workload": "backend",
+					}).
+					WithState(meshservice_api.StateAvailable).
+					WithKumaVIP("240.0.0.2").
+					AddIntPortWithName(80, 80, "http", "main").
+					Build()
+				mzSvc := builders.MeshMultiZoneService().
+					WithName("backend").
+					WithServiceLabelSelector(map[string]string{
+						mesh_proto.DisplayName: "backend",
+					}).
+					AddMatchedMeshServiceName(kri.From(localMs)).
+					AddMatchedMeshServiceName(kri.From(remoteMs)).
+					AddIntPort(80, "http").
+					Build()
+
+				localKey := kri.WithSectionName(kri.From(localMs), "main").String()
+				remoteKey := kri.WithSectionName(kri.From(remoteMs), "main").String()
+				mzSvcKey := kri.WithSectionName(kri.From(mzSvc), "80").String()
+
+				return testCase{
+					meshZoneAddresses: []*meshzoneaddress_api.MeshZoneAddressResource{
+						{
+							Meta: &test_model.ResourceMeta{
+								Mesh:   defaultMeshName,
+								Name:   "mza-east",
+								Labels: map[string]string{mesh_proto.ZoneTag: "east"},
 							},
-							Endpoints: &[]meshexternalservice_api.Endpoint{
-								{Address: "external.com", Port: 443},
+							Spec: &meshzoneaddress_api.MeshZoneAddress{
+								Address: "192.168.0.100",
+								Port:    12345,
 							},
 						},
 					},
-				},
-				zoneEgressAddresses: []core_xds.ZoneEgressInstance{
-					{Address: "10.42.0.11", Port: 10002},
-				},
-				mesh: defaultMeshWithMTLS,
-				expected: core_xds.EndpointMap{
-					"default_ext-svc___extsvc_10000": []core_xds.Endpoint{
-						{
-							Target: "10.42.0.11",
-							Port:   10002,
-							Tags:   nil,
-							Weight: 1,
-							ExternalService: &core_xds.ExternalService{
-								Protocol: core_meta.ProtocolTCP,
-								OwnerResource: kri.Identifier{
-									ResourceType: meshexternalservice_api.MeshExternalServiceType,
-									Mesh:         "default",
-									Name:         "ext-svc",
+					dataplanes: []*core_mesh.DataplaneResource{
+						samples.DataplaneBackend(),
+					},
+					meshServices: []*meshservice_api.MeshServiceResource{
+						localMs,
+						remoteMs,
+					},
+					meshMultiZoneService: []*meshmzservice_api.MeshMultiZoneServiceResource{
+						mzSvc,
+					},
+					mesh: defaultMeshWithMTLS,
+					expected: core_xds.EndpointMap{
+						localKey: []core_xds.Endpoint{
+							{
+								Target: "192.168.0.1",
+								Port:   80,
+								Tags: map[string]string{
+									"kuma.io/workload": "backend",
 								},
+								Weight: 1,
+							},
+						},
+						remoteKey: []core_xds.Endpoint{
+							{
+								Target: "192.168.0.100",
+								Port:   12345,
+								Tags: map[string]string{
+									"kuma.io/service": "backend-k8s-east",
+									"kuma.io/zone":    "east",
+								},
+								Weight:   1,
+								Locality: &core_xds.Locality{Zone: "east", SubZone: "", Priority: 1, Weight: 0},
+							},
+						},
+						mzSvcKey: []core_xds.Endpoint{
+							{
+								Target: "192.168.0.1",
+								Port:   80,
+								Tags: map[string]string{
+									"kuma.io/workload": "backend",
+								},
+								Weight: 1,
+							},
+							{
+								Target: "192.168.0.100",
+								Port:   12345,
+								Tags: map[string]string{
+									"kuma.io/service": "backend-k8s-east",
+									"kuma.io/zone":    "east",
+								},
+								Weight:   1,
+								Locality: &core_xds.Locality{Zone: "east", SubZone: "", Priority: 1, Weight: 0},
 							},
 						},
 					},
-				},
-			}),
-			Entry("prefers dataplane zone egress listener address over legacy ZoneEgressResource", testCase{
+				}
+			}()),
+			Entry("uses MeshExternalService with dataplane zone egress listener", testCase{
 				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
 					{
 						Meta: &test_model.ResourceMeta{
@@ -640,24 +679,12 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				zoneEgresses: []*core_mesh.ZoneEgressResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: "default", Name: "legacy-ze"},
-						Spec: &mesh_proto.ZoneEgress{
-							Networking: &mesh_proto.ZoneEgress_Networking{
-								Address: "1.1.1.1",
-								Port:    10002,
-							},
-						},
-					},
-				},
-				// zoneEgressAddresses is explicitly set to simulate resolver picking Dataplane listener over legacy
 				zoneEgressAddresses: []core_xds.ZoneEgressInstance{
 					{Address: "10.42.0.11", Port: 10002},
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"default_ext-svc___extsvc_10000": []core_xds.Endpoint{
+					"kri_extsvc_default___ext-svc_10000": []core_xds.Endpoint{
 						{
 							Target: "10.42.0.11",
 							Port:   10002,

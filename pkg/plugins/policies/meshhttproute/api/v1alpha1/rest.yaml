@@ -210,7 +210,6 @@ components:
                                     description: Kind of the referenced resource
                                     enum:
                                       - Mesh
-                                      - MeshSubset
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -239,8 +238,8 @@ components:
                                     additionalProperties:
                                       type: string
                                     description: |-
-                                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                      `MeshSubset` and `MeshServiceSubset`
+                                      Tags used to select a subset of proxies by tags. Can only be used with kind
+                                      `MeshServiceSubset`
                                     type: object
                                   weight:
                                     default: 1
@@ -312,7 +311,6 @@ components:
                                             description: Kind of the referenced resource
                                             enum:
                                               - Mesh
-                                              - MeshSubset
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
@@ -341,8 +339,8 @@ components:
                                             additionalProperties:
                                               type: string
                                             description: |-
-                                              Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                              `MeshSubset` and `MeshServiceSubset`
+                                              Tags used to select a subset of proxies by tags. Can only be used with kind
+                                              `MeshServiceSubset`
                                             type: object
                                           weight:
                                             default: 1

@@ -140,32 +140,17 @@ func isSubset(t1, t2 Tag) bool {
 // We're using this function to check if 2 'from' rules of MeshTrafficPermission can be applied to the same client DPP.
 // For example:
 //
-//	from:
-//	  - targetRef:
-//	      kind: MeshSubset
-//	      tags:
-//	        team: team-a
-//	  - targetRef:
-//	      kind: MeshSubset
-//	      tags:
-//	        zone: east
+//	subset 1: {team: team-a}
+//	subset 2: {zone: east}
 //
 // there is a DPP with tags 'team: team-a' and 'zone: east' that's subjected to both these rules.
-// So 'from[0]' and 'from[1]' have an intersection.
+// So subset 1 and subset 2 have an intersection.
 // However, in another example:
 //
-//	from:
-//	 - targetRef:
-//	     kind: MeshSubset
-//	     tags:
-//	       team: team-a
-//	 - targetRef:
-//	     kind: MeshSubset
-//	     tags:
-//	       team: team-b
-//	       zone: east
+//	subset 1: {team: team-a}
+//	subset 2: {team: team-b, zone: east}
 //
-// there is no DPP that'd hit both 'from[0]' and 'from[1]'. So in this case they don't have an intersection.
+// there is no DPP that'd hit both subset 1 and subset 2. So in this case they don't have an intersection.
 func (ss Subset) Intersect(other Subset) bool {
 	if len(ss) == 0 || len(other) == 0 {
 		return true
@@ -198,7 +183,8 @@ func (ss Subset) WithTag(key, value string, not bool) Subset {
 	return append(ss, Tag{Key: key, Value: value, Not: not})
 }
 
-func MeshSubset() Subset {
+// MatchAll returns an empty Subset, meaning it matches every element.
+func MatchAll() Subset {
 	return Subset{}
 }
 

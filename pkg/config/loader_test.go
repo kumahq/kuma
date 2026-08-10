@@ -143,7 +143,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.HTTPS.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.ApiServer.HTTPS.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 			Expect(cfg.ApiServer.HTTPS.RequireClientCert).To(BeTrue())
-			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
 			Expect(cfg.ApiServer.Authn.LocalhostIsAdmin).To(BeFalse())
 			Expect(cfg.ApiServer.Authn.Type).To(Equal("custom-authn"))
 			Expect(cfg.ApiServer.Authn.Tokens.BootstrapAdminToken).To(BeFalse())
@@ -369,7 +368,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Users).To(Equal([]string{"cp-admin1", "cp-admin2"}))
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Groups).To(Equal([]string{"cp-group1", "cp-group2"}))
 
-			Expect(cfg.Experimental.IngressTagFilters).To(ContainElements("kuma.io/service"))
 			Expect(cfg.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.EventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.EventBasedWatchdog.DelayFullResync).To(BeTrue())
@@ -468,8 +466,6 @@ apiServer:
     tlsMaxVersion: TLSv1_3
     tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
     requireClientCert: true
-  auth:
-    clientCertsDir: "/certs" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
   authn:
     type: custom-authn
     localhostIsAdmin: false
@@ -787,7 +783,6 @@ access:
       groups: ["cp-group1", "cp-group2"]
 experimental:
   cniApp: "kuma-cni"
-  ingressTagFilters: ["kuma.io/service"]
   generateMeshServices: true
   skipPersistedVIPs: true
 eventBus:
@@ -887,7 +882,6 @@ meshService:
 				"KUMA_API_SERVER_HTTPS_TLS_MAX_VERSION":                                                    "TLSv1_3",
 				"KUMA_API_SERVER_HTTPS_TLS_CIPHER_SUITES":                                                  "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_API_SERVER_HTTPS_REQUIRE_CLIENT_CERT":                                                "true",
-				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                                                    "/certs",
 				"KUMA_API_SERVER_AUTHN_TYPE":                                                               "custom-authn",
 				"KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN":                                                 "false",
 				"KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN":                                       "false",
@@ -1106,7 +1100,6 @@ meshService:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_USERS":                                          "cp-admin1,cp-admin2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS":                                         "cp-group1,cp-group2",
-				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",
 				"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                            "10s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                      "15s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                         "true",
