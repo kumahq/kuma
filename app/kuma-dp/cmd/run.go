@@ -212,7 +212,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			rootCtx.Features = []string{
 				xds_types.FeatureTCPAccessLogViaNamedPipe,
-				xds_types.FeatureUnifiedResourceNaming,
 			}
 			if cfg.DataplaneRuntime.OtelPipeEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureOtelViaKumaDp)

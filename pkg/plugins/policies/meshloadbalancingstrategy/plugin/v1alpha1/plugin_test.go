@@ -1653,13 +1653,22 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
 				Port:     uint32(port),
-				Resource: serviceResourceKRI,
+				Resource: destinationKRI(serviceResourceKRI, port),
 			},
-			Protocol: core_meta.ProtocolHTTP,
+			Protocol:            core_meta.ProtocolHTTP,
+			DestinationResource: destinationName(serviceResourceKRI, port),
 		},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
+}
+
+func destinationKRI(id kri.Identifier, port int32) kri.Identifier {
+	return kri.WithSectionName(id, strconv.Itoa(int(port)))
+}
+
+func destinationName(id kri.Identifier, port int32) string {
+	return destinationKRI(id, port).String()
 }
