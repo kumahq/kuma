@@ -7,4 +7,5 @@ rules:
         max: TLS13
       tlsCiphers:
         - "ECDHE-ECDSA-AES128-GCM-SHA256"
-      mode: Permissive
+        - "ECDHE-RSA-AES256-GCM-SHA384"
+      mode: Strict

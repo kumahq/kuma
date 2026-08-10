@@ -7,10 +7,5 @@ resources:
       name: envoy.transport_sockets.tls
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          tlsParams:
-            cipherSuites:
-            - ECDHE-ECDSA-AES128-GCM-SHA256
-            tlsMaximumProtocolVersion: TLSv1_3
-            tlsMinimumProtocolVersion: TLSv1_2
+        commonTlsContext: {}
         sni: outgoing
