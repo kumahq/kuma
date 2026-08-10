@@ -109,9 +109,12 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 		}
 
 		if err := s.store.Upsert(gracefulCtx, zone, currentState); err != nil {
-			if store.IsAlreadyExists(err) || store.IsConflict(err) {
+			switch {
+			case store.IsAlreadyExists(err), store.IsConflict(err):
 				log.V(1).Info("failed to flush ZoneInsight because it was updated in other place. Will retry in the next tick", "zone", zone)
-			} else {
+			case store.IsNotFound(err):
+				log.V(1).Info("failed to flush ZoneInsight because the owning Zone does not exist yet. Will retry in the next tick", "zone", zone)
+			default:
 				log.Error(err, "failed to flush zone status", "zone", zone)
 			}
 		} else {
