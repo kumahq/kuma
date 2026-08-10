@@ -181,7 +181,7 @@ func claConfigurer(conf api.Conf, tags mesh_proto.MultiValueTagSet, podLabels ma
 		isLocalityAware := conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled)
 		return NewModifier(cla).
 			Configure(bldrs_endpoint.NonLocalPriority(isLocalityAware, localZone)).
-			Configure(If(atLeastOneLocalityGroup, bldrs_endpoint.Endpoints(NewEndpoints(cla.Endpoints, tags, podLabels, pointer.To(conf), localZone, false, generator_metadata.OriginOutbound)))).
+			Configure(If(atLeastOneLocalityGroup, bldrs_endpoint.Endpoints(NewEndpoints(cla.Endpoints, tags, podLabels, pointer.To(conf), localZone)))).
 			Configure(If(atLeastOneLocalityGroup, bldrs_endpoint.OverprovisioningFactor(overprovisioningFactor(conf)))).
 			Modify()
 	}

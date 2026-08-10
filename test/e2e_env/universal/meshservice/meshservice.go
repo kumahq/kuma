@@ -94,6 +94,14 @@ spec:
 	})
 
 	It("should switch to permissive mTLS without drop of the traffic", func() {
+		// let's wait until Dataplanes are ready
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				universal.Cluster, "demo-client", "first-test-server.svc.mesh.local",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "500ms").Should(Succeed())
+
 		// given constant requests to the service
 		reqError := atomic.Value{}
 		stopCh := make(chan struct{})
@@ -104,7 +112,7 @@ spec:
 					return
 				}
 				_, err := client.CollectEchoResponse(
-					universal.Cluster, "demo-client", "backend.meshservice.othertld",
+					universal.Cluster, "demo-client", "first-test-server.svc.mesh.local",
 				)
 				if err != nil {
 					reqError.Store(err)
@@ -135,6 +143,7 @@ spec:
 		Expect(universal.Cluster.Install(MeshIdentityBundledUnselected(meshName, identityName))).To(Succeed())
 		Expect(WaitForMeshIdentityReady(universal.Cluster, meshName, identityName)).To(Succeed())
 		err = universal.Cluster.Install(MeshIdentityBundled(meshName, identityName))
+		Expect(WaitForMeshIdentityReady(universal.Cluster, meshName, identityName)).To(Succeed())
 
 		// then traffic went over mTLS with no errors
 		Expect(err).ToNot(HaveOccurred())
@@ -142,8 +151,8 @@ spec:
 			cmd := tunnel.AdminCurlCmd("/stats")
 			stdout, _, err := universal.Cluster.Exec("", "", "demo-client", cmd...)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("cluster.kri_msvc_%s_kuma-3__backend_80.ssl.handshake", meshName)))
-			g.Expect(stdout).ToNot(ContainSubstring(fmt.Sprintf("cluster.kri_msvc_%s_kuma-3__backend_80.ssl.handshake: 0", meshName)))
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("cluster.kri_msvc_%s_kuma-3__first-test-server_80.ssl.handshake", meshName)))
+			g.Expect(stdout).ToNot(ContainSubstring(fmt.Sprintf("cluster.kri_msvc_%s_kuma-3__first-test-server_80.ssl.handshake: 0", meshName)))
 		}, "30s", "1s").Should(Succeed())
 		Expect(reqError.Load()).To(BeNil())
 

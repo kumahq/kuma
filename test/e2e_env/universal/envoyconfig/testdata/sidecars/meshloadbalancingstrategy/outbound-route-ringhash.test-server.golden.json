@@ -952,7 +952,6 @@
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig",
               "kuma.io/origin": "zone",
-              "kuma.io/protocol": "http",
               "kuma.io/service": "test-server",
               "kuma.io/workload": "test-server",
               "kuma.io/zone": "kuma-3",

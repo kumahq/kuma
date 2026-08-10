@@ -1332,6 +1332,17 @@ func zoneProxyDataplane() *core_mesh.DataplaneResource {
 	}
 }
 
+func contextWithEgressEnabled() xds_context.Context {
+	return *xds_builders.Context().
+		WithMeshBuilder(samples.MeshMTLSBuilder()).
+		With(func(ctx *xds_context.Context) {
+			ctx.Mesh.ZoneEgresses = []core_xds.ZoneEgressInstance{
+				{Address: "10.0.0.1", Port: 10002},
+			}
+		}).
+		Build()
+}
+
 func createEndpointWith(zone string, ip string, extraTags map[string]string) core_xds.Endpoint {
 	return *xds_builders.Endpoint().
 		WithTarget(ip).
