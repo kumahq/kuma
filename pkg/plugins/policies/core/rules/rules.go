@@ -432,8 +432,11 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 	}
 
 	uniqueKeys := map[string]struct{}{}
-	// 1. Convert list of rules into the list of subsets
-	var subsets []subsetutils.Subset
+	// 1. Convert list of rules into the list of subsets.
+	// itemSubsets stays index-aligned with oldKindsItems and is never reassigned, so
+	// createRule can look up an item's subset instead of recomputing it. subsets is
+	// the working copy that later steps are free to deduplicate.
+	itemSubsets := make([]subsetutils.Subset, 0, len(oldKindsItems))
 	for _, item := range oldKindsItems {
 		ss, err := asSubset(item.GetTargetRef())
 		if err != nil {
@@ -442,8 +445,9 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 		for _, tag := range ss {
 			uniqueKeys[tag.Key] = struct{}{}
 		}
-		subsets = append(subsets, ss)
+		itemSubsets = append(itemSubsets, ss)
 	}
+	subsets := itemSubsets
 
 	// we don't need to generate all permutations when there is no negations
 	// and we have only 0 or one tag, in other cases we need to generate.
@@ -454,7 +458,7 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 		subsets = subsetutils.Deduplicate(subsets)
 
 		for _, ss := range subsets {
-			if r, err := createRule(ss, oldKindsItems); err != nil {
+			if r, err := createRule(ss, oldKindsItems, itemSubsets); err != nil {
 				return nil, err
 			} else {
 				rules = append(rules, r...)
@@ -525,7 +529,7 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 			}
 
 			// 5. For each combination determine a configuration
-			if r, err := createRule(ss, oldKindsItems); err != nil {
+			if r, err := createRule(ss, oldKindsItems, itemSubsets); err != nil {
 				return nil, err
 			} else {
 				rules = append(rules, r...)
@@ -540,17 +544,16 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 	return rules, nil
 }
 
-func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta) ([]*Rule, error) {
+// createRule builds the rules for subset ss. itemSubsets holds the subset of every
+// entry in items, index-aligned, so the caller's step-1 conversion is reused rather
+// than recomputed on every call.
+func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta, itemSubsets []subsetutils.Subset) ([]*Rule, error) {
 	rules := []*Rule{}
 	confs := []any{}
 	var relevant []PolicyItemWithMeta
 	for i := range items {
 		item := items[i]
-		itemSubset, err := asSubset(item.GetTargetRef())
-		if err != nil {
-			return nil, err
-		}
-		if itemSubset.IsSubset(ss) {
+		if itemSubsets[i].IsSubset(ss) {
 			confs = append(confs, item.GetDefault())
 			relevant = append(relevant, item)
 		}
