@@ -298,8 +298,8 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 	serviceTagIdentities := map[string]struct{}{}
 	spiffeIDs := map[string]struct{}{}
 	for _, dpp := range dpps {
-		// Must mirror pkg/xds/secrets.identityTags: identity comes from the
-		// workload label, the same signal the mTLS identity path relies on.
+		// Identity comes from the workload label, the same signal the
+		// identity path relies on.
 		if workload := dpp.GetMeta().GetLabels()[metadata.KumaWorkload]; workload != "" {
 			serviceTagIdentities[workload] = struct{}{}
 		}

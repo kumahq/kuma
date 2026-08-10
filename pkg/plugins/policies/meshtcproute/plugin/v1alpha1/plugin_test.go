@@ -46,7 +46,6 @@ import (
 	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
@@ -1039,7 +1038,6 @@ func meshContextForMeshExternalService(resources ...core_model.Resource) *xds_co
 		xds_server.MeshResourceTypes(),
 		lookupIPFunc,
 		"zone-1",
-		nil,
 	)
 	mc, err := meshContextBuilder.Build(context.Background(), "default")
 	Expect(err).ToNot(HaveOccurred())
@@ -1119,7 +1117,6 @@ func dppForMeshExternalService(mesList ...*meshexternalservice_api.MeshExternalS
 	proxy := xds_builders.Proxy().
 		WithDataplane(dp).
 		WithOutbounds(outbounds).
-		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 		WithMetadata(&core_xds.DataplaneMetadata{
 			SystemCaPath: "/tmp/ca-certs.crt",
 		}).

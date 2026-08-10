@@ -20,7 +20,6 @@ import (
 	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
 type DataplaneProxyBuilder struct {
@@ -51,15 +50,6 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		return nil, errors.Wrap(err, "could not match policies")
 	}
 
-	meshName := meshContext.Resource.GetMeta().GetName()
-
-	allMeshNames := []string{}
-	for _, mesh := range meshContext.Resources.Meshes().Items {
-		allMeshNames = append(allMeshNames, mesh.GetMeta().GetName())
-	}
-
-	secretsTracker := envoy.NewSecretsTracker(meshName, allMeshNames)
-
 	proxy := &core_xds.Proxy{
 		Id:                core_xds.FromResourceKey(key),
 		APIVersion:        p.APIVersion,
@@ -68,7 +58,6 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		Outbounds:         outbounds,
 		Routing:           *routing,
 		Policies:          *matchedPolicies,
-		SecretsTracker:    secretsTracker,
 		Metadata:          meta,
 		Zone:              p.Zone,
 		RuntimeExtensions: map[string]any{},

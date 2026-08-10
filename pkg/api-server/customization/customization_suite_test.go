@@ -80,7 +80,6 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			nil,
 		),
 		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),
 		&cfg,

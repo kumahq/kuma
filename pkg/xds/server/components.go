@@ -14,7 +14,6 @@ import (
 	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 	v3 "github.com/kumahq/kuma/v3/pkg/xds/server/v3"
 )
 
@@ -56,12 +55,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	idProvider, err := secrets.NewIdentityProvider(rt.CaManagers(), rt.Metrics())
-	if err != nil {
-		return err
-	}
-
-	// Shared across the legacy mTLS and MeshIdentity issuance paths so a single
+	// Shared by every MeshIdentity issuance path so a single
 	// failing/misconfigured backend is throttled consistently.
 	maxBackoff := rt.Config().General.CertGenerationMaxBackoff.Duration
 	issuanceLimiter, err := issuer.NewLimiter(issuer.Config{
@@ -74,23 +68,12 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	secrets, err := secrets.NewSecrets(
-		rt.CAProvider(),
-		idProvider,
-		rt.Metrics(),
-		issuanceLimiter,
-	)
-	if err != nil {
-		return err
-	}
-
 	systemNamespace := ""
 	if rt.Config().Store.Type == config_store.KubernetesStore {
 		systemNamespace = rt.Config().Store.Kubernetes.SystemNamespace
 	}
 	envoyCpCtx := &xds_context.ControlPlaneContext{
 		CLACache:        claCache,
-		Secrets:         secrets,
 		IdentityManager: providers.NewIdentityProviderManager(rt.IdentityProviders(), rt.EventBus(), issuanceLimiter),
 		Zone:            rt.Config().Multizone.Zone.Name,
 		SystemNamespace: systemNamespace,

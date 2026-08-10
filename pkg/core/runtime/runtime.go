@@ -42,7 +42,6 @@ import (
 	zone_access "github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone/access"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 // Runtime represents initialized application state.
@@ -81,7 +80,6 @@ type RuntimeContext interface {
 	EventBus() events.EventBus
 	APIInstaller() api_server.APIInstaller
 	XDS() xds_runtime.XDSRuntimeContext
-	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
 	KDSContext() *kds_context.Context
 	APIServerAuthenticator() authn.Authenticator
@@ -203,7 +201,6 @@ type runtimeContext struct {
 	erf                      events.EventBus
 	apim                     api_server.APIInstaller
 	xds                      xds_runtime.XDSRuntimeContext
-	cap                      secrets.CaProvider
 	dps                      *dp_server.DpServer
 	kdsctx                   *kds_context.Context
 	rv                       ResourceValidators
@@ -295,10 +292,6 @@ func (rc *runtimeContext) APIInstaller() api_server.APIInstaller {
 
 func (rc *runtimeContext) DpServer() *dp_server.DpServer {
 	return rc.dps
-}
-
-func (rc *runtimeContext) CAProvider() secrets.CaProvider {
-	return rc.cap
 }
 
 func (rc *runtimeContext) XDS() xds_runtime.XDSRuntimeContext {

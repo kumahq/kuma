@@ -33,7 +33,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 // BuilderContext provides access to Builder's interim state.
@@ -52,7 +51,6 @@ type BuilderContext interface {
 	Metrics() metrics.Metrics
 	EventBus() events.EventBus
 	APIManager() api_server.APIManager
-	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
 	ResourceValidators() ResourceValidators
 	KDSContext() *kds_context.Context
@@ -89,7 +87,6 @@ type Builder struct {
 	erf            events.EventBus
 	apim           api_server.APIManager
 	xds            xds_runtime.XDSRuntimeContext
-	cap            secrets.CaProvider
 	dps            *dp_server.DpServer
 	kdsctx         *kds_context.Context
 	rv             ResourceValidators
@@ -224,11 +221,6 @@ func (b *Builder) WithAPIManager(apim api_server.APIManager) *Builder {
 	return b
 }
 
-func (b *Builder) WithCAProvider(c secrets.CaProvider) *Builder {
-	b.cap = c
-	return b
-}
-
 func (b *Builder) WithDpServer(dps *dp_server.DpServer) *Builder {
 	b.dps = dps
 	return b
@@ -350,9 +342,6 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.xds == (xds_runtime.XDSRuntimeContext{}) {
 		return nil, errors.New("xds is not configured")
 	}
-	if b.cap == nil {
-		return nil, errors.Errorf("CAProvider has not been configured")
-	}
 	if b.dps == nil {
 		return nil, errors.Errorf("DpServer has not been configured")
 	}
@@ -407,7 +396,6 @@ func (b *Builder) Build() (Runtime, error) {
 			erf:                      b.erf,
 			apim:                     b.apim,
 			xds:                      b.xds,
-			cap:                      b.cap,
 			dps:                      b.dps,
 			kdsctx:                   b.kdsctx,
 			rv:                       b.rv,
@@ -498,10 +486,6 @@ func (b *Builder) EventBus() events.EventBus {
 
 func (b *Builder) APIManager() api_server.APIManager {
 	return b.apim
-}
-
-func (b *Builder) CAProvider() secrets.CaProvider {
-	return b.cap
 }
 
 func (b *Builder) DpServer() *dp_server.DpServer {

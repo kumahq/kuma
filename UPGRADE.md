@@ -12,13 +12,23 @@ does not have any particular instructions.
 
 The transport socket builders no longer read `Mesh.spec.mtls`. A proxy gets an mTLS transport socket — inbound and outbound — only when a `MeshIdentity` matches it; the identity certificate and the trust bundle come from `MeshIdentity` and `MeshTrust`, never from the mesh CA backend. A mesh whose only identity source is `mtls` now serves and accepts plaintext, and `MeshTLS` and `MeshTrafficPermission` no longer apply to its proxies.
 
-The `mtls` field itself is still accepted and still issues certificates over the legacy SDS path, but nothing in the generated Envoy config references them.
+The `mtls` field itself is still accepted, but it no longer issues anything: the legacy SDS path is gone, so no certificate is ever generated for it.
 
 **Action required**
 
 Migrate every mesh that still relies on `mtls` to `MeshIdentity` before upgrading. A mesh already covered by a `MeshIdentity` is unaffected.
 
 Two things go away with the legacy path: `SNIFromTags`/`TagsFromSNI`-style tag-encoded SNIs (outbounds to a destination that is not a real resource are plaintext, so they carry no SNI at all), and `MeshService.status.tls` gating of *permissive* meshes — the status is still computed and still gates outbound TLS for `MeshIdentity` proxies.
+
+### The legacy mesh CA is no longer added to the `MeshTrust` bundle
+
+While both systems coexisted, a mesh that had `mtls` enabled *and* at least one `MeshTrust` got the mesh CA injected into the trust bundle under the mesh name, so a `MeshIdentity` proxy still trusted peers presenting a legacy mesh certificate. That bridge is removed together with the legacy SDS server: the trust bundle now contains only the CAs declared by `MeshTrust` resources.
+
+`DataplaneInsight.mTLS` (and the `MeshInsight.mTLS` aggregation built from it) is now populated exclusively from `MeshIdentity` issuance. A proxy with no workload identity reports no certificate at all instead of the legacy mesh CA's.
+
+**Action required**
+
+Complete the migration to `MeshIdentity` *before* upgrading — this is the point where a partially migrated mesh breaks. Once upgraded, proxies still holding a legacy mesh certificate are no longer trusted by their `MeshIdentity` peers, and there is no rolling path back.
 
 ### `mtls.backends[].mode: PERMISSIVE` no longer makes inbounds permissive
 

@@ -40,7 +40,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 type testRuntimeContext struct {
@@ -104,10 +103,6 @@ func (t *testRuntimeContext) APIInstaller() customization.APIInstaller {
 }
 
 func (t *testRuntimeContext) XDS() xds_runtime.XDSRuntimeContext {
-	panic("implement me")
-}
-
-func (t *testRuntimeContext) CAProvider() secrets.CaProvider {
 	panic("implement me")
 }
 

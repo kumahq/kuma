@@ -73,7 +73,6 @@ var _ = Describe("MADS http service", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			"",
-			nil,
 		)
 		newMetrics, err := metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
