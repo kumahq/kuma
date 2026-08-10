@@ -813,7 +813,7 @@ var _ = Describe("MeshTimeout", func() {
 		})
 		meshTimeout.Spec = &api.MeshTimeout{
 			TargetRef: &common_api.TopLevelTargetRef{
-				Kind:        common_api.Dataplane,
+				Kind:        common_api.TopLevelTargetRefKindDataplane,
 				SectionName: pointer.To("ze-port"),
 			},
 			Rules: &[]api.Rule{{
@@ -893,7 +893,7 @@ var _ = Describe("MeshTimeout", func() {
 		})
 		meshTimeout.Spec = &api.MeshTimeout{
 			TargetRef: &common_api.TopLevelTargetRef{
-				Kind:        common_api.Dataplane,
+				Kind:        common_api.TopLevelTargetRefKindDataplane,
 				SectionName: pointer.To("ze-port"),
 			},
 			Rules: &[]api.Rule{

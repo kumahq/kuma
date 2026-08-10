@@ -55,7 +55,7 @@ func validateConf(conf Conf, to To) validators.ValidationError {
 	var verr validators.ValidationError
 
 	// For MeshHTTPRoute, only hashPolicies is allowed
-	if to.TargetRef.Kind == common_api.MeshHTTPRoute {
+	if to.TargetRef.Kind == common_api.OutboundTargetRefKindMeshHTTPRoute {
 		verr.AddError("hashPolicies", validateHashPolicies(conf.HashPolicies))
 
 		// Add validation errors if other fields are specified
@@ -114,7 +114,7 @@ func validateCrossZone(crossZone *CrossZone, to To) validators.ValidationError {
 	if crossZone == nil {
 		return verr
 	}
-	if to.TargetRef.Kind == common_api.MeshService && (pointer.Deref(to.TargetRef.SectionName) != "" || len(pointer.Deref(to.TargetRef.Labels)) > 0) {
+	if to.TargetRef.Kind == common_api.OutboundTargetRefKindMeshService && (pointer.Deref(to.TargetRef.SectionName) != "" || len(pointer.Deref(to.TargetRef.Labels)) > 0) {
 		verr.AddViolationAt(validators.Root(), fmt.Sprintf("%s: MeshService traffic is local", validators.MustNotBeSet))
 	}
 

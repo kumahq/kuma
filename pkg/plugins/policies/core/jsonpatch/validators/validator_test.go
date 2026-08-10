@@ -323,9 +323,9 @@ var _ = Describe("JsonPatchBlock Validator", func() {
 			Expect(jsonpatch_validators.TopLevelTargetRefDeprecations(targetRef)).To(BeEmpty())
 		},
 		Entry("nil targetRef", nil),
-		Entry("Mesh", &common_api.TopLevelTargetRef{Kind: common_api.Mesh}),
-		Entry("Dataplane", &common_api.TopLevelTargetRef{Kind: common_api.Dataplane}),
-		Entry("MeshHTTPRoute", &common_api.TopLevelTargetRef{Kind: common_api.MeshHTTPRoute}),
-		Entry("MeshService", &common_api.TopLevelTargetRef{Kind: common_api.MeshService}),
+		Entry("Mesh", &common_api.TopLevelTargetRef{Kind: common_api.TopLevelTargetRefKindMesh}),
+		Entry("Dataplane", &common_api.TopLevelTargetRef{Kind: common_api.TopLevelTargetRefKindDataplane}),
+		Entry("MeshHTTPRoute", &common_api.TopLevelTargetRef{Kind: "MeshHTTPRoute"}),
+		Entry("MeshService", &common_api.TopLevelTargetRef{Kind: "MeshService"}),
 	)
 })

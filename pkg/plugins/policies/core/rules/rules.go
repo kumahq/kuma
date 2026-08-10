@@ -309,7 +309,7 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 				for _, to := range policyWithTo.GetToList() {
 					var targetRef common_api.TargetRef
 					switch mhrRules.TargetRef.Kind {
-					case common_api.Mesh, common_api.LegacyMeshSubsetKind():
+					case common_api.OutboundTargetRefKindMesh, common_api.OutboundTargetRefKind(common_api.LegacyMeshSubsetKind()):
 						targetRef = common_api.TargetRef{
 							Kind: common_api.LegacyMeshSubsetKind(),
 							Tags: &map[string]string{
