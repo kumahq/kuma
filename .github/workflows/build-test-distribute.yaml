@@ -367,7 +367,7 @@ jobs:
       - name: Get Cloudsmith OIDC token
         id: cloudsmith_token
         if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
-        uses: cloudsmith-io/cloudsmith-cli-action@db783de9f6e7a445e5e31d94f4210303b48a10a3 # v3.0.1
+        uses: cloudsmith-io/cloudsmith-cli-action@ad73fafb92e3e29a5166c529464c2df7658a608e # v3.1.0
         with:
           oidc-namespace: kong
           oidc-service-slug: ${{ contains(needs.check.outputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
