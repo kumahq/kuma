@@ -143,11 +143,6 @@ var _ = Describe("MeshTrace", func() {
 			}
 			proxyBuilder := xds_builders.Proxy().
 				WithDataplane(dpBuilder).
-				WithMetadata(&core_xds.DataplaneMetadata{
-					// Outbounds are always built from real resources, so every
-					// proxy here supports unified resource naming.
-					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-				}).
 				WithOutbounds(given.outbounds).
 				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules))
 			if given.zone != "" {

@@ -108,9 +108,7 @@ var _ = Describe("MeshTLS", func() {
 				).
 				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, fromRules))
 
-			// Outbounds are always built from real resources, so every proxy here
-			// supports unified resource naming.
-			features := xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true}
+			features := xds_types.Features{}
 			maps.Copy(features, given.features)
 			proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{Features: features})
 

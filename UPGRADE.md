@@ -126,21 +126,19 @@ The `KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED` `kuma-dp`
 environment variable, the `KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED`
 control plane environment variable / `runtime.kubernetes.injector.unifiedResourceNamingEnabled`
 `kuma-cp.yaml` key, and the `dataPlane.features.unifiedResourceNaming` Helm value have
-all been removed. `kuma-dp` now always advertises the unified naming feature to the
-control plane, and the sidecar injector no longer stamps the corresponding env var
-onto injected `kuma-sidecar` containers.
+all been removed. Unified Envoy resource and stat naming is now always enabled,
+and the sidecar injector no longer stamps the corresponding env var onto injected
+`kuma-sidecar` containers.
 
 **Action required**
 
 If you previously set any of these to `false` to opt out, unified naming is now
-always on: `kuma-dp` always advertises `FeatureUnifiedResourceNaming`, and the
-control plane generates unified Envoy resource and stat names regardless of any
-leftover config. Update automation, dashboards, or alerting that depend on the
-legacy names before upgrading. The leftover config values themselves are silently
-ignored rather than rejected: `kuma-cp` does not use strict YAML parsing outside of
-tests, `envconfig` ignores unknown environment variables, and Helm accepts unknown
-`--set` paths. Universal data planes fall back to legacy naming until they run a
-`kuma-dp` version that advertises `FeatureUnifiedResourceNaming` (Kuma 3.0+).
+always on and the control plane generates unified Envoy resource and stat names
+regardless of any leftover config. Update automation, dashboards, or alerting that
+depend on the legacy names before upgrading. The leftover config values themselves
+are silently ignored rather than rejected: `kuma-cp` does not use strict YAML
+parsing outside of tests, `envconfig` ignores unknown environment variables, and
+Helm accepts unknown `--set` paths.
 
 ### MADS restricted to universal deployment mode
 
@@ -323,8 +321,7 @@ already behaviourally identical, so no other changes are required.
 ### `meshServices` removed from the `Mesh` schema
 
 The `meshServices` field (and its `mode` enum) has been removed from the
-`Mesh` resource spec. Unified resource naming for a Dataplane now depends
-solely on that Dataplane's `FeatureUnifiedResourceNaming` capability,
+`Mesh` resource spec. Unified resource naming is now unconditional,
 regardless of what the mesh's former `meshServices.mode` was set to.
 
 **Action required**
@@ -756,6 +753,24 @@ Before upgrading, migrate every policy that uses one of these top-level
 
 After the migration, verify the intended policy coverage in every Zone before
 upgrading Zone control planes.
+
+The `spec.to[].targetRef` field of a policy is a separate, narrower selector
+and is affected too: no policy accepts `kind: MeshSubset`,
+`kind: MeshServiceSubset`, or `kind: MeshGateway` there. The remaining
+accepted kinds are per policy, so check the policy documentation before you
+migrate:
+
+- Every policy that has a `to` array accepts `kind: Mesh`.
+- Most policies also accept `MeshService`, `MeshExternalService`, and
+  `MeshMultiZoneService`.
+- Only `MeshAccessLog`, `MeshLoadBalancingStrategy`, `MeshRetry`, and
+  `MeshTimeout` accept `kind: MeshHTTPRoute`. For example,
+  `MeshCircuitBreaker` rejects it.
+- `MeshRateLimit` and `MeshFaultInjection` accept `kind: Mesh` only, and only
+  when the top-level `targetRef` selects a gateway.
+
+`MeshServiceSubset` remains valid only as a route `backendRefs[].kind`, not as
+a top-level or `to[]` `targetRef.kind`.
 
 ### `from` removed from `MeshTimeout`
 

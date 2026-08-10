@@ -338,15 +338,6 @@ func (n *Dataplane_Networking) GetHealthyInbounds() []*Dataplane_Networking_Inbo
 	return inbounds
 }
 
-// Matches is simply an alias for MatchTags to make source code more aesthetic.
-// Only the gateway carries tags; regular inbounds are matched via labels.
-func (d *Dataplane) Matches(selector TagSelector) bool {
-	if d == nil {
-		return false
-	}
-	return selector.Matches(d.GetNetworking().GetGateway().GetTags())
-}
-
 // MatchTagsFuzzy fuzzy-matches the gateway's tags; regular inbounds are
 // matched via labels.
 func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
@@ -434,18 +425,6 @@ func (s TagSelector) Rank() TagSelectorRank {
 
 func (s TagSelector) Equal(other TagSelector) bool {
 	return len(s) == 0 && len(other) == 0 || len(s) == len(other) && reflect.DeepEqual(s, other)
-}
-
-func MatchAnyService() TagSelector {
-	return MatchService(MatchAllTag)
-}
-
-func MatchService(service string) TagSelector {
-	return TagSelector{ServiceTag: service}
-}
-
-func MatchTags(tags map[string]string) TagSelector {
-	return TagSelector(tags)
 }
 
 // Set of tags that only allows a single value per key.

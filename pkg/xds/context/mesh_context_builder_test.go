@@ -508,7 +508,7 @@ spec:
 
 		// and so is the endpoint Envoy EDS gets, since it only accepts IPs
 		meshService := meshCtx.Resources.MeshServices().Items[0]
-		endpoints := meshCtx.EndpointMap[destinationname.ResolveLegacyFromDestination(meshService, meshService.Spec.Ports[0])]
+		endpoints := meshCtx.EndpointMap[destinationname.MustResolve(meshService, meshService.Spec.Ports[0])]
 		Expect(endpoints).To(HaveLen(1))
 		Expect(endpoints[0].Target).To(Equal("192.168.0.10"))
 	})
@@ -645,12 +645,12 @@ var _ = Describe("ServicesInformation", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then the MeshService-backed service is TLS ready
-		msKey := destinationname.ResolveLegacyFromDestination(ms, ms.Spec.Ports[0])
+		msKey := destinationname.MustResolve(ms, ms.Spec.Ports[0])
 		Expect(mc.ServicesInformation[msKey]).ToNot(BeNil())
 		Expect(mc.ServicesInformation[msKey].TLSReadiness).To(BeTrue())
 
 		// and the external service is unconditionally TLS ready
-		esKey := destinationname.ResolveLegacyFromDestination(externalService, externalService.Spec.Match)
+		esKey := destinationname.MustResolve(externalService, externalService.Spec.Match)
 		Expect(mc.ServicesInformation[esKey]).ToNot(BeNil())
 		Expect(mc.ServicesInformation[esKey].IsExternalService).To(BeTrue())
 		Expect(mc.ServicesInformation[esKey].TLSReadiness).To(BeTrue())
@@ -680,7 +680,7 @@ var _ = Describe("ServicesInformation", func() {
 		mc, err := meshContextBuilder.Build(context.Background(), meshName)
 		Expect(err).ToNot(HaveOccurred())
 
-		msKey := destinationname.ResolveLegacyFromDestination(ms, ms.Spec.Ports[0])
+		msKey := destinationname.MustResolve(ms, ms.Spec.Ports[0])
 		info, found := mc.ServicesInformation[msKey]
 		if found {
 			Expect(info.TLSReadiness).To(BeFalse())

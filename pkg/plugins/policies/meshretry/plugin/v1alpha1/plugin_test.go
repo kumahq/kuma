@@ -16,7 +16,6 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
@@ -102,11 +101,6 @@ var _ = Describe("MeshRetry", func() {
 				WithMesh("default").
 				WithAddress("127.0.0.1").
 				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
-			WithMetadata(&core_xds.DataplaneMetadata{
-				// Outbounds are always built from real resources, so every proxy
-				// here supports unified resource naming.
-				Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-			}).
 			WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshRetryType, given.toRules)).
 			Build()
 
