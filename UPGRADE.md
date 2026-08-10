@@ -153,7 +153,7 @@ Migrate any policy that still selects those resources by `name` and/or `namespac
 
 ### `MeshService.spec.identities` now accepts SPIFFE IDs only
 
-`MeshService.spec.identities[].type` no longer accepts `ServiceTag`. MeshService status now publishes SPIFFE IDs only, while service-tag-based routing keeps using the `kuma.io/service` label or the MeshService resource name as its fallback naming signal.
+`MeshService.spec.identities[].type` no longer accepts `ServiceTag`. `MeshService.spec.identities` now publishes SPIFFE IDs only, while service-tag-based routing keeps using the `kuma.io/service` label or the MeshService resource name as its fallback naming signal.
 
 **Action required**
 

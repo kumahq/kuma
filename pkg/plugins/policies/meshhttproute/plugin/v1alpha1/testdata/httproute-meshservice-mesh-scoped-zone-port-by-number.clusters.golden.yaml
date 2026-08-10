@@ -15,7 +15,11 @@ resources:
           alpnProtocols:
           - kuma
           combinedValidationContext:
-            defaultValidationContext: {}
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://default/backend
+                sanType: URI
             validationContextSdsSecretConfig:
               name: system_trust_bundle
               sdsConfig:
@@ -49,7 +53,11 @@ resources:
           alpnProtocols:
           - kuma
           combinedValidationContext:
-            defaultValidationContext: {}
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://default/backend
+                sanType: URI
             validationContextSdsSecretConfig:
               name: system_trust_bundle
               sdsConfig:
