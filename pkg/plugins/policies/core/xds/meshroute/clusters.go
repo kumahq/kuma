@@ -271,6 +271,9 @@ func Identities(
 				continue
 			}
 			for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
+				if identity.Type != meshservice_api.MeshServiceIdentitySpiffeIDType {
+					continue
+				}
 				identities[identity.Value] = struct{}{}
 			}
 		}
