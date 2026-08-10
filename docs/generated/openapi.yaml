@@ -6216,13 +6216,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshAccessLog resource.
           properties:
@@ -7357,13 +7357,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshFaultInjectionItem:
       type: object
       description: >-
@@ -7758,13 +7758,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshHTTPRouteItem:
       type: object
       description: >-
@@ -8419,13 +8419,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshHealthCheckItem:
       type: object
       description: >-
@@ -8820,13 +8820,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshLoadBalancingStrategyItem:
       type: object
       description: >-
@@ -9384,13 +9384,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshMetricItem:
       type: object
       description: >-
@@ -9694,13 +9694,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshMetric resource.
           properties:
@@ -9901,13 +9901,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshProxyPatchItem:
       type: object
       description: >-
@@ -10567,13 +10567,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshRateLimitItem:
       type: object
       description: >-
@@ -11041,13 +11041,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshRetryItem:
       type: object
       description: >-
@@ -11616,13 +11616,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshTCPRouteItem:
       type: object
       description: >-
@@ -11852,13 +11852,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshTLSItem:
       type: object
       description: >-
@@ -12010,13 +12010,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshTimeoutItem:
       type: object
       description: >-
@@ -12381,13 +12381,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshTraceItem:
       type: object
       description: >-
@@ -12712,13 +12712,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshTrace resource.
           properties:
@@ -13035,13 +13035,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     DataplaneOverviewWithMeta:
       allOf:
         - $ref: '#/components/schemas/Meta'
@@ -13909,13 +13909,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshExternalServiceItem:
       type: object
       description: >-
@@ -14300,13 +14300,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshExternalService
@@ -14657,13 +14657,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshIdentity resource.
           properties:
@@ -14832,13 +14832,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshMultiZoneService
@@ -15193,13 +15193,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshOpenTelemetryBackend
@@ -15398,13 +15398,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshService resource.
           properties:
@@ -15615,13 +15615,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshTrust resource.
           properties:
@@ -15695,13 +15695,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     WorkloadItem:
       type: object
       description: >-
@@ -15752,13 +15752,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma Workload resource.
           properties:
