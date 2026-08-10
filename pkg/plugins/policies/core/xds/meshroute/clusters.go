@@ -9,10 +9,8 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
@@ -25,7 +23,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
-	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
@@ -35,19 +32,16 @@ func GenerateClusters(
 	proxy *core_xds.Proxy,
 	meshCtx xds_context.MeshContext,
 	services envoy_common.Services,
-	systemNamespace string,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		protocol := meshCtx.GetServiceProtocol(serviceName)
-		tlsReady := service.TLSReady()
 
 		for _, cluster := range service.Clusters() {
 			clusterName := cluster.Name()
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
-			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 			if meshCtx.IsExternalService(serviceName) {
 				realResourceRef := service.BackendRef().RealResourceBackendRef()
 				_, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
@@ -101,21 +95,17 @@ func GenerateClusters(
 					if !ok {
 						continue
 					}
-					tlsReady = true // tls readiness is only relevant for MeshService
-					isLocalMeshService := false
+					tlsReady := true // tls readiness is only relevant for MeshService
 					if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
 						ms := dest.(*meshservice_api.MeshServiceResource)
 						// we only check TLS status for local service
 						// services that are synced can be accessed only with TLS through the zone proxy
-						isLocalMeshService = ms.IsLocalMeshService()
-						tlsReady = !isLocalMeshService || ms.Status.TLS.Status == meshservice_api.TLSReady
+						tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
 						protocol = port.GetProtocol()
 					}
 					// Every zone is reachable through a mesh-scoped zone proxy, which
 					// matches the KRI SNI, so a proxy with WorkloadIdentity always uses it.
-					kriSNI := proxy.WorkloadIdentity != nil
-					var sni string
-					if kriSNI {
+					if proxy.WorkloadIdentity != nil {
 						// The destination advertises its SNI from the resolved
 						// port name, so normalize a numeric backend-ref section
 						// (named port targeted by number) to the port name
@@ -124,40 +114,23 @@ func GenerateClusters(
 						if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
 							continue
 						}
-						sni = core_sni.FromKRI(kriID)
-					} else {
-						sni = SniForBackendRef(realResourceRef, dest, port, systemNamespace)
-					}
-					// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
-					if proxy.WorkloadIdentity != nil {
 						// A proxy receives its own identity independently of
 						// the destination's, so requiring mTLS before the
 						// destination reports it can serve TLS drops every
-						// request sent in between. Ready is sticky for as
-						// long as the mesh keeps mTLS or any MeshIdentity,
-						// and only resets once both are gone - which is
-						// exactly when the destination stops terminating
-						// TLS and plaintext becomes correct again.
+						// request sent in between. Ready is sticky for as long
+						// as the mesh keeps any MeshIdentity, and only resets
+						// once they are gone - which is exactly when the
+						// destination stops terminating TLS and plaintext
+						// becomes correct again.
 						if tlsReady {
-							sans := Identities(realResourceRef, meshCtx, true)
-							upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
+							sans := Identities(realResourceRef, meshCtx)
+							upstreamCtx, err := UpstreamTLSContext(proxy, core_sni.FromKRI(kriID), sans)
 							if err != nil {
 								return nil, err
 							}
 							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 						}
-					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
-							proxy.SecretsTracker,
-							meshCtx.Resource,
-							tlsReady,
-							sni,
-							Identities(realResourceRef, meshCtx, false),
-							len(meshCtx.CAsByTrustDomain) > 0,
-						))
 					}
-				} else {
-					edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
 				}
 			}
 
@@ -222,35 +195,13 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 		Build()
 }
 
-func SniForBackendRef(
-	backendRef *resolve.RealResourceBackendRef,
-	dest core_resources.Destination,
-	port core_resources.Port,
-	systemNamespace string,
-) string {
-	name := core_model.GetDisplayName(dest.GetMeta())
-	if backendRef.Resource.ResourceType == meshservice_api.MeshServiceType {
-		name = dest.(*meshservice_api.MeshServiceResource).SNIName(systemNamespace)
-	}
-
-	return tls.SNIForResource(name, dest.GetMeta().GetMesh(), dest.Descriptor().Name, port.GetValue(), nil)
-}
-
 func Identities(
 	backendRef *resolve.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
-	includeSpiffeID bool,
 ) []string {
 	var result []string
 	serviceTagTransformer := func(serviceTag string) string {
-		return serviceTag
-	}
-	// we don't use function which transform service tag to the spiffe id on cluster configuration
-	// instead we want to set it here. It's not required for SpiffeID type, only ServiceTag
-	if includeSpiffeID {
-		serviceTagTransformer = func(serviceTag string) string {
-			return tls.ServiceSpiffeID(meshCtx.Resource.Meta.GetName(), serviceTag)
-		}
+		return tls.ServiceSpiffeID(meshCtx.Resource.Meta.GetName(), serviceTag)
 	}
 	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
 	case common_api.MeshService:

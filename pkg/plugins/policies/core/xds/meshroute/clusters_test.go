@@ -26,61 +26,15 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
-var _ = Describe("SniForBackendRef", func() {
-	DescribeTable("returns SNI built from resolved port",
-		func(sectionName string) {
-			ms := builders.MeshService().
-				WithName("backend").
-				WithMesh("default").
-				AddIntPortWithName(8080, 8080, core_meta.ProtocolHTTP, "http").
-				Build()
-
-			port, ok := ms.FindPortByName(sectionName)
-			Expect(ok).To(BeTrue())
-
-			id := kri.WithSectionName(kri.From(ms), sectionName)
-			ref := &resolve.RealResourceBackendRef{Resource: id}
-
-			sni := meshroute.SniForBackendRef(ref, ms, port, "")
-
-			Expect(sni).NotTo(BeEmpty())
-			Expect(sni).To(ContainSubstring(".8080."))
-		},
-		Entry("by port name", "http"),
-		Entry("by port value", "8080"),
-	)
-
-	It("uses SNIName for MeshService destination", func() {
-		ms := builders.MeshService().
-			WithName("backend").
-			WithMesh("default").
-			AddIntPortWithName(8080, 8080, core_meta.ProtocolHTTP, "http").
-			Build()
-
-		port, ok := ms.FindPortByName("http")
-		Expect(ok).To(BeTrue())
-
-		id := kri.WithSectionName(kri.From(ms), "http")
-		id.ResourceType = meshservice_api.MeshServiceType
-		ref := &resolve.RealResourceBackendRef{Resource: id}
-
-		sni := meshroute.SniForBackendRef(ref, ms, port, "kuma-system")
-
-		Expect(sni).To(ContainSubstring(ms.SNIName("kuma-system")))
-	})
-})
-
 var _ = Describe("GenerateClusters", func() {
 	// A proxy is given its own identity before the destination reports that it
 	// can terminate TLS, so an outbound cluster must stay on plaintext until the
-	// destination's MeshService is TLS Ready. Both the WorkloadIdentity and the
-	// legacy mTLS path have to agree on that, otherwise switching a mesh to mTLS
-	// drops every request sent in the window between the two pushes.
+	// destination's MeshService is TLS Ready, otherwise enabling identity on a
+	// mesh drops every request sent in the window between the two pushes.
 	type testCase struct {
 		tlsStatus        meshservice_api.TLSStatus
 		zoneOrigin       bool
 		workloadIdentity bool
-		permissiveMTLS   bool
 		expectMTLS       bool
 		expectedSNI      string
 	}
@@ -99,12 +53,8 @@ var _ = Describe("GenerateClusters", func() {
 			WithTLSStatus(given.tlsStatus).
 			Build()
 
-		meshBuilder := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1")
-		if given.permissiveMTLS {
-			meshBuilder = meshBuilder.WithPermissiveMTLSBackends()
-		}
 		meshCtx := xds_context.MeshContext{
-			Resource: meshBuilder.Build(),
+			Resource: builders.Mesh().Build(),
 			BaseMeshContext: &xds_context.BaseMeshContext{
 				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{ms}),
 			},
@@ -115,7 +65,7 @@ var _ = Describe("GenerateClusters", func() {
 			Resource: kri.WithSectionName(kri.From(ms), "http"),
 			Weight:   100,
 		})
-		services := envoy_common.NewServicesAccumulator(nil)
+		services := envoy_common.NewServicesAccumulator()
 		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("backend").Build())
 
 		proxyBuilder := xds_builders.Proxy().
@@ -135,7 +85,7 @@ var _ = Describe("GenerateClusters", func() {
 			})
 		}
 
-		rs, err := meshroute.GenerateClusters(proxyBuilder.Build(), meshCtx, services.Services(), "")
+		rs, err := meshroute.GenerateClusters(proxyBuilder.Build(), meshCtx, services.Services())
 		Expect(err).ToNot(HaveOccurred())
 
 		clusters := rs.Resources(envoy_resource.ClusterType)
@@ -179,16 +129,9 @@ var _ = Describe("GenerateClusters", func() {
 			expectMTLS:       true,
 			expectedSNI:      "sni.msvc.default.zone-1.backend.http",
 		}),
-		Entry("permissive mTLS, local destination not TLS ready", testCase{
-			tlsStatus:      meshservice_api.TLSNotReady,
-			zoneOrigin:     true,
-			permissiveMTLS: true,
-		}),
-		Entry("permissive mTLS, local destination TLS ready", testCase{
-			tlsStatus:      meshservice_api.TLSReady,
-			zoneOrigin:     true,
-			permissiveMTLS: true,
-			expectMTLS:     true,
+		Entry("no workload identity, destination TLS ready", testCase{
+			tlsStatus:  meshservice_api.TLSReady,
+			zoneOrigin: true,
 		}),
 	)
 
@@ -221,7 +164,7 @@ var _ = Describe("GenerateClusters", func() {
 			Resource: kri.WithSectionName(kri.From(mes), "9000"),
 			Weight:   100,
 		})
-		services := envoy_common.NewServicesAccumulator(nil)
+		services := envoy_common.NewServicesAccumulator()
 		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("external-backend").Build())
 
 		rs, err := meshroute.GenerateClusters(
@@ -242,7 +185,6 @@ var _ = Describe("GenerateClusters", func() {
 				Build(),
 			meshCtx,
 			services.Services(),
-			"",
 		)
 		Expect(err).ToNot(HaveOccurred())
 

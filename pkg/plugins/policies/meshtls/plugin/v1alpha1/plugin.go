@@ -70,11 +70,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		"mesh", ctx.Mesh.Resource.GetMeta().GetName(),
 	)
 
-	switch {
-	case ctx.Mesh.Resource.MTLSEnabled():
-	case proxy.WorkloadIdentity != nil:
-	default:
-		log.V(1).Info("skip applying MeshTLS, mTLS is disabled")
+	if proxy.WorkloadIdentity == nil {
+		log.V(1).Info("skip applying MeshTLS, the proxy has no workload identity")
 		return nil
 	}
 
@@ -131,7 +128,7 @@ func applyToInbounds(
 			})
 		}
 
-		if resource, err := configureInboundPassthroughListener(proxy, ctx, conf, false); err != nil {
+		if resource, err := configureInboundPassthroughListener(proxy, conf, false); err != nil {
 			return err
 		} else if resource != nil {
 			rs.Remove(envoy_resource.ListenerType, resource.GetName())
@@ -142,7 +139,7 @@ func applyToInbounds(
 			})
 		}
 
-		if resource, err := configureInboundPassthroughListener(proxy, ctx, conf, true); err != nil {
+		if resource, err := configureInboundPassthroughListener(proxy, conf, true); err != nil {
 			return err
 		} else if resource != nil {
 			rs.Remove(envoy_resource.ListenerType, resource.GetName())
@@ -253,7 +250,6 @@ func configureTLSParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
 
 func configureInboundPassthroughListener(
 	proxy *core_xds.Proxy,
-	xdsCtx xds_context.Context,
 	conf api.Conf,
 	ipv6 bool,
 ) (envoy_common.NamedResource, error) {
@@ -265,11 +261,6 @@ func configureInboundPassthroughListener(
 		return nil, nil
 	}
 	if ipv6 && !tpCfg.EnabledIPv6() {
-		return nil, nil
-	}
-	if xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend() == nil &&
-		proxy.WorkloadIdentity == nil &&
-		!proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts) {
 		return nil, nil
 	}
 	tlsMode := getMeshTLSMode(conf.Mode)
@@ -321,13 +312,6 @@ func configureListener(
 	protocol := core_meta.ParseProtocol(inbound.GetProtocol())
 
 	filterChainKumaTLS := generator.FilterChainBuilder(protocol, proxy, iface).
-		Configure(envoy_listeners.ServerSideMTLS(
-			xdsCtx.Mesh.Resource,
-			proxy.SecretsTracker,
-			conf.TlsVersion,
-			pointer.Deref(conf.TlsCiphers),
-			len(xdsCtx.Mesh.CAsByTrustDomain) > 0,
-		)).
 		Configure(envoy_listeners.DownstreamTlsContext(downstreamCtx))
 
 	if getMeshTLSMode(conf.Mode) == api.ModeStrict {

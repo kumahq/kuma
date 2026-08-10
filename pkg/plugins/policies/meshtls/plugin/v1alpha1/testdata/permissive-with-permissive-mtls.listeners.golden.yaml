@@ -44,18 +44,14 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
-              defaultValidationContext:
-                matchTypedSubjectAltNames:
-                - matcher:
-                    prefix: spiffe://default/
-                  sanType: URI
+              defaultValidationContext: {}
               validationContextSdsSecretConfig:
-                name: system_mtls_ca_default
+                name: system_trust_bundle
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: system_mtls_identity_default
+            - name: my-secret-name
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
@@ -121,18 +117,14 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
-              defaultValidationContext:
-                matchTypedSubjectAltNames:
-                - matcher:
-                    prefix: spiffe://default/
-                  sanType: URI
+              defaultValidationContext: {}
               validationContextSdsSecretConfig:
-                name: system_mtls_ca_default
+                name: system_trust_bundle
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: system_mtls_identity_default
+            - name: my-secret-name
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3

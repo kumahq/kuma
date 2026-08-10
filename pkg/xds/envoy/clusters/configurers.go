@@ -6,71 +6,11 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters/v3"
 	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
-
-func ClientSideMTLS(
-	tracker core_xds.SecretsTracker,
-	mesh *core_mesh.MeshResource,
-	upstreamService string,
-	upstreamTLSReady bool,
-	tags []envoy_tags.Tags,
-	useMeshTrust bool,
-) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:   tracker,
-			UpstreamMesh:     mesh,
-			UpstreamService:  upstreamService,
-			LocalMesh:        mesh,
-			Tags:             tags,
-			UpstreamTLSReady: upstreamTLSReady,
-			UseMeshTrust:     useMeshTrust,
-		})
-	})
-}
-
-func ClientSideMultiIdentitiesMTLS(
-	tracker core_xds.SecretsTracker,
-	mesh *core_mesh.MeshResource,
-	upstreamTLSReady bool,
-	sni string,
-	identities []string,
-	useMeshTrust bool,
-) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:   tracker,
-			UpstreamMesh:     mesh,
-			UpstreamService:  "*",
-			LocalMesh:        mesh,
-			SNI:              sni,
-			Tags:             nil,
-			UpstreamTLSReady: upstreamTLSReady,
-			VerifyIdentities: identities,
-			UseMeshTrust:     useMeshTrust,
-		})
-	})
-}
-
-// UnknownDestinationClientSideMTLS configures cluster with mTLS for a mesh but without extensive destination verification (only Mesh is verified)
-func UnknownDestinationClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, useMeshTrust bool) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:   tracker,
-			UpstreamMesh:     mesh,
-			UpstreamService:  "*",
-			LocalMesh:        mesh,
-			Tags:             nil,
-			UpstreamTLSReady: true,
-			UseMeshTrust:     useMeshTrust,
-		})
-	})
-}
 
 func ClientSideTLS(endpoints []core_xds.Endpoint) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {

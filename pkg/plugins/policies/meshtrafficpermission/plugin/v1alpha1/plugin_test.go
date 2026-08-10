@@ -29,6 +29,15 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
+// kumaDownstreamTLS marks a filter chain as protected by Kuma's TLS, which is
+// the only property MeshTrafficPermission keys off when placing RBAC filters.
+func kumaDownstreamTLS() listeners.FilterChainBuilderOpt {
+	return listeners.DownstreamTlsContext(&envoy_tls.DownstreamTlsContext{
+		CommonTlsContext:         &envoy_tls.CommonTlsContext{},
+		RequireClientCertificate: util_proto.Bool(true),
+	})
+}
+
 var _ = Describe("RBAC", func() {
 	Context("for Dataplane", func() {
 		It("should default-deny every mTLS inbound listener with no rules", func() {
@@ -42,7 +51,7 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -58,7 +67,7 @@ var _ = Describe("RBAC", func() {
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener2", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -72,7 +81,7 @@ var _ = Describe("RBAC", func() {
 			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener3", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -130,7 +139,7 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -172,7 +181,7 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -186,7 +195,7 @@ var _ = Describe("RBAC", func() {
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener2", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -200,7 +209,7 @@ var _ = Describe("RBAC", func() {
 			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener3", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -302,7 +311,7 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -356,7 +365,7 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())

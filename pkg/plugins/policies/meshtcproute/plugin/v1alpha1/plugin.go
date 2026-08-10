@@ -55,8 +55,7 @@ func ApplyToOutbounds(
 	ctx xds_context.Context,
 	policies core_xds.TypedMatchingPolicies,
 ) error {
-	tlsReady := ctx.Mesh.GetTLSReadiness()
-	servicesAccumulator := envoy_common.NewServicesAccumulator(tlsReady)
+	servicesAccumulator := envoy_common.NewServicesAccumulator()
 
 	listeners, err := generateListeners(proxy, policies.ToRules, servicesAccumulator, ctx.Mesh)
 	if err != nil {
@@ -66,7 +65,7 @@ func ApplyToOutbounds(
 
 	services := servicesAccumulator.Services()
 
-	clusters, err := meshroute.GenerateClusters(proxy, ctx.Mesh, services, ctx.ControlPlane.SystemNamespace)
+	clusters, err := meshroute.GenerateClusters(proxy, ctx.Mesh, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate cluster resources")
 	}

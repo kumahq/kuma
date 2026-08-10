@@ -8,24 +8,6 @@ resources:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
-          alpnProtocols:
-          - kuma
-          combinedValidationContext:
-            defaultValidationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: spiffe://default/outgoing
-                sanType: URI
-            validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
-            sdsConfig:
-              ads: {}
-              resourceApiVersion: V3
           tlsParams:
             cipherSuites:
             - ECDHE-ECDSA-AES128-GCM-SHA256
@@ -36,3 +18,4 @@ resources:
             - ECDHE-RSA-CHACHA20-POLY1305
             tlsMaximumProtocolVersion: TLSv1_2
             tlsMinimumProtocolVersion: TLSv1_1
+        sni: outgoing

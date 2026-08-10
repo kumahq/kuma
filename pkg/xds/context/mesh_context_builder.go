@@ -15,10 +15,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
@@ -219,7 +217,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		EndpointMap:                     endpointMap,
 		VIPDomains:                      domains,
 		VIPOutbounds:                    outbounds,
-		ServicesInformation:             m.generateServicesInformation(mesh, meshServices, endpointMap),
+		ServicesInformation:             m.generateServicesInformation(endpointMap),
 		DataSourceLoader:                loader,
 		CAsByTrustDomain:                casByTrustDomain,
 		ZoneEgresses:                    zoneEgressList,
@@ -389,13 +387,10 @@ func modifyAllEntries(list core_model.ResourceList, fn func(resource core_model.
 }
 
 func (m *meshContextBuilder) generateServicesInformation(
-	mesh *core_mesh.MeshResource,
-	meshServices []*meshservice_api.MeshServiceResource,
 	endpointMap xds.EndpointMap,
 ) map[string]*ServiceInformation {
 	servicesInformation := map[string]*ServiceInformation{}
 	m.resolveProtocol(endpointMap, servicesInformation)
-	m.resolveTLSReadiness(mesh, meshServices, servicesInformation)
 	return servicesInformation
 }
 
@@ -408,37 +403,6 @@ func (m *meshContextBuilder) resolveProtocol(
 		serviceInfo.Protocol = inferServiceProtocol(endpoints)
 		serviceInfo.IsExternalService = isExternalService(endpoints)
 		servicesInformation[svc] = serviceInfo
-	}
-}
-
-func (m *meshContextBuilder) resolveTLSReadiness(
-	mesh *core_mesh.MeshResource,
-	meshServices []*meshservice_api.MeshServiceResource,
-	servicesInformation map[string]*ServiceInformation,
-) {
-	backend := mesh.GetEnabledCertificateAuthorityBackend()
-	// TLS readiness is irrelevant unless we are using PERMISSIVE TLS, so skip
-	// checking MeshServices if we aren't.
-	if backend == nil || backend.Mode != mesh_proto.CertificateAuthorityBackend_PERMISSIVE {
-		return
-	}
-
-	// External services are always considered TLS ready: traffic to them never
-	// goes through mTLS issued by this mesh's CA.
-	for svc, info := range servicesInformation {
-		if info.IsExternalService {
-			info.TLSReadiness = true
-			servicesInformation[svc] = info
-		}
-	}
-
-	for _, ms := range meshServices {
-		for _, port := range ms.Spec.Ports {
-			svc := destinationname.MustResolve(ms, port)
-			serviceInfo := getServiceInformation(servicesInformation, svc)
-			serviceInfo.TLSReadiness = ms.Status.TLS.Status == meshservice_api.TLSReady
-			servicesInformation[svc] = serviceInfo
-		}
 	}
 }
 

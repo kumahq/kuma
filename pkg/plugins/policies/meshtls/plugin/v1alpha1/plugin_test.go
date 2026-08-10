@@ -42,6 +42,19 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
+// kumaWorkloadIdentity is the identity every proxy that MeshTLS runs on carries.
+func kumaWorkloadIdentity() *core_xds.WorkloadIdentity {
+	return &core_xds.WorkloadIdentity{
+		KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
+		IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+			return bldrs_tls.SdsSecretConfigSource(
+				"my-secret-name",
+				bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+			)
+		},
+	}
+}
+
 var _ = Describe("MeshTLS", func() {
 	type testCase struct {
 		caseName         string
@@ -65,7 +78,7 @@ var _ = Describe("MeshTLS", func() {
 				Build()
 			resourceSet := core_xds.NewResourceSet()
 			secretsTracker := envoy_common.NewSecretsTracker("default", nil)
-			resourceSet.Add(getMeshServiceResources(secretsTracker, mesh)...)
+			resourceSet.Add(getMeshServiceResources()...)
 
 			fromRules := core_rules.FromRules{}
 			if !given.noPolicy {
@@ -127,38 +140,28 @@ var _ = Describe("MeshTLS", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.clusters.golden.yaml", given.caseName)))
 		},
-		Entry("strict with no mTLS on the mesh", testCase{
+		Entry("no workload identity = plugin does not run", testCase{
 			caseName:    "strict-no-mtls",
 			meshBuilder: samples.MeshDefaultBuilder(),
 		}),
-		Entry("permissive with no mTLS on the mesh", testCase{
-			caseName:    "permissive-no-mtls",
-			meshBuilder: samples.MeshDefaultBuilder(),
+		Entry("strict with SNI matchers", testCase{
+			caseName:         "strict-with-permissive-mtls",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaWorkloadIdentity(),
 		}),
-		Entry("strict with permissive mTLS on the mesh", testCase{
-			caseName:    "strict-with-permissive-mtls",
-			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
-		}),
-		Entry("permissive with permissive mTLS on the mesh", testCase{
-			caseName:    "permissive-with-permissive-mtls",
-			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
+		Entry("permissive with SNI matchers", testCase{
+			caseName:         "permissive-with-permissive-mtls",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaWorkloadIdentity(),
 		}),
 		Entry("strict based on workload identity", testCase{
-			caseName:    "strict-with-workload-identity",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
+			caseName:         "strict-with-workload-identity",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaWorkloadIdentity(),
 		}),
 		Entry("permissive based on workload identity and custom functions", testCase{
 			caseName:    "permissive-with-workload-identity-custom-functions",
-			meshBuilder: samples.MeshMTLSBuilder(),
+			meshBuilder: samples.MeshDefaultBuilder(),
 			workloadIdentity: &core_xds.WorkloadIdentity{
 				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
 				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
@@ -176,8 +179,9 @@ var _ = Describe("MeshTLS", func() {
 			},
 		}),
 		Entry("strict with MeshTrust", testCase{
-			caseName:    "strict-with-mesh-trust",
-			meshBuilder: samples.MeshMTLSBuilder(),
+			caseName:         "strict-with-mesh-trust",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaWorkloadIdentity(),
 			casByTrustDomain: map[string][]xds_context.PEMBytes{
 				"domain-1": {
 					xds_context.PEMBytes("123"),
@@ -186,7 +190,7 @@ var _ = Describe("MeshTLS", func() {
 		}),
 		Entry("strict using external validator", testCase{
 			caseName:    "strict-with-external-validator",
-			meshBuilder: samples.MeshMTLSBuilder(),
+			meshBuilder: samples.MeshDefaultBuilder(),
 			workloadIdentity: &core_xds.WorkloadIdentity{
 				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
 				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
@@ -210,7 +214,7 @@ var _ = Describe("MeshTLS", func() {
 		}),
 		Entry("strict with MeshTrust and kuma managed identity", testCase{
 			caseName:    "strict-with-mesh-trust-kuma-managed",
-			meshBuilder: samples.MeshMTLSBuilder(),
+			meshBuilder: samples.MeshDefaultBuilder(),
 			workloadIdentity: &core_xds.WorkloadIdentity{
 				KRI:            kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
 				ManagementMode: core_xds.KumaManagementMode,
@@ -229,7 +233,7 @@ var _ = Describe("MeshTLS", func() {
 		}),
 		Entry("strict with multiple MeshTrust and kuma managed identity", testCase{
 			caseName:    "strict-with-multiple-mesh-trust-kuma-managed",
-			meshBuilder: samples.MeshMTLSBuilder(),
+			meshBuilder: samples.MeshDefaultBuilder(),
 			workloadIdentity: &core_xds.WorkloadIdentity{
 				KRI:            kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
 				ManagementMode: core_xds.KumaManagementMode,
@@ -247,74 +251,42 @@ var _ = Describe("MeshTLS", func() {
 				"domain-b": {xds_context.PEMBytes("789")},
 			},
 		}),
-		Entry("strict mode + strict mesh = no passthrough listeners", testCase{
-			caseName:    "strict-with-strict-mtls",
-			meshBuilder: samples.MeshMTLSBuilder(),
+		Entry("strict mode = no passthrough listeners", testCase{
+			caseName:         "strict-with-strict-mtls",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaWorkloadIdentity(),
 		}),
-		Entry("permissive mode + strict mesh = passthrough listeners", testCase{
-			caseName:    "permissive-with-strict-mtls",
-			meshBuilder: samples.MeshMTLSBuilder(),
+		Entry("permissive mode = passthrough listeners", testCase{
+			caseName:         "permissive-with-strict-mtls",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaWorkloadIdentity(),
 		}),
 		Entry("workload identity without CA = passthrough listeners", testCase{
-			caseName:    "strict-with-workload-identity-no-ca",
-			meshBuilder: samples.MeshDefaultBuilder(),
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
+			caseName:         "strict-with-workload-identity-no-ca",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaWorkloadIdentity(),
 		}),
 		Entry("tls version on both ends of the range with workload identity", testCase{
-			caseName:    "strict-with-workload-identity-tls-version",
-			meshBuilder: samples.MeshDefaultBuilder(),
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
+			caseName:         "strict-with-workload-identity-tls-version",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaWorkloadIdentity(),
 		}),
 		Entry("dualstack tproxy = ipv4 and ipv6 passthrough listeners", testCase{
-			caseName:     "permissive-with-dualstack-tproxy",
-			meshBuilder:  samples.MeshMTLSBuilder(),
-			ipFamilyMode: "dualstack",
+			caseName:         "permissive-with-dualstack-tproxy",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaWorkloadIdentity(),
+			ipFamilyMode:     "dualstack",
 		}),
-		Entry("no policy + strict mesh = strict", testCase{
-			caseName:    "no-policy-with-strict-mtls",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			noPolicy:    true,
-		}),
-		Entry("no policy + permissive mesh = strict", testCase{
-			caseName:    "no-policy-with-permissive-mtls",
-			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
-			noPolicy:    true,
-		}),
-		Entry("strict inbound ports feature = port filtering", testCase{
-			caseName:    "strict-with-feature-strict-inbound-ports",
-			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
-			features: xds_types.Features{
-				xds_types.FeatureStrictInboundPorts: true,
-			},
+		Entry("no policy = strict", testCase{
+			caseName:         "no-policy-with-strict-mtls",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaWorkloadIdentity(),
+			noPolicy:         true,
 		}),
 		Entry("strict inbound ports feature with workload identity = port filtering", testCase{
-			caseName:    "strict-with-workload-identity-strict-inbound-ports",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
+			caseName:         "strict-with-workload-identity-strict-inbound-ports",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaWorkloadIdentity(),
 			features: xds_types.Features{
 				xds_types.FeatureStrictInboundPorts: true,
 			},
@@ -333,7 +305,7 @@ var outgoingMeshService = kri.Identifier{
 	SectionName:  "80",
 }
 
-func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *builders.MeshBuilder) []*core_xds.Resource {
+func getMeshServiceResources() []*core_xds.Resource {
 	return []*core_xds.Resource{
 		{
 			Name:   "inbound:127.0.0.1:17777",
@@ -362,7 +334,10 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 			Name:   outgoingMeshService.String(),
 			Origin: metadata.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, outgoingMeshService.String()).
-				Configure(clusters.ClientSideMTLS(secretsTracker, mesh.Build(), "outgoing", true, nil, false)).
+				Configure(clusters.UpstreamTLSContext(&envoy_tls.UpstreamTlsContext{
+					CommonTlsContext: &envoy_tls.CommonTlsContext{},
+					Sni:              "outgoing",
+				})).
 				MustBuild(),
 			Protocol:       core_meta.ProtocolHTTP,
 			ResourceOrigin: outgoingMeshService,
