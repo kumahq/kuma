@@ -207,7 +207,7 @@ func makeSplits(
 			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx)
 		}
 
-		return handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef(), meshCtx)
+		return handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef())
 	}
 
 	for _, ref := range refs {
@@ -287,7 +287,6 @@ func handleLegacyBackendRef(
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	ref *resolve.LegacyBackendRef,
-	meshCtx xds_context.MeshContext,
 ) envoy_common.Split {
 	if ref.Weight != nil && *ref.Weight == 0 {
 		return nil
@@ -297,15 +296,17 @@ func handleLegacyBackendRef(
 	if service == "" {
 		service = pointer.Deref(ref.Tags)[mesh_proto.ServiceTag]
 	}
-	protocol := meshCtx.GetServiceProtocol(service)
-	if _, ok := protocols[protocol]; !ok {
+	// A legacy ref names a kuma.io/service, which is no longer a destination: it
+	// resolves to no resource, so neither a protocol nor an external service can be
+	// derived from it. Such a ref only survives in a TCP split, which accepts an
+	// unknown protocol.
+	if _, ok := protocols[core_meta.ProtocolUnknown]; !ok {
 		return nil
 	}
 	clusterName, _ := envoy_tags.Tags(pointer.Deref(ref.Tags)).
 		WithTags(mesh_proto.ServiceTag, service).
 		DestinationClusterName(nil)
 
-	isExternalService := meshCtx.IsExternalService(service)
 	refHash := common_api.BackendRef(*ref).Hash()
 
 	if existingClusterName, ok := clusterCache[refHash]; ok {
@@ -313,7 +314,6 @@ func handleLegacyBackendRef(
 		return plugins_xds.NewSplitBuilder().
 			WithClusterName(existingClusterName).
 			WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
-			WithExternalService(isExternalService).
 			Build()
 	}
 
@@ -322,7 +322,6 @@ func handleLegacyBackendRef(
 	split := plugins_xds.NewSplitBuilder().
 		WithClusterName(clusterName).
 		WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
-		WithExternalService(isExternalService).
 		Build()
 
 	clusterBuilder := plugins_xds.NewClusterBuilder().
@@ -330,8 +329,7 @@ func handleLegacyBackendRef(
 		WithName(clusterName).
 		WithTags(envoy_tags.Tags(pointer.Deref(ref.Tags)).
 			WithTags(mesh_proto.ServiceTag, service).
-			WithoutTags(mesh_proto.MeshTag)).
-		WithExternalService(isExternalService)
+			WithoutTags(mesh_proto.MeshTag))
 
 	servicesAcc.AddBackendRef(resolve.NewResolvedBackendRef(ref), clusterBuilder.Build())
 	return split

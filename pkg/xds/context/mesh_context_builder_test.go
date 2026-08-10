@@ -542,7 +542,7 @@ func (f *failingListManager) List(context.Context, core_model.ResourceList, ...s
 	return errors.New("store unavailable")
 }
 
-var _ = Describe("ServicesInformation", func() {
+var _ = Describe("EndpointMap", func() {
 	lookupIPFunc := func(s string) ([]net.IP, error) {
 		return []net.IP{net.ParseIP(s)}, nil
 	}
@@ -567,7 +567,7 @@ var _ = Describe("ServicesInformation", func() {
 		meshName := meshBuilder.Build().GetMeta().GetName()
 
 		// and a MeshService-backed service with no Dataplane behind it, so it
-		// contributes no endpoints and gets no ServicesInformation entry
+		// contributes no endpoints
 		msBuilder := builders.MeshService().
 			WithMesh(meshName).
 			WithName("backend").
@@ -641,19 +641,19 @@ var _ = Describe("ServicesInformation", func() {
 		mc, err := meshContextBuilder.Build(context.Background(), meshName)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then only services that resolve to endpoints are described
+		// then a MeshService with no Dataplane behind it contributes no endpoints
 		msKey := destinationname.MustResolve(ms, ms.Spec.Ports[0])
-		Expect(mc.ServicesInformation).ToNot(HaveKey(msKey))
+		Expect(mc.EndpointMap).ToNot(HaveKey(msKey))
 
-		// and the external service is marked as one
+		// and the external service resolves to the egress, and its protocol is
+		// read off the resource itself
 		esKey := destinationname.MustResolve(externalService, externalService.Spec.Match)
-		Expect(mc.ServicesInformation[esKey]).ToNot(BeNil())
-		Expect(mc.ServicesInformation[esKey].Protocol).To(Equal(core_meta.ProtocolHTTP))
-		Expect(mc.ServicesInformation[esKey].IsExternalService).To(BeTrue())
+		Expect(mc.EndpointMap[esKey]).ToNot(BeEmpty())
+		Expect(mc.EndpointMap[esKey][0].IsExternalService()).To(BeTrue())
+		Expect(mc.GetServiceProtocol(esKey)).To(Equal(core_meta.ProtocolHTTP))
 
-		// and gateway dataplanes (builtin and delegated) don't get a
-		// ServicesInformation entry of their own
-		Expect(mc.ServicesInformation).ToNot(HaveKey("gateway-builtin"))
-		Expect(mc.ServicesInformation).ToNot(HaveKey("gateway-delegated"))
+		// and gateway dataplanes (builtin and delegated) are not destinations
+		Expect(mc.EndpointMap).ToNot(HaveKey("gateway-builtin"))
+		Expect(mc.EndpointMap).ToNot(HaveKey("gateway-delegated"))
 	})
 })

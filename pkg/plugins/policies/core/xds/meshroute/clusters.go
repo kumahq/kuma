@@ -42,7 +42,7 @@ func GenerateClusters(
 		for _, cluster := range service.Clusters() {
 			clusterName := cluster.Name()
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
-			if meshCtx.IsExternalService(serviceName) {
+			if service.HasExternalService() {
 				realResourceRef := service.BackendRef().RealResourceBackendRef()
 				_, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
 				if !ok {

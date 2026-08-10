@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -68,14 +67,6 @@ var _ = Describe("DefaultProxyProfile", func() {
 						Spec: &mesh_proto.Mesh{},
 					},
 					Resources: resources,
-					ServicesInformation: map[string]*xds_context.ServiceInformation{
-						"db": {
-							Protocol: core_meta.ProtocolUnknown,
-						},
-						"elastic": {
-							Protocol: core_meta.ProtocolUnknown,
-						},
-					},
 				},
 			}
 

@@ -33,26 +33,12 @@ resources:
                 name: kri_mhttpr_default___test-origin_rule_0
                 route:
                   cluster: kri_msvc_default___backend_80
-                  requestMirrorPolicies:
-                  - cluster: payments-9f43ffb3c22f8c19
-                    runtimeFraction:
-                      defaultValue:
-                        denominator: TEN_THOUSAND
-                        numerator: 9990
-                  - cluster: payments
                   timeout: 0s
               - match:
                   prefix: /v1/
                 name: kri_mhttpr_default___test-origin_rule_0
                 route:
                   cluster: kri_msvc_default___backend_80
-                  requestMirrorPolicies:
-                  - cluster: payments-9f43ffb3c22f8c19
-                    runtimeFraction:
-                      defaultValue:
-                        denominator: TEN_THOUSAND
-                        numerator: 9990
-                  - cluster: payments
                   timeout: 0s
               - match:
                   prefix: /
