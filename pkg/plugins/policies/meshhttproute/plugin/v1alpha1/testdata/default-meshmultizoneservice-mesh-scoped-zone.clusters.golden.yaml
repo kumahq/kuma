@@ -15,11 +15,7 @@ resources:
           alpnProtocols:
           - kuma
           combinedValidationContext:
-            defaultValidationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: backend
-                sanType: URI
+            defaultValidationContext: {}
             validationContextSdsSecretConfig:
               name: system_trust_bundle
               sdsConfig:

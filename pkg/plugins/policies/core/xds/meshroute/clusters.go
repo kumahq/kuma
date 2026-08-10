@@ -139,7 +139,7 @@ func GenerateClusters(
 						// exactly when the destination stops terminating
 						// TLS and plaintext becomes correct again.
 						if tlsReady {
-							sans := Identities(realResourceRef, meshCtx, true)
+							sans := Identities(realResourceRef, meshCtx)
 							upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
 							if err != nil {
 								return nil, err
@@ -152,7 +152,7 @@ func GenerateClusters(
 							meshCtx.Resource,
 							tlsReady,
 							sni,
-							Identities(realResourceRef, meshCtx, false),
+							Identities(realResourceRef, meshCtx),
 							len(meshCtx.CAsByTrustDomain) > 0,
 						))
 					}
@@ -239,19 +239,8 @@ func SniForBackendRef(
 func Identities(
 	backendRef *resolve.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
-	includeSpiffeID bool,
 ) []string {
 	var result []string
-	serviceTagTransformer := func(serviceTag string) string {
-		return serviceTag
-	}
-	// we don't use function which transform service tag to the spiffe id on cluster configuration
-	// instead we want to set it here. It's not required for SpiffeID type, only ServiceTag
-	if includeSpiffeID {
-		serviceTagTransformer = func(serviceTag string) string {
-			return tls.ServiceSpiffeID(meshCtx.Resource.Meta.GetName(), serviceTag)
-		}
-	}
 	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
 	case common_api.MeshService:
 		ms := meshCtx.GetServiceByKRI(backendRef.Resource)
@@ -259,9 +248,6 @@ func Identities(
 			return result
 		}
 		for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
-			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
-				result = append(result, serviceTagTransformer(identity.Value))
-			}
 			if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
 				result = append(result, identity.Value)
 			}

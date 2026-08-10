@@ -69,12 +69,7 @@ var _ = Describe("Updater", func() {
 			ms := meshservice_api.NewMeshServiceResource()
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
-				{
-					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-					Value: "backend",
-				},
-			}))
+			g.Expect(ms.Spec.Identities).To(BeNil())
 		}, "10s", "100ms").Should(Succeed())
 	})
 
@@ -102,7 +97,6 @@ var _ = Describe("Updater", func() {
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
-				{Type: "ServiceTag", Value: "backend"},
 				{
 					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
 					Value: "spiffe://default.east.mesh.local/ns/my-ns/sa/default",
@@ -142,10 +136,6 @@ var _ = Describe("Updater", func() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(pointer.Deref(ms.Spec.Identities)).To(ContainElements(
 				meshservice_api.MeshServiceIdentity{
-					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-					Value: "backend",
-				},
-				meshservice_api.MeshServiceIdentity{
 					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
 					Value: "spiffe://tls-mesh.east.mesh.local/ns/my-ns/sa/default",
 				},
@@ -176,24 +166,23 @@ var _ = Describe("Updater", func() {
 			ms := meshservice_api.NewMeshServiceResource()
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
-				{
-					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-					Value: "backend",
-				},
-			}))
+			g.Expect(ms.Spec.Identities).To(BeNil())
 		}, "10s", "100ms").Should(Succeed())
 	})
 
 	It("should not override identity to status of service from another zone", func() {
 		// when
-		Expect(samples.MeshServiceBackendBuilder().
+		ms := samples.MeshServiceBackendBuilder().
 			WithLabels(map[string]string{
 				mesh_proto.ZoneTag:             "west",
 				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 			}).
-			AddServiceTagIdentity("backend").
-			Create(resManager)).To(Succeed())
+			Build()
+		ms.Spec.Identities = &[]meshservice_api.MeshServiceIdentity{{
+			Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+			Value: "spiffe://west.mesh.local/workload/backend",
+		}}
+		Expect(resManager.Create(context.TODO(), ms, store.CreateByKey("backend", model.DefaultMesh), store.CreateWithLabels(ms.GetMeta().GetLabels()))).To(Succeed())
 		// and there are no DPPs. If it was a local service it would have no identities
 
 		// then
@@ -203,8 +192,8 @@ var _ = Describe("Updater", func() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
 				{
-					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-					Value: "backend",
+					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+					Value: "spiffe://west.mesh.local/workload/backend",
 				},
 			}))
 		}, "1s", "100ms").Should(Succeed())
