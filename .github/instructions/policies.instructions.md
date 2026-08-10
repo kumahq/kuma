@@ -62,7 +62,10 @@ pkg/plugins/policies/<policy-name>/
 - Validate targetRef with `mesh.ValidateTargetRef()`
 - Support policy roles (System vs User) with different TargetRef rules
 - Helper functions: `validateFrom()`, `validateTo()`, `validateRules()`, `validateDefault()`
-- All TargetRef kinds: `Mesh`, `MeshService`, `MeshSubset`, `MeshServiceSubset`
+- Top-level targetRef kinds: `Mesh`, `Dataplane`. Outbound (`to[].targetRef`) kinds:
+  `Mesh`, `MeshService`, `MeshExternalService`, `MeshMultiZoneService`,
+  `MeshHTTPRoute`. `MeshServiceSubset` is valid only as a route
+  `backendRefs[].kind`
 - Inbound (`from`) and outbound (`to`) rules if applicable
 
 **Testing (validator_test.go):**
@@ -116,7 +119,7 @@ pkg/plugins/policies/<policy-name>/
 switch protocol {
 case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
     // HTTP-specific: listeners_v3.UpdateHTTPConnectionManager()
-case core_meta.ProtocolUnknown, core_meta.ProtocolTCP, core_meta.ProtocolKafka:
+case core_meta.ProtocolUnknown, core_meta.ProtocolTCP:
     // TCP-specific: listeners_v3.UpdateTCPProxy()
 }
 ```

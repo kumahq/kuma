@@ -5,8 +5,6 @@ metadata:
     app: example
     version: "0.1"
   annotations:
-    kuma.io/virtual-probes: enabled
-    kuma.io/virtual-probes-port: 19000
     kuma.io/application-probe-proxy-port: "8662"
 spec:
   serviceAccountName: test-sa

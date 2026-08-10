@@ -106,27 +106,12 @@ type Endpoint struct {
 	Port           uint32
 	// Tags is the endpoint's load-balancing identity. It is derived from the
 	// Dataplane's workload/resource labels plus the inbound's protocol
-	// (see BuildEdsEndpointMap), so a single well-known key carries the identity.
+	// (see BuildDataplaneEndpointMap), so a single well-known key carries the identity.
 	Tags            map[string]string
 	Weight          uint32
 	Locality        *Locality
 	ExternalService *ExternalService
 }
-
-func (e Endpoint) Address() string {
-	return fmt.Sprintf("%s:%d", e.Target, e.Port)
-}
-
-func (e Endpoint) Protocol() core_meta.Protocol {
-	if e.ExternalService != nil && e.ExternalService.Protocol != "" {
-		return e.ExternalService.Protocol
-	}
-
-	return core_meta.ParseProtocol(e.Tags[mesh_proto.ProtocolTag])
-}
-
-// EndpointList is a list of Endpoints with convenience methods.
-type EndpointList []Endpoint
 
 // EndpointMap holds routing-related information about a set of endpoints grouped by service name.
 type EndpointMap map[ServiceName][]Endpoint
@@ -326,10 +311,6 @@ func (e Endpoint) IsExternalService() bool {
 	return e.ExternalService != nil
 }
 
-func (e Endpoint) IsMeshExternalService() bool {
-	return e.ExternalService != nil && !e.ExternalService.OwnerResource.IsEmpty()
-}
-
 func (e Endpoint) LocalityString() string {
 	if e.Locality == nil {
 		return ""
@@ -353,16 +334,6 @@ func (e Endpoint) ContainsTags(tags map[string]string) bool {
 	return true
 }
 
-func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
-	var endpoints EndpointList
-	for _, endpoint := range l {
-		if selector.Matches(endpoint.Tags) {
-			endpoints = append(endpoints, endpoint)
-		}
-	}
-	return endpoints
-}
-
 func BuildProxyId(mesh, name string) *ProxyId {
 	return &ProxyId{
 		name: name,
@@ -376,7 +347,6 @@ func ParseProxyIdFromString(id string) (*ProxyId, error) {
 	}
 	parts := strings.SplitN(id, ".", 2)
 	mesh := parts[0]
-	// when proxy is an ingress mesh is empty
 	if len(parts) < 2 {
 		return nil, errors.New("the name should be provided after the dot")
 	}

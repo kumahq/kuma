@@ -19,7 +19,6 @@ import (
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -65,9 +64,6 @@ var _ = Describe("bootstrapGenerator", func() {
 						{
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 					Admin: &mesh_proto.EnvoyAdmin{},
@@ -191,29 +187,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.custom-config-minimal-request.golden.yaml",
 			hdsEnabled:         true,
 		}),
-		Entry("default config with minimal request with unified resource naming feature flag", testCase{
-			dpAuthForProxyType: map[string]bool{},
-			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
-				cfg := bootstrap_config.DefaultBootstrapServerConfig()
-				cfg.Params.XdsHost = "localhost"
-				cfg.Params.XdsPort = 5678
-				return cfg
-			}(),
-			dataplane: func() *core_mesh.DataplaneResource {
-				dp := defaultDataplane()
-				dp.Spec.Networking.Admin.Port = 9902
-				return dp
-			},
-			request: types.BootstrapRequest{
-				Mesh:     "mesh",
-				Name:     "name.namespace",
-				Version:  defaultVersion,
-				Workdir:  "/tmp",
-				Features: []string{xds_types.FeatureUnifiedResourceNaming},
-			},
-			expectedConfigFile: "generator.custom-config-minimal-request-with-unified-resource-naming-feature-flag.golden.yaml",
-			hdsEnabled:         false,
-		}),
 		Entry("custom config", testCase{
 			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
@@ -252,10 +225,7 @@ var _ = Describe("bootstrapGenerator", func() {
       {
         "port": 22022,
         "servicePort": 8443,
-        "tags": {
-          "kuma.io/protocol": "http2",
-          "kuma.io/service": "backend"
-        }
+        "protocol": "http2"
       },
     ],
     "admin": {
@@ -420,10 +390,9 @@ var _ = Describe("bootstrapGenerator", func() {
 		}),
 	)
 
-	It("should use the workload label as cluster identity when inbound tags are empty", func() {
+	It("should use the workload label as cluster identity", func() {
 		// given
 		dp := defaultDataplane()
-		dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
 		err := resManager.Create(
 			context.Background(),
 			dp,
@@ -464,10 +433,9 @@ var _ = Describe("bootstrapGenerator", func() {
 		Expect(envoyBootstrap.GetNode().GetCluster()).To(Equal("backend-workload"))
 	})
 
-	It("should use unknown service as cluster identity when inbound tags and workload label are empty", func() {
+	It("should use unknown service as cluster identity when workload label is empty", func() {
 		// given
 		dp := defaultDataplane()
-		dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
 		err := resManager.Create(
 			context.Background(),
 			dp,

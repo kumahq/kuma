@@ -1,5 +1,5 @@
 resources:
-- name: kri_msvc_default_zone-1_ns-1_ms-1_
+- name: kri_msvc_default_zone-1_ns-1_ms-1_27777
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -21,7 +21,7 @@ resources:
               prefixLen: 32
           normalizePath: true
           routeConfig:
-            name: kri_msvc_default_zone-1_ns-1_ms-1_
+            name: kri_msvc_default_zone-1_ns-1_ms-1_27777
             requestHeadersToAdd:
             - header:
                 key: x-kuma-tags
@@ -30,7 +30,7 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: kri_msvc_default_zone-1_ns-1_ms-1_
+              name: kri_msvc_default_zone-1_ns-1_ms-1_27777
               routes:
               - match:
                   path: /route-1
@@ -86,11 +86,11 @@ resources:
                   - header:
                       headerName: x-per-meshhttproute-route-3
                   timeout: 0s
-          statPrefix: kri_msvc_default_zone-1_ns-1_ms-1_
+          statPrefix: kri_msvc_default_zone-1_ns-1_ms-1_27777
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/unified-name: kri_msvc_default_zone-1_ns-1_ms-1_
-    name: kri_msvc_default_zone-1_ns-1_ms-1_
-    statPrefix: kri_msvc_default_zone-1_ns-1_ms-1_
+          kuma.io/unified-name: kri_msvc_default_zone-1_ns-1_ms-1_27777
+    name: kri_msvc_default_zone-1_ns-1_ms-1_27777
+    statPrefix: kri_msvc_default_zone-1_ns-1_ms-1_27777
     trafficDirection: OUTBOUND

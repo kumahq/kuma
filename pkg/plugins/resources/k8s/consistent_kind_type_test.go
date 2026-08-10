@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -13,11 +12,9 @@ import (
 
 // Those types are not mapped directly to Kubernetes Resource
 var IgnoredTypes = map[model.ResourceType]bool{
-	system.SecretType:           true,
-	system.GlobalSecretType:     true,
-	system.ConfigType:           true,
-	mesh.ZoneIngressInsightType: true, // uses DataplaneInsight under the hood
-	mesh.ZoneEgressInsightType:  true, // uses DataplaneInsight under the hood
+	system.SecretType:       true,
+	system.GlobalSecretType: true,
+	system.ConfigType:       true,
 }
 
 var _ = Describe("Consistent Kind Types", func() {

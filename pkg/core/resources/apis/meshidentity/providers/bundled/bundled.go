@@ -52,7 +52,7 @@ const (
 	cacheExpirationTime = 5 * time.Second
 )
 
-var DefaultWorkloadCertValidityPeriod = k8s.Duration{Duration: 24 * time.Hour}
+var DefaultWorkloadCertValidityPeriod = k8s.Duration{Duration: 5 * 24 * time.Hour}
 
 var _ providers.IdentityProvider = &bundledIdentityProvider{}
 

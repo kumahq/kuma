@@ -34,28 +34,6 @@ func ClientSideMTLS(
 	})
 }
 
-func ClientSideMTLSCustomSNI(
-	tracker core_xds.SecretsTracker,
-	mesh *core_mesh.MeshResource,
-	upstreamService string,
-	upstreamTLSReady bool,
-	sni string,
-	useMeshTrust bool,
-) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:   tracker,
-			UpstreamMesh:     mesh,
-			UpstreamService:  upstreamService,
-			LocalMesh:        mesh,
-			Tags:             nil,
-			UpstreamTLSReady: upstreamTLSReady,
-			SNI:              sni,
-			UseMeshTrust:     useMeshTrust,
-		})
-	})
-}
-
 func ClientSideMultiIdentitiesMTLS(
 	tracker core_xds.SecretsTracker,
 	mesh *core_mesh.MeshResource,
@@ -75,26 +53,6 @@ func ClientSideMultiIdentitiesMTLS(
 			UpstreamTLSReady: upstreamTLSReady,
 			VerifyIdentities: identities,
 			UseMeshTrust:     useMeshTrust,
-		})
-	})
-}
-
-func CrossMeshClientSideMTLS(
-	tracker core_xds.SecretsTracker,
-	localMesh *core_mesh.MeshResource,
-	upstreamMesh *core_mesh.MeshResource,
-	upstreamService string,
-	upstreamTLSReady bool,
-	tags []envoy_tags.Tags,
-) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
-			SecretsTracker:   tracker,
-			UpstreamMesh:     upstreamMesh,
-			UpstreamService:  upstreamService,
-			LocalMesh:        localMesh,
-			Tags:             tags,
-			UpstreamTLSReady: upstreamTLSReady,
 		})
 	})
 }

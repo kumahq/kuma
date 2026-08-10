@@ -64,28 +64,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			// no tags therefore SNI is empty
 			goldenFile: "testdata/client_side_mtls_configurer/cluster-with-mtls.golden.yaml",
 		}),
-		Entry("cluster with mTLS and unified naming", testCase{
-			clusterName:   "testCluster",
-			clientService: "backend",
-			mesh: &core_mesh.MeshResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "default",
-				},
-				Spec: &mesh_proto.Mesh{
-					Mtls: &mesh_proto.Mesh_Mtls{
-						EnabledBackend: "builtin",
-						Backends: []*mesh_proto.CertificateAuthorityBackend{
-							{
-								Name: "builtin",
-								Type: "builtin",
-							},
-						},
-					},
-				},
-			},
-			// no tags therefore SNI is empty
-			goldenFile: "testdata/client_side_mtls_configurer/cluster-with-mtls-unified-naming.golden.yaml",
-		}),
 		Entry("cluster with many different tag sets", testCase{
 			clusterName:   "testCluster",
 			clientService: "backend",

@@ -25,3 +25,7 @@ violations:
   message: '"type" must be one of ["Prefix", "Exact"]'
 - field: spec.tls.verification.clientKey
   message: must be defined when clientCert is defined
+- field: spec.tls.verification.caCert.type
+  message: 'File must be one of: Secret, InsecureInline'
+- field: spec.tls.verification.clientCert.secretRef.name
+  message: must be defined

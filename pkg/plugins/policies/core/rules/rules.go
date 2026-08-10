@@ -3,7 +3,6 @@ package rules
 import (
 	"encoding"
 	"fmt"
-	"os"
 	"slices"
 	"sort"
 	"strings"
@@ -31,20 +30,6 @@ import (
 
 const RuleMatchesHashTag = "__rule-matches-hash__"
 
-// useCliques controls the algorithm for grouping subsets when building rules.
-// Cliques (BronKerbosch) finds maximal fully-connected subgraphs, producing fewer
-// but more precise groups. Connected components finds all reachable nodes, which
-// may over-group subsets that don't directly relate. Cliques is the default as it
-// generates more accurate rules at the cost of slightly more computation.
-var useCliques = true
-
-func init() {
-	// TODO: remove ability to opt-out for the next major version https://github.com/kumahq/kuma/issues/15440
-	if v, ok := os.LookupEnv("KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM"); ok && v == "true" {
-		useCliques = false
-	}
-}
-
 type InboundListener struct {
 	Address string
 	Port    uint32
@@ -63,11 +48,6 @@ func (i InboundListener) String() string {
 }
 
 type FromRules struct {
-	// Rules is the legacy subset-based inbound view used by a small set of egress
-	// and backward-compatible plugin paths.
-	//
-	// Deprecated: use InboundRules instead
-	Rules map[InboundListener]Rules
 	// InboundRules is a map of InboundListener to a list of inbound rules built by using 'spec.rules' field.
 	InboundRules map[InboundListener][]*inbound.Rule
 }
@@ -115,8 +95,7 @@ type GatewayToRules struct {
 }
 
 type GatewayRules struct {
-	ToRules   GatewayToRules
-	FromRules map[InboundListener]Rules
+	ToRules GatewayToRules
 	// InboundRules is a map of InboundListener to a list of inbound rules built by using 'spec.rules' field.
 	InboundRules map[InboundListener][]*inbound.Rule
 }
@@ -199,7 +178,6 @@ func BuildFromRules(
 		rulesByInboundNew[inb] = rulesNew
 	}
 	return FromRules{
-		Rules:        map[InboundListener]Rules{},
 		InboundRules: rulesByInboundNew,
 	}, nil
 }
@@ -288,7 +266,6 @@ func BuildGatewayRules(
 			ByListenerAndHostname: toRulesByListenerHostname,
 			ByListener:            toRulesByInbound,
 		},
-		FromRules:    fromRules.Rules,
 		InboundRules: fromRules.InboundRules,
 	}, nil
 }
@@ -345,7 +322,7 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 						// selector that doesn't carry kuma.io/display-name has
 						// no legacy equivalent; fail loudly rather than emitting
 						// an empty selector that silently matches nothing.
-						service := serviceTagValue(mhrRules.TargetRef)
+						service := serviceTagValue(mhrRules.TargetRef.ToTargetRef())
 						if service == "" {
 							return nil, errors.Errorf("can't resolve %s targetRef to a service: kuma.io/display-name label is required", mhrRules.TargetRef.Kind)
 						}
@@ -428,7 +405,7 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
 func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
-	return buildRulesInternal(list, withNegations, useCliques)
+	return buildRulesInternal(list, withNegations, true)
 }
 
 func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useCliques bool) (Rules, error) {

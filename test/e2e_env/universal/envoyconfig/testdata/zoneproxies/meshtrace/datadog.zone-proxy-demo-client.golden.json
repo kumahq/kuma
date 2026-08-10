@@ -67,7 +67,7 @@
           "typedConfig": {
             "@type": "type.googleapis.com/envoy.config.trace.v3.DatadogConfig",
             "collectorCluster": "system_meshtrace_datadog_http---datadog-example-com-8126",
-            "serviceName": "zone-proxy-demo-client_OUTBOUND_envoyconfig-zoneproxies_zone-proxy-test-server-no-reusable-ports__kuma-3_msvc_80"
+            "serviceName": "zone-proxy-demo-client_OUTBOUND_kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server-no-reusable-ports_80"
           }
         },
         "spawnUpstreamSpan": false
@@ -105,7 +105,7 @@
           "typedConfig": {
             "@type": "type.googleapis.com/envoy.config.trace.v3.DatadogConfig",
             "collectorCluster": "system_meshtrace_datadog_http---datadog-example-com-8126",
-            "serviceName": "zone-proxy-demo-client_OUTBOUND_envoyconfig-zoneproxies_zone-proxy-test-server__kuma-3_msvc_80"
+            "serviceName": "zone-proxy-demo-client_OUTBOUND_kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80"
           }
         },
         "spawnUpstreamSpan": false
@@ -682,7 +682,6 @@
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "zone-proxy-demo-client",
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
@@ -692,7 +691,6 @@
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "zone-proxy-demo-client",
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
@@ -731,7 +729,6 @@
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
                       "kuma.io/protocol": "http",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "zone-proxy-test-server-no-reusable-ports",
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
@@ -744,7 +741,6 @@
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
                       "kuma.io/protocol": "http",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "zone-proxy-test-server-no-reusable-ports",
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
@@ -784,7 +780,6 @@
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
                       "kuma.io/protocol": "http",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "zone-proxy-test-server",
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
@@ -797,7 +792,6 @@
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
                       "kuma.io/protocol": "http",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "zone-proxy-test-server",
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
@@ -1043,7 +1037,7 @@
                       "typedConfig": {
                         "@type": "type.googleapis.com/envoy.config.trace.v3.DatadogConfig",
                         "collectorCluster": "system_meshtrace_datadog_http---datadog-example-com-8126",
-                        "serviceName": "zone-proxy-demo-client_OUTBOUND_envoyconfig-zoneproxies_zone-proxy-test-server-no-reusable-ports__kuma-3_msvc_80"
+                        "serviceName": "zone-proxy-demo-client_OUTBOUND_kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server-no-reusable-ports_80"
                       }
                     },
                     "spawnUpstreamSpan": false
@@ -1167,7 +1161,7 @@
                       "typedConfig": {
                         "@type": "type.googleapis.com/envoy.config.trace.v3.DatadogConfig",
                         "collectorCluster": "system_meshtrace_datadog_http---datadog-example-com-8126",
-                        "serviceName": "zone-proxy-demo-client_OUTBOUND_envoyconfig-zoneproxies_zone-proxy-test-server__kuma-3_msvc_80"
+                        "serviceName": "zone-proxy-demo-client_OUTBOUND_kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80"
                       }
                     },
                     "spawnUpstreamSpan": false
@@ -1303,7 +1297,7 @@
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig-zoneproxies",
               "kuma.io/origin": "zone",
-              "kuma.io/proxy-type": "sidecar",
+              "kuma.io/service": "zone-proxy-demo-client",
               "kuma.io/workload": "zone-proxy-demo-client",
               "kuma.io/zone": "kuma-3",
               "team": "client-owners"

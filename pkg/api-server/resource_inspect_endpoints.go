@@ -520,7 +520,6 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 		}
 
 		resources := xds_context.Resources{
-			CrossMeshResources: map[core_xds.MeshName]xds_context.ResourceMap{},
 			MeshLocalResources: baseMeshContext.ResourceMap,
 		}
 		matchesByHash := map[common_api.MatchesHash][]meshhttproute_api.Match{}
@@ -554,14 +553,9 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 				}
 			}
 
-			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
-			if len(res.ToRules.Rules) == 0 && len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.Rules) == 0 && len(res.FromRules.InboundRules) == 0 && len(res.SingleItemRules.Rules) == 0 {
+			if len(res.ToRules.Rules) == 0 && len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.InboundRules) == 0 && len(res.SingleItemRules.Rules) == 0 {
 				continue
 			}
-			// Old 'ToRules' don't affect outbounds that were produced by real resources,
-			// which is all outbounds now that meshServices.mode is always Exclusive, so
-			// the legacy 'ToRules' response field is always empty.
-			toRules := []api_common.Rule{}
 			var proxyRule *api_common.ProxyRule
 			if len(res.SingleItemRules.Rules) > 0 {
 				proxyRule = &api_common.ProxyRule{
@@ -575,41 +569,6 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 					return &name
 				}
 				return nil
-			}
-
-			fromRules := []api_common.FromRule{}
-			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
-			if len(res.FromRules.Rules) > 0 {
-				for inbound, rulesForInbound := range res.FromRules.Rules {
-					if len(rulesForInbound) == 0 {
-						continue
-					}
-					fromRulesForInbound := make([]api_common.Rule, len(rulesForInbound))
-					for i := range rulesForInbound {
-						fromRulesForInbound[i] = api_common.Rule{
-							Conf:     rulesForInbound[i].Conf,
-							Matchers: oapi_helpers.SubsetToRuleMatcher(rulesForInbound[i].Subset),
-							Origin:   oapi_helpers.ResourceMetaListToMetaList(res.Type, rulesForInbound[i].Origin),
-						}
-					}
-					var tags map[string]string
-					if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
-						tags = dp.Spec.Networking.Gateway.Tags
-					} else if inb := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port); inb != nil {
-						tags = inb.Tags
-					}
-					fromRules = append(fromRules, api_common.FromRule{
-						Inbound: api_common.Inbound{
-							Name: getInboundPortName(inbound.Port),
-							Tags: tags,
-							Port: int(inbound.Port),
-						},
-						Rules: fromRulesForInbound,
-					})
-				}
-				sort.SliceStable(fromRules, func(i, j int) bool {
-					return fromRules[i].Inbound.Port < fromRules[j].Inbound.Port
-				})
 			}
 
 			inboundRules := []api_common.InboundRulesEntry{}
@@ -628,8 +587,6 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 				var tags map[string]string
 				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
 					tags = dp.Spec.Networking.Gateway.Tags
-				} else if inb := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port); inb != nil {
-					tags = inb.Tags
 				}
 				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
 					Inbound: api_common.Inbound{
@@ -657,7 +614,7 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
 			})
 
-			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 && len(inboundRules) == 0 && len(res.Warnings) == 0 {
+			if proxyRule == nil && len(toResourceRules) == 0 && len(inboundRules) == 0 && len(res.Warnings) == 0 {
 				// No matches for this policy, keep going...
 				continue
 			}
@@ -667,9 +624,7 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 			}
 			rules = append(rules, api_common.InspectRule{
 				Type:            string(res.Type),
-				ToRules:         &toRules,
 				ToResourceRules: &toResourceRules,
-				FromRules:       &fromRules,
 				InboundRules:    &inboundRules,
 				ProxyRule:       proxyRule,
 				Warnings:        &warnings,
