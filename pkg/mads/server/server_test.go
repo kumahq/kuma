@@ -30,11 +30,12 @@ import (
 
 type testRuntime struct {
 	runtime.Runtime
-	rm         manager.ResourceManager
-	config     kuma_cp.Config
-	components []component.Component
-	metrics    metrics.Metrics
-	meshCache  *mesh.Cache
+	rm           manager.ResourceManager
+	config       kuma_cp.Config
+	components   []component.Component
+	metrics      metrics.Metrics
+	meshCache    *mesh.Cache
+	certWatchers *util_tls.Watchers
 }
 
 func (t *testRuntime) ReadOnlyResourceManager() manager.ReadOnlyResourceManager {
@@ -59,7 +60,7 @@ func (t *testRuntime) MeshCache() *mesh.Cache {
 }
 
 func (t *testRuntime) CertWatchers() *util_tls.Watchers {
-	return util_tls.NewWatchers(context.Background(), logr.Discard())
+	return t.certWatchers
 }
 
 var _ = Describe("MADS Server", func() {
@@ -73,9 +74,10 @@ var _ = Describe("MADS Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		rt = &testRuntime{
-			rm:      manager.NewResourceManager(memory.NewStore()),
-			config:  kuma_cp.Config{MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig()},
-			metrics: m,
+			rm:           manager.NewResourceManager(memory.NewStore()),
+			config:       kuma_cp.Config{MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig()},
+			metrics:      m,
+			certWatchers: util_tls.NewWatchers(context.Background(), logr.Discard()),
 		}
 
 		port, err = test.FindFreePort("127.0.0.1")

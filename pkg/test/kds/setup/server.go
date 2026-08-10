@@ -58,6 +58,7 @@ type testRuntimeContext struct {
 	kdsContext               *kds_context.Context
 	ctx                      context.Context
 	envoyAdminClient         admin.EnvoyAdminClient
+	certWatchers             *util_tls.Watchers
 }
 
 func (t *testRuntimeContext) DataSourceLoader() datasource.Loader {
@@ -137,7 +138,7 @@ func (t *testRuntimeContext) AppContext() context.Context {
 }
 
 func (t *testRuntimeContext) CertWatchers() *util_tls.Watchers {
-	return util_tls.NewWatchers(t.ctx, core.Log.WithName("cert-watcher"))
+	return t.certWatchers
 }
 
 func (t *testRuntimeContext) ExtraReportsFn() runtime.ExtraReportsFn {
@@ -266,6 +267,7 @@ func NewTestRuntime(ctx context.Context, cfg kuma_cp.Config, store store.Resourc
 		eventBus:                 eventBus,
 		kdsContext:               kds_context.DefaultContext(ctx, rm, cfg),
 		envoyAdminClient:         &runtime2.DummyEnvoyAdminClient{},
+		certWatchers:             util_tls.NewWatchers(ctx, core.Log.WithName("cert-watcher")),
 	}
 }
 
