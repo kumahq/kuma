@@ -20,7 +20,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/origin"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	bldrs_clusters "github.com/kumahq/kuma/v3/pkg/envoy/builders/cluster"
 	. "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
 	bldrs_endpoint "github.com/kumahq/kuma/v3/pkg/envoy/builders/endpoint"
@@ -62,7 +61,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
-	endpoints := policies_xds.GatherOutboundEndpoints(rs)
 	gatewayEndpoints := policies_xds.GatherGatewayEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
 
@@ -83,8 +81,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		proxy,
 		policies.ToRules,
 		listeners,
-		clusters,
-		endpoints,
 		rs,
 		ctx.Mesh,
 	)
@@ -94,66 +90,13 @@ func (p plugin) configureDPP(
 	proxy *core_xds.Proxy,
 	toRules core_rules.ToRules,
 	listeners policies_xds.Listeners,
-	clusters policies_xds.Clusters,
-	endpoints policies_xds.EndpointMap,
 	rs *core_xds.ResourceSet,
 	meshCtx xds_context.MeshContext,
 ) error {
 	if proxy.Dataplane.Spec.IsBuiltinGateway() {
 		return nil
 	}
-	serviceConfs := map[string]api.Conf{}
-
 	affinityLabels := proxy.Dataplane.GetMeta().GetLabels()
-
-	for _, outbound := range proxy.Outbounds.Filter(xds_types.NonBackendRefFilter) {
-		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
-		serviceName := outbound.LegacyOutbound.GetService()
-
-		computed := toRules.Rules.Compute(subsetutils.KumaServiceTagElement(serviceName))
-		if computed == nil {
-			continue
-		}
-
-		conf := computed.Conf.(api.Conf)
-
-		if listener, ok := listeners.Outbound[oface]; ok {
-			if err := NewModifier(listener).Configure(listenerConfigurer(rules_outbound.AsResourceContext(conf))).Modify(); err != nil {
-				return err
-			}
-		}
-
-		serviceConfs[serviceName] = conf
-	}
-
-	clusterModifier := func(cluster *envoy_cluster.Cluster, conf api.Conf) error {
-		egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
-		return NewModifier(cluster).
-			Configure(clusterConfigurer(conf)).
-			Configure(If(cluster.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, generator_metadata.OriginOutbound))).
-			Modify()
-	}
-
-	// when VIPs are enabled 2 listeners are pointing to the same cluster, that's why
-	// we configure clusters in a separate loop to avoid configuring the same cluster twice
-	for serviceName, conf := range serviceConfs {
-		if cluster, ok := clusters.Outbound[serviceName]; ok {
-			if err := clusterModifier(cluster, conf); err != nil {
-				return err
-			}
-		}
-		for _, cluster := range clusters.OutboundSplit[serviceName] {
-			if err := clusterModifier(cluster, conf); err != nil {
-				return err
-			}
-		}
-		egressEnabled := meshCtx.Resource.MTLSEnabled() && len(meshCtx.ZoneEgresses) > 0
-		for _, cla := range endpoints[serviceName] {
-			if err := NewModifier(cla).Configure(claConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone, egressEnabled, generator_metadata.OriginOutbound)).Modify(); err != nil {
-				return err
-			}
-		}
-	}
 
 	rctx := rules_outbound.RootContext[api.Conf](meshCtx.Resource, toRules.ResourceRules)
 	for _, r := range util_slices.Filter(rs.List(), core_xds.HasAssociatedServiceResource) {

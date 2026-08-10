@@ -70,12 +70,6 @@ type DataplaneOutbound struct {
 	ProxyResourceName string `json:"proxyResourceName"`
 }
 
-// FromRule defines model for FromRule.
-type FromRule struct {
-	Inbound Inbound `json:"inbound"`
-	Rules   []Rule  `json:"rules"`
-}
-
 // HttpMatch defines model for HttpMatch.
 type HttpMatch struct {
 	Hash  string      `json:"hash"`
@@ -126,10 +120,7 @@ type InboundRulesEntry struct {
 
 // InspectRule defines model for InspectRule.
 type InspectRule struct {
-	// FromRules a set of rules for each inbound of this proxy
-	FromRules *[]FromRule `json:"fromRules,omitempty"`
-
-	// InboundRules a set of rules for each inbound port of the proxy. When the policy descriptor has 'isFromAsRules' set to true, this field supersedes 'fromRules' and should be used instead.
+	// InboundRules a set of rules for each inbound port of the proxy.
 	InboundRules *[]InboundRulesEntry `json:"inboundRules,omitempty"`
 
 	// ProxyRule a rule that affects the entire proxy
@@ -137,9 +128,6 @@ type InspectRule struct {
 
 	// ToResourceRules a set of rules for the outbounds produced by real resources (i.e MeshService, MeshExternalService, MeshMultiZoneService).
 	ToResourceRules *[]ResourceRule `json:"toResourceRules,omitempty"`
-
-	// ToRules a set of rules for the outbounds of this proxy. The field is not set when 'meshService.mode' on Mesh is set to 'Exclusive'.
-	ToRules *[]Rule `json:"toRules,omitempty"`
 
 	// Type the type of the policy
 	//
@@ -306,28 +294,4 @@ type RouteRules struct {
 type RoutesList struct {
 	// Routes Computed list of routes
 	Routes []RouteConf `json:"routes"`
-}
-
-// Rule defines model for Rule.
-type Rule struct {
-	// Conf The actual conf generated
-	Conf     interface{}   `json:"conf"`
-	Matchers []RuleMatcher `json:"matchers"`
-	Origin   []Meta        `json:"origin"`
-}
-
-// RuleMatcher A matcher to select which traffic this conf applies to
-type RuleMatcher struct {
-	// Key the key to match against
-	//
-	// Example: kuma.io/service
-	Key string `json:"key"`
-
-	// Not whether we check on the absence of this key:value pair
-	Not bool `json:"not"`
-
-	// Value the value for the key to match against
-	//
-	// Example: my-cool-service
-	Value string `json:"value"`
 }

@@ -84,7 +84,12 @@ func newRunCmd() *cobra.Command {
 					for j := 0; j < args.outbounds; j++ {
 						service := fmt.Sprintf("service-%d", rand.Int()%args.services) // #nosec G404 -- that's just a test tool
 						dpSpec.Networking.Outbound = append(dpSpec.Networking.Outbound, &v1alpha1.Dataplane_Networking_Outbound{
-							Port: uint32(10080 + j), Tags: map[string]string{v1alpha1.ServiceTag: service},
+							Port: uint32(10080 + j),
+							BackendRef: &v1alpha1.Dataplane_Networking_Outbound_BackendRef{
+								Kind: "MeshService",
+								Name: service,
+								Port: uint32(10080 + j),
+							},
 						})
 					}
 

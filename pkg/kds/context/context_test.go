@@ -15,6 +15,7 @@ import (
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -31,6 +32,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
@@ -107,84 +109,6 @@ var _ = Describe("Context", func() {
 							},
 							{
 								Id:         "sub2",
-								Generation: 0,
-							},
-						},
-					},
-				},
-			}),
-			Entry("should zero generation on ZoneIngressInsight", testCase{
-				resource: &core_mesh.ZoneIngressInsightResource{
-					Meta: &test_model.ResourceMeta{
-						Name: "zii-1",
-					},
-					Spec: &mesh_proto.ZoneIngressInsight{
-						Subscriptions: []*mesh_proto.DiscoverySubscription{
-							{
-								ControlPlaneInstanceId: "ID1",
-								Generation:             10,
-							},
-							{
-								ControlPlaneInstanceId: "ID2",
-								Generation:             15,
-							},
-						},
-					},
-				},
-				expect: &core_mesh.ZoneIngressInsightResource{
-					Meta: &test_model.ResourceMeta{
-						Name: hash.HashedName("", "zii-1", "zone"),
-						Labels: map[string]string{
-							"kuma.io/display-name": "zii-1",
-							"kuma.io/origin":       "zone",
-							"kuma.io/zone":         "zone",
-						},
-					},
-					Spec: &mesh_proto.ZoneIngressInsight{
-						Subscriptions: []*mesh_proto.DiscoverySubscription{
-							{
-								ControlPlaneInstanceId: "ID1",
-								Generation:             0,
-							},
-							{
-								ControlPlaneInstanceId: "ID2",
-								Generation:             0,
-							},
-						},
-					},
-				},
-			}),
-			Entry("should zero generation on ZoneEgressInsight", testCase{
-				resource: &core_mesh.ZoneEgressInsightResource{
-					Meta: &test_model.ResourceMeta{
-						Name: "zei-1",
-					},
-					Spec: &mesh_proto.ZoneEgressInsight{
-						Subscriptions: []*mesh_proto.DiscoverySubscription{
-							{
-								Generation: 10,
-							},
-							{
-								Generation: 15,
-							},
-						},
-					},
-				},
-				expect: &core_mesh.ZoneEgressInsightResource{
-					Meta: &test_model.ResourceMeta{
-						Name: hash.HashedName("", "zei-1", "zone"),
-						Labels: map[string]string{
-							"kuma.io/zone":         "zone",
-							"kuma.io/display-name": "zei-1",
-							"kuma.io/origin":       "zone",
-						},
-					},
-					Spec: &mesh_proto.ZoneEgressInsight{
-						Subscriptions: []*mesh_proto.DiscoverySubscription{
-							{
-								Generation: 0,
-							},
-							{
 								Generation: 0,
 							},
 						},
@@ -303,7 +227,7 @@ var _ = Describe("Context", func() {
 			}
 		}
 
-		DescribeTable("zone ingresses",
+		DescribeTable("resources synced across zones",
 			func(given testCase) {
 				ctx := stdcontext.Background()
 				// given
@@ -321,15 +245,13 @@ var _ = Describe("Context", func() {
 				// then
 				Expect(ok).To(Equal(given.expect))
 			},
-			Entry("should not filter out zone ingresses from the different, enabled zone", testCase{
-				resource: &core_mesh.ZoneIngressResource{
+			Entry("should not filter out a resource from the different, enabled zone", testCase{
+				resource: &meshzoneaddress_api.MeshZoneAddressResource{
 					Meta: &test_model.ResourceMeta{
-						Name:   "zone-ingress-1",
+						Name:   "mza-1",
 						Labels: zoneLabelsFn("different-zone"),
 					},
-					Spec: &mesh_proto.ZoneIngress{
-						Zone: "different-zone",
-					},
+					Spec: &meshzoneaddress_api.MeshZoneAddress{Address: "192.168.0.1", Port: 10001},
 				},
 				zoneResource: &core_system.ZoneResource{
 					Meta: &test_model.ResourceMeta{
@@ -342,27 +264,23 @@ var _ = Describe("Context", func() {
 				zoneName: "different-zone",
 				expect:   true,
 			}),
-			Entry("should filter out zone ingresses from the same zone", testCase{
-				resource: &core_mesh.ZoneIngressResource{
+			Entry("should filter out a resource from the same zone", testCase{
+				resource: &meshzoneaddress_api.MeshZoneAddressResource{
 					Meta: &test_model.ResourceMeta{
-						Name:   "zone-ingress-1",
+						Name:   "mza-1",
 						Labels: zoneLabelsFn(clusterID),
 					},
-					Spec: &mesh_proto.ZoneIngress{
-						Zone: clusterID,
-					},
+					Spec: &meshzoneaddress_api.MeshZoneAddress{Address: "192.168.0.1", Port: 10001},
 				},
 				expect: false,
 			}),
-			Entry("should filter out zone ingresses from the different, not enabled zone", testCase{
-				resource: &core_mesh.ZoneIngressResource{
+			Entry("should filter out a resource from the different, not enabled zone", testCase{
+				resource: &meshzoneaddress_api.MeshZoneAddressResource{
 					Meta: &test_model.ResourceMeta{
-						Name:   "zone-ingress-1",
+						Name:   "mza-1",
 						Labels: zoneLabelsFn("different-zone"),
 					},
-					Spec: &mesh_proto.ZoneIngress{
-						Zone: "different-zone",
-					},
+					Spec: &meshzoneaddress_api.MeshZoneAddress{Address: "192.168.0.1", Port: 10001},
 				},
 				zoneResource: &core_system.ZoneResource{
 					Meta: &test_model.ResourceMeta{
@@ -384,8 +302,6 @@ var _ = Describe("Context", func() {
 				core_system.ConfigType:       {},
 				core_system.GlobalSecretType: {},
 				core_mesh.DataplaneType:      {},
-				core_mesh.ZoneIngressType:    {},
-				core_mesh.ZoneEgressType:     {},
 			}
 
 			var entries []TableEntry
@@ -419,10 +335,10 @@ var _ = Describe("Context", func() {
 			)
 		})
 
-		It("should not filter out a producer policy solely due to a top-level MeshSubset zone tag mismatch", func() {
+		It("should not filter out a producer policy solely due to a top-level Dataplane zone label mismatch", func() {
 			ctx := stdcontext.Background()
 			// given
-			targetRef := builders.TargetRefMeshSubset(mesh_proto.ZoneTag, "different-zone")
+			targetRef := builders.TargetRefDataplaneLabels(mesh_proto.ZoneTag, "different-zone")
 			resource := &meshtimeout_api.MeshTimeoutResource{
 				Meta: &test_model.ResourceMeta{
 					Mesh: "default",
@@ -435,13 +351,10 @@ var _ = Describe("Context", func() {
 					},
 				},
 				Spec: &meshtimeout_api.MeshTimeout{
-					TargetRef: &targetRef,
+					TargetRef: pointer.To(builders.ToTopLevelTargetRef(targetRef)),
 					To: &[]meshtimeout_api.To{
 						{
-							TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{
-								mesh_proto.DisplayName:      "backend",
-								mesh_proto.KubeNamespaceTag: "kuma-demo",
-							}, ""),
+							TargetRef: builders.ToOutboundTargetRef(builders.TargetRefMeshService("backend", "kuma-demo", "")),
 						},
 					},
 				},

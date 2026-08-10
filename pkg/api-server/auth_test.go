@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path"
-	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,7 +15,6 @@ import (
 	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
 	"github.com/kumahq/kuma/v3/pkg/config/access"
 	config "github.com/kumahq/kuma/v3/pkg/config/api-server"
-	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/tls"
 	http2 "github.com/kumahq/kuma/v3/pkg/util/http"
@@ -24,7 +22,6 @@ import (
 
 var _ = Describe("Auth test", func() {
 	var httpsClient *http.Client
-	var httpsClientWithoutCerts *http.Client
 	var httpPort uint32
 	var httpsPort uint32
 	stop := func() {}
@@ -38,8 +35,6 @@ var _ = Describe("Auth test", func() {
 		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithConfigMutator(func(cfg *config.ApiServerConfig) {
 			cfg.HTTPS.TlsCertFile = certPath
 			cfg.HTTPS.TlsKeyFile = keyPath
-			cfg.Authn.Type = certs.PluginName
-			cfg.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
 		}).WithAccessConfigMutator(func(cfg *access.AccessConfig) {
 			cfg.Static.ControlPlaneMetadata.Groups = []string{"mesh-system:authenticated"}
 		}))
@@ -50,16 +45,7 @@ var _ = Describe("Auth test", func() {
 
 		// configure https clients
 		httpsClient = &http.Client{}
-		Expect(http2.ConfigureMTLS(
-			httpsClient,
-			certPath,
-			filepath.Join("..", "..", "test", "certs", "client", "client.pem"),
-			filepath.Join("..", "..", "test", "certs", "client", "client.key"),
-			false,
-		)).To(Succeed())
-
-		httpsClientWithoutCerts = &http.Client{}
-		Expect(http2.ConfigureMTLS(httpsClientWithoutCerts, certPath, "", "", false)).To(Succeed())
+		Expect(http2.ConfigureMTLS(httpsClient, certPath, "", "", false)).To(Succeed())
 
 		// wait for both http and https server
 		Eventually(func(g Gomega) {
@@ -87,9 +73,8 @@ var _ = Describe("Auth test", func() {
 		Expect(resp).To(HaveHTTPStatus(200))
 	})
 
-	It("should be able to access admin endpoints using client certs and HTTPS", func() {
-		// when - test that client cert authentication works via HTTPS
-		// Using localhost instead of external IP since client cert auth doesn't depend on RemoteAddr
+	It("should be able to access admin endpoints on localhost using HTTPS", func() {
+		// when
 		resp, err := httpsClient.Get(fmt.Sprintf("https://localhost:%d/secrets", httpsPort))
 
 		// then

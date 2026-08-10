@@ -502,11 +502,6 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 				dpp.InboundPort = "13000"
 				dpp.InboundServicePort = "3000"
 				dpp.ServiceProbe = opts.serviceProbe
-				dpp.Outbounds = []OutboundConfig{
-					{Port: "4000", Service: "echo-server_kuma-test_svc_80"},
-					{Port: "4001", Service: "echo-server_kuma-test_svc_8080"},
-					{Port: "5000", Service: "external-service"},
-				}
 			}
 
 			appYaml, err = RenderDataplaneTemplate(dpp)

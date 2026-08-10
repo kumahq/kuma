@@ -121,6 +121,6 @@ func validatePath(path *string, op string) validators.ValidationError {
 // MeshSubset, MeshGateway, and MeshHTTPRoute as top-level targetRef kinds. Those kinds
 // are now rejected outright by top-level targetRef validation, so there is nothing left
 // to deprecate for them.
-func TopLevelTargetRefDeprecations(_ *common_api.TargetRef) []string {
+func TopLevelTargetRefDeprecations(_ *common_api.TopLevelTargetRef) []string {
 	return nil
 }

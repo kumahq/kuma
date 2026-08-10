@@ -41,7 +41,6 @@ import (
 	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
-	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/v3/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
@@ -116,7 +115,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		return nil, err
 	}
 	builder.WithCAProvider(caProvider)
-	builder.WithAPIServerAuthenticator(certs.ClientCertAuthenticator)
+	builder.WithAPIServerAuthenticator(authn.NoopAuthenticator)
 	builder.WithAccess(core_runtime.Access{
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
 		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
@@ -308,7 +307,7 @@ func (r *TestRuntime) APIInstaller() customization.APIInstaller {
 }
 
 func (r *TestRuntime) APIServerAuthenticator() authn.Authenticator {
-	return certs.ClientCertAuthenticator
+	return authn.NoopAuthenticator
 }
 
 func (r *TestRuntime) Access() core_runtime.Access {

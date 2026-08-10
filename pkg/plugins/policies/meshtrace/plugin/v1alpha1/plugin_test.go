@@ -143,11 +143,6 @@ var _ = Describe("MeshTrace", func() {
 			}
 			proxyBuilder := xds_builders.Proxy().
 				WithDataplane(dpBuilder).
-				WithMetadata(&core_xds.DataplaneMetadata{
-					// Outbounds are always built from real resources, so every
-					// proxy here supports unified resource naming.
-					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-				}).
 				WithOutbounds(given.outbounds).
 				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules))
 			if given.zone != "" {
@@ -1058,7 +1053,7 @@ var _ = Describe("MeshTrace on mixed Dataplane with sectionName targetRef", func
 		mt := &api.MeshTraceResource{
 			Meta: &test_model.ResourceMeta{Mesh: "default", Name: "mt-section"},
 			Spec: &api.MeshTrace{
-				TargetRef: &common_api.TargetRef{
+				TargetRef: &common_api.TopLevelTargetRef{
 					Kind:        common_api.Dataplane,
 					SectionName: pointer.To("ze-port"),
 				},

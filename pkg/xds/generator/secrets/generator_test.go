@@ -240,7 +240,7 @@ var _ = Describe("SecretsGenerator", func() {
 				"mesh-1": {},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", mesh_proto.ZoneEgressServiceName),
+				Id:             *core_xds.BuildProxyId("", "zone-egress"),
 				SecretsTracker: envoy_common.NewSecretsTracker("mesh-1", []string{"mesh-1", "mesh-2"}),
 				APIVersion:     envoy_common.APIV3,
 			},
@@ -298,7 +298,7 @@ var _ = Describe("SecretsGenerator", func() {
 				"mesh-2": {},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", mesh_proto.ZoneEgressServiceName),
+				Id:             *core_xds.BuildProxyId("", "zone-egress"),
 				SecretsTracker: envoy_common.NewSecretsTracker("mesh-1", []string{"mesh-1", "mesh-2"}),
 				APIVersion:     envoy_common.APIV3,
 			},

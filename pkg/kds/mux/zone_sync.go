@@ -52,18 +52,19 @@ type KDSSyncServiceServer struct {
 	extensions context.Context
 	eventBus   events.EventBus
 	mesh_proto.UnimplementedKDSSyncServiceServer
-	context         context.Context
-	resManager      core_manager.ResourceManager
-	upsertCfg       config_store.UpsertConfig
-	instanceID      string
-	deltaServer     delta.Server
-	typesSentByZone []core_model.ResourceType
-	resourceSyncer  kds_sync_store.ResourceSyncer
-	k8sStore        bool
-	systemNamespace string
-	responseBackoff time.Duration
-	logPayloads     bool
-	metrics         *kds_server.Metrics
+	context           context.Context
+	resManager        core_manager.ResourceManager
+	upsertCfg         config_store.UpsertConfig
+	instanceID        string
+	deltaServer       delta.Server
+	typesSentByZone   []core_model.ResourceType
+	resourceSyncer    kds_sync_store.ResourceSyncer
+	k8sStore          bool
+	systemNamespace   string
+	ingressTagFilters []string
+	responseBackoff   time.Duration
+	logPayloads       bool
+	metrics           *kds_server.Metrics
 }
 
 func NewKDSSyncServiceServer(
@@ -227,6 +228,7 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 			g.k8sStore,
 			k8s.NewSimpleKubeFactory(),
 			g.systemNamespace,
+			g.ingressTagFilters,
 			g.metrics.KdsZoneAttributionRewrites,
 		)
 		zoneName := zone

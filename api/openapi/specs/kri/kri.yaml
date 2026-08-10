@@ -43,8 +43,6 @@ paths:
                   - $ref: '/specs/policies/meshtimeout/rest.yaml#/components/schemas/MeshTimeoutItem'
                   - $ref: '/specs/policies/meshtrace/rest.yaml#/components/schemas/MeshTraceItem'
                   - $ref: '/specs/policies/meshtrafficpermission/rest.yaml#/components/schemas/MeshTrafficPermissionItem'
-                  - $ref: '/specs/protoresources/zoneegress/rest.yaml#/components/schemas/ZoneEgressItem'
-                  - $ref: '/specs/protoresources/zoneingress/rest.yaml#/components/schemas/ZoneIngressItem'
         '400':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
         '404':

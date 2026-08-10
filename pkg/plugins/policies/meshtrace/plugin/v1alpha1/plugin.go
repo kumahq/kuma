@@ -65,9 +65,6 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if err := applyToInbounds(ctx, policies, listeners.Inbound, proxy); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(ctx, policies.SingleItemRules, listeners.Outbound, proxy); err != nil {
-		return err
-	}
 	if err := applyToZoneProxyListeners(ctx, policies, rs, proxy); err != nil {
 		return err
 	}
@@ -110,27 +107,6 @@ func inboundSectionNames(n *mesh_proto.Dataplane_Networking) map[core_rules.Inbo
 		result[key] = inb.GetSectionName()
 	}
 	return result
-}
-
-func applyToOutbounds(ctx xds_context.Context, rules core_rules.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, proxy *xds.Proxy) error {
-	outbounds := proxy.Outbounds
-	dataplane := proxy.Dataplane
-	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
-		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
-
-		listener, ok := outboundListeners[oface]
-		if !ok {
-			continue
-		}
-
-		serviceName := outbound.LegacyOutbound.GetService()
-
-		if err := configureListener(ctx, rules, proxy, listener, serviceName, listener.TrafficDirection); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func applyToZoneProxyListeners(ctx xds_context.Context, policies xds.TypedMatchingPolicies, rs *xds.ResourceSet, proxy *xds.Proxy) error {
@@ -213,7 +189,7 @@ func applyToRealResources(ctx xds_context.Context, rules core_rules.SingleItemRu
 			if typ == envoy_resource.ListenerType {
 				for _, listener := range resources {
 					l := listener.Resource.(*envoy_listener.Listener)
-					if err := configureListener(ctx, rules, proxy, l, destinationname.ResolveLegacyFromDestination(service, port), l.TrafficDirection); err != nil {
+					if err := configureListener(ctx, rules, proxy, l, destinationname.MustResolve(service, port), l.TrafficDirection); err != nil {
 						return err
 					}
 				}

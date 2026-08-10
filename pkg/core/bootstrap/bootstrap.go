@@ -20,8 +20,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplaneinsight"
 	mesh_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
-	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneegressinsight"
-	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneingressinsight"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneinsight"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
@@ -451,16 +449,6 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	customizableManager.Customize(
 		system.ZoneInsightType,
 		zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone),
-	)
-
-	customizableManager.Customize(
-		mesh.ZoneIngressInsightType,
-		zoneingressinsight.NewZoneIngressInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
-	)
-
-	customizableManager.Customize(
-		mesh.ZoneEgressInsightType,
-		zoneegressinsight.NewZoneEgressInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
 	)
 
 	var cipher secret_cipher.Cipher

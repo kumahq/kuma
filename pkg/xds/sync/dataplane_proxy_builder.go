@@ -160,40 +160,39 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelResourceIdentifierResolver) xds_types.Outbounds {
 	var outbounds xds_types.Outbounds
 	for _, o := range dataplane.Spec.Networking.Outbound {
-		if o.BackendRef != nil {
-			port := o.BackendRef.Port
-			labels, sectionName := xds_context.NormalizeBackendRefTarget(
-				o.BackendRef.Kind,
-				o.BackendRef.Name,
-				"",
-				&port,
-				o.BackendRef.Labels,
-				dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
-			)
-			// convert proto BackendRef to common_api.BackendRef
-			backendRef := common_api.BackendRef{
-				TargetRef: common_api.TargetRef{
-					Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
-					Labels: pointer.To(labels),
-				},
-				Port: pointer.To(o.BackendRef.Port),
-			}
-			if sectionName != "" {
-				backendRef.SectionName = pointer.To(sectionName)
-			}
-			ref, ok := resolve.BackendRef(kri.From(dataplane), backendRef, resolver)
-			if !ok {
-				continue
-			}
-			if ref.ReferencesRealResource() {
-				outbounds = append(outbounds, &xds_types.Outbound{
-					Address:  o.Address,
-					Port:     o.Port,
-					Resource: ref.Resource(),
-				})
-			}
-		} else {
-			outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: o})
+		if o.BackendRef == nil {
+			continue
+		}
+		port := o.BackendRef.Port
+		labels, sectionName := xds_context.NormalizeBackendRefTarget(
+			o.BackendRef.Kind,
+			o.BackendRef.Name,
+			"",
+			&port,
+			o.BackendRef.Labels,
+			dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
+		)
+		// convert proto BackendRef to common_api.BackendRef
+		backendRef := common_api.BackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
+				Labels: pointer.To(labels),
+			},
+			Port: pointer.To(o.BackendRef.Port),
+		}
+		if sectionName != "" {
+			backendRef.SectionName = pointer.To(sectionName)
+		}
+		ref, ok := resolve.BackendRef(kri.From(dataplane), backendRef, resolver)
+		if !ok {
+			continue
+		}
+		if ref.ReferencesRealResource() {
+			outbounds = append(outbounds, &xds_types.Outbound{
+				Address:  o.Address,
+				Port:     o.Port,
+				Resource: ref.Resource(),
+			})
 		}
 	}
 	return outbounds

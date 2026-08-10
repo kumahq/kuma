@@ -172,13 +172,6 @@ type ProxyType string
 
 const DataplaneProxyType ProxyType = "dataplane"
 
-func (t ProxyType) IsValid() error {
-	if t != DataplaneProxyType {
-		return errors.Errorf("%s is not a valid proxy type", t)
-	}
-	return nil
-}
-
 type InboundInterface struct {
 	DataplaneIP   string
 	DataplanePort uint32
@@ -219,10 +212,6 @@ func (i OutboundInterface) MarshalText() ([]byte, error) {
 func (i OutboundInterface) String() string {
 	return net.JoinHostPort(i.DataplaneIP,
 		strconv.FormatUint(uint64(i.DataplanePort), 10))
-}
-
-func NonBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
-	return outbound.BackendRef == nil
 }
 
 func BackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
@@ -349,15 +338,6 @@ func (n *Dataplane_Networking) GetHealthyInbounds() []*Dataplane_Networking_Inbo
 	return inbounds
 }
 
-// Matches is simply an alias for MatchTags to make source code more aesthetic.
-// Only the gateway carries tags; regular inbounds are matched via labels.
-func (d *Dataplane) Matches(selector TagSelector) bool {
-	if d == nil {
-		return false
-	}
-	return selector.Matches(d.GetNetworking().GetGateway().GetTags())
-}
-
 // MatchTagsFuzzy fuzzy-matches the gateway's tags; regular inbounds are
 // matched via labels.
 func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
@@ -392,17 +372,6 @@ func (l *Dataplane_Networking_Listener) GetSectionName() string {
 		return l.Name
 	}
 	return strconv.Itoa(int(l.Port))
-}
-
-// GetService returns a service name represented by this outbound interface.
-//
-// The purpose of this method is to encapsulate implementation detail
-// that service is modeled as a tag rather than a separate field.
-func (d *Dataplane_Networking_Outbound) GetService() string {
-	if d == nil || d.GetTags() == nil {
-		return ""
-	}
-	return d.GetTags()[ServiceTag]
 }
 
 const MatchAllTag = "*"
@@ -456,18 +425,6 @@ func (s TagSelector) Rank() TagSelectorRank {
 
 func (s TagSelector) Equal(other TagSelector) bool {
 	return len(s) == 0 && len(other) == 0 || len(s) == len(other) && reflect.DeepEqual(s, other)
-}
-
-func MatchAnyService() TagSelector {
-	return MatchService(MatchAllTag)
-}
-
-func MatchService(service string) TagSelector {
-	return TagSelector{ServiceTag: service}
-}
-
-func MatchTags(tags map[string]string) TagSelector {
-	return TagSelector(tags)
 }
 
 // Set of tags that only allows a single value per key.
@@ -660,17 +617,6 @@ func (n *Dataplane_Networking) HasZoneProxyListeners() bool {
 // no regular inbounds and no gateway, meaning it acts exclusively as a zone proxy.
 func (n *Dataplane_Networking) IsZoneProxyOnly() bool {
 	return n.HasZoneProxyListeners() && len(n.GetInbound()) == 0 && n.GetGateway() == nil
-}
-
-// GetReadyZoneIngressListeners returns all listeners of type ZoneIngress in Ready state.
-func (n *Dataplane_Networking) GetReadyZoneIngressListeners() []*Dataplane_Networking_Listener {
-	var result []*Dataplane_Networking_Listener
-	for _, l := range n.GetListeners() {
-		if l.Type == Dataplane_Networking_Listener_ZoneIngress && l.State == Dataplane_Networking_Listener_Ready {
-			result = append(result, l)
-		}
-	}
-	return result
 }
 
 // GetReadyZoneEgressListeners returns all listeners of type ZoneEgress in Ready state.

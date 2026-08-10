@@ -10,7 +10,6 @@
  },
  "rules": [
   {
-   "fromRules": [],
    "inboundRules": [
     {
      "inbound": {
@@ -96,7 +95,6 @@
     }
    ],
    "toResourceRules": [],
-   "toRules": [],
    "type": "MeshTimeout",
    "warnings": []
   }

@@ -48,11 +48,6 @@ func (i InboundListener) String() string {
 }
 
 type FromRules struct {
-	// Rules is the legacy subset-based inbound view used by a small set of egress
-	// and backward-compatible plugin paths.
-	//
-	// Deprecated: use InboundRules instead
-	Rules map[InboundListener]Rules
 	// InboundRules is a map of InboundListener to a list of inbound rules built by using 'spec.rules' field.
 	InboundRules map[InboundListener][]*inbound.Rule
 }
@@ -100,8 +95,7 @@ type GatewayToRules struct {
 }
 
 type GatewayRules struct {
-	ToRules   GatewayToRules
-	FromRules map[InboundListener]Rules
+	ToRules GatewayToRules
 	// InboundRules is a map of InboundListener to a list of inbound rules built by using 'spec.rules' field.
 	InboundRules map[InboundListener][]*inbound.Rule
 }
@@ -184,7 +178,6 @@ func BuildFromRules(
 		rulesByInboundNew[inb] = rulesNew
 	}
 	return FromRules{
-		Rules:        map[InboundListener]Rules{},
 		InboundRules: rulesByInboundNew,
 	}, nil
 }
@@ -273,7 +266,6 @@ func BuildGatewayRules(
 			ByListenerAndHostname: toRulesByListenerHostname,
 			ByListener:            toRulesByInbound,
 		},
-		FromRules:    fromRules.Rules,
 		InboundRules: fromRules.InboundRules,
 	}, nil
 }
@@ -330,7 +322,7 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 						// selector that doesn't carry kuma.io/display-name has
 						// no legacy equivalent; fail loudly rather than emitting
 						// an empty selector that silently matches nothing.
-						service := serviceTagValue(mhrRules.TargetRef)
+						service := serviceTagValue(mhrRules.TargetRef.ToTargetRef())
 						if service == "" {
 							return nil, errors.Errorf("can't resolve %s targetRef to a service: kuma.io/display-name label is required", mhrRules.TargetRef.Kind)
 						}

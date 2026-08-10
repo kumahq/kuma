@@ -22,7 +22,7 @@ type MeshHTTPRoute struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef *common_api.TopLevelTargetRef `json:"targetRef,omitempty"`
 
 	// To matches destination services of requests and holds configuration.
 	To *[]To `json:"to,omitempty"`
@@ -33,7 +33,7 @@ type To struct {
 	Hostnames *[]string `json:"hostnames,omitempty"`
 	// TargetRef is a reference to the resource that represents a group of
 	// request destinations.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef common_api.OutboundTargetRef `json:"targetRef"`
 	// Rules contains the routing rules applies to a combination of top-level
 	// targetRef and the targetRef in this entry.
 	Rules []Rule `json:"rules"`
