@@ -100,7 +100,7 @@ jobs:
           token: ${{ steps.github-app-token.outputs.token }}
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
-          version: 2026.7.11
+          version: 2026.7.16
         if: steps.parse-commands.outputs.has_command == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
