@@ -51,7 +51,6 @@ func MatchedPolicies(
 	var warnings []string
 
 	matchedPoliciesByInbound := map[core_rules.InboundListener]core_model.ResourceList{}
-	matchedPoliciesByGatewayListener := map[core_rules.InboundListenerHostname]core_model.ResourceList{}
 	dpPolicies, err := registry.Global().NewList(rType)
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
@@ -109,15 +108,6 @@ func MatchedPolicies(
 		warnings = append(warnings, fmt.Sprintf("couldn't create To rules: %s", err.Error()))
 	}
 
-	gr, err := core_rules.BuildGatewayRules(
-		matchedPoliciesByInbound,
-		matchedPoliciesByGatewayListener,
-		resources,
-	)
-	if err != nil {
-		warnings = append(warnings, fmt.Sprintf("couldn't create Gateway rules: %s", err.Error()))
-	}
-
 	sr, err := core_rules.BuildSingleItemRules(dpPolicies.GetItems())
 	if err != nil {
 		warnings = append(warnings, fmt.Sprintf("couldn't create top level rules: %s", err.Error()))
@@ -128,7 +118,6 @@ func MatchedPolicies(
 		DataplanePolicies: dpPolicies.GetItems(),
 		FromRules:         fr,
 		ToRules:           tr,
-		GatewayRules:      gr,
 		SingleItemRules:   sr,
 		Warnings:          warnings,
 	}

@@ -57,49 +57,6 @@ type ToRules struct {
 	ResourceRules outbound.ResourceRules
 }
 
-type InboundListenerHostname struct {
-	Address  string
-	Port     uint32
-	hostname string
-}
-
-var _ encoding.TextMarshaler = InboundListenerHostname{}
-
-func (i InboundListenerHostname) MarshalText() ([]byte, error) {
-	return []byte(i.String()), nil
-}
-
-func (i InboundListenerHostname) String() string {
-	return fmt.Sprintf("%s:%d:%s", i.Address, i.Port, i.hostname)
-}
-
-func NewInboundListenerHostname(address string, port uint32, hostname string) InboundListenerHostname {
-	if hostname == "" {
-		hostname = mesh_proto.WildcardHostname
-	}
-	return InboundListenerHostname{
-		Address:  address,
-		Port:     port,
-		hostname: hostname,
-	}
-}
-
-type GatewayToRules struct {
-	// ByListener contains rules that are not specific to hostnames
-	// If the policy supports `GatewayListenerTagsAllowed: true`
-	// then it likely should use ByListenerAndHostname
-	ByListener map[InboundListener]ToRules
-	// ByListenerAndHostname contains rules for policies that are specific to hostnames
-	// This only relevant if the policy has `GatewayListenerTagsAllowed: true`
-	ByListenerAndHostname map[InboundListenerHostname]ToRules
-}
-
-type GatewayRules struct {
-	ToRules GatewayToRules
-	// InboundRules is a map of InboundListener to a list of inbound rules built by using 'spec.rules' field.
-	InboundRules map[InboundListener][]*inbound.Rule
-}
-
 type SingleItemRules struct {
 	Rules Rules
 }
@@ -232,42 +189,6 @@ func legacyBuildToRules(matchedPolicies core_model.ResourceList, reader kri.Reso
 		}
 	}
 	return BuildRules(toList, false)
-}
-
-func BuildGatewayRules(
-	matchedPoliciesByInbound map[InboundListener]core_model.ResourceList,
-	matchedPoliciesByListener map[InboundListenerHostname]core_model.ResourceList,
-	reader kri.ResourceReader,
-) (GatewayRules, error) {
-	toRulesByInbound := map[InboundListener]ToRules{}
-	toRulesByListenerHostname := map[InboundListenerHostname]ToRules{}
-	for listener, policies := range matchedPoliciesByListener {
-		toRules, err := BuildToRules(policies, reader)
-		if err != nil {
-			return GatewayRules{}, err
-		}
-		toRulesByListenerHostname[listener] = toRules
-	}
-	for inbound, policies := range matchedPoliciesByInbound {
-		toRules, err := BuildToRules(policies, reader)
-		if err != nil {
-			return GatewayRules{}, err
-		}
-		toRulesByInbound[inbound] = toRules
-	}
-
-	fromRules, err := BuildFromRules(matchedPoliciesByInbound)
-	if err != nil {
-		return GatewayRules{}, err
-	}
-
-	return GatewayRules{
-		ToRules: GatewayToRules{
-			ByListenerAndHostname: toRulesByListenerHostname,
-			ByListener:            toRulesByInbound,
-		},
-		InboundRules: fromRules.InboundRules,
-	}, nil
 }
 
 func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model.PolicyWithToList, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
