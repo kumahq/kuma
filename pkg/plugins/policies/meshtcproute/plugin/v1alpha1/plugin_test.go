@@ -63,8 +63,6 @@ var _ = Describe("MeshTCPRoute", func() {
 		Mesh:         "default",
 		Name:         "example",
 	}
-	unifiedNaming := func() *core_xds.DataplaneMetadata { return &core_xds.DataplaneMetadata{} }
-
 	type policiesTestCase struct {
 		dataplane      *core_mesh.DataplaneResource
 		resources      xds_context.Resources
@@ -404,7 +402,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						xds_builders.Routing().
 							WithOutboundTargets(outboundTargets),
 					).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
 			}
@@ -586,7 +584,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						xds_builders.Routing().
 							WithOutboundTargets(outboundTargets),
 					).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					Build(),
 			}
 		}()),
@@ -743,7 +741,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
 			}
@@ -872,7 +870,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshTCPRouteType, tcpRules).
@@ -1010,7 +1008,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshTCPRouteType, tcpRules).
