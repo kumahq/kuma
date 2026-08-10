@@ -84,7 +84,6 @@ func GenerateClusters(
 				edsClusterBuilder.
 					Configure(envoy_clusters.EdsCluster()).
 					Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
-
 				switch protocol {
 				case core_meta.ProtocolHTTP:
 					edsClusterBuilder.Configure(envoy_clusters.Http())

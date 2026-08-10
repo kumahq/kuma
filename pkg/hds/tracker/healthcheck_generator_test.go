@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	v3 "github.com/kumahq/kuma/v3/pkg/hds/v3"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -160,7 +159,7 @@ networking:
 				},
 			},
 		}),
-		Entry("should generate HealthCheckSpecifier with new cluster name", testCase{
+		Entry("should generate HealthCheckSpecifier with system admin cluster name", testCase{
 			goldenFile: "hds.4.golden.yaml",
 			dataplane: `
 networking:
@@ -174,15 +173,6 @@ networking:
       tags:
         kuma.io/service: backend
 `,
-			metadata: &structpb.Struct{
-				Fields: map[string]*structpb.Value{
-					xds.FieldFeatures: {Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{Kind: &structpb.Value_StringValue{StringValue: types.FeatureUnifiedResourceNaming}},
-						},
-					}}},
-				},
-			},
 			hdsConfig: &dp_server.HdsConfig{
 				Interval: config_types.Duration{Duration: 8 * time.Second},
 				Enabled:  true,
@@ -195,11 +185,11 @@ networking:
 				},
 			},
 		}),
-		Entry("should use pre-unified admin cluster name for an orphaned dataplane whose mesh was deleted", testCase{
+		Entry("should keep generating HDS for an orphaned dataplane whose mesh was deleted", testCase{
 			// Mesh deletion doesn't cascade to Dataplanes, so HDS can still see an
-			// orphaned dataplane after its mesh is gone. It must use the pre-unified
-			// admin cluster name instead of failing the snapshot.
-			goldenFile: "hds.1.golden.yaml",
+			// orphaned dataplane after its mesh is gone. Snapshot generation must
+			// still succeed and keep using the system admin cluster name.
+			goldenFile: "hds.4.golden.yaml",
 			deleteMesh: true,
 			dataplane: `
 networking:
@@ -213,15 +203,6 @@ networking:
       tags:
         kuma.io/service: backend
 `,
-			metadata: &structpb.Struct{
-				Fields: map[string]*structpb.Value{
-					xds.FieldFeatures: {Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{Kind: &structpb.Value_StringValue{StringValue: types.FeatureUnifiedResourceNaming}},
-						},
-					}}},
-				},
-			},
 			hdsConfig: &dp_server.HdsConfig{
 				Interval: config_types.Duration{Duration: 8 * time.Second},
 				Enabled:  true,

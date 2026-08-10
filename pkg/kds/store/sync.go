@@ -449,6 +449,7 @@ func GlobalSyncCallback(
 	k8sStore bool,
 	kubeFactory resources_k8s.KubeFactory,
 	systemNamespace string,
+	ingressTagFilters []string,
 	rewrites *prometheus.CounterVec,
 ) *kds_client.Callbacks {
 	supportsHashSuffixes := kds.ContextHasFeature(ctx, kds.FeatureHashSuffix)
