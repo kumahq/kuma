@@ -327,7 +327,5 @@ var _ = Describe("JsonPatchBlock Validator", func() {
 		Entry("Dataplane", &common_api.TopLevelTargetRef{Kind: common_api.Dataplane}),
 		Entry("MeshHTTPRoute", &common_api.TopLevelTargetRef{Kind: common_api.MeshHTTPRoute}),
 		Entry("MeshService", &common_api.TopLevelTargetRef{Kind: common_api.MeshService}),
-		Entry("MeshServiceSubset", &common_api.TopLevelTargetRef{Kind: common_api.LegacyMeshServiceSubsetKind()}),
-		Entry("MeshSubset", &common_api.TopLevelTargetRef{Kind: common_api.LegacyMeshSubsetKind()}),
 	)
 })
