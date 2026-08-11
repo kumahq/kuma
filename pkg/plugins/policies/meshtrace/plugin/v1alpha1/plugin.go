@@ -84,7 +84,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 func applyToInbounds(ctx xds_context.Context, policies xds.TypedMatchingPolicies, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
 	sectionNames := inboundSectionNames(proxy.Dataplane.Spec.GetNetworking())
 	for key, inboundListener := range inboundListeners {
-		listenerPolicyConf, err := buildListenerScopedPolicyConf(policies, sectionNames[key])
+		listenerPolicyConf, err := buildListenerScopedProxyConf(policies, sectionNames[key])
 		if err != nil {
 			return err
 		}
@@ -135,7 +135,7 @@ func applyToZoneProxyListeners(ctx xds_context.Context, policies xds.TypedMatchi
 		if !ok {
 			continue
 		}
-		listenerPolicyConf, err := buildListenerScopedPolicyConf(policies, l.GetSectionName())
+		listenerPolicyConf, err := buildListenerScopedProxyConf(policies, l.GetSectionName())
 		if err != nil {
 			return err
 		}
@@ -152,11 +152,11 @@ func applyToZoneProxyListeners(ctx xds_context.Context, policies xds.TypedMatchi
 	return nil
 }
 
-// buildListenerScopedPolicyConf returns proxy-wide config scoped to the given embedded listener.
+// buildListenerScopedProxyConf returns the merged conf scoped to the given embedded listener.
 // Policies with `kind: Dataplane` and a non-empty `sectionName` that does not match the
 // listener are excluded; everything else (including the matcher's proxy-wide rule when no
 // per-policy info is available) is preserved.
-func buildListenerScopedPolicyConf(policies xds.TypedMatchingPolicies, sectionName string) (*core_rules.MergedPolicyConf, error) {
+func buildListenerScopedProxyConf(policies xds.TypedMatchingPolicies, sectionName string) (*core_rules.ProxyConf, error) {
 	if len(policies.DataplanePolicies) == 0 {
 		return policies.ProxyConf, nil
 	}
@@ -174,10 +174,10 @@ func buildListenerScopedPolicyConf(policies xds.TypedMatchingPolicies, sectionNa
 		}
 		filtered = append(filtered, p)
 	}
-	return core_rules.BuildMergedPolicyConf(filtered)
+	return core_rules.BuildProxyConf(filtered)
 }
 
-func applyToRealResources(ctx xds_context.Context, policyConf *core_rules.MergedPolicyConf, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+func applyToRealResources(ctx xds_context.Context, policyConf *core_rules.ProxyConf, rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
 		service, port, found := meshroute.DestinationPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
 			Resource: uri,
@@ -199,7 +199,7 @@ func applyToRealResources(ctx xds_context.Context, policyConf *core_rules.Merged
 	return nil
 }
 
-func configureListener(ctx xds_context.Context, policyConf *core_rules.MergedPolicyConf, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, direction envoy_core.TrafficDirection) error {
+func configureListener(ctx xds_context.Context, policyConf *core_rules.ProxyConf, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, direction envoy_core.TrafficDirection) error {
 	serviceName := proxy.Dataplane.IdentifyingName()
 	// IdentifyingName falls back to "unknown" on a zone-proxy-only Dataplane (no service tag).
 	// Prefer the workload label (stable across pod restarts on K8s) and fall back to the
@@ -290,7 +290,7 @@ func shouldSkipUnresolvedOpenTelemetryBackend(
 	return hasOpenTelemetryBackend(conf)
 }
 
-func applyToClusters(ctx xds_context.Context, policyConf *core_rules.MergedPolicyConf, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+func applyToClusters(ctx xds_context.Context, policyConf *core_rules.ProxyConf, rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	conf := policyConf.Conf.(api.Conf)
 
 	var backend api.Backend
@@ -396,7 +396,7 @@ func endpointForDatadog(cfg *api.DatadogBackend) *xds.Endpoint {
 	}
 }
 
-func addToOtelPipeBackends(ctx xds_context.Context, policyConf *core_rules.MergedPolicyConf, proxy *xds.Proxy) {
+func addToOtelPipeBackends(ctx xds_context.Context, policyConf *core_rules.ProxyConf, proxy *xds.Proxy) {
 	conf := policyConf.Conf.(api.Conf)
 	if !hasOtelBackendRef(conf) {
 		return

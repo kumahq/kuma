@@ -21,17 +21,17 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
-func mergedPolicyConf(rules core_rules.Rules) *core_rules.MergedPolicyConf {
+func mergedPolicyConf(rules core_rules.Rules) *core_rules.ProxyConf {
 	if len(rules) == 0 {
 		return nil
 	}
-	return &core_rules.MergedPolicyConf{Conf: rules[0].Conf, Origin: rules[0].Origin}
+	return &core_rules.ProxyConf{Conf: rules[0].Conf, Origin: rules[0].Origin}
 }
 
 var _ = Describe("MeshProxyPatch", func() {
 	type testCase struct {
 		resources        []core_xds.Resource
-		proxyConf        *core_rules.MergedPolicyConf
+		proxyConf        *core_rules.ProxyConf
 		expectedClusters []string
 	}
 
@@ -46,7 +46,7 @@ var _ = Describe("MeshProxyPatch", func() {
 			context := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().WithProxyPolicy(api.MeshProxyPatchType, given.proxyConf)).
+				WithPolicies(xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshProxyPatchType, given.proxyConf)).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 

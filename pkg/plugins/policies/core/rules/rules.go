@@ -57,7 +57,10 @@ type ToRules struct {
 	ResourceRules outbound.ResourceRules
 }
 
-type MergedPolicyConf struct {
+// ProxyConf is the single merged configuration of a proxy-wide policy applying
+// to the whole proxy. A nil *ProxyConf means either no policy of that type matched
+// the proxy, or the matched policy type doesn't support proxy-wide configuration.
+type ProxyConf struct {
 	Conf   any
 	Origin []core_model.ResourceMeta
 }
@@ -209,7 +212,7 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 			// (e.g. kuma.io/display-name) across namespaces. Namespaced
 			// policies must only expand routes from their own namespace,
 			// otherwise route-derived config leaks across namespaces.
-			if !policySelectsByNamespace(meta, route.GetMeta()) {
+			if !PolicySelectsByNamespace(meta, route.GetMeta()) {
 				continue
 			}
 			if r, ok := route.(*meshhttproute_api.MeshHTTPRouteResource); ok {
@@ -231,7 +234,7 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 				for _, to := range policyWithTo.GetToList() {
 					var targetRef common_api.TargetRef
 					switch mhrRules.TargetRef.Kind {
-					case common_api.Mesh, common_api.LegacyMeshSubsetKind():
+					case common_api.OutboundTargetRefKindMesh, common_api.OutboundTargetRefKind(common_api.LegacyMeshSubsetKind()):
 						targetRef = common_api.TargetRef{
 							Kind: common_api.LegacyMeshSubsetKind(),
 							Tags: &map[string]string{
@@ -296,7 +299,7 @@ func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.Res
 	return result
 }
 
-func BuildMergedPolicyConf(matchedPolicies []core_model.Resource) (*MergedPolicyConf, error) {
+func BuildProxyConf(matchedPolicies []core_model.Resource) (*ProxyConf, error) {
 	if len(matchedPolicies) == 0 {
 		return nil, nil
 	}
@@ -321,7 +324,6 @@ func BuildMergedPolicyConf(matchedPolicies []core_model.Resource) (*MergedPolicy
 	if err != nil {
 		return nil, err
 	}
-
 	if len(merged) == 0 {
 		return nil, nil
 	}
@@ -329,7 +331,7 @@ func BuildMergedPolicyConf(matchedPolicies []core_model.Resource) (*MergedPolicy
 		return nil, errors.Errorf("expected a single merged proxy-wide config, got %d", len(merged))
 	}
 
-	return &MergedPolicyConf{
+	return &ProxyConf{
 		Conf:   merged[0],
 		Origin: util_slices.Map(common.Origins(items, false), func(o common.Origin) core_model.ResourceMeta { return o.Resource }),
 	}, nil
@@ -549,12 +551,11 @@ func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {
 	}
 }
 
-// policySelectsByNamespace reports whether a policy may reference a resource
+// PolicySelectsByNamespace reports whether a policy may reference a resource
 // living in the given namespace. Consumer and workload-owner policies are
 // namespaced, so they can only reference resources from their own namespace;
-// producer/system policies are namespace-agnostic. This mirrors the dataplane
-// namespace scoping applied during matching.
-func policySelectsByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) bool {
+// producer/system policies are namespace-agnostic.
+func PolicySelectsByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) bool {
 	switch core_model.PolicyRole(policyMeta) {
 	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
 		ns, ok := policyMeta.GetLabels()[mesh_proto.KubeNamespaceTag]

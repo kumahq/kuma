@@ -58,7 +58,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 func applyToOutboundPassthrough(
 	_ xds_context.Context,
 	rs *core_xds.ResourceSet,
-	policyConf *core_rules.MergedPolicyConf,
+	policyConf *core_rules.ProxyConf,
 	listeners policies_xds.Listeners,
 	proxy *core_xds.Proxy,
 ) error {

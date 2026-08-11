@@ -33,7 +33,7 @@ var _ = Describe("MeshPassthrough", func() {
 
 	type testCase struct {
 		resources       []*core_xds.Resource
-		proxyConf       *core_rules.MergedPolicyConf
+		proxyConf       *core_rules.ProxyConf
 		listenersGolden string
 		clustersGolden  string
 	}
@@ -62,7 +62,7 @@ var _ = Describe("MeshPassthrough", func() {
 						),
 				).
 				WithPolicies(
-					xds_builders.MatchedPolicies().WithProxyPolicy(api.MeshPassthroughType, given.proxyConf),
+					xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshPassthroughType, given.proxyConf),
 				).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
@@ -601,9 +601,9 @@ var _ = Describe("MeshPassthrough", func() {
 	)
 })
 
-func mergedPolicyConf(rules core_rules.Rules) *core_rules.MergedPolicyConf {
+func mergedPolicyConf(rules core_rules.Rules) *core_rules.ProxyConf {
 	if len(rules) == 0 {
 		return nil
 	}
-	return &core_rules.MergedPolicyConf{Conf: rules[0].Conf, Origin: rules[0].Origin}
+	return &core_rules.ProxyConf{Conf: rules[0].Conf, Origin: rules[0].Origin}
 }

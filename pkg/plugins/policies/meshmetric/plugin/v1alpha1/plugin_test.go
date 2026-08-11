@@ -32,11 +32,11 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
-func mergedPolicyConf(rules core_rules.Rules) *core_rules.MergedPolicyConf {
+func mergedPolicyConf(rules core_rules.Rules) *core_rules.ProxyConf {
 	if len(rules) == 0 {
 		return nil
 	}
-	return &core_rules.MergedPolicyConf{Conf: rules[0].Conf, Origin: rules[0].Origin}
+	return &core_rules.ProxyConf{Conf: rules[0].Conf, Origin: rules[0].Origin}
 }
 
 func workloadLabels() map[string]string {
@@ -133,7 +133,7 @@ var _ = Describe("MeshMetric", func() {
 						WithLabels(workloadLabels()),
 				).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
 						{
 							Subset: []subsetutils.Tag{},
 							Conf: api.Conf{
@@ -169,7 +169,7 @@ var _ = Describe("MeshMetric", func() {
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
 						{
 							Subset: []subsetutils.Tag{},
 							Conf: api.Conf{
@@ -207,7 +207,7 @@ var _ = Describe("MeshMetric", func() {
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
 						{
 							Subset: []subsetutils.Tag{},
 							Conf: api.Conf{
@@ -256,7 +256,7 @@ var _ = Describe("MeshMetric", func() {
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
 						{
 							Subset: []subsetutils.Tag{},
 							Conf: api.Conf{
@@ -294,7 +294,7 @@ var _ = Describe("MeshMetric", func() {
 					MetricsKeyPath:  "/path/key",
 				}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
 						{
 							Subset: []subsetutils.Tag{},
 							Conf: api.Conf{
@@ -330,7 +330,7 @@ var _ = Describe("MeshMetric", func() {
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
 						{
 							Subset: []subsetutils.Tag{},
 							Origin: []core_model.ResourceMeta{
@@ -384,7 +384,7 @@ var _ = Describe("MeshMetric", func() {
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
 						{
 							Subset: []subsetutils.Tag{},
 							Conf: api.Conf{
@@ -424,7 +424,7 @@ var _ = Describe("MeshMetric", func() {
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithDataplane(zoneEgressOnlyDataplane()).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
 						{
 							Subset: []subsetutils.Tag{},
 							Conf: api.Conf{
@@ -456,7 +456,7 @@ var _ = Describe("MeshMetric", func() {
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithDataplane(zoneIngressOnlyDataplane("zone-ingress-1")).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
 						{
 							Subset: []subsetutils.Tag{},
 							Conf: api.Conf{
@@ -484,7 +484,7 @@ var _ = Describe("MeshMetric", func() {
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithDataplane(dp).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
 						{
 							Subset: []subsetutils.Tag{},
 							Conf: api.Conf{
@@ -544,7 +544,7 @@ var _ = Describe("MeshMetric", func() {
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithDataplane(zoneEgressOnlyDataplane()).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
 						{
 							Subset: []subsetutils.Tag{},
 							Conf: api.Conf{
@@ -601,7 +601,7 @@ var _ = Describe("MeshMetric", func() {
 					},
 				}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
 						{
 							Subset: []subsetutils.Tag{},
 							Conf: api.Conf{

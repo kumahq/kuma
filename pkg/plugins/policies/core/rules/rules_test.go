@@ -549,7 +549,7 @@ var _ = Describe("Rules", func() {
 		DescribeTable("should build a rule-based view for list of single item policies",
 			func(inputFile string) {
 				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (any, error) {
-					return core_rules.BuildMergedPolicyConf(policies)
+					return core_rules.BuildProxyConf(policies)
 				})
 			},
 			test.EntriesForFolder("rules/single"),
@@ -1325,7 +1325,7 @@ var _ = Describe("buildToListWithRoutes", func() {
 			Spec: &v1alpha1.MeshHTTPRoute{
 				To: &[]v1alpha1.To{{
 					TargetRef: common_api.OutboundTargetRef{
-						Kind:   common_api.MeshService,
+						Kind:   common_api.OutboundTargetRefKindMeshService,
 						Labels: pointer.To(map[string]string{mesh_proto.DisplayName: backend}),
 					},
 					Rules: []v1alpha1.Rule{{}},
@@ -1393,7 +1393,7 @@ var _ = Describe("buildToListWithRoutes", func() {
 			Spec: &v1alpha1.MeshHTTPRoute{
 				To: &[]v1alpha1.To{{
 					TargetRef: common_api.OutboundTargetRef{
-						Kind:   common_api.MeshService,
+						Kind:   common_api.OutboundTargetRefKindMeshService,
 						Labels: pointer.To(map[string]string{"env": "dev"}),
 					},
 					Rules: []v1alpha1.Rule{{}},

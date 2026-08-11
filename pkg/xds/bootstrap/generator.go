@@ -1,13 +1,13 @@
 package bootstrap
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
@@ -32,33 +33,36 @@ type BootstrapGenerator interface {
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
 	serverConfig *bootstrap_config.BootstrapServerConfig,
-	dpServerCertFile string,
+	dpServerKeyPair *util_tls.Watcher,
 	authEnabledForProxyType map[string]bool,
 	enableReloadableTokens bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
 	envoyAdminUnixSocket bool,
 ) (BootstrapGenerator, error) {
-	dpServerCert, err := parseCertFromFile(dpServerCertFile)
-	if err != nil {
-		return nil, err
+	if dpServerKeyPair == nil {
+		return nil, errors.New("DP Server key pair is required")
 	}
-	if serverConfig.Params.XdsHost != "" {
-		if err := dpServerCert.VerifyHostname(serverConfig.Params.XdsHost); err != nil {
-			return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", serverConfig.Params.XdsHost, dpServerCert.DNSNames)
-		}
-	}
-	return &bootstrapGenerator{
+	b := &bootstrapGenerator{
 		resManager:              resManager,
 		config:                  serverConfig,
-		xdsCertFile:             dpServerCertFile,
+		dpServerKeyPair:         dpServerKeyPair,
 		authEnabledForProxyType: authEnabledForProxyType,
 		enableReloadableTokens:  enableReloadableTokens,
-		dpServerCert:            dpServerCert,
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
 		envoyAdminUnixSocket:    envoyAdminUnixSocket,
-	}, nil
+	}
+	if serverConfig.Params.XdsHost != "" {
+		cert, err := b.dpServerCertificate()
+		if err != nil {
+			return nil, err
+		}
+		if err := cert.parsed.VerifyHostname(serverConfig.Params.XdsHost); err != nil {
+			return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", serverConfig.Params.XdsHost, cert.parsed.DNSNames)
+		}
+	}
+	return b, nil
 }
 
 type bootstrapGenerator struct {
@@ -66,8 +70,7 @@ type bootstrapGenerator struct {
 	config                  *bootstrap_config.BootstrapServerConfig
 	authEnabledForProxyType map[string]bool
 	enableReloadableTokens  bool
-	xdsCertFile             string
-	dpServerCert            *x509.Certificate
+	dpServerKeyPair         *util_tls.Watcher
 	hdsEnabled              bool
 	defaultAdminPort        uint32
 	envoyAdminUnixSocket    bool
@@ -78,7 +81,12 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		request.ProxyType = string(mesh_proto.DataplaneProxyType)
 	}
 	kumaDpBootstrap := KumaDpBootstrap{}
-	if err := b.validateRequest(request); err != nil {
+	// The DP server reloads its certificate when it is rotated on disk, so it
+	// cannot be parsed once at startup. Take it from the same key pair the DP
+	// server serves, once per request, so that the SAN check and the CA handed
+	// to the proxy both describe the certificate the proxy is about to see.
+	loadCert := sync.OnceValues(b.dpServerCertificate)
+	if err := b.validateRequest(request, loadCert); err != nil {
 		return nil, kumaDpBootstrap, err
 	}
 	features := make(xds_types.Features, len(request.Features))
@@ -166,7 +174,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, kumaDpBootstrap, errors.Errorf("unknown proxy type %v", params.ProxyType)
 	}
 	var err error
-	if params.CertBytes, err = b.caCert(request); err != nil {
+	if params.CertBytes, err = b.caCert(request, loadCert); err != nil {
 		return nil, kumaDpBootstrap, err
 	}
 
@@ -195,7 +203,7 @@ func SANMismatchErr(host string, cert *x509.Certificate) error {
 		"Either change the --cp-address in kuma-dp to one of those or execute the following steps:\n"+
 		"1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --hostname=%s'\n"+
 		"2) Set KUMA_GENERAL_TLS_CERT_FILE and KUMA_GENERAL_TLS_KEY_FILE or the equivalent in Kuma CP config file to the new certificate.\n"+
-		"3) Restart the control plane to read the new certificate and start kuma-dp.", host, sans, host)
+		"3) Start kuma-dp, the control plane picks up the new certificate on its own.", host, sans, host)
 }
 
 func ISSANMismatchErr(err error) bool {
@@ -205,13 +213,17 @@ func ISSANMismatchErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "A data plane proxy is trying to connect to the control plane using")
 }
 
-func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {
+func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest, loadCert func() (*dpServerCert, error)) error {
 	if b.authEnabledForProxyType[request.ProxyType] && request.DataplaneToken == "" && request.DataplaneTokenPath == "" {
 		return DpTokenRequired
 	}
 	if b.config.Params.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set
-		if err := b.dpServerCert.VerifyHostname(request.Host); err != nil {
-			return SANMismatchErr(request.Host, b.dpServerCert)
+		cert, err := loadCert()
+		if err != nil {
+			return err
+		}
+		if err := cert.parsed.VerifyHostname(request.Host); err != nil {
+			return SANMismatchErr(request.Host, cert.parsed)
 		}
 	}
 	return nil
@@ -267,38 +279,27 @@ func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string)
 // caCert gets CA cert that was used to signed cert that DP server is protected with.
 // Technically result of this function does not have to be a valid CA.
 // When user provides custom cert + key and does not provide --ca-cert-file to kuma-dp run, this can return just a regular cert
-func (b *bootstrapGenerator) caCert(request types.BootstrapRequest) ([]byte, error) {
+func (b *bootstrapGenerator) caCert(request types.BootstrapRequest, loadCert func() (*dpServerCert, error)) ([]byte, error) {
 	// CaCert from the request takes precedence. It is only visible if user provides --ca-cert-file to kuma-dp run
-	var cert []byte
-	var origin string
+	var cert *dpServerCert
 	switch {
 	case request.CaCert != "":
-		cert = []byte(request.CaCert)
-		origin = "request .CaCert"
-	case b.xdsCertFile != "":
-		var err error
-		xdsCertFile := filepath.Clean(b.xdsCertFile)
-		cert, err = os.ReadFile(xdsCertFile)
-		origin = "file " + xdsCertFile
+		parsed, err := parseCert([]byte(request.CaCert))
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed getting cert from %s", origin)
+			return nil, errors.Wrap(err, "could not parse certificate from request .CaCert")
 		}
+		cert = &dpServerCert{pem: []byte(request.CaCert), parsed: parsed}
 	default:
-		return nil, nil
+		var err error
+		if cert, err = loadCert(); err != nil {
+			return nil, err
+		}
 	}
-	pemCert, _ := pem.Decode(cert)
-	if pemCert == nil {
-		return nil, errors.Errorf("could not parse certificate from %s", origin)
-	}
-	x509Cert, err := x509.ParseCertificate(pemCert.Bytes)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not parse certificate %s", origin)
-	}
-	// checking just x509Cert.IsCA is not enough, because it's valid to generate CA without CA:TRUE basic constraint
-	if x509Cert.BasicConstraintsValid && !x509Cert.IsCA {
+	// checking just IsCA is not enough, because it's valid to generate CA without CA:TRUE basic constraint
+	if cert.parsed.BasicConstraintsValid && !cert.parsed.IsCA {
 		return nil, NotCA
 	}
-	return cert, nil
+	return cert.pem, nil
 }
 
 func (b *bootstrapGenerator) xdsHost(request types.BootstrapRequest) string {
@@ -316,11 +317,38 @@ func (b *bootstrapGenerator) adminAccessLogPath(operatingSystem string) string {
 	return b.config.Params.AdminAccessLogPath
 }
 
-func parseCertFromFile(dpServerCertFile string) (*x509.Certificate, error) {
-	certBytes, err := os.ReadFile(dpServerCertFile)
+// dpServerCert is the certificate the DP server presents. Both representations
+// are kept because the CA is handed to the proxy as PEM while the SAN and CA
+// checks need the parsed form.
+type dpServerCert struct {
+	pem    []byte
+	parsed *x509.Certificate
+}
+
+// dpServerCertificate takes a snapshot of the key pair the DP server serves.
+func (b *bootstrapGenerator) dpServerCertificate() (*dpServerCert, error) {
+	cert, err := b.dpServerKeyPair.Certificate()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not read certificate")
+		return nil, errors.Wrapf(err, "failed getting cert from file %s", b.dpServerKeyPair.CertFile())
 	}
+	leaf := cert.Leaf
+	if leaf == nil {
+		if leaf, err = x509.ParseCertificate(cert.Certificate[0]); err != nil {
+			return nil, errors.Wrap(err, "could not parse certificate")
+		}
+	}
+	// The whole chain is handed to the proxy, the same as when the file was read
+	// as it is.
+	var certPEM bytes.Buffer
+	for _, der := range cert.Certificate {
+		if err := pem.Encode(&certPEM, &pem.Block{Type: "CERTIFICATE", Bytes: der}); err != nil {
+			return nil, errors.Wrap(err, "could not encode certificate")
+		}
+	}
+	return &dpServerCert{pem: certPEM.Bytes(), parsed: leaf}, nil
+}
+
+func parseCert(certBytes []byte) (*x509.Certificate, error) {
 	pemCert, _ := pem.Decode(certBytes)
 	if pemCert == nil {
 		return nil, errors.New("could not parse certificate")

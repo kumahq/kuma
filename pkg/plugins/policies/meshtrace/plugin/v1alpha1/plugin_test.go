@@ -41,11 +41,11 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
-func mergedPolicyConf(rules core_rules.Rules) *core_rules.MergedPolicyConf {
+func mergedPolicyConf(rules core_rules.Rules) *core_rules.ProxyConf {
 	if len(rules) == 0 {
 		return nil
 	}
-	return &core_rules.MergedPolicyConf{Conf: rules[0].Conf, Origin: rules[0].Origin}
+	return &core_rules.ProxyConf{Conf: rules[0].Conf, Origin: rules[0].Origin}
 }
 
 func otelBackendResource(name, address string) *motb_api.MeshOpenTelemetryBackendResource {
@@ -73,7 +73,7 @@ func otelBackendRef(name string) *common_api.BackendResourceRef {
 var _ = Describe("MeshTrace", func() {
 	type testCase struct {
 		resources    []core_xds.Resource
-		proxyConf    *core_rules.MergedPolicyConf
+		proxyConf    *core_rules.ProxyConf
 		outbounds    xds_types.Outbounds
 		goldenFile   string
 		proxyLabels  map[string]string
@@ -150,7 +150,7 @@ var _ = Describe("MeshTrace", func() {
 			proxyBuilder := xds_builders.Proxy().
 				WithDataplane(dpBuilder).
 				WithOutbounds(given.outbounds).
-				WithPolicies(xds_builders.MatchedPolicies().WithProxyPolicy(api.MeshTraceType, given.proxyConf))
+				WithPolicies(xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshTraceType, given.proxyConf))
 			if given.zone != "" {
 				proxyBuilder = proxyBuilder.WithZone(given.zone)
 			}
@@ -437,7 +437,7 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			}).
-			WithPolicies(xds_builders.MatchedPolicies().WithProxyPolicy(api.MeshTraceType, mergedPolicyConf(core_rules.Rules{
+			WithPolicies(xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshTraceType, mergedPolicyConf(core_rules.Rules{
 				{
 					Subset: []subsetutils.Tag{},
 					Conf: api.Conf{
@@ -493,7 +493,7 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			}).
-			WithPolicies(xds_builders.MatchedPolicies().WithProxyPolicy(api.MeshTraceType, mergedPolicyConf(core_rules.Rules{
+			WithPolicies(xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshTraceType, mergedPolicyConf(core_rules.Rules{
 				{
 					Subset: []subsetutils.Tag{},
 					Conf: api.Conf{
@@ -582,7 +582,7 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			}).
-			WithPolicies(xds_builders.MatchedPolicies().WithProxyPolicy(api.MeshTraceType, mergedPolicyConf(core_rules.Rules{
+			WithPolicies(xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshTraceType, mergedPolicyConf(core_rules.Rules{
 				{
 					Subset: []subsetutils.Tag{},
 					Conf: api.Conf{
@@ -743,7 +743,7 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 	type testCase struct {
 		dp           *builders.DataplaneBuilder
 		resources    []core_xds.Resource
-		proxyConf    *core_rules.MergedPolicyConf
+		proxyConf    *core_rules.ProxyConf
 		goldenFile   string
 		otelBackends []*motb_api.MeshOpenTelemetryBackendResource
 	}
@@ -769,7 +769,7 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 				WithDataplane(given.dp).
 				WithMetadata(&core_xds.DataplaneMetadata{}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithProxyPolicy(api.MeshTraceType, given.proxyConf)).
+					WithProxyConfPolicy(api.MeshTraceType, given.proxyConf)).
 				WithZone("zone-1").
 				Build()
 
@@ -1014,7 +1014,7 @@ var _ = Describe("MeshTrace on mixed Dataplane with sectionName targetRef", func
 			Meta: &test_model.ResourceMeta{Mesh: "default", Name: "mt-section"},
 			Spec: &api.MeshTrace{
 				TargetRef: &common_api.TopLevelTargetRef{
-					Kind:        common_api.Dataplane,
+					Kind:        common_api.TopLevelTargetRefKindDataplane,
 					SectionName: pointer.To("ze-port"),
 				},
 				Default: api.Conf{

@@ -26,8 +26,8 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
-var _ = Describe("SniForBackendRef", func() {
-	DescribeTable("returns SNI built from resolved port",
+var _ = Describe("SNIForRealResource", func() {
+	DescribeTable("returns KRI SNI built from the resolved port name",
 		func(sectionName string) {
 			ms := builders.MeshService().
 				WithName("backend").
@@ -41,32 +41,29 @@ var _ = Describe("SniForBackendRef", func() {
 			id := kri.WithSectionName(kri.From(ms), sectionName)
 			ref := &resolve.RealResourceBackendRef{Resource: id}
 
-			sni := meshroute.SniForBackendRef(ref, ms, port, "")
+			sni, ok := meshroute.SNIForRealResource(ref, port)
 
-			Expect(sni).NotTo(BeEmpty())
-			Expect(sni).To(ContainSubstring(".8080."))
+			Expect(ok).To(BeTrue())
+			Expect(sni).To(Equal("sni.msvc.default.backend.http"))
 		},
 		Entry("by port name", "http"),
 		Entry("by port value", "8080"),
 	)
 
-	It("uses SNIName for MeshService destination", func() {
+	It("skips invalid destination KRI SNI", func() {
 		ms := builders.MeshService().
 			WithName("backend").
 			WithMesh("default").
-			AddIntPortWithName(8080, 8080, core_meta.ProtocolHTTP, "http").
+			AddIntPortWithName(8080, 8080, core_meta.ProtocolHTTP, "HTTP").
 			Build()
 
-		port, ok := ms.FindPortByName("http")
+		port, ok := ms.FindPortByName("HTTP")
 		Expect(ok).To(BeTrue())
 
-		id := kri.WithSectionName(kri.From(ms), "http")
-		id.ResourceType = meshservice_api.MeshServiceType
-		ref := &resolve.RealResourceBackendRef{Resource: id}
+		ref := &resolve.RealResourceBackendRef{Resource: kri.WithSectionName(kri.From(ms), "HTTP")}
 
-		sni := meshroute.SniForBackendRef(ref, ms, port, "kuma-system")
-
-		Expect(sni).To(ContainSubstring(ms.SNIName("kuma-system")))
+		_, valid := meshroute.SNIForRealResource(ref, port)
+		Expect(valid).To(BeFalse())
 	})
 })
 
@@ -188,6 +185,7 @@ var _ = Describe("GenerateClusters", func() {
 			zoneOrigin:     true,
 			permissiveMTLS: true,
 			expectMTLS:     true,
+			expectedSNI:    "sni.msvc.default.zone-1.backend.http",
 		}),
 	)
 
@@ -254,5 +252,54 @@ var _ = Describe("GenerateClusters", func() {
 		upstreamCtx := &envoy_tls.UpstreamTlsContext{}
 		Expect(util_proto.UnmarshalAnyTo(cluster.TransportSocket.GetTypedConfig(), upstreamCtx)).To(Succeed())
 		Expect(upstreamCtx.Sni).To(Equal("sni.extsvc.default.external-backend.9000"))
+	})
+
+	It("uses KRI SNI for MeshMultiZoneService without WorkloadIdentity", func() {
+		mzms := builders.MeshMultiZoneService().
+			WithName("backend").
+			WithMesh("default").
+			WithServiceLabelSelector(map[string]string{"app": "backend"}).
+			AddIntPortWithName(8080, core_meta.ProtocolHTTP, "http").
+			Build()
+
+		meshCtx := xds_context.MeshContext{
+			Resource: builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").WithPermissiveMTLSBackends().Build(),
+			BaseMeshContext: &xds_context.BaseMeshContext{
+				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{mzms}),
+			},
+			ServicesInformation: map[string]*xds_context.ServiceInformation{},
+		}
+
+		backendRef := resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
+			Resource: kri.WithSectionName(kri.From(mzms), "8080"),
+			Weight:   100,
+		})
+		services := envoy_common.NewServicesAccumulator(map[string]bool{"backend": true})
+		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("backend").Build())
+
+		rs, err := meshroute.GenerateClusters(
+			xds_builders.Proxy().
+				WithSecretsTracker(envoy_common.NewSecretsTracker(core_model.DefaultMesh, nil)).
+				WithDataplane(builders.Dataplane().
+					WithName("web-01").
+					WithAddress("192.168.0.2").
+					WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+				Build(),
+			meshCtx,
+			services.Services(),
+			"",
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		clusters := rs.Resources(envoy_resource.ClusterType)
+		Expect(clusters).To(HaveLen(1))
+		cluster, ok := clusters["backend"].Resource.(*envoy_cluster.Cluster)
+		Expect(ok).To(BeTrue())
+		Expect(cluster.TransportSocket).ToNot(BeNil())
+
+		upstreamCtx := &envoy_tls.UpstreamTlsContext{}
+		Expect(util_proto.UnmarshalAnyTo(cluster.TransportSocket.GetTypedConfig(), upstreamCtx)).To(Succeed())
+		Expect(upstreamCtx.Sni).To(Equal("sni.mzsvc.default.backend.http"))
+		Expect(cluster.TransportSocketMatches).To(BeEmpty())
 	})
 })
