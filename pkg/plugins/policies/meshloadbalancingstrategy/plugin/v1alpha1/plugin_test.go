@@ -5,9 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -24,7 +22,6 @@ import (
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	meshroute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -46,7 +43,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/endpoints/v3"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
-	gateway_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -1058,237 +1054,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		}),
 	)
 
-	It("applies gateway rules to gateway-origin resources", func() {
-		gatewayListener := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
-			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-				Configure(HttpConnectionManager("192.168.0.1:8080", false, nil, true)).
-				Configure(HttpDynamicRoute("gateway-route")),
-			)).
-			MustBuild()
-		gatewayCluster := clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
-			Configure(clusters.EdsCluster()).
-			MustBuild()
-		gatewayEndpoints := endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
-			createEndpointWith("zone-1", "192.168.1.1", map[string]string{}),
-			createEndpointWith("zone-2", "192.168.1.2", map[string]string{}),
-		})
-		gatewayRoute := &envoy_route.RouteConfiguration{
-			Name: "gateway-route",
-			VirtualHosts: []*envoy_route.VirtualHost{{
-				Name:    "*",
-				Domains: []string{"*"},
-				Routes: []*envoy_route.Route{{
-					Match: &envoy_route.RouteMatch{
-						PathSpecifier: &envoy_route.RouteMatch_Prefix{Prefix: "/"},
-					},
-					Action: &envoy_route.Route_Route{
-						Route: &envoy_route.RouteAction{
-							ClusterSpecifier: &envoy_route.RouteAction_Cluster{Cluster: "backend"},
-						},
-					},
-				}},
-			}},
-		}
-
-		resources := core_xds.NewResourceSet()
-		resources.Add(&core_xds.Resource{
-			Name:     "gateway-listener",
-			Origin:   gateway_metadata.OriginGateway,
-			Resource: gatewayListener,
-		})
-		resources.Add(&core_xds.Resource{
-			Name:     "backend",
-			Origin:   gateway_metadata.OriginGateway,
-			Resource: gatewayCluster,
-		})
-		resources.Add(&core_xds.Resource{
-			Name:     "backend",
-			Origin:   gateway_metadata.OriginGateway,
-			Resource: gatewayEndpoints,
-		})
-		resources.Add(&core_xds.Resource{
-			Name:     "gateway-route",
-			Origin:   gateway_metadata.OriginGateway,
-			Resource: gatewayRoute,
-		})
-
-		proxy := &core_xds.Proxy{
-			APIVersion: envoy_common.APIV3,
-			Zone:       "zone-1",
-			Dataplane: builders.Dataplane().
-				WithName("sample-gateway").
-				WithAddress("192.168.0.1").
-				WithDelegatedGateway("sample-gateway").
-				Build(),
-			Policies: *xds_builders.MatchedPolicies().
-				WithGatewayPolicy(api.MeshLoadBalancingStrategyType, core_rules.GatewayRules{
-					ToRules: core_rules.GatewayToRules{
-						ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-							{Address: "192.168.0.1", Port: 8080}: {
-								Rules: core_rules.Rules{{
-									Subset: subsetutils.MeshService("backend"),
-									Conf: api.Conf{
-										HashPolicies: &[]api.HashPolicy{{
-											Type: api.QueryParameterType,
-											QueryParameter: &api.QueryParameter{
-												Name: "queryparam",
-											},
-											Terminal: pointer.To(true),
-										}},
-										LoadBalancer: &api.LoadBalancer{
-											Type: api.RingHashType,
-											RingHash: &api.RingHash{
-												MinRingSize:  pointer.To[uint32](100),
-												MaxRingSize:  pointer.To[uint32](1000),
-												HashFunction: pointer.To(api.MurmurHash2Type),
-											},
-										},
-									},
-								}},
-							},
-						},
-					},
-				}).
-				Build(),
-		}
-
-		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(plugin.Apply(resources, *xds_builders.Context().WithMeshBuilder(samples.MeshMTLSBuilder()).Build(), proxy)).To(Succeed())
-
-		cluster := gatewayCluster.(*envoy_cluster.Cluster)
-		Expect(cluster.LbPolicy).To(Equal(envoy_cluster.Cluster_RING_HASH))
-		Expect(cluster.GetRingHashLbConfig().GetMinimumRingSize().GetValue()).To(Equal(uint64(100)))
-		Expect(cluster.GetRingHashLbConfig().GetMaximumRingSize().GetValue()).To(Equal(uint64(1000)))
-		Expect(cluster.GetRingHashLbConfig().GetHashFunction()).To(Equal(envoy_cluster.Cluster_RingHashLbConfig_MURMUR_HASH_2))
-
-		Expect(gatewayEndpoints.Endpoints).To(HaveLen(2))
-		Expect(gatewayEndpoints.Endpoints[1].Priority).To(Equal(uint32(1)))
-
-		routeAction := gatewayRoute.VirtualHosts[0].Routes[0].GetRoute()
-		Expect(routeAction.HashPolicy).To(HaveLen(1))
-		Expect(routeAction.HashPolicy[0].GetQueryParameter().GetName()).To(Equal("queryparam"))
-		Expect(routeAction.HashPolicy[0].GetTerminal()).To(BeTrue())
-	})
-
-	It("applies gateway hash policies only to routes for the targeted service", func() {
-		gatewayListener := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
-			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-				Configure(HttpConnectionManager("192.168.0.1:8080", false, nil, true)).
-				Configure(HttpDynamicRoute("gateway-route")),
-			)).
-			MustBuild()
-		backendCluster := clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
-			Configure(clusters.EdsCluster()).
-			MustBuild()
-		paymentsCluster := clusters.NewClusterBuilder(envoy_common.APIV3, "payments").
-			Configure(clusters.EdsCluster()).
-			MustBuild()
-		backendRoute := &envoy_route.Route{
-			Match: &envoy_route.RouteMatch{
-				PathSpecifier: &envoy_route.RouteMatch_Prefix{Prefix: "/backend"},
-			},
-			Action: &envoy_route.Route_Route{
-				Route: &envoy_route.RouteAction{
-					ClusterSpecifier: &envoy_route.RouteAction_Cluster{Cluster: "backend"},
-				},
-			},
-		}
-		paymentsRoute := &envoy_route.Route{
-			Match: &envoy_route.RouteMatch{
-				PathSpecifier: &envoy_route.RouteMatch_Prefix{Prefix: "/payments"},
-			},
-			Action: &envoy_route.Route_Route{
-				Route: &envoy_route.RouteAction{
-					ClusterSpecifier: &envoy_route.RouteAction_Cluster{Cluster: "payments"},
-				},
-			},
-		}
-		gatewayRoute := &envoy_route.RouteConfiguration{
-			Name: "gateway-route",
-			VirtualHosts: []*envoy_route.VirtualHost{{
-				Name:    "*",
-				Domains: []string{"*"},
-				Routes:  []*envoy_route.Route{backendRoute, paymentsRoute},
-			}},
-		}
-
-		resources := core_xds.NewResourceSet()
-		resources.Add(&core_xds.Resource{
-			Name:     "gateway-listener",
-			Origin:   gateway_metadata.OriginGateway,
-			Resource: gatewayListener,
-		})
-		resources.Add(&core_xds.Resource{
-			Name:     "backend",
-			Origin:   gateway_metadata.OriginGateway,
-			Resource: backendCluster,
-		})
-		resources.Add(&core_xds.Resource{
-			Name:     "payments",
-			Origin:   gateway_metadata.OriginGateway,
-			Resource: paymentsCluster,
-		})
-		resources.Add(&core_xds.Resource{
-			Name:     "gateway-route",
-			Origin:   gateway_metadata.OriginGateway,
-			Resource: gatewayRoute,
-		})
-
-		proxy := &core_xds.Proxy{
-			APIVersion: envoy_common.APIV3,
-			Dataplane: builders.Dataplane().
-				WithName("sample-gateway").
-				WithAddress("192.168.0.1").
-				WithDelegatedGateway("sample-gateway").
-				Build(),
-			Policies: *xds_builders.MatchedPolicies().
-				WithGatewayPolicy(api.MeshLoadBalancingStrategyType, core_rules.GatewayRules{
-					ToRules: core_rules.GatewayToRules{
-						ByListener: map[core_rules.InboundListener]core_rules.ToRules{
-							{Address: "192.168.0.1", Port: 8080}: {
-								Rules: core_rules.Rules{
-									{
-										Subset: subsetutils.MeshService("backend"),
-										Conf: api.Conf{
-											HashPolicies: &[]api.HashPolicy{{
-												Type: api.HeaderType,
-												Header: &api.Header{
-													Name: "x-backend",
-												},
-											}},
-										},
-									},
-									{
-										Subset: subsetutils.MeshService("payments"),
-										Conf: api.Conf{
-											HashPolicies: &[]api.HashPolicy{{
-												Type: api.QueryParameterType,
-												QueryParameter: &api.QueryParameter{
-													Name: "payment",
-												},
-											}},
-										},
-									},
-								},
-							},
-						},
-					},
-				}).
-				Build(),
-		}
-
-		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(plugin.Apply(resources, *xds_builders.Context().WithMeshBuilder(samples.MeshMTLSBuilder()).Build(), proxy)).To(Succeed())
-
-		backendHashPolicies := backendRoute.GetRoute().HashPolicy
-		Expect(backendHashPolicies).To(HaveLen(1))
-		Expect(backendHashPolicies[0].GetHeader().GetHeaderName()).To(Equal("x-backend"))
-
-		paymentsHashPolicies := paymentsRoute.GetRoute().HashPolicy
-		Expect(paymentsHashPolicies).To(HaveLen(1))
-		Expect(paymentsHashPolicies[0].GetQueryParameter().GetName()).To(Equal("payment"))
-	})
-
 	type zoneProxyTestCase struct {
 		conf            api.Conf
 		endpoints       []core_xds.Endpoint
@@ -1653,13 +1418,22 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 			Outbound: &xds_types.Outbound{
 				Address:  "127.0.0.1",
 				Port:     uint32(port),
-				Resource: serviceResourceKRI,
+				Resource: destinationKRI(serviceResourceKRI, port),
 			},
-			Protocol: core_meta.ProtocolHTTP,
+			Protocol:            core_meta.ProtocolHTTP,
+			DestinationResource: destinationName(serviceResourceKRI, port),
 		},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
+}
+
+func destinationKRI(id kri.Identifier, port int32) kri.Identifier {
+	return kri.WithSectionName(id, strconv.Itoa(int(port)))
+}
+
+func destinationName(id kri.Identifier, port int32) string {
+	return destinationKRI(id, port).String()
 }

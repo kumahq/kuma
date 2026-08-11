@@ -8,6 +8,29 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `mtls.backends[].mode: PERMISSIVE` no longer makes inbounds permissive
+
+`MeshTLS` is now the only thing that decides whether an inbound accepts plaintext. The inbound listener is built once, and the mode is resolved from the `MeshTLS` policy alone — the `mode` of the enabled `Mesh` CA backend is no longer consulted. A mesh that sets `mtls.backends[].mode: PERMISSIVE` and has no `MeshTLS` policy now gets `Strict` inbounds, and plaintext traffic to those inbounds is rejected.
+
+**Action required**
+
+Before upgrading, author a `MeshTLS` policy with `default.mode: Permissive` for every mesh that relies on `mtls.backends[].mode: PERMISSIVE`:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTLS
+metadata:
+  name: permissive
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  rules:
+    - default:
+        mode: Permissive
+```
+
+Meshes on `mtls.backends[].mode: STRICT`, meshes with mTLS disabled, and meshes that already have a `MeshTLS` policy are unaffected. Note that a mesh using `MeshIdentity` already resolved to `Strict` without a `MeshTLS` policy.
 ### Zone Token `ingress` and `egress` scopes removed
 
 `kumactl generate zone-token` no longer accepts `--scope ingress` or `--scope egress`, and the `POST /tokens/zone` endpoint no longer requires a `scope`. A zone proxy is an ordinary `Dataplane` and authenticates with a dataplane token, so these scopes identified components that no longer exist. Kuma itself defines no zone token scopes now; the token carries only the zone name unless a distribution registers its own.
@@ -103,21 +126,19 @@ The `KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED` `kuma-dp`
 environment variable, the `KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED`
 control plane environment variable / `runtime.kubernetes.injector.unifiedResourceNamingEnabled`
 `kuma-cp.yaml` key, and the `dataPlane.features.unifiedResourceNaming` Helm value have
-all been removed. `kuma-dp` now always advertises the unified naming feature to the
-control plane, and the sidecar injector no longer stamps the corresponding env var
-onto injected `kuma-sidecar` containers.
+all been removed. Unified Envoy resource and stat naming is now always enabled,
+and the sidecar injector no longer stamps the corresponding env var onto injected
+`kuma-sidecar` containers.
 
 **Action required**
 
 If you previously set any of these to `false` to opt out, unified naming is now
-always on: `kuma-dp` always advertises `FeatureUnifiedResourceNaming`, and the
-control plane generates unified Envoy resource and stat names regardless of any
-leftover config. Update automation, dashboards, or alerting that depend on the
-legacy names before upgrading. The leftover config values themselves are silently
-ignored rather than rejected: `kuma-cp` does not use strict YAML parsing outside of
-tests, `envconfig` ignores unknown environment variables, and Helm accepts unknown
-`--set` paths. Universal data planes fall back to legacy naming until they run a
-`kuma-dp` version that advertises `FeatureUnifiedResourceNaming` (Kuma 3.0+).
+always on and the control plane generates unified Envoy resource and stat names
+regardless of any leftover config. Update automation, dashboards, or alerting that
+depend on the legacy names before upgrading. The leftover config values themselves
+are silently ignored rather than rejected: `kuma-cp` does not use strict YAML
+parsing outside of tests, `envconfig` ignores unknown environment variables, and
+Helm accepts unknown `--set` paths.
 
 ### MADS restricted to universal deployment mode
 
@@ -152,6 +173,14 @@ Policies that select real resources through `spec.targetRef` or `spec.to[].targe
 **Action required**
 
 Migrate any policy that still selects those resources by `name` and/or `namespace` to use `labels` instead before upgrading. `sectionName` remains supported for `Dataplane` inbound selection and `MeshService` port selection.
+
+### `MeshService.spec.identities` now accepts SPIFFE IDs only
+
+`MeshService.spec.identities[].type` no longer accepts `ServiceTag`. `MeshService.spec.identities` now publishes SPIFFE IDs only, while service-tag-based routing keeps using the `kuma.io/service` label or the MeshService resource name as its fallback naming signal.
+
+**Action required**
+
+Update any MeshService manifest that still declares a `ServiceTag` identity to use `SpiffeID` entries only before upgrading. A persisted `ServiceTag` entry is rejected by the updated schema once the new CRD or API validation is in place.
 
 ### Transparent proxy configured only through the ConfigMap
 
@@ -300,8 +329,7 @@ already behaviourally identical, so no other changes are required.
 ### `meshServices` removed from the `Mesh` schema
 
 The `meshServices` field (and its `mode` enum) has been removed from the
-`Mesh` resource spec. Unified resource naming for a Dataplane now depends
-solely on that Dataplane's `FeatureUnifiedResourceNaming` capability,
+`Mesh` resource spec. Unified resource naming is now unconditional,
 regardless of what the mesh's former `meshServices.mode` was set to.
 
 **Action required**

@@ -63,12 +63,6 @@ var _ = Describe("MeshTCPRoute", func() {
 		Mesh:         "default",
 		Name:         "example",
 	}
-	unifiedNaming := func() *core_xds.DataplaneMetadata {
-		return &core_xds.DataplaneMetadata{
-			Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-		}
-	}
-
 	type policiesTestCase struct {
 		dataplane      *core_mesh.DataplaneResource
 		resources      xds_context.Resources
@@ -408,7 +402,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						xds_builders.Routing().
 							WithOutboundTargets(outboundTargets),
 					).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
 			}
@@ -590,7 +584,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						xds_builders.Routing().
 							WithOutboundTargets(outboundTargets),
 					).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					Build(),
 			}
 		}()),
@@ -606,12 +600,6 @@ var _ = Describe("MeshTCPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{
-						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
-						},
-					},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{
@@ -747,7 +735,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
 			}
@@ -876,7 +864,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshTCPRouteType, tcpRules).
@@ -1014,7 +1002,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshTCPRouteType, tcpRules).
@@ -1128,7 +1116,6 @@ func dppForMeshExternalService(mesList ...*meshexternalservice_api.MeshExternalS
 		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 		WithMetadata(&core_xds.DataplaneMetadata{
 			SystemCaPath: "/tmp/ca-certs.crt",
-			Features:     xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
 		}).
 		Build()
 

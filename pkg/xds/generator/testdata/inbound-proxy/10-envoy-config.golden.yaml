@@ -68,32 +68,10 @@ resources:
             uri: true
           statPrefix: self_inbound_dp_9000
           streamIdleTimeout: 3600s
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext:
-                matchTypedSubjectAltNames:
-                - matcher:
-                    prefix: spiffe://default/
-                  sanType: URI
-              validationContextSdsSecretConfig:
-                name: system_mtls_ca_default
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: system_mtls_identity_default
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          requireClientCertificate: true
     metadata:
       filterMetadata:
         io.kuma.tags:
-          kuma.io/protocol: http
+          kuma.io/unified-name: self_inbound_dp_9000
     name: self_inbound_dp_9000
     statPrefix: self_inbound_dp_9000
     trafficDirection: INBOUND

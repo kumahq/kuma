@@ -95,7 +95,6 @@ var _ = Describe("GenerateClusters", func() {
 			WithMesh("default").
 			WithLabels(labels).
 			AddIntPortWithName(80, 8080, core_meta.ProtocolHTTP, "http").
-			AddServiceTagIdentity("backend").
 			WithTLSStatus(given.tlsStatus).
 			Build()
 
@@ -191,4 +190,69 @@ var _ = Describe("GenerateClusters", func() {
 			expectMTLS:     true,
 		}),
 	)
+
+	It("uses KRI SNI for MeshExternalService with WorkloadIdentity", func() {
+		mes := builders.MeshExternalService().
+			WithName("external-backend").
+			WithMesh("default").
+			WithKumaVIP("242.0.0.1").
+			Build()
+
+		meshCtx := xds_context.MeshContext{
+			Resource: builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").Build(),
+			BaseMeshContext: &xds_context.BaseMeshContext{
+				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{mes}),
+			},
+			ZoneEgresses: []core_xds.ZoneEgressInstance{{
+				Address: "10.0.0.1",
+				Port:    10002,
+				SAN:     "spiffe://default/zone-egress",
+			}},
+			ServicesInformation: map[string]*xds_context.ServiceInformation{
+				"external-backend": {
+					Protocol:          core_meta.ProtocolHTTP,
+					IsExternalService: true,
+				},
+			},
+		}
+
+		backendRef := resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
+			Resource: kri.WithSectionName(kri.From(mes), "9000"),
+			Weight:   100,
+		})
+		services := envoy_common.NewServicesAccumulator(nil)
+		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("external-backend").Build())
+
+		rs, err := meshroute.GenerateClusters(
+			xds_builders.Proxy().
+				WithSecretsTracker(envoy_common.NewSecretsTracker(core_model.DefaultMesh, nil)).
+				WithDataplane(builders.Dataplane().
+					WithName("web-01").
+					WithAddress("192.168.0.2").
+					WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{
+					IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+						return bldrs_tls.SdsSecretConfigSource(
+							"identity_cert:secret:default",
+							bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+						)
+					},
+				}).
+				Build(),
+			meshCtx,
+			services.Services(),
+			"",
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		clusters := rs.Resources(envoy_resource.ClusterType)
+		Expect(clusters).To(HaveLen(1))
+		cluster, ok := clusters["external-backend"].Resource.(*envoy_cluster.Cluster)
+		Expect(ok).To(BeTrue())
+		Expect(cluster.TransportSocket).ToNot(BeNil())
+
+		upstreamCtx := &envoy_tls.UpstreamTlsContext{}
+		Expect(util_proto.UnmarshalAnyTo(cluster.TransportSocket.GetTypedConfig(), upstreamCtx)).To(Succeed())
+		Expect(upstreamCtx.Sni).To(Equal("sni.extsvc.default.external-backend.9000"))
+	})
 })

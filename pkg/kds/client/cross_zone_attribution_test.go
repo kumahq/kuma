@@ -42,7 +42,7 @@ const (
 
 // newGlobalSink wires the global-CP KDS ingest as pkg/kds/mux/zone_sync.go does,
 // over a memory store; the connecting peer's client-id is connectingZone.
-func newGlobalSink(t *testing.T, ctx context.Context, typ core_model.ResourceType) (store.ResourceStore, *test_grpc.MockDeltaClientStream, *prometheus.CounterVec, func()) {
+func newGlobalSink(t *testing.T, ctx context.Context, typ core_model.ResourceType, ingressTagFilters []string) (store.ResourceStore, *test_grpc.MockDeltaClientStream, *prometheus.CounterVec, func()) {
 	t.Helper()
 	g := NewWithT(t)
 
@@ -73,7 +73,7 @@ func newGlobalSink(t *testing.T, ctx context.Context, typ core_model.ResourceTyp
 		core.Log.WithName("crosszone-global-sink"),
 		[]core_model.ResourceType{typ},
 		kdsStream,
-		kds_sync_store.GlobalSyncCallback(ctx, syncer, false, nil, "kuma-system", rewrites),
+		kds_sync_store.GlobalSyncCallback(ctx, syncer, false, nil, "kuma-system", ingressTagFilters, rewrites),
 		kds_client.SyncClientConfig{},
 	)
 
@@ -178,7 +178,7 @@ func TestZoneToGlobalSyncAttribution(t *testing.T) {
 	t.Run("DataplaneGateway", func(t *testing.T) {
 		g := NewWithT(t)
 		ctx := hashSuffixCtx()
-		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.DataplaneType)
+		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.DataplaneType, nil)
 		defer cleanup()
 
 		clientStream.RecvCh <- deltaResponse(t, core_mesh.DataplaneType, otherZone, "gw-dp-1", "default", gatewayDataplaneWithDivergentZoneTag())
@@ -196,7 +196,7 @@ func TestZoneToGlobalSyncAttribution(t *testing.T) {
 	t.Run("MatchingZoneIsNoOp", func(t *testing.T) {
 		g := NewWithT(t)
 		ctx := hashSuffixCtx()
-		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.DataplaneType)
+		globalStore, clientStream, rewrites, cleanup := newGlobalSink(t, ctx, core_mesh.DataplaneType, nil)
 		defer cleanup()
 
 		clientStream.RecvCh <- deltaResponse(t, core_mesh.DataplaneType, connectingZone, "dp-ok", "default", dataplaneWithZoneTag(connectingZone))

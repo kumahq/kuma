@@ -172,22 +172,3 @@ resources:
     statPrefix: self_transparentproxy_passthrough_inbound_ipv4
     trafficDirection: INBOUND
     useOriginalDst: true
-- name: self_transparentproxy_passthrough_inbound_ipv6
-  resource:
-    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
-    address:
-      socketAddress:
-        address: '::'
-        portValue: 15001
-    enableReusePort: false
-    filterChains:
-    - filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: self_transparentproxy_passthrough_inbound_ipv6
-          statPrefix: self_transparentproxy_passthrough_inbound_ipv6
-    name: self_transparentproxy_passthrough_inbound_ipv6
-    statPrefix: self_transparentproxy_passthrough_inbound_ipv6
-    trafficDirection: INBOUND
-    useOriginalDst: true

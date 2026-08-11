@@ -66,10 +66,16 @@ var _ = Describe("MeshHTTPRoute", func() {
 		Mesh:         "default",
 		Name:         "example",
 	}
-	unifiedNaming := func() *core_xds.DataplaneMetadata {
-		return &core_xds.DataplaneMetadata{
-			Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
+	unifiedNaming := func() *core_xds.DataplaneMetadata { return &core_xds.DataplaneMetadata{} }
+	meshServiceSpiffeIdentities := func(values ...string) *[]meshservice_api.MeshServiceIdentity {
+		identities := make([]meshservice_api.MeshServiceIdentity, 0, len(values))
+		for _, value := range values {
+			identities = append(identities, meshservice_api.MeshServiceIdentity{
+				Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+				Value: value,
+			})
 		}
+		return &identities
 	}
 
 	type outboundsTestCase struct {
@@ -125,10 +131,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
-					}},
+					Identities: meshServiceSpiffeIdentities("spiffe://default/backend"),
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
@@ -211,10 +214,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
-					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
@@ -276,12 +275,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{
-						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
-						},
-					},
+					Identities: meshServiceSpiffeIdentities("spiffe://default/backend"),
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{
@@ -343,10 +337,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
-					}},
+					Identities: meshServiceSpiffeIdentities("spiffe://default/backend"),
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
@@ -405,10 +396,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
-					}},
+					Identities: meshServiceSpiffeIdentities("spiffe://default/backend"),
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
@@ -543,11 +531,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Port:     9000,
 					}}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithMetadata(&core_xds.DataplaneMetadata{
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
-					}).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithWorkloadIdentity(&core_xds.WorkloadIdentity{
 						IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
 							return bldrs_tls.SdsSecretConfigSource(
@@ -593,12 +577,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{
-						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
-						},
-					},
+					Identities: meshServiceSpiffeIdentities("spiffe://default/backend"),
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{
@@ -701,12 +680,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{
-						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
-						},
-					},
+					Identities: meshServiceSpiffeIdentities("spiffe://default/backend"),
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{
@@ -869,12 +843,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{
-						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
-						},
-					},
+					Identities: meshServiceSpiffeIdentities("spiffe://default/backend"),
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{
@@ -892,12 +861,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{
-						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend-us",
-						},
-					},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{
@@ -1041,12 +1004,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{
-						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
-						},
-					},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{
@@ -1071,12 +1028,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{
-						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend-second",
-						},
-					},
+					Identities: meshServiceSpiffeIdentities("spiffe://default/backend-second"),
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{
@@ -1197,12 +1149,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{
-						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "backend",
-						},
-					},
+					Identities: meshServiceSpiffeIdentities("spiffe://default/backend"),
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{
@@ -1352,10 +1299,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
-					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
@@ -1446,10 +1389,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
-					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
@@ -1463,10 +1402,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Port:        80,
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolTCP,
-					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "other-tcp",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -1554,10 +1489,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Port:        80,
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
-					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -1650,10 +1581,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
-					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
@@ -1738,10 +1665,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
-					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
@@ -1823,10 +1746,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
-					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
@@ -1897,10 +1816,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Port:        80,
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
-					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -1974,10 +1889,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Port:        80,
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
-					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
@@ -2060,10 +1971,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolGRPC,
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
-					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
@@ -2132,10 +2039,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Port:        80,
 						TargetPort:  pointer.To(intstr.FromInt(8084)),
 						AppProtocol: core_meta.ProtocolHTTP,
-					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{{
-						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-						Value: "backend",
 					}},
 				},
 				Status: &meshservice_api.MeshServiceStatus{

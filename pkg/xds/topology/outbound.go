@@ -140,9 +140,13 @@ func fillMeshMultiZoneServices(
 				continue
 			}
 			for _, port := range mzSvc.Spec.Ports {
-				serviceName := destinationname.ResolveLegacyFromDestination(mzSvc, port)
+				serviceName := destinationname.MustResolve(mzSvc, port)
+				msPort, ok := ms.FindPortByName(port.GetName())
+				if !ok {
+					continue
+				}
 
-				existingEndpoints := outbound[destinationname.ResolveLegacyFromDestination(ms, port)]
+				existingEndpoints := outbound[destinationname.MustResolve(ms, msPort)]
 				outbound[serviceName] = append(outbound[serviceName], existingEndpoints...)
 			}
 		}
@@ -206,8 +210,9 @@ func fillRemoteMeshServices(
 			}
 			continue
 		}
+		serviceTag := meshServiceTagValue(ms)
 		for _, port := range ms.Spec.Ports {
-			serviceName := destinationname.ResolveLegacyFromDestination(ms, port)
+			serviceName := destinationname.MustResolve(ms, port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
 				ep := endpoint
 				ep.Locality = &core_xds.Locality{
@@ -215,7 +220,7 @@ func fillRemoteMeshServices(
 					Priority: priorityRemote,
 				}
 				ep.Tags = map[string]string{
-					mesh_proto.ServiceTag: serviceName,
+					mesh_proto.ServiceTag: serviceTag,
 					mesh_proto.ZoneTag:    msZone,
 				}
 				outbound[serviceName] = append(outbound[serviceName], ep)
@@ -240,6 +245,14 @@ func endpointIdentity(dataplane *core_mesh.DataplaneResource, inbound *mesh_prot
 	return tags
 }
 
+func meshServiceTagValue(ms *meshservice_api.MeshServiceResource) string {
+	if serviceTag := ms.GetMeta().GetLabels()[mesh_proto.ServiceTag]; serviceTag != "" {
+		return serviceTag
+	}
+
+	return ms.GetMeta().GetName()
+}
+
 // fillLocalMeshServices adds one endpoint per healthy inbound backing a MeshService of this
 // zone, pointing straight at the workload.
 func fillLocalMeshServices(
@@ -262,7 +275,7 @@ func fillLocalMeshServices(
 					}
 
 					inboundTags := endpointIdentity(dpp, inbound)
-					serviceName := destinationname.ResolveLegacyFromDestination(meshSvc, port)
+					serviceName := destinationname.MustResolve(meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
 					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
@@ -366,7 +379,7 @@ func fillMeshExternalServicesOnDataplane(
 	for _, mes := range meshExternalServices {
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
-		serviceName := destinationname.ResolveLegacyFromDestination(mes, mes.Spec.Match)
+		serviceName := destinationname.MustResolve(mes, mes.Spec.Match)
 		locality := GetLocality(nil)
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
