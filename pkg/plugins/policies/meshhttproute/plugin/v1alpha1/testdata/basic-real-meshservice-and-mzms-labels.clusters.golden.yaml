@@ -30,7 +30,7 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a601e0c00295a9fbe.backend.80.default.ms
+        sni: sni.msvc.default.backend.test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -68,7 +68,7 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a601e0c00295a9fbe.backend.80.default.ms
+        sni: sni.msvc.default.backend.test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -106,7 +106,7 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a601e0c00295a9fbe.backend.80.default.mzms
+        sni: sni.mzsvc.default.backend.test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
