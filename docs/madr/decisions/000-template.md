@@ -1,3 +1,12 @@
+---
+title: {same as the H1 below}
+status: {rejected | accepted | superseded}
+date: {YYYY-MM-DD, when the MADR was written}
+tags: [{3-8 lowercase keywords: components, resources, policies, areas this touches}]
+summary: {one sentence: the problem and the decided solution, so a reader can tell from `list.sh` whether this MADR is relevant}
+related: [{file stems of MADRs this builds on or supersedes, e.g. 095-mesh-scoped-zone-ingress-egress}]
+---
+
 # {short title of solved problem and solution}
 
 * Status: {rejected | accepted} <!-- recommended to have the status as accepted proactively and then to change it if needed -->

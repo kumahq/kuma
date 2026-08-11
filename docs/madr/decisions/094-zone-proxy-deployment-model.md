@@ -1,3 +1,12 @@
+---
+title: Zone Proxy Deployment Model
+status: accepted
+date: 2026-02-18
+tags: [zone-proxy, zone-ingress, zone-egress, helm, kubernetes, multizone, deployment]
+summary: Defines how mesh-scoped zone proxies are deployed via Helm — a per-mesh `meshes` list, empty by default (explicit opt-in), per-mesh Services in kuma-system, additive migration next to the legacy `ingress`/`egress` keys.
+related: [090-zone-egress-identity, 095-mesh-scoped-zone-ingress-egress, 097-zone-proxy-sidecar-deployment, 098-zone-proxy-deployment-topology, 099-allow-multiple-meshes-per-k8s-ns]
+---
+
 # Zone Proxy Deployment Model
 
 * Status: accepted
