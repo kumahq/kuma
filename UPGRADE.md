@@ -8,6 +8,18 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Workload certificates no longer carry a `kuma://` SAN
+
+A dataplane's mTLS certificate now carries exactly one SAN URI, `spiffe://<mesh>/<workload>`, derived directly from the `kuma.io/workload` label. The `kuma://kuma.io/service/<workload>` URI that used to accompany it is gone: nothing in this version of Kuma reads it, since its only consumer, the legacy tag-based `MeshTrafficPermission` RBAC principal builder, was already removed.
+
+**No forced rotation is required**
+
+mTLS validation between two upgraded proxies matches only the `spiffe://` URI, which both the old and new certificate formats carry, so a certificate issued before the upgrade keeps working until it expires naturally (5 days by default) and does not need to be rotated for this change.
+
+**Mixed-fleet caveat**
+
+A proxy that has not yet been upgraded and still enforces a tag-based `MeshTrafficPermission` through `kuma://` RBAC principals denies peers that present a certificate issued after the upgrade, because that certificate no longer carries the `kuma://` URI the old RBAC principal expects. Upgrade proxies enforcing such policies before, or at the same time as, the proxies they receive traffic from.
+
 ### Control plane TLS certificates are reloaded without a restart
 
 Every control plane server that reads its certificate from disk (API server HTTPS, dp-server, global KDS, MADS, diagnostics) now picks up a rotation performed by an external tool without restarting `kuma-cp`. Nothing has to be configured for this, and no action is required to keep the previous behaviour, which was to serve the certificate loaded at startup until the process was restarted.

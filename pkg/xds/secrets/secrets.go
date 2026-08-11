@@ -47,7 +47,7 @@ type Info struct {
 	Expiration time.Time
 	Generation time.Time
 
-	Tags mesh_proto.MultiValueTagSet
+	Workload string
 
 	IssuedBackend     string
 	SupportedBackends []string
@@ -155,11 +155,11 @@ func (s *secrets) GetForDataPlane(
 	mesh *core_mesh.MeshResource,
 	otherMeshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error) {
-	tags, err := identityTags(dataplane)
+	workload, err := identityWorkload(dataplane)
 	if err != nil {
 		return nil, nil, err
 	}
-	identity, cas, _, err := s.get(ctx, mesh_proto.DataplaneProxyType, dataplane, tags, mesh, otherMeshes)
+	identity, cas, _, err := s.get(ctx, mesh_proto.DataplaneProxyType, dataplane, workload, mesh, otherMeshes)
 	return identity, cas, err
 }
 
@@ -169,11 +169,11 @@ func (s *secrets) GetAllInOne(
 	dataplane *core_mesh.DataplaneResource,
 	otherMeshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	tags, err := identityTags(dataplane)
+	workload, err := identityWorkload(dataplane)
 	if err != nil {
 		return nil, nil, err
 	}
-	identity, _, allInOne, err := s.get(ctx, mesh_proto.DataplaneProxyType, dataplane, tags, mesh, otherMeshes)
+	identity, _, allInOne, err := s.get(ctx, mesh_proto.DataplaneProxyType, dataplane, workload, mesh, otherMeshes)
 	return identity, allInOne.CaSecret, err
 }
 
@@ -181,7 +181,7 @@ func (s *secrets) get(
 	ctx context.Context,
 	proxyType mesh_proto.ProxyType,
 	resource model.Resource,
-	tags mesh_proto.MultiValueTagSet,
+	workload string,
 	mesh *core_mesh.MeshResource,
 	otherMeshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, MeshCa, error) {
@@ -201,7 +201,7 @@ func (s *secrets) get(
 
 	if updateKinds, debugReason := s.shouldGenerateCerts(
 		certs.Info(),
-		tags,
+		workload,
 		mesh,
 		otherMeshes,
 	); len(updateKinds) > 0 {
@@ -223,7 +223,7 @@ func (s *secrets) get(
 			string(resource.Descriptor().Name), resourceKey, "reason", debugReason,
 		)
 
-		newCerts, err := s.generateCerts(ctx, tags, mesh, otherMeshes, certs, updateKinds)
+		newCerts, err := s.generateCerts(ctx, workload, mesh, otherMeshes, certs, updateKinds)
 		s.limiter.Record(backend, source, err == nil)
 		if err != nil {
 			s.certGenerationFailuresMetric.WithLabelValues(meshName).Inc()
@@ -286,7 +286,7 @@ func (s *secrets) Cleanup(proxyType mesh_proto.ProxyType, dpKey model.ResourceKe
 	s.limiter.Forget(dpKey)
 }
 
-func (s *secrets) shouldGenerateCerts(info *Info, tags mesh_proto.MultiValueTagSet, ownMesh *core_mesh.MeshResource, otherMeshInfos []*core_mesh.MeshResource) (UpdateKinds, string) {
+func (s *secrets) shouldGenerateCerts(info *Info, workload string, ownMesh *core_mesh.MeshResource, otherMeshInfos []*core_mesh.MeshResource) (UpdateKinds, string) {
 	if info == nil {
 		return UpdateEverything(), "mTLS is enabled and DP hasn't received a certificate yet"
 	}
@@ -318,9 +318,9 @@ func (s *secrets) shouldGenerateCerts(info *Info, tags mesh_proto.MultiValueTagS
 		}
 	}
 
-	if tags.String() != info.Tags.String() {
+	if workload != info.Workload {
 		updates.AddKind(IdentityChange)
-		reason = "DP tags have changed"
+		reason = "DP workload has changed"
 	}
 
 	if info.ExpiringSoon() {
@@ -333,7 +333,7 @@ func (s *secrets) shouldGenerateCerts(info *Info, tags mesh_proto.MultiValueTagS
 
 func (s *secrets) generateCerts(
 	ctx context.Context,
-	tags mesh_proto.MultiValueTagSet,
+	workload string,
 	mesh *core_mesh.MeshResource,
 	otherMeshes []*core_mesh.MeshResource,
 	oldCerts *certs,
@@ -358,7 +358,7 @@ func (s *secrets) generateCerts(
 
 	if updateKinds.HasType(IdentityChange) || updateKinds.HasType(OwnMeshChange) {
 		requester := Identity{
-			Services: tags,
+			Workload: workload,
 			Mesh:     meshName,
 		}
 
@@ -375,7 +375,7 @@ func (s *secrets) generateCerts(
 			return nil, errors.Wrap(err, "could not extract info about certificate")
 		}
 
-		info.Tags = tags
+		info.Workload = workload
 		info.IssuedBackend = issuedBackend
 		info.Expiration = cert.NotAfter
 		info.Generation = core.Now()

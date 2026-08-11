@@ -196,11 +196,7 @@ func (ds *dummySecrets) Info(proxyType mesh_proto.ProxyType, dpKey model.Resourc
 	return &secrets.Info{
 		Expiration: time.Unix(2, 2),
 		Generation: time.Unix(1, 1),
-		Tags: map[string]map[string]bool{
-			"kuma.io/service": {
-				dpKey.Name: true,
-			},
-		},
+		Workload:   dpKey.Name,
 		OwnMesh: secrets.MeshInfo{
 			MTLS: &mesh_proto.Mesh_Mtls{
 				EnabledBackend: "ca-1",

@@ -254,14 +254,6 @@ func ServiceSpiffeIDMatcher(mesh string, service string) *envoy_type_matcher.Str
 	}
 }
 
-func KumaIDMatcher(tagName, tagValue string) *envoy_type_matcher.StringMatcher {
-	return &envoy_type_matcher.StringMatcher{
-		MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-			Exact: xds_tls.KumaID(tagName, tagValue),
-		},
-	}
-}
-
 func StaticDownstreamTlsContextWithPath(certPath, keyPath string) *envoy_tls.DownstreamTlsContext {
 	cert := &envoy_core.DataSource{
 		Specifier: &envoy_core.DataSource_Filename{

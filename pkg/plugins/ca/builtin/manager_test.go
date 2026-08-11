@@ -261,16 +261,7 @@ var _ = Describe("Builtin CA Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			tags := map[string]map[string]bool{
-				"kuma.io/service": {
-					"web":     true,
-					"web-api": true,
-				},
-				"version": {
-					"v1": true,
-				},
-			}
-			pair, err := caManager.GenerateDataplaneCert(context.Background(), mesh.GetMeta().GetName(), backend, tags)
+			pair, err := caManager.GenerateDataplaneCert(context.Background(), mesh.GetMeta().GetName(), backend, "web")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -281,12 +272,8 @@ var _ = Describe("Builtin CA Manager", func() {
 			block, _ := pem.Decode(pair.CertPEM)
 			cert, err := x509.ParseCertificate(block.Bytes)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(cert.URIs).To(HaveLen(5))
+			Expect(cert.URIs).To(HaveLen(1))
 			Expect(cert.URIs[0].String()).To(Equal("spiffe://default/web"))
-			Expect(cert.URIs[1].String()).To(Equal("spiffe://default/web-api"))
-			Expect(cert.URIs[2].String()).To(Equal("kuma://kuma.io/service/web"))
-			Expect(cert.URIs[3].String()).To(Equal("kuma://kuma.io/service/web-api"))
-			Expect(cert.URIs[4].String()).To(Equal("kuma://version/v1"))
 			Expect(cert.NotAfter).To(Equal(now.UTC().Truncate(time.Second).Add(1 * time.Second))) // time in cert is in UTC and truncated to seconds
 		})
 
@@ -299,7 +286,7 @@ var _ = Describe("Builtin CA Manager", func() {
 			}
 
 			// when
-			_, err := caManager.GenerateDataplaneCert(context.Background(), mesh, backend, mesh_proto.MultiValueTagSet{})
+			_, err := caManager.GenerateDataplaneCert(context.Background(), mesh, backend, "web")
 
 			// then
 			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "default" and backend "builtin-non-existent": resource not found: type="Secret" name="default.ca-builtin-cert-builtin-non-existent" mesh="default"`))

@@ -14,11 +14,7 @@ import (
 var TestSecretsInfo = &secrets.Info{
 	Expiration: time.Unix(2, 2),
 	Generation: time.Unix(1, 1),
-	Tags: map[string]map[string]bool{
-		"kuma.io/service": {
-			"web": true,
-		},
-	},
+	Workload:   "web",
 	OwnMesh: secrets.MeshInfo{
 		MTLS: &mesh_proto.Mesh_Mtls{
 			EnabledBackend: "ca-1",

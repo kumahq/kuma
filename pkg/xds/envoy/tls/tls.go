@@ -22,7 +22,3 @@ func MeshSpiffeIDPrefix(mesh string) string {
 func ServiceSpiffeID(mesh string, service string) string {
 	return fmt.Sprintf("spiffe://%s/%s", mesh, service)
 }
-
-func KumaID(tagName, tagValue string) string {
-	return fmt.Sprintf("kuma://%s/%s", tagName, tagValue)
-}

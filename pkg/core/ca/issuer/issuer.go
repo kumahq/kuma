@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	util_rsa "github.com/kumahq/kuma/v3/pkg/util/rsa"
@@ -33,7 +32,7 @@ func WithExpirationTime(expiration time.Duration) CertOptsFn {
 	}
 }
 
-func NewWorkloadCert(ca util_tls.KeyPair, mesh string, tags mesh_proto.MultiValueTagSet, certOpts ...CertOptsFn) (*util_tls.KeyPair, error) {
+func NewWorkloadCert(ca util_tls.KeyPair, mesh string, workload string, certOpts ...CertOptsFn) (*util_tls.KeyPair, error) {
 	caPrivateKey, caCert, err := loadKeyPair(ca)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load CA key pair")
@@ -43,7 +42,7 @@ func NewWorkloadCert(ca util_tls.KeyPair, mesh string, tags mesh_proto.MultiValu
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate a private key")
 	}
-	template, err := newWorkloadTemplate(mesh, tags, workloadKey.Public(), certOpts...)
+	template, err := newWorkloadTemplate(mesh, workload, workloadKey.Public(), certOpts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate X509 certificate template")
 	}
@@ -54,29 +53,16 @@ func NewWorkloadCert(ca util_tls.KeyPair, mesh string, tags mesh_proto.MultiValu
 	return util_tls.ToKeyPair(workloadKey, workloadCert)
 }
 
-func newWorkloadTemplate(trustDomain string, tags mesh_proto.MultiValueTagSet, publicKey crypto.PublicKey, certOpts ...CertOptsFn) (*x509.Certificate, error) {
-	var uris []*url.URL
-	for _, service := range tags.Values(mesh_proto.ServiceTag) {
-		domain, err := spiffeid.TrustDomainFromString(trustDomain)
-		if err != nil {
-			return nil, err
-		}
-		uri, err := spiffeid.FromSegments(domain, service)
-		if err != nil {
-			return nil, err
-		}
-		uris = append(uris, uri.URL())
+func newWorkloadTemplate(trustDomain string, workload string, publicKey crypto.PublicKey, certOpts ...CertOptsFn) (*x509.Certificate, error) {
+	domain, err := spiffeid.TrustDomainFromString(trustDomain)
+	if err != nil {
+		return nil, err
 	}
-	for _, tag := range tags.Keys() {
-		for _, value := range tags.UniqueValues(tag) {
-			uri := fmt.Sprintf("kuma://%s/%s", tag, value)
-			u, err := url.Parse(uri)
-			if err != nil {
-				return nil, errors.Wrap(err, "invalid Kuma URI")
-			}
-			uris = append(uris, u)
-		}
+	uri, err := spiffeid.FromSegments(domain, workload)
+	if err != nil {
+		return nil, err
 	}
+	uris := []*url.URL{uri.URL()}
 
 	now := time.Now()
 	serialNumber, err := newSerialNumber()

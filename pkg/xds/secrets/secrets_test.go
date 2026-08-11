@@ -157,11 +157,7 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(info.Generation).To(Equal(now))
 			Expect(info.Expiration.Unix()).To(Equal(now.Add(1 * time.Hour).Unix()))
 			Expect(info.OwnMesh.MTLS.EnabledBackend).To(Equal("ca-1"))
-			Expect(info.Tags).To(Equal(mesh_proto.MultiValueTagSet{
-				"kuma.io/service": map[string]bool{
-					"web": true,
-				},
-			}))
+			Expect(info.Workload).To(Equal("web"))
 
 			// and metric is published
 			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
@@ -303,11 +299,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				Expect(ca).To(HaveLen(1))
 
 				info := secrets.Info(mesh_proto.DataplaneProxyType, core_model.MetaToResourceKey(dataplane.Meta))
-				Expect(info.Tags).To(Equal(mesh_proto.MultiValueTagSet{
-					"kuma.io/service": map[string]bool{
-						"web": true,
-					},
-				}))
+				Expect(info.Workload).To(Equal("web"))
 			})
 
 			It("should error rather than issue a cert with no SAN when the workload label is missing", func() {
@@ -515,7 +507,7 @@ type failingCaManager struct {
 
 var _ core_ca.Manager = &failingCaManager{}
 
-func (f *failingCaManager) GenerateDataplaneCert(context.Context, string, *mesh_proto.CertificateAuthorityBackend, mesh_proto.MultiValueTagSet) (core_ca.KeyPair, error) {
+func (f *failingCaManager) GenerateDataplaneCert(context.Context, string, *mesh_proto.CertificateAuthorityBackend, string) (core_ca.KeyPair, error) {
 	*f.calls++
 	return core_ca.KeyPair{}, errors.New("failing CA")
 }

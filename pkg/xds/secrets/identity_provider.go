@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -16,8 +15,7 @@ import (
 
 type Identity struct {
 	Mesh     string
-	Name     string
-	Services mesh_proto.MultiValueTagSet
+	Workload string
 }
 
 type IdentityProvider interface {
@@ -69,11 +67,11 @@ func (s *identityCertProvider) Get(ctx context.Context, requestor Identity, mesh
 		defer func() {
 			s.latencyMetrics.WithLabelValues(backend.GetName()).Observe(float64(time.Since(start).Milliseconds()))
 		}()
-		pair, err = caManager.GenerateDataplaneCert(ctx, mesh.GetMeta().GetName(), backend, requestor.Services)
+		pair, err = caManager.GenerateDataplaneCert(ctx, mesh.GetMeta().GetName(), backend, requestor.Workload)
 	}()
 
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "could not generate dataplane cert for mesh: %q backend: %q services: %q", mesh.GetMeta().GetName(), backend.Name, requestor.Services)
+		return nil, "", errors.Wrapf(err, "could not generate dataplane cert for mesh: %q backend: %q workload: %q", mesh.GetMeta().GetName(), backend.Name, requestor.Workload)
 	}
 
 	return &core_xds.IdentitySecret{
