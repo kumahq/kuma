@@ -97,8 +97,8 @@ func (s *SnapshotGenerator) getMatchingDataplanes(ctx context.Context, meshesWit
 			if err != nil {
 				return nil, errors.Wrap(err, "error on matching dpp")
 			}
-			if len(matchedPolicies.SingleItemRules.Rules) == 1 {
-				conf := matchedPolicies.SingleItemRules.Rules[0].Conf.(v1alpha1.Conf)
+			if matchedPolicies.ProxyConf != nil {
+				conf := matchedPolicies.ProxyConf.Conf.(v1alpha1.Conf)
 				meshMetricConfToDataplanes[&conf] = dp
 			}
 		}
