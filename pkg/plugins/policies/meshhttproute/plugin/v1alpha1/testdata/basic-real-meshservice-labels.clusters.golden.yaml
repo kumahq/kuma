@@ -56,7 +56,7 @@ resources:
             defaultValidationContext:
               matchTypedSubjectAltNames:
               - matcher:
-                  exact: spiffe://default/backend
+                  prefix: spiffe://default/
                 sanType: URI
             validationContextSdsSecretConfig:
               name: system_mtls_ca_default
@@ -94,7 +94,7 @@ resources:
             defaultValidationContext:
               matchTypedSubjectAltNames:
               - matcher:
-                  exact: spiffe://default/backend
+                  prefix: spiffe://default/
                 sanType: URI
             validationContextSdsSecretConfig:
               name: system_mtls_ca_default

@@ -22,7 +22,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_time "github.com/kumahq/kuma/v3/pkg/util/time"
@@ -295,14 +294,8 @@ func (s *StatusUpdater) hasReadyIdentity(
 }
 
 func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, meshIdentities []*meshidentity_api.MeshIdentityResource) []meshservice_api.MeshServiceIdentity {
-	serviceTagIdentities := map[string]struct{}{}
 	spiffeIDs := map[string]struct{}{}
 	for _, dpp := range dpps {
-		// Must mirror pkg/xds/secrets.identityTags: identity comes from the
-		// workload label, the same signal the mTLS identity path relies on.
-		if workload := dpp.GetMeta().GetLabels()[metadata.KumaWorkload]; workload != "" {
-			serviceTagIdentities[workload] = struct{}{}
-		}
 		for _, identity := range meshidentity_api.AllMatched(dpp.Meta.GetLabels(), meshIdentities) {
 			if identity.Status == nil || (!identity.Status.IsInitialized() && !identity.Status.IsPartiallyReady()) {
 				continue
@@ -322,12 +315,6 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 	}
 	var identites []meshservice_api.MeshServiceIdentity
 
-	for _, identity := range maps.SortedKeys(serviceTagIdentities) {
-		identites = append(identites, meshservice_api.MeshServiceIdentity{
-			Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-			Value: identity,
-		})
-	}
 	for _, identity := range maps.SortedKeys(spiffeIDs) {
 		identites = append(identites, meshservice_api.MeshServiceIdentity{
 			Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,

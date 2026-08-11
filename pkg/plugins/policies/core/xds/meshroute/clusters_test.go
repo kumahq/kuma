@@ -95,7 +95,6 @@ var _ = Describe("GenerateClusters", func() {
 			WithMesh("default").
 			WithLabels(labels).
 			AddIntPortWithName(80, 8080, core_meta.ProtocolHTTP, "http").
-			AddServiceTagIdentity("backend").
 			WithTLSStatus(given.tlsStatus).
 			Build()
 
