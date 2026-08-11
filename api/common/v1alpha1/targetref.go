@@ -114,11 +114,13 @@ type TargetRef struct {
 }
 
 // TopLevelTargetRefKind is the set of TargetRefKind values valid for the
-// top-level spec.targetRef field. A type alias (not a distinct type) so that
-// existing comparisons and constants (e.g. common_api.Mesh) keep working
-// unchanged; the per-field kubebuilder enum marker below is what actually
-// narrows the generated CRD schema.
-type TopLevelTargetRefKind = TargetRefKind
+// top-level spec.targetRef field.
+type TopLevelTargetRefKind string
+
+const (
+	TopLevelTargetRefKindMesh      TopLevelTargetRefKind = "Mesh"
+	TopLevelTargetRefKindDataplane TopLevelTargetRefKind = "Dataplane"
+)
 
 // TopLevelTargetRef defines the structure of the top-level targetRef field,
 // used to attach a policy's default configuration to a Mesh or Dataplane.
@@ -149,16 +151,23 @@ func (t *TopLevelTargetRef) ToTargetRef() TargetRef {
 	}
 	return TargetRef{
 		UsesSyntacticSugar: t.UsesSyntacticSugar,
-		Kind:               t.Kind,
+		Kind:               TargetRefKind(t.Kind),
 		Labels:             t.Labels,
 		SectionName:        t.SectionName,
 	}
 }
 
 // OutboundTargetRefKind is the set of TargetRefKind values valid for the
-// spec.to[].targetRef field. A type alias for the same reason as
-// TopLevelTargetRefKind above.
-type OutboundTargetRefKind = TargetRefKind
+// spec.to[].targetRef field.
+type OutboundTargetRefKind string
+
+const (
+	OutboundTargetRefKindMesh                 OutboundTargetRefKind = "Mesh"
+	OutboundTargetRefKindMeshService          OutboundTargetRefKind = "MeshService"
+	OutboundTargetRefKindMeshExternalService  OutboundTargetRefKind = "MeshExternalService"
+	OutboundTargetRefKindMeshMultiZoneService OutboundTargetRefKind = "MeshMultiZoneService"
+	OutboundTargetRefKindMeshHTTPRoute        OutboundTargetRefKind = "MeshHTTPRoute"
+)
 
 // OutboundTargetRef defines the structure of the spec.to[].targetRef field,
 // used to match a group of destinations a policy configuration applies to.
@@ -179,7 +188,7 @@ type OutboundTargetRef struct {
 // representation used by the policy matching engine.
 func (t OutboundTargetRef) ToTargetRef() TargetRef {
 	return TargetRef{
-		Kind:        t.Kind,
+		Kind:        TargetRefKind(t.Kind),
 		Labels:      t.Labels,
 		SectionName: t.SectionName,
 	}
