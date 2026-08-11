@@ -59,8 +59,11 @@ func ZoneWithHelmChartAndUniversalGlobal() {
 				// never gets an address on the k3d clusters the E2E tests run on.
 				WithHelmOpt("meshes[0].ingress.service.type", "NodePort"),
 			)).
-			Install(WaitNumPods(Config.KumaNamespace, 1, meshZoneIngressApp)).
-			Install(WaitPodsAvailable(Config.KumaNamespace, meshZoneIngressApp)).
+			// The chart deploys the zone proxy before the injector webhook
+			// exists, so the first pod comes up without a sidecar and a
+			// post-install hook restarts the Deployment. Waiting for that
+			// rollout is the only wait the pre-restart pod can't satisfy.
+			Install(WaitDeploymentRollout(Config.KumaNamespace, meshZoneIngressApp)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default")),

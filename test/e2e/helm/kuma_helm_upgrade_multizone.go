@@ -97,10 +97,21 @@ func UpgradingZoneWithHelmChart() {
 					WithHelmOpt("meshes[0].ingress.service.type", "NodePort"),
 					WithoutHelmOpt("global.image.tag"),
 				)).
-				Install(WaitNumPods(Config.KumaNamespace, 1, meshZoneIngressApp)).
-				Install(WaitPodsAvailable(Config.KumaNamespace, meshZoneIngressApp)).
+				// The chart deploys the zone proxy before the injector webhook
+				// exists, so the first pod comes up without a sidecar and a
+				// post-install hook restarts the Deployment. Waiting for that
+				// rollout is the only wait the pre-restart pod can't satisfy.
+				Install(WaitDeploymentRollout(Config.KumaNamespace, meshZoneIngressApp)).
 				Setup(zoneK8s)
 			Expect(err).ToNot(HaveOccurred())
+
+			// Only once the restarted pod is up does the ingress have a Dataplane,
+			// which the counts below include.
+			Eventually(func(g Gomega) {
+				dataplanes, err := zoneK8s.GetKumactlOptions().KumactlList("dataplanes", "default")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(dataplanes).To(ContainElement(ContainSubstring(meshZoneIngressApp)))
+			}, "60s", "1s").Should(Succeed(), "mesh zone ingress is not registered in the zone")
 
 			By("Sync policies from Global to Zone")
 			Expect(YamlUniversal(fmt.Sprintf(`
@@ -128,10 +139,13 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 
 			// The zone's own mesh zone ingress is a Dataplane too, so it counts
-			// alongside the test server.
-			Eventually(func(g Gomega) (int, error) {
-				return NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
-			}, "60s", "1s").Should(Equal(2), "dpps should be synced to global")
+			// alongside the test server. List them instead of counting so a
+			// failure says which one is missing.
+			Eventually(func(g Gomega) {
+				dataplanes, err := global.GetKumactlOptions().KumactlList("dataplanes", "default")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(dataplanes).To(HaveLen(2))
+			}, "60s", "1s").Should(Succeed(), "dpps should be synced to global")
 
 			By("deploy a new universal zone with latest version")
 			err = NewClusterSetup().

@@ -366,6 +366,26 @@ func WaitNumPods(namespace string, num int, app string) InstallFunc {
 	}
 }
 
+// WaitDeploymentRollout waits until the Deployment's current generation is
+// rolled out. Unlike WaitNumPods and WaitPodsAvailable it cannot be satisfied by
+// pods of an older generation, so it's the one to use for Deployments the chart
+// restarts from a post-install hook.
+func WaitDeploymentRollout(namespace, name string) InstallFunc {
+	return func(c Cluster) error {
+		ck8s := c.(*K8sCluster)
+		timeout := time.Duration(ck8s.defaultRetries) * ck8s.defaultTimeout
+		out, err := k8s.RunKubectlAndGetOutputContextE(
+			c.GetTesting(), context.Background(),
+			c.GetKubectlOptions(namespace),
+			"rollout", "status", "deployment/"+name, "--timeout="+timeout.String(),
+		)
+		if err != nil {
+			return errors.Wrapf(err, "deployment %q did not roll out: %s", name, out)
+		}
+		return nil
+	}
+}
+
 func WaitPodsAvailable(namespace, app string) InstallFunc {
 	return WaitPodsAvailableWithLabel(namespace, "app", app)
 }
