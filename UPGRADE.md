@@ -337,6 +337,34 @@ networking:
 
 **Warning**: Stored `Dataplane` resources that still carry `tags` on an outbound keep being served, but the tags are discarded during deserialization and no outbound listener is generated for them, so the workload loses connectivity to that destination.
 
+### Route `backendRef` no longer accepts `MeshServiceSubset`
+
+`MeshHTTPRoute` and `MeshTCPRoute` accept only `MeshService`, `MeshExternalService` and `MeshMultiZoneService` in `backendRefs[]` and in the `RequestMirror` filter's `backendRef`. A route using `kind: MeshServiceSubset` is rejected with `value 'MeshServiceSubset' is not supported`.
+
+The xDS path that turned such a ref into a `kuma.io/service` cluster is gone with it, and a `MeshService` ref selected by `kuma.io/display-name` alone no longer falls back to one when it fails to resolve. A backendRef that resolves to no real resource now produces no split at all, rather than a split towards a cluster that is never generated.
+
+**Action required**
+
+Repoint every route that splits or mirrors to a `MeshServiceSubset` at the real resource before upgrading. Selecting a subset of endpoints by tag has no equivalent: split the destination into separate `MeshService` resources if you need it.
+
+```yaml
+# Before (rejected)
+backendRefs:
+  - kind: MeshServiceSubset
+    tags:
+      kuma.io/service: payments
+      version: v1
+
+# After
+backendRefs:
+  - kind: MeshService
+    labels:
+      kuma.io/display-name: payments
+    port: 8080
+```
+
+**Warning**: Stored routes that still carry a `MeshServiceSubset` backendRef keep being served, but the backend is dropped during xDS generation, so traffic matching those rules loses its destination.
+
 ### Legacy `ExternalService` resource removed
 
 The legacy `ExternalService` resource has been removed. Its CRD, API

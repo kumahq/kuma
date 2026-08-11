@@ -12,8 +12,6 @@ import (
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
@@ -193,25 +191,19 @@ func makeSplits(
 ) []envoy_common.Split {
 	var result []envoy_common.Split
 
-	splitFromRef := func(ref resolve.ResolvedBackendRef) envoy_common.Split {
-		if ref.ReferencesRealResource() {
-			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx)
-		}
-
-		return handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef(), meshCtx)
-	}
-
 	for _, ref := range refs {
-		result = append(result, splitFromRef(ref))
+		// A ref that resolves to no real resource gets no cluster from
+		// GenerateClusters, so splitting towards it would leave the route
+		// pointing at a cluster that is never emitted.
+		if !ref.ReferencesRealResource() {
+			continue
+		}
+		if split := handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx); split != nil {
+			result = append(result, split)
+		}
 	}
 
-	// return only non-nil splits
-	return util_slices.Filter(
-		result,
-		func(s envoy_common.Split) bool {
-			return s != nil
-		},
-	)
+	return result
 }
 
 func handleRealResources(
@@ -271,59 +263,4 @@ func handleRealResources(
 	servicesAcc.AddBackendRef(resolve.NewResolvedBackendRef(ref), clusterBuilder.Build())
 
 	return splitTo(clusterName)
-}
-
-func handleLegacyBackendRef(
-	protocols map[core_meta.Protocol]struct{},
-	clusterCache map[common_api.BackendRefHash]string,
-	servicesAcc envoy_common.ServicesAccumulator,
-	ref *resolve.LegacyBackendRef,
-	meshCtx xds_context.MeshContext,
-) envoy_common.Split {
-	if ref.Weight != nil && *ref.Weight == 0 {
-		return nil
-	}
-
-	service := pointer.Deref(ref.Labels)[mesh_proto.DisplayName]
-	if service == "" {
-		service = pointer.Deref(ref.Tags)[mesh_proto.ServiceTag]
-	}
-	protocol := meshCtx.GetServiceProtocol(service)
-	if _, ok := protocols[protocol]; !ok {
-		return nil
-	}
-	clusterName, _ := envoy_tags.Tags(pointer.Deref(ref.Tags)).
-		WithTags(mesh_proto.ServiceTag, service).
-		DestinationClusterName(nil)
-
-	isExternalService := meshCtx.IsExternalService(service)
-	refHash := common_api.BackendRef(*ref).Hash()
-
-	if existingClusterName, ok := clusterCache[refHash]; ok {
-		// cluster already exists, so adding only split
-		return plugins_xds.NewSplitBuilder().
-			WithClusterName(existingClusterName).
-			WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
-			WithExternalService(isExternalService).
-			Build()
-	}
-
-	clusterCache[refHash] = clusterName
-
-	split := plugins_xds.NewSplitBuilder().
-		WithClusterName(clusterName).
-		WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
-		WithExternalService(isExternalService).
-		Build()
-
-	clusterBuilder := plugins_xds.NewClusterBuilder().
-		WithService(service).
-		WithName(clusterName).
-		WithTags(envoy_tags.Tags(pointer.Deref(ref.Tags)).
-			WithTags(mesh_proto.ServiceTag, service).
-			WithoutTags(mesh_proto.MeshTag)).
-		WithExternalService(isExternalService)
-
-	servicesAcc.AddBackendRef(resolve.NewResolvedBackendRef(ref), clusterBuilder.Build())
-	return split
 }
