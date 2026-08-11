@@ -91,7 +91,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			Expect(err).ToNot(HaveOccurred())
 			given.xdsContext.ControlPlane.CLACache = claCache
 
-			secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil, false)
+			secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None())
 			dataSourceLoader := datasource.NewDataSourceLoader(secretManager)
 			given.xdsContext.Mesh.DataSourceLoader = dataSourceLoader
 

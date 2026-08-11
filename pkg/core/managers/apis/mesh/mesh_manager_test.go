@@ -7,12 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/config/multizone"
-	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
-	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
@@ -23,14 +20,9 @@ import (
 	secrets_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
 	secrets_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/v3/pkg/core/tokens"
-	"github.com/kumahq/kuma/v3/pkg/core/validators"
-	ca_builtin "github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin"
-	"github.com/kumahq/kuma/v3/pkg/plugins/ca/provided"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	test_resources "github.com/kumahq/kuma/v3/pkg/test/resources"
-	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Mesh Manager", func() {
@@ -38,22 +30,15 @@ var _ = Describe("Mesh Manager", func() {
 	var unsafeDeleteResManager manager.ResourceManager
 	var secretManager manager.ResourceManager
 	var resStore store.ResourceStore
-	var builtinCaManager core_ca.Manager
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		secretManager = secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil, false)
-		builtinCaManager = ca_builtin.NewBuiltinCaManager(secretManager)
-		providedCaManager := provided.NewProvidedCaManager(datasource.NewDataSourceLoader(secretManager))
-		caManagers := core_ca.Managers{
-			"builtin":  builtinCaManager,
-			"provided": providedCaManager,
-		}
+		secretManager = secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None())
 
 		manager := manager.NewResourceManager(resStore)
-		validator := mesh.NewMeshValidator(caManagers, resStore)
+		validator := mesh.NewMeshValidator(resStore)
 		resManager = mesh.NewMeshManager(
-			resStore, manager, caManagers, test_resources.Global(),
+			resStore, manager, test_resources.Global(),
 			validator, context.Background(),
 			kuma_cp.Config{
 				Store: &config_store.StoreConfig{
@@ -63,7 +48,7 @@ var _ = Describe("Mesh Manager", func() {
 				Multizone: multizone.DefaultMultizoneConfig(),
 			})
 		unsafeDeleteResManager = mesh.NewMeshManager(
-			resStore, manager, caManagers, test_resources.Global(),
+			resStore, manager, test_resources.Global(),
 			validator, context.Background(),
 			kuma_cp.Config{
 				Store: &config_store.StoreConfig{
@@ -75,64 +60,6 @@ var _ = Describe("Mesh Manager", func() {
 	})
 
 	Describe("Create()", func() {
-		It("should also ensure that CAs are created", func() {
-			// given
-			meshName := "mesh-1"
-
-			// when
-			mesh := samples.MeshMTLSBuilder().WithName("mesh-1")
-			err := mesh.Create(resManager)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// and enabled CA is created
-			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, mesh.Build().Spec.Mtls.Backends[0])
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should fail with invalid CA backend type", func() {
-			// given
-			mesh := core_mesh.NewMeshResource()
-			err := util_proto.FromYAML([]byte(`
-                mtls:
-                  enabledBackend: ca-1
-                  backends:
-                  - name: ca-1
-                    type: bulitin
-            `), mesh.Spec)
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			err = resManager.Create(context.Background(), mesh, store.CreateByKey("mesh-1", model.NoMesh))
-
-			// then
-			Expect(err).To(MatchError(&validators.ValidationError{
-				Violations: []validators.Violation{
-					{
-						Field:   "mtls.backends[0].type",
-						Message: "could not find installed plugin for this type",
-					},
-				},
-			}))
-		})
-
-		It("should create CA without validation", func() {
-			// given
-			meshName := "mesh-no-validation"
-
-			// when
-			mesh := samples.MeshMTLSBuilder().WithName(meshName).WithoutBackendValidation()
-			err := mesh.Create(resManager)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// and enabled CA is created
-			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, mesh.Build().Spec.Mtls.Backends[0])
-			Expect(err).ToNot(HaveOccurred())
-		})
-
 		It("should create default resources", func() {
 			// given
 			meshName := "mesh-1"
@@ -147,33 +74,6 @@ var _ = Describe("Mesh Manager", func() {
 			key := tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(meshName), tokens.DefaultKeyID, meshName)
 			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(key))
 			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should validate all CAs", func() {
-			// given
-			meshName := "mesh-1"
-			resKey := model.ResourceKey{
-				Name: meshName,
-			}
-
-			// when
-			mesh := core_mesh.MeshResource{
-				Spec: &mesh_proto.Mesh{
-					Mtls: &mesh_proto.Mesh_Mtls{
-						EnabledBackend: "ca-1",
-						Backends: []*mesh_proto.CertificateAuthorityBackend{
-							{
-								Name: "ca-1",
-								Type: "provided",
-							},
-						},
-					},
-				},
-			}
-			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
-
-			// then
-			Expect(err).To(MatchError("mtls.backends[0].conf.cert: has to be defined; mtls.backends[0].conf.key: has to be defined"))
 		})
 
 		It("should not create mesh with name longer than 64 chars", func() {
@@ -234,60 +134,6 @@ var _ = Describe("Mesh Manager", func() {
 
 			// when mesh-1 is deleted
 			err := unsafeDeleteResManager.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey("mesh-1", model.NoMesh))
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-		})
-	})
-
-	Describe("Update()", func() {
-		It("should not allow to change CA when mTLS is enabled", func() {
-			// given
-			meshName := "mesh-1"
-
-			// when
-			mesh := samples.MeshMTLSBuilder().WithName(meshName)
-			err := mesh.Create(resManager)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// when trying to change CA
-			mesh.WithoutMTLSBackends().
-				WithBuiltinMTLSBackend("builtin-2").
-				WithEnabledMTLSBackend("builtin-2")
-			err = resManager.Update(context.Background(), mesh.Build())
-
-			// then
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(&validators.ValidationError{
-				Violations: []validators.Violation{
-					{
-						Field:   "mtls.enabledBackend",
-						Message: "Changing CA when mTLS is enabled is forbidden. Disable mTLS first and then change the CA",
-					},
-				},
-			}))
-		})
-
-		It("should allow to change CA when mTLS is disabled", func() {
-			// given
-			meshName := "mesh-1"
-
-			// when
-			mesh := builders.Mesh().
-				WithName(meshName).
-				WithBuiltinMTLSBackend("builtin-1")
-			err := mesh.Create(resManager)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// when trying to enable mTLS change CA
-			mesh.WithoutMTLSBackends().
-				WithBuiltinMTLSBackend("builtin-2").
-				WithEnabledMTLSBackend("builtin-2")
-			err = resManager.Update(context.Background(), mesh.Build())
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

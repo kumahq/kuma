@@ -14,7 +14,6 @@ import (
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/access"
-	"github.com/kumahq/kuma/v3/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
@@ -71,7 +70,6 @@ type RuntimeContext interface {
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
 	GlobalInsightService() globalinsight.GlobalInsightService
-	CaManagers() ca.Managers
 	Extensions() context.Context
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
@@ -194,7 +192,6 @@ type runtimeContext struct {
 	cs                       core_store.ResourceStore
 	gis                      globalinsight.GlobalInsightService
 	rom                      core_manager.ReadOnlyResourceManager
-	cam                      ca.Managers
 	dsl                      datasource.Loader
 	ext                      context.Context
 	configm                  config_manager.ConfigManager
@@ -229,10 +226,6 @@ func (rc *runtimeContext) Metrics() metrics.Metrics {
 
 func (rc *runtimeContext) EventBus() events.EventBus {
 	return rc.erf
-}
-
-func (rc *runtimeContext) CaManagers() ca.Managers {
-	return rc.cam
 }
 
 func (rc *runtimeContext) Config() kuma_cp.Config {
