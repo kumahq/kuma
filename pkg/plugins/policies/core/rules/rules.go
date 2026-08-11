@@ -5,12 +5,8 @@ import (
 	"fmt"
 	"slices"
 	"sort"
-	"strings"
 
 	"github.com/pkg/errors"
-	"gonum.org/v1/gonum/graph"
-	"gonum.org/v1/gonum/graph/simple"
-	"gonum.org/v1/gonum/graph/topo"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -192,7 +188,7 @@ func legacyBuildToRules(matchedPolicies core_model.ResourceList, reader kri.Reso
 			toList = append(toList, BuildPolicyItemsWithMeta(tl, meta, topLevel)...)
 		}
 	}
-	return BuildRules(toList, false)
+	return BuildRules(toList)
 }
 
 func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model.PolicyWithToList, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
@@ -337,18 +333,9 @@ func BuildProxyConf(matchedPolicies []core_model.Resource) (*ProxyConf, error) {
 	}, nil
 }
 
-// BuildRules creates a list of rules with negations sorted by the number of positive tags.
-// If rules with negative tags are filtered out then the order becomes 'most specific to less specific'.
-// Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.
-// In case of `to` policies we don't need to check negations since only possible value for `to` is either Mesh
-// which has empty subset or kuma.io/service.
-//
-// See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
-func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
-	return buildRulesInternal(list, withNegations, true)
-}
-
-func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useCliques bool) (Rules, error) {
+// BuildRules creates rules for legacy outbound matching sorted from most to
+// least specific by subset size.
+func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	rules := Rules{}
 	oldKindsItems := []PolicyItemWithMeta{}
 	for _, item := range list {
@@ -360,110 +347,26 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 		return rules, nil
 	}
 
-	uniqueKeys := map[string]struct{}{}
-	// 1. Convert list of rules into the list of subsets
 	var subsets []subsetutils.Subset
 	for _, item := range oldKindsItems {
 		ss, err := asSubset(item.GetTargetRef())
 		if err != nil {
 			return nil, err
 		}
-		for _, tag := range ss {
-			uniqueKeys[tag.Key] = struct{}{}
-		}
 		subsets = append(subsets, ss)
 	}
 
-	// we don't need to generate all permutations when there is no negations
-	// and we have only 0 or one tag, in other cases we need to generate.
-	// in case of `to` policies it can happen when using top target ref MeshGateway,
-	// for policy MeshHTTPRoute.
-	if !withNegations && len(uniqueKeys) <= 1 {
-		// deduplicate subsets
-		subsets = subsetutils.Deduplicate(subsets)
-
-		for _, ss := range subsets {
-			if r, err := createRule(ss, oldKindsItems); err != nil {
-				return nil, err
-			} else {
-				rules = append(rules, r...)
-			}
-		}
-
-		sort.SliceStable(rules, func(i, j int) bool {
-			// resource with more tags should be first
-			return len(rules[i].Subset) > len(rules[j].Subset)
-		})
-
-		return rules, nil
-	}
-
-	// 2. Create a graph where nodes are subsets and edge exists between 2 subsets only if there is an intersection
-	g := simple.NewUndirectedGraph()
-
-	for nodeId := range subsets {
-		g.AddNode(simple.Node(nodeId))
-	}
-
-	for i := range subsets {
-		for j := range subsets {
-			if i == j {
-				continue
-			}
-			if subsets[i].Intersect(subsets[j]) {
-				g.SetEdge(simple.Edge{F: simple.Node(i), T: simple.Node(j)})
-			}
-		}
-	}
-
-	var nodeGroups [][]graph.Node
-	if useCliques {
-		nodeGroups = topo.BronKerbosch(g)
-	} else {
-		nodeGroups = topo.ConnectedComponents(g)
-	}
-
-	sortComponents(nodeGroups)
-
-	for _, group := range nodeGroups {
-		tagSet := map[subsetutils.Tag]bool{}
-		for _, node := range group {
-			for _, t := range subsets[node.ID()] {
-				tagSet[t] = true
-			}
-		}
-
-		tags := []subsetutils.Tag{}
-		for tag := range tagSet {
-			tags = append(tags, tag)
-		}
-
-		sort.Slice(tags, func(i, j int) bool {
-			if tags[i].Key != tags[j].Key {
-				return tags[i].Key < tags[j].Key
-			}
-			return tags[i].Value < tags[j].Value
-		})
-
-		// 4. Iterate over all possible combinations with negations
-		iter := subsetutils.NewSubsetIter(tags)
-		for {
-			ss := iter.Next()
-			if ss == nil {
-				break
-			}
-
-			// 5. For each combination determine a configuration
-			if r, err := createRule(ss, oldKindsItems); err != nil {
-				return nil, err
-			} else {
-				rules = append(rules, r...)
-			}
+	subsets = subsetutils.Deduplicate(subsets)
+	for _, ss := range subsets {
+		if r, err := createRule(ss, oldKindsItems); err != nil {
+			return nil, err
+		} else {
+			rules = append(rules, r...)
 		}
 	}
 
 	sort.SliceStable(rules, func(i, j int) bool {
-		return rules[i].Subset.NumPositive() > rules[j].Subset.NumPositive()
+		return len(rules[i].Subset) > len(rules[j].Subset)
 	})
 
 	return rules, nil
@@ -507,25 +410,6 @@ func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta) ([]*Rule, err
 	}
 
 	return rules, nil
-}
-
-func sortComponents(components [][]graph.Node) {
-	for _, c := range components {
-		sort.SliceStable(c, func(i, j int) bool {
-			return c[i].ID() < c[j].ID()
-		})
-	}
-	sort.SliceStable(components, func(i, j int) bool {
-		return strings.Join(toStringList(components[i]), ":") > strings.Join(toStringList(components[j]), ":")
-	})
-}
-
-func toStringList(nodes []graph.Node) []string {
-	rv := make([]string, 0, len(nodes))
-	for _, id := range nodes {
-		rv = append(rv, fmt.Sprintf("%d", id.ID()))
-	}
-	return rv
 }
 
 func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {

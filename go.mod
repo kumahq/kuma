@@ -75,7 +75,6 @@ require (
 	golang.org/x/sys v0.47.0
 	golang.org/x/text v0.40.0
 	golang.org/x/tools v0.48.0
-	gonum.org/v1/gonum v0.17.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260810153831-ec0a7760b754
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260810153831-ec0a7760b754
 	google.golang.org/grpc v1.83.0
@@ -97,6 +96,8 @@ require (
 	sigs.k8s.io/gateway-api/conformance v0.0.0-20260603141352-8f69037cd891
 	sigs.k8s.io/yaml v1.6.0
 )
+
+replace google.golang.org/grpc => google.golang.org/grpc v1.74.2
 
 require (
 	cel.dev/expr v0.25.2 // indirect

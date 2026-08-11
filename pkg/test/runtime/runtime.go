@@ -41,7 +41,6 @@ import (
 	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
-	"github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/v3/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
@@ -73,7 +72,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore())).
 		WithResourceValidators(core_runtime.ResourceValidators{
 			Dataplane: dataplane.NewMembershipValidator(),
-			Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
+			Mesh:      mesh_managers.NewMeshValidator(builder.ResourceStore()),
 		})
 
 	rm := newResourceManager(builder) //nolint:contextcheck
@@ -84,7 +83,6 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithMetrics(metrics)
 
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
-	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.ResourceManager()))
 	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
 	builder.WithLookupIP(func(s string) ([]net.IP, error) {
 		return nil, errors.New("LookupIP not set, set one in your test to resolve things")
@@ -150,7 +148,6 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 	meshManager := mesh_managers.NewMeshManager(
 		builder.ResourceStore(),
 		customizableManager,
-		builder.CaManagers(),
 		registry.Global(),
 		builder.ResourceValidators().Mesh,
 		builder.Extensions(),
@@ -158,7 +155,7 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 	)
 	customManagers[core_mesh.MeshType] = meshManager
 
-	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None(), nil, builder.Config().Store.UnsafeDelete)
+	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None())
 	customManagers[system.SecretType] = secretManager
 	return customizableManager
 }

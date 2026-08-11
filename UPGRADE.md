@@ -30,17 +30,21 @@ While both systems coexisted, a mesh that had `mtls` enabled *and* at least one 
 
 Complete the migration to `MeshIdentity` *before* upgrading — this is the point where a partially migrated mesh breaks. Once upgraded, proxies still holding a legacy mesh certificate are no longer trusted by their `MeshIdentity` peers, and there is no rolling path back.
 
-### Workload certificates no longer carry a `kuma://` SAN
+### `Mesh.mtls` backends are no longer provisioned or validated
 
-A dataplane's mTLS certificate now carries exactly one SAN URI, `spiffe://<mesh>/<workload>`, derived directly from the `kuma.io/workload` label. The `kuma://kuma.io/service/<workload>` URI that used to accompany it is gone: nothing in this version of Kuma reads it, since its only consumer, the legacy tag-based `MeshTrafficPermission` RBAC principal builder, was already removed.
+The CA plugin subsystem is gone — both the `builtin` and the `provided` CA managers, and the code that drove them on every Mesh create, update and Kubernetes reconcile. `mtls.backends` is now inert configuration: nothing generates a CA for a `builtin` backend, nothing reads the certificate and key of a `provided` one, and nothing checks either at admission time.
 
-**No forced rotation is required**
+Three validations disappear with it. An unknown `mtls.backends[].type` is accepted instead of being rejected with `could not find installed plugin for this type`. A `provided` backend missing `conf.cert` or `conf.key` is accepted. Changing `mtls.enabledBackend` while mTLS is enabled is accepted instead of being rejected with `Changing CA when mTLS is enabled is forbidden`.
 
-mTLS validation between two upgraded proxies matches only the `spiffe://` URI, which both the old and new certificate formats carry, so a certificate issued before the upgrade keeps working until it expires naturally (5 days by default) and does not need to be rotated for this change.
+Deleting a Secret is no longer blocked when an `mtls` backend still references it, on both Universal and Kubernetes — the check dispatched into the CA managers, which no longer exist. `MeshIdentity` and `MeshTrust` secrets were never covered by it, and the `inter-cp-ca` and `envoy-admin-ca` global secrets are separate PKIs, untouched by this change.
 
-**Mixed-fleet caveat**
+**Orphaned CA secrets are left in place**
 
-A proxy that has not yet been upgraded and still enforces a tag-based `MeshTrafficPermission` through `kuma://` RBAC principals denies peers that present a certificate issued after the upgrade, because that certificate no longer carries the `kuma://` URI the old RBAC principal expects. Upgrade proxies enforcing such policies before, or at the same time as, the proxies they receive traffic from.
+`builtin` CA material was persisted as `<mesh>.ca-builtin-cert-<backend>` and `<mesh>.ca-builtin-key-<backend>` Secrets owned by their Mesh. The upgrade does not delete them: they stay, unread by any code, and are still synced global→zone by KDS. Leaving them is deliberate — the CA private key is unrecoverable once removed, and a dead row costs nothing.
+
+**Action required**
+
+None. Delete the orphaned Secrets yourself once you are certain no downstream tooling needs the CA material; they are removed automatically when their Mesh is deleted.
 
 ### Control plane TLS certificates are reloaded without a restart
 
