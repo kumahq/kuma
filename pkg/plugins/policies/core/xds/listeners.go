@@ -10,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
-	gateway_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	generator_meta "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	generator_model "github.com/kumahq/kuma/v3/pkg/xds/generator/model"
 )
@@ -20,7 +19,6 @@ type Listeners struct {
 	Outbound        map[mesh_proto.OutboundInterface]*envoy_listener.Listener
 	ZoneIngress     map[string]*envoy_listener.Listener
 	ZoneEgress      map[string]*envoy_listener.Listener
-	Gateway         map[core_rules.InboundListener]*envoy_listener.Listener
 	Ipv4Passthrough *envoy_listener.Listener
 	Ipv6Passthrough *envoy_listener.Listener
 	DirectAccess    map[generator_model.Endpoint]*envoy_listener.Listener
@@ -33,7 +31,6 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 		Outbound:     map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
 		ZoneIngress:  map[string]*envoy_listener.Listener{},
 		ZoneEgress:   map[string]*envoy_listener.Listener{},
-		Gateway:      map[core_rules.InboundListener]*envoy_listener.Listener{},
 		DirectAccess: map[generator_model.Endpoint]*envoy_listener.Listener{},
 	}
 	zoneIngressPrefix := naming.ContextualZoneIngressListenerName("")
@@ -75,11 +72,6 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 			}
 		case generator_meta.OriginDirectAccess:
 			listeners.DirectAccess[generator_model.Endpoint{
-				Address: address.GetAddress(),
-				Port:    address.GetPortValue(),
-			}] = listener
-		case gateway_metadata.OriginGateway:
-			listeners.Gateway[core_rules.InboundListener{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener

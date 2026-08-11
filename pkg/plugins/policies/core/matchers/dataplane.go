@@ -51,7 +51,6 @@ func MatchedPolicies(
 	var warnings []string
 
 	matchedPoliciesByInbound := map[core_rules.InboundListener]core_model.ResourceList{}
-	matchedPoliciesByGatewayListener := map[core_rules.InboundListenerHostname]core_model.ResourceList{}
 	dpPolicies, err := registry.Global().NewList(rType)
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
@@ -109,15 +108,6 @@ func MatchedPolicies(
 		warnings = append(warnings, fmt.Sprintf("couldn't create To rules: %s", err.Error()))
 	}
 
-	gr, err := core_rules.BuildGatewayRules(
-		matchedPoliciesByInbound,
-		matchedPoliciesByGatewayListener,
-		resources,
-	)
-	if err != nil {
-		warnings = append(warnings, fmt.Sprintf("couldn't create Gateway rules: %s", err.Error()))
-	}
-
 	sr, err := core_rules.BuildSingleItemRules(dpPolicies.GetItems())
 	if err != nil {
 		warnings = append(warnings, fmt.Sprintf("couldn't create top level rules: %s", err.Error()))
@@ -128,7 +118,6 @@ func MatchedPolicies(
 		DataplanePolicies: dpPolicies.GetItems(),
 		FromRules:         fr,
 		ToRules:           tr,
-		GatewayRules:      gr,
 		SingleItemRules:   sr,
 		Warnings:          warnings,
 	}
@@ -149,7 +138,7 @@ func DppSelectedByPolicy(
 	if !dppSelectedByZone(meta, dpp) {
 		return []core_rules.InboundListener{}, false, nil
 	}
-	if !dppSelectedByNamespace(meta, dpp) {
+	if !core_rules.PolicySelectsByNamespace(meta, dpp.GetMeta()) {
 		return []core_rules.InboundListener{}, false, nil
 	}
 	switch ref.Kind {
@@ -237,16 +226,6 @@ func isSelectedByLabels(dpp *core_mesh.DataplaneResource, ref common_api.TargetR
 	return true
 }
 
-func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
-	switch core_model.PolicyRole(meta) {
-	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
-		ns, ok := meta.GetLabels()[mesh_proto.KubeNamespaceTag]
-		return ok && ns == dpp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
-	default:
-		return true
-	}
-}
-
 func dppSelectedByZone(policyMeta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
 	switch core_model.PolicyRole(policyMeta) {
 	case mesh_proto.ProducerPolicyRole:
@@ -290,27 +269,12 @@ func resolveMeshHTTPRouteRef(policyMeta core_model.ResourceMeta, ref common_api.
 		// (e.g. kuma.io/display-name) across namespaces. Namespaced
 		// policies must only expand routes from their own namespace,
 		// otherwise route-derived config leaks across namespaces.
-		if !policySelectsResourceByNamespace(policyMeta, item.GetMeta()) {
+		if !core_rules.PolicySelectsByNamespace(policyMeta, item.GetMeta()) {
 			continue
 		}
 		matches = append(matches, item.(*meshhttproute_api.MeshHTTPRouteResource))
 	}
 	return matches
-}
-
-// policySelectsResourceByNamespace reports whether a policy may reference a
-// resource living in the given namespace. Consumer and workload-owner policies
-// are namespaced, so they can only reference resources from their own
-// namespace; producer/system policies are namespace-agnostic. Mirrors the
-// equivalent check applied when building To rules.
-func policySelectsResourceByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) bool {
-	switch core_model.PolicyRole(policyMeta) {
-	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
-		ns, ok := policyMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
-		return ok && ns == resourceMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
-	default:
-		return true
-	}
 }
 
 // allInboundListeners returns every inbound of the dataplane as an InboundListener

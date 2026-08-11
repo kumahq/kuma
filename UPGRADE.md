@@ -186,6 +186,14 @@ Policies that select real resources through `spec.targetRef` or `spec.to[].targe
 
 Migrate any policy that still selects those resources by `name` and/or `namespace` to use `labels` instead before upgrading. `sectionName` remains supported for `Dataplane` inbound selection and `MeshService` port selection.
 
+### `MeshService.spec.identities` now accepts SPIFFE IDs only
+
+`MeshService.spec.identities[].type` no longer accepts `ServiceTag`. `MeshService.spec.identities` now publishes SPIFFE IDs only, while service-tag-based routing keeps using the `kuma.io/service` label or the MeshService resource name as its fallback naming signal.
+
+**Action required**
+
+Update any MeshService manifest that still declares a `ServiceTag` identity to use `SpiffeID` entries only before upgrading. A persisted `ServiceTag` entry is rejected by the updated schema once the new CRD or API validation is in place.
+
 ### Transparent proxy configured only through the ConfigMap
 
 The legacy annotation-based transparent proxy injection path has been removed.

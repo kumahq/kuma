@@ -57,49 +57,6 @@ type ToRules struct {
 	ResourceRules outbound.ResourceRules
 }
 
-type InboundListenerHostname struct {
-	Address  string
-	Port     uint32
-	hostname string
-}
-
-var _ encoding.TextMarshaler = InboundListenerHostname{}
-
-func (i InboundListenerHostname) MarshalText() ([]byte, error) {
-	return []byte(i.String()), nil
-}
-
-func (i InboundListenerHostname) String() string {
-	return fmt.Sprintf("%s:%d:%s", i.Address, i.Port, i.hostname)
-}
-
-func NewInboundListenerHostname(address string, port uint32, hostname string) InboundListenerHostname {
-	if hostname == "" {
-		hostname = mesh_proto.WildcardHostname
-	}
-	return InboundListenerHostname{
-		Address:  address,
-		Port:     port,
-		hostname: hostname,
-	}
-}
-
-type GatewayToRules struct {
-	// ByListener contains rules that are not specific to hostnames
-	// If the policy supports `GatewayListenerTagsAllowed: true`
-	// then it likely should use ByListenerAndHostname
-	ByListener map[InboundListener]ToRules
-	// ByListenerAndHostname contains rules for policies that are specific to hostnames
-	// This only relevant if the policy has `GatewayListenerTagsAllowed: true`
-	ByListenerAndHostname map[InboundListenerHostname]ToRules
-}
-
-type GatewayRules struct {
-	ToRules GatewayToRules
-	// InboundRules is a map of InboundListener to a list of inbound rules built by using 'spec.rules' field.
-	InboundRules map[InboundListener][]*inbound.Rule
-}
-
 type SingleItemRules struct {
 	Rules Rules
 }
@@ -234,42 +191,6 @@ func legacyBuildToRules(matchedPolicies core_model.ResourceList, reader kri.Reso
 	return BuildRules(toList, false)
 }
 
-func BuildGatewayRules(
-	matchedPoliciesByInbound map[InboundListener]core_model.ResourceList,
-	matchedPoliciesByListener map[InboundListenerHostname]core_model.ResourceList,
-	reader kri.ResourceReader,
-) (GatewayRules, error) {
-	toRulesByInbound := map[InboundListener]ToRules{}
-	toRulesByListenerHostname := map[InboundListenerHostname]ToRules{}
-	for listener, policies := range matchedPoliciesByListener {
-		toRules, err := BuildToRules(policies, reader)
-		if err != nil {
-			return GatewayRules{}, err
-		}
-		toRulesByListenerHostname[listener] = toRules
-	}
-	for inbound, policies := range matchedPoliciesByInbound {
-		toRules, err := BuildToRules(policies, reader)
-		if err != nil {
-			return GatewayRules{}, err
-		}
-		toRulesByInbound[inbound] = toRules
-	}
-
-	fromRules, err := BuildFromRules(matchedPoliciesByInbound)
-	if err != nil {
-		return GatewayRules{}, err
-	}
-
-	return GatewayRules{
-		ToRules: GatewayToRules{
-			ByListenerAndHostname: toRulesByListenerHostname,
-			ByListener:            toRulesByInbound,
-		},
-		InboundRules: fromRules.InboundRules,
-	}, nil
-}
-
 func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model.PolicyWithToList, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
 	var mhrs []*meshhttproute_api.MeshHTTPRouteResource
 	switch policyWithTo.GetTargetRef().Kind {
@@ -287,7 +208,7 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 			// (e.g. kuma.io/display-name) across namespaces. Namespaced
 			// policies must only expand routes from their own namespace,
 			// otherwise route-derived config leaks across namespaces.
-			if !policySelectsByNamespace(meta, route.GetMeta()) {
+			if !PolicySelectsByNamespace(meta, route.GetMeta()) {
 				continue
 			}
 			if r, ok := route.(*meshhttproute_api.MeshHTTPRouteResource); ok {
@@ -309,7 +230,7 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 				for _, to := range policyWithTo.GetToList() {
 					var targetRef common_api.TargetRef
 					switch mhrRules.TargetRef.Kind {
-					case common_api.Mesh, common_api.LegacyMeshSubsetKind():
+					case common_api.OutboundTargetRefKindMesh, common_api.OutboundTargetRefKind(common_api.LegacyMeshSubsetKind()):
 						targetRef = common_api.TargetRef{
 							Kind: common_api.LegacyMeshSubsetKind(),
 							Tags: &map[string]string{
@@ -611,12 +532,11 @@ func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {
 	}
 }
 
-// policySelectsByNamespace reports whether a policy may reference a resource
+// PolicySelectsByNamespace reports whether a policy may reference a resource
 // living in the given namespace. Consumer and workload-owner policies are
 // namespaced, so they can only reference resources from their own namespace;
-// producer/system policies are namespace-agnostic. This mirrors the dataplane
-// namespace scoping applied during matching.
-func policySelectsByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) bool {
+// producer/system policies are namespace-agnostic.
+func PolicySelectsByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) bool {
 	switch core_model.PolicyRole(policyMeta) {
 	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
 		ns, ok := policyMeta.GetLabels()[mesh_proto.KubeNamespaceTag]

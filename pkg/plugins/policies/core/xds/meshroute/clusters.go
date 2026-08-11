@@ -23,7 +23,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
@@ -200,9 +199,6 @@ func Identities(
 	meshCtx xds_context.MeshContext,
 ) []string {
 	var result []string
-	serviceTagTransformer := func(serviceTag string) string {
-		return tls.ServiceSpiffeID(meshCtx.Resource.Meta.GetName(), serviceTag)
-	}
 	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
 	case common_api.MeshService:
 		ms := meshCtx.GetServiceByKRI(backendRef.Resource)
@@ -210,9 +206,6 @@ func Identities(
 			return result
 		}
 		for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
-			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
-				result = append(result, serviceTagTransformer(identity.Value))
-			}
 			if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
 				result = append(result, identity.Value)
 			}
@@ -236,6 +229,9 @@ func Identities(
 				continue
 			}
 			for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
+				if identity.Type != meshservice_api.MeshServiceIdentitySpiffeIDType {
+					continue
+				}
 				identities[identity.Value] = struct{}{}
 			}
 		}

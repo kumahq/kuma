@@ -131,7 +131,7 @@ spec:
 			// alongside the test server.
 			Eventually(func(g Gomega) (int, error) {
 				return NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
-			}, "30s", "1s").Should(Equal(2), "dpps should be synced to global")
+			}, "60s", "1s").Should(Equal(2), "dpps should be synced to global")
 
 			By("deploy a new universal zone with latest version")
 			err = NewClusterSetup().

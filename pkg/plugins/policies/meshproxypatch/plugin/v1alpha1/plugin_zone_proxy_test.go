@@ -208,7 +208,7 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 			resources: []core_xds.Resource{zoneEgressListenerResource()},
 			policies: []*api.MeshProxyPatchResource{
 				newMeshProxyPatch("by-label", &common_api.TopLevelTargetRef{
-					Kind:   common_api.Dataplane,
+					Kind:   common_api.TopLevelTargetRefKindDataplane,
 					Labels: pointer.To(map[string]string{mesh_proto.ListenerZoneEgressLabel: "enabled"}),
 				}, []api.Modification{
 					{Listener: &api.ListenerMod{
@@ -225,7 +225,7 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 			resources: []core_xds.Resource{zoneIngressListenerResource()},
 			policies: []*api.MeshProxyPatchResource{
 				newMeshProxyPatch("by-label", &common_api.TopLevelTargetRef{
-					Kind:   common_api.Dataplane,
+					Kind:   common_api.TopLevelTargetRefKindDataplane,
 					Labels: pointer.To(map[string]string{mesh_proto.ListenerZoneIngressLabel: "enabled"}),
 				}, []api.Modification{
 					{Listener: &api.ListenerMod{
@@ -241,7 +241,7 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 			dp:        mixedInboundAndZoneEgressDataplane(),
 			resources: mixedInboundAndZoneEgressResources(),
 			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("patch-both", &common_api.TopLevelTargetRef{Kind: common_api.Dataplane}, []api.Modification{
+				newMeshProxyPatch("patch-both", &common_api.TopLevelTargetRef{Kind: common_api.TopLevelTargetRefKindDataplane}, []api.Modification{
 					{Listener: &api.ListenerMod{
 						Operation: api.ModOpPatch,
 						Match:     &api.ListenerMatch{Name: pointer.To("inbound:192.168.0.1:17777")},
