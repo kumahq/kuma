@@ -3,8 +3,5 @@ kri: kri_m____demo_
 modificationTime: "2019-07-17T16:05:36.995Z"
 name: demo
 type: Mesh
-mtls:
-  backends:
-  - name: builtin-1
-    type: builtin
-  enabledBackend: builtin-1
+skipCreatingInitialPolicies:
+- MeshRetry

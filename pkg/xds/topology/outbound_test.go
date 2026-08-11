@@ -32,16 +32,6 @@ import (
 
 var _ = Describe("TrafficRoute", func() {
 	const defaultMeshName = "default"
-	defaultMeshWithMTLS := &core_mesh.MeshResource{
-		Meta: &test_model.ResourceMeta{
-			Name: defaultMeshName,
-		},
-		Spec: &mesh_proto.Mesh{
-			Mtls: &mesh_proto.Mesh_Mtls{
-				EnabledBackend: "ca-1",
-			},
-		},
-	}
 	var dataSourceLoader datasource.Loader
 
 	BeforeEach(func() {
@@ -56,20 +46,20 @@ var _ = Describe("TrafficRoute", func() {
 			meshMultiZoneService []*meshmzservice_api.MeshMultiZoneServiceResource
 			meshZoneAddresses    []*meshzoneaddress_api.MeshZoneAddressResource
 			zoneEgressAddresses  []core_xds.ZoneEgressInstance
-			mesh                 *core_mesh.MeshResource
+			workloadIdentity     bool
 			expected             core_xds.EndpointMap
 		}
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildDataplaneEndpointMap(context.Background(), "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.meshZoneAddresses, dataSourceLoader, given.mesh.MTLSEnabled(), given.zoneEgressAddresses)
+				endpoints := BuildDataplaneEndpointMap(context.Background(), "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.meshZoneAddresses, dataSourceLoader, given.workloadIdentity, given.zoneEgressAddresses)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
 			Entry("no dataplanes", testCase{
-				dataplanes: []*core_mesh.DataplaneResource{},
-				mesh:       defaultMeshWithMTLS,
-				expected:   core_xds.EndpointMap{},
+				dataplanes:       []*core_mesh.DataplaneResource{},
+				workloadIdentity: true,
+				expected:         core_xds.EndpointMap{},
 			}),
 			Entry("unhealthy dataplane", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
@@ -110,7 +100,7 @@ var _ = Describe("TrafficRoute", func() {
 						AddIntPort(6379, 6379, "tcp").
 						Build(),
 				},
-				mesh: defaultMeshWithMTLS,
+				workloadIdentity: true,
 				expected: core_xds.EndpointMap{
 					"kri_msvc_default___redis_6379": []core_xds.Endpoint{
 						{
@@ -175,7 +165,7 @@ var _ = Describe("TrafficRoute", func() {
 						AddIntPort(6379, 6379, "tcp").
 						Build(),
 				},
-				mesh: defaultMeshWithMTLS,
+				workloadIdentity: true,
 				expected: core_xds.EndpointMap{
 					"kri_msvc_default___redis_6379": []core_xds.Endpoint{
 						{
@@ -313,7 +303,7 @@ var _ = Describe("TrafficRoute", func() {
 				zoneEgressAddresses: []core_xds.ZoneEgressInstance{
 					{Address: "1.1.1.1", Port: 10002},
 				},
-				mesh: defaultMeshWithMTLS,
+				workloadIdentity: true,
 				expected: core_xds.EndpointMap{
 					"kri_extsvc_default___another-mes_10000": []core_xds.Endpoint{
 						{
@@ -414,8 +404,8 @@ var _ = Describe("TrafficRoute", func() {
 				zoneEgressAddresses: []core_xds.ZoneEgressInstance{
 					{Address: "1.1.1.1", Port: 10002},
 				},
-				mesh:     defaultMeshWithMTLS,
-				expected: core_xds.EndpointMap{},
+				workloadIdentity: true,
+				expected:         core_xds.EndpointMap{},
 			}),
 			Entry("uses MeshExternalService without egress", testCase{
 				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
@@ -473,8 +463,8 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				mesh:     defaultMeshWithMTLS,
-				expected: core_xds.EndpointMap{},
+				workloadIdentity: true,
+				expected:         core_xds.EndpointMap{},
 			}),
 			Entry("uses MeshMultiZoneService", testCase{
 				meshZoneAddresses: []*meshzoneaddress_api.MeshZoneAddressResource{
@@ -503,7 +493,7 @@ var _ = Describe("TrafficRoute", func() {
 						AddMatchedMeshServiceName(kri.From(samples.MeshServiceSyncedBackend())).
 						Build(),
 				},
-				mesh: defaultMeshWithMTLS,
+				workloadIdentity: true,
 				expected: core_xds.EndpointMap{
 					"kri_msvc_default___backend_80": []core_xds.Endpoint{
 						{
@@ -613,7 +603,7 @@ var _ = Describe("TrafficRoute", func() {
 					meshMultiZoneService: []*meshmzservice_api.MeshMultiZoneServiceResource{
 						mzSvc,
 					},
-					mesh: defaultMeshWithMTLS,
+					workloadIdentity: true,
 					expected: core_xds.EndpointMap{
 						localKey: []core_xds.Endpoint{
 							{
@@ -682,7 +672,7 @@ var _ = Describe("TrafficRoute", func() {
 				zoneEgressAddresses: []core_xds.ZoneEgressInstance{
 					{Address: "10.42.0.11", Port: 10002},
 				},
-				mesh: defaultMeshWithMTLS,
+				workloadIdentity: true,
 				expected: core_xds.EndpointMap{
 					"kri_extsvc_default___ext-svc_10000": []core_xds.Endpoint{
 						{
@@ -706,8 +696,8 @@ var _ = Describe("TrafficRoute", func() {
 				meshServices: []*meshservice_api.MeshServiceResource{
 					samples.MeshServiceSyncedBackend(), // remote MeshService from "east" zone
 				},
-				mesh:     defaultMeshWithMTLS,
-				expected: core_xds.EndpointMap{},
+				workloadIdentity: true,
+				expected:         core_xds.EndpointMap{},
 			}),
 			Entry("remote MeshService with a MeshZoneAddress of another zone is not included", testCase{
 				meshZoneAddresses: []*meshzoneaddress_api.MeshZoneAddressResource{
@@ -726,8 +716,8 @@ var _ = Describe("TrafficRoute", func() {
 				meshServices: []*meshservice_api.MeshServiceResource{
 					samples.MeshServiceSyncedBackend(), // remote MeshService from "east" zone
 				},
-				mesh:     defaultMeshWithMTLS,
-				expected: core_xds.EndpointMap{},
+				workloadIdentity: true,
+				expected:         core_xds.EndpointMap{},
 			}),
 		)
 	})

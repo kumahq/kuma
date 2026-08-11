@@ -3,8 +3,6 @@ syntax = "proto3";
 package kuma.mesh.v1alpha1;
 
 import "api/mesh/options.proto";
-import "google/protobuf/duration.proto";
-import "google/protobuf/struct.proto";
 
 option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
 
@@ -19,21 +17,8 @@ message Mesh {
   option (kuma.mesh.resource).ws.plural = "meshes";
   option (kuma.mesh.resource).short_name = "m";
 
-  // mTLS settings of a Mesh.
-  message Mtls {
-    // Name of the enabled backend
-    string enabledBackend = 1;
-
-    // List of available Certificate Authority backends
-    repeated CertificateAuthorityBackend backends = 2;
-
-    // If enabled, skips CA validation.
-    bool skipValidation = 3;
-  }
-
-  // mTLS settings.
-  // +optional
-  Mtls mtls = 1;
+  reserved 1;
+  reserved "mtls";
 
   reserved 2;
   reserved "tracing";
@@ -47,8 +32,8 @@ message Mesh {
   reserved 5;
   reserved "networking";
 
-  // Routing settings of the mesh
-  Routing routing = 6;
+  reserved 6;
+  reserved "routing";
 
   reserved 7;
   reserved "constraints";
@@ -59,70 +44,4 @@ message Mesh {
   repeated string skipCreatingInitialPolicies = 8;
 
   reserved 9; // formerly meshServices
-}
-
-// CertificateAuthorityBackend defines Certificate Authority backend
-message CertificateAuthorityBackend {
-  // Name of the backend
-  string name = 1;
-
-  // Type of the backend. Has to be one of the loaded plugins (Kuma ships with
-  // builtin and provided)
-  string type = 2;
-
-  // DpCert defines settings for certificates generated for Dataplanes
-  message DpCert {
-    // Rotation defines rotation settings for Dataplane certificate
-    message Rotation {
-      // Time after which generated certificate for Dataplane will expire
-      string expiration = 1;
-    }
-    // Rotation settings
-    Rotation rotation = 1;
-
-    // Timeout on request to CA for DP certificate generation and retrieval
-    google.protobuf.Duration requestTimeout = 2;
-  }
-
-  // Dataplane certificate settings
-  DpCert dpCert = 3;
-
-  // Configuration of the backend
-  google.protobuf.Struct conf = 4;
-
-  enum Mode {
-    // A STRICT mode implies that the server validates the connection and
-    // accepts only encrypted TLS traffic
-    STRICT = 0;
-    // A PERMISSIVE mode implies that the outbounds encrypt traffic the same way
-    // it happens in strict mode, but inbounds accept both TLS and plaintext
-    // traffic. This allows applications residing in the mesh to accept requests
-    // from outside of the mesh.
-    PERMISSIVE = 1;
-  }
-
-  // Mode defines the behaviour of inbound listeners with regard to traffic
-  // encryption
-  Mode mode = 5;
-
-  // RootChain defines settings related to CA root certificate chain.
-  message RootChain {
-    // Timeout on request for to CA for root certificate chain.
-    // If not specified, defaults to 10s.
-    google.protobuf.Duration requestTimeout = 1;
-  }
-
-  RootChain rootChain = 6;
-}
-
-// Routing defines configuration for the routing in the mesh
-message Routing {
-  reserved 1;
-  reserved "localityAwareLoadBalancing";
-
-  reserved 2;
-  reserved "zoneEgress";
-
-  reserved 3;
-  reserved "defaultForbidMeshExternalServiceAccess";
 }

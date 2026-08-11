@@ -149,15 +149,7 @@ var _ = Describe("Snapshot", func() {
 			resources = &mesh_proto.KumaResource{
 				Meta: &mesh_proto.KumaResource_Meta{Name: "mesh1", Mesh: "mesh1"},
 				Spec: mustMarshalAny(&mesh_proto.Mesh{
-					Mtls: &mesh_proto.Mesh_Mtls{
-						EnabledBackend: "ca",
-						Backends: []*mesh_proto.CertificateAuthorityBackend{
-							{
-								Name: "ca",
-								Type: "builtin",
-							},
-						},
-					},
+					SkipCreatingInitialPolicies: []string{"MeshRetry"},
 				}),
 			}
 			snapshot = cache.NewSnapshotBuilder([]model.ResourceType{core_mesh.MeshType}).

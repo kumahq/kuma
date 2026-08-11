@@ -45,8 +45,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
 
-	if !ctx.Mesh.Resource.MTLSEnabled() && proxy.WorkloadIdentity == nil {
-		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
+	if proxy.WorkloadIdentity == nil {
+		log.V(1).Info("skip applying MeshTrafficPermission, the proxy has no workload identity",
 			"proxyName", proxy.Dataplane.GetMeta().GetName(),
 			"mesh", ctx.Mesh.Resource.GetMeta().GetName())
 		return nil

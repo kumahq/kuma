@@ -11,26 +11,7 @@ import (
 
 var (
 	Mesh1 = &mesh_proto.Mesh{
-		Mtls: &mesh_proto.Mesh_Mtls{
-			EnabledBackend: "ca-1",
-			Backends: []*mesh_proto.CertificateAuthorityBackend{
-				{
-					Name: "ca-1",
-					Type: "builtin",
-				},
-			},
-		},
-	}
-	Mesh2 = &mesh_proto.Mesh{
-		Mtls: &mesh_proto.Mesh_Mtls{
-			EnabledBackend: "ca-2",
-			Backends: []*mesh_proto.CertificateAuthorityBackend{
-				{
-					Name: "ca-2",
-					Type: "builtin",
-				},
-			},
-		},
+		SkipCreatingInitialPolicies: []string{"*"},
 	}
 	Dataplane = &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{

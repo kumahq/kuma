@@ -105,7 +105,7 @@ var _ = Describe("Updater", func() {
 		}, "10s", "100ms").Should(Succeed())
 	})
 
-	It("should add identity to status of service based on MeshIdentity and old mTLS", func() {
+	It("should add identities to status of service based on multiple MeshIdentities", func() {
 		// when
 		mid := builders.MeshIdentity().WithName("identity-1").WithBundled().WithMesh("tls-mesh").WithSelector(&common_api.LabelSelector{
 			MatchLabels: &map[string]string{
@@ -117,7 +117,7 @@ var _ = Describe("Updater", func() {
 		}).WithSpiffeID("another-mesh-domain.east.mesh.local", "/my/domain/test").WithPartiallyReadyStatus().Build()
 		trustDomain := "tls-mesh.east.mesh.local"
 
-		Expect(samples.MeshMTLSBuilder().WithName("tls-mesh").Create(resManager)).To(Succeed())
+		Expect(samples.MeshDefaultBuilder().WithName("tls-mesh").Create(resManager)).To(Succeed())
 		Expect(samples.MeshServiceBackendBuilder().WithMesh("tls-mesh").Create(resManager)).To(Succeed())
 		Expect(builders.MeshTrust().WithMesh("tls-mesh").WithTrustDomain(trustDomain).Create(resManager)).To(Succeed())
 		Expect(resManager.Create(context.TODO(), mid, store.CreateByKey(mid.Meta.GetName(), "tls-mesh"))).To(Succeed())
@@ -248,32 +248,20 @@ var _ = Describe("Updater", func() {
 			}, "10s", "50ms").MustPassRepeatedly(3).Should(Succeed())
 			// MustPassRepeatedly is to make sure that when existingTLSStatus == expectedTLSStatus we actually preserve it.
 		},
-		Entry("should set TLS to NotReady when mTLS is disabled", testCase{
+		Entry("should set TLS to NotReady when the mesh has no MeshIdentity", testCase{
 			meshBuilder:            samples.MeshDefaultBuilder(),
 			dpInsightIssuedBackend: "builtin-1",
 			existingTLSStatus:      meshservice_api.TLSReady,
 			expectedTLSStatus:      meshservice_api.TLSNotReady,
 		}),
-		Entry("should set TLS to Ready when we issued certs to all DPPs", testCase{
-			meshBuilder:            samples.MeshMTLSBuilder(),
-			dpInsightIssuedBackend: "builtin-1",
-			existingTLSStatus:      meshservice_api.TLSNotReady,
-			expectedTLSStatus:      meshservice_api.TLSReady,
-		}),
-		Entry("should set TLS to NotReady when we did not issued certs to all DPPs", testCase{
-			meshBuilder:            samples.MeshMTLSBuilder(),
+		Entry("should set TLS to NotReady when the mesh has no MeshIdentity and no previous status", testCase{
+			meshBuilder:            samples.MeshDefaultBuilder(),
 			dpInsightIssuedBackend: "",
 			existingTLSStatus:      "",
 			expectedTLSStatus:      meshservice_api.TLSNotReady,
 		}),
-		Entry("should preserve TLS Ready even through we did not issue certs to all DPPs", testCase{
-			meshBuilder:            samples.MeshMTLSBuilder(),
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      meshservice_api.TLSReady,
-			expectedTLSStatus:      meshservice_api.TLSReady,
-		}),
 		Entry("should set TLS to NotReady when DP has no insight", testCase{
-			meshBuilder:            samples.MeshMTLSBuilder(),
+			meshBuilder:            samples.MeshDefaultBuilder(),
 			dpInsightMissing:       true,
 			dpInsightIssuedBackend: "",
 			existingTLSStatus:      "",
@@ -339,8 +327,8 @@ var _ = Describe("Updater", func() {
 			existingTLSStatus:      "",
 			expectedTLSStatus:      meshservice_api.TLSNotReady,
 		}),
-		Entry("should set TLS to Ready when mTLS is on but the DPP takes its identity from MeshIdentity", testCase{
-			meshBuilder: samples.MeshMTLSBuilder(),
+		Entry("should set TLS to Ready when the DPP takes its identity from MeshIdentity", testCase{
+			meshBuilder: samples.MeshDefaultBuilder(),
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{
 				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
 					MatchLabels: &map[string]string{
@@ -359,7 +347,7 @@ var _ = Describe("Updater", func() {
 			existingTLSStatus:      "",
 			expectedTLSStatus:      meshservice_api.TLSReady,
 		}),
-		Entry("should preserve TLS Ready even through we did not issue certs to all DPPs with MeshIdentity", testCase{
+		Entry("should preserve TLS Ready even though not every DPP has a ready identity", testCase{
 			meshBuilder: samples.MeshDefaultBuilder(),
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{
 				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
