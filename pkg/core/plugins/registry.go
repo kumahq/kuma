@@ -30,9 +30,6 @@ const (
 	Universal  PluginName = "universal"
 	Memory     PluginName = "memory"
 	Postgres   PluginName = "postgres"
-
-	CaBuiltin  PluginName = "builtin"
-	CaProvided PluginName = "provided"
 )
 
 type RegisteredPolicyPlugin struct {
