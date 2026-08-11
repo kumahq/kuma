@@ -1,0 +1,1 @@
+import{j as c,b as e,o as s,v as _,w as o,g as t}from"./index-CTIo3MVQ.js";const i={};function p(m,u){const n=e("RouterView"),r=e("AppView"),a=e("RouteView");return s(),_(a,{name:"hostname-generator-root-view"},{default:o(()=>[t(r,null,{default:o(()=>[t(n)]),_:1})]),_:1})}const f=c(i,[["render",p]]);export{f as default};
