@@ -12,7 +12,6 @@ import (
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
@@ -26,7 +25,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
@@ -61,14 +59,10 @@ func GenerateClusters(
 				if proxy.WorkloadIdentity == nil {
 					continue
 				}
-				// The destination advertises its SNI from the resolved port
-				// name, so normalize a numeric backend-ref section (named port
-				// targeted by number) to the port name before deriving the KRI SNI.
-				kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
-				if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+				sni, ok := SNIForRealResource(realResourceRef, port)
+				if !ok {
 					continue
 				}
-				sni := core_sni.FromKRI(kriID)
 				// we only want to route when are mesh-scoped zone egresses
 				if len(meshCtx.ZoneEgresses) == 0 {
 					continue
@@ -116,17 +110,16 @@ func GenerateClusters(
 					kriSNI := proxy.WorkloadIdentity != nil
 					var sni string
 					if kriSNI {
-						// The destination advertises its SNI from the resolved
-						// port name, so normalize a numeric backend-ref section
-						// (named port targeted by number) to the port name
-						// before deriving the KRI SNI.
-						kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
-						if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+						var ok bool
+						sni, ok = SNIForRealResource(realResourceRef, port)
+						if !ok {
 							continue
 						}
-						sni = core_sni.FromKRI(kriID)
 					} else {
-						sni = SniForBackendRef(realResourceRef, dest, port, systemNamespace)
+						sni, ok = SNIForRealResource(realResourceRef, port)
+						if !ok {
+							continue
+						}
 					}
 					// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 					if proxy.WorkloadIdentity != nil {
@@ -222,18 +215,17 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 		Build()
 }
 
-func SniForBackendRef(
+func SNIForRealResource(
 	backendRef *resolve.RealResourceBackendRef,
-	dest core_resources.Destination,
 	port core_resources.Port,
-	systemNamespace string,
-) string {
-	name := core_model.GetDisplayName(dest.GetMeta())
-	if backendRef.Resource.ResourceType == meshservice_api.MeshServiceType {
-		name = dest.(*meshservice_api.MeshServiceResource).SNIName(systemNamespace)
+) (string, bool) {
+	// The destination advertises SNI from the resolved port name, so numeric
+	// backend-ref sections must be normalized before deriving the KRI SNI.
+	kriID := kri.WithSectionName(backendRef.Resource, port.GetName())
+	if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+		return "", false
 	}
-
-	return tls.SNIForResource(name, dest.GetMeta().GetMesh(), dest.Descriptor().Name, port.GetValue(), nil)
+	return core_sni.FromKRI(kriID), true
 }
 
 func Identities(
