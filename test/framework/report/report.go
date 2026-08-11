@@ -102,19 +102,25 @@ func persistFile(name, srcPath string) {
 	}
 }
 
+// SuiteDir is the directory a suite dumps into: a subdirectory of BaseDir named
+// after the suite. Every suite of a job shares BaseDir, so without the extra
+// level the suite that finishes last wipes the debug data of the suite that
+// actually failed.
+func SuiteDir(suiteDescription string) string {
+	name := files.ToValidUnixFilename(suiteDescription)
+	if name == "" {
+		name = "suite"
+	}
+	return path.Join(BaseDir, name)
+}
+
 // DumpReport dumps the report to the disk.
 func DumpReport(report ginkgo.Report) {
 	ginkgo.GinkgoHelper()
-	basePath := BaseDir
-	if files.FileExists(basePath) {
-		tmpDir := path.Join(os.TempDir(), fmt.Sprintf("kuma-%04d", ginkgo.GinkgoRandomSeed()))
-		logf("Report already exists in %q, moving to tmpDir: %q", basePath, tmpDir)
-		if err := os.Rename(BaseDir, tmpDir); err != nil {
-			logf("[WARNING]: failed to move %q to %q deleting it! %v", basePath, tmpDir, err)
-			if err := os.RemoveAll(basePath); err != nil {
-				logf("[WARNING]: failed to remove %q %v", basePath, err)
-			}
-		}
+	basePath := SuiteDir(report.SuiteDescription)
+	// Only this suite's own directory is cleaned, so re-runs don't mix results.
+	if err := os.RemoveAll(basePath); err != nil {
+		logf("[WARNING]: failed to remove %q %v", basePath, err)
 	}
 	logf("saving report to %q DumpOnSuccess: %v", basePath, DumpOnSuccess)
 	writeEntry := func(path string, data string) {
