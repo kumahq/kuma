@@ -206,11 +206,9 @@ var WorkloadResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             false,
 	HasToTargetRef:               false,
-	HasFromTargetRef:             false,
 	HasRulesTargetRef:            false,
 	HasStatus:                    true,
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "wl",
-	IsFromAsRules:                false,
 	Order:                        0,
 }

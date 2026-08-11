@@ -195,11 +195,9 @@ var MeshLoadBalancingStrategyResourceTypeDescriptor = model.ResourceTypeDescript
 	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
-	HasFromTargetRef:             false,
 	HasRulesTargetRef:            false,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mlbs",
-	IsFromAsRules:                false,
 	Order:                        400,
 }

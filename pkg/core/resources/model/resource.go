@@ -225,9 +225,6 @@ type ResourceTypeDescriptor struct {
 	IsTargetRefBased bool
 	// HasToTargetRef indicates that the policy can be applied to outbound traffic
 	HasToTargetRef bool
-	// HasFromTargetRef is retained for REST compatibility with older clients and
-	// is no longer set by policy generators.
-	HasFromTargetRef bool
 	// HasRulesTargetRef indicates that the policy can be applied to inbound traffic
 	HasRulesTargetRef bool
 	// HasStatus indicates that the policy has a status field
@@ -254,9 +251,6 @@ type ResourceTypeDescriptor struct {
 	AllowedOnSystemNamespaceOnly bool
 	// ShortName a name that is used in kubectl or in the envoy configuration
 	ShortName string
-	// IsFromAsRules is retained for REST compatibility with older clients and is
-	// no longer set by policy generators.
-	IsFromAsRules bool
 	// Order defines the execution order of the associated plugin relative to others. It's used only when IsPluginOriginated is true.
 	// Lower values run first. Used by PolicyPlugins() to return a sorted list.
 	Order int

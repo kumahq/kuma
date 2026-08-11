@@ -209,11 +209,9 @@ var MeshMultiZoneServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             false,
 	HasToTargetRef:               false,
-	HasFromTargetRef:             false,
 	HasRulesTargetRef:            false,
 	HasStatus:                    true,
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mzsvc",
-	IsFromAsRules:                false,
 	Order:                        0,
 }

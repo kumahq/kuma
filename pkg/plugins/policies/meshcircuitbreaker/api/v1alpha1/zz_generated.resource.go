@@ -195,11 +195,9 @@ var MeshCircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
-	HasFromTargetRef:             false,
 	HasRulesTargetRef:            true,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mcb",
-	IsFromAsRules:                false,
 	Order:                        1300,
 }

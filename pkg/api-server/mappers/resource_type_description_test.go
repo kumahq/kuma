@@ -18,7 +18,6 @@ func TestMapResourceTypeDescriptionPreservesRulesTargetRefPolicies(t *testing.T)
 			IsPolicy:          true,
 			IsTargetRefBased:  true,
 			HasToTargetRef:    true,
-			HasFromTargetRef:  false,
 			HasRulesTargetRef: true,
 		},
 	}, false, false)
@@ -26,6 +25,7 @@ func TestMapResourceTypeDescriptionPreservesRulesTargetRefPolicies(t *testing.T)
 	require.Len(t, response.Resources, 1)
 	require.NotNil(t, response.Resources[0].Policy)
 	require.False(t, response.Resources[0].Policy.HasFromTargetRef)
+	require.False(t, response.Resources[0].Policy.IsFromAsRules)
 	require.True(t, response.Resources[0].Policy.HasRulesTargetRef)
 	require.True(t, response.Resources[0].Policy.HasToTargetRef)
 }
