@@ -134,51 +134,6 @@ func isSubset(t1, t2 Tag) bool {
 	}
 }
 
-// Intersect returns true if there exists an element that belongs both to 'other' and current set.
-// Empty set intersects with all sets.
-//
-// We're using this function to check if 2 'from' rules of MeshTrafficPermission can be applied to the same client DPP.
-// For example:
-//
-//	subset 1: {team: team-a}
-//	subset 2: {zone: east}
-//
-// there is a DPP with tags 'team: team-a' and 'zone: east' that's subjected to both these rules.
-// So subset 1 and subset 2 have an intersection.
-// However, in another example:
-//
-//	subset 1: {team: team-a}
-//	subset 2: {team: team-b, zone: east}
-//
-// there is no DPP that'd hit both subset 1 and subset 2. So in this case they don't have an intersection.
-func (ss Subset) Intersect(other Subset) bool {
-	if len(ss) == 0 || len(other) == 0 {
-		return true
-	}
-	otherByKeysOnlyPositive := map[string][]Tag{}
-	for _, t := range other {
-		if t.Not {
-			continue
-		}
-		otherByKeysOnlyPositive[t.Key] = append(otherByKeysOnlyPositive[t.Key], t)
-	}
-	for _, tag := range ss {
-		if tag.Not {
-			continue
-		}
-		oTags, ok := otherByKeysOnlyPositive[tag.Key]
-		if !ok {
-			continue
-		}
-		for _, otherTag := range oTags {
-			if otherTag != tag {
-				return false
-			}
-		}
-	}
-	return true
-}
-
 func (ss Subset) WithTag(key, value string, not bool) Subset {
 	return append(ss, Tag{Key: key, Value: value, Not: not})
 }
@@ -258,82 +213,6 @@ func (ss Subset) IndexOfPositive() int {
 		}
 	}
 	return -1
-}
-
-type SubsetIter struct {
-	dims     []chooser
-	idx      []int
-	finished bool
-}
-
-type chooser struct {
-	key  string
-	vals []string // unique values for this key in stable order
-}
-
-func NewSubsetIter(tags []Tag) *SubsetIter {
-	seenKey := make(map[string]int)
-	seenVal := make(map[string]map[string]bool)
-	var dims []chooser
-
-	for _, t := range tags {
-		i, ok := seenKey[t.Key]
-		if !ok {
-			i = len(dims)
-			seenKey[t.Key] = i
-			seenVal[t.Key] = make(map[string]bool)
-			dims = append(dims, chooser{key: t.Key})
-		}
-		if !seenVal[t.Key][t.Value] {
-			dims[i].vals = append(dims[i].vals, t.Value)
-			seenVal[t.Key][t.Value] = true
-		}
-	}
-
-	return &SubsetIter{
-		dims: dims,
-		idx:  make([]int, len(dims)),
-	}
-}
-
-// Next returns the next subset of the partition. When reaches the end Next returns 'nil'
-func (it *SubsetIter) Next() Subset {
-	if it.finished {
-		return nil
-	}
-
-	for i := 0; i < len(it.idx); i++ {
-		radix := len(it.dims[i].vals) + 1
-		it.idx[i]++
-		if it.idx[i] < radix {
-			return it.currentSubset()
-		}
-		it.idx[i] = 0
-	}
-
-	it.finished = true
-	return it.currentSubset()
-}
-
-// Build the subset for the current counter state.
-// Rule per key:
-//
-//	idx == len(vals)  -> include all negatives for that key
-//	else              -> include exactly one positive for that key
-func (it *SubsetIter) currentSubset() Subset {
-	out := Subset{}
-	for i, d := range it.dims {
-		ch := it.idx[i]
-		if ch == len(d.vals) {
-			for _, v := range d.vals {
-				out = append(out, Tag{Key: d.key, Value: v, Not: true})
-			}
-		} else {
-			backIdx := len(d.vals) - ch - 1
-			out = append(out, Tag{Key: d.key, Value: d.vals[backIdx], Not: false})
-		}
-	}
-	return out
 }
 
 // Deduplicate returns a new slice of subsetutils.Subset with duplicates removed.
