@@ -105,21 +105,9 @@ func GenerateClusters(
 						tlsReady = !isLocalMeshService || ms.Status.TLS.Status == meshservice_api.TLSReady
 						protocol = port.GetProtocol()
 					}
-					// Every zone is reachable through a mesh-scoped zone proxy, which
-					// matches the KRI SNI, so a proxy with WorkloadIdentity always uses it.
-					kriSNI := proxy.WorkloadIdentity != nil
-					var sni string
-					if kriSNI {
-						var ok bool
-						sni, ok = SNIForRealResource(realResourceRef, port)
-						if !ok {
-							continue
-						}
-					} else {
-						sni, ok = SNIForRealResource(realResourceRef, port)
-						if !ok {
-							continue
-						}
+					sni, ok := SNIForRealResource(realResourceRef, port)
+					if !ok {
+						continue
 					}
 					// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
 					if proxy.WorkloadIdentity != nil {
