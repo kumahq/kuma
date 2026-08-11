@@ -58,14 +58,14 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 func applyToOutboundPassthrough(
 	_ xds_context.Context,
 	rs *core_xds.ResourceSet,
-	rules *core_rules.ProxyConf,
+	policyConf *core_rules.ProxyConf,
 	listeners policies_xds.Listeners,
 	proxy *core_xds.Proxy,
 ) error {
-	if rules == nil {
+	if policyConf == nil {
 		return nil
 	}
-	conf := rules.Conf.(api.Conf)
+	conf := policyConf.Conf.(api.Conf)
 
 	// todo: this should be handled by "base policy"
 	if pointer.Deref(conf.PassthroughMode) == "" {

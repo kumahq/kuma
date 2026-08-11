@@ -84,14 +84,14 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 func applyToInbounds(ctx xds_context.Context, policies xds.TypedMatchingPolicies, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
 	sectionNames := inboundSectionNames(proxy.Dataplane.Spec.GetNetworking())
 	for key, inboundListener := range inboundListeners {
-		listenerConf, err := buildListenerScopedProxyConf(policies, sectionNames[key])
+		listenerPolicyConf, err := buildListenerScopedProxyConf(policies, sectionNames[key])
 		if err != nil {
 			return err
 		}
-		if listenerConf == nil {
+		if listenerPolicyConf == nil {
 			continue
 		}
-		if err := configureListener(ctx, listenerConf, proxy, inboundListener, "", inboundListener.TrafficDirection); err != nil {
+		if err := configureListener(ctx, listenerPolicyConf, proxy, inboundListener, "", inboundListener.TrafficDirection); err != nil {
 			return err
 		}
 	}
@@ -135,17 +135,17 @@ func applyToZoneProxyListeners(ctx xds_context.Context, policies xds.TypedMatchi
 		if !ok {
 			continue
 		}
-		listenerConf, err := buildListenerScopedProxyConf(policies, l.GetSectionName())
+		listenerPolicyConf, err := buildListenerScopedProxyConf(policies, l.GetSectionName())
 		if err != nil {
 			return err
 		}
-		if listenerConf == nil {
+		if listenerPolicyConf == nil {
 			continue
 		}
 		// Zone-proxy listener TrafficDirection is INBOUND on the wire (Envoy receives
 		// from local sidecars), but a zone-egress span represents an outbound hop. Pass
 		// UNSPECIFIED so Datadog SplitService skips the misleading "_INBOUND" suffix.
-		if err := configureListener(ctx, listenerConf, proxy, listener, "", envoy_core.TrafficDirection_UNSPECIFIED); err != nil {
+		if err := configureListener(ctx, listenerPolicyConf, proxy, listener, "", envoy_core.TrafficDirection_UNSPECIFIED); err != nil {
 			return err
 		}
 	}
@@ -177,7 +177,7 @@ func buildListenerScopedProxyConf(policies xds.TypedMatchingPolicies, sectionNam
 	return core_rules.BuildProxyConf(filtered)
 }
 
-func applyToRealResources(ctx xds_context.Context, rules *core_rules.ProxyConf, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+func applyToRealResources(ctx xds_context.Context, policyConf *core_rules.ProxyConf, rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
 		service, port, found := meshroute.DestinationPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
 			Resource: uri,
@@ -189,7 +189,7 @@ func applyToRealResources(ctx xds_context.Context, rules *core_rules.ProxyConf, 
 			if typ == envoy_resource.ListenerType {
 				for _, listener := range resources {
 					l := listener.Resource.(*envoy_listener.Listener)
-					if err := configureListener(ctx, rules, proxy, l, destinationname.MustResolve(service, port), l.TrafficDirection); err != nil {
+					if err := configureListener(ctx, policyConf, proxy, l, destinationname.MustResolve(service, port), l.TrafficDirection); err != nil {
 						return err
 					}
 				}
@@ -199,7 +199,7 @@ func applyToRealResources(ctx xds_context.Context, rules *core_rules.ProxyConf, 
 	return nil
 }
 
-func configureListener(ctx xds_context.Context, rules *core_rules.ProxyConf, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, direction envoy_core.TrafficDirection) error {
+func configureListener(ctx xds_context.Context, policyConf *core_rules.ProxyConf, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, direction envoy_core.TrafficDirection) error {
 	serviceName := proxy.Dataplane.IdentifyingName()
 	// IdentifyingName falls back to "unknown" on a zone-proxy-only Dataplane (no service tag).
 	// Prefer the workload label (stable across pod restarts on K8s) and fall back to the
@@ -211,7 +211,7 @@ func configureListener(ctx xds_context.Context, rules *core_rules.ProxyConf, pro
 			serviceName = proxy.Dataplane.GetMeta().GetName()
 		}
 	}
-	conf := rules.Conf.(api.Conf)
+	conf := policyConf.Conf.(api.Conf)
 
 	var workloadKRI string
 	if workloadName := proxy.Dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workloadName != "" {
@@ -290,8 +290,8 @@ func shouldSkipUnresolvedOpenTelemetryBackend(
 	return hasOpenTelemetryBackend(conf)
 }
 
-func applyToClusters(ctx xds_context.Context, rules *core_rules.ProxyConf, rs *xds.ResourceSet, proxy *xds.Proxy) error {
-	conf := rules.Conf.(api.Conf)
+func applyToClusters(ctx xds_context.Context, policyConf *core_rules.ProxyConf, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+	conf := policyConf.Conf.(api.Conf)
 
 	var backend api.Backend
 	if backends := pointer.Deref(conf.Backends); len(backends) == 0 {
@@ -396,8 +396,8 @@ func endpointForDatadog(cfg *api.DatadogBackend) *xds.Endpoint {
 	}
 }
 
-func addToOtelPipeBackends(ctx xds_context.Context, rules *core_rules.ProxyConf, proxy *xds.Proxy) {
-	conf := rules.Conf.(api.Conf)
+func addToOtelPipeBackends(ctx xds_context.Context, policyConf *core_rules.ProxyConf, proxy *xds.Proxy) {
+	conf := policyConf.Conf.(api.Conf)
 	if !hasOtelBackendRef(conf) {
 		return
 	}
