@@ -30,6 +30,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
@@ -95,6 +96,7 @@ type Builder struct {
 	rv             ResourceValidators
 	au             authn.Authenticator
 	acc            Access
+	certWatchers   *util_tls.Watchers
 	appCtx         context.Context
 	extraReportsFn ExtraReportsFn
 	tokenIssuers   builtin.TokenIssuers
@@ -119,6 +121,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
 		ext:               context.Background(),
 		cam:               core_ca.Managers{},
 		RuntimeInfo:       NewRuntimeInfo(fmt.Sprintf("%s-%s", hostname, suffix), cfg.Mode),
+		certWatchers:      util_tls.NewWatchers(appCtx, core.Log.WithName("cert-watcher")),
 		appCtx:            appCtx,
 		identityProviders: providers.IdentityProviders{},
 	}, nil
@@ -413,6 +416,7 @@ func (b *Builder) Build() (Runtime, error) {
 			rv:                       b.rv,
 			au:                       b.au,
 			acc:                      b.acc,
+			certWatchers:             b.certWatchers,
 			appCtx:                   b.appCtx,
 			extraReportsFn:           b.extraReportsFn,
 			tokenIssuers:             b.tokenIssuers,
@@ -522,6 +526,10 @@ func (b *Builder) APIServerAuthenticator() authn.Authenticator {
 
 func (b *Builder) Access() Access {
 	return b.acc
+}
+
+func (b *Builder) CertWatchers() *util_tls.Watchers {
+	return b.certWatchers
 }
 
 func (b *Builder) AppCtx() context.Context {

@@ -30,7 +30,7 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a4e00178bd7b60937.payments-mes-mirror.9090.default.mes
+        sni: sni.extsvc.default.payments-mes-mirror.9090
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -68,7 +68,7 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a601e0c00295a9fbe.backend.80.default.ms
+        sni: sni.msvc.default.backend.test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -106,7 +106,7 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a601e0c00295a9fbe.backend.80.default.ms
+        sni: sni.msvc.default.backend.test-port
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -144,7 +144,7 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: aad4a090772bd8489.payments-mirror.80.default.ms
+        sni: sni.msvc.default.payments-mirror.80
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -182,7 +182,7 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a2df35fadf2df7e35.payments-mz-mirror.80.default.mzms
+        sni: sni.mzsvc.default.payments-mz-mirror.80
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

@@ -17,7 +17,7 @@ type TypedMatchingPolicies struct {
 	DataplanePolicies []core_model.Resource
 	FromRules         rules.FromRules
 	ToRules           rules.ToRules
-	SingleItemRules   rules.SingleItemRules
+	ProxyConf         *rules.ProxyConf
 	Warnings          []string
 }
 

@@ -222,7 +222,7 @@ var _ = Describe("Rules", func() {
 		DescribeTable("should build a rule-based view for list of single item policies",
 			func(inputFile string) {
 				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (any, error) {
-					return core_rules.BuildSingleItemRules(policies)
+					return core_rules.BuildProxyConf(policies)
 				})
 			},
 			test.EntriesForFolder("rules/single"),
