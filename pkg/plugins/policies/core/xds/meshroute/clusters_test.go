@@ -70,14 +70,12 @@ var _ = Describe("SNIForRealResource", func() {
 var _ = Describe("GenerateClusters", func() {
 	// A proxy is given its own identity before the destination reports that it
 	// can terminate TLS, so an outbound cluster must stay on plaintext until the
-	// destination's MeshService is TLS Ready. Both the WorkloadIdentity and the
-	// legacy mTLS path have to agree on that, otherwise switching a mesh to mTLS
-	// drops every request sent in the window between the two pushes.
+	// destination's MeshService is TLS Ready, otherwise enabling identity on a
+	// mesh drops every request sent in the window between the two pushes.
 	type testCase struct {
 		tlsStatus        meshservice_api.TLSStatus
 		zoneOrigin       bool
 		workloadIdentity bool
-		permissiveMTLS   bool
 		expectMTLS       bool
 		expectedSNI      string
 	}
@@ -95,12 +93,8 @@ var _ = Describe("GenerateClusters", func() {
 			WithTLSStatus(given.tlsStatus).
 			Build()
 
-		meshBuilder := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1")
-		if given.permissiveMTLS {
-			meshBuilder = meshBuilder.WithPermissiveMTLSBackends()
-		}
 		meshCtx := xds_context.MeshContext{
-			Resource: meshBuilder.Build(),
+			Resource: builders.Mesh().Build(),
 			BaseMeshContext: &xds_context.BaseMeshContext{
 				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{ms}),
 			},
@@ -111,11 +105,10 @@ var _ = Describe("GenerateClusters", func() {
 			Resource: kri.WithSectionName(kri.From(ms), "http"),
 			Weight:   100,
 		})
-		services := envoy_common.NewServicesAccumulator(nil)
+		services := envoy_common.NewServicesAccumulator()
 		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("backend").Build())
 
 		proxyBuilder := xds_builders.Proxy().
-			WithSecretsTracker(envoy_common.NewSecretsTracker(core_model.DefaultMesh, nil)).
 			WithDataplane(builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
@@ -131,7 +124,7 @@ var _ = Describe("GenerateClusters", func() {
 			})
 		}
 
-		rs, err := meshroute.GenerateClusters(proxyBuilder.Build(), meshCtx, services.Services(), "")
+		rs, err := meshroute.GenerateClusters(proxyBuilder.Build(), meshCtx, services.Services())
 		Expect(err).ToNot(HaveOccurred())
 
 		clusters := rs.Resources(envoy_resource.ClusterType)
@@ -175,17 +168,9 @@ var _ = Describe("GenerateClusters", func() {
 			expectMTLS:       true,
 			expectedSNI:      "sni.msvc.default.zone-1.backend.http",
 		}),
-		Entry("permissive mTLS, local destination not TLS ready", testCase{
-			tlsStatus:      meshservice_api.TLSNotReady,
-			zoneOrigin:     true,
-			permissiveMTLS: true,
-		}),
-		Entry("permissive mTLS, local destination TLS ready", testCase{
-			tlsStatus:      meshservice_api.TLSReady,
-			zoneOrigin:     true,
-			permissiveMTLS: true,
-			expectMTLS:     true,
-			expectedSNI:    "sni.msvc.default.zone-1.backend.http",
+		Entry("no workload identity, destination TLS ready", testCase{
+			tlsStatus:  meshservice_api.TLSReady,
+			zoneOrigin: true,
 		}),
 	)
 
@@ -218,12 +203,11 @@ var _ = Describe("GenerateClusters", func() {
 			Resource: kri.WithSectionName(kri.From(mes), "9000"),
 			Weight:   100,
 		})
-		services := envoy_common.NewServicesAccumulator(nil)
+		services := envoy_common.NewServicesAccumulator()
 		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("external-backend").Build())
 
 		rs, err := meshroute.GenerateClusters(
 			xds_builders.Proxy().
-				WithSecretsTracker(envoy_common.NewSecretsTracker(core_model.DefaultMesh, nil)).
 				WithDataplane(builders.Dataplane().
 					WithName("web-01").
 					WithAddress("192.168.0.2").
@@ -239,7 +223,6 @@ var _ = Describe("GenerateClusters", func() {
 				Build(),
 			meshCtx,
 			services.Services(),
-			"",
 		)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -254,7 +237,7 @@ var _ = Describe("GenerateClusters", func() {
 		Expect(upstreamCtx.Sni).To(Equal("sni.extsvc.default.external-backend.9000"))
 	})
 
-	It("uses KRI SNI for MeshMultiZoneService without WorkloadIdentity", func() {
+	It("uses KRI SNI for MeshMultiZoneService with WorkloadIdentity", func() {
 		mzms := builders.MeshMultiZoneService().
 			WithName("backend").
 			WithMesh("default").
@@ -263,7 +246,7 @@ var _ = Describe("GenerateClusters", func() {
 			Build()
 
 		meshCtx := xds_context.MeshContext{
-			Resource: builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").WithPermissiveMTLSBackends().Build(),
+			Resource: builders.Mesh().Build(),
 			BaseMeshContext: &xds_context.BaseMeshContext{
 				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{mzms}),
 			},
@@ -274,20 +257,26 @@ var _ = Describe("GenerateClusters", func() {
 			Resource: kri.WithSectionName(kri.From(mzms), "8080"),
 			Weight:   100,
 		})
-		services := envoy_common.NewServicesAccumulator(map[string]bool{"backend": true})
+		services := envoy_common.NewServicesAccumulator()
 		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("backend").Build())
 
 		rs, err := meshroute.GenerateClusters(
 			xds_builders.Proxy().
-				WithSecretsTracker(envoy_common.NewSecretsTracker(core_model.DefaultMesh, nil)).
 				WithDataplane(builders.Dataplane().
 					WithName("web-01").
 					WithAddress("192.168.0.2").
 					WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{
+					IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+						return bldrs_tls.SdsSecretConfigSource(
+							"identity_cert:secret:default",
+							bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+						)
+					},
+				}).
 				Build(),
 			meshCtx,
 			services.Services(),
-			"",
 		)
 		Expect(err).ToNot(HaveOccurred())
 

@@ -58,7 +58,6 @@ import (
 	mesh_cache "github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
@@ -134,11 +133,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL.Duration))
 	builder.WithAPIManager(customization.NewAPIList())
-	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), builder.Metrics())
-	if err != nil {
-		return nil, err
-	}
-	builder.WithCAProvider(caProvider)
 	dpServer, err := server.NewDpServer(*cfg.DpServer, builder.Metrics(), builder.CertWatchers(), func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
 	})
@@ -510,7 +504,6 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		xds_server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		builder.CAProvider(),
 		mcbOpts...,
 	)
 

@@ -237,7 +237,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 					AddServiceProtocol("default_backend___msvc_80", core_meta.ProtocolHTTP).
 					Build(),
 				proxy: xds_builders.Proxy().
-					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -295,7 +294,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 					AddServiceProtocol("default_backend___svc_80", core_meta.ProtocolHTTP).
 					Build(),
 				proxy: xds_builders.Proxy().
-					WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -519,7 +517,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}).
 					Build(),
 				proxy: xds_builders.Proxy().
-					WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -1074,7 +1071,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Resource: kri.WithSectionName(kri.From(&meshSvc), "test-port"),
 						},
 					}).
-					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
@@ -1233,7 +1229,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Resource: kri.WithSectionName(kri.From(&meshSvc), "test-port"),
 						},
 					}).
-					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
@@ -2311,7 +2306,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Resource: kri.WithSectionName(kri.From(&meshSvc), "test-port"),
 						},
 					}).
-					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
@@ -2502,7 +2496,6 @@ func meshContextWithResources(
 		xds_server.MeshResourceTypes(),
 		lookupIPFunc,
 		"zone-1",
-		nil,
 	)
 	mc, err := meshContextBuilder.Build(context.Background(), "default")
 	Expect(err).ToNot(HaveOccurred())
@@ -2524,7 +2517,6 @@ func dppForMeshExternalService(mes *meshexternalservice_api.MeshExternalServiceR
 				Resource: kri.From(mes),
 			},
 		}).
-		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 		WithMetadata(&core_xds.DataplaneMetadata{
 			SystemCaPath: "/tmp/ca-certs.crt",
 		}).

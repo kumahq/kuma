@@ -300,20 +300,24 @@ func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.Res
 }
 
 func BuildProxyConf(matchedPolicies []core_model.Resource) (*ProxyConf, error) {
-	var confs []any
-	var origin []core_model.ResourceMeta
+	if len(matchedPolicies) == 0 {
+		return nil, nil
+	}
+
+	items := []PolicyItemWithMeta{}
+	confs := []any{}
 	for _, mp := range matchedPolicies {
 		policyWithSingleItem, ok := mp.GetSpec().(core_model.PolicyWithSingleItem)
 		if !ok {
 			// policy doesn't support single item
 			return nil, nil
 		}
-		confs = append(confs, policyWithSingleItem.GetPolicyItem().GetDefault())
-		origin = append(origin, mp.GetMeta())
-	}
-
-	if len(confs) == 0 {
-		return nil, nil
+		item := PolicyItemWithMeta{
+			PolicyItem:   policyWithSingleItem.GetPolicyItem(),
+			ResourceMeta: mp.GetMeta(),
+		}
+		items = append(items, item)
+		confs = append(confs, item.GetDefault())
 	}
 
 	merged, err := merge.Confs(confs)
@@ -323,8 +327,14 @@ func BuildProxyConf(matchedPolicies []core_model.Resource) (*ProxyConf, error) {
 	if len(merged) == 0 {
 		return nil, nil
 	}
+	if len(merged) > 1 {
+		return nil, errors.Errorf("expected a single merged proxy-wide config, got %d", len(merged))
+	}
 
-	return &ProxyConf{Conf: merged[0], Origin: origin}, nil
+	return &ProxyConf{
+		Conf:   merged[0],
+		Origin: util_slices.Map(common.Origins(items, false), func(o common.Origin) core_model.ResourceMeta { return o.Resource }),
+	}, nil
 }
 
 // BuildRules creates a list of rules with negations sorted by the number of positive tags.

@@ -55,11 +55,6 @@ func (p *ProxyBuilder) WithMetadata(metadata *core_xds.DataplaneMetadata) *Proxy
 	return p
 }
 
-func (p *ProxyBuilder) WithSecretsTracker(secretsTracker core_xds.SecretsTracker) *ProxyBuilder {
-	p.res.SecretsTracker = secretsTracker
-	return p
-}
-
 func (p *ProxyBuilder) WithWorkloadIdentity(workloadIdentity *core_xds.WorkloadIdentity) *ProxyBuilder {
 	p.res.WorkloadIdentity = workloadIdentity
 	return p

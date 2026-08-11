@@ -154,7 +154,7 @@ func newMeshProxyPatch(name string, targetRef *common_api.TopLevelTargetRef, mod
 }
 
 // MeshProxyPatch on a zone proxy Dataplane flows through the same
-// ProxyConf path as a regular Dataplane — the matcher (#16584)
+// Proxy-wide config path as a regular Dataplane — the matcher (#16584)
 // is what makes Dataplane-targeted policies reach the embedded zone
 // proxy listeners. MeshProxyPatch itself is proxy-wide; scoping to a
 // specific zone proxy DPP is done with computed labels on `targetRef`,

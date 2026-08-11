@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 var logger = core.Log.WithName("xds").WithName("context")
@@ -33,7 +32,6 @@ type ConnectionInfo struct {
 // This data is the same regardless of a data plane proxy and mesh we are generating the data for.
 type ControlPlaneContext struct {
 	CLACache        envoy.CLACache
-	Secrets         secrets.Secrets
 	IdentityManager providers.IdentityProviderManager
 	Zone            string
 	SystemNamespace string
@@ -104,7 +102,6 @@ type MeshContext struct {
 }
 
 type ServiceInformation struct {
-	TLSReadiness      bool
 	Protocol          core_meta.Protocol
 	IsExternalService bool
 }
@@ -134,18 +131,6 @@ func (mc *MeshContext) IsExternalService(serviceName string) bool {
 		return info.IsExternalService
 	}
 	return false
-}
-
-func (mc *MeshContext) GetTLSReadiness() map[string]bool {
-	tlsReady := map[string]bool{}
-	for serviceName, info := range mc.ServicesInformation {
-		if info != nil {
-			tlsReady[serviceName] = info.TLSReadiness
-		} else {
-			tlsReady[serviceName] = false
-		}
-	}
-	return tlsReady
 }
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {
