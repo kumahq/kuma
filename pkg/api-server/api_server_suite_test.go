@@ -193,7 +193,6 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			nil,
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

@@ -51,7 +51,6 @@ import (
 	mesh_cache "github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
@@ -110,11 +109,6 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	}
 	builder.WithDpServer(dpServer)
 	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg))
-	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), metrics)
-	if err != nil {
-		return nil, err
-	}
-	builder.WithCAProvider(caProvider)
 	builder.WithAPIServerAuthenticator(authn.NoopAuthenticator)
 	builder.WithAccess(core_runtime.Access{
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
@@ -175,7 +169,6 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		xds_server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		builder.CAProvider(),
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(

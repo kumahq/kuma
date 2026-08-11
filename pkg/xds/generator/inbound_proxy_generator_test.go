@@ -13,7 +13,6 @@ import (
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -39,9 +38,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 			}
 
 			xdsCtx := xds_context.Context{
-				ControlPlane: &xds_context.ControlPlaneContext{
-					Secrets: &xds.TestSecrets{},
-				},
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
 					Resource: mesh,
 				},
@@ -59,9 +56,8 @@ var _ = Describe("InboundProxyGenerator", func() {
 					},
 					Spec: &dataplane,
 				},
-				SecretsTracker: envoy_common.NewSecretsTracker(xdsCtx.Mesh.Resource.Meta.GetName(), []string{xdsCtx.Mesh.Resource.Meta.GetName()}),
-				APIVersion:     envoy_common.APIV3,
-				Metadata:       given.dataplaneMeta,
+				APIVersion: envoy_common.APIV3,
+				Metadata:   given.dataplaneMeta,
 				InternalAddresses: []model.InternalAddress{
 					{AddressPrefix: "100.64.0.0", PrefixLen: 16},
 					{AddressPrefix: "fc00::/7", PrefixLen: 128},

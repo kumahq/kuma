@@ -77,7 +77,6 @@ var _ = Describe("snapshotGenerator", func() {
 					server.MeshResourceTypes(),
 					net.LookupIP,
 					zone,
-					nil,
 				)
 				newMetrics, err := metrics.NewMetrics(zone)
 				Expect(err).ToNot(HaveOccurred())

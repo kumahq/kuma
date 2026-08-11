@@ -116,7 +116,6 @@ var _ = Describe("MeshSnapshot Cache", func() {
 			[]core_model.ResourceType{core_mesh.DataplaneType, meshhttproute_api.MeshHTTPRouteType},
 			lookupIPFunc,
 			"zone-1",
-			nil,
 		)
 		meshCache, err = mesh.NewCache(
 			expiration,

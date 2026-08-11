@@ -109,7 +109,6 @@ var _ = Describe("GenerateClusters", func() {
 		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("backend").Build())
 
 		proxyBuilder := xds_builders.Proxy().
-			WithSecretsTracker(envoy_common.NewSecretsTracker(core_model.DefaultMesh, nil)).
 			WithDataplane(builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
@@ -209,7 +208,6 @@ var _ = Describe("GenerateClusters", func() {
 
 		rs, err := meshroute.GenerateClusters(
 			xds_builders.Proxy().
-				WithSecretsTracker(envoy_common.NewSecretsTracker(core_model.DefaultMesh, nil)).
 				WithDataplane(builders.Dataplane().
 					WithName("web-01").
 					WithAddress("192.168.0.2").
@@ -264,7 +262,6 @@ var _ = Describe("GenerateClusters", func() {
 
 		rs, err := meshroute.GenerateClusters(
 			xds_builders.Proxy().
-				WithSecretsTracker(envoy_common.NewSecretsTracker(core_model.DefaultMesh, nil)).
 				WithDataplane(builders.Dataplane().
 					WithName("web-01").
 					WithAddress("192.168.0.2").

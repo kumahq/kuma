@@ -28,7 +28,6 @@ import (
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
@@ -37,7 +36,6 @@ type meshContextBuilder struct {
 	typeSet                map[core_model.ResourceType]struct{}
 	ipFunc                 lookup.LookupIPFunc
 	zone                   string
-	caProvider             secrets.CaProvider
 	withPolicyMatchingHash bool
 }
 
@@ -76,7 +74,6 @@ func NewMeshContextBuilder(
 	types []core_model.ResourceType, // types that should be taken into account when MeshContext is built.
 	ipFunc lookup.LookupIPFunc,
 	zone string,
-	caProvider secrets.CaProvider,
 	opts ...MeshContextBuilderOption,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
@@ -85,11 +82,10 @@ func NewMeshContextBuilder(
 	}
 
 	builder := &meshContextBuilder{
-		rm:         rm,
-		typeSet:    typeSet,
-		ipFunc:     ipFunc,
-		zone:       zone,
-		caProvider: caProvider,
+		rm:      rm,
+		typeSet: typeSet,
+		ipFunc:  ipFunc,
+		zone:    zone,
 	}
 	for _, opt := range opts {
 		opt(builder)
@@ -171,16 +167,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 	mesh := baseMeshContext.Mesh
 	casByTrustDomain := getCAsByTrustDomain(resources.MeshTrusts().Items)
-	// add a mesh mTLS CA
-	if len(casByTrustDomain) > 0 && mesh.MTLSEnabled() {
-		cas, _, err := m.caProvider.Get(ctx, mesh)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not fetch mesh CA")
-		}
-		for _, ca := range cas.PemCerts {
-			casByTrustDomain[meshName] = append(casByTrustDomain[meshName], ca)
-		}
-	}
 	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
 	endpointMap := xds_topology.BuildDataplaneEndpointMap(
 		ctx,

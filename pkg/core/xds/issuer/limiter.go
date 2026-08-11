@@ -1,5 +1,4 @@
-// Package issuer provides throttling for certificate issuance shared between
-// the legacy mTLS path (pkg/xds/secrets) and MeshIdentity
+// Package issuer provides throttling for certificate issuance done by MeshIdentity
 // (pkg/core/resources/apis/meshidentity/providers).
 package issuer
 

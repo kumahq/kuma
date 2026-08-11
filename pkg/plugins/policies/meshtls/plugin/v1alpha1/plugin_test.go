@@ -107,7 +107,6 @@ var _ = Describe("MeshTLS", func() {
 				WithCAsByTrustDomain(given.casByTrustDomain).
 				Build()
 			resourceSet := core_xds.NewResourceSet()
-			secretsTracker := envoy_common.NewSecretsTracker("default", nil)
 
 			fromRules := core_rules.FromRules{}
 			if !given.noPolicy {
@@ -120,7 +119,6 @@ var _ = Describe("MeshTLS", func() {
 			}
 
 			proxyBuilder := xds_builders.Proxy().
-				WithSecretsTracker(secretsTracker).
 				WithWorkloadIdentity(given.workloadIdentity).
 				WithApiVersion(envoy_common.APIV3).
 				WithDataplane(

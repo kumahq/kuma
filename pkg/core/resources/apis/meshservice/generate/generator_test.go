@@ -83,7 +83,6 @@ var _ = Describe("MeshService generator", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			"zone",
-			nil,
 		)
 		meshCache, err := cache_mesh.NewCache(
 			100*time.Millisecond,
@@ -488,7 +487,6 @@ var _ = Describe("MeshService generator", func() {
 				server.MeshResourceTypes(),
 				net.LookupIP,
 				"zone",
-				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
 				100*time.Millisecond,
@@ -622,7 +620,6 @@ var _ = Describe("MeshService generator", func() {
 				server.MeshResourceTypes(),
 				net.LookupIP,
 				"zone",
-				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
 				100*time.Millisecond,
@@ -692,7 +689,6 @@ var _ = Describe("MeshService generator", func() {
 				server.MeshResourceTypes(),
 				net.LookupIP,
 				"zone",
-				nil,
 			)
 			meshCache, err := cache_mesh.NewCache(
 				100*time.Millisecond,
@@ -982,7 +978,6 @@ var _ = Describe("MeshService generator", func() {
 					server.MeshResourceTypes(),
 					net.LookupIP,
 					"zone",
-					nil,
 				)
 				meshCache, err := cache_mesh.NewCache(
 					100*time.Millisecond,
