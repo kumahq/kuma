@@ -57,8 +57,9 @@ type ToRules struct {
 	ResourceRules outbound.ResourceRules
 }
 
-type SingleItemRules struct {
-	Rules Rules
+type MergedPolicyConf struct {
+	Conf   any
+	Origin []core_model.ResourceMeta
 }
 
 // Deprecated: use common.WithPolicyAttributes instead
@@ -295,27 +296,43 @@ func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.Res
 	return result
 }
 
-func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRules, error) {
+func BuildMergedPolicyConf(matchedPolicies []core_model.Resource) (*MergedPolicyConf, error) {
+	if len(matchedPolicies) == 0 {
+		return nil, nil
+	}
+
 	items := []PolicyItemWithMeta{}
+	confs := []any{}
 	for _, mp := range matchedPolicies {
 		policyWithSingleItem, ok := mp.GetSpec().(core_model.PolicyWithSingleItem)
 		if !ok {
 			// policy doesn't support single item
-			return SingleItemRules{}, nil
+			return nil, nil
 		}
 		item := PolicyItemWithMeta{
 			PolicyItem:   policyWithSingleItem.GetPolicyItem(),
 			ResourceMeta: mp.GetMeta(),
 		}
 		items = append(items, item)
+		confs = append(confs, item.GetDefault())
 	}
 
-	rules, err := BuildRules(items, false)
+	merged, err := merge.Confs(confs)
 	if err != nil {
-		return SingleItemRules{}, err
+		return nil, err
 	}
 
-	return SingleItemRules{Rules: rules}, nil
+	if len(merged) == 0 {
+		return nil, nil
+	}
+	if len(merged) > 1 {
+		return nil, errors.Errorf("expected a single merged proxy-wide config, got %d", len(merged))
+	}
+
+	return &MergedPolicyConf{
+		Conf:   merged[0],
+		Origin: util_slices.Map(common.Origins(items, false), func(o common.Origin) core_model.ResourceMeta { return o.Resource }),
+	}, nil
 }
 
 // BuildRules creates a list of rules with negations sorted by the number of positive tags.

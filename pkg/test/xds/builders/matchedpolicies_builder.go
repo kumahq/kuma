@@ -41,9 +41,10 @@ func (mp *MatchedPoliciesBuilder) WithFromPolicy(resourceType core_model.Resourc
 	return mp
 }
 
-func (mp *MatchedPoliciesBuilder) WithSingleItemPolicy(resourceType core_model.ResourceType, singleItemRules rules.SingleItemRules) *MatchedPoliciesBuilder {
+func (mp *MatchedPoliciesBuilder) WithProxyPolicy(resourceType core_model.ResourceType, policyConf *rules.MergedPolicyConf) *MatchedPoliciesBuilder {
 	mp.res.Dynamic[resourceType] = xds.TypedMatchingPolicies{
-		SingleItemRules: singleItemRules,
+		Type:      resourceType,
+		ProxyConf: policyConf,
 	}
 	return mp
 }

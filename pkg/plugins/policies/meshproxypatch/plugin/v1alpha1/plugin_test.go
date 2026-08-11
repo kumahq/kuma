@@ -1,4 +1,3 @@
-//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -22,10 +21,17 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
+func mergedPolicyConf(rules core_rules.Rules) *core_rules.MergedPolicyConf {
+	if len(rules) == 0 {
+		return nil
+	}
+	return &core_rules.MergedPolicyConf{Conf: rules[0].Conf, Origin: rules[0].Origin}
+}
+
 var _ = Describe("MeshProxyPatch", func() {
 	type testCase struct {
 		resources        []core_xds.Resource
-		rules            core_rules.SingleItemRules
+		proxyConf        *core_rules.MergedPolicyConf
 		expectedClusters []string
 	}
 
@@ -40,7 +46,7 @@ var _ = Describe("MeshProxyPatch", func() {
 			context := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshProxyPatchType, given.rules)).
+				WithPolicies(xds_builders.MatchedPolicies().WithProxyPolicy(api.MeshProxyPatchType, given.proxyConf)).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -56,37 +62,35 @@ var _ = Describe("MeshProxyPatch", func() {
 						MustBuild(),
 				},
 			},
-			rules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							AppendModifications: &[]api.Modification{
-								{
-									Cluster: &api.ClusterMod{
-										Operation: api.ModOpAdd,
-										Value: pointer.To(`
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: subsetutils.Subset{},
+					Conf: api.Conf{
+						AppendModifications: &[]api.Modification{
+							{
+								Cluster: &api.ClusterMod{
+									Operation: api.ModOpAdd,
+									Value: pointer.To(`
 name: new-cluster
 connectTimeout: 5s
 `),
-									},
 								},
-								{
-									Cluster: &api.ClusterMod{
-										Operation: api.ModOpPatch,
-										Match: &api.ClusterMatch{
-											Name: pointer.To("echo-http"),
-										},
-										Value: pointer.To(`
+							},
+							{
+								Cluster: &api.ClusterMod{
+									Operation: api.ModOpPatch,
+									Match: &api.ClusterMatch{
+										Name: pointer.To("echo-http"),
+									},
+									Value: pointer.To(`
 connectTimeout: 100s
 `),
-									},
 								},
 							},
 						},
 					},
 				},
-			},
+			}),
 			expectedClusters: []string{
 				`
 name: echo-http
