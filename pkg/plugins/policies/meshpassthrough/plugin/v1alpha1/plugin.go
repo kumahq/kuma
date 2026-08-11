@@ -49,7 +49,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 	listeners := policies_xds.GatherListeners(rs)
-	if err := applyToOutboundPassthrough(ctx, rs, policies.SingleItemRules, listeners, proxy); err != nil {
+	if err := applyToOutboundPassthrough(ctx, rs, policies.ProxyConf, listeners, proxy); err != nil {
 		return err
 	}
 	return nil
@@ -58,15 +58,14 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 func applyToOutboundPassthrough(
 	_ xds_context.Context,
 	rs *core_xds.ResourceSet,
-	rules core_rules.SingleItemRules,
+	rules *core_rules.ProxyConf,
 	listeners policies_xds.Listeners,
 	proxy *core_xds.Proxy,
 ) error {
-	if len(rules.Rules) == 0 {
+	if rules == nil {
 		return nil
 	}
-	rawConf := rules.Rules[0].Conf
-	conf := rawConf.(api.Conf)
+	conf := rules.Conf.(api.Conf)
 
 	// todo: this should be handled by "base policy"
 	if pointer.Deref(conf.PassthroughMode) == "" {

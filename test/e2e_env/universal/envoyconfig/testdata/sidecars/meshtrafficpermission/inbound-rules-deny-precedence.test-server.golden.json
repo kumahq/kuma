@@ -92,12 +92,6 @@
                         "exact": "spiffe://envoyconfig.kuma-3.mesh.local/workload/demo-client"
                       },
                       "sanType": "URI"
-                    },
-                    {
-                      "matcher": {
-                        "exact": "spiffe://envoyconfig/demo-client"
-                      },
-                      "sanType": "URI"
                     }
                   ]
                 },
@@ -162,12 +156,6 @@
                     {
                       "matcher": {
                         "exact": "spiffe://envoyconfig.kuma-3.mesh.local/workload/test-server"
-                      },
-                      "sanType": "URI"
-                    },
-                    {
-                      "matcher": {
-                        "exact": "spiffe://envoyconfig/test-server"
                       },
                       "sanType": "URI"
                     }

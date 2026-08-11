@@ -305,13 +305,13 @@ type matchedPoliciesToResponse func([]core_xds.TypedMatchingPolicies, *restful.R
 func matchedPoliciesToProxyPolicy(matchedPolicies []core_xds.TypedMatchingPolicies, _ *restful.Request, _ *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ xds_context.Resources) (any, error) {
 	conf := []api_common.PolicyConf{}
 	for _, matched := range matchedPolicies {
-		if len(matched.SingleItemRules.Rules) == 0 {
+		if matched.ProxyConf == nil {
 			continue
 		}
 		conf = append(conf, api_common.PolicyConf{
-			Conf:    matched.SingleItemRules.Rules[0].Conf,
+			Conf:    matched.ProxyConf.Conf,
 			Kind:    string(matched.Type),
-			Origins: policyOriginsToKRIOrigins(matched.Type, matched.SingleItemRules.Rules[0].Origin),
+			Origins: policyOriginsToKRIOrigins(matched.Type, matched.ProxyConf.Origin),
 		})
 	}
 	return api_common.PoliciesList{Policies: conf}, nil
@@ -553,14 +553,14 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 				}
 			}
 
-			if len(res.ToRules.Rules) == 0 && len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.InboundRules) == 0 && len(res.SingleItemRules.Rules) == 0 {
+			if len(res.ToRules.Rules) == 0 && len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.InboundRules) == 0 && res.ProxyConf == nil {
 				continue
 			}
 			var proxyRule *api_common.ProxyRule
-			if len(res.SingleItemRules.Rules) > 0 {
+			if res.ProxyConf != nil {
 				proxyRule = &api_common.ProxyRule{
-					Conf:   res.SingleItemRules.Rules[0].Conf,
-					Origin: oapi_helpers.ResourceMetaListToMetaList(res.Type, res.SingleItemRules.Rules[0].Origin),
+					Conf:   res.ProxyConf.Conf,
+					Origin: oapi_helpers.ResourceMetaListToMetaList(res.Type, res.ProxyConf.Origin),
 				}
 			}
 

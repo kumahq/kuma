@@ -37,6 +37,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/v3/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone/access"
@@ -85,6 +86,9 @@ type RuntimeContext interface {
 	APIServerAuthenticator() authn.Authenticator
 	ResourceValidators() ResourceValidators
 	Access() Access
+	// CertWatchers hands out the TLS key pairs that servers serve, reloaded when
+	// they are rotated on disk.
+	CertWatchers() *util_tls.Watchers
 	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
 	AppContext() context.Context
 	ExtraReportsFn() ExtraReportsFn
@@ -206,6 +210,7 @@ type runtimeContext struct {
 	rv                       ResourceValidators
 	au                       authn.Authenticator
 	acc                      Access
+	certWatchers             *util_tls.Watchers
 	appCtx                   context.Context
 	extraReportsFn           ExtraReportsFn
 	tokenIssuers             builtin.TokenIssuers
@@ -312,6 +317,10 @@ func (rc *runtimeContext) APIServerAuthenticator() authn.Authenticator {
 
 func (rc *runtimeContext) Access() Access {
 	return rc.acc
+}
+
+func (rc *runtimeContext) CertWatchers() *util_tls.Watchers {
+	return rc.certWatchers
 }
 
 func (rc *runtimeContext) AppContext() context.Context {

@@ -1,4 +1,3 @@
-//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -9,7 +8,6 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
@@ -25,7 +23,7 @@ import (
 var _ = Describe("MeshProxyPatch", func() {
 	type testCase struct {
 		resources        []core_xds.Resource
-		rules            core_rules.SingleItemRules
+		rules            *core_rules.ProxyConf
 		expectedClusters []string
 	}
 
@@ -40,7 +38,7 @@ var _ = Describe("MeshProxyPatch", func() {
 			context := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshProxyPatchType, given.rules)).
+				WithPolicies(xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshProxyPatchType, given.rules)).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -56,32 +54,27 @@ var _ = Describe("MeshProxyPatch", func() {
 						MustBuild(),
 				},
 			},
-			rules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							AppendModifications: &[]api.Modification{
-								{
-									Cluster: &api.ClusterMod{
-										Operation: api.ModOpAdd,
-										Value: pointer.To(`
+			rules: &core_rules.ProxyConf{
+				Conf: api.Conf{
+					AppendModifications: &[]api.Modification{
+						{
+							Cluster: &api.ClusterMod{
+								Operation: api.ModOpAdd,
+								Value: pointer.To(`
 name: new-cluster
 connectTimeout: 5s
 `),
-									},
+							},
+						},
+						{
+							Cluster: &api.ClusterMod{
+								Operation: api.ModOpPatch,
+								Match: &api.ClusterMatch{
+									Name: pointer.To("echo-http"),
 								},
-								{
-									Cluster: &api.ClusterMod{
-										Operation: api.ModOpPatch,
-										Match: &api.ClusterMatch{
-											Name: pointer.To("echo-http"),
-										},
-										Value: pointer.To(`
+								Value: pointer.To(`
 connectTimeout: 100s
 `),
-									},
-								},
 							},
 						},
 					},

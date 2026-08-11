@@ -55,7 +55,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 ) core_model.ResourceSpec {
 	// consumer route
 	targetRef := common_api.TopLevelTargetRef{
-		Kind: common_api.Dataplane,
+		Kind: common_api.TopLevelTargetRefKindDataplane,
 		Labels: &map[string]string{
 			mesh_proto.KubeNamespaceTag: routeNamespace,
 		},
@@ -64,7 +64,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 	// producer route
 	if routeNamespace == parent.GetNamespace() {
 		targetRef = common_api.TopLevelTargetRef{
-			Kind: common_api.Mesh,
+			Kind: common_api.TopLevelTargetRefKindMesh,
 		}
 	}
 
@@ -93,7 +93,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 		}
 		tos = append(tos, v1alpha1.To{
 			TargetRef: common_api.OutboundTargetRef{
-				Kind: common_api.MeshService,
+				Kind: common_api.OutboundTargetRefKindMeshService,
 				Labels: &map[string]string{
 					mesh_proto.DisplayName:      parent.GetName(),
 					mesh_proto.KubeNamespaceTag: parent.GetNamespace(),

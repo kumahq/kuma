@@ -133,7 +133,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL.Duration))
 	builder.WithAPIManager(customization.NewAPIList())
-	dpServer, err := server.NewDpServer(*cfg.DpServer, builder.Metrics(), func(writer http.ResponseWriter, request *http.Request) bool {
+	dpServer, err := server.NewDpServer(*cfg.DpServer, builder.Metrics(), builder.CertWatchers(), func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
 	})
 	if err != nil {

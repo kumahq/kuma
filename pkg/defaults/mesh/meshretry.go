@@ -19,12 +19,12 @@ var defaultMeshRetryResource = func() model.Resource {
 	return &v1alpha1.MeshRetryResource{
 		Spec: &v1alpha1.MeshRetry{
 			TargetRef: &common_api.TopLevelTargetRef{
-				Kind: common_api.Mesh,
+				Kind: common_api.TopLevelTargetRefKindMesh,
 			},
 			To: &[]v1alpha1.To{
 				{
 					TargetRef: common_api.OutboundTargetRef{
-						Kind: common_api.Mesh,
+						Kind: common_api.OutboundTargetRefKindMesh,
 					},
 					Default: v1alpha1.Conf{
 						TCP: &v1alpha1.TCP{

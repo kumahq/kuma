@@ -1,4 +1,3 @@
-//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -19,7 +18,6 @@ import (
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
@@ -127,26 +125,21 @@ var _ = Describe("MeshMetric", func() {
 						WithLabels(workloadLabels()),
 				).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Applications: &[]api.Application{
-										{
-											Name: pointer.To("test-app"),
-											Path: "/metrics",
-											Port: 8080,
-										},
-									},
-									Backends: &[]api.Backend{
-										{
-											Type: api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{
-												Path: "/metrics",
-												Port: 5670,
-											},
-										},
+					WithProxyConfPolicy(api.MeshMetricType, &core_rules.ProxyConf{
+						Conf: api.Conf{
+							Applications: &[]api.Application{
+								{
+									Name: pointer.To("test-app"),
+									Path: "/metrics",
+									Port: 8080,
+								},
+							},
+							Backends: &[]api.Backend{
+								{
+									Type: api.PrometheusBackendType,
+									Prometheus: &api.PrometheusBackend{
+										Path: "/metrics",
+										Port: 5670,
 									},
 								},
 							},
@@ -165,28 +158,23 @@ var _ = Describe("MeshMetric", func() {
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Sidecar: &api.Sidecar{
-										IncludeUnused: pointer.To(false),
-									},
-									Applications: &[]api.Application{
-										{
-											Path: "/metrics",
-											Port: 8080,
-										},
-									},
-									Backends: &[]api.Backend{
-										{
-											Type: api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{
-												Path: "/metrics",
-												Port: 5670,
-											},
-										},
+					WithProxyConfPolicy(api.MeshMetricType, &core_rules.ProxyConf{
+						Conf: api.Conf{
+							Sidecar: &api.Sidecar{
+								IncludeUnused: pointer.To(false),
+							},
+							Applications: &[]api.Application{
+								{
+									Path: "/metrics",
+									Port: 8080,
+								},
+							},
+							Backends: &[]api.Backend{
+								{
+									Type: api.PrometheusBackendType,
+									Prometheus: &api.PrometheusBackend{
+										Path: "/metrics",
+										Port: 5670,
 									},
 								},
 							},
@@ -205,37 +193,32 @@ var _ = Describe("MeshMetric", func() {
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Sidecar: &api.Sidecar{
-										IncludeUnused: pointer.To(false),
+					WithProxyConfPolicy(api.MeshMetricType, &core_rules.ProxyConf{
+						Conf: api.Conf{
+							Sidecar: &api.Sidecar{
+								IncludeUnused: pointer.To(false),
+							},
+							Applications: &[]api.Application{
+								{
+									Path: "/metrics",
+									Port: 8080,
+								},
+							},
+							Backends: &[]api.Backend{
+								{
+									Type: api.PrometheusBackendType,
+									Prometheus: &api.PrometheusBackend{
+										ClientId: pointer.To("first-backend"),
+										Path:     "/metrics",
+										Port:     5670,
 									},
-									Applications: &[]api.Application{
-										{
-											Path: "/metrics",
-											Port: 8080,
-										},
-									},
-									Backends: &[]api.Backend{
-										{
-											Type: api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{
-												ClientId: pointer.To("first-backend"),
-												Path:     "/metrics",
-												Port:     5670,
-											},
-										},
-										{
-											Type: api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{
-												ClientId: pointer.To("second-backend"),
-												Path:     "/metrics",
-												Port:     5671,
-											},
-										},
+								},
+								{
+									Type: api.PrometheusBackendType,
+									Prometheus: &api.PrometheusBackend{
+										ClientId: pointer.To("second-backend"),
+										Path:     "/metrics",
+										Port:     5671,
 									},
 								},
 							},
@@ -256,25 +239,20 @@ var _ = Describe("MeshMetric", func() {
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Applications: &[]api.Application{
-										{
-											Path: "/metrics",
-											Port: 8080,
-										},
-									},
-									Backends: &[]api.Backend{
-										{
-											Type: api.OpenTelemetryBackendType,
-											OpenTelemetry: &api.OpenTelemetryBackend{
-												BackendRef:      otelBackendRef("otel-collector"),
-												RefreshInterval: &k8s.Duration{Duration: 10 * time.Second},
-											},
-										},
+					WithProxyConfPolicy(api.MeshMetricType, &core_rules.ProxyConf{
+						Conf: api.Conf{
+							Applications: &[]api.Application{
+								{
+									Path: "/metrics",
+									Port: 8080,
+								},
+							},
+							Backends: &[]api.Backend{
+								{
+									Type: api.OpenTelemetryBackendType,
+									OpenTelemetry: &api.OpenTelemetryBackend{
+										BackendRef:      otelBackendRef("otel-collector"),
+										RefreshInterval: &k8s.Duration{Duration: 10 * time.Second},
 									},
 								},
 							},
@@ -296,21 +274,16 @@ var _ = Describe("MeshMetric", func() {
 					MetricsKeyPath:  "/path/key",
 				}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Backends: &[]api.Backend{
-										{
-											Type: api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{
-												Path: "/metrics",
-												Port: 5670,
-												Tls: &api.PrometheusTls{
-													Mode: api.ProvidedTLS,
-												},
-											},
+					WithProxyConfPolicy(api.MeshMetricType, &core_rules.ProxyConf{
+						Conf: api.Conf{
+							Backends: &[]api.Backend{
+								{
+									Type: api.PrometheusBackendType,
+									Prometheus: &api.PrometheusBackend{
+										Path: "/metrics",
+										Port: 5670,
+										Tls: &api.PrometheusTls{
+											Mode: api.ProvidedTLS,
 										},
 									},
 								},
@@ -334,42 +307,37 @@ var _ = Describe("MeshMetric", func() {
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Origin: []core_model.ResourceMeta{
-									&test_model.ResourceMeta{
-										Mesh: "default",
-										Name: "meshmetric1",
+					WithProxyConfPolicy(api.MeshMetricType, &core_rules.ProxyConf{
+						Conf: api.Conf{
+							Sidecar: &api.Sidecar{
+								IncludeUnused: pointer.To(false),
+							},
+							Applications: &[]api.Application{
+								{
+									Path: "/metrics",
+									Port: 8080,
+								},
+							},
+							Backends: &[]api.Backend{
+								{
+									Type: api.PrometheusBackendType,
+									Prometheus: &api.PrometheusBackend{
+										Path: "/metrics",
+										Port: 5670,
 									},
 								},
-								Conf: api.Conf{
-									Sidecar: &api.Sidecar{
-										IncludeUnused: pointer.To(false),
-									},
-									Applications: &[]api.Application{
-										{
-											Path: "/metrics",
-											Port: 8080,
-										},
-									},
-									Backends: &[]api.Backend{
-										{
-											Type: api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{
-												Path: "/metrics",
-												Port: 5670,
-											},
-										},
-										{
-											Type: api.OpenTelemetryBackendType,
-											OpenTelemetry: &api.OpenTelemetryBackend{
-												BackendRef: otelBackendRef("otel-collector"),
-											},
-										},
+								{
+									Type: api.OpenTelemetryBackendType,
+									OpenTelemetry: &api.OpenTelemetryBackend{
+										BackendRef: otelBackendRef("otel-collector"),
 									},
 								},
+							},
+						},
+						Origin: []core_model.ResourceMeta{
+							&test_model.ResourceMeta{
+								Mesh: "default",
+								Name: "meshmetric1",
 							},
 						},
 					}),
@@ -390,33 +358,28 @@ var _ = Describe("MeshMetric", func() {
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Sidecar: &api.Sidecar{
-										IncludeUnused: pointer.To(false),
+					WithProxyConfPolicy(api.MeshMetricType, &core_rules.ProxyConf{
+						Conf: api.Conf{
+							Sidecar: &api.Sidecar{
+								IncludeUnused: pointer.To(false),
+							},
+							Applications: &[]api.Application{
+								{
+									Path: "/metrics",
+									Port: 8080,
+								},
+							},
+							Backends: &[]api.Backend{
+								{
+									Type: api.OpenTelemetryBackendType,
+									OpenTelemetry: &api.OpenTelemetryBackend{
+										BackendRef: otelBackendRef("otel-collector"),
 									},
-									Applications: &[]api.Application{
-										{
-											Path: "/metrics",
-											Port: 8080,
-										},
-									},
-									Backends: &[]api.Backend{
-										{
-											Type: api.OpenTelemetryBackendType,
-											OpenTelemetry: &api.OpenTelemetryBackend{
-												BackendRef: otelBackendRef("otel-collector"),
-											},
-										},
-										{
-											Type: api.OpenTelemetryBackendType,
-											OpenTelemetry: &api.OpenTelemetryBackend{
-												BackendRef: otelBackendRef("second-collector"),
-											},
-										},
+								},
+								{
+									Type: api.OpenTelemetryBackendType,
+									OpenTelemetry: &api.OpenTelemetryBackend{
+										BackendRef: otelBackendRef("second-collector"),
 									},
 								},
 							},
@@ -432,25 +395,20 @@ var _ = Describe("MeshMetric", func() {
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithDataplane(zoneEgressOnlyDataplane()).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Applications: &[]api.Application{
-										{
-											Path: "/metrics",
-											Port: 8080,
-										},
-									},
-									Backends: &[]api.Backend{
-										{
-											Type: api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{
-												Path: "/metrics",
-												Port: 5670,
-											},
-										},
+					WithProxyConfPolicy(api.MeshMetricType, &core_rules.ProxyConf{
+						Conf: api.Conf{
+							Applications: &[]api.Application{
+								{
+									Path: "/metrics",
+									Port: 8080,
+								},
+							},
+							Backends: &[]api.Backend{
+								{
+									Type: api.PrometheusBackendType,
+									Prometheus: &api.PrometheusBackend{
+										Path: "/metrics",
+										Port: 5670,
 									},
 								},
 							},
@@ -466,19 +424,14 @@ var _ = Describe("MeshMetric", func() {
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithDataplane(zoneIngressOnlyDataplane("zone-ingress-1")).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Backends: &[]api.Backend{
-										{
-											Type: api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{
-												Path: "/metrics",
-												Port: 5670,
-											},
-										},
+					WithProxyConfPolicy(api.MeshMetricType, &core_rules.ProxyConf{
+						Conf: api.Conf{
+							Backends: &[]api.Backend{
+								{
+									Type: api.PrometheusBackendType,
+									Prometheus: &api.PrometheusBackend{
+										Path: "/metrics",
+										Port: 5670,
 									},
 								},
 							},
@@ -496,20 +449,15 @@ var _ = Describe("MeshMetric", func() {
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithDataplane(dp).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Applications: &[]api.Application{
-										{Name: pointer.To("my-app"), Path: "/metrics", Port: 8080},
-									},
-									Backends: &[]api.Backend{
-										{
-											Type:       api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{Path: "/metrics", Port: 5670},
-										},
-									},
+					WithProxyConfPolicy(api.MeshMetricType, &core_rules.ProxyConf{
+						Conf: api.Conf{
+							Applications: &[]api.Application{
+								{Name: pointer.To("my-app"), Path: "/metrics", Port: 8080},
+							},
+							Backends: &[]api.Backend{
+								{
+									Type:       api.PrometheusBackendType,
+									Prometheus: &api.PrometheusBackend{Path: "/metrics", Port: 5670},
 								},
 							},
 						},
@@ -558,18 +506,13 @@ var _ = Describe("MeshMetric", func() {
 				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithDataplane(zoneEgressOnlyDataplane()).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Applications: nil,
-									Backends: &[]api.Backend{
-										{
-											Type:       api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{Path: "/metrics", Port: 5670},
-										},
-									},
+					WithProxyConfPolicy(api.MeshMetricType, &core_rules.ProxyConf{
+						Conf: api.Conf{
+							Applications: nil,
+							Backends: &[]api.Backend{
+								{
+									Type:       api.PrometheusBackendType,
+									Prometheus: &api.PrometheusBackend{Path: "/metrics", Port: 5670},
 								},
 							},
 						},
@@ -617,14 +560,9 @@ var _ = Describe("MeshMetric", func() {
 					},
 				}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []subsetutils.Tag{},
-								Conf: api.Conf{
-									Backends: backends,
-								},
-							},
+					WithProxyConfPolicy(api.MeshMetricType, &core_rules.ProxyConf{
+						Conf: api.Conf{
+							Backends: backends,
 						},
 					}),
 				).

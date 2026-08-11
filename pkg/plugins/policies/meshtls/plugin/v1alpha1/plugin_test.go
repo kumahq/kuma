@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -25,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -105,7 +107,6 @@ var _ = Describe("MeshTLS", func() {
 				WithCAsByTrustDomain(given.casByTrustDomain).
 				Build()
 			resourceSet := core_xds.NewResourceSet()
-			resourceSet.Add(getMeshServiceResources()...)
 
 			fromRules := core_rules.FromRules{}
 			if !given.noPolicy {
@@ -152,6 +153,7 @@ var _ = Describe("MeshTLS", func() {
 			proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{Features: features})
 
 			proxy := proxyBuilder.Build()
+			resourceSet.Add(getMeshServiceResources(proxy)...)
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -288,7 +290,24 @@ var outgoingMeshService = kri.Identifier{
 	SectionName:  "80",
 }
 
-func getMeshServiceResources() []*core_xds.Resource {
+// outgoingCluster is the outbound cluster the sidecar already has by the time
+// MeshTLS runs. Its transport socket comes from the very builder the outbound
+// generator uses, so the golden files show MeshTLS layering TLS params onto a
+// real TLS context instead of an empty one. Without a workload identity there
+// is no mTLS and therefore no transport socket to configure.
+func outgoingCluster(proxy *core_xds.Proxy) *envoy_cluster.Cluster {
+	builder := clusters.NewClusterBuilder(envoy_common.APIV3, outgoingMeshService.String())
+
+	if proxy.WorkloadIdentity != nil {
+		tlsContext, err := meshroute.UpstreamTLSContext(proxy, "outgoing", []string{"spiffe://default/outgoing"})
+		Expect(err).ToNot(HaveOccurred())
+		builder.Configure(clusters.UpstreamTLSContext(tlsContext))
+	}
+
+	return builder.MustBuild().(*envoy_cluster.Cluster)
+}
+
+func getMeshServiceResources(proxy *core_xds.Proxy) []*core_xds.Resource {
 	return []*core_xds.Resource{
 		{
 			Name:   "inbound:127.0.0.1:17777",
@@ -314,14 +333,9 @@ func getMeshServiceResources() []*core_xds.Resource {
 				)).MustBuild(),
 		},
 		{
-			Name:   outgoingMeshService.String(),
-			Origin: metadata.OriginOutbound,
-			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, outgoingMeshService.String()).
-				Configure(clusters.UpstreamTLSContext(&envoy_tls.UpstreamTlsContext{
-					CommonTlsContext: &envoy_tls.CommonTlsContext{},
-					Sni:              "outgoing",
-				})).
-				MustBuild(),
+			Name:           outgoingMeshService.String(),
+			Origin:         metadata.OriginOutbound,
+			Resource:       outgoingCluster(proxy),
 			Protocol:       core_meta.ProtocolHTTP,
 			ResourceOrigin: outgoingMeshService,
 		},
