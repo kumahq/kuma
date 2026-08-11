@@ -74,7 +74,7 @@ func ApplyToOutbounds(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, xdsCtx xd
 	}
 	rs.AddSet(clusters)
 
-	endpoints, err := meshroute.GenerateEndpoints(proxy, xdsCtx, services)
+	endpoints, err := meshroute.GenerateEndpoints(proxy, xdsCtx, services, clusters)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate endpoint resources")
 	}
