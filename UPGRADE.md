@@ -14,7 +14,7 @@ The `mtls` field is gone from the `Mesh` resource, together with `CertificateAut
 
 `mtls` had been inert since the legacy SDS path and the CA plugin subsystem were removed: it issued nothing, was provisioned by nothing and validated by nothing. Removing the field only removes the ability to write it down.
 
-Nothing breaks on the way in: `mtls` is now an unknown field, and the control plane accepts unknown fields, so an existing `Mesh` still loads and a manifest that still carries `mtls` still applies. The field is silently dropped the next time the resource is written. The Kubernetes `Mesh` CRD is unaffected — its `spec` is `x-kubernetes-preserve-unknown-fields`, so `mtls` was never part of the CRD schema and a stored `Mesh` keeps it in etcd until it is rewritten.
+Nothing breaks on the way in: `mtls` is now an unknown field, and the control plane accepts unknown fields, so an existing `Mesh` still loads and a manifest that still carries `mtls` still applies. The field is silently dropped the next time the resource is written, so reading a `Mesh` back (`kumactl get mesh`, `kubectl get mesh -o yaml` after a rewrite) no longer shows `mtls`. The Kubernetes `Mesh` CRD is unaffected — its `spec` is `x-kubernetes-preserve-unknown-fields`, so `mtls` was never part of the CRD schema and a stored `Mesh` keeps it in etcd until it is rewritten.
 
 Two user-visible surfaces change with it. `kumactl get meshes` no longer prints the `mTLS` column, so the table is now `NAME` and `AGE`. `kumactl export --profile federation` no longer rewrites `builtin` backends into `provided` ones pointing at the CA secrets, because there is no backend left to rewrite; the orphaned `<mesh>.ca-builtin-*` Secrets are still exported like any other secret.
 
