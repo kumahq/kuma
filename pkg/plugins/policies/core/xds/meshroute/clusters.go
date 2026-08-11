@@ -9,6 +9,7 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
@@ -54,14 +55,10 @@ func GenerateClusters(
 				if proxy.WorkloadIdentity == nil {
 					continue
 				}
-				// The destination advertises its SNI from the resolved port
-				// name, so normalize a numeric backend-ref section (named port
-				// targeted by number) to the port name before deriving the KRI SNI.
-				kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
-				if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+				sni, ok := SNIForRealResource(realResourceRef, port)
+				if !ok {
 					continue
 				}
-				sni := core_sni.FromKRI(kriID)
 				// we only want to route when are mesh-scoped zone egresses
 				if len(meshCtx.ZoneEgresses) == 0 {
 					continue
@@ -105,12 +102,8 @@ func GenerateClusters(
 					// Every zone is reachable through a mesh-scoped zone proxy, which
 					// matches the KRI SNI, so a proxy with WorkloadIdentity always uses it.
 					if proxy.WorkloadIdentity != nil {
-						// The destination advertises its SNI from the resolved
-						// port name, so normalize a numeric backend-ref section
-						// (named port targeted by number) to the port name
-						// before deriving the KRI SNI.
-						kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
-						if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+						sni, ok := SNIForRealResource(realResourceRef, port)
+						if !ok {
 							continue
 						}
 						// A proxy receives its own identity independently of
@@ -123,7 +116,7 @@ func GenerateClusters(
 						// becomes correct again.
 						if tlsReady {
 							sans := Identities(realResourceRef, meshCtx)
-							upstreamCtx, err := UpstreamTLSContext(proxy, core_sni.FromKRI(kriID), sans)
+							upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
 							if err != nil {
 								return nil, err
 							}
@@ -192,6 +185,19 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 		Configure(bldrs_tls.SNI(sni)).
 		Configure(bldrs_tls.UpstreamCommonTlsContext(commonTlsContext)).
 		Build()
+}
+
+func SNIForRealResource(
+	backendRef *resolve.RealResourceBackendRef,
+	port core_resources.Port,
+) (string, bool) {
+	// The destination advertises SNI from the resolved port name, so numeric
+	// backend-ref sections must be normalized before deriving the KRI SNI.
+	kriID := kri.WithSectionName(backendRef.Resource, port.GetName())
+	if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+		return "", false
+	}
+	return core_sni.FromKRI(kriID), true
 }
 
 func Identities(

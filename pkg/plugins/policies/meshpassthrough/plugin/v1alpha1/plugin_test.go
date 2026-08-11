@@ -1,4 +1,3 @@
-//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -12,7 +11,6 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshpassthrough/plugin/v1alpha1"
@@ -34,7 +32,7 @@ var _ = Describe("MeshPassthrough", func() {
 
 	type testCase struct {
 		resources       []*core_xds.Resource
-		singleItemRules core_rules.SingleItemRules
+		proxyConf       *core_rules.ProxyConf
 		listenersGolden string
 		clustersGolden  string
 	}
@@ -63,7 +61,7 @@ var _ = Describe("MeshPassthrough", func() {
 						),
 				).
 				WithPolicies(
-					xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshPassthroughType, given.singleItemRules),
+					xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshPassthroughType, given.proxyConf),
 				).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
@@ -104,78 +102,73 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("Matched")),
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "api.example.com",
-									Port:     pointer.To[uint32](443),
-									Protocol: api.ProtocolType("tls"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "example.com",
-									Port:     pointer.To[uint32](443),
-									Protocol: api.ProtocolType("tls"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "*.example.com",
-									Port:     pointer.To[uint32](443),
-									Protocol: api.ProtocolType("tls"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "example.com",
-									Port:     pointer.To[uint32](8080),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "other.com",
-									Port:     pointer.To[uint32](8080),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("CIDR"),
-									Value:    "192.168.0.0/16",
-									Protocol: api.ProtocolType("http"),
-									Port:     pointer.To[uint32](8126),
-								},
-								{
-									Type:     api.MatchType("CIDR"),
-									Value:    "240.0.0.0/4",
-									Protocol: api.ProtocolType("http"),
-									Port:     pointer.To[uint32](8126),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "www.google.com",
-									Protocol: api.ProtocolType("http"),
-									Port:     pointer.To[uint32](80),
-								},
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "10.42.0.8",
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6",
-									Protocol: api.ProtocolType("tls"),
-								},
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "9942:9abf:d0e0:f2da:2290:333b:e590:f497",
-									Port:     pointer.To[uint32](9091),
-									Protocol: api.ProtocolType("tcp"),
-								},
-							},
+			proxyConf: &core_rules.ProxyConf{
+				Conf: api.Conf{
+					PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("Matched")),
+					AppendMatch: &[]api.Match{
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "api.example.com",
+							Port:     pointer.To[uint32](443),
+							Protocol: api.ProtocolType("tls"),
+						},
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "example.com",
+							Port:     pointer.To[uint32](443),
+							Protocol: api.ProtocolType("tls"),
+						},
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "*.example.com",
+							Port:     pointer.To[uint32](443),
+							Protocol: api.ProtocolType("tls"),
+						},
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "example.com",
+							Port:     pointer.To[uint32](8080),
+							Protocol: api.ProtocolType("http"),
+						},
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "other.com",
+							Port:     pointer.To[uint32](8080),
+							Protocol: api.ProtocolType("http"),
+						},
+						{
+							Type:     api.MatchType("CIDR"),
+							Value:    "192.168.0.0/16",
+							Protocol: api.ProtocolType("http"),
+							Port:     pointer.To[uint32](8126),
+						},
+						{
+							Type:     api.MatchType("CIDR"),
+							Value:    "240.0.0.0/4",
+							Protocol: api.ProtocolType("http"),
+							Port:     pointer.To[uint32](8126),
+						},
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "www.google.com",
+							Protocol: api.ProtocolType("http"),
+							Port:     pointer.To[uint32](80),
+						},
+						{
+							Type:     api.MatchType("IP"),
+							Value:    "10.42.0.8",
+							Protocol: api.ProtocolType("http"),
+						},
+						{
+							Type:     api.MatchType("IP"),
+							Value:    "b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6",
+							Protocol: api.ProtocolType("tls"),
+						},
+						{
+							Type:     api.MatchType("IP"),
+							Value:    "9942:9abf:d0e0:f2da:2290:333b:e590:f497",
+							Port:     pointer.To[uint32](9091),
+							Protocol: api.ProtocolType("tcp"),
 						},
 					},
 				},
@@ -208,19 +201,14 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "192.168.0.0",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("tcp"),
-								},
-							},
+			proxyConf: &core_rules.ProxyConf{
+				Conf: api.Conf{
+					AppendMatch: &[]api.Match{
+						{
+							Type:     api.MatchType("IP"),
+							Value:    "192.168.0.0",
+							Port:     pointer.To[uint32](80),
+							Protocol: api.ProtocolType("tcp"),
 						},
 					},
 				},
@@ -253,25 +241,20 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "api.example.com",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "192.168.0.0",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("tcp"),
-								},
-							},
+			proxyConf: &core_rules.ProxyConf{
+				Conf: api.Conf{
+					AppendMatch: &[]api.Match{
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "api.example.com",
+							Port:     pointer.To[uint32](80),
+							Protocol: api.ProtocolType("http"),
+						},
+						{
+							Type:     api.MatchType("IP"),
+							Value:    "192.168.0.0",
+							Port:     pointer.To[uint32](80),
+							Protocol: api.ProtocolType("tcp"),
 						},
 					},
 				},
@@ -304,30 +287,25 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("CIDR"),
-									Value:    "10.10.0.0/16",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("CIDR"),
-									Value:    "192.168.0.0/24",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "192.168.0.0",
-									Protocol: api.ProtocolType("http"),
-								},
-							},
+			proxyConf: &core_rules.ProxyConf{
+				Conf: api.Conf{
+					AppendMatch: &[]api.Match{
+						{
+							Type:     api.MatchType("CIDR"),
+							Value:    "10.10.0.0/16",
+							Port:     pointer.To[uint32](80),
+							Protocol: api.ProtocolType("http"),
+						},
+						{
+							Type:     api.MatchType("CIDR"),
+							Value:    "192.168.0.0/24",
+							Port:     pointer.To[uint32](80),
+							Protocol: api.ProtocolType("http"),
+						},
+						{
+							Type:     api.MatchType("IP"),
+							Value:    "192.168.0.0",
+							Protocol: api.ProtocolType("http"),
 						},
 					},
 				},
@@ -360,35 +338,30 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "example1.com",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "anotherexample.com",
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "example2.com",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "*.example.com",
-									Protocol: api.ProtocolType("http"),
-								},
-							},
+			proxyConf: &core_rules.ProxyConf{
+				Conf: api.Conf{
+					AppendMatch: &[]api.Match{
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "example1.com",
+							Port:     pointer.To[uint32](80),
+							Protocol: api.ProtocolType("http"),
+						},
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "anotherexample.com",
+							Protocol: api.ProtocolType("http"),
+						},
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "example2.com",
+							Port:     pointer.To[uint32](80),
+							Protocol: api.ProtocolType("http"),
+						},
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "*.example.com",
+							Protocol: api.ProtocolType("http"),
 						},
 					},
 				},
@@ -421,24 +394,19 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "www.example.com",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "www.anotherexample.com",
-									Protocol: api.ProtocolType("http"),
-								},
-							},
+			proxyConf: &core_rules.ProxyConf{
+				Conf: api.Conf{
+					AppendMatch: &[]api.Match{
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "www.example.com",
+							Port:     pointer.To[uint32](80),
+							Protocol: api.ProtocolType("http"),
+						},
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "www.anotherexample.com",
+							Protocol: api.ProtocolType("http"),
 						},
 					},
 				},
@@ -471,24 +439,19 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "www.gmail.com",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "10.42.0.8",
-									Protocol: api.ProtocolType("http"),
-								},
-							},
+			proxyConf: &core_rules.ProxyConf{
+				Conf: api.Conf{
+					AppendMatch: &[]api.Match{
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "www.gmail.com",
+							Port:     pointer.To[uint32](80),
+							Protocol: api.ProtocolType("http"),
+						},
+						{
+							Type:     api.MatchType("IP"),
+							Value:    "10.42.0.8",
+							Protocol: api.ProtocolType("http"),
 						},
 					},
 				},
@@ -521,25 +484,20 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "172.12.2.2",
-									Port:     pointer.To[uint32](3306),
-									Protocol: api.ProtocolType("mysql"),
-								},
-								{
-									Type:     api.MatchType("CIDR"),
-									Value:    "172.12.2.2/24",
-									Port:     pointer.To[uint32](3307),
-									Protocol: api.ProtocolType("mysql"),
-								},
-							},
+			proxyConf: &core_rules.ProxyConf{
+				Conf: api.Conf{
+					AppendMatch: &[]api.Match{
+						{
+							Type:     api.MatchType("IP"),
+							Value:    "172.12.2.2",
+							Port:     pointer.To[uint32](3306),
+							Protocol: api.ProtocolType("mysql"),
+						},
+						{
+							Type:     api.MatchType("CIDR"),
+							Value:    "172.12.2.2/24",
+							Port:     pointer.To[uint32](3307),
+							Protocol: api.ProtocolType("mysql"),
 						},
 					},
 				},
@@ -566,14 +524,9 @@ var _ = Describe("MeshPassthrough", func() {
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("None")),
-						},
-					},
+			proxyConf: &core_rules.ProxyConf{
+				Conf: api.Conf{
+					PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("None")),
 				},
 			},
 			listenersGolden: "disabled_on_policy.listeners.golden.yaml",
@@ -598,20 +551,15 @@ var _ = Describe("MeshPassthrough", func() {
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "api.example.com",
-									Port:     pointer.To[uint32](443),
-									Protocol: api.ProtocolType("tls"),
-								},
-							},
+			proxyConf: &core_rules.ProxyConf{
+				Conf: api.Conf{
+					PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
+					AppendMatch: &[]api.Match{
+						{
+							Type:     api.MatchType("Domain"),
+							Value:    "api.example.com",
+							Port:     pointer.To[uint32](443),
+							Protocol: api.ProtocolType("tls"),
 						},
 					},
 				},

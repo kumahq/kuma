@@ -98,16 +98,15 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshMetricType]
-	if !ok || len(policies.SingleItemRules.Rules) == 0 {
+	if !ok || policies.ProxyConf == nil {
 		return nil
 	}
 
-	rule := policies.SingleItemRules.Rules[0]
-	policyNames := make([]string, 0, len(rule.Origin))
-	for _, o := range rule.Origin {
+	policyNames := make([]string, 0, len(policies.ProxyConf.Origin))
+	for _, o := range policies.ProxyConf.Origin {
 		policyNames = append(policyNames, o.GetName())
 	}
-	conf := sanitizeConfForProxy(rule.Conf.(api.Conf), proxy, policyNames)
+	conf := sanitizeConfForProxy(policies.ProxyConf.Conf.(api.Conf), proxy, policyNames)
 
 	if len(pointer.Deref(conf.Backends)) == 0 {
 		return nil

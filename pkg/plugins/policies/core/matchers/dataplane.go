@@ -108,9 +108,9 @@ func MatchedPolicies(
 		warnings = append(warnings, fmt.Sprintf("couldn't create To rules: %s", err.Error()))
 	}
 
-	sr, err := core_rules.BuildSingleItemRules(dpPolicies.GetItems())
+	pc, err := core_rules.BuildProxyConf(dpPolicies.GetItems())
 	if err != nil {
-		warnings = append(warnings, fmt.Sprintf("couldn't create top level rules: %s", err.Error()))
+		warnings = append(warnings, fmt.Sprintf("couldn't create proxy-wide config: %s", err.Error()))
 	}
 
 	result := core_xds.TypedMatchingPolicies{
@@ -118,7 +118,7 @@ func MatchedPolicies(
 		DataplanePolicies: dpPolicies.GetItems(),
 		FromRules:         fr,
 		ToRules:           tr,
-		SingleItemRules:   sr,
+		ProxyConf:         pc,
 		Warnings:          warnings,
 	}
 	if mpOpts.Cache != nil {

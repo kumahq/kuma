@@ -57,8 +57,12 @@ type ToRules struct {
 	ResourceRules outbound.ResourceRules
 }
 
-type SingleItemRules struct {
-	Rules Rules
+// ProxyConf is the single merged configuration of a proxy-wide policy applying
+// to the whole proxy. A nil *ProxyConf means either no policy of that type matched
+// the proxy, or the matched policy type doesn't support proxy-wide configuration.
+type ProxyConf struct {
+	Conf   any
+	Origin []core_model.ResourceMeta
 }
 
 // Deprecated: use common.WithPolicyAttributes instead
@@ -295,27 +299,32 @@ func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.Res
 	return result
 }
 
-func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRules, error) {
-	items := []PolicyItemWithMeta{}
+func BuildProxyConf(matchedPolicies []core_model.Resource) (*ProxyConf, error) {
+	var confs []any
+	var origin []core_model.ResourceMeta
 	for _, mp := range matchedPolicies {
 		policyWithSingleItem, ok := mp.GetSpec().(core_model.PolicyWithSingleItem)
 		if !ok {
 			// policy doesn't support single item
-			return SingleItemRules{}, nil
+			return nil, nil
 		}
-		item := PolicyItemWithMeta{
-			PolicyItem:   policyWithSingleItem.GetPolicyItem(),
-			ResourceMeta: mp.GetMeta(),
-		}
-		items = append(items, item)
+		confs = append(confs, policyWithSingleItem.GetPolicyItem().GetDefault())
+		origin = append(origin, mp.GetMeta())
 	}
 
-	rules, err := BuildRules(items, false)
+	if len(confs) == 0 {
+		return nil, nil
+	}
+
+	merged, err := merge.Confs(confs)
 	if err != nil {
-		return SingleItemRules{}, err
+		return nil, err
+	}
+	if len(merged) == 0 {
+		return nil, nil
 	}
 
-	return SingleItemRules{Rules: rules}, nil
+	return &ProxyConf{Conf: merged[0], Origin: origin}, nil
 }
 
 // BuildRules creates a list of rules with negations sorted by the number of positive tags.
