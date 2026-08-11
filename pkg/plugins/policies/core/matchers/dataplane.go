@@ -110,7 +110,7 @@ func MatchedPolicies(
 
 	pc, err := core_rules.BuildProxyConf(dpPolicies.GetItems())
 	if err != nil {
-		warnings = append(warnings, fmt.Sprintf("couldn't create top level rules: %s", err.Error()))
+		warnings = append(warnings, fmt.Sprintf("couldn't create proxy-wide config: %s", err.Error()))
 	}
 
 	result := core_xds.TypedMatchingPolicies{

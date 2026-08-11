@@ -984,7 +984,7 @@ var _ = Describe("MeshTrace on mixed Dataplane with sectionName targetRef", func
 		matched, err := core_matchers.MatchedPolicies(api.MeshTraceType, dpp, meshResources)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(matched.DataplanePolicies).To(HaveLen(1), "matcher must include the MeshTrace policy")
-		Expect(matched.ProxyConf).ToNot(BeNil(), "matcher must produce a single-item rule")
+		Expect(matched.ProxyConf).ToNot(BeNil(), "matcher must produce a merged proxy-wide config")
 
 		rs := core_xds.NewResourceSet()
 		for _, res := range mixedInboundAndZoneEgressResources() {

@@ -58,7 +58,8 @@ type ToRules struct {
 }
 
 // ProxyConf is the single merged configuration of a proxy-wide policy applying
-// to the whole proxy. A nil *ProxyConf means no policy of that type matched the proxy.
+// to the whole proxy. A nil *ProxyConf means either no policy of that type matched
+// the proxy, or the matched policy type doesn't support proxy-wide configuration.
 type ProxyConf struct {
 	Conf   any
 	Origin []core_model.ResourceMeta

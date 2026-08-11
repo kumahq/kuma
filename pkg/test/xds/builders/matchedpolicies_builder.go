@@ -43,6 +43,7 @@ func (mp *MatchedPoliciesBuilder) WithFromPolicy(resourceType core_model.Resourc
 
 func (mp *MatchedPoliciesBuilder) WithProxyConfPolicy(resourceType core_model.ResourceType, proxyConf *rules.ProxyConf) *MatchedPoliciesBuilder {
 	mp.res.Dynamic[resourceType] = xds.TypedMatchingPolicies{
+		Type:      resourceType,
 		ProxyConf: proxyConf,
 	}
 	return mp
