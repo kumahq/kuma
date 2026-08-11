@@ -60,7 +60,7 @@ var _ = Describe("Bundled Providers Test", func() {
 		}
 		memoryStore := memory.NewStore()
 		resourceManager = manager.NewResourceManager(memoryStore)
-		secretManager = secret_manager.NewSecretManager(store.NewSecretStore(memoryStore), cipher.None(), nil, false)
+		secretManager = secret_manager.NewSecretManager(store.NewSecretStore(memoryStore), cipher.None())
 		mesh = core_mesh.NewMeshResource()
 		// Since mesh is the owner of secrets we can't operate on secrets without having the mesh in the store
 		err := resourceManager.Create(context.Background(), mesh, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))

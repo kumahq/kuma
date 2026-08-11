@@ -112,7 +112,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 
 	builder.WithResourceValidators(core_runtime.ResourceValidators{
 		Dataplane: dataplane.NewMembershipValidator(),
-		Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
+		Mesh:      mesh_managers.NewMeshValidator(builder.ResourceStore()),
 	})
 
 	if err := initializeResourceManager(cfg, builder); err != nil { //nolint:contextcheck
@@ -121,9 +121,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ReadOnlyResourceManager()))
 
-	if err := initializeCaManagers(builder); err != nil {
-		return nil, err
-	}
 	if err := initializeIdentityProviders(builder); err != nil {
 		return nil, err
 	}
@@ -161,7 +158,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	} else {
 		builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(
 			resourceManager,
-			builder.CaManagers(),
 			builder.Config().GetEnvoyAdminPort(),
 		))
 	}
@@ -365,17 +361,6 @@ func initializeGlobalInsightService(cfg kuma_cp.Config, builder *core_runtime.Bu
 	builder.WithGlobalInsightService(globalInsightService)
 }
 
-func initializeCaManagers(builder *core_runtime.Builder) error {
-	for pluginName, caPlugin := range core_plugins.Plugins().CaPlugins() {
-		caManager, err := caPlugin.NewCaManager(builder, nil)
-		if err != nil {
-			return errors.Wrapf(err, "could not create CA manager for plugin %q", pluginName)
-		}
-		builder.WithCaManager(string(pluginName), caManager)
-	}
-	return nil
-}
-
 func initializeIdentityProviders(builder *core_runtime.Builder) error {
 	for pluginName, idpPlugin := range core_plugins.Plugins().IdentityProviders() {
 		idp, err := idpPlugin.NewIdentityProvider(builder, nil)
@@ -410,7 +395,6 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 		mesh_managers.NewMeshManager(
 			builder.ResourceStore(),
 			customizableManager,
-			builder.CaManagers(),
 			registry.Global(),
 			builder.ResourceValidators().Mesh,
 			builder.Extensions(),
@@ -454,16 +438,9 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}
-	var secretValidator secret_manager.SecretValidator
-	if cfg.IsFederatedZoneCP() {
-		secretValidator = secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil })
-	} else {
-		secretValidator = secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
-	}
-
 	customizableManager.Customize(
 		system.SecretType,
-		secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator, cfg.Store.UnsafeDelete),
+		secret_manager.NewSecretManager(builder.SecretStore(), cipher),
 	)
 
 	customizableManager.Customize(

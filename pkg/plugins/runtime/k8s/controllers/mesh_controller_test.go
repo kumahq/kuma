@@ -13,7 +13,6 @@ import (
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	resources_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -22,7 +21,6 @@ import (
 	secret_cipher "github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
 	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
-	ca_builtin "github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin"
 	v1alpha12 "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
@@ -34,7 +32,6 @@ var _ = Describe("MeshReconciler", func() {
 	var kubeClient kube_client.Client
 	var resourceManager resources_manager.ResourceManager
 	var reconciler kube_reconcile.Reconciler
-	var builtinCaManager core_ca.Manager
 
 	BeforeAll(func() {
 		kubeClient = kube_client_fake.NewClientBuilder().
@@ -57,28 +54,17 @@ var _ = Describe("MeshReconciler", func() {
 
 		resourceManager = resources_manager.NewResourceManager(store)
 		customizableManager := resources_manager.NewCustomizableResourceManager(resourceManager, nil)
-		secretManager := secret_manager.NewSecretManager(
-			secretStore,
-			secret_cipher.None(),
-			secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil }),
-			false,
-		)
-
 		customizableManager.Customize(
 			system.SecretType,
-			secretManager,
+			secret_manager.NewSecretManager(secretStore, secret_cipher.None()),
 		)
 
-		builtinCaManager = ca_builtin.NewBuiltinCaManager(secretManager)
 		reconciler = &controllers.MeshReconciler{
 			ResourceManager: customizableManager,
 			Log:             logr.Discard(),
 			Extensions:      context.Background(),
 			K8sStore:        true,
 			SystemNamespace: "kuma-system",
-			CaManagers: core_ca.Managers{
-				"builtin": builtinCaManager,
-			},
 		}
 	})
 
@@ -109,11 +95,6 @@ var _ = Describe("MeshReconciler", func() {
 			meshRetries := &v1alpha12.MeshRetryResourceList{}
 			Expect(resourceManager.List(context.Background(), meshRetries, core_store.ListByMesh("default"))).To(Succeed())
 			Expect(meshRetries.Items).To(HaveLen(1))
-		})
-
-		It("should create default CA", func() {
-			_, err := builtinCaManager.GetRootCert(context.Background(), "default", samples.MeshMTLS().Spec.Mtls.Backends[0])
-			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 }, Ordered)
