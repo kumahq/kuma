@@ -97,6 +97,8 @@ require (
 	sigs.k8s.io/yaml v1.6.0
 )
 
+replace google.golang.org/grpc => google.golang.org/grpc v1.74.2
+
 require (
 	cel.dev/expr v0.25.2 // indirect
 	dario.cat/mergo v1.0.2 // indirect
