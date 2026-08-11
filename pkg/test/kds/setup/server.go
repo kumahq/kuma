@@ -37,10 +37,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
 	runtime2 "github.com/kumahq/kuma/v3/pkg/test/runtime"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 type testRuntimeContext struct {
@@ -57,6 +57,7 @@ type testRuntimeContext struct {
 	kdsContext               *kds_context.Context
 	ctx                      context.Context
 	envoyAdminClient         admin.EnvoyAdminClient
+	certWatchers             *util_tls.Watchers
 }
 
 func (t *testRuntimeContext) DataSourceLoader() datasource.Loader {
@@ -107,10 +108,6 @@ func (t *testRuntimeContext) XDS() xds_runtime.XDSRuntimeContext {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) CAProvider() secrets.CaProvider {
-	panic("implement me")
-}
-
 func (t *testRuntimeContext) DpServer() *server.DpServer {
 	panic("implement me")
 }
@@ -133,6 +130,10 @@ func (t *testRuntimeContext) Access() runtime.Access {
 
 func (t *testRuntimeContext) AppContext() context.Context {
 	return t.ctx
+}
+
+func (t *testRuntimeContext) CertWatchers() *util_tls.Watchers {
+	return t.certWatchers
 }
 
 func (t *testRuntimeContext) ExtraReportsFn() runtime.ExtraReportsFn {
@@ -261,6 +262,7 @@ func NewTestRuntime(ctx context.Context, cfg kuma_cp.Config, store store.Resourc
 		eventBus:                 eventBus,
 		kdsContext:               kds_context.DefaultContext(ctx, rm, cfg),
 		envoyAdminClient:         &runtime2.DummyEnvoyAdminClient{},
+		certWatchers:             util_tls.NewWatchers(ctx, core.Log.WithName("cert-watcher")),
 	}
 }
 

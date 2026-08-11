@@ -11,12 +11,12 @@ var defaultMeshCircuitBreakerResource = func() model.Resource {
 	return &v1alpha1.MeshCircuitBreakerResource{
 		Spec: &v1alpha1.MeshCircuitBreaker{
 			TargetRef: &common_api.TopLevelTargetRef{
-				Kind: common_api.Mesh,
+				Kind: common_api.TopLevelTargetRefKindMesh,
 			},
 			To: &[]v1alpha1.To{
 				{
 					TargetRef: common_api.OutboundTargetRef{
-						Kind: common_api.Mesh,
+						Kind: common_api.OutboundTargetRefKindMesh,
 					},
 					Default: v1alpha1.Conf{
 						ConnectionLimits: &v1alpha1.ConnectionLimits{

@@ -84,7 +84,6 @@ var _ = Describe("hash", func() {
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			nil,
 		)
 	})
 
@@ -276,7 +275,6 @@ status:
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			nil,
 			xds_context.WithPolicyMatchingHash(),
 		)
 
@@ -321,7 +319,6 @@ networking:
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			nil,
 			xds_context.WithPolicyMatchingHash(),
 		)
 
@@ -398,7 +395,6 @@ status:
 				return []net.IP{net.ParseIP(resolvedIP)}, nil
 			},
 			"zone-1",
-			nil,
 		)
 		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
 		Expect(test_store.LoadResources(context.Background(), resourceStore, remoteMeshZoneAddressWithHostname)).To(Succeed())
@@ -469,7 +465,6 @@ status:
 				}
 			},
 			"zone-1",
-			nil,
 		)
 
 		Expect(test_store.LoadResources(context.Background(), resourceStore, `
@@ -521,7 +516,6 @@ spec:
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			nil,
 		)
 
 		// when building the base mesh context
@@ -556,7 +550,6 @@ var _ = Describe("EndpointMap", func() {
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			nil,
 		)
 	})
 

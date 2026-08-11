@@ -56,7 +56,6 @@ spec:
                   properties:
                     type:
                       enum:
-                      - ServiceTag
                       - SpiffeID
                       type: string
                     value:

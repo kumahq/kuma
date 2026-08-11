@@ -245,12 +245,6 @@ func endpointIdentity(dataplane *core_mesh.DataplaneResource, inbound *mesh_prot
 }
 
 func meshServiceTagValue(ms *meshservice_api.MeshServiceResource) string {
-	for _, identity := range pointer.Deref(ms.Spec.Identities) {
-		if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
-			return identity.Value
-		}
-	}
-
 	if serviceTag := ms.GetMeta().GetLabels()[mesh_proto.ServiceTag]; serviceTag != "" {
 		return serviceTag
 	}

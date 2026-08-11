@@ -1,4 +1,3 @@
-//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -42,6 +41,13 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
+func mergedPolicyConf(rules core_rules.Rules) *core_rules.ProxyConf {
+	if len(rules) == 0 {
+		return nil
+	}
+	return &core_rules.ProxyConf{Conf: rules[0].Conf, Origin: rules[0].Origin}
+}
+
 func otelBackendResource(name, address string) *motb_api.MeshOpenTelemetryBackendResource {
 	motb := motb_api.NewMeshOpenTelemetryBackendResource()
 	motb.SetMeta(&test_model.ResourceMeta{
@@ -66,13 +72,13 @@ func otelBackendRef(name string) *common_api.BackendResourceRef {
 
 var _ = Describe("MeshTrace", func() {
 	type testCase struct {
-		resources       []core_xds.Resource
-		singleItemRules core_rules.SingleItemRules
-		outbounds       xds_types.Outbounds
-		goldenFile      string
-		proxyLabels     map[string]string
-		zone            string
-		otelBackends    []*motb_api.MeshOpenTelemetryBackendResource
+		resources    []core_xds.Resource
+		proxyConf    *core_rules.ProxyConf
+		outbounds    xds_types.Outbounds
+		goldenFile   string
+		proxyLabels  map[string]string
+		zone         string
+		otelBackends []*motb_api.MeshOpenTelemetryBackendResource
 	}
 	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
@@ -144,7 +150,7 @@ var _ = Describe("MeshTrace", func() {
 			proxyBuilder := xds_builders.Proxy().
 				WithDataplane(dpBuilder).
 				WithOutbounds(given.outbounds).
-				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules))
+				WithPolicies(xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshTraceType, given.proxyConf))
 			if given.zone != "" {
 				proxyBuilder = proxyBuilder.WithZone(given.zone)
 			}
@@ -170,33 +176,31 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Tags: &[]api.Tag{
-								{Name: "app", Literal: pointer.To("backend")},
-								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
-								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
-							},
-							Sampling: &api.Sampling{
-								Overall: pointer.To(intstr.FromInt(10)),
-								Client:  pointer.To(intstr.FromInt(20)),
-								Random:  pointer.To(intstr.FromInt(50)),
-							},
-							Backends: &[]api.Backend{{
-								Zipkin: &api.ZipkinBackend{
-									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: true,
-									ApiVersion:        "httpProto",
-									TraceId128Bit:     true,
-								},
-							}},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Tags: &[]api.Tag{
+							{Name: "app", Literal: pointer.To("backend")},
+							{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
+							{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
 						},
+						Sampling: &api.Sampling{
+							Overall: pointer.To(intstr.FromInt(10)),
+							Client:  pointer.To(intstr.FromInt(20)),
+							Random:  pointer.To(intstr.FromInt(50)),
+						},
+						Backends: &[]api.Backend{{
+							Zipkin: &api.ZipkinBackend{
+								Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+								SharedSpanContext: true,
+								ApiVersion:        "httpProto",
+								TraceId128Bit:     true,
+							},
+						}},
 					},
 				},
-			},
+			}),
 			goldenFile: "inbound-outbound-zipkin",
 		}),
 		Entry("inbound/outbound for opentelemetry", testCase{
@@ -208,30 +212,28 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Tags: &[]api.Tag{
-								{Name: "app", Literal: pointer.To("backend")},
-								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
-								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
-							},
-							Sampling: &api.Sampling{
-								Overall: pointer.To(intstr.FromInt(10)),
-								Client:  pointer.To(intstr.FromInt(20)),
-								Random:  pointer.To(intstr.FromInt(50)),
-							},
-							Backends: &[]api.Backend{{
-								OpenTelemetry: &api.OpenTelemetryBackend{
-									BackendRef: otelBackendRef("otel-collector"),
-								},
-							}},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Tags: &[]api.Tag{
+							{Name: "app", Literal: pointer.To("backend")},
+							{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
+							{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
 						},
+						Sampling: &api.Sampling{
+							Overall: pointer.To(intstr.FromInt(10)),
+							Client:  pointer.To(intstr.FromInt(20)),
+							Random:  pointer.To(intstr.FromInt(50)),
+						},
+						Backends: &[]api.Backend{{
+							OpenTelemetry: &api.OpenTelemetryBackend{
+								BackendRef: otelBackendRef("otel-collector"),
+							},
+						}},
 					},
 				},
-			},
+			}),
 			otelBackends: []*motb_api.MeshOpenTelemetryBackendResource{
 				otelBackendResource("otel-collector", "jaeger-collector.mesh-observability"),
 			},
@@ -246,20 +248,18 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								OpenTelemetry: &api.OpenTelemetryBackend{
-									BackendRef: otelBackendRef("otel-collector-ipv6"),
-								},
-							}},
-						},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Backends: &[]api.Backend{{
+							OpenTelemetry: &api.OpenTelemetryBackend{
+								BackendRef: otelBackendRef("otel-collector-ipv6"),
+							},
+						}},
 					},
 				},
-			},
+			}),
 			otelBackends: []*motb_api.MeshOpenTelemetryBackendResource{
 				otelBackendResource("otel-collector-ipv6", "2001:db8::1"),
 			},
@@ -274,24 +274,22 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Sampling: &api.Sampling{
-								Random: pointer.To(intstr.FromInt(50)),
-							},
-							Backends: &[]api.Backend{{
-								Datadog: &api.DatadogBackend{
-									Url:          "http://ingest.datadog.eu:8126",
-									SplitService: true,
-								},
-							}},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Sampling: &api.Sampling{
+							Random: pointer.To(intstr.FromInt(50)),
 						},
+						Backends: &[]api.Backend{{
+							Datadog: &api.DatadogBackend{
+								Url:          "http://ingest.datadog.eu:8126",
+								SplitService: true,
+							},
+						}},
 					},
 				},
-			},
+			}),
 			goldenFile: "inbound-outbound-datadog",
 		}),
 		Entry("sampling is empty", testCase{
@@ -303,22 +301,20 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Zipkin: &api.ZipkinBackend{
-									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: true,
-									TraceId128Bit:     true,
-								},
-							}},
-						},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Backends: &[]api.Backend{{
+							Zipkin: &api.ZipkinBackend{
+								Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+								SharedSpanContext: true,
+								TraceId128Bit:     true,
+							},
+						}},
 					},
 				},
-			},
+			}),
 			goldenFile: "empty-sampling",
 		}),
 		Entry("inbound/outbound for zipkin with workload identity", testCase{
@@ -330,23 +326,21 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Zipkin: &api.ZipkinBackend{
-									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: true,
-									ApiVersion:        "httpProto",
-									TraceId128Bit:     true,
-								},
-							}},
-						},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Backends: &[]api.Backend{{
+							Zipkin: &api.ZipkinBackend{
+								Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+								SharedSpanContext: true,
+								ApiVersion:        "httpProto",
+								TraceId128Bit:     true,
+							},
+						}},
 					},
 				},
-			},
+			}),
 			goldenFile: "inbound-outbound-zipkin-workload-identity",
 			proxyLabels: map[string]string{
 				"kuma.io/workload":      "backend",
@@ -364,26 +358,24 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Tags: &[]api.Tag{
-								{Name: "kuma.mesh", Literal: pointer.To("user-mesh")},
-							},
-							Backends: &[]api.Backend{{
-								Zipkin: &api.ZipkinBackend{
-									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: true,
-									ApiVersion:        "httpProto",
-									TraceId128Bit:     true,
-								},
-							}},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Tags: &[]api.Tag{
+							{Name: "kuma.mesh", Literal: pointer.To("user-mesh")},
 						},
+						Backends: &[]api.Backend{{
+							Zipkin: &api.ZipkinBackend{
+								Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+								SharedSpanContext: true,
+								ApiVersion:        "httpProto",
+								TraceId128Bit:     true,
+							},
+						}},
 					},
 				},
-			},
+			}),
 			goldenFile: "inbound-outbound-zipkin-user-tag-no-override",
 			proxyLabels: map[string]string{
 				"kuma.io/workload":      "backend",
@@ -401,16 +393,14 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{},
-						},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Backends: &[]api.Backend{},
 					},
 				},
-			},
+			}),
 			goldenFile: "empty-backend-list",
 		}),
 	)
@@ -447,18 +437,16 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			}).
-			WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								OpenTelemetry: &api.OpenTelemetryBackend{},
-							}},
-						},
+			WithPolicies(xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshTraceType, mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Backends: &[]api.Backend{{
+							OpenTelemetry: &api.OpenTelemetryBackend{},
+						}},
 					},
 				},
-			})).
+			}))).
 			Build()
 
 		meshTracePlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
@@ -505,25 +493,23 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			}).
-			WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								OpenTelemetry: &api.OpenTelemetryBackend{
-									BackendRef: &common_api.BackendResourceRef{
-										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-										Labels: map[string]string{
-											"kuma.io/test": "non-existing",
-										},
+			WithPolicies(xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshTraceType, mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Backends: &[]api.Backend{{
+							OpenTelemetry: &api.OpenTelemetryBackend{
+								BackendRef: &common_api.BackendResourceRef{
+									Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
+									Labels: map[string]string{
+										"kuma.io/test": "non-existing",
 									},
 								},
-							}},
-						},
+							},
+						}},
 					},
 				},
-			})).
+			}))).
 			Build()
 
 		meshTracePlugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
@@ -596,25 +582,23 @@ var _ = Describe("MeshTrace", func() {
 					Resource: backendMeshServiceIdentifier,
 				},
 			}).
-			WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								OpenTelemetry: &api.OpenTelemetryBackend{
-									BackendRef: &common_api.BackendResourceRef{
-										Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
-										Labels: map[string]string{
-											"kuma.io/display-name": backendName,
-										},
+			WithPolicies(xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshTraceType, mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Backends: &[]api.Backend{{
+							OpenTelemetry: &api.OpenTelemetryBackend{
+								BackendRef: &common_api.BackendResourceRef{
+									Kind: common_api.BackendResourceMeshOpenTelemetryBackend,
+									Labels: map[string]string{
+										"kuma.io/display-name": backendName,
 									},
 								},
-							}},
-						},
+							},
+						}},
 					},
 				},
-			})).
+			}))).
 			Build()
 
 		proxy.OtelPipeBackends = &core_xds.OtelPipeBackends{}
@@ -757,11 +741,11 @@ func mixedInboundAndZoneEgressResources() []core_xds.Resource {
 
 var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 	type testCase struct {
-		dp              *builders.DataplaneBuilder
-		resources       []core_xds.Resource
-		singleItemRules core_rules.SingleItemRules
-		goldenFile      string
-		otelBackends    []*motb_api.MeshOpenTelemetryBackendResource
+		dp           *builders.DataplaneBuilder
+		resources    []core_xds.Resource
+		proxyConf    *core_rules.ProxyConf
+		goldenFile   string
+		otelBackends []*motb_api.MeshOpenTelemetryBackendResource
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -785,7 +769,7 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 				WithDataplane(given.dp).
 				WithMetadata(&core_xds.DataplaneMetadata{}).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules)).
+					WithProxyConfPolicy(api.MeshTraceType, given.proxyConf)).
 				WithZone("zone-1").
 				Build()
 
@@ -803,55 +787,49 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 		Entry("zone-egress-only zipkin", testCase{
 			dp:        zoneEgressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneEgressListenerResource()},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{{
-					Subset: []subsetutils.Tag{},
-					Conf: api.Conf{
-						Backends: &[]api.Backend{{
-							Zipkin: &api.ZipkinBackend{
-								Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-								SharedSpanContext: true,
-								TraceId128Bit:     true,
-							},
-						}},
-					},
-				}},
-			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{{
+				Subset: []subsetutils.Tag{},
+				Conf: api.Conf{
+					Backends: &[]api.Backend{{
+						Zipkin: &api.ZipkinBackend{
+							Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+							SharedSpanContext: true,
+							TraceId128Bit:     true,
+						},
+					}},
+				},
+			}}),
 			goldenFile: "zone-egress-only-zipkin",
 		}),
 		Entry("zone-egress-only datadog", testCase{
 			dp:        zoneEgressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneEgressListenerResource()},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{{
-					Subset: []subsetutils.Tag{},
-					Conf: api.Conf{
-						Backends: &[]api.Backend{{
-							Datadog: &api.DatadogBackend{
-								Url:          "http://ingest.datadog.eu:8126",
-								SplitService: true,
-							},
-						}},
-					},
-				}},
-			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{{
+				Subset: []subsetutils.Tag{},
+				Conf: api.Conf{
+					Backends: &[]api.Backend{{
+						Datadog: &api.DatadogBackend{
+							Url:          "http://ingest.datadog.eu:8126",
+							SplitService: true,
+						},
+					}},
+				},
+			}}),
 			goldenFile: "zone-egress-only-datadog",
 		}),
 		Entry("zone-egress-only opentelemetry", testCase{
 			dp:        zoneEgressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneEgressListenerResource()},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{{
-					Subset: []subsetutils.Tag{},
-					Conf: api.Conf{
-						Backends: &[]api.Backend{{
-							OpenTelemetry: &api.OpenTelemetryBackend{
-								BackendRef: otelBackendRef("otel-collector"),
-							},
-						}},
-					},
-				}},
-			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{{
+				Subset: []subsetutils.Tag{},
+				Conf: api.Conf{
+					Backends: &[]api.Backend{{
+						OpenTelemetry: &api.OpenTelemetryBackend{
+							BackendRef: otelBackendRef("otel-collector"),
+						},
+					}},
+				},
+			}}),
 			otelBackends: []*motb_api.MeshOpenTelemetryBackendResource{
 				otelBackendResource("otel-collector", "jaeger-collector.mesh-observability"),
 			},
@@ -860,55 +838,49 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 		Entry("zone-ingress-only zipkin", testCase{
 			dp:        zoneIngressOnlyDataplane("zone-ingress-1"),
 			resources: []core_xds.Resource{zoneIngressListenerResource()},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{{
-					Subset: []subsetutils.Tag{},
-					Conf: api.Conf{
-						Backends: &[]api.Backend{{
-							Zipkin: &api.ZipkinBackend{
-								Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-								SharedSpanContext: true,
-								TraceId128Bit:     true,
-							},
-						}},
-					},
-				}},
-			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{{
+				Subset: []subsetutils.Tag{},
+				Conf: api.Conf{
+					Backends: &[]api.Backend{{
+						Zipkin: &api.ZipkinBackend{
+							Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+							SharedSpanContext: true,
+							TraceId128Bit:     true,
+						},
+					}},
+				},
+			}}),
 			goldenFile: "zone-ingress-only-zipkin",
 		}),
 		Entry("zone-ingress-only datadog", testCase{
 			dp:        zoneIngressOnlyDataplane("zone-ingress-1"),
 			resources: []core_xds.Resource{zoneIngressListenerResource()},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{{
-					Subset: []subsetutils.Tag{},
-					Conf: api.Conf{
-						Backends: &[]api.Backend{{
-							Datadog: &api.DatadogBackend{
-								Url:          "http://ingest.datadog.eu:8126",
-								SplitService: true,
-							},
-						}},
-					},
-				}},
-			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{{
+				Subset: []subsetutils.Tag{},
+				Conf: api.Conf{
+					Backends: &[]api.Backend{{
+						Datadog: &api.DatadogBackend{
+							Url:          "http://ingest.datadog.eu:8126",
+							SplitService: true,
+						},
+					}},
+				},
+			}}),
 			goldenFile: "zone-ingress-only-datadog",
 		}),
 		Entry("zone-ingress-only opentelemetry", testCase{
 			dp:        zoneIngressOnlyDataplane("zone-ingress-1"),
 			resources: []core_xds.Resource{zoneIngressListenerResource()},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{{
-					Subset: []subsetutils.Tag{},
-					Conf: api.Conf{
-						Backends: &[]api.Backend{{
-							OpenTelemetry: &api.OpenTelemetryBackend{
-								BackendRef: otelBackendRef("otel-collector"),
-							},
-						}},
-					},
-				}},
-			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{{
+				Subset: []subsetutils.Tag{},
+				Conf: api.Conf{
+					Backends: &[]api.Backend{{
+						OpenTelemetry: &api.OpenTelemetryBackend{
+							BackendRef: otelBackendRef("otel-collector"),
+						},
+					}},
+				},
+			}}),
 			otelBackends: []*motb_api.MeshOpenTelemetryBackendResource{
 				otelBackendResource("otel-collector", "jaeger-collector.mesh-observability"),
 			},
@@ -917,55 +889,49 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 		Entry("mixed inbound and zone egress zipkin", testCase{
 			dp:        mixedInboundAndZoneEgressDataplane(),
 			resources: mixedInboundAndZoneEgressResources(),
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{{
-					Subset: []subsetutils.Tag{},
-					Conf: api.Conf{
-						Backends: &[]api.Backend{{
-							Zipkin: &api.ZipkinBackend{
-								Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-								SharedSpanContext: true,
-								TraceId128Bit:     true,
-							},
-						}},
-					},
-				}},
-			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{{
+				Subset: []subsetutils.Tag{},
+				Conf: api.Conf{
+					Backends: &[]api.Backend{{
+						Zipkin: &api.ZipkinBackend{
+							Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+							SharedSpanContext: true,
+							TraceId128Bit:     true,
+						},
+					}},
+				},
+			}}),
 			goldenFile: "mixed-inbound-and-zone-egress-zipkin",
 		}),
 		Entry("mixed inbound and zone egress datadog", testCase{
 			dp:        mixedInboundAndZoneEgressDataplane(),
 			resources: mixedInboundAndZoneEgressResources(),
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{{
-					Subset: []subsetutils.Tag{},
-					Conf: api.Conf{
-						Backends: &[]api.Backend{{
-							Datadog: &api.DatadogBackend{
-								Url:          "http://ingest.datadog.eu:8126",
-								SplitService: true,
-							},
-						}},
-					},
-				}},
-			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{{
+				Subset: []subsetutils.Tag{},
+				Conf: api.Conf{
+					Backends: &[]api.Backend{{
+						Datadog: &api.DatadogBackend{
+							Url:          "http://ingest.datadog.eu:8126",
+							SplitService: true,
+						},
+					}},
+				},
+			}}),
 			goldenFile: "mixed-inbound-and-zone-egress-datadog",
 		}),
 		Entry("mixed inbound and zone egress opentelemetry", testCase{
 			dp:        mixedInboundAndZoneEgressDataplane(),
 			resources: mixedInboundAndZoneEgressResources(),
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{{
-					Subset: []subsetutils.Tag{},
-					Conf: api.Conf{
-						Backends: &[]api.Backend{{
-							OpenTelemetry: &api.OpenTelemetryBackend{
-								BackendRef: otelBackendRef("otel-collector"),
-							},
-						}},
-					},
-				}},
-			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{{
+				Subset: []subsetutils.Tag{},
+				Conf: api.Conf{
+					Backends: &[]api.Backend{{
+						OpenTelemetry: &api.OpenTelemetryBackend{
+							BackendRef: otelBackendRef("otel-collector"),
+						},
+					}},
+				},
+			}}),
 			otelBackends: []*motb_api.MeshOpenTelemetryBackendResource{
 				otelBackendResource("otel-collector", "jaeger-collector.mesh-observability"),
 			},
@@ -977,20 +943,18 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 		Entry("zone-egress-only with missing xDS listener", testCase{
 			dp:        zoneEgressOnlyDataplane(),
 			resources: nil,
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{{
-					Subset: []subsetutils.Tag{},
-					Conf: api.Conf{
-						Backends: &[]api.Backend{{
-							Zipkin: &api.ZipkinBackend{
-								Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-								SharedSpanContext: true,
-								TraceId128Bit:     true,
-							},
-						}},
-					},
-				}},
-			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{{
+				Subset: []subsetutils.Tag{},
+				Conf: api.Conf{
+					Backends: &[]api.Backend{{
+						Zipkin: &api.ZipkinBackend{
+							Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+							SharedSpanContext: true,
+							TraceId128Bit:     true,
+						},
+					}},
+				},
+			}}),
 			goldenFile: "zone-egress-only-missing-listener",
 		}),
 		// IdentifyingName walks the workload label first. For a zone-proxy-only
@@ -999,20 +963,18 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 		Entry("zone-egress-only zipkin without workload label", testCase{
 			dp:        zoneEgressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneEgressListenerResource()},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{{
-					Subset: []subsetutils.Tag{},
-					Conf: api.Conf{
-						Backends: &[]api.Backend{{
-							Zipkin: &api.ZipkinBackend{
-								Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-								SharedSpanContext: true,
-								TraceId128Bit:     true,
-							},
-						}},
-					},
-				}},
-			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{{
+				Subset: []subsetutils.Tag{},
+				Conf: api.Conf{
+					Backends: &[]api.Backend{{
+						Zipkin: &api.ZipkinBackend{
+							Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+							SharedSpanContext: true,
+							TraceId128Bit:     true,
+						},
+					}},
+				},
+			}}),
 			goldenFile: "zone-egress-only-zipkin",
 		}),
 		// When the kuma.io/workload label is set (K8s pod-to-Dataplane mapping
@@ -1025,19 +987,17 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 				k8s_metadata.KumaWorkload: "kuma-default-egress",
 			}),
 			resources: []core_xds.Resource{zoneEgressListenerResource()},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{{
-					Subset: []subsetutils.Tag{},
-					Conf: api.Conf{
-						Backends: &[]api.Backend{{
-							Datadog: &api.DatadogBackend{
-								Url:          "http://datadog-collector.mesh-observability:8126",
-								SplitService: true,
-							},
-						}},
-					},
-				}},
-			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{{
+				Subset: []subsetutils.Tag{},
+				Conf: api.Conf{
+					Backends: &[]api.Backend{{
+						Datadog: &api.DatadogBackend{
+							Url:          "http://datadog-collector.mesh-observability:8126",
+							SplitService: true,
+						},
+					}},
+				},
+			}}),
 			goldenFile: "zone-egress-only-datadog-workload-label",
 		}),
 	)
@@ -1046,7 +1006,7 @@ var _ = Describe("MeshTrace on zone proxy Dataplane", func() {
 var _ = Describe("MeshTrace on mixed Dataplane with sectionName targetRef", func() {
 	// A MeshTrace policy that targets only the zone egress section name must apply tracing
 	// to that listener and leave the regular inbound untouched. Exercises the matcher path
-	// (not a hand-built SingleItemRules), so it catches the per-section filtering in Apply.
+	// (not a hand-built proxy config), so it catches the per-section filtering in Apply.
 	It("only configures the targeted zone listener", func() {
 		dpp := mixedInboundAndZoneEgressDataplane().Build()
 
@@ -1054,7 +1014,7 @@ var _ = Describe("MeshTrace on mixed Dataplane with sectionName targetRef", func
 			Meta: &test_model.ResourceMeta{Mesh: "default", Name: "mt-section"},
 			Spec: &api.MeshTrace{
 				TargetRef: &common_api.TopLevelTargetRef{
-					Kind:        common_api.Dataplane,
+					Kind:        common_api.TopLevelTargetRefKindDataplane,
 					SectionName: pointer.To("ze-port"),
 				},
 				Default: api.Conf{
@@ -1077,7 +1037,7 @@ var _ = Describe("MeshTrace on mixed Dataplane with sectionName targetRef", func
 		matched, err := core_matchers.MatchedPolicies(api.MeshTraceType, dpp, meshResources)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(matched.DataplanePolicies).To(HaveLen(1), "matcher must include the MeshTrace policy")
-		Expect(matched.SingleItemRules.Rules).To(HaveLen(1), "matcher must produce a single-item rule")
+		Expect(matched.ProxyConf).ToNot(BeNil(), "matcher must produce a proxy-wide config")
 
 		rs := core_xds.NewResourceSet()
 		for _, res := range mixedInboundAndZoneEgressResources() {

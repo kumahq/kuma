@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 var logger = core.Log.WithName("xds").WithName("context")
@@ -33,7 +32,6 @@ type ConnectionInfo struct {
 // This data is the same regardless of a data plane proxy and mesh we are generating the data for.
 type ControlPlaneContext struct {
 	CLACache        envoy.CLACache
-	Secrets         secrets.Secrets
 	IdentityManager providers.IdentityProviderManager
 	Zone            string
 	SystemNamespace string

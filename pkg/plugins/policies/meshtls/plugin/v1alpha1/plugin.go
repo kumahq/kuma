@@ -154,7 +154,7 @@ func applyToRealResources(
 	fromRules core_rules.FromRules,
 	rs *core_xds.ResourceSet,
 ) error {
-	for _, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService, core_xds.NonGatewayResources) {
+	for _, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
 		// there is only one rule always because we're in `Mesh/Mesh`
 		var conf api.Conf
 		for _, r := range fromRules.InboundRules {

@@ -42,7 +42,6 @@ var _ = Describe("Workload generator", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			"zone",
-			nil,
 		)
 		meshCache, err := cache_mesh.NewCache(
 			100*time.Millisecond,

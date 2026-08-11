@@ -44,6 +44,7 @@ import (
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	secrets_k8s "github.com/kumahq/kuma/v3/pkg/plugins/secrets/k8s"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	tokens_server "github.com/kumahq/kuma/v3/pkg/tokens/builtin/server"
 	kuma_srv "github.com/kumahq/kuma/v3/pkg/util/http/server"
 	util_prometheus "github.com/kumahq/kuma/v3/pkg/util/prometheus"
@@ -56,10 +57,11 @@ import (
 var log = core.Log.WithName("api-server")
 
 type ApiServer struct {
-	mux        *http.ServeMux
-	config     api_server.ApiServerConfig
-	httpReady  atomic.Bool
-	httpsReady atomic.Bool
+	mux          *http.ServeMux
+	config       api_server.ApiServerConfig
+	certWatchers *util_tls.Watchers
+	httpReady    atomic.Bool
+	httpsReady   atomic.Bool
 }
 
 func (a *ApiServer) NeedLeaderElection() bool {
@@ -229,8 +231,9 @@ func NewApiServer(
 	container.Handle(guiPath, guiHandler)
 
 	newApiServer := &ApiServer{
-		mux:    container.ServeMux,
-		config: *serverConfig,
+		mux:          container.ServeMux,
+		config:       *serverConfig,
+		certWatchers: rt.CertWatchers(),
 	}
 
 	container.Filter(func(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
@@ -412,7 +415,7 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 		a.httpReady.Store(true)
 	}
 	if a.config.HTTPS.Enabled {
-		tlsConfig, err := configureTLS(a.config)
+		tlsConfig, err := configureTLS(a.config, a.certWatchers)
 		if err != nil {
 			return err
 		}
@@ -454,14 +457,14 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {
-	cert, err := tls.LoadX509KeyPair(cfg.HTTPS.TlsCertFile, cfg.HTTPS.TlsKeyFile)
+func configureTLS(cfg api_server.ApiServerConfig, certWatchers *util_tls.Watchers) (*tls.Config, error) {
+	keyPair, err := certWatchers.Watch(cfg.HTTPS.TlsCertFile, cfg.HTTPS.TlsKeyFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load TLS certificate")
+		return nil, err
 	}
 	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12, // to pass gosec (in practice it's always set after.
+		GetCertificate: keyPair.GetCertificate,
+		MinVersion:     tls.VersionTLS12, // to pass gosec (in practice it's always set after.
 	}
 	tlsConfig.MinVersion, err = config_types.TLSVersion(cfg.HTTPS.TlsMinVersion)
 	if err != nil {
@@ -498,7 +501,6 @@ func SetupServer(rt runtime.Runtime) error {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			rt.CAProvider(),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

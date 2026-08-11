@@ -73,7 +73,6 @@ var _ = Describe("MADS http service", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			"",
-			nil,
 		)
 		newMetrics, err := metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
@@ -186,7 +185,7 @@ var _ = Describe("MADS http service", func() {
 			},
 			Spec: &meshmetric_api.MeshMetric{
 				TargetRef: &common_api.TopLevelTargetRef{
-					Kind: common_api.Mesh,
+					Kind: common_api.TopLevelTargetRefKindMesh,
 				},
 				Default: meshmetric_api.Conf{
 					Backends: &[]meshmetric_api.Backend{

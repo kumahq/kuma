@@ -9,6 +9,7 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
@@ -23,7 +24,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
@@ -55,14 +55,10 @@ func GenerateClusters(
 				if proxy.WorkloadIdentity == nil {
 					continue
 				}
-				// The destination advertises its SNI from the resolved port
-				// name, so normalize a numeric backend-ref section (named port
-				// targeted by number) to the port name before deriving the KRI SNI.
-				kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
-				if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+				sni, ok := SNIForRealResource(realResourceRef, port)
+				if !ok {
 					continue
 				}
-				sni := core_sni.FromKRI(kriID)
 				// we only want to route when are mesh-scoped zone egresses
 				if len(meshCtx.ZoneEgresses) == 0 {
 					continue
@@ -106,12 +102,8 @@ func GenerateClusters(
 					// Every zone is reachable through a mesh-scoped zone proxy, which
 					// matches the KRI SNI, so a proxy with WorkloadIdentity always uses it.
 					if proxy.WorkloadIdentity != nil {
-						// The destination advertises its SNI from the resolved
-						// port name, so normalize a numeric backend-ref section
-						// (named port targeted by number) to the port name
-						// before deriving the KRI SNI.
-						kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
-						if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+						sni, ok := SNIForRealResource(realResourceRef, port)
+						if !ok {
 							continue
 						}
 						// A proxy receives its own identity independently of
@@ -124,7 +116,7 @@ func GenerateClusters(
 						// becomes correct again.
 						if tlsReady {
 							sans := Identities(realResourceRef, meshCtx)
-							upstreamCtx, err := UpstreamTLSContext(proxy, core_sni.FromKRI(kriID), sans)
+							upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
 							if err != nil {
 								return nil, err
 							}
@@ -195,14 +187,24 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 		Build()
 }
 
+func SNIForRealResource(
+	backendRef *resolve.RealResourceBackendRef,
+	port core_resources.Port,
+) (string, bool) {
+	// The destination advertises SNI from the resolved port name, so numeric
+	// backend-ref sections must be normalized before deriving the KRI SNI.
+	kriID := kri.WithSectionName(backendRef.Resource, port.GetName())
+	if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+		return "", false
+	}
+	return core_sni.FromKRI(kriID), true
+}
+
 func Identities(
 	backendRef *resolve.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []string {
 	var result []string
-	serviceTagTransformer := func(serviceTag string) string {
-		return tls.ServiceSpiffeID(meshCtx.Resource.Meta.GetName(), serviceTag)
-	}
 	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
 	case common_api.MeshService:
 		ms := meshCtx.GetServiceByKRI(backendRef.Resource)
@@ -210,9 +212,6 @@ func Identities(
 			return result
 		}
 		for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
-			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
-				result = append(result, serviceTagTransformer(identity.Value))
-			}
 			if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
 				result = append(result, identity.Value)
 			}
@@ -236,6 +235,9 @@ func Identities(
 				continue
 			}
 			for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
+				if identity.Type != meshservice_api.MeshServiceIdentitySpiffeIDType {
+					continue
+				}
 				identities[identity.Value] = struct{}{}
 			}
 		}

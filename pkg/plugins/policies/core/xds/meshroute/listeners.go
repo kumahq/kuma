@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
@@ -151,14 +150,6 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 }
 
 func kumaServiceTagValue(dest core.Destination) string {
-	if d, ok := dest.(*meshservice_api.MeshServiceResource); ok {
-		for _, identity := range pointer.Deref(d.Spec.Identities) {
-			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
-				return identity.Value
-			}
-		}
-	}
-
 	if serviceTag := dest.GetMeta().GetLabels()[mesh_proto.ServiceTag]; serviceTag != "" {
 		return serviceTag
 	}

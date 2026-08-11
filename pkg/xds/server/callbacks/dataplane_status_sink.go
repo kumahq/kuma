@@ -21,10 +21,23 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/events"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 var sinkLog = core.Log.WithName("xds").WithName("sink")
+
+// MTLSInfo describes the identity certificate currently served to a proxy.
+// It is the source of DataplaneInsight.mTLS.
+type MTLSInfo struct {
+	Expiration time.Time
+	Generation time.Time
+
+	IssuedBackend     string
+	SupportedBackends []string
+
+	// ManagedExternally is set when the certificate is delivered by an external SDS server,
+	// so the control plane doesn't know its lifetime.
+	ManagedExternally bool
+}
 
 type DataplaneInsightSink interface {
 	Start(stop <-chan struct{}) // TODO error
@@ -40,7 +53,7 @@ type DataplaneInsightStore interface {
 		dataplaneType core_model.ResourceType,
 		dataplaneID core_model.ResourceKey,
 		subscription *mesh_proto.DiscoverySubscription,
-		secretsInfo *secrets.Info,
+		mtlsInfo *MTLSInfo,
 		otel *mesh_proto.DataplaneInsight_OpenTelemetry,
 	) error
 }
@@ -48,7 +61,6 @@ type DataplaneInsightStore interface {
 func NewDataplaneInsightSink(
 	xdsMetadata *structpb.Struct,
 	accessor SubscriptionStatusAccessor,
-	secrets secrets.Secrets,
 	otelStatusCache *otelstatus.Cache,
 	newTicker func() *time.Ticker,
 	generationTicker func() *time.Ticker,
@@ -66,7 +78,6 @@ func NewDataplaneInsightSink(
 		generationTicker: generationTicker,
 		dataplaneType:    dpType,
 		accessor:         accessor,
-		secrets:          secrets,
 		otelStatusCache:  otelStatusCache,
 		flushBackoff:     flushBackoff,
 		store:            store,
@@ -84,7 +95,6 @@ type dataplaneInsightSink struct {
 	generationTicker func() *time.Ticker
 	dataplaneType    core_model.ResourceType
 	accessor         SubscriptionStatusAccessor
-	secrets          secrets.Secrets
 	otelStatusCache  *otelstatus.Cache
 	store            DataplaneInsightStore
 	flushBackoff     time.Duration
@@ -101,7 +111,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	defer generationTicker.Stop()
 
 	var lastStoredState *mesh_proto.DiscoverySubscription
-	var lastStoredSecretsInfo *secrets.Info
+	var lastStoredMTLSInfo *MTLSInfo
 	var lastStoredOtel *mesh_proto.DataplaneInsight_OpenTelemetry
 	var lastEvent *events.WorkloadIdentityChangedEvent
 	var generation uint32
@@ -118,26 +128,26 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	flush := func(closing bool, event *events.WorkloadIdentityChangedEvent) {
 		ctx := context.TODO()
 		dataplaneID, currentState := s.accessor.GetStatus()
-		var secretsInfo *secrets.Info
+		var mtlsInfo *MTLSInfo
 		switch {
-		case event != nil && event.Operation == events.Delete:
-			secretsInfo = nil
-			// we don't need to store event once delete
-			lastEvent = nil
 		case event != nil && event.Operation == events.Create:
-			secretsInfo = &secrets.Info{
+			mtlsInfo = &MTLSInfo{
 				IssuedBackend: event.Origin.String(),
 			}
 			if event.ExpirationTime != nil && event.GenerationTime != nil {
-				secretsInfo.Expiration = pointer.Deref(event.ExpirationTime)
-				secretsInfo.Generation = pointer.Deref(event.GenerationTime)
-				secretsInfo.SupportedBackends = s.listMeshTrustBackends(ctx, dataplaneID.Mesh)
+				mtlsInfo.Expiration = pointer.Deref(event.ExpirationTime)
+				mtlsInfo.Generation = pointer.Deref(event.GenerationTime)
+				mtlsInfo.SupportedBackends = s.listMeshTrustBackends(ctx, dataplaneID.Mesh)
 			} else {
-				secretsInfo.ManagedExternally = true
+				mtlsInfo.ManagedExternally = true
 			}
 			lastEvent = event
 		default:
-			secretsInfo = s.secrets.Info(mesh_proto.DataplaneProxyType, dataplaneID)
+			// Either the proxy has no workload identity or it was just removed,
+			// in both cases the insight must not advertise a certificate.
+			mtlsInfo = nil
+			// we don't need to store event once delete
+			lastEvent = nil
 		}
 		select {
 		case <-generationTicker.C:
@@ -153,13 +163,13 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 			sinkLog.V(1).Info("OTel status changed", "dataplaneID", dataplaneID)
 		}
 
-		if proto.Equal(currentState, lastStoredState) && secretsInfo == lastStoredSecretsInfo && !otelChanged {
-			// We compare secretsInfo and lastStoredSecretsInfo as pointers. It makes sense to short-circuit if flush() runs
-			// on tick without events and we're picking exactly the same secreetsInfo structure from the cachedCerts cache.
+		if proto.Equal(currentState, lastStoredState) && mtlsInfo == lastStoredMTLSInfo && !otelChanged {
+			// We compare mtlsInfo and lastStoredMTLSInfo as pointers. It makes sense to short-circuit if flush() runs
+			// on tick without any workload identity, so both are nil.
 			return
 		}
 
-		if err := s.store.Upsert(ctx, s.xdsMetadata, s.dataplaneType, dataplaneID, currentState, secretsInfo, otel); err != nil {
+		if err := s.store.Upsert(ctx, s.xdsMetadata, s.dataplaneType, dataplaneID, currentState, mtlsInfo, otel); err != nil {
 			switch {
 			case closing:
 				// When XDS stream is closed, Dataplane Status Tracker executes OnStreamClose which closes stop channel
@@ -181,7 +191,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		} else {
 			sinkLog.V(1).Info("DataplaneInsight saved", "dataplaneID", dataplaneID, "subscription", currentState)
 			lastStoredState = currentState
-			lastStoredSecretsInfo = secretsInfo
+			lastStoredMTLSInfo = mtlsInfo
 			lastStoredOtel = otel
 		}
 	}
@@ -245,7 +255,7 @@ func (s *dataplaneInsightStore) Upsert(
 	dataplaneType core_model.ResourceType,
 	dataplaneID core_model.ResourceKey,
 	subscription *mesh_proto.DiscoverySubscription,
-	secretsInfo *secrets.Info,
+	mtlsInfo *MTLSInfo,
 	otel *mesh_proto.DataplaneInsight_OpenTelemetry,
 ) error {
 	switch dataplaneType {
@@ -258,13 +268,13 @@ func (s *dataplaneInsightStore) Upsert(
 
 			insight.Spec.Metadata = xdsMetadata
 			insight.Spec.OpenTelemetry = otel
-			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
+			if mtlsInfo == nil { // it means the proxy has no identity, we need to clear stats
 				insight.Spec.MTLS = nil
 			} else if insight.Spec.MTLS == nil ||
-				(!secretsInfo.ManagedExternally && !insight.Spec.MTLS.CertificateExpirationTime.AsTime().Equal(secretsInfo.Expiration)) ||
-				insight.Spec.MTLS.IssuedBackend != secretsInfo.IssuedBackend ||
-				!reflect.DeepEqual(insight.Spec.MTLS.SupportedBackends, secretsInfo.SupportedBackends) {
-				if err := insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.IssuedBackend, secretsInfo.SupportedBackends, secretsInfo.ManagedExternally); err != nil {
+				(!mtlsInfo.ManagedExternally && !insight.Spec.MTLS.CertificateExpirationTime.AsTime().Equal(mtlsInfo.Expiration)) ||
+				insight.Spec.MTLS.IssuedBackend != mtlsInfo.IssuedBackend ||
+				!reflect.DeepEqual(insight.Spec.MTLS.SupportedBackends, mtlsInfo.SupportedBackends) {
+				if err := insight.Spec.UpdateCert(mtlsInfo.Generation, mtlsInfo.Expiration, mtlsInfo.IssuedBackend, mtlsInfo.SupportedBackends, mtlsInfo.ManagedExternally); err != nil {
 					return err
 				}
 			}

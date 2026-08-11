@@ -7,5 +7,23 @@ resources:
       name: envoy.transport_sockets.tls
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext: {}
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://default/outgoing
+                sanType: URI
+            validationContextSdsSecretConfig:
+              name: ca-bundle
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: my-secret-name
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
         sni: outgoing

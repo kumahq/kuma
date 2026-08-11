@@ -19,7 +19,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
 	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 	xds_callbacks "github.com/kumahq/kuma/v3/pkg/xds/server/callbacks"
 	xds_sync "github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
@@ -48,7 +47,7 @@ func RegisterXDS(
 	}
 
 	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory))
-	dpStatusTracker := DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets, otelStatusCache)
+	dpStatusTracker := DefaultDataplaneStatusTracker(rt, otelStatusCache)
 
 	callbacks := util_xds_v3.CallbacksChain{
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
@@ -120,13 +119,12 @@ func DefaultReconciler(
 	}
 }
 
-func DefaultDataplaneStatusTracker(rt core_runtime.Runtime, secrets secrets.Secrets, otelStatusCache *otelstatus.Cache) xds_callbacks.DataplaneStatusTracker {
+func DefaultDataplaneStatusTracker(rt core_runtime.Runtime, otelStatusCache *otelstatus.Cache) xds_callbacks.DataplaneStatusTracker {
 	return xds_callbacks.NewDataplaneStatusTracker(rt,
 		func(xdsMetadata *structpb.Struct, accessor xds_callbacks.SubscriptionStatusAccessor) xds_callbacks.DataplaneInsightSink {
 			return xds_callbacks.NewDataplaneInsightSink(
 				xdsMetadata,
 				accessor,
-				secrets,
 				otelStatusCache,
 				func() *time.Ticker {
 					return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval.Duration)
