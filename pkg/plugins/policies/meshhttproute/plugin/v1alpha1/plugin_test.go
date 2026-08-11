@@ -177,6 +177,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xds_builders.Context().
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
+					With(func(ctx *xds_context.Context) {
+						ctx.Mesh.ZoneEgresses = meshExternalServiceEgresses()
+					}).
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(builders.Dataplane().
@@ -197,6 +200,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithMetadata(unifiedNaming()).
+					WithWorkloadIdentity(testWorkloadIdentity()).
 					WithInternalAddresses(core_xds.InternalAddress{AddressPrefix: "192.168.0.0", PrefixLen: 16}, core_xds.InternalAddress{AddressPrefix: "::1", PrefixLen: 128}).
 					Build(),
 			}
@@ -503,9 +507,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					With(func(ctx *xds_context.Context) {
-						ctx.Mesh.ZoneEgresses = []core_xds.ZoneEgressInstance{
-							{Address: "10.0.0.1", Port: 10002, SAN: "spiffe://default/zone-egress"},
-						}
+						ctx.Mesh.ZoneEgresses = meshExternalServiceEgresses()
 					}).
 					Build(),
 				proxy: xds_builders.Proxy().
@@ -521,14 +523,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithMetadata(&core_xds.DataplaneMetadata{}).
-					WithWorkloadIdentity(&core_xds.WorkloadIdentity{
-						IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-							return bldrs_tls.SdsSecretConfigSource(
-								"identity_cert:secret:default",
-								bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-							)
-						},
-					}).
+					WithWorkloadIdentity(testWorkloadIdentity()).
 					Build(),
 			}
 		}()),
@@ -2017,7 +2012,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
-		Entry("request-mirror", func() outboundsTestCase {
+		// A tag-based mirror backendRef resolves to a kuma.io/service, which is not a
+		// destination: it has no resource behind it, so no protocol and no cluster.
+		// Both mirrors are dropped and the routes keep only their primary cluster.
+		Entry("request-mirror-legacy-refs", func() outboundsTestCase {
 			meshSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
 				Spec: &meshservice_api.MeshService{
@@ -2099,8 +2097,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 														},
 													},
 													{
-														// MeshHTTPRoute resolves mirror backendRefs through the
-														// legacy path only, so this one has to stay tag-based.
+														// A MeshService kind that matches no resource falls back
+														// to the same legacy ref as the subset above.
 														Type: api.RequestMirrorType,
 														RequestMirror: &api.RequestMirror{
 															BackendRef: common_api.BackendRef{
@@ -2285,6 +2283,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithResources(resources).
 					WithMeshContext(mc).
 					WithEndpointMap(outboundTargets).
+					With(func(ctx *xds_context.Context) {
+						ctx.Mesh.ZoneEgresses = meshExternalServiceEgresses()
+					}).
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(
@@ -2297,6 +2298,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithWorkloadIdentity(testWorkloadIdentity()).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
@@ -2436,6 +2438,28 @@ var _ = Describe("MeshHTTPRoute", func() {
 		}()),
 	)
 })
+
+// meshExternalServiceEgresses is the zone egress instance a MeshExternalService is
+// reached through. Together with a WorkloadIdentity it is what makes the control
+// plane emit a cluster for a MeshExternalService outbound.
+func meshExternalServiceEgresses() []core_xds.ZoneEgressInstance {
+	return []core_xds.ZoneEgressInstance{
+		{Address: "10.0.0.1", Port: 10002, SAN: "spiffe://default/zone-egress"},
+	}
+}
+
+// testWorkloadIdentity is the identity every proxy gets once MeshIdentity is in play.
+// Clusters that terminate TLS upstream source their client certificate from it.
+func testWorkloadIdentity() *core_xds.WorkloadIdentity {
+	return &core_xds.WorkloadIdentity{
+		IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+			return bldrs_tls.SdsSecretConfigSource(
+				"identity_cert:secret:default",
+				bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+			)
+		},
+	}
+}
 
 // zoneEgressDataplane is a Dataplane exposing an embedded zone egress listener, which is
 // how MeshExternalServices become reachable through an egress.
