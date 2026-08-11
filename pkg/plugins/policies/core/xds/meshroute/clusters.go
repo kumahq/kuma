@@ -29,16 +29,15 @@ import (
 )
 
 // destination is everything a cluster needs to know about what it talks to: the
-// protocol advertised by the destination port, the identities this proxy has to
-// accept when it originates mTLS, and the upstream HTTP options to apply.
+// identities this proxy has to accept when it originates mTLS, and the upstream
+// options to apply.
 type destination struct {
-	protocol core_meta.Protocol
-	sans     []string
+	sans []string
 	// upstreamHTTP is nil when the connection carries opaque bytes.
 	upstreamHTTP envoy_clusters.ClusterBuilderOpt
-	// plaintext keeps the cluster without a transport socket, for a destination
-	// that does not terminate TLS yet.
-	plaintext bool
+	// terminatesTLS is false while the destination cannot accept mTLS, which
+	// keeps its cluster without a transport socket.
+	terminatesTLS bool
 }
 
 // upstreamHTTPOptions returns the upstream options matching the protocol the
@@ -87,18 +86,19 @@ func GenerateClusters(
 		case meshservice_api.MeshServiceType:
 			ms := destResource.(*meshservice_api.MeshServiceResource)
 			dest = destination{
-				protocol: port.GetProtocol(),
-				sans:     meshServiceIdentities(meshCtx, backendRef.Resource),
+				sans: meshServiceIdentities(meshCtx, backendRef.Resource),
 				// The hop between the two proxies is HTTP/2 no matter which
 				// protocol the application speaks.
-				upstreamHTTP: envoy_clusters.Http2(),
-				plaintext:    !ms.TerminatesTLS(),
+				upstreamHTTP:  envoy_clusters.Http2(),
+				terminatesTLS: ms.TerminatesTLS(),
 			}
 		case meshmultizoneservice_api.MeshMultiZoneServiceType:
+			// Another zone is only reachable through a zone proxy, which always
+			// terminates TLS.
 			dest = destination{
-				protocol:     port.GetProtocol(),
-				sans:         meshMultiZoneServiceIdentities(meshCtx, backendRef.Resource),
-				upstreamHTTP: envoy_clusters.Http2(),
+				sans:          meshMultiZoneServiceIdentities(meshCtx, backendRef.Resource),
+				upstreamHTTP:  envoy_clusters.Http2(),
+				terminatesTLS: true,
 			}
 		case meshexternalservice_api.MeshExternalServiceType:
 			// An external service is only reachable through a zone egress: the
@@ -111,22 +111,20 @@ func GenerateClusters(
 			// entire configuration.
 			egressSANs := meshCtx.ZoneEgressSANs()
 			dest = destination{
-				protocol:     port.GetProtocol(),
-				sans:         egressSANs,
-				upstreamHTTP: upstreamHTTPOptions(port.GetProtocol()),
-				plaintext:    len(egressSANs) == 0,
+				sans:          egressSANs,
+				upstreamHTTP:  upstreamHTTPOptions(port.GetProtocol()),
+				terminatesTLS: len(egressSANs) > 0,
 			}
 		default:
 			continue
 		}
 
-		sni, ok := SNIForRealResource(backendRef, port)
-		if !ok {
-			continue
-		}
-
 		var transportSocket envoy_clusters.ClusterBuilderOpt
-		if hasIdentity && !dest.plaintext {
+		if hasIdentity && dest.terminatesTLS {
+			sni, ok := SNIForRealResource(backendRef, port)
+			if !ok {
+				continue
+			}
 			upstreamCtx, err := UpstreamTLSContext(proxy, sni, dest.sans)
 			if err != nil {
 				return nil, err
@@ -149,8 +147,8 @@ func GenerateClusters(
 				Name:           clusterName,
 				Origin:         metadata.OriginOutbound,
 				Resource:       edsCluster,
-				ResourceOrigin: service.BackendRef().Resource(),
-				Protocol:       dest.protocol,
+				ResourceOrigin: backendRef.Resource,
+				Protocol:       port.GetProtocol(),
 			})
 		}
 	}
