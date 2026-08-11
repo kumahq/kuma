@@ -35,7 +35,7 @@ var _ auth.Authenticator = &kubeAuthenticator{}
 func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) error {
 	var err error
 	switch resource := resource.(type) {
-	case *core_mesh.DataplaneResource, *core_mesh.ZoneIngressResource, *core_mesh.ZoneEgressResource:
+	case *core_mesh.DataplaneResource:
 		err = k.authResource(ctx, resource, credential)
 	default:
 		err = errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)

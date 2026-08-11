@@ -9,7 +9,6 @@ import (
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
-	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -22,7 +21,6 @@ import (
 func NewMeshManager(
 	store core_store.ResourceStore,
 	otherManagers core_manager.ResourceManager,
-	caManagers core_ca.Managers,
 	registry core_registry.TypeRegistry,
 	validator MeshValidator,
 	extensions context.Context,
@@ -35,7 +33,6 @@ func NewMeshManager(
 	meshManager := &meshManager{
 		store:         store,
 		otherManagers: otherManagers,
-		caManagers:    caManagers,
 		registry:      registry,
 		meshValidator: validator,
 		unsafeDelete:  config.Store.UnsafeDelete,
@@ -53,7 +50,6 @@ func NewMeshManager(
 type meshManager struct {
 	store           core_store.ResourceStore
 	otherManagers   core_manager.ResourceManager
-	caManagers      core_ca.Managers
 	registry        core_registry.TypeRegistry
 	meshValidator   MeshValidator
 	unsafeDelete    bool
@@ -94,10 +90,6 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	}
 	// persist Mesh
 	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
-		return err
-	}
-	// We need to first persist the mesh so that we can hook up secrets (cert/key) as their owner in EnsureCAs.
-	if err := EnsureCAs(ctx, m.caManagers, mesh, opts.Name); err != nil {
 		return err
 	}
 	if err := defaults_mesh.EnsureDefaultMeshResources(
@@ -164,9 +156,6 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 		return err
 	}
 	if err := m.meshValidator.ValidateUpdate(ctx, currentMesh, mesh); err != nil {
-		return err
-	}
-	if err := EnsureCAs(ctx, m.caManagers, mesh, mesh.Meta.GetName()); err != nil {
 		return err
 	}
 	return m.store.Update(ctx, mesh, append(fs, core_store.ModifiedAt(time.Now()))...)

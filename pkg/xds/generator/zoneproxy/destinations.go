@@ -30,7 +30,7 @@ func BuildRealResourceDestinations(destinations []core_resources.Destination) []
 			id := kri.WithSectionName(origin, port.GetName())
 			result = append(result, BackendRefDestination{
 				SNI:            core_sni.FromKRI(id),
-				EndpointMapKey: destinationname.ResolveLegacyFromDestination(dest, port),
+				EndpointMapKey: destinationname.MustResolve(dest, port),
 				ResolvedBackendRef: resolve.ResolvedBackendRef{
 					Ref: &resolve.RealResourceBackendRef{
 						Resource: id,

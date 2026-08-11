@@ -155,7 +155,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 1fa6f39d97a8aad47eff6f6670269d3333a30c2e107b0a9d14b2aa23e0f3bf24
-        checksum/tls-secrets: 01c5dbaaff5e871deac824962de1b2f22ea141c03c2e5f3d8eb7dac089831a3a
+        checksum/tls-secrets: 3b2f8accdc8faf6cd4b5f0a3a0798f9e1644fb939d8df10f980068717706c4ff
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -265,8 +265,6 @@ spec:
               value: "docker.io/kumahq/kuma-dp:0.0.1"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
               value: "kuma-transparent-proxy-config"
-            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
-              value: "true"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: "kuma-system"
             - name: KUMA_STORE_TYPE
@@ -384,10 +382,6 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - zoneingresses
-          - zoneingressinsights
-          - zoneegresses
-          - zoneegressinsights
           - serviceinsights
           - zone
           - zoneinsights

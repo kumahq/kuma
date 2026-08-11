@@ -14,7 +14,6 @@ import (
 	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	unified_naming "github.com/kumahq/kuma/v3/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -61,28 +60,16 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 	}
 
 	meshResource := mesh.NewMeshResource()
-	meshFound := true
 	if err := g.readOnlyResourceManager.Get(ctx, meshResource, store.GetByKey(proxyId.ToResourceKey().Mesh, model.NoMesh)); err != nil {
 		if !store.IsNotFound(err) {
 			return nil, err
 		}
-		// Mesh deletion doesn't cascade to Dataplanes (mesh_manager only deletes
-		// the Mesh itself), so an orphaned Dataplane can still reach HDS. Fall
-		// back to the pre-unified admin cluster name instead of failing the snapshot.
-		meshFound = false
 	}
 
-	// Both cluster name formats must be accepted during rolling updates and for
-	// orphaned dataplanes whose mesh has been deleted.
 	md := xds.DataplaneMetadataFromXdsMetadata(node.Metadata)
-	unifiedNamingEnabled := meshFound && unified_naming.Enabled(md, meshResource)
-	clusterName := names.GetEnvoyAdminClusterName()
-	if unifiedNamingEnabled {
-		clusterName = system_names.SystemResourceNameEnvoyAdmin
-	}
 
 	healthChecks := []*envoy_service_health.ClusterHealthCheck{
-		g.envoyHealthCheck(dp.AdminPort(g.defaultAdminPort), md.GetAdminSocketPath(), clusterName),
+		g.envoyHealthCheck(dp.AdminPort(g.defaultAdminPort), md.GetAdminSocketPath(), system_names.SystemResourceNameEnvoyAdmin),
 	}
 
 	for _, inbound := range dp.Spec.GetNetworking().GetInbound() {

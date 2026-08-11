@@ -29,7 +29,7 @@ type NamespaceReconciler struct {
 	CNIEnabled bool
 }
 
-// Reconcile is in charge of creating NetworkAttachmentDefinition if CNI enabled and namespace has label 'kuma.io/sidecar-injection: enabled'
+// Reconcile creates a NetworkAttachmentDefinition when CNI is enabled and the namespace carries the sidecar injection label.
 func (r *NamespaceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	if !r.CNIEnabled {
 		return kube_ctrl.Result{}, nil
@@ -69,7 +69,7 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		err := r.createOrUpdateNetworkAttachmentDefinition(ctx, req.Name)
 		return kube_ctrl.Result{}, err
 	} else {
-		// either a namespace that just had its kuma.io/sidecar-injection annotation removed or a namespace that never had this annotation
+		// Either a namespace that just had its kuma.io/sidecar-injection label removed or a namespace that never had this label.
 		err := r.deleteNetworkAttachmentDefinition(ctx, log, req.Name)
 		return kube_ctrl.Result{}, err
 	}

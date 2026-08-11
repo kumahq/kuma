@@ -2,8 +2,17 @@ package bundled_test
 
 import (
 	"context"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
+	"math/big"
 	"time"
 
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -51,7 +60,7 @@ var _ = Describe("Bundled Providers Test", func() {
 		}
 		memoryStore := memory.NewStore()
 		resourceManager = manager.NewResourceManager(memoryStore)
-		secretManager = secret_manager.NewSecretManager(store.NewSecretStore(memoryStore), cipher.None(), nil, false)
+		secretManager = secret_manager.NewSecretManager(store.NewSecretStore(memoryStore), cipher.None())
 		mesh = core_mesh.NewMeshResource()
 		// Since mesh is the owner of secrets we can't operate on secrets without having the mesh in the store
 		err := resourceManager.Create(context.Background(), mesh, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
@@ -143,6 +152,50 @@ var _ = Describe("Bundled Providers Test", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("self-signed certificates are not allowed"))
+		})
+
+		It("should accept a user provided CA that follows X509-SVID rules", func() {
+			certPEM, keyPEM := generateCA(true, x509.KeyUsageCertSign|x509.KeyUsageCRLSign)
+			meshIdentity := builders.MeshIdentity().WithName("matching-1").WithBundledCA(certPEM, keyPEM).Build()
+			Expect(resourceManager.Create(context.TODO(), meshIdentity, core_store.CreateBy(model.MetaToResourceKey(meshIdentity.Meta)))).To(Succeed())
+
+			// when
+			err := bundledProvider.Validate(context.TODO(), meshIdentity)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		DescribeTable("should reject a user provided CA that breaks X509-SVID rules",
+			func(isCA bool, keyUsage x509.KeyUsage, expected string) {
+				certPEM, keyPEM := generateCA(isCA, keyUsage)
+				meshIdentity := builders.MeshIdentity().WithName("matching-1").WithBundledCA(certPEM, keyPEM).Build()
+				Expect(resourceManager.Create(context.TODO(), meshIdentity, core_store.CreateBy(model.MetaToResourceKey(meshIdentity.Meta)))).To(Succeed())
+
+				// when
+				err := bundledProvider.Validate(context.TODO(), meshIdentity)
+
+				// then
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring(expected))
+			},
+			Entry("not a CA", false, x509.KeyUsageCertSign, "basic constraint 'CA' must be set to 'true'"),
+			Entry("without keyCertSign", true, x509.KeyUsageCRLSign, "key usage extension 'keyCertSign' must be set"),
+			Entry("with keyAgreement", true, x509.KeyUsageCertSign|x509.KeyUsageKeyAgreement, "key usage extension 'keyAgreement' must NOT be set"),
+		)
+
+		It("should reject a user provided CA whose private key doesn't match the certificate", func() {
+			certPEM, _ := generateCA(true, x509.KeyUsageCertSign)
+			_, keyPEM := generateCA(true, x509.KeyUsageCertSign)
+			meshIdentity := builders.MeshIdentity().WithName("matching-1").WithBundledCA(certPEM, keyPEM).Build()
+			Expect(resourceManager.Create(context.TODO(), meshIdentity, core_store.CreateBy(model.MetaToResourceKey(meshIdentity.Meta)))).To(Succeed())
+
+			// when
+			err := bundledProvider.Validate(context.TODO(), meshIdentity)
+
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("not a valid TLS key pair"))
 		})
 	})
 
@@ -264,6 +317,69 @@ var _ = Describe("Bundled Providers Test", func() {
 			Expect(cert.URIs[0].String()).To(Equal("spiffe://default.my-zone.mesh.local/workload/my-backend"))
 		})
 
+		// The key type of the workload certificate is derived from the key type of the CA,
+		// so a user provided CA is what controls it.
+		DescribeTable("should derive the workload certificate key type from a user provided CA",
+			func(newSigner func() crypto.Signer, expected x509.PublicKeyAlgorithm) {
+				certPEM, keyPEM := generateCAWithSigner(newSigner(), true, x509.KeyUsageCertSign|x509.KeyUsageCRLSign)
+				meshIdentity := builders.MeshIdentity().WithName("user-ca").WithBundledCA(certPEM, keyPEM).Build()
+				Expect(resourceManager.Create(context.TODO(), meshIdentity, core_store.CreateBy(model.MetaToResourceKey(meshIdentity.Meta)))).To(Succeed())
+
+				proxy := xds_builders.Proxy().
+					WithDataplane(builders.Dataplane().
+						WithName("web-01").
+						WithAddress("192.168.0.2").
+						WithLabels(map[string]string{
+							metadata.KumaServiceAccount: "my-sa",
+							mesh_proto.KubeNamespaceTag: "my-ns",
+						}).
+						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+					Build()
+
+				// when
+				identity, err := bundledProvider.CreateIdentity(context.TODO(), meshIdentity, proxy)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				leaf, err := readCertificate(identity, kri.From(meshIdentity).String())
+				Expect(err).ToNot(HaveOccurred())
+				Expect(leaf.PublicKeyAlgorithm).To(Equal(expected))
+
+				// the issued PEM pair has to be loadable, that's what the proxy gets
+				secret := identity.AdditionalResources.Resources(envoy_resource.SecretType)[kri.From(meshIdentity).String()].Resource.(*envoy_auth.Secret)
+				_, err = tls.X509KeyPair(
+					secret.GetTlsCertificate().GetCertificateChain().GetInlineBytes(),
+					secret.GetTlsCertificate().GetPrivateKey().GetInlineBytes(),
+				)
+				Expect(err).ToNot(HaveOccurred())
+			},
+			Entry("RSA-2048", func() crypto.Signer {
+				key, err := rsa.GenerateKey(rand.Reader, 2048)
+				Expect(err).ToNot(HaveOccurred())
+				return key
+			}, x509.RSA),
+			Entry("RSA-4096", func() crypto.Signer {
+				key, err := rsa.GenerateKey(rand.Reader, 4096)
+				Expect(err).ToNot(HaveOccurred())
+				return key
+			}, x509.RSA),
+			Entry("ECDSA-P256", func() crypto.Signer {
+				key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+				Expect(err).ToNot(HaveOccurred())
+				return key
+			}, x509.ECDSA),
+			Entry("ECDSA-P384", func() crypto.Signer {
+				key, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+				Expect(err).ToNot(HaveOccurred())
+				return key
+			}, x509.ECDSA),
+			Entry("ED25519", func() crypto.Signer {
+				_, key, err := ed25519.GenerateKey(rand.Reader)
+				Expect(err).ToNot(HaveOccurred())
+				return key
+			}, x509.Ed25519),
+		)
+
 		It("should use different CA pairs for different identities", func() {
 			// create first identity
 			identity1 := builders.MeshIdentity().
@@ -353,6 +469,34 @@ var _ = Describe("Bundled Providers Test", func() {
 		})
 	})
 })
+
+func generateCA(isCA bool, keyUsage x509.KeyUsage) ([]byte, []byte) {
+	GinkgoHelper()
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	Expect(err).ToNot(HaveOccurred())
+	return generateCAWithSigner(key, isCA, keyUsage)
+}
+
+func generateCAWithSigner(signer crypto.Signer, isCA bool, keyUsage x509.KeyUsage) ([]byte, []byte) {
+	GinkgoHelper()
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "test-ca"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              keyUsage,
+		BasicConstraintsValid: true,
+		IsCA:                  isCA,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, signer.Public(), signer)
+	Expect(err).ToNot(HaveOccurred())
+	// PKCS8 so the helper can express every key type a user could bring, including
+	// the ones util_tls.ToKeyPair refuses to encode.
+	keyDER, err := x509.MarshalPKCS8PrivateKey(signer)
+	Expect(err).ToNot(HaveOccurred())
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}),
+		pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER})
+}
 
 func readCertificate(identity *core_xds.WorkloadIdentity, kri string) (*x509.Certificate, error) {
 	secrets := identity.AdditionalResources.Resources(envoy_resource.SecretType)

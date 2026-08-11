@@ -141,7 +141,7 @@ func mixedInboundAndZoneEgressResources() []core_xds.Resource {
 	return []core_xds.Resource{inbound, egress}
 }
 
-func newMeshProxyPatch(name string, targetRef *common_api.TargetRef, mods []api.Modification) *api.MeshProxyPatchResource {
+func newMeshProxyPatch(name string, targetRef *common_api.TopLevelTargetRef, mods []api.Modification) *api.MeshProxyPatchResource {
 	return &api.MeshProxyPatchResource{
 		Meta: &test_model.ResourceMeta{Mesh: "default", Name: name},
 		Spec: &api.MeshProxyPatch{
@@ -154,7 +154,7 @@ func newMeshProxyPatch(name string, targetRef *common_api.TargetRef, mods []api.
 }
 
 // MeshProxyPatch on a zone proxy Dataplane flows through the same
-// SingleItemRules path as a regular Dataplane — the matcher (#16584)
+// Proxy-wide config path as a regular Dataplane — the matcher (#16584)
 // is what makes Dataplane-targeted policies reach the embedded zone
 // proxy listeners. MeshProxyPatch itself is proxy-wide; scoping to a
 // specific zone proxy DPP is done with computed labels on `targetRef`,
@@ -207,8 +207,8 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 			dp:        zoneEgressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneEgressListenerResource()},
 			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("by-label", &common_api.TargetRef{
-					Kind:   common_api.Dataplane,
+				newMeshProxyPatch("by-label", &common_api.TopLevelTargetRef{
+					Kind:   common_api.TopLevelTargetRefKindDataplane,
 					Labels: pointer.To(map[string]string{mesh_proto.ListenerZoneEgressLabel: "enabled"}),
 				}, []api.Modification{
 					{Listener: &api.ListenerMod{
@@ -224,8 +224,8 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 			dp:        zoneIngressOnlyDataplane(),
 			resources: []core_xds.Resource{zoneIngressListenerResource()},
 			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("by-label", &common_api.TargetRef{
-					Kind:   common_api.Dataplane,
+				newMeshProxyPatch("by-label", &common_api.TopLevelTargetRef{
+					Kind:   common_api.TopLevelTargetRefKindDataplane,
 					Labels: pointer.To(map[string]string{mesh_proto.ListenerZoneIngressLabel: "enabled"}),
 				}, []api.Modification{
 					{Listener: &api.ListenerMod{
@@ -241,7 +241,7 @@ var _ = Describe("MeshProxyPatch on zone proxy Dataplane", func() {
 			dp:        mixedInboundAndZoneEgressDataplane(),
 			resources: mixedInboundAndZoneEgressResources(),
 			policies: []*api.MeshProxyPatchResource{
-				newMeshProxyPatch("patch-both", &common_api.TargetRef{Kind: common_api.Dataplane}, []api.Modification{
+				newMeshProxyPatch("patch-both", &common_api.TopLevelTargetRef{Kind: common_api.TopLevelTargetRefKindDataplane}, []api.Modification{
 					{Listener: &api.ListenerMod{
 						Operation: api.ModOpPatch,
 						Match:     &api.ListenerMatch{Name: pointer.To("inbound:192.168.0.1:17777")},

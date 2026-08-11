@@ -105,14 +105,6 @@ func (m *MeshServiceBuilder) AddIntPortWithName(port, target int32, protocol cor
 	return m
 }
 
-func (m *MeshServiceBuilder) AddServiceTagIdentity(identity string) *MeshServiceBuilder {
-	m.res.Spec.Identities = pointer.To(append(pointer.Deref(m.res.Spec.Identities), v1alpha1.MeshServiceIdentity{
-		Type:  v1alpha1.MeshServiceIdentityServiceTagType,
-		Value: identity,
-	}))
-	return m
-}
-
 func (m *MeshServiceBuilder) AddSpiffeIDIdentity(identity string) *MeshServiceBuilder {
 	m.res.Spec.Identities = pointer.To(append(pointer.Deref(m.res.Spec.Identities), v1alpha1.MeshServiceIdentity{
 		Type:  v1alpha1.MeshServiceIdentitySpiffeIDType,
@@ -142,6 +134,15 @@ func (m *MeshServiceBuilder) WithoutVIP() *MeshServiceBuilder {
 
 func (m *MeshServiceBuilder) WithTLSStatus(status v1alpha1.TLSStatus) *MeshServiceBuilder {
 	m.res.Status.TLS.Status = status
+	return m
+}
+
+func (m *MeshServiceBuilder) WithDataplaneProxies(connected, healthy, total int) *MeshServiceBuilder {
+	m.res.Status.DataplaneProxies = v1alpha1.DataplaneProxies{
+		Connected: connected,
+		Healthy:   healthy,
+		Total:     total,
+	}
 	return m
 }
 

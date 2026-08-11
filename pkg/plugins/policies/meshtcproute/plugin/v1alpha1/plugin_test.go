@@ -20,7 +20,6 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -47,7 +46,6 @@ import (
 	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
@@ -64,12 +62,6 @@ var _ = Describe("MeshTCPRoute", func() {
 		Mesh:         "default",
 		Name:         "example",
 	}
-	unifiedNaming := func() *core_xds.DataplaneMetadata {
-		return &core_xds.DataplaneMetadata{
-			Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-		}
-	}
-
 	type policiesTestCase struct {
 		dataplane      *core_mesh.DataplaneResource
 		resources      xds_context.Resources
@@ -96,10 +88,10 @@ var _ = Describe("MeshTCPRoute", func() {
 									Name: "route-1",
 								},
 								Spec: &api.MeshTCPRoute{
-									TargetRef: pointer.To(builders.TargetRefMesh()),
+									TargetRef: pointer.To(builders.ToTopLevelTargetRef(builders.TargetRefMesh())),
 									To: &[]api.To{
 										{
-											TargetRef: builders.TargetRefService("backend"),
+											TargetRef: builders.ToOutboundTargetRef(builders.TargetRefService("backend")),
 										},
 									},
 								},
@@ -110,10 +102,10 @@ var _ = Describe("MeshTCPRoute", func() {
 									Name: "route-2",
 								},
 								Spec: &api.MeshTCPRoute{
-									TargetRef: pointer.To(builders.TargetRefDataplaneName("web-01")),
+									TargetRef: pointer.To(builders.ToTopLevelTargetRef(builders.TargetRefDataplaneName("web-01"))),
 									To: &[]api.To{
 										{
-											TargetRef: builders.TargetRefService("backend"),
+											TargetRef: builders.ToOutboundTargetRef(builders.TargetRefService("backend")),
 											Rules: []api.Rule{
 												{
 													Default: api.RuleConf{
@@ -200,7 +192,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			Expect(err).ToNot(HaveOccurred())
 			given.xdsContext.ControlPlane.CLACache = claCache
 
-			secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil, false)
+			secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None())
 			dataSourceLoader := datasource.NewDataSourceLoader(secretManager)
 			given.xdsContext.Mesh.DataSourceLoader = dataSourceLoader
 
@@ -384,7 +376,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
+				proxy: xds_builders.Proxy().
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -409,7 +401,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						xds_builders.Routing().
 							WithOutboundTargets(outboundTargets),
 					).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
 			}
@@ -445,7 +437,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			dp, proxy, backendMeshSvc := dppForMeshExternalService(&meshExtSvc)
-			mc := meshContextForMeshExternalService(dp.Build(), backendDataplane(), &meshExtSvc, zoneEgressDataplane(), zoneEgressIdentity(), backendMeshSvc)
+			mc := meshContextForMeshExternalService(dp.Build(), backendDataplane(), &meshExtSvc, zoneEgressDataplane(), backendMeshSvc)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -511,7 +503,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			dp, proxy, backendMeshSvc := dppForMeshExternalService(&meshExtSvc, &meshExtSvc2)
-			mc := meshContextForMeshExternalService(zoneEgressDataplane(), zoneEgressIdentity(), &meshExtSvc, &meshExtSvc2, dp.Build(), backendDataplane(), backendMeshSvc)
+			mc := meshContextForMeshExternalService(zoneEgressDataplane(), &meshExtSvc, &meshExtSvc2, dp.Build(), backendDataplane(), backendMeshSvc)
 
 			proxy.Policies = core_xds.MatchedPolicies{
 				Dynamic: core_xds.PluginOriginatedPolicies{},
@@ -576,7 +568,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
+				proxy: xds_builders.Proxy().
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
@@ -591,7 +583,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						xds_builders.Routing().
 							WithOutboundTargets(outboundTargets),
 					).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					Build(),
 			}
 		}()),
@@ -607,12 +599,6 @@ var _ = Describe("MeshTCPRoute", func() {
 						AppProtocol: core_meta.ProtocolHTTP,
 						Name:        pointer.To("test-port"),
 					}},
-					Identities: &[]meshservice_api.MeshServiceIdentity{
-						{
-							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
-							Value: "spiffe://default/backend",
-						},
-					},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{
@@ -634,7 +620,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
+				proxy: xds_builders.Proxy().
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -730,7 +716,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
+				proxy: xds_builders.Proxy().
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -748,7 +734,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
 			}
@@ -855,7 +841,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
+				proxy: xds_builders.Proxy().
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -877,7 +863,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshTCPRouteType, tcpRules).
@@ -993,7 +979,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
-				proxy: xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
+				proxy: xds_builders.Proxy().
 					WithDataplane(
 						builders.Dataplane().
 							WithName("web-01").
@@ -1015,7 +1001,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithMetadata(unifiedNaming()).
+					WithMetadata(&core_xds.DataplaneMetadata{}).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshTCPRouteType, tcpRules).
@@ -1046,7 +1032,6 @@ func meshContextForMeshExternalService(resources ...core_model.Resource) *xds_co
 		xds_server.MeshResourceTypes(),
 		lookupIPFunc,
 		"zone-1",
-		nil,
 	)
 	mc, err := meshContextBuilder.Build(context.Background(), "default")
 	Expect(err).ToNot(HaveOccurred())
@@ -1060,7 +1045,6 @@ func zoneEgressDataplane() *core_mesh.DataplaneResource {
 	return builders.Dataplane().
 		WithName("zone-egress-01").
 		WithAddress("127.0.0.1").
-		WithLabels(map[string]string{"kuma.io/workload": "zone-egress"}).
 		With(func(d *core_mesh.DataplaneResource) {
 			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
 				Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
@@ -1124,24 +1108,13 @@ func dppForMeshExternalService(mesList ...*meshexternalservice_api.MeshExternalS
 		WithName("web-01").
 		WithAddress("192.168.0.2").
 		WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")
-	proxy := xds_builders.Proxy().WithWorkloadIdentity(xds_builders.WorkloadIdentity()).
+	proxy := xds_builders.Proxy().
 		WithDataplane(dp).
 		WithOutbounds(outbounds).
-		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 		WithMetadata(&core_xds.DataplaneMetadata{
 			SystemCaPath: "/tmp/ca-certs.crt",
-			Features:     xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
 		}).
 		Build()
 
 	return dp, proxy, backendMeshSvc
-}
-
-// zoneEgressIdentity gives the zone egress dataplane a SPIFFE identity, which a
-// client verifies when it originates mTLS towards an external service.
-func zoneEgressIdentity() *meshidentity_api.MeshIdentityResource {
-	return builders.MeshIdentity().
-		WithBundledAutoGenerated().
-		WithInitializedStatus().
-		Build()
 }

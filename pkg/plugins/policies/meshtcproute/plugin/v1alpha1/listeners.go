@@ -28,8 +28,8 @@ func GenerateOutboundListener(
 	listenerName := envoy_names.GetOutboundListenerName(address, port)
 	listenerStatPrefix := ""
 	tcpProxyStatPrefix := svc.KumaServiceTagValue
-	if id, ok := svc.Outbound.AssociatedServiceResource(); ok {
-		listenerName = id.String()
+	if svc.DestinationResource != "" {
+		listenerName = svc.DestinationResource
 		listenerStatPrefix = listenerName
 		tcpProxyStatPrefix = listenerName
 	}

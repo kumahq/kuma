@@ -8,47 +8,46 @@ import (
 )
 
 type InstallControlPlaneArgs struct {
-	Namespace                                    string
-	ControlPlane_image_pullPolicy                string            `helm:"controlPlane.image.pullPolicy"`
-	ControlPlane_image_registry                  string            `helm:"controlPlane.image.registry,omitempty"`
-	ControlPlane_image_repository                string            `helm:"controlPlane.image.repository"`
-	ControlPlane_image_tag                       string            `helm:"controlPlane.image.tag"`
-	ControlPlane_service_name                    string            `helm:"controlPlane.service.name"`
-	ControlPlane_tls_general_secret              string            `helm:"controlPlane.tls.general.secretName"`
-	ControlPlane_tls_general_ca_secret           string            `helm:"controlPlane.tls.general.caSecretName"`
-	ControlPlane_tls_general_caBundle            string            `helm:"controlPlane.tls.general.caBundle"`
-	ControlPlane_tls_apiServer_secret            string            `helm:"controlPlane.tls.apiServer.secretName"`
-	ControlPlane_tls_apiServer_clientCertsSecret string            `helm:"controlPlane.tls.apiServer.clientCertsSecretName"`
-	ControlPlane_tls_kdsZoneClient_secret        string            `helm:"controlPlane.tls.kdsZoneClient.secretName"`
-	ControlPlane_injectorFailurePolicy           string            `helm:"controlPlane.injectorFailurePolicy"`
-	ControlPlane_secrets                         []ImageEnvSecret  `helm:"controlPlane.secrets"`
-	ControlPlane_envVars                         map[string]string `helm:"controlPlane.envVars"`
-	ControlPlane_nodeSelector                    map[string]string `helm:"controlPlane.nodeSelector"`
-	DataPlane_image_registry                     string            `helm:"dataPlane.image.registry,omitempty"`
-	DataPlane_image_repository                   string            `helm:"dataPlane.image.repository"`
-	DataPlane_image_tag                          string            `helm:"dataPlane.image.tag"`
-	DataPlane_initImage_registry                 string            `helm:"dataPlane.initImage.registry,omitempty"`
-	DataPlane_initImage_repository               string            `helm:"dataPlane.initImage.repository"`
-	DataPlane_initImage_tag                      string            `helm:"dataPlane.initImage.tag"`
-	ControlPlane_kdsGlobalAddress                string            `helm:"controlPlane.kdsGlobalAddress"`
-	Cni_enabled                                  bool              `helm:"cni.enabled"`
-	Cni_chained                                  bool              `helm:"cni.chained"`
-	Cni_net_dir                                  string            `helm:"cni.netDir"`
-	Cni_bin_dir                                  string            `helm:"cni.binDir"`
-	Cni_conf_name                                string            `helm:"cni.confName"`
-	Cni_image_registry                           string            `helm:"cni.image.registry"`
-	Cni_image_repository                         string            `helm:"cni.image.repository"`
-	Cni_image_tag                                string            `helm:"cni.image.tag"`
-	Cni_nodeSelector                             map[string]string `helm:"cni.nodeSelector"`
-	ControlPlane_mode                            string            `helm:"controlPlane.mode"`
-	ControlPlane_zone                            string            `helm:"controlPlane.zone"`
-	Image_registry                               string            `helm:"global.image.registry"`
-	Hooks_nodeSelector                           map[string]string `helm:"hooks.nodeSelector"`
-	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
-	ValueFiles                                   []string
-	Values                                       []string
-	SkipKinds                                    []string
-	SkipCRDs                                     bool
+	Namespace                             string
+	ControlPlane_image_pullPolicy         string            `helm:"controlPlane.image.pullPolicy"`
+	ControlPlane_image_registry           string            `helm:"controlPlane.image.registry,omitempty"`
+	ControlPlane_image_repository         string            `helm:"controlPlane.image.repository"`
+	ControlPlane_image_tag                string            `helm:"controlPlane.image.tag"`
+	ControlPlane_service_name             string            `helm:"controlPlane.service.name"`
+	ControlPlane_tls_general_secret       string            `helm:"controlPlane.tls.general.secretName"`
+	ControlPlane_tls_general_ca_secret    string            `helm:"controlPlane.tls.general.caSecretName"`
+	ControlPlane_tls_general_caBundle     string            `helm:"controlPlane.tls.general.caBundle"`
+	ControlPlane_tls_apiServer_secret     string            `helm:"controlPlane.tls.apiServer.secretName"`
+	ControlPlane_tls_kdsZoneClient_secret string            `helm:"controlPlane.tls.kdsZoneClient.secretName"`
+	ControlPlane_injectorFailurePolicy    string            `helm:"controlPlane.injectorFailurePolicy"`
+	ControlPlane_secrets                  []ImageEnvSecret  `helm:"controlPlane.secrets"`
+	ControlPlane_envVars                  map[string]string `helm:"controlPlane.envVars"`
+	ControlPlane_nodeSelector             map[string]string `helm:"controlPlane.nodeSelector"`
+	DataPlane_image_registry              string            `helm:"dataPlane.image.registry,omitempty"`
+	DataPlane_image_repository            string            `helm:"dataPlane.image.repository"`
+	DataPlane_image_tag                   string            `helm:"dataPlane.image.tag"`
+	DataPlane_initImage_registry          string            `helm:"dataPlane.initImage.registry,omitempty"`
+	DataPlane_initImage_repository        string            `helm:"dataPlane.initImage.repository"`
+	DataPlane_initImage_tag               string            `helm:"dataPlane.initImage.tag"`
+	ControlPlane_kdsGlobalAddress         string            `helm:"controlPlane.kdsGlobalAddress"`
+	Cni_enabled                           bool              `helm:"cni.enabled"`
+	Cni_chained                           bool              `helm:"cni.chained"`
+	Cni_net_dir                           string            `helm:"cni.netDir"`
+	Cni_bin_dir                           string            `helm:"cni.binDir"`
+	Cni_conf_name                         string            `helm:"cni.confName"`
+	Cni_image_registry                    string            `helm:"cni.image.registry"`
+	Cni_image_repository                  string            `helm:"cni.image.repository"`
+	Cni_image_tag                         string            `helm:"cni.image.tag"`
+	Cni_nodeSelector                      map[string]string `helm:"cni.nodeSelector"`
+	ControlPlane_mode                     string            `helm:"controlPlane.mode"`
+	ControlPlane_zone                     string            `helm:"controlPlane.zone"`
+	Image_registry                        string            `helm:"global.image.registry"`
+	Hooks_nodeSelector                    map[string]string `helm:"hooks.nodeSelector"`
+	WithoutKubernetesConnection           bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
+	ValueFiles                            []string
+	Values                                []string
+	SkipKinds                             []string
+	SkipCRDs                              bool
 	// APIVersions is a hidden, internal option
 	APIVersions []string
 	DumpValues  bool

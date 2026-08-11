@@ -29,7 +29,6 @@ func Context() *ContextBuilder {
 			ControlPlane: &xds_context.ControlPlaneContext{
 				CLACache: &xds.DummyCLACache{OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{}},
 				Zone:     "test-zone",
-				Secrets:  &xds.TestSecrets{},
 			},
 		},
 	}

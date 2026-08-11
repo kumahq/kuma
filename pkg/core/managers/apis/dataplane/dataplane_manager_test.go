@@ -111,9 +111,6 @@ var _ = Describe("Dataplane Manager", func() {
 						{
 							Port:    3030,
 							Address: "10.0.0.1",
-							Tags: map[string]string{
-								mesh_proto.ServiceTag: "service-1",
-							},
 							ServiceProbe: &mesh_proto.Dataplane_Networking_Inbound_ServiceProbe{
 								Tcp: &mesh_proto.Dataplane_Networking_Inbound_ServiceProbe_Tcp{},
 							},

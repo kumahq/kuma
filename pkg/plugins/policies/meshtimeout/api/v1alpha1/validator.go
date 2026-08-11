@@ -22,19 +22,19 @@ func (r *MeshTimeoutResource) validate() error {
 	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 {
 		verr.AddViolationAt(path, "at least one of 'to' or 'rules' has to be defined")
 	}
-	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
+	topLevel := r.Spec.TargetRef.ToTargetRef()
 	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To), topLevel.Kind))
 	verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules), topLevel.Kind))
 	return verr.OrNil()
 }
 
-func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
+func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TopLevelTargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
 	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.Dataplane,
@@ -43,7 +43,7 @@ func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef, isInb
 			IsInboundPolicy:            isInboundPolicy,
 		})
 	default:
-		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.Dataplane,

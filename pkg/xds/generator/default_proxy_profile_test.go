@@ -58,7 +58,6 @@ var _ = Describe("DefaultProxyProfile", func() {
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					CLACache: &test_xds.DummyCLACache{OutboundTargets: outboundTargets},
-					Secrets:  &test_xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
@@ -70,12 +69,10 @@ var _ = Describe("DefaultProxyProfile", func() {
 					Resources: resources,
 					ServicesInformation: map[string]*xds_context.ServiceInformation{
 						"db": {
-							TLSReadiness: true,
-							Protocol:     core_meta.ProtocolUnknown,
+							Protocol: core_meta.ProtocolUnknown,
 						},
 						"elastic": {
-							TLSReadiness: true,
-							Protocol:     core_meta.ProtocolUnknown,
+							Protocol: core_meta.ProtocolUnknown,
 						},
 					},
 				},
@@ -96,8 +93,7 @@ var _ = Describe("DefaultProxyProfile", func() {
 					},
 					Spec: dataplane,
 				},
-				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
-				APIVersion:     envoy_common.APIV3,
+				APIVersion: envoy_common.APIV3,
 				Routing: core_xds.Routing{
 					OutboundTargets: outboundTargets,
 				},

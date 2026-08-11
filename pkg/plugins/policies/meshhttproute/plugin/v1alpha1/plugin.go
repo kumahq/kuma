@@ -58,8 +58,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 }
 
 func ApplyToOutbounds(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, rules rules.ToRules) error {
-	tlsReady := xdsCtx.Mesh.GetTLSReadiness()
-	servicesAcc := envoy_common.NewServicesAccumulator(tlsReady)
+	servicesAcc := envoy_common.NewServicesAccumulator()
 
 	listeners, err := generateListeners(proxy, rules, servicesAcc, xdsCtx.Mesh)
 	if err != nil {

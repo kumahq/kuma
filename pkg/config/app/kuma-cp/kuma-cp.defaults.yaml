@@ -182,13 +182,9 @@ apiServer:
     tlsCipherSuites: [] # ENV: KUMA_API_SERVER_HTTPS_TLS_CIPHER_SUITES
     # If true, then HTTPS connection will require client cert.
     requireClientCert: false # ENV: KUMA_API_SERVER_HTTPS_REQUIRE_CLIENT_CERT
-  # Authentication configuration for administrative endpoints like Dataplane Token or managing Secrets
-  auth:
-    # Directory of authorized client certificates (only validate in HTTPS)
-    clientCertsDir: "" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
   # Api Server Authentication configuration
   authn:
-    # Type of authentication mechanism (available values: "adminClientCerts", "tokens")
+    # Type of authentication mechanism ("tokens" is the built-in/default value; plugin-provided authn types may also be available)
     type: tokens # ENV: KUMA_API_SERVER_AUTHN_TYPE
     # Localhost is authenticated as a user admin of group admin
     localhostIsAdmin: true # ENV: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
@@ -269,12 +265,6 @@ runtime:
         labels:
           openshift.io/build.name: "*"
           openshift.io/deployer-pod-for.name: "*"
-      # (Deprecated, set ApplicationProbeProxyPort to 0 to disable probe proxying) VirtualProbesEnabled enables automatic converting HttpGet probes to virtual.
-      #	Virtual probe serves on sub-path of insecure port 'virtualProbesPort',
-      #	i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
-      virtualProbesEnabled: false # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED
-      # (Deprecated, use ApplicationProbeProxyPort instead) VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
-      virtualProbesPort: 9000 # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT
       # ApplicationProbeProxyPort is a port for proxying application probes, it is not secured by mTLS. By setting to 0, probe proxying will be disabled.
       applicationProbeProxyPort: 9001 # ENV: KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT
       # CaCertFile is CA certificate which will be used to verify a connection to the control plane.
@@ -415,10 +405,6 @@ runtime:
       # transparent proxy configuration. The sidecar injector reads it, merges it with pod annotations and injects the
       # result. It defaults to "kuma-transparent-proxy-config" and the ConfigMap is expected to exist.
       transparentProxyConfigMap: "kuma-transparent-proxy-config" # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
-      # unifiedResourceNamingEnabled enables automatic injection of the unified naming feature flag into all sidecar-injected workloads.
-      # When set to true, the injector will add the required environment variable directly to the `kuma-sidecar` container.
-      # This ensures that the data plane proxy uses the new unified naming format for Envoy resources and stats.
-      unifiedResourceNamingEnabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
       # OtelPipeEnabled controls whether kuma-dp pipe mode is enabled for OTel backends.
       # When true (default), kuma-dp proxies OTel traffic through a Unix socket.
       otelPipeEnabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED
@@ -468,8 +454,6 @@ runtime:
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
     dataplaneCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE
-    # ZoneResourceCleanupAge defines how long ZoneIngress and ZoneEgress should be offline to be cleaned up by GC
-    zoneResourceCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE
     # Spire defines default configuration of the spire properties
     spire:
       # SocketPath is the location of the socket file one the host
@@ -595,6 +579,14 @@ multizone:
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF
       # If true, Global CP logs full DeltaDiscoveryResponse payloads received from Zone CPs at V(1) instead of compact summaries.
       logPayloads: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_LOG_PAYLOADS
+      # Event-based snapshot watchdog timing for Global KDS.
+      eventBasedWatchdog:
+        # How often changed resources are flushed to a KDS snapshot.
+        flushInterval: 1s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
+        # How often a full KDS resync is scheduled.
+        fullResyncInterval: 1s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
+        # If true, the initial full resync is delayed by a random duration up to FullResyncInterval.
+        delayFullResync: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
       tracing:
         # Defines whether tracing is enabled for all gRPC methods
         # of GlobalKDSServer and KDSSyncService or completely disabled
@@ -622,11 +614,16 @@ multizone:
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF
       # If true, Zone CP logs full DeltaDiscoveryResponse payloads received from Global CP at V(1) instead of compact summaries.
       logPayloads: false # ENV: KUMA_MULTIZONE_ZONE_KDS_LOG_PAYLOADS
+      # Event-based snapshot watchdog timing for Zone KDS.
+      eventBasedWatchdog:
+        # How often changed resources are flushed to a KDS snapshot.
+        flushInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
+        # How often a full KDS resync is scheduled.
+        fullResyncInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
+        # If true, the initial full resync is delayed by a random duration up to FullResyncInterval.
+        delayFullResync: false # ENV: KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
     # disableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
     disableOriginLabelValidation: false # ENV: KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION
-    # IngressUpdateInterval is the interval between the CP updating the list of
-    # available services on ZoneIngress.
-    ingressUpdateInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL
 # Diagnostics configuration
 diagnostics:
   # Port of Diagnostic Server for checking health and readiness of the Control Plane
@@ -818,20 +815,7 @@ access:
       # List of groups that are allowed to get control plane metadata
       groups: ["mesh-system:unauthenticated", "mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS
 # Configuration of experimental features of Kuma
-experimental:
-  # List of prefixes that will be used to filter out tags by keys from ingress' available services section.
-  # This can trim the size of the ZoneIngress object significantly.
-  # The drawback is that you cannot use filtered out tags for traffic routing.
-  # If empty, no filter is applied.
-  ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
-  # KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
-  kdsEventBasedWatchdog:
-    # How often we flush changes when experimental event based watchdog is used.
-    flushInterval: 1s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
-    # How often we schedule full KDS resync when experimental event based watchdog is used.
-    fullResyncInterval: 1s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
-    # If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
-    delayFullResync: false # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
+experimental: {}
 tracing:
   openTelemetry:
     endpoint: "" # e.g. otel-collector:4317

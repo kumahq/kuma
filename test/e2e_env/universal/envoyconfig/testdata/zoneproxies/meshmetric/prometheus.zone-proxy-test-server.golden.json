@@ -245,12 +245,6 @@
                         "exact": "spiffe://envoyconfig-zoneproxies.kuma-3.mesh.local/workload/zone-proxy-demo-client"
                       },
                       "sanType": "URI"
-                    },
-                    {
-                      "matcher": {
-                        "exact": "spiffe://envoyconfig-zoneproxies/zone-proxy-demo-client"
-                      },
-                      "sanType": "URI"
                     }
                   ]
                 },
@@ -315,12 +309,6 @@
                     {
                       "matcher": {
                         "exact": "spiffe://envoyconfig-zoneproxies.kuma-3.mesh.local/workload/zone-proxy-test-server-no-reusable-ports"
-                      },
-                      "sanType": "URI"
-                    },
-                    {
-                      "matcher": {
-                        "exact": "spiffe://envoyconfig-zoneproxies/zone-proxy-test-server-no-reusable-ports"
                       },
                       "sanType": "URI"
                     }
@@ -392,12 +380,6 @@
                     {
                       "matcher": {
                         "exact": "spiffe://envoyconfig-zoneproxies.kuma-3.mesh.local/workload/zone-proxy-test-server"
-                      },
-                      "sanType": "URI"
-                    },
-                    {
-                      "matcher": {
-                        "exact": "spiffe://envoyconfig-zoneproxies/zone-proxy-test-server"
                       },
                       "sanType": "URI"
                     }
@@ -1324,7 +1306,7 @@
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig-zoneproxies",
               "kuma.io/origin": "zone",
-              "kuma.io/protocol": "http",
+              "kuma.io/service": "zone-proxy-test-server",
               "kuma.io/workload": "zone-proxy-test-server",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",

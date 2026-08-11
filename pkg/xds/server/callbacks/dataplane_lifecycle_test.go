@@ -190,9 +190,6 @@ var _ = Describe("Dataplane Lifecycle", func() {
 						{
 							Port:        8080,
 							ServicePort: 8081,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 				},
@@ -261,9 +258,6 @@ var _ = Describe("Dataplane Lifecycle", func() {
 						{
 							Port:        8080,
 							ServicePort: 8081,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 				},
@@ -342,9 +336,6 @@ var _ = Describe("Dataplane Lifecycle", func() {
 						{
 							Port:        8080,
 							ServicePort: 8081,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 				},

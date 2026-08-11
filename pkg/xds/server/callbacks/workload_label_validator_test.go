@@ -67,7 +67,6 @@ var _ = Describe("Workload Label Validator", func() {
 						{
 							Port:        8080,
 							ServicePort: 8081,
-							Tags:        map[string]string{"kuma.io/service": labels["kuma.io/service"]},
 						},
 					},
 				},
@@ -227,31 +226,4 @@ var _ = Describe("Workload Label Validator", func() {
 			Expect(err.Error()).To(ContainSubstring("/workload/{{ .Workload }}"))
 		})
 	})
-
-	DescribeTable("non-dataplane proxy types",
-		func(proxyType mesh_proto.ProxyType, createResource func(string) core_model.Resource) {
-			name := "proxy-01"
-			resource := createResource(name)
-			err := validateConnection(resource, proxyType, core_model.NoMesh, name)
-			Expect(err).ToNot(HaveOccurred())
-		},
-		Entry("should allow ingress proxy", mesh_proto.IngressProxyType,
-			func(name string) core_model.Resource {
-				return &core_mesh.ZoneIngressResource{
-					Meta: &test_model.ResourceMeta{Name: name, Mesh: core_model.NoMesh},
-					Spec: &mesh_proto.ZoneIngress{
-						Networking: &mesh_proto.ZoneIngress_Networking{Address: "1.1.1.1", Port: 10001},
-					},
-				}
-			}),
-		Entry("should allow egress proxy", mesh_proto.EgressProxyType,
-			func(name string) core_model.Resource {
-				return &core_mesh.ZoneEgressResource{
-					Meta: &test_model.ResourceMeta{Name: name, Mesh: core_model.NoMesh},
-					Spec: &mesh_proto.ZoneEgress{
-						Networking: &mesh_proto.ZoneEgress_Networking{Address: "1.1.1.1", Port: 10002},
-					},
-				}
-			}),
-	)
 })

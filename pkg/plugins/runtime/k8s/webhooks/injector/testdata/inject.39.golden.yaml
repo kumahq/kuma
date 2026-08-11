@@ -6,8 +6,6 @@ metadata:
     kuma.io/application-probe-proxy-port: "9000"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/sidecar-injected: "true"
-    kuma.io/virtual-probes: disabled
-    kuma.io/virtual-probes-port: "9000"
     traffic.kuma.io/exclude-inbound-ips: 192.168.0.1,172.32.16.8/16,a81b:a033:6399:73c7:72b6:aa8c:6f22:7098,fe80::/10
     traffic.kuma.io/transparent-proxy-config: |
       ipFamilyMode: dualstack

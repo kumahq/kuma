@@ -104,9 +104,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToZoneProxyListeners(rs, policies.FromRules, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, endpoints, accessLogSocketPath, ctx.Mesh, zone, workloadKRI); err != nil {
-		return err
-	}
 	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
@@ -233,51 +230,6 @@ func applyToZoneProxyListeners(
 	return nil
 }
 
-func applyToOutbounds(
-	rules core_rules.ToRules,
-	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
-	outbounds xds_types.Outbounds,
-	dataplane *core_mesh.DataplaneResource,
-	backendsAcc *EndpointAccumulator,
-	accessLogSocketPath string,
-	meshCtx xds_context.MeshContext,
-	zone string,
-	workloadKRI string,
-) error {
-	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
-		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
-
-		listener, ok := outboundListeners[oface]
-		if !ok {
-			continue
-		}
-
-		serviceName := outbound.LegacyOutbound.GetService()
-
-		kumaValues := listeners_v3.KumaValues{
-			SourceService:      dataplane.IdentifyingName(),
-			SourceIP:           dataplane.GetAddress(),
-			DestinationService: outbound.LegacyOutbound.GetService(),
-			Mesh:               dataplane.GetMeta().GetMesh(),
-			Zone:               zone,
-			WorkloadKRI:        workloadKRI,
-			TrafficDirection:   envoy.TrafficDirectionOutbound,
-		}
-
-		conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.KumaServiceTagElement(serviceName))
-		if conf == nil {
-			continue
-		}
-
-		protocol := meshCtx.GetServiceProtocol(serviceName)
-		if err := configureListener(*conf, listener, backendsAcc, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func applyToTransparentProxyListeners(
 	policies core_xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
 	backends *EndpointAccumulator, path string, zone string, workloadKRI string,
@@ -372,7 +324,7 @@ func configureListenerFromRules(
 		return err
 	}
 	if hasSNIMatch(rules) {
-		return ensureTLSInspector(listener)
+		return listeners_v3.EnsureTLSInspector(listener)
 	}
 	return nil
 }
@@ -384,15 +336,6 @@ func hasSNIMatch(rules []*rules_inbound.Rule) bool {
 		}
 	}
 	return false
-}
-
-func ensureTLSInspector(listener *envoy_listener.Listener) error {
-	for _, lf := range listener.ListenerFilters {
-		if lf.Name == listeners_v3.TlsInspectorName {
-			return nil
-		}
-	}
-	return (&listeners_v3.TLSInspectorConfigurer{}).Configure(listener)
 }
 
 func applyToRealResource(

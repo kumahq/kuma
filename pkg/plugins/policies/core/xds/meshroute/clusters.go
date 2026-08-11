@@ -8,6 +8,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -17,12 +18,12 @@ import (
 	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
 	bldrs_matcher "github.com/kumahq/kuma/v3/pkg/envoy/builders/matcher"
 	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
@@ -119,14 +120,14 @@ func GenerateClusters(
 			continue
 		}
 
-		kriID := kri.WithSectionName(backendRef.Resource, port.GetName())
-		if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+		sni, ok := SNIForRealResource(backendRef, port)
+		if !ok {
 			continue
 		}
 
 		var transportSocket envoy_clusters.ClusterBuilderOpt
 		if hasIdentity && !dest.plaintext {
-			upstreamCtx, err := UpstreamTLSContext(proxy, core_sni.FromKRI(kriID), dest.sans)
+			upstreamCtx, err := UpstreamTLSContext(proxy, sni, dest.sans)
 			if err != nil {
 				return nil, err
 			}
@@ -200,9 +201,19 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 		Build()
 }
 
-// meshServiceIdentities returns the SPIFFE IDs advertised by a MeshService. A
-// destination still issued a certificate off its kuma.io/service tag presents
-// spiffe://<mesh>/<service>, so that form is accepted next to the workload ID.
+// SNIForRealResource returns the KRI SNI the destination port advertises, and
+// false when the resulting KRI cannot be encoded as an SNI.
+func SNIForRealResource(backendRef *resolve.RealResourceBackendRef, port core.Port) (string, bool) {
+	// The destination advertises SNI from the resolved port name, so numeric
+	// backend-ref sections must be normalized before deriving the KRI SNI.
+	kriID := kri.WithSectionName(backendRef.Resource, port.GetName())
+	if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+		return "", false
+	}
+	return core_sni.FromKRI(kriID), true
+}
+
+// meshServiceIdentities returns the SPIFFE IDs advertised by a MeshService.
 func meshServiceIdentities(meshCtx xds_context.MeshContext, id kri.Identifier) []string {
 	ms, ok := meshCtx.GetServiceByKRI(id).(*meshservice_api.MeshServiceResource)
 	if !ok {
@@ -210,11 +221,8 @@ func meshServiceIdentities(meshCtx xds_context.MeshContext, id kri.Identifier) [
 	}
 	var identities []string
 	for _, identity := range pointer.Deref(ms.Spec.Identities) {
-		switch identity.Type {
-		case meshservice_api.MeshServiceIdentitySpiffeIDType:
+		if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
 			identities = append(identities, identity.Value)
-		case meshservice_api.MeshServiceIdentityServiceTagType:
-			identities = append(identities, tls.ServiceSpiffeID(meshCtx.Resource.Meta.GetName(), identity.Value))
 		}
 	}
 	slices.Sort(identities)

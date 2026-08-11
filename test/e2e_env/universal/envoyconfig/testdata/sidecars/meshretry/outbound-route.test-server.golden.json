@@ -133,12 +133,6 @@
                         "exact": "spiffe://envoyconfig.kuma-3.mesh.local/workload/demo-client"
                       },
                       "sanType": "URI"
-                    },
-                    {
-                      "matcher": {
-                        "exact": "spiffe://envoyconfig/demo-client"
-                      },
-                      "sanType": "URI"
                     }
                   ]
                 },
@@ -203,12 +197,6 @@
                     {
                       "matcher": {
                         "exact": "spiffe://envoyconfig.kuma-3.mesh.local/workload/test-server"
-                      },
-                      "sanType": "URI"
-                    },
-                    {
-                      "matcher": {
-                        "exact": "spiffe://envoyconfig/test-server"
                       },
                       "sanType": "URI"
                     }
@@ -902,7 +890,7 @@
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig",
               "kuma.io/origin": "zone",
-              "kuma.io/protocol": "http",
+              "kuma.io/service": "test-server",
               "kuma.io/workload": "test-server",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",

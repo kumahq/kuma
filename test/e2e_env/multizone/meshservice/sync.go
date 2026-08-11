@@ -149,10 +149,6 @@ spec:
 		// of the zone the backing dataplane lives in.
 		expectedIdentities := &[]v1alpha1.MeshServiceIdentity{
 			{
-				Type:  v1alpha1.MeshServiceIdentityServiceTagType,
-				Value: "test-server",
-			},
-			{
 				Type:  v1alpha1.MeshServiceIdentitySpiffeIDType,
 				Value: fmt.Sprintf("spiffe://%s/workload/test-server", MeshIdentityTrustDomain(meshName, multizone.UniZone1)),
 			},

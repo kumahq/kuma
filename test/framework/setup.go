@@ -502,9 +502,6 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 				dpp.InboundPort = "13000"
 				dpp.InboundServicePort = "3000"
 				dpp.ServiceProbe = opts.serviceProbe
-				dpp.Outbounds = []OutboundConfig{
-					{Port: "4000", Service: "test-server", ServicePort: "80"},
-				}
 			}
 
 			appYaml, err = RenderDataplaneTemplate(dpp)

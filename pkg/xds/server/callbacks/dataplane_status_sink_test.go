@@ -20,7 +20,6 @@ import (
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	memory_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/v3/pkg/test/xds"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
@@ -87,7 +86,6 @@ var _ = Describe("DataplaneInsightSink", func() {
 					},
 				},
 				accessor,
-				&xds.TestSecrets{},
 				nil,
 				func() *time.Ticker { return ticker },
 				func() *time.Ticker { return &time.Ticker{C: make(chan time.Time)} },
@@ -120,8 +118,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 `))
 
 			// and
-			Expect(latestOperation.DataplaneInsight_MTLS.IssuedBackend).To(Equal(xds.TestSecretsInfo.IssuedBackend))
-			Expect(latestOperation.DataplaneInsight_MTLS.SupportedBackends).To(Equal(xds.TestSecretsInfo.SupportedBackends))
+			Expect(latestOperation.DataplaneInsight_MTLS).To(BeNil())
 
 			// when - time tick after changes
 			subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(t0.Add(2 * time.Second))
@@ -201,7 +198,6 @@ var _ = Describe("DataplaneInsightSink", func() {
 					},
 				},
 				accessor,
-				&xds.TestSecrets{NoSecrets: true}, // let's use events
 				nil,
 				func() *time.Ticker { return ticker },
 				func() *time.Ticker { return &time.Ticker{C: make(chan time.Time)} },
@@ -333,7 +329,6 @@ var _ = Describe("DataplaneInsightSink", func() {
 					},
 				},
 				accessor,
-				&xds.TestSecrets{},
 				otelCache,
 				func() *time.Ticker { return ticker },
 				func() *time.Ticker { return &time.Ticker{C: make(chan time.Time)} },

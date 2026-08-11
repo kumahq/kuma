@@ -170,19 +170,7 @@ func (r PolicyRole) Compare(o PolicyRole) int {
 
 type ProxyType string
 
-const (
-	DataplaneProxyType ProxyType = "dataplane"
-	IngressProxyType   ProxyType = "ingress"
-	EgressProxyType    ProxyType = "egress"
-)
-
-func (t ProxyType) IsValid() error {
-	switch t {
-	case DataplaneProxyType, IngressProxyType, EgressProxyType:
-		return nil
-	}
-	return errors.Errorf("%s is not a valid proxy type", t)
-}
+const DataplaneProxyType ProxyType = "dataplane"
 
 type InboundInterface struct {
 	DataplaneIP   string
@@ -224,10 +212,6 @@ func (i OutboundInterface) MarshalText() ([]byte, error) {
 func (i OutboundInterface) String() string {
 	return net.JoinHostPort(i.DataplaneIP,
 		strconv.FormatUint(uint64(i.DataplanePort), 10))
-}
-
-func NonBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
-	return outbound.BackendRef == nil
 }
 
 func BackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
@@ -354,15 +338,6 @@ func (n *Dataplane_Networking) GetHealthyInbounds() []*Dataplane_Networking_Inbo
 	return inbounds
 }
 
-// Matches is simply an alias for MatchTags to make source code more aesthetic.
-// Only the gateway carries tags; regular inbounds are matched via labels.
-func (d *Dataplane) Matches(selector TagSelector) bool {
-	if d == nil {
-		return false
-	}
-	return selector.Matches(d.GetNetworking().GetGateway().GetTags())
-}
-
 // MatchTagsFuzzy fuzzy-matches the gateway's tags; regular inbounds are
 // matched via labels.
 func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
@@ -372,20 +347,8 @@ func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
 	return selector.MatchesFuzzy(d.GetNetworking().GetGateway().GetTags())
 }
 
-// GetServiceFallback returns the service this inbound belongs to, preferring
-// the legacy per-inbound kuma.io/service tag over the given Dataplane-scoped
-// fallback (its kuma.io/service label). A Dataplane carries a single service
-// label, so a Dataplane provisioned before the move to labels that exposes
-// several services can only be resolved per inbound, from the tag it still
-// declares. Without the tag every inbound would inherit one service and
-// per-service filtering would publish ports of unrelated services.
+// GetServiceFallback returns the service this inbound belongs to.
 func (d *Dataplane_Networking_Inbound) GetServiceFallback(fallback string) string {
-	if d == nil {
-		return fallback
-	}
-	if service := d.GetTags()[ServiceTag]; service != "" {
-		return service
-	}
 	return fallback
 }
 
@@ -409,17 +372,6 @@ func (l *Dataplane_Networking_Listener) GetSectionName() string {
 		return l.Name
 	}
 	return strconv.Itoa(int(l.Port))
-}
-
-// GetService returns a service name represented by this outbound interface.
-//
-// The purpose of this method is to encapsulate implementation detail
-// that service is modeled as a tag rather than a separate field.
-func (d *Dataplane_Networking_Outbound) GetService() string {
-	if d == nil || d.GetTags() == nil {
-		return ""
-	}
-	return d.GetTags()[ServiceTag]
 }
 
 const MatchAllTag = "*"
@@ -473,18 +425,6 @@ func (s TagSelector) Rank() TagSelectorRank {
 
 func (s TagSelector) Equal(other TagSelector) bool {
 	return len(s) == 0 && len(other) == 0 || len(s) == len(other) && reflect.DeepEqual(s, other)
-}
-
-func MatchAnyService() TagSelector {
-	return MatchService(MatchAllTag)
-}
-
-func MatchService(service string) TagSelector {
-	return TagSelector{ServiceTag: service}
-}
-
-func MatchTags(tags map[string]string) TagSelector {
-	return TagSelector(tags)
 }
 
 // Set of tags that only allows a single value per key.
@@ -677,17 +617,6 @@ func (n *Dataplane_Networking) HasZoneProxyListeners() bool {
 // no regular inbounds and no gateway, meaning it acts exclusively as a zone proxy.
 func (n *Dataplane_Networking) IsZoneProxyOnly() bool {
 	return n.HasZoneProxyListeners() && len(n.GetInbound()) == 0 && n.GetGateway() == nil
-}
-
-// GetReadyZoneIngressListeners returns all listeners of type ZoneIngress in Ready state.
-func (n *Dataplane_Networking) GetReadyZoneIngressListeners() []*Dataplane_Networking_Listener {
-	var result []*Dataplane_Networking_Listener
-	for _, l := range n.GetListeners() {
-		if l.Type == Dataplane_Networking_Listener_ZoneIngress && l.State == Dataplane_Networking_Listener_Ready {
-			result = append(result, l)
-		}
-	}
-	return result
 }
 
 // GetReadyZoneEgressListeners returns all listeners of type ZoneEgress in Ready state.

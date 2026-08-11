@@ -34,12 +34,6 @@
                         "exact": "spiffe://envoyconfig.kuma-3.mesh.local/workload/demo-client"
                       },
                       "sanType": "URI"
-                    },
-                    {
-                      "matcher": {
-                        "exact": "spiffe://envoyconfig/demo-client"
-                      },
-                      "sanType": "URI"
                     }
                   ]
                 },
@@ -104,12 +98,6 @@
                     {
                       "matcher": {
                         "exact": "spiffe://envoyconfig.kuma-3.mesh.local/workload/test-server"
-                      },
-                      "sanType": "URI"
-                    },
-                    {
-                      "matcher": {
-                        "exact": "spiffe://envoyconfig/test-server"
                       },
                       "sanType": "URI"
                     }
@@ -515,7 +503,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "\u0026kuma.io/display-name=demo-client\u0026\u0026kuma.io/env=universal\u0026\u0026kuma.io/mesh=envoyconfig\u0026\u0026kuma.io/origin=zone\u0026\u0026kuma.io/workload=demo-client\u0026\u0026kuma.io/zone=kuma-3\u0026\u0026team=client-owners\u0026"
+                          "value": "&kuma.io/display-name=demo-client&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig&&kuma.io/origin=zone&&kuma.io/service=demo-client&&kuma.io/workload=demo-client&&kuma.io/zone=kuma-3&&team=client-owners&"
                         }
                       }
                     ],
@@ -674,6 +662,7 @@
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig",
               "kuma.io/origin": "zone",
+              "kuma.io/service": "demo-client",
               "kuma.io/workload": "demo-client",
               "kuma.io/zone": "kuma-3",
               "team": "client-owners"

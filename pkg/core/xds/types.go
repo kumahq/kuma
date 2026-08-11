@@ -149,10 +149,6 @@ type Proxy struct {
 	Policies            MatchedPolicies
 	EnvoyAdminMTLSCerts ServerSideMTLSCerts
 
-	// SecretsTracker allows us to track when a generator references a secret so
-	// we can be sure to include only those secrets later on.
-	SecretsTracker SecretsTracker
-
 	// WorkloadIdentity stores information about identity of the proxy.
 	WorkloadIdentity *WorkloadIdentity
 
@@ -216,41 +212,10 @@ type ServerSideTLSCertPaths struct {
 	KeyPath  string
 }
 
-type IdentityCertRequest interface {
-	Name() string
-	MeshName() string
-}
-
-type CaRequest interface {
-	MeshName() []string
-	Name() string
-}
-
-// SecretsTracker provides a way to ask for a secret and keeps track of which are
-// used, so that they can later be generated and included in the resources.
-type SecretsTracker interface {
-	RequestIdentityCert() IdentityCertRequest
-	RequestCa(mesh string) CaRequest
-	RequestAllInOneCa() CaRequest
-
-	UsedIdentity() bool
-	UsedCas() map[string]struct{}
-	UsedAllInOne() bool
-}
-
 type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type Routing struct {
 	OutboundTargets EndpointMap
-}
-
-type CaSecret struct {
-	PemCerts [][]byte
-}
-
-type IdentitySecret struct {
-	PemCerts [][]byte
-	PemKey   []byte
 }
 
 type InternalAddress struct {
@@ -347,7 +312,6 @@ func ParseProxyIdFromString(id string) (*ProxyId, error) {
 	}
 	parts := strings.SplitN(id, ".", 2)
 	mesh := parts[0]
-	// when proxy is an ingress mesh is empty
 	if len(parts) < 2 {
 		return nil, errors.New("the name should be provided after the dot")
 	}

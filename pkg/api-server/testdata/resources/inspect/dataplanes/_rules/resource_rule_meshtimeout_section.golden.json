@@ -8,7 +8,6 @@
  },
  "rules": [
   {
-   "fromRules": [],
    "inboundRules": [],
    "toResourceRules": [
     {
@@ -44,7 +43,6 @@
      "resourceSectionName": "super-port"
     }
    ],
-   "toRules": [],
    "type": "MeshTimeout",
    "warnings": []
   }

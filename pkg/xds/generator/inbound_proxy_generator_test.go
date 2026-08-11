@@ -13,7 +13,6 @@ import (
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -22,11 +21,9 @@ import (
 
 var _ = Describe("InboundProxyGenerator", func() {
 	type testCase struct {
-		dataplaneFile    string
-		dataplaneMeta    *model.DataplaneMetadata
-		expected         string
-		mode             mesh_proto.CertificateAuthorityBackend_Mode
-		casByTrustDomain map[string][]xds_context.PEMBytes
+		dataplaneFile string
+		dataplaneMeta *model.DataplaneMetadata
+		expected      string
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -37,27 +34,13 @@ var _ = Describe("InboundProxyGenerator", func() {
 				Meta: &test_model.ResourceMeta{
 					Name: "default",
 				},
-				Spec: &mesh_proto.Mesh{
-					Mtls: &mesh_proto.Mesh_Mtls{
-						EnabledBackend: "builtin",
-						Backends: []*mesh_proto.CertificateAuthorityBackend{
-							{
-								Name: "builtin",
-								Type: "builtin",
-								Mode: given.mode,
-							},
-						},
-					},
-				},
+				Spec: &mesh_proto.Mesh{},
 			}
 
 			xdsCtx := xds_context.Context{
-				ControlPlane: &xds_context.ControlPlaneContext{
-					Secrets: &xds.TestSecrets{},
-				},
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
-					Resource:         mesh,
-					CAsByTrustDomain: given.casByTrustDomain,
+					Resource: mesh,
 				},
 			}
 
@@ -73,9 +56,8 @@ var _ = Describe("InboundProxyGenerator", func() {
 					},
 					Spec: &dataplane,
 				},
-				SecretsTracker: envoy_common.NewSecretsTracker(xdsCtx.Mesh.Resource.Meta.GetName(), []string{xdsCtx.Mesh.Resource.Meta.GetName()}),
-				APIVersion:     envoy_common.APIV3,
-				Metadata:       given.dataplaneMeta,
+				APIVersion: envoy_common.APIV3,
+				Metadata:   given.dataplaneMeta,
 				InternalAddresses: []model.InternalAddress{
 					{AddressPrefix: "100.64.0.0", PrefixLen: 16},
 					{AddressPrefix: "fc00::/7", PrefixLen: 128},
@@ -117,27 +99,9 @@ var _ = Describe("InboundProxyGenerator", func() {
 			dataplaneFile: "4-dataplane.input.yaml",
 			expected:      "4-envoy-config.golden.yaml",
 		}),
-		Entry("05. transparent_proxying=false, ip_addresses=2, ports=2, mode=permissive", testCase{
-			dataplaneFile: "5-dataplane.input.yaml",
-			expected:      "5-envoy-config.golden.yaml",
-			mode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE,
-		}),
-		Entry("06. transparent_proxying=true, ip_addresses=2, ports=2, mode=permissive", testCase{
-			dataplaneFile: "6-dataplane.input.yaml",
-			expected:      "6-envoy-config.golden.yaml",
-			mode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE,
-		}),
-		Entry("07. transparent_proxying=true, ip_addresses=2, ports=2, mode=strict", testCase{
+		Entry("07. transparent_proxying=true, ip_addresses=2, ports=2, loopback inbounds", testCase{
 			dataplaneFile: "7-dataplane.input.yaml",
 			expected:      "7-envoy-config.golden.yaml",
-			mode:          mesh_proto.CertificateAuthorityBackend_STRICT,
-		}),
-		Entry("09. transparent_proxying=false, ip_addresses=2, ports=2, trust with old mesh mtls", testCase{
-			dataplaneFile: "9-dataplane.input.yaml",
-			expected:      "9-envoy-config.golden.yaml",
-			casByTrustDomain: map[string][]xds_context.PEMBytes{
-				"my-test.domain.com": {xds_context.PEMBytes("123")},
-			},
 		}),
 		Entry("10. transparent_proxying=false, no kuma.io/service tag, http protocol", testCase{
 			dataplaneFile: "10-dataplane.input.yaml",

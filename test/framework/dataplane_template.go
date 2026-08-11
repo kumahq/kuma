@@ -6,6 +6,8 @@ import (
 	"text/template"
 
 	"github.com/pkg/errors"
+
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 )
 
 // DataplaneTemplateData represents the data for dataplane templates
@@ -31,9 +33,6 @@ type DataplaneTemplateData struct {
 	// Service probe
 	ServiceProbe bool
 
-	// Outbound configuration
-	Outbounds []OutboundConfig
-
 	// Transparent proxy configuration
 	TransparentProxy *TransparentProxyConfig
 
@@ -43,16 +42,6 @@ type DataplaneTemplateData struct {
 
 	// Additional raw YAML to append
 	AppendConfig string
-}
-
-// OutboundConfig represents an outbound configuration. The destination is
-// selected through a MeshService backendRef, so an outbound whose MeshService
-// does not exist resolves to nothing instead of producing a listener for a
-// service that is not there. Service is matched on kuma.io/display-name.
-type OutboundConfig struct {
-	Port        string
-	Service     string
-	ServicePort string
 }
 
 // TransparentProxyConfig represents transparent proxy configuration
@@ -107,22 +96,6 @@ networking:
 {{- if .Protocol }}
     protocol: {{ .Protocol }}
 {{- end }}
-    tags:
-      kuma.io/service: {{ .ServiceName }}
-{{- if .Protocol }}
-      kuma.io/protocol: {{ .Protocol }}
-{{- end }}
-{{- if .Outbounds }}
-  outbound:
-{{- range .Outbounds }}
-  - port: {{ .Port }}
-    backendRef:
-      kind: MeshService
-      labels:
-        kuma.io/display-name: {{ .Service }}
-      port: {{ .ServicePort }}
-{{- end }}
-{{- end }}
 {{- if .TransparentProxy }}
   transparentProxying:
     redirectPortInbound: {{ .TransparentProxy.RedirectPortInbound }}
@@ -139,14 +112,17 @@ networking:
 
 // RenderDataplaneTemplate renders a dataplane template with the given data.
 // When Listeners is set, renders a zone proxy dataplane with a listeners block
-// instead of inbound/outbound. Team/Version/Instance/AdditionalTags are
-// rendered as Dataplane labels rather than inbound tags: endpoint
-// load-balancing identity (envoy.lb metadata) is now sourced solely from
-// Dataplane labels, not inbound tags (see pkg/xds/topology/outbound.go).
+// instead of inbound/outbound. ServiceName/Team/Version/Instance/AdditionalTags
+// are rendered as Dataplane labels rather than inbound tags: service identity
+// and endpoint load-balancing identity (envoy.lb metadata) are now sourced
+// solely from Dataplane labels, not inbound tags (see pkg/xds/topology/outbound.go).
 func RenderDataplaneTemplate(data DataplaneTemplateData) (string, error) {
-	labels := make(map[string]string, len(data.Labels)+len(data.AdditionalTags)+2)
+	labels := make(map[string]string, len(data.Labels)+len(data.AdditionalTags)+3)
 	maps.Copy(labels, data.Labels)
 	maps.Copy(labels, data.AdditionalTags)
+	if data.ServiceName != "" {
+		labels[mesh_proto.ServiceTag] = data.ServiceName
+	}
 	if data.Team != "" {
 		labels["team"] = data.Team
 	}
