@@ -6,7 +6,6 @@ import (
 
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
-	gateway_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 	generator_metadata "github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -14,7 +13,6 @@ type Clusters struct {
 	Inbound       map[string]*envoy_cluster.Cluster
 	Outbound      map[string]*envoy_cluster.Cluster
 	OutboundSplit map[string][]*envoy_cluster.Cluster
-	Gateway       map[string]*envoy_cluster.Cluster
 	Egress        map[string]*envoy_cluster.Cluster
 	Prometheus    *envoy_cluster.Cluster
 }
@@ -33,7 +31,6 @@ func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 		Inbound:       map[string]*envoy_cluster.Cluster{},
 		Outbound:      map[string]*envoy_cluster.Cluster{},
 		OutboundSplit: map[string][]*envoy_cluster.Cluster{},
-		Gateway:       map[string]*envoy_cluster.Cluster{},
 		Egress:        map[string]*envoy_cluster.Cluster{},
 	}
 	for _, res := range rs.Resources(envoy_resource.ClusterType) {
@@ -50,8 +47,6 @@ func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 			}
 		case generator_metadata.OriginInbound:
 			clusters.Inbound[cluster.Name] = cluster
-		case gateway_metadata.OriginGateway:
-			clusters.Gateway[cluster.Name] = cluster
 		case generator_metadata.OriginEgress:
 			clusters.Egress[cluster.Name] = cluster
 		case generator_metadata.OriginPrometheus:
