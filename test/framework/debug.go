@@ -234,7 +234,9 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 	} else {
 		Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
 	}
-	report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "manifests.yaml"), out)
+	// Per namespace, like the events below: this function runs once for every
+	// namespace and a shared path would leave only the last one's manifests.
+	report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", namespace, "manifests.yaml"), out)
 
 	events, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &kubeOptions, "get", "events", "--sort-by=.lastTimestamp", "-owide")
 	if err != nil {
