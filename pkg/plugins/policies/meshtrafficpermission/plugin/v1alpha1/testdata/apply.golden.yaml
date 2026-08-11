@@ -31,23 +31,7 @@ resources:
         name: envoy.transport_sockets.tls
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext:
-                matchTypedSubjectAltNames:
-                - matcher:
-                    prefix: spiffe://mesh-1/
-                  sanType: URI
-              validationContextSdsSecretConfig:
-                name: system_mtls_ca_mesh-1
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: system_mtls_identity_mesh-1
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
+          commonTlsContext: {}
           requireClientCertificate: true
     name: test_listener
     trafficDirection: INBOUND
@@ -83,23 +67,7 @@ resources:
         name: envoy.transport_sockets.tls
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext:
-                matchTypedSubjectAltNames:
-                - matcher:
-                    prefix: spiffe://mesh-1/
-                  sanType: URI
-              validationContextSdsSecretConfig:
-                name: system_mtls_ca_mesh-1
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: system_mtls_identity_mesh-1
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
+          commonTlsContext: {}
           requireClientCertificate: true
     name: test_listener2
     trafficDirection: INBOUND
@@ -131,23 +99,7 @@ resources:
         name: envoy.transport_sockets.tls
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext:
-                matchTypedSubjectAltNames:
-                - matcher:
-                    prefix: spiffe://mesh-1/
-                  sanType: URI
-              validationContextSdsSecretConfig:
-                name: system_mtls_ca_mesh-1
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: system_mtls_identity_mesh-1
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
+          commonTlsContext: {}
           requireClientCertificate: true
     name: test_listener3
     trafficDirection: INBOUND

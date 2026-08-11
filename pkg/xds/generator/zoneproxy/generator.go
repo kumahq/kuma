@@ -105,7 +105,7 @@ func CreateFilterChain(
 func GetServices(
 	destinations MeshDestinations,
 ) envoy_common.Services {
-	acc := envoy_common.NewServicesAccumulator(nil)
+	acc := envoy_common.NewServicesAccumulator()
 
 	sniUsed := map[string]struct{}{}
 

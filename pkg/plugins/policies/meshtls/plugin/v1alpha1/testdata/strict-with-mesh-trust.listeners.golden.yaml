@@ -29,7 +29,7 @@ resources:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: system_mtls_identity_default
+            - name: my-secret-name
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
@@ -71,7 +71,7 @@ resources:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: system_mtls_identity_default
+            - name: my-secret-name
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3

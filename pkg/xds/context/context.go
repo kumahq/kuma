@@ -104,7 +104,6 @@ type MeshContext struct {
 }
 
 type ServiceInformation struct {
-	TLSReadiness      bool
 	Protocol          core_meta.Protocol
 	IsExternalService bool
 }
@@ -134,18 +133,6 @@ func (mc *MeshContext) IsExternalService(serviceName string) bool {
 		return info.IsExternalService
 	}
 	return false
-}
-
-func (mc *MeshContext) GetTLSReadiness() map[string]bool {
-	tlsReady := map[string]bool{}
-	for serviceName, info := range mc.ServicesInformation {
-		if info != nil {
-			tlsReady[serviceName] = info.TLSReadiness
-		} else {
-			tlsReady[serviceName] = false
-		}
-	}
-	return tlsReady
 }
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {

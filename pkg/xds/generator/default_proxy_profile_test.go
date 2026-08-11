@@ -70,12 +70,10 @@ var _ = Describe("DefaultProxyProfile", func() {
 					Resources: resources,
 					ServicesInformation: map[string]*xds_context.ServiceInformation{
 						"db": {
-							TLSReadiness: true,
-							Protocol:     core_meta.ProtocolUnknown,
+							Protocol: core_meta.ProtocolUnknown,
 						},
 						"elastic": {
-							TLSReadiness: true,
-							Protocol:     core_meta.ProtocolUnknown,
+							Protocol: core_meta.ProtocolUnknown,
 						},
 					},
 				},

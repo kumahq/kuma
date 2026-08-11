@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -25,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtls/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -41,6 +43,47 @@ import (
 	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
+
+func identitySource(secretName string) func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+	return func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+		return bldrs_tls.SdsSecretConfigSource(
+			secretName,
+			bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+		)
+	}
+}
+
+// workloadIdentity is the identity every proxy that MeshTLS runs on carries.
+func workloadIdentity() *core_xds.WorkloadIdentity {
+	return &core_xds.WorkloadIdentity{
+		KRI:                      kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
+		IdentitySourceConfigurer: identitySource("my-secret-name"),
+	}
+}
+
+// kumaManagedWorkloadIdentity is managed by Kuma, so SAN matchers are derived
+// from the trust domains of the mesh.
+func kumaManagedWorkloadIdentity() *core_xds.WorkloadIdentity {
+	identity := workloadIdentity()
+	identity.ManagementMode = core_xds.KumaManagementMode
+	return identity
+}
+
+// externalValidatorWorkloadIdentity delivers its own CA bundle instead of
+// relying on the one Kuma generates.
+func externalValidatorWorkloadIdentity() *core_xds.WorkloadIdentity {
+	identity := workloadIdentity()
+	identity.ExternalValidationSourceConfigurer = identitySource("ca-bundle")
+	return identity
+}
+
+func trustDomains(names ...string) map[string][]xds_context.PEMBytes {
+	cas := map[string][]xds_context.PEMBytes{}
+	for i, name := range names {
+		cas[name] = []xds_context.PEMBytes{xds_context.PEMBytes(fmt.Sprintf("ca-%d", i))}
+	}
+	return cas
+}
 
 var _ = Describe("MeshTLS", func() {
 	type testCase struct {
@@ -65,7 +108,6 @@ var _ = Describe("MeshTLS", func() {
 				Build()
 			resourceSet := core_xds.NewResourceSet()
 			secretsTracker := envoy_common.NewSecretsTracker("default", nil)
-			resourceSet.Add(getMeshServiceResources(secretsTracker, mesh)...)
 
 			fromRules := core_rules.FromRules{}
 			if !given.noPolicy {
@@ -113,6 +155,7 @@ var _ = Describe("MeshTLS", func() {
 			proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{Features: features})
 
 			proxy := proxyBuilder.Build()
+			resourceSet.Add(getMeshServiceResources(proxy)...)
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -127,197 +170,113 @@ var _ = Describe("MeshTLS", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.clusters.golden.yaml", given.caseName)))
 		},
-		Entry("strict with no mTLS on the mesh", testCase{
-			caseName:    "strict-no-mtls",
+		Entry("no workload identity = plugin does not run", testCase{
+			caseName:    "no-workload-identity",
 			meshBuilder: samples.MeshDefaultBuilder(),
 		}),
-		Entry("permissive with no mTLS on the mesh", testCase{
-			caseName:    "permissive-no-mtls",
-			meshBuilder: samples.MeshDefaultBuilder(),
+		Entry("no policy = strict", testCase{
+			caseName:         "no-policy",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
+			noPolicy:         true,
 		}),
-		Entry("strict with permissive mTLS on the mesh", testCase{
-			caseName:    "strict-with-permissive-mtls",
-			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
+
+		Entry("strict = a single kuma TLS filter chain", testCase{
+			caseName:         "strict",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
 		}),
-		Entry("permissive with permissive mTLS on the mesh", testCase{
-			caseName:    "permissive-with-permissive-mtls",
-			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
+		Entry("strict with tls version and ciphers", testCase{
+			caseName:         "strict-with-tls-params",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
 		}),
-		Entry("strict based on workload identity", testCase{
-			caseName:    "strict-with-workload-identity",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
+		Entry("strict with an external validator = identity delivers the CA bundle", testCase{
+			caseName:         "strict-with-external-validator",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: externalValidatorWorkloadIdentity(),
 		}),
-		Entry("permissive based on workload identity and custom functions", testCase{
-			caseName:    "permissive-with-workload-identity-custom-functions",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-				ExternalValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"ca-bundle",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
+		Entry("strict with MeshTrust = no SAN matchers, the identity isn't kuma managed", testCase{
+			caseName:         "strict-with-mesh-trust",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
+			casByTrustDomain: trustDomains("domain-1"),
 		}),
-		Entry("strict with MeshTrust", testCase{
-			caseName:    "strict-with-mesh-trust",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			casByTrustDomain: map[string][]xds_context.PEMBytes{
-				"domain-1": {
-					xds_context.PEMBytes("123"),
-				},
-			},
+		Entry("strict with MeshTrust and kuma managed identity = SAN matchers", testCase{
+			caseName:         "strict-with-mesh-trust-kuma-managed",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaManagedWorkloadIdentity(),
+			casByTrustDomain: trustDomains("domain-1"),
 		}),
-		Entry("strict using external validator", testCase{
-			caseName:    "strict-with-external-validator",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-				ExternalValidationSourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"ca-bundle",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
-			casByTrustDomain: map[string][]xds_context.PEMBytes{
-				"domain-1": {
-					xds_context.PEMBytes("123"),
-				},
-			},
-		}),
-		Entry("strict with MeshTrust and kuma managed identity", testCase{
-			caseName:    "strict-with-mesh-trust-kuma-managed",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI:            kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				ManagementMode: core_xds.KumaManagementMode,
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
-			casByTrustDomain: map[string][]xds_context.PEMBytes{
-				"domain-1": {
-					xds_context.PEMBytes("123"),
-				},
-			},
-		}),
-		Entry("strict with multiple MeshTrust and kuma managed identity", testCase{
-			caseName:    "strict-with-multiple-mesh-trust-kuma-managed",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI:            kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				ManagementMode: core_xds.KumaManagementMode,
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
+		Entry("strict with multiple MeshTrust and kuma managed identity = sorted SAN matchers", testCase{
+			caseName:         "strict-with-multiple-mesh-trust-kuma-managed",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaManagedWorkloadIdentity(),
 			// deliberately out of alphabetical order to verify SANs are sorted
-			casByTrustDomain: map[string][]xds_context.PEMBytes{
-				"domain-c": {xds_context.PEMBytes("123")},
-				"domain-a": {xds_context.PEMBytes("456")},
-				"domain-b": {xds_context.PEMBytes("789")},
-			},
+			casByTrustDomain: trustDomains("domain-c", "domain-a", "domain-b"),
 		}),
-		Entry("strict mode + strict mesh = no passthrough listeners", testCase{
-			caseName:    "strict-with-strict-mtls",
-			meshBuilder: samples.MeshMTLSBuilder(),
-		}),
-		Entry("permissive mode + strict mesh = passthrough listeners", testCase{
-			caseName:    "permissive-with-strict-mtls",
-			meshBuilder: samples.MeshMTLSBuilder(),
-		}),
-		Entry("workload identity without CA = passthrough listeners", testCase{
-			caseName:    "strict-with-workload-identity-no-ca",
-			meshBuilder: samples.MeshDefaultBuilder(),
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
-		}),
-		Entry("tls version on both ends of the range with workload identity", testCase{
-			caseName:    "strict-with-workload-identity-tls-version",
-			meshBuilder: samples.MeshDefaultBuilder(),
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
-		}),
-		Entry("dualstack tproxy = ipv4 and ipv6 passthrough listeners", testCase{
-			caseName:     "permissive-with-dualstack-tproxy",
-			meshBuilder:  samples.MeshMTLSBuilder(),
-			ipFamilyMode: "dualstack",
-		}),
-		Entry("no policy + strict mesh = strict", testCase{
-			caseName:    "no-policy-with-strict-mtls",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			noPolicy:    true,
-		}),
-		Entry("no policy + permissive mesh = strict", testCase{
-			caseName:    "no-policy-with-permissive-mtls",
-			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
-			noPolicy:    true,
-		}),
-		Entry("strict inbound ports feature = port filtering", testCase{
-			caseName:    "strict-with-feature-strict-inbound-ports",
-			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
+		Entry("strict with strict inbound ports feature = port filtering", testCase{
+			caseName:         "strict-with-strict-inbound-ports",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
 			features: xds_types.Features{
 				xds_types.FeatureStrictInboundPorts: true,
 			},
 		}),
-		Entry("strict inbound ports feature with workload identity = port filtering", testCase{
-			caseName:    "strict-with-workload-identity-strict-inbound-ports",
-			meshBuilder: samples.MeshMTLSBuilder(),
-			workloadIdentity: &core_xds.WorkloadIdentity{
-				KRI: kri.Identifier{ResourceType: meshidentity_api.MeshIdentityType, Mesh: "default", Zone: "default", Name: "my-identity"},
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"my-secret-name",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			},
+		Entry("strict with dualstack tproxy = ipv4 and ipv6 passthrough listeners", testCase{
+			caseName:         "strict-with-dualstack-tproxy",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
+			ipFamilyMode:     "dualstack",
+		}),
+
+		Entry("permissive = raw buffer, TLS and kuma TLS filter chains", testCase{
+			caseName:         "permissive",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
+		}),
+		Entry("permissive with tls version and ciphers", testCase{
+			caseName:         "permissive-with-tls-params",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
+		}),
+		Entry("permissive with an external validator = identity delivers the CA bundle", testCase{
+			caseName:         "permissive-with-external-validator",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: externalValidatorWorkloadIdentity(),
+		}),
+		Entry("permissive with MeshTrust = no SAN matchers, the identity isn't kuma managed", testCase{
+			caseName:         "permissive-with-mesh-trust",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
+			casByTrustDomain: trustDomains("domain-1"),
+		}),
+		Entry("permissive with MeshTrust and kuma managed identity = SAN matchers", testCase{
+			caseName:         "permissive-with-mesh-trust-kuma-managed",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaManagedWorkloadIdentity(),
+			casByTrustDomain: trustDomains("domain-1"),
+		}),
+		Entry("permissive with multiple MeshTrust and kuma managed identity = sorted SAN matchers", testCase{
+			caseName:         "permissive-with-multiple-mesh-trust-kuma-managed",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: kumaManagedWorkloadIdentity(),
+			// deliberately out of alphabetical order to verify SANs are sorted
+			casByTrustDomain: trustDomains("domain-c", "domain-a", "domain-b"),
+		}),
+		Entry("permissive with strict inbound ports feature = no port filtering", testCase{
+			caseName:         "permissive-with-strict-inbound-ports",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
 			features: xds_types.Features{
 				xds_types.FeatureStrictInboundPorts: true,
 			},
+		}),
+		Entry("permissive with dualstack tproxy = ipv4 and ipv6 passthrough listeners", testCase{
+			caseName:         "permissive-with-dualstack-tproxy",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
+			ipFamilyMode:     "dualstack",
 		}),
 	)
 })
@@ -333,7 +292,24 @@ var outgoingMeshService = kri.Identifier{
 	SectionName:  "80",
 }
 
-func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *builders.MeshBuilder) []*core_xds.Resource {
+// outgoingCluster is the outbound cluster the sidecar already has by the time
+// MeshTLS runs. Its transport socket comes from the very builder the outbound
+// generator uses, so the golden files show MeshTLS layering TLS params onto a
+// real TLS context instead of an empty one. Without a workload identity there
+// is no mTLS and therefore no transport socket to configure.
+func outgoingCluster(proxy *core_xds.Proxy) *envoy_cluster.Cluster {
+	builder := clusters.NewClusterBuilder(envoy_common.APIV3, outgoingMeshService.String())
+
+	if proxy.WorkloadIdentity != nil {
+		tlsContext, err := meshroute.UpstreamTLSContext(proxy, "outgoing", []string{"spiffe://default/outgoing"})
+		Expect(err).ToNot(HaveOccurred())
+		builder.Configure(clusters.UpstreamTLSContext(tlsContext))
+	}
+
+	return builder.MustBuild().(*envoy_cluster.Cluster)
+}
+
+func getMeshServiceResources(proxy *core_xds.Proxy) []*core_xds.Resource {
 	return []*core_xds.Resource{
 		{
 			Name:   "inbound:127.0.0.1:17777",
@@ -359,11 +335,9 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 				)).MustBuild(),
 		},
 		{
-			Name:   outgoingMeshService.String(),
-			Origin: metadata.OriginOutbound,
-			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, outgoingMeshService.String()).
-				Configure(clusters.ClientSideMTLS(secretsTracker, mesh.Build(), "outgoing", true, nil, false)).
-				MustBuild(),
+			Name:           outgoingMeshService.String(),
+			Origin:         metadata.OriginOutbound,
+			Resource:       outgoingCluster(proxy),
 			Protocol:       core_meta.ProtocolHTTP,
 			ResourceOrigin: outgoingMeshService,
 		},

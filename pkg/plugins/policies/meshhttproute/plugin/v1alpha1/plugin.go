@@ -58,8 +58,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 }
 
 func ApplyToOutbounds(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, rules rules.ToRules) error {
-	tlsReady := xdsCtx.Mesh.GetTLSReadiness()
-	servicesAcc := envoy_common.NewServicesAccumulator(tlsReady)
+	servicesAcc := envoy_common.NewServicesAccumulator()
 
 	listeners, err := generateListeners(proxy, rules, servicesAcc, xdsCtx.Mesh)
 	if err != nil {
@@ -69,7 +68,7 @@ func ApplyToOutbounds(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, xdsCtx xd
 
 	services := servicesAcc.Services()
 
-	clusters, err := meshroute.GenerateClusters(proxy, xdsCtx.Mesh, services, xdsCtx.ControlPlane.SystemNamespace)
+	clusters, err := meshroute.GenerateClusters(proxy, xdsCtx.Mesh, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate cluster resources")
 	}

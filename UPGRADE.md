@@ -8,6 +8,17 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `Mesh.mtls` no longer produces mTLS
+
+The transport socket builders no longer read `Mesh.spec.mtls`. A proxy gets an mTLS transport socket — inbound and outbound — only when a `MeshIdentity` matches it; the identity certificate and the trust bundle come from `MeshIdentity` and `MeshTrust`, never from the mesh CA backend. A mesh whose only identity source is `mtls` now serves and accepts plaintext, and `MeshTLS` and `MeshTrafficPermission` no longer apply to its proxies.
+
+The `mtls` field itself is still accepted and still issues certificates over the legacy SDS path, but nothing in the generated Envoy config references them.
+
+**Action required**
+
+Migrate every mesh that still relies on `mtls` to `MeshIdentity` before upgrading. A mesh already covered by a `MeshIdentity` is unaffected.
+
+Two things go away with the legacy path: `SNIFromTags`/`TagsFromSNI`-style tag-encoded SNIs (outbounds to a destination that is not a real resource are plaintext, so they carry no SNI at all), and `MeshService.status.tls` gating of *permissive* meshes — the status is still computed and still gates outbound TLS for `MeshIdentity` proxies.
 ### Control plane TLS certificates are reloaded without a restart
 
 Every control plane server that reads its certificate from disk (API server HTTPS, dp-server, global KDS, MADS, diagnostics) now picks up a rotation performed by an external tool without restarting `kuma-cp`. Nothing has to be configured for this, and no action is required to keep the previous behaviour, which was to serve the certificate loaded at startup until the process was restarted.

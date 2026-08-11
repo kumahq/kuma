@@ -24,7 +24,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
-	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
@@ -33,19 +32,16 @@ func GenerateClusters(
 	proxy *core_xds.Proxy,
 	meshCtx xds_context.MeshContext,
 	services envoy_common.Services,
-	systemNamespace string,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		protocol := meshCtx.GetServiceProtocol(serviceName)
-		tlsReady := service.TLSReady()
 
 		for _, cluster := range service.Clusters() {
 			clusterName := cluster.Name()
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
-			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 			if meshCtx.IsExternalService(serviceName) {
 				realResourceRef := service.BackendRef().RealResourceBackendRef()
 				_, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
@@ -95,30 +91,29 @@ func GenerateClusters(
 					if !ok {
 						continue
 					}
-					tlsReady = true // tls readiness is only relevant for MeshService
-					isLocalMeshService := false
+					tlsReady := true // tls readiness is only relevant for MeshService
 					if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
 						ms := dest.(*meshservice_api.MeshServiceResource)
 						// we only check TLS status for local service
 						// services that are synced can be accessed only with TLS through the zone proxy
-						isLocalMeshService = ms.IsLocalMeshService()
-						tlsReady = !isLocalMeshService || ms.Status.TLS.Status == meshservice_api.TLSReady
+						tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
 						protocol = port.GetProtocol()
 					}
-					sni, ok := SNIForRealResource(realResourceRef, port)
-					if !ok {
-						continue
-					}
-					// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
+					// Every zone is reachable through a mesh-scoped zone proxy, which
+					// matches the KRI SNI, so a proxy with WorkloadIdentity always uses it.
 					if proxy.WorkloadIdentity != nil {
+						sni, ok := SNIForRealResource(realResourceRef, port)
+						if !ok {
+							continue
+						}
 						// A proxy receives its own identity independently of
 						// the destination's, so requiring mTLS before the
 						// destination reports it can serve TLS drops every
-						// request sent in between. Ready is sticky for as
-						// long as the mesh keeps mTLS or any MeshIdentity,
-						// and only resets once both are gone - which is
-						// exactly when the destination stops terminating
-						// TLS and plaintext becomes correct again.
+						// request sent in between. Ready is sticky for as long
+						// as the mesh keeps any MeshIdentity, and only resets
+						// once they are gone - which is exactly when the
+						// destination stops terminating TLS and plaintext
+						// becomes correct again.
 						if tlsReady {
 							sans := Identities(realResourceRef, meshCtx)
 							upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
@@ -127,18 +122,7 @@ func GenerateClusters(
 							}
 							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 						}
-					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
-							proxy.SecretsTracker,
-							meshCtx.Resource,
-							tlsReady,
-							sni,
-							Identities(realResourceRef, meshCtx),
-							len(meshCtx.CAsByTrustDomain) > 0,
-						))
 					}
-				} else {
-					edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
 				}
 			}
 
