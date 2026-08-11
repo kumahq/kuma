@@ -91,9 +91,6 @@ apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   name: default
-spec:
-  meshServices:
-    mode: Disabled
 `)(cluster)
 	}, "30s", "3s").Should(Succeed())
 
@@ -131,20 +128,27 @@ spec:
 			SkipTests: []string{
 				"HTTPRouteNoBackendRefs",
 			},
+			// Left undeclared, with what Kuma does not do:
+			//   - SupportMeshHTTPRouteBackendRequestHeaderModification: common_api.BackendRef
+			//     has no Filters field, so rules[].backendRefs[].filters cannot be translated.
+			//   - SupportMeshHTTPRouteNamedRouteRule: the upstream test is Provisional and
+			//     asserts a backend path of /named for a /unnamed request with no rewrite in
+			//     its own manifest.
 			SupportedFeatures: []features.FeatureName{
 				features.SupportHTTPRouteResponseHeaderModification,
 				features.SupportHTTPRoute,
-				features.SupportHTTPRouteHostRewrite,
-				features.SupportHTTPRouteMethodMatching,
+				features.SupportHTTPRoute303RedirectStatusCode,
+				features.SupportHTTPRoute307RedirectStatusCode,
+				features.SupportHTTPRoute308RedirectStatusCode,
 				features.SupportHTTPRouteParentRefPort,
-				features.SupportHTTPRoutePathRedirect,
-				features.SupportHTTPRoutePathRewrite,
-				features.SupportHTTPRoutePortRedirect,
-				features.SupportHTTPRouteQueryParamMatching,
-				features.SupportHTTPRouteRequestMirror,
-				features.SupportHTTPRouteSchemeRedirect,
 				features.SupportMesh,
+				features.SupportMeshClusterIPMatching,
 				features.SupportMeshConsumerRoute,
+				features.SupportMeshHTTPRouteQueryParamMatching,
+				features.SupportMeshHTTPRouteRedirectPath,
+				features.SupportMeshHTTPRouteRedirectPort,
+				features.SupportMeshHTTPRouteSchemeRedirect,
+				features.SupportMeshHTTPRouteRewritePath,
 			},
 			Implementation:      implementation,
 			ConformanceProfiles: []suite.ConformanceProfileName{suite.MeshHTTPConformanceProfileName},
