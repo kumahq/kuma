@@ -12,7 +12,6 @@ import (
 	api_server "github.com/kumahq/kuma/v3/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
@@ -77,7 +76,6 @@ type Builder struct {
 	rm             core_manager.CustomizableResourceManager
 	rom            core_manager.ReadOnlyResourceManager
 	gis            globalinsight.GlobalInsightService
-	cam            core_ca.Managers
 	dsl            datasource.Loader
 	ext            context.Context
 	configm        config_manager.ConfigManager
@@ -116,7 +114,6 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
 	return &Builder{
 		cfg:               cfg,
 		ext:               context.Background(),
-		cam:               core_ca.Managers{},
 		RuntimeInfo:       NewRuntimeInfo(fmt.Sprintf("%s-%s", hostname, suffix), cfg.Mode),
 		certWatchers:      util_tls.NewWatchers(appCtx, core.Log.WithName("cert-watcher")),
 		appCtx:            appCtx,
@@ -161,16 +158,6 @@ func (b *Builder) WithResourceManager(rm core_manager.CustomizableResourceManage
 
 func (b *Builder) WithReadOnlyResourceManager(rom core_manager.ReadOnlyResourceManager) *Builder {
 	b.rom = rom
-	return b
-}
-
-func (b *Builder) WithCaManagers(cam core_ca.Managers) *Builder {
-	b.cam = cam
-	return b
-}
-
-func (b *Builder) WithCaManager(name string, cam core_ca.Manager) *Builder {
-	b.cam[name] = cam
 	return b
 }
 
@@ -387,7 +374,6 @@ func (b *Builder) Build() (Runtime, error) {
 			rs:                       b.rs,
 			txs:                      b.txs,
 			ss:                       b.ss,
-			cam:                      b.cam,
 			gis:                      b.gis,
 			dsl:                      b.dsl,
 			ext:                      b.ext,
@@ -450,10 +436,6 @@ func (b *Builder) ResourceManager() core_manager.CustomizableResourceManager {
 
 func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
 	return b.rom
-}
-
-func (b *Builder) CaManagers() core_ca.Managers {
-	return b.cam
 }
 
 func (b *Builder) Config() kuma_cp.Config {

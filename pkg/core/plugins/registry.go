@@ -16,7 +16,6 @@ const (
 	secretStorePlugin      pluginType = "secret-store"
 	configStorePlugin      pluginType = "config-store"
 	runtimePlugin          pluginType = "runtime"
-	caPlugin               pluginType = "ca"
 	authnAPIServer         pluginType = "authn-api-server"
 	policyPlugin           pluginType = "policy"
 	proxyPlugin            pluginType = "proxy"
@@ -47,7 +46,6 @@ type Registry interface {
 	SecretStore(name PluginName) (SecretStorePlugin, error)
 	ConfigStore(name PluginName) (ConfigStorePlugin, error)
 	RuntimePlugins() map[PluginName]RuntimePlugin
-	CaPlugins() map[PluginName]CaPlugin
 	AuthnAPIServer() map[PluginName]AuthnAPIServerPlugin
 	PolicyPlugins() []RegisteredPolicyPlugin
 	ProxyPlugins() map[PluginName]ProxyPlugin
@@ -71,7 +69,6 @@ func NewRegistry() MutableRegistry {
 		secretStore:                 make(map[PluginName]SecretStorePlugin),
 		configStore:                 make(map[PluginName]ConfigStorePlugin),
 		runtime:                     make(map[PluginName]RuntimePlugin),
-		ca:                          make(map[PluginName]CaPlugin),
 		authnAPIServer:              make(map[PluginName]AuthnAPIServerPlugin),
 		proxy:                       make(map[PluginName]ProxyPlugin),
 		registeredResources:         make(map[PluginName]CoreResourcePlugin),
@@ -88,7 +85,6 @@ type registry struct {
 	configStore                 map[PluginName]ConfigStorePlugin
 	runtime                     map[PluginName]RuntimePlugin
 	proxy                       map[PluginName]ProxyPlugin
-	ca                          map[PluginName]CaPlugin
 	authnAPIServer              map[PluginName]AuthnAPIServerPlugin
 	registeredPolicies          []RegisteredPolicyPlugin
 	registeredResources         map[PluginName]CoreResourcePlugin
@@ -117,10 +113,6 @@ func (r *registry) ConfigStore(name PluginName) (ConfigStorePlugin, error) {
 	} else {
 		return nil, noSuchPluginError(configStorePlugin, name)
 	}
-}
-
-func (r *registry) CaPlugins() map[PluginName]CaPlugin {
-	return r.ca
 }
 
 func (r *registry) RuntimePlugins() map[PluginName]RuntimePlugin {
@@ -194,12 +186,6 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 			return pluginAlreadyRegisteredError(runtimePlugin, name, old, rp)
 		}
 		r.runtime[name] = rp
-	}
-	if cp, ok := plugin.(CaPlugin); ok {
-		if old, exists := r.ca[name]; exists {
-			return pluginAlreadyRegisteredError(caPlugin, name, old, cp)
-		}
-		r.ca[name] = cp
 	}
 	if authn, ok := plugin.(AuthnAPIServerPlugin); ok {
 		if old, exists := r.authnAPIServer[name]; exists {

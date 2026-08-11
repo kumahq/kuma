@@ -30,6 +30,22 @@ While both systems coexisted, a mesh that had `mtls` enabled *and* at least one 
 
 Complete the migration to `MeshIdentity` *before* upgrading — this is the point where a partially migrated mesh breaks. Once upgraded, proxies still holding a legacy mesh certificate are no longer trusted by their `MeshIdentity` peers, and there is no rolling path back.
 
+### `Mesh.mtls` backends are no longer provisioned or validated
+
+The CA plugin subsystem is gone — both the `builtin` and the `provided` CA managers, and the code that drove them on every Mesh create, update and Kubernetes reconcile. `mtls.backends` is now inert configuration: nothing generates a CA for a `builtin` backend, nothing reads the certificate and key of a `provided` one, and nothing checks either at admission time.
+
+Three validations disappear with it. An unknown `mtls.backends[].type` is accepted instead of being rejected with `could not find installed plugin for this type`. A `provided` backend missing `conf.cert` or `conf.key` is accepted. Changing `mtls.enabledBackend` while mTLS is enabled is accepted instead of being rejected with `Changing CA when mTLS is enabled is forbidden`.
+
+Deleting a Secret is no longer blocked when an `mtls` backend still references it, on both Universal and Kubernetes — the check dispatched into the CA managers, which no longer exist. `MeshIdentity` and `MeshTrust` secrets were never covered by it, and the `inter-cp-ca` and `envoy-admin-ca` global secrets are separate PKIs, untouched by this change.
+
+**Orphaned CA secrets are left in place**
+
+`builtin` CA material was persisted as `<mesh>.ca-builtin-cert-<backend>` and `<mesh>.ca-builtin-key-<backend>` Secrets owned by their Mesh. The upgrade does not delete them: they stay, unread by any code, and are still synced global→zone by KDS. Leaving them is deliberate — the CA private key is unrecoverable once removed, and a dead row costs nothing.
+
+**Action required**
+
+None. Delete the orphaned Secrets yourself once you are certain no downstream tooling needs the CA material; they are removed automatically when their Mesh is deleted.
+
 ### Control plane TLS certificates are reloaded without a restart
 
 Every control plane server that reads its certificate from disk (API server HTTPS, dp-server, global KDS, MADS, diagnostics) now picks up a rotation performed by an external tool without restarting `kuma-cp`. Nothing has to be configured for this, and no action is required to keep the previous behaviour, which was to serve the certificate loaded at startup until the process was restarted.

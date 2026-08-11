@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
-	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -75,12 +74,6 @@ type SecretStorePlugin interface {
 type RuntimePlugin interface {
 	Plugin
 	Customize(core_runtime.Runtime) error
-}
-
-// CaPlugin is responsible for providing Certificate Authority Manager
-type CaPlugin interface {
-	Plugin
-	NewCaManager(PluginContext, PluginConfig) (core_ca.Manager, error)
 }
 
 // AuthnAPIServerPlugin is responsible for providing authenticator for API Server.
