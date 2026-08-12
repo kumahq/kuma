@@ -12,6 +12,7 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -172,6 +173,14 @@ var _ = Describe("meshServicesOfRoute", func() {
 						BackendRefs: []gatewayapi.HTTPBackendRef{
 							{BackendRef: gatewayapi.BackendRef{BackendObjectReference: *meshServiceRef("other-ns", "backend-ms")}},
 						},
+						Filters: []gatewayapi.HTTPRouteFilter{
+							{
+								Type: gatewayapi_v1.HTTPRouteFilterRequestMirror,
+								RequestMirror: &gatewayapi.HTTPRequestMirrorFilter{
+									BackendRef: *meshServiceRef("mirror-ns", "mirror-ms"),
+								},
+							},
+						},
 					},
 				},
 			},
@@ -181,6 +190,7 @@ var _ = Describe("meshServicesOfRoute", func() {
 		Expect(names).To(ConsistOf(
 			"kuma-demo/parent-ms",
 			"other-ns/backend-ms",
+			"mirror-ns/mirror-ms",
 		))
 	})
 })
