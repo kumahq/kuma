@@ -35,10 +35,6 @@ func (q query) findPort(ports []core.Port) core.Port {
 }
 
 func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, reader kri.ResourceReader) []*ResourceSection {
-	if !targetRef.Kind.IsRealResource() {
-		return nil
-	}
-
 	rtype := core_model.ResourceType(targetRef.Kind)
 
 	// Mesh is a real resource but, unlike MeshService and friends, it carries no

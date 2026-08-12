@@ -12,13 +12,6 @@ func TargetRefMesh() common_api.TargetRef {
 	}
 }
 
-func TargetRefMeshSubset(kv ...string) common_api.TargetRef {
-	return common_api.TargetRef{
-		Kind: common_api.LegacyMeshSubsetKind(),
-		Tags: pointer.To(TagsKVToMap(kv)),
-	}
-}
-
 func TargetRefDataplaneLabels(kv ...string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind:   common_api.Dataplane,
@@ -41,16 +34,6 @@ func TargetRefService(name string) common_api.TargetRef {
 		Labels: pointer.To(map[string]string{
 			mesh_proto.DisplayName: name,
 		}),
-	}
-}
-
-func TargetRefServiceSubset(name string, kv ...string) common_api.TargetRef {
-	return common_api.TargetRef{
-		Kind: common_api.LegacyMeshServiceSubsetKind(),
-		Labels: pointer.To(map[string]string{
-			mesh_proto.DisplayName: name,
-		}),
-		Tags: pointer.To(TagsKVToMap(kv)),
 	}
 }
 

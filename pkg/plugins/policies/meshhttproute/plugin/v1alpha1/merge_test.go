@@ -134,7 +134,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
+										TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "backend", "version": "v1"}, ""),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -147,7 +147,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
+										TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "backend", "version": "v2"}, ""),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -170,7 +170,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				Default: api.RuleConf{
 					Filters: &[]api.Filter{{}},
 					BackendRefs: &[]common_api.BackendRef{{
-						TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
+						TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "backend", "version": "v1"}, ""),
 						Weight:    pointer.To(uint(100)),
 					}},
 				},
@@ -183,7 +183,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				}},
 				Default: api.RuleConf{
 					BackendRefs: &[]common_api.BackendRef{{
-						TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
+						TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "backend", "version": "v2"}, ""),
 						Weight:    pointer.To(uint(100)),
 					}},
 				},
@@ -219,7 +219,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: builders.TargetRefServiceSubset("a-backend", "version", "v1"),
+										TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "a-backend", "version": "v1"}, ""),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -244,7 +244,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: builders.TargetRefServiceSubset("b-backend", "version", "v1"),
+										TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "b-backend", "version": "v1"}, ""),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -266,7 +266,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				}},
 				Default: api.RuleConf{
 					BackendRefs: &[]common_api.BackendRef{{
-						TargetRef: builders.TargetRefServiceSubset("a-backend", "version", "v1"),
+						TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "a-backend", "version": "v1"}, ""),
 						Weight:    pointer.To(uint(100)),
 					}},
 				},

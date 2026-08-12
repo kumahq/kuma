@@ -4,7 +4,6 @@ package v1alpha1
 import (
 	"fmt"
 	"maps"
-	"sort"
 	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -23,74 +22,18 @@ var (
 	MeshHTTPRoute        TargetRefKind = "MeshHTTPRoute"
 )
 
-// meshSubset and meshServiceSubset are legacy kinds that predate real
-// resources (MeshService, MeshExternalService, MeshMultiZoneService). They
-// stay unexported: the wire values are still valid and must keep their
-// current validation/matching behavior, but no new Go code should reference
-// them directly.
-const (
-	meshSubset        TargetRefKind = "MeshSubset"
-	meshServiceSubset TargetRefKind = "MeshServiceSubset"
-)
-
-// LegacyMeshSubsetKind returns the legacy MeshSubset wire value without
-// re-exporting the kind constant.
-func LegacyMeshSubsetKind() TargetRefKind {
-	return meshSubset
-}
-
-// LegacyMeshServiceSubsetKind returns the legacy MeshServiceSubset wire value
-// without re-exporting the kind constant.
-func LegacyMeshServiceSubsetKind() TargetRefKind {
-	return meshServiceSubset
-}
-
 var order = map[TargetRefKind]int{
 	Mesh:                 1,
 	Dataplane:            2,
-	meshSubset:           3,
 	MeshService:          5,
 	MeshExternalService:  6,
 	MeshMultiZoneService: 7,
-	meshServiceSubset:    8,
 	MeshHTTPRoute:        9,
 }
 
 func (k TargetRefKind) Compare(o TargetRefKind) int {
 	return order[k] - order[o]
 }
-
-func (k TargetRefKind) IsRealResource() bool {
-	switch k {
-	case meshSubset, meshServiceSubset:
-		return false
-	default:
-		return true
-	}
-}
-
-// These are the kinds that can be used in Kuma policies before support for
-// actual resources (e.g., MeshExternalService, MeshMultiZoneService, and MeshService) was introduced.
-func (k TargetRefKind) IsOldKind() bool {
-	switch k {
-	case Mesh, meshSubset, meshServiceSubset, MeshService, MeshHTTPRoute:
-		return true
-	default:
-		return false
-	}
-}
-
-func AllTargetRefKinds() []TargetRefKind {
-	keys := util_maps.AllKeys(order)
-	sort.Sort(TargetRefKindSlice(keys))
-	return keys
-}
-
-type TargetRefKindSlice []TargetRefKind
-
-func (x TargetRefKindSlice) Len() int           { return len(x) }
-func (x TargetRefKindSlice) Less(i, j int) bool { return string(x[i]) < string(x[j]) }
-func (x TargetRefKindSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
@@ -99,11 +42,8 @@ type TargetRef struct {
 	UsesSyntacticSugar bool `json:"-"`
 
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
+	// +kubebuilder:validation:Enum=Mesh;MeshService;MeshExternalService;MeshMultiZoneService;MeshHTTPRoute;Dataplane
 	Kind TargetRefKind `json:"kind"`
-	// Tags used to select a subset of proxies by tags. Can only be used with kind
-	// `MeshServiceSubset`
-	Tags *map[string]string `json:"tags,omitempty"`
 	// Labels are used to select referenced real resources and to carry legacy
 	// service identity when a common TargetRef must still target old
 	// service-tag based paths.
@@ -209,14 +149,14 @@ func (t TargetRef) CompareDataplaneKind(other TargetRef) int {
 
 // IncludesGateways reports whether a policy attached with this targetRef could
 // apply to a Gateway-type dataplane (a delegated gateway is an ordinary
-// Dataplane from the CP's perspective, not a distinct kind). Kind: Mesh (and
-// the legacy MeshSubset) has no way to exclude gateways, so it always includes
-// them; Kind: Dataplane never distinguishes gateways from any other dataplane,
-// same as before proxyTypes existed (it was never a valid field on Kind:
-// Dataplane); MeshHTTPRoute is always gateway-routing.
+// Dataplane from the CP's perspective, not a distinct kind). Kind: Mesh has no
+// way to exclude gateways, so it always includes them; Kind: Dataplane never
+// distinguishes gateways from any other dataplane, same as before proxyTypes
+// existed (it was never a valid field on Kind: Dataplane); MeshHTTPRoute is
+// always gateway-routing.
 func IncludesGateways(ref TargetRef) bool {
 	switch ref.Kind {
-	case Mesh, meshSubset, MeshHTTPRoute:
+	case Mesh, MeshHTTPRoute:
 		return true
 	default:
 		return false
@@ -257,8 +197,6 @@ func (b BackendRef) ReferencesRealObject() bool {
 	switch b.Kind {
 	case MeshService, MeshExternalService, MeshMultiZoneService:
 		return true
-	case meshServiceSubset:
-		return false
 	// empty targetRef should not be treated as real object
 	case "":
 		return false
@@ -301,22 +239,15 @@ func (in BackendRef) Hash() BackendRefHash {
 		}
 	}
 
-	keys := util_maps.SortedKeys(pointer.Deref(in.Tags))
-	orderedTags := make([]string, 0, len(keys))
-	for _, k := range keys {
-		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, pointer.Deref(in.Tags)[k]))
-	}
-
-	keys = util_maps.SortedKeys(labels)
+	keys := util_maps.SortedKeys(labels)
 	orderedLabels := make([]string, 0, len(labels))
 	for _, k := range keys {
 		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, labels[k]))
 	}
 
 	return BackendRefHash(fmt.Sprintf(
-		"%s/%s/%s/%d/%s",
+		"%s/%s/%d/%s",
 		in.Kind,
-		strings.Join(orderedTags, "/"),
 		strings.Join(orderedLabels, "/"),
 		pointer.DerefOr(in.Port, 0),
 		sectionName,
