@@ -264,10 +264,6 @@ type: MeshHTTPRoute
 mesh: %s
 name: http-route-1
 spec:
-  targetRef:
-    kind: MeshService
-    labels:
-      kuma.io/display-name: demo-client
   to:
     - targetRef:
         kind: MeshService
