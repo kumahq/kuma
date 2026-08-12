@@ -26,7 +26,6 @@ import (
 	bldrs_listener "github.com/kumahq/kuma/v3/pkg/envoy/builders/listener"
 	bldrs_matcher "github.com/kumahq/kuma/v3/pkg/envoy/builders/matcher"
 	bldrs_route "github.com/kumahq/kuma/v3/pkg/envoy/builders/route"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
@@ -54,10 +53,6 @@ func (p plugin) Order() int { return api.MeshAccessLogResourceTypeDescriptor.Ord
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshAccessLogType, dataplane, resources, opts...)
 }
 
 func workloadIdentity(proxy *core_xds.Proxy) (string, string) {
@@ -149,36 +144,27 @@ func applyToInbounds(
 	workloadKRI string,
 ) error {
 	configured := map[core_rules.InboundListener]struct{}{}
-	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
-		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
-
-		listenerKey := core_rules.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
+	return policies_xds.ForEachInbound[api.Conf](dataplane, rules, func(m policies_xds.InboundMatch[api.Conf]) error {
+		if _, ok := configured[m.Listener]; ok {
+			return nil
 		}
-		if _, ok := configured[listenerKey]; ok {
-			continue
-		}
-		listener, ok := inboundListeners[listenerKey]
+		listener, ok := inboundListeners[m.Listener]
 		if !ok {
-			continue
+			return nil
 		}
-		configured[listenerKey] = struct{}{}
-		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
+		configured[m.Listener] = struct{}{}
+		protocol := core_meta.ParseProtocol(m.Inbound.GetProtocol())
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
 			SourceIP:           dataplane.GetAddress(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
-			DestinationService: dataplane.InboundIdentifyingName(inbound),
+			DestinationService: dataplane.InboundIdentifyingName(m.Inbound),
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
 			WorkloadKRI:        workloadKRI,
 			TrafficDirection:   envoy.TrafficDirectionInbound,
 		}
-		if err := configureListenerFromRules(rules.InboundRules[listenerKey], listener, backends, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
-			return err
-		}
-	}
-	return nil
+		return configureListenerFromRules(m.Rules, listener, backends, DefaultFormat(protocol), kumaValues, accessLogSocketPath)
+	})
 }
 
 func applyToZoneProxyListeners(

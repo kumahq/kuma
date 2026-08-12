@@ -9,9 +9,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
-	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
@@ -27,14 +25,6 @@ func (p plugin) Order() int { return api.MeshCircuitBreakerResourceTypeDescripto
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(
-	dataplane *core_mesh.DataplaneResource,
-	resources xds_context.Resources,
-	opts ...core_plugins.MatchedPoliciesOption,
-) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshCircuitBreakerType, dataplane, resources, opts...)
 }
 
 func (p plugin) Apply(
@@ -73,50 +63,15 @@ func applyToInbounds(
 	inboundClusters map[string]*envoy_cluster.Cluster,
 	dataplane *core_mesh.DataplaneResource,
 ) error {
-	for _, inbound := range dataplane.Spec.Networking.GetInbound() {
-		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
-
-		listenerKey := core_rules.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
-		}
-
-		clusterName := naming.MustContextualInboundName(dataplane, iface.InboundName)
+	return policies_xds.ForEachInbound[api.Conf](dataplane, fromRules, func(m policies_xds.InboundMatch[api.Conf]) error {
+		clusterName := naming.MustContextualInboundName(dataplane, m.Interface.InboundName)
 		cluster, ok := inboundClusters[clusterName]
 		if !ok {
-			continue
+			return nil
 		}
 
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
-		err := plugin_xds.NewConfigurer(conf).ConfigureCluster(cluster)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func applyToRealResource(
-	meshCtx xds_context.MeshContext,
-	rules outbound.ResourceRules,
-	uri kri.Identifier,
-	resourcesByType core_xds.ResourcesByType,
-) error {
-	conf := rules.Compute(uri, meshCtx.Resources)
-	if conf == nil {
-		return nil
-	}
-
-	for typ, resources := range resourcesByType {
-		if typ == envoy_resource.ClusterType {
-			err := configureClusters(resources, conf.Conf[0].(api.Conf))
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+		return plugin_xds.NewConfigurer(m.Conf).ConfigureCluster(cluster)
+	})
 }
 
 func applyToRealResources(
@@ -125,12 +80,16 @@ func applyToRealResources(
 	rules outbound.ResourceRules,
 	filters ...func(*core_xds.Resource) bool,
 ) error {
-	for uri, resType := range rs.IndexByOrigin(filters...) {
-		if err := applyToRealResource(meshCtx, rules, uri, resType); err != nil {
-			return err
+	return policies_xds.ForEachOutboundRule(rs, rules, meshCtx.Resources, func(uri kri.Identifier, conf api.Conf, resourcesByType core_xds.ResourcesByType) error {
+		for typ, resources := range resourcesByType {
+			if typ == envoy_resource.ClusterType {
+				if err := configureClusters(resources, conf); err != nil {
+					return err
+				}
+			}
 		}
-	}
-	return nil
+		return nil
+	}, filters...)
 }
 
 func configureClusters(resources []*core_xds.Resource, conf api.Conf) error {
