@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
@@ -11,6 +12,9 @@ var AllowedMTLSBackends = 1
 
 func (m *MeshResource) Validate() error {
 	var verr validators.ValidationError
+	if meta := m.GetMeta(); meta != nil {
+		verr.Add(validators.ValidateRFC1035Name(validators.RootedAt("name"), core_model.GetDisplayName(meta)))
+	}
 	verr.AddError("mtls", validateMtls(m.Spec.Mtls))
 	return verr.OrNil()
 }

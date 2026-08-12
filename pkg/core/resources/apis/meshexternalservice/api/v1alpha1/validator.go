@@ -23,7 +23,9 @@ var (
 func (r *MeshExternalServiceResource) validate() error {
 	var verr validators.ValidationError
 
-	verr.Add(validators.ValidateLength(validators.RootedAt("name"), 63, model.GetDisplayName(r.GetMeta())))
+	if meta := r.GetMeta(); meta != nil {
+		verr.Add(validators.ValidateRFC1035Name(validators.RootedAt("name"), model.GetDisplayName(meta)))
+	}
 
 	path := validators.RootedAt("spec")
 

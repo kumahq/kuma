@@ -19,9 +19,20 @@ var _ = Describe("MeshService", func() {
 			ResourceValidationCase{
 				Violations: []validators.Violation{{
 					Field:   `name`,
-					Message: `must not be longer than 63 characters`,
+					Message: `must be no more than 63 characters`,
 				}},
 				Name:     "meshservice-too-long-too-long-too-long-too-long-too-long-too-long-too-long-too-long-too-long",
+				Resource: "",
+			},
+		),
+		Entry(
+			"name does not conform to RFC 1035",
+			ResourceValidationCase{
+				Violations: []validators.Violation{{
+					Field:   `name`,
+					Message: `a DNS-1035 label must consist of lower case alphanumeric characters or '-', start with an alphabetic character, and end with an alphanumeric character (e.g. 'my-name',  or 'abc-123', regex used for validation is '[a-z]([-a-z0-9]*[a-z0-9])?')`,
+				}},
+				Name:     "1meshservice.backend",
 				Resource: "",
 			},
 		),
