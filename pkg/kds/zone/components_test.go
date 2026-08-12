@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
 	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	meshtrafficpermission_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/grpc"
 	"github.com/kumahq/kuma/v3/pkg/test/kds/samples"
@@ -192,45 +193,47 @@ var _ = Describe("Zone Sync", func() {
 		})
 
 		It("should sync policies from global store to the local after resource is valid", func() {
-			// incorrct mesh
-			invalidMesh := &mesh_proto.Mesh{
-				Mtls: &mesh_proto.Mesh_Mtls{
-					EnabledBackend: "ca-1",
-				},
+			// a policy without rules does not pass validation, so the zone NACKs it
+			invalidPolicy := &meshtrafficpermission_api.MeshTrafficPermission{
+				TargetRef: &common_api.TopLevelTargetRef{Kind: common_api.TopLevelTargetRefKindMesh},
 			}
-			err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: invalidMesh}, store.CreateByKey("mesh-1", model.NoMesh))
+			err := globalStore.Create(
+				context.Background(),
+				&meshtrafficpermission_api.MeshTrafficPermissionResource{Spec: invalidPolicy},
+				store.CreateByKey("mtp-1", model.DefaultMesh),
+			)
 			Expect(err).ToNot(HaveOccurred())
 
 			// should not be synchronized
 			Consistently(func(g Gomega) {
-				actual := mesh.MeshResourceList{}
+				actual := meshtrafficpermission_api.MeshTrafficPermissionResourceList{}
 				err := zoneStore.List(context.Background(), &actual)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(actual.Items).To(BeEmpty())
 			}, "1s", "100ms").Should(Succeed())
 
-			mesh1 := mesh.NewMeshResource()
-			err = globalStore.Get(context.Background(), mesh1, store.GetByKey("mesh-1", model.NoMesh))
+			policy := meshtrafficpermission_api.NewMeshTrafficPermissionResource()
+			err = globalStore.Get(context.Background(), policy, store.GetByKey("mtp-1", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
 
-			// when mesh is a valid resource
-			mesh1.Spec = samples.Mesh1
-			err = globalStore.Update(context.Background(), mesh1)
+			// when the policy becomes a valid resource
+			policy.Spec = samples.MeshTrafficPermission
+			err = globalStore.Update(context.Background(), policy)
 			Expect(err).ToNot(HaveOccurred())
 
 			// should be synchronized
 			Eventually(func(g Gomega) {
-				actual := mesh.MeshResourceList{}
+				actual := meshtrafficpermission_api.MeshTrafficPermissionResourceList{}
 				err := zoneStore.List(context.Background(), &actual)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(actual.Items).To(HaveLen(1))
-			}, "1s", "100ms").Should(Succeed())
+			}, "5s", "100ms").Should(Succeed())
 
-			actual := mesh.MeshResourceList{}
+			actual := meshtrafficpermission_api.MeshTrafficPermissionResourceList{}
 			err = zoneStore.List(context.Background(), &actual)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
+			Expect(actual.Items[0].Spec).To(Equal(samples.MeshTrafficPermission))
 		})
 
 		It("should have up to date list of consumed types", func() {

@@ -40,11 +40,11 @@ func kumaDownstreamTLS() listeners.FilterChainBuilderOpt {
 
 var _ = Describe("RBAC", func() {
 	Context("for Dataplane", func() {
-		It("should default-deny every mTLS inbound listener with no rules", func() {
+		It("should default-deny every TLS inbound listener with no rules", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			// listener that matches
@@ -111,6 +111,7 @@ var _ = Describe("RBAC", func() {
 						WithMesh("mesh-1").
 						WithServices("backend"),
 				).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
 						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{}),
@@ -133,7 +134,7 @@ var _ = Describe("RBAC", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
@@ -174,7 +175,7 @@ var _ = Describe("RBAC", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			// listener that matches
@@ -238,6 +239,7 @@ var _ = Describe("RBAC", func() {
 						WithMesh("mesh-1").
 						WithServices("backend"),
 				).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
 						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
@@ -305,7 +307,7 @@ var _ = Describe("RBAC", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
@@ -323,6 +325,7 @@ var _ = Describe("RBAC", func() {
 
 			proxy := xds_builders.Proxy().
 				WithDataplane(builders.Dataplane().WithName("dp1").WithMesh("mesh-1").WithServices("backend")).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
 						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
@@ -359,7 +362,7 @@ var _ = Describe("RBAC", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
@@ -377,6 +380,7 @@ var _ = Describe("RBAC", func() {
 
 			proxy := xds_builders.Proxy().
 				WithDataplane(builders.Dataplane().WithName("dp1").WithMesh("mesh-1").WithServices("backend")).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
 						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
@@ -444,7 +448,7 @@ var _ = Describe("RBAC", func() {
 			rs.Add(buildZEListener("192.168.0.1", 10002, "ze-listener")())
 
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			proxy := xds_builders.Proxy().
@@ -470,7 +474,7 @@ var _ = Describe("RBAC", func() {
 			rs.Add(buildZEListener("192.168.0.1", 10002, "ze-listener")())
 
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			proxy := xds_builders.Proxy().

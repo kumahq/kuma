@@ -91,7 +91,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			Expect(err).ToNot(HaveOccurred())
 			given.xdsContext.ControlPlane.CLACache = claCache
 
-			secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil, false)
+			secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None())
 			dataSourceLoader := datasource.NewDataSourceLoader(secretManager)
 			given.xdsContext.Mesh.DataSourceLoader = dataSourceLoader
 
@@ -232,7 +232,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
-					WithMeshBuilder(samples.MeshMTLSBuilder()).
+					WithMeshBuilder(samples.MeshDefaultBuilder()).
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
@@ -288,7 +288,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
-					WithMeshBuilder(builders.Mesh().WithBuiltinMTLSBackend("builtin").WithEnabledMTLSBackend("builtin")).
+					WithMeshBuilder(builders.Mesh()).
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
@@ -346,7 +346,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
-					WithMeshBuilder(builders.Mesh().WithBuiltinMTLSBackend("builtin").WithEnabledMTLSBackend("builtin")).
+					WithMeshBuilder(builders.Mesh()).
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					Build(),
@@ -2379,7 +2379,7 @@ func meshContextWithResources(
 		meshBuilder = builders.Mesh()
 	}
 
-	mesh := meshBuilder.WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").Build()
+	mesh := meshBuilder.Build()
 	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", core_model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 

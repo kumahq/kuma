@@ -5,9 +5,7 @@ import (
 
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
@@ -23,10 +21,6 @@ func (p plugin) Order() int { return api.MeshFaultInjectionResourceTypeDescripto
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshFaultInjectionType, dataplane, resources, opts...)
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
@@ -54,35 +48,27 @@ func applyToInbounds(
 	inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	proxy *core_xds.Proxy,
 ) error {
-	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
-		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
-		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
-
-		listenerKey := core_rules.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
-		}
-		listener, ok := inboundListeners[listenerKey]
+	return policies_xds.ForEachInbound[api.Conf](proxy.Dataplane, fromRules, func(m policies_xds.InboundMatch[api.Conf]) error {
+		listener, ok := inboundListeners[m.Listener]
 		if !ok {
-			continue
+			return nil
 		}
 
-		inboundRules, ok := fromRules.InboundRules[listenerKey]
-		if !ok || len(inboundRules) == 0 {
-			continue
+		if len(m.Rules) == 0 {
+			return nil
 		}
 
-		switch protocol {
+		switch core_meta.ParseProtocol(m.Inbound.GetProtocol()) {
 		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-			configurer := plugin_xds.Configurer{Rules: inboundRules}
+			configurer := plugin_xds.Configurer{Rules: m.Rules}
 			for _, filterChain := range listener.FilterChains {
 				if err := configurer.ConfigureHttpListener(filterChain); err != nil {
 					return err
 				}
 			}
 		}
-	}
-	return nil
+		return nil
+	})
 }
 
 func applyToZoneProxyListeners(

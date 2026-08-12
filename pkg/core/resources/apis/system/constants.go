@@ -1,7 +1,5 @@
 package system
 
-import "fmt"
-
 const (
 	// AdminUserToken is the name of the global secret holding the token for the admin user
 	AdminUserToken = "admin-user-token"
@@ -25,9 +23,6 @@ const (
 	DataplaneTokenSigningKeyPrefix = "dataplane-token-signing-key-"
 	// DataplaneTokenRevolationsPrefix is the prefix for the secret holding the dataplane token revocations
 	DataplaneTokenRevocationsPrefix = "dataplane-token-revocations-"
-
-	// Builtin Certificate and Key Secret name
-	BuiltinCertificateSecretNamePart = "ca-builtin-"
 )
 
 func DataplaneTokenSigningKey(mesh string) string {
@@ -36,12 +31,4 @@ func DataplaneTokenSigningKey(mesh string) string {
 
 func DataplaneTokenRevocations(mesh string) string {
 	return DataplaneTokenRevocationsPrefix + mesh
-}
-
-func BuiltinCertSecretName(mesh, backendName string) string {
-	return fmt.Sprintf("%s.%scert-%s", mesh, BuiltinCertificateSecretNamePart, backendName)
-}
-
-func BuiltinKeySecretName(mesh, backendName string) string {
-	return fmt.Sprintf("%s.%skey-%s", mesh, BuiltinCertificateSecretNamePart, backendName)
 }

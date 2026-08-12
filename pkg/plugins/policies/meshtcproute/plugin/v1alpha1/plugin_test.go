@@ -34,8 +34,8 @@ import (
 	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	rules_common "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
@@ -66,6 +66,24 @@ var _ = Describe("MeshTCPRoute", func() {
 		Mesh:         "default",
 		Name:         "example",
 	}
+	backendMeshServiceMeta := func() *test_model.ResourceMeta {
+		return &test_model.ResourceMeta{
+			Mesh: core_model.DefaultMesh,
+			Name: "backend",
+			Labels: map[string]string{
+				mesh_proto.DisplayName: "backend",
+			},
+		}
+	}
+	routeOrigin := func(name string) rules_common.Origin {
+		return rules_common.Origin{
+			Resource: &test_model.ResourceMeta{
+				Mesh: core_model.DefaultMesh,
+				Name: name,
+			},
+			RuleIndex: 0,
+		}
+	}
 	type policiesTestCase struct {
 		dataplane      *core_mesh.DataplaneResource
 		resources      xds_context.Resources
@@ -84,6 +102,13 @@ var _ = Describe("MeshTCPRoute", func() {
 			dataplane: samples.DataplaneWeb(),
 			resources: xds_context.Resources{
 				MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+					meshservice_api.MeshServiceType: &meshservice_api.MeshServiceResourceList{
+						Items: []*meshservice_api.MeshServiceResource{{
+							Meta:   backendMeshServiceMeta(),
+							Spec:   &meshservice_api.MeshService{},
+							Status: &meshservice_api.MeshServiceStatus{},
+						}},
+					},
 					api.MeshTCPRouteType: &api.MeshTCPRouteResourceList{
 						Items: []*api.MeshTCPRouteResource{
 							{
@@ -141,10 +166,10 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			},
 			expectedRoutes: core_rules.ToRules{
-				Rules: core_rules.Rules{
-					{
-						Subset: subsetutils.MeshService("backend"),
-						Conf: api.Rule{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					backendMeshServiceIdentifier: {
+						Resource: backendMeshServiceMeta(),
+						Conf: []any{api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: &[]common_api.BackendRef{
 									{
@@ -163,21 +188,14 @@ var _ = Describe("MeshTCPRoute", func() {
 									},
 								},
 							},
+						}},
+						Origin: []rules_common.Origin{
+							routeOrigin("route-1"),
+							routeOrigin("route-2"),
 						},
-						Origin: []core_model.ResourceMeta{
-							&test_model.ResourceMeta{
-								Mesh: "default",
-								Name: "route-1",
-							},
-							&test_model.ResourceMeta{
-								Mesh: "default",
-								Name: "route-2",
-							},
-						},
-						OriginByMatches: map[common_api.MatchesHash]core_model.ResourceMeta{},
+						OriginByMatches: map[common_api.MatchesHash]rules_common.Origin{},
 					},
 				},
-				ResourceRules: map[kri.Identifier]outbound.ResourceRule{},
 			},
 		}),
 	)
@@ -196,7 +214,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			Expect(err).ToNot(HaveOccurred())
 			given.xdsContext.ControlPlane.CLACache = claCache
 
-			secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil, false)
+			secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None())
 			dataSourceLoader := datasource.NewDataSourceLoader(secretManager)
 			given.xdsContext.Mesh.DataSourceLoader = dataSourceLoader
 
@@ -1034,7 +1052,7 @@ var _ = Describe("MeshTCPRoute", func() {
 
 func meshContextForMeshExternalService(resources ...core_model.Resource) *xds_context.MeshContext {
 	resourceStore := memory.NewStore()
-	mesh := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").Build()
+	mesh := builders.Mesh().Build()
 	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", core_model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 

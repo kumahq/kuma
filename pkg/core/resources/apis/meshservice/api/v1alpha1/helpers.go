@@ -42,6 +42,15 @@ func (m *MeshServiceResource) IsLocalMeshService() bool {
 	return origin == string(mesh_proto.ZoneResourceOrigin)
 }
 
+// TerminatesTLS reports whether a client may originate mTLS towards this
+// service. A proxy receives its own identity independently of the destination's,
+// so originating mTLS before every destination proxy can serve it drops each
+// request sent in between. Only a local MeshService reports readiness: a synced
+// one is reachable through a zone proxy, which always terminates TLS.
+func (m *MeshServiceResource) TerminatesTLS() bool {
+	return !m.IsLocalMeshService() || m.Status.TLS.Status == TLSReady
+}
+
 // Hash returns a content-based hash of the MeshService for generic resource
 // consumers that need version-aware change detection.
 func (t *MeshServiceResource) Hash() []byte {

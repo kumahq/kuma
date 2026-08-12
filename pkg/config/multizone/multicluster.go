@@ -4,11 +4,12 @@ import (
 	"crypto/x509"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
-	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/kumahq/kuma/v3/pkg/config"
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
@@ -84,11 +85,8 @@ func (r *ZoneConfig) Validate() error {
 	if r.Name == "" {
 		return errors.Errorf("Name is mandatory")
 	}
-	if !govalidator.IsDNSName(r.Name) {
-		return errors.Errorf("Zone name %s has to be a valid DNS name", r.Name)
-	}
-	if len(r.Name) > 63 {
-		return errors.New("Zone name cannot be longer than 63 characters")
+	if violations := k8s_validation.IsDNS1123Label(r.Name); len(violations) > 0 {
+		return errors.Errorf("Zone name %q has to be a valid RFC1123 DNS label: %s", r.Name, strings.Join(violations, ", "))
 	}
 	if r.GlobalAddress != "" {
 		u, err := url.Parse(r.GlobalAddress)

@@ -12,17 +12,16 @@ import (
 	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
 	bldrs_matcher "github.com/kumahq/kuma/v3/pkg/envoy/builders/matcher"
 	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
@@ -50,14 +49,6 @@ func (p plugin) Order() int { return api.MeshTLSResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(
-	dataplane *core_mesh.DataplaneResource,
-	resources xds_context.Resources,
-	opts ...core_plugins.MatchedPoliciesOption,
-) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshTLSType, dataplane, resources, opts...)
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
@@ -98,22 +89,15 @@ func applyToInbounds(
 	proxy *core_xds.Proxy,
 	ctx xds_context.Context,
 ) error {
-	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
-		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
-
-		listenerKey := core_rules.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
-		}
-
-		listener, ok := inboundListeners[listenerKey]
+	return policies_xds.ForEachInbound[api.Conf](proxy.Dataplane, fromRules, func(m policies_xds.InboundMatch[api.Conf]) error {
+		listener, ok := inboundListeners[m.Listener]
 		if !ok {
-			continue
+			return nil
 		}
 
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
+		conf := m.Conf
 
-		if resource, err := configureListener(proxy, ctx, iface, inbound, conf); err != nil {
+		if resource, err := configureListener(proxy, ctx, m.Interface, m.Inbound, conf); err != nil {
 			return err
 		} else if resource != nil {
 			rs.Remove(envoy_resource.ListenerType, listener.GetName())
@@ -145,16 +129,16 @@ func applyToInbounds(
 				Resource: resource,
 			})
 		}
-	}
 
-	return nil
+		return nil
+	})
 }
 
 func applyToRealResources(
 	fromRules core_rules.FromRules,
 	rs *core_xds.ResourceSet,
 ) error {
-	for _, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
+	return policies_xds.ForEachOrigin(rs, func(_ kri.Identifier, resType core_xds.ResourcesByType) error {
 		// there is only one rule always because we're in `Mesh/Mesh`
 		var conf api.Conf
 		for _, r := range fromRules.InboundRules {
@@ -167,9 +151,9 @@ func applyToRealResources(
 				return err
 			}
 		}
-	}
 
-	return nil
+		return nil
+	}, core_xds.NonMeshExternalService)
 }
 
 func configureTLSParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {

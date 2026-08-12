@@ -1,4 +1,25 @@
 resources:
+- name: kri_extsvc_default___example_
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 10.20.20.1
+        portValue: 9090
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: kri_extsvc_default___example_
+          statPrefix: kri_extsvc_default___example_
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/unified-name: kri_extsvc_default___example_
+    name: kri_extsvc_default___example_
+    statPrefix: kri_extsvc_default___example_
+    trafficDirection: OUTBOUND
 - name: kri_msvc_default___backend_tcp-port
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener

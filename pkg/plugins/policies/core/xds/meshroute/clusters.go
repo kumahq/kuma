@@ -1,15 +1,15 @@
 package meshroute
 
 import (
-	"sort"
+	"slices"
 
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
@@ -28,6 +28,35 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
 
+// destination is everything a cluster needs to know about what it talks to: the
+// identities this proxy has to accept when it originates mTLS, and the upstream
+// options to apply.
+type destination struct {
+	sans []string
+	// upstreamHTTP is nil when the connection carries opaque bytes.
+	upstreamHTTP envoy_clusters.ClusterBuilderOpt
+	// terminatesTLS is false while the destination cannot accept mTLS, which
+	// keeps its cluster without a transport socket.
+	terminatesTLS bool
+}
+
+// upstreamHTTPOptions returns the upstream options matching the protocol the
+// destination speaks, or nil when the connection carries opaque bytes.
+func upstreamHTTPOptions(protocol core_meta.Protocol) envoy_clusters.ClusterBuilderOpt {
+	switch protocol {
+	case core_meta.ProtocolHTTP:
+		return envoy_clusters.Http()
+	case core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
+		return envoy_clusters.Http2()
+	default:
+		return nil
+	}
+}
+
+// GenerateClusters builds one EDS cluster per outbound destination. Every
+// destination is reachable through a mesh-scoped zone proxy, so a cluster
+// originates mTLS towards the KRI SNI of the destination port once this proxy
+// has an identity to present and the destination can terminate TLS.
 func GenerateClusters(
 	proxy *core_xds.Proxy,
 	meshCtx xds_context.MeshContext,
@@ -35,83 +64,81 @@ func GenerateClusters(
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
+	// A proxy without a workload identity has no certificate to present, which
+	// happens until the MeshIdentity matching it reports initialized, so it
+	// cannot originate mTLS towards any destination yet.
+	hasIdentity := proxy.WorkloadIdentity != nil
+
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
-		protocol := meshCtx.GetServiceProtocol(serviceName)
+
+		backendRef := service.BackendRef().RealResourceBackendRef()
+		if backendRef == nil {
+			continue
+		}
+		destResource, port, ok := DestinationPortFromRef(meshCtx, backendRef)
+		if !ok {
+			continue
+		}
+
+		var dest destination
+		switch backendRef.Resource.ResourceType {
+		case meshservice_api.MeshServiceType:
+			ms := destResource.(*meshservice_api.MeshServiceResource)
+			dest = destination{
+				sans: meshServiceIdentities(meshCtx, backendRef.Resource),
+				// The hop between the two proxies is HTTP/2 no matter which
+				// protocol the application speaks.
+				upstreamHTTP:  envoy_clusters.Http2(),
+				terminatesTLS: ms.TerminatesTLS(),
+			}
+		case meshmultizoneservice_api.MeshMultiZoneServiceType:
+			// Another zone is only reachable through a zone proxy, which always
+			// terminates TLS.
+			dest = destination{
+				sans:          meshMultiZoneServiceIdentities(meshCtx, backendRef.Resource),
+				upstreamHTTP:  envoy_clusters.Http2(),
+				terminatesTLS: true,
+			}
+		case meshexternalservice_api.MeshExternalServiceType:
+			// An external service is only reachable through a zone egress: the
+			// egress terminates this connection and matches the KRI SNI, so the
+			// egress identity is what this proxy has to trust. The egress
+			// forwards the original protocol, so the upstream keeps speaking it.
+			// Without an egress the destination has no endpoints either, so the
+			// cluster stays plaintext rather than being dropped - a cluster
+			// missing under an emitted load assignment costs the proxy its
+			// entire configuration.
+			egressSANs := meshCtx.ZoneEgressSANs()
+			dest = destination{
+				sans:          egressSANs,
+				upstreamHTTP:  upstreamHTTPOptions(port.GetProtocol()),
+				terminatesTLS: len(egressSANs) > 0,
+			}
+		default:
+			continue
+		}
+
+		var transportSocket envoy_clusters.ClusterBuilderOpt
+		if hasIdentity && dest.terminatesTLS {
+			sni, ok := SNIForRealResource(backendRef, port)
+			if !ok {
+				continue
+			}
+			upstreamCtx, err := UpstreamTLSContext(proxy, sni, dest.sans)
+			if err != nil {
+				return nil, err
+			}
+			transportSocket = envoy_clusters.UpstreamTLSContext(upstreamCtx)
+		}
 
 		for _, cluster := range service.Clusters() {
 			clusterName := cluster.Name()
-			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
-			if service.HasExternalService() {
-				realResourceRef := service.BackendRef().RealResourceBackendRef()
-				_, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
-				if !ok {
-					continue
-				}
-				sni, egressSANs, ok := EgressRouteForExternalService(proxy, meshCtx, realResourceRef, port)
-				if !ok {
-					continue
-				}
-				upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
-				if err != nil {
-					return nil, err
-				}
-				edsClusterBuilder.
-					Configure(envoy_clusters.EdsCluster()).
-					Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
-				switch protocol {
-				case core_meta.ProtocolHTTP:
-					edsClusterBuilder.Configure(envoy_clusters.Http())
-				case core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-					edsClusterBuilder.Configure(envoy_clusters.Http2())
-				default:
-				}
-			} else {
-				edsClusterBuilder.
-					Configure(envoy_clusters.EdsCluster()).
-					Configure(envoy_clusters.Http2())
-
-				if realResourceRef := service.BackendRef().RealResourceBackendRef(); realResourceRef != nil {
-					dest, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
-					if !ok {
-						continue
-					}
-					tlsReady := true // tls readiness is only relevant for MeshService
-					if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
-						ms := dest.(*meshservice_api.MeshServiceResource)
-						// we only check TLS status for local service
-						// services that are synced can be accessed only with TLS through the zone proxy
-						tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
-						protocol = port.GetProtocol()
-					}
-					// Every zone is reachable through a mesh-scoped zone proxy, which
-					// matches the KRI SNI, so a proxy with WorkloadIdentity always uses it.
-					if proxy.WorkloadIdentity != nil {
-						sni, ok := SNIForRealResource(realResourceRef, port)
-						if !ok {
-							continue
-						}
-						// A proxy receives its own identity independently of
-						// the destination's, so requiring mTLS before the
-						// destination reports it can serve TLS drops every
-						// request sent in between. Ready is sticky for as long
-						// as the mesh keeps any MeshIdentity, and only resets
-						// once they are gone - which is exactly when the
-						// destination stops terminating TLS and plaintext
-						// becomes correct again.
-						if tlsReady {
-							sans := Identities(realResourceRef, meshCtx)
-							upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
-							if err != nil {
-								return nil, err
-							}
-							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
-						}
-					}
-				}
-			}
-
-			edsCluster, err := edsClusterBuilder.Build()
+			edsCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
+				Configure(envoy_clusters.EdsCluster()).
+				ConfigureIf(dest.upstreamHTTP != nil, dest.upstreamHTTP).
+				ConfigureIf(transportSocket != nil, transportSocket).
+				Build()
 			if err != nil {
 				return nil, errors.Wrapf(err, "build CDS for cluster %s failed", clusterName)
 			}
@@ -120,8 +147,8 @@ func GenerateClusters(
 				Name:           clusterName,
 				Origin:         metadata.OriginOutbound,
 				Resource:       edsCluster,
-				ResourceOrigin: service.BackendRef().Resource(),
-				Protocol:       protocol,
+				ResourceOrigin: backendRef.Resource,
+				Protocol:       port.GetProtocol(),
 			})
 		}
 	}
@@ -172,10 +199,9 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 		Build()
 }
 
-func SNIForRealResource(
-	backendRef *resolve.RealResourceBackendRef,
-	port core_resources.Port,
-) (string, bool) {
+// SNIForRealResource returns the KRI SNI the destination port advertises, and
+// false when the resulting KRI cannot be encoded as an SNI.
+func SNIForRealResource(backendRef *resolve.RealResourceBackendRef, port core.Port) (string, bool) {
 	// The destination advertises SNI from the resolved port name, so numeric
 	// backend-ref sections must be normalized before deriving the KRI SNI.
 	kriID := kri.WithSectionName(backendRef.Resource, port.GetName())
@@ -185,85 +211,41 @@ func SNIForRealResource(
 	return core_sni.FromKRI(kriID), true
 }
 
-// EgressRouteForExternalService returns how this proxy reaches a MeshExternalService:
-// the SNI that identifies the destination to the zone egress, and the SANs of the
-// egresses allowed to terminate the connection.
-//
-// A MeshExternalService is only reachable through a zone egress, over mTLS from the
-// proxy's own identity, and the egress listener itself is generated only for proxies
-// with a WorkloadIdentity (see ZoneProxyListenerGenerator). Without an identity, an
-// egress, or an egress SAN there is no way to reach the destination at all, so callers
-// drop it whole - no split, and therefore no listener, cluster, or endpoints. Emitting
-// only some of those leaves a route pointing at a cluster that never arrives, which
-// Envoy answers with a 503 instead of a config error.
-func EgressRouteForExternalService(
-	proxy *core_xds.Proxy,
-	meshCtx xds_context.MeshContext,
-	backendRef *resolve.RealResourceBackendRef,
-	port core_resources.Port,
-) (string, []string, bool) {
-	if proxy.WorkloadIdentity == nil {
-		return "", nil, false
-	}
-	if len(meshCtx.ZoneEgresses) == 0 {
-		return "", nil, false
-	}
-	egressSANs := meshCtx.ZoneEgressSANs()
-	if len(egressSANs) == 0 {
-		return "", nil, false
-	}
-	sni, ok := SNIForRealResource(backendRef, port)
+// meshServiceIdentities returns the SPIFFE IDs advertised by a MeshService.
+func meshServiceIdentities(meshCtx xds_context.MeshContext, id kri.Identifier) []string {
+	ms, ok := meshCtx.GetServiceByKRI(id).(*meshservice_api.MeshServiceResource)
 	if !ok {
-		return "", nil, false
+		return nil
 	}
-	return sni, egressSANs, true
+	var identities []string
+	for _, identity := range pointer.Deref(ms.Spec.Identities) {
+		if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
+			identities = append(identities, identity.Value)
+		}
+	}
+	slices.Sort(identities)
+	return identities
 }
 
-func Identities(
-	backendRef *resolve.RealResourceBackendRef,
-	meshCtx xds_context.MeshContext,
-) []string {
-	var result []string
-	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
-	case common_api.MeshService:
-		ms := meshCtx.GetServiceByKRI(backendRef.Resource)
-		if ms == nil {
-			return result
-		}
-		for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
-			if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
-				result = append(result, identity.Value)
-			}
-		}
-	case common_api.MeshMultiZoneService:
-		svc := meshCtx.GetServiceByKRI(backendRef.Resource)
-		if svc == nil {
-			return result
-		}
-		identities := map[string]struct{}{}
-		for _, matchedMs := range svc.(*meshmultizoneservice_api.MeshMultiZoneServiceResource).Status.MeshServices {
-			ri := kri.Identifier{
-				ResourceType: meshservice_api.MeshServiceType,
-				Name:         matchedMs.Name,
-				Namespace:    matchedMs.Namespace,
-				Zone:         matchedMs.Zone,
-				Mesh:         matchedMs.Mesh,
-			}
-			ms := meshCtx.GetServiceByKRI(ri)
-			if ms == nil {
-				continue
-			}
-			for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
-				if identity.Type != meshservice_api.MeshServiceIdentitySpiffeIDType {
-					continue
-				}
-				identities[identity.Value] = struct{}{}
-			}
-		}
-		result = util_maps.SortedKeys(identities)
+// meshMultiZoneServiceIdentities returns the SPIFFE IDs advertised by every
+// MeshService the MeshMultiZoneService matched, across all zones.
+func meshMultiZoneServiceIdentities(meshCtx xds_context.MeshContext, id kri.Identifier) []string {
+	mzms, ok := meshCtx.GetServiceByKRI(id).(*meshmultizoneservice_api.MeshMultiZoneServiceResource)
+	if !ok {
+		return nil
 	}
-	sort.SliceStable(result, func(i, j int) bool {
-		return result[i] < result[j]
-	})
-	return result
+	identities := map[string]struct{}{}
+	for _, matched := range mzms.Status.MeshServices {
+		msID := kri.Identifier{
+			ResourceType: meshservice_api.MeshServiceType,
+			Name:         matched.Name,
+			Namespace:    matched.Namespace,
+			Zone:         matched.Zone,
+			Mesh:         matched.Mesh,
+		}
+		for _, identity := range meshServiceIdentities(meshCtx, msID) {
+			identities[identity] = struct{}{}
+		}
+	}
+	return util_maps.SortedKeys(identities)
 }

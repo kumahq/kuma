@@ -53,13 +53,13 @@ func BuildDataplaneEndpointMap(
 	dataplanes []*core_mesh.DataplaneResource,
 	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
 	loader datasource.Loader,
-	mtlsEnabled bool,
+	workloadIdentityEnabled bool,
 	egressAddresses []core_xds.ZoneEgressInstance,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
 	fillLocalMeshServices(outbound, meshServices, dataplanes)
-	fillRemoteMeshServices(outbound, meshServices, meshZoneAddresses, localZone, mtlsEnabled)
+	fillRemoteMeshServices(outbound, meshServices, meshZoneAddresses, localZone, workloadIdentityEnabled)
 	fillMeshExternalServicesOnDataplane(ctx, outbound, meshExternalServices, egressAddresses, loader)
 	// has to be last, it republishes the endpoints the fillers above produced
 	fillMeshMultiZoneServices(outbound, meshServices, meshMultiZoneServices)
@@ -158,13 +158,12 @@ func fillRemoteMeshServices(
 	services []*meshservice_api.MeshServiceResource,
 	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
 	localZone string,
-	mtlsEnabled bool,
+	workloadIdentityEnabled bool,
 ) {
-	if !mtlsEnabled {
+	if !workloadIdentityEnabled {
 		return
 	}
 
-	// introduction of MeshIdentity doesn't requires mTLS on mesh
 	zoneToEndpoints := map[string][]core_xds.Endpoint{}
 
 	// MeshZoneAddress is the only source of publicly reachable coordinates of a

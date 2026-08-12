@@ -13,14 +13,12 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	bldrs_clusters "github.com/kumahq/kuma/v3/pkg/envoy/builders/cluster"
 	. "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
 	bldrs_endpoint "github.com/kumahq/kuma/v3/pkg/envoy/builders/endpoint"
 	bldrs_listener "github.com/kumahq/kuma/v3/pkg/envoy/builders/listener"
 	bldrs_route "github.com/kumahq/kuma/v3/pkg/envoy/builders/route"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_outbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
@@ -39,10 +37,6 @@ func (p plugin) Order() int { return api.MeshLoadBalancingStrategyResourceTypeDe
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshLoadBalancingStrategyType, dataplane, resources, opts...)
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {

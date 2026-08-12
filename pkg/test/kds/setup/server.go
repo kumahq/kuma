@@ -13,7 +13,6 @@ import (
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
@@ -77,10 +76,6 @@ func (t *testRuntimeContext) ConfigStore() store.ResourceStore {
 }
 
 func (t *testRuntimeContext) GlobalInsightService() globalinsight.GlobalInsightService {
-	panic("implement me")
-}
-
-func (t *testRuntimeContext) CaManagers() core_ca.Managers {
 	panic("implement me")
 }
 

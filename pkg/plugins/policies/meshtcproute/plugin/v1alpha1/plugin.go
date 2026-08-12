@@ -4,9 +4,7 @@ import (
 	"github.com/pkg/errors"
 
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -21,14 +19,6 @@ func (p plugin) Order() int { return api.MeshTCPRouteResourceTypeDescriptor.Orde
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(
-	dataplane *core_mesh.DataplaneResource,
-	resources xds_context.Resources,
-	opts ...core_plugins.MatchedPoliciesOption,
-) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshTCPRouteType, dataplane, resources, opts...)
 }
 
 func (p plugin) Apply(
