@@ -26,23 +26,24 @@ var _ = Describe("Rules", func() {
 			isSubset bool
 		}
 
-		DescribeTable("should respond if s2 is subset of s1",
+		DescribeTable(
+			"should respond if s2 is subset of s1",
 			func(given testCase) {
 				Expect(given.s1.IsSubset(given.s2)).To(Equal(given.isSubset))
 			},
 			Entry("positive subset", testCase{
-				s1: []subsetutils.Tag{{Key: "service", Value: "backend"}},
-				s2: []subsetutils.Tag{{Key: "service", Value: "backend"}, {Key: "version", Value: "v2"}},
+				s1:       []subsetutils.Tag{{Key: "service", Value: "backend"}},
+				s2:       []subsetutils.Tag{{Key: "service", Value: "backend"}, {Key: "version", Value: "v2"}},
 				isSubset: true,
 			}),
 			Entry("negative subset", testCase{
-				s1: []subsetutils.Tag{{Key: "service", Value: "backend"}},
-				s2: []subsetutils.Tag{{Key: "service", Not: true, Value: "frontend"}, {Key: "version", Value: "v2"}},
+				s1:       []subsetutils.Tag{{Key: "service", Value: "backend"}},
+				s2:       []subsetutils.Tag{{Key: "service", Not: true, Value: "frontend"}, {Key: "version", Value: "v2"}},
 				isSubset: false,
 			}),
 			Entry("negative selector can contain different value", testCase{
-				s1: []subsetutils.Tag{{Key: "key1", Not: true, Value: "val1"}},
-				s2: []subsetutils.Tag{{Key: "key1", Value: "val2"}},
+				s1:       []subsetutils.Tag{{Key: "key1", Not: true, Value: "val1"}},
+				s2:       []subsetutils.Tag{{Key: "key1", Value: "val2"}},
 				isSubset: true,
 			}),
 			Entry("empty superset", testCase{
@@ -94,7 +95,8 @@ var _ = Describe("Rules", func() {
 			Expect(string(bytes)).To(ContainSubstring("spiffe://mesh-1"))
 		})
 
-		DescribeTable("should build proxy-wide config for single item policies",
+		DescribeTable(
+			"should build proxy-wide config for single item policies",
 			func(inputFile string) {
 				policies := file.ReadInputFile(inputFile)
 				rules, err := core_rules.BuildProxyConf(policies)

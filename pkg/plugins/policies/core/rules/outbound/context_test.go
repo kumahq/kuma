@@ -74,5 +74,27 @@ var _ = Describe("ResourceContext", func() {
 			Expect(newRc).NotTo(BeIdenticalTo(rc)) // Should be a new instance
 			Expect(newRc.Conf()).To(Equal("mesh-conf"))
 		})
+
+		It("should skip empty specific conf and use the mesh conf", func() {
+			// given
+			id := kri.Identifier{
+				ResourceType: "TestResource",
+				Mesh:         "test-mesh",
+				Name:         "test-resource",
+			}
+			resourceRules := outbound.ResourceRules{
+				kri.From(mesh): outbound.ResourceRule{Conf: []any{"mesh-conf"}},
+				id:             outbound.ResourceRule{},
+			}
+			rc := outbound.RootContext[string](mesh, resourceRules)
+
+			// when
+			newRc := rc.WithID(id)
+
+			// then
+			Expect(newRc.Conf()).To(Equal("mesh-conf"))
+			_, ok := newRc.DirectConf()
+			Expect(ok).To(BeFalse())
+		})
 	})
 })
