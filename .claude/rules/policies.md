@@ -47,7 +47,7 @@ Field markers: `+kuma:discriminator` (union types), `+kuma:non-mergeable-struct`
 ## Plugin interface
 
 Policies implement `core_plugins.PolicyPlugin`:
-- `MatchedPolicies()`: finds policies applying to a dataplane (use `matchers.MatchedPolicies()`)
+- `MatchedPolicies()`: finds policies applying to a dataplane; generated into `plugin/v1alpha1/zz_generated.matcher.go` by `make generate` — never hand-write it
 - `Apply()`: modifies Envoy xDS `ResourceSet` based on matched policies
 
 Access matched policies in Apply: `proxy.Policies.Dynamic[api.PolicyType]`

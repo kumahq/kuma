@@ -26,7 +26,6 @@ import (
 	bldrs_listener "github.com/kumahq/kuma/v3/pkg/envoy/builders/listener"
 	bldrs_matcher "github.com/kumahq/kuma/v3/pkg/envoy/builders/matcher"
 	bldrs_route "github.com/kumahq/kuma/v3/pkg/envoy/builders/route"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
@@ -54,10 +53,6 @@ func (p plugin) Order() int { return api.MeshAccessLogResourceTypeDescriptor.Ord
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshAccessLogType, dataplane, resources, opts...)
 }
 
 func workloadIdentity(proxy *core_xds.Proxy) (string, string) {

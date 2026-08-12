@@ -17,14 +17,12 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
@@ -49,10 +47,6 @@ func (p plugin) Order() int { return api.MeshTraceResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshTraceType, dataplane, resources, opts...)
 }
 
 func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.Proxy) error {
