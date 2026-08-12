@@ -193,6 +193,7 @@ spec:
 `, mesh))(multizone.Global)).To(Succeed())
 
 		Eventually(func(g Gomega) {
+			start := time.Now()
 			response, err := framework_client.CollectFailure(
 				multizone.KubeZone1, "test-client", dest+"/path/with/timeout",
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
@@ -201,6 +202,9 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(504))
+			// the 5s injected delay would also yield a 504, so bound the
+			// duration to prove the 2s requestTimeout is what fired
+			g.Expect(time.Since(start)).To(BeNumerically("<", time.Second*4))
 		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// negative control: catch-all route is untouched by the route-scoped timeout
