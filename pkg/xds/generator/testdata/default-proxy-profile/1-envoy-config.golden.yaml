@@ -63,39 +63,12 @@ resources:
     enableReusePort: false
     filterChains:
     - filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: self_inbound_dp_80.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: self_inbound_dp_80
           idleTimeout: 7200s
           statPrefix: self_inbound_dp_80
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext:
-                matchTypedSubjectAltNames:
-                - matcher:
-                    prefix: spiffe://demo/
-                  sanType: URI
-              validationContextSdsSecretConfig:
-                name: system_mtls_ca_demo
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: system_mtls_identity_demo
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          requireClientCertificate: true
     metadata:
       filterMetadata:
         io.kuma.tags:
@@ -197,19 +170,3 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: system_envoy_admin
     trafficDirection: INBOUND
-- name: system_mtls_ca_demo
-  resource:
-    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
-    name: system_mtls_ca_demo
-    validationContext:
-      trustedCa:
-        inlineBytes: Q0E=
-- name: system_mtls_identity_demo
-  resource:
-    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
-    name: system_mtls_identity_demo
-    tlsCertificate:
-      certificateChain:
-        inlineBytes: Q0VSVA==
-      privateKey:
-        inlineBytes: S0VZ

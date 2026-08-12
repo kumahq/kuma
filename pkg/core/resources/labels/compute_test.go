@@ -138,6 +138,8 @@ var _ = Describe("ComputePolicyRole", func() {
 })
 
 var _ = Describe("Compute", func() {
+	legacyProxyTypeLabel := "kuma.io/" + "proxy-type"
+
 	type testCase struct {
 		r              core_model.Resource
 		mode           core.CpMode
@@ -273,7 +275,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":       "zone",
 				"kuma.io/zone":         "zone-1",
 				"kuma.io/env":          "kubernetes",
-				"kuma.io/proxy-type":   "gateway",
 			},
 		}),
 		Entry("dataplane proxy", testCase{
@@ -291,22 +292,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":       "zone",
 				"kuma.io/zone":         "zone-1",
 				"kuma.io/env":          "kubernetes",
-				"kuma.io/proxy-type":   "sidecar",
-			},
-		}),
-		Entry("zone egress proxy", testCase{
-			mode:      core.Zone,
-			isK8s:     true,
-			localZone: "zone-1",
-			r: builders.ZoneEgress().
-				WithPort(1001).
-				Build(),
-			expectedLabels: map[string]string{
-				"kuma.io/display-name": "zoneegress-1",
-				"kuma.io/origin":       "zone",
-				"kuma.io/zone":         "zone-1",
-				"kuma.io/env":          "kubernetes",
-				"kuma.io/proxy-type":   "zoneegress",
 			},
 		}),
 		Entry("dataplane with ZoneIngress listener", testCase{
@@ -331,7 +316,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":               "zone",
 				"kuma.io/zone":                 "zone-1",
 				"kuma.io/env":                  "kubernetes",
-				"kuma.io/proxy-type":           "sidecar",
 				"kuma.io/listener-zoneingress": "enabled",
 			},
 		}),
@@ -357,7 +341,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":              "zone",
 				"kuma.io/zone":                "zone-1",
 				"kuma.io/env":                 "kubernetes",
-				"kuma.io/proxy-type":          "sidecar",
 				"kuma.io/listener-zoneegress": "enabled",
 			},
 		}),
@@ -388,7 +371,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":               "zone",
 				"kuma.io/zone":                 "zone-1",
 				"kuma.io/env":                  "kubernetes",
-				"kuma.io/proxy-type":           "sidecar",
 				"kuma.io/listener-zoneingress": "enabled",
 				"kuma.io/listener-zoneegress":  "enabled",
 			},
@@ -401,6 +383,7 @@ var _ = Describe("Compute", func() {
 				WithMesh("mesh-1").
 				WithServices("backend").
 				WithLabels(map[string]string{
+					legacyProxyTypeLabel:           "sidecar",
 					"kuma.io/listener-zoneingress": "enabled",
 					"kuma.io/listener-zoneegress":  "enabled",
 				}).
@@ -411,7 +394,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":       "zone",
 				"kuma.io/zone":         "zone-1",
 				"kuma.io/env":          "kubernetes",
-				"kuma.io/proxy-type":   "sidecar",
 			},
 		}),
 	)

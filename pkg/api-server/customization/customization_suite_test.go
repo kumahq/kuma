@@ -45,7 +45,6 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	if config.HTTPS.TlsKeyFile == "" {
 		config.HTTPS.TlsKeyFile = filepath.Join("..", "..", "..", "test", "certs", "server-key.pem")
 		config.HTTPS.TlsCertFile = filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem")
-		config.Auth.ClientCertsDir = filepath.Join("..", "..", "..", "test", "certs", "client")
 	}
 
 	if wsManager == nil {
@@ -81,7 +80,6 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			nil,
 		),
 		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),
 		&cfg,

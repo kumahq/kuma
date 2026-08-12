@@ -24,7 +24,6 @@
  },
  "rules": [
   {
-   "fromRules": [],
    "inboundRules": [],
    "toResourceRules": [
     {
@@ -81,7 +80,6 @@
      "resourceSectionName": "5050"
     }
    ],
-   "toRules": [],
    "type": "MeshHTTPRoute",
    "warnings": []
   }

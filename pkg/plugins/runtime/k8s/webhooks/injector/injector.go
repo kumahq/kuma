@@ -135,7 +135,7 @@ func New(
 			cfg.SidecarContainer.DataplaneContainer,
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, envoyAdminUnixSocket,
 			sidecarContainersEnabled,
-			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
+			cfg.ApplicationProbeProxyPort,
 			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
 		),
 		systemNamespace: systemNamespace,
@@ -247,6 +247,21 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 		}
 	}
 
+	// When application probe proxying is disabled, K8s probes hit the
+	// application's own ports directly, so exclude those ports from
+	// inbound interception so probes don't need mTLS.
+	if appProbeProxyPort, err := probes.GetApplicationProbeProxyPort(
+		metadata.Annotations(pod.Annotations), i.cfg.ApplicationProbeProxyPort,
+	); err != nil {
+		return err
+	} else if appProbeProxyPort == 0 {
+		for _, port := range probes.RealProbePorts(pod) {
+			if err := tpCfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", port)); err != nil {
+				return err
+			}
+		}
+	}
+
 	pod.Spec.Volumes = append(pod.Spec.Volumes, volumeTPBase)
 
 	if v := pod.Annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {
@@ -325,19 +340,8 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 
 	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
 
-	disabledAppProbeProxy, err := probes.ApplicationProbeProxyDisabled(pod)
-	if err != nil {
+	if err := probes.SetupAppProbeProxies(pod, log); err != nil {
 		return err
-	}
-
-	if disabledAppProbeProxy {
-		if err := i.overrideHTTPProbes(pod); err != nil {
-			return err
-		}
-	} else {
-		if err := probes.SetupAppProbeProxies(pod, log); err != nil {
-			return err
-		}
 	}
 
 	return nil

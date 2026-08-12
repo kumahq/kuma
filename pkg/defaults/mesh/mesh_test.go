@@ -167,15 +167,15 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			// with both 'rules' and 'to' set (now mutually exclusive)
 			legacy := meshtimeout.NewMeshTimeoutResource()
 			legacy.Spec = &meshtimeout.MeshTimeout{
-				TargetRef: &common_api.TargetRef{
-					Kind: common_api.Mesh,
+				TargetRef: &common_api.TopLevelTargetRef{
+					Kind: common_api.TopLevelTargetRefKindMesh,
 				},
 				Rules: &[]meshtimeout.Rule{
 					{Default: meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Hour}}},
 				},
 				To: &[]meshtimeout.To{
 					{
-						TargetRef: common_api.TargetRef{Kind: common_api.Mesh},
+						TargetRef: common_api.OutboundTargetRef{Kind: common_api.OutboundTargetRefKindMesh},
 						Default:   meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Hour}},
 					},
 				},
@@ -195,7 +195,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			err = resManager.Get(context.Background(), migrated, core_store.GetByKey("mesh-timeout-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(migrated.Spec.TargetRef).ToNot(BeNil())
-			Expect(migrated.Spec.TargetRef.Kind).To(Equal(common_api.Mesh))
+			Expect(migrated.Spec.TargetRef.Kind).To(Equal(common_api.TopLevelTargetRefKindMesh))
 			Expect(migrated.Spec.To).To(BeNil())
 			Expect(migrated.Spec.Rules).ToNot(BeNil())
 
@@ -212,7 +212,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			// CP version stored them before sidecar/gateway defaults were merged
 			gatewayRules := meshtimeout.NewMeshTimeoutResource()
 			gatewayRules.Spec = &meshtimeout.MeshTimeout{
-				TargetRef: &common_api.TargetRef{Kind: common_api.Mesh},
+				TargetRef: &common_api.TopLevelTargetRef{Kind: common_api.TopLevelTargetRefKindMesh},
 				Rules: &[]meshtimeout.Rule{
 					{Default: meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Minute}}},
 				},
@@ -222,10 +222,10 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 
 			gatewayTo := meshtimeout.NewMeshTimeoutResource()
 			gatewayTo.Spec = &meshtimeout.MeshTimeout{
-				TargetRef: &common_api.TargetRef{Kind: common_api.Mesh},
+				TargetRef: &common_api.TopLevelTargetRef{Kind: common_api.TopLevelTargetRefKindMesh},
 				To: &[]meshtimeout.To{
 					{
-						TargetRef: common_api.TargetRef{Kind: common_api.Mesh},
+						TargetRef: common_api.OutboundTargetRef{Kind: common_api.OutboundTargetRefKindMesh},
 						Default:   meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Minute}},
 					},
 				},

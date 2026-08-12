@@ -105,7 +105,7 @@ func CreateFilterChain(
 func GetServices(
 	destinations MeshDestinations,
 ) envoy_common.Services {
-	acc := envoy_common.NewServicesAccumulator(nil)
+	acc := envoy_common.NewServicesAccumulator()
 
 	sniUsed := map[string]struct{}{}
 
@@ -122,7 +122,6 @@ func GetServices(
 			WithName(clusterName).
 			WithService(br.EndpointMapKey).
 			WithSNI(br.SNI).
-			WithMesh(br.Mesh).
 			Build()
 
 		acc.AddBackendRef(&br.ResolvedBackendRef, cluster)

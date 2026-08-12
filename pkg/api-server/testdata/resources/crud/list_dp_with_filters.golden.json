@@ -15,10 +15,7 @@
     "address": "10.1.2.1",
     "inbound": [
      {
-      "port": 1234,
-      "tags": {
-       "kuma.io/service": "my-svc"
-      }
+      "port": 1234
      }
     ]
    }
@@ -37,16 +34,10 @@
     "address": "10.1.2.2",
     "inbound": [
      {
-      "port": 1232,
-      "tags": {
-       "kuma.io/service": "other-svc"
-      }
+      "port": 1232
      },
      {
-      "port": 1234,
-      "tags": {
-       "kuma.io/service": "my-svc"
-      }
+      "port": 1234
      }
     ]
    }

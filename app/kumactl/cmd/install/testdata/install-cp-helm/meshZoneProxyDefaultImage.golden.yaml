@@ -182,10 +182,6 @@ rules:
       - meshes
       - zones
       - zoneinsights
-      - zoneingresses
-      - zoneingressinsights
-      - zoneegresses
-      - zoneegressinsights
       - meshinsights
       - serviceinsights
       - containerpatches
@@ -472,9 +468,6 @@ spec:
       name: https-admission-server
       targetPort: 5443
       appProtocol: https
-    - port: 5676
-      name: mads-server
-      appProtocol: https
     - port: 5678
       name: dp-server
       appProtocol: https
@@ -554,7 +547,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 1fa6f39d97a8aad47eff6f6670269d3333a30c2e107b0a9d14b2aa23e0f3bf24
-        checksum/tls-secrets: 9d76be2d856c9a56eacb3ae8be762fdcc4f7b2831b3b15c6f17c787e95276f83
+        checksum/tls-secrets: c0fd4507c14ad83044123da4d57d251f6e1bb3554c2890a5ed6cb33b4c6df32e
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -645,7 +638,7 @@ spec:
             - name: KUMA_MODE
               value: "zone"
             - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
-              value: "true"
+              value: "false"
             - name: KUMA_PLUGIN_POLICIES_ENABLED
               value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshpassthroughs,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtlses,meshtraces,meshtrafficpermissions"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
@@ -664,8 +657,6 @@ spec:
               value: "docker.io/kumahq/kuma-dp:0.0.1"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
               value: "kuma-transparent-proxy-config"
-            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
-              value: "true"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: "kuma-system"
             - name: KUMA_STORE_TYPE
@@ -903,10 +894,6 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - zoneingresses
-          - zoneingressinsights
-          - zoneegresses
-          - zoneegressinsights
           - serviceinsights
           - zone
           - zoneinsights

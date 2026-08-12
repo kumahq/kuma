@@ -18,12 +18,7 @@
      "address": "127.0.0.1",
      "inbound": [
       {
-       "port": 1234,
-       "tags": {
-        "service": "backend",
-        "tagcolumn": "tag:v",
-        "version": "v1"
-       }
+       "port": 1234
       }
      ]
     }
@@ -63,12 +58,7 @@
      "address": "127.0.0.1",
      "inbound": [
       {
-       "port": 1234,
-       "tags": {
-        "service": "backend",
-        "tagcolumn": "tag:v",
-        "version": "v1"
-       }
+       "port": 1234
       }
      ]
     }

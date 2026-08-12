@@ -6,7 +6,6 @@ metadata:
   labels:
     kuma.io/mesh: multizone-label-validation
     kuma.io/origin: zone
-    kuma.io/proxy-type: sidecar
 spec:
   match:
     type: HostnameGenerator

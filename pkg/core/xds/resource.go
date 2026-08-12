@@ -14,7 +14,6 @@ import (
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/origin"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 )
 
 // ResourcePayload is a convenience type alias.
@@ -185,10 +184,6 @@ func NonMeshExternalService(r *Resource) bool {
 
 func MeshExternalServiceOnly(r *Resource) bool {
 	return r.ResourceOrigin.ResourceType == meshexternalservice_api.MeshExternalServiceType
-}
-
-func NonGatewayResources(r *Resource) bool {
-	return r.ResourceOrigin.IsEmpty() || r.Origin != metadata.OriginGateway
 }
 
 func HasAssociatedServiceResource(r *Resource) bool {

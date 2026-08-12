@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -58,7 +57,6 @@ var _ = Describe("DefaultProxyProfile", func() {
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					CLACache: &test_xds.DummyCLACache{OutboundTargets: outboundTargets},
-					Secrets:  &test_xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
@@ -68,16 +66,6 @@ var _ = Describe("DefaultProxyProfile", func() {
 						Spec: &mesh_proto.Mesh{},
 					},
 					Resources: resources,
-					ServicesInformation: map[string]*xds_context.ServiceInformation{
-						"db": {
-							TLSReadiness: true,
-							Protocol:     core_meta.ProtocolUnknown,
-						},
-						"elastic": {
-							TLSReadiness: true,
-							Protocol:     core_meta.ProtocolUnknown,
-						},
-					},
 				},
 			}
 
@@ -96,8 +84,7 @@ var _ = Describe("DefaultProxyProfile", func() {
 					},
 					Spec: dataplane,
 				},
-				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
-				APIVersion:     envoy_common.APIV3,
+				APIVersion: envoy_common.APIV3,
 				Routing: core_xds.Routing{
 					OutboundTargets: outboundTargets,
 				},
@@ -199,35 +186,6 @@ var _ = Describe("DefaultProxyProfile", func() {
                 ipFamilyMode: IPv4
 `,
 			expected: "2-envoy-config.golden.yaml",
-		}),
-		Entry("should generate the default proxy config; transparent_proxying=false; unified naming", testCase{
-			mesh: `
-            mtls:
-              enabledBackend: builtin
-              backends:
-              - type: builtin
-                name: builtin
-`,
-			dataplane: `
-            networking:
-              address: 192.168.0.1
-              inbound:
-                - port: 80
-                  servicePort: 8080
-                  tags:
-                    kuma.io/service: backend
-              outbound:
-              - port: 54321
-                tags:
-                  kuma.io/service: db
-              - port: 59200
-                tags:
-                  kuma.io/service: elastic
-`,
-			expected: "5-envoy-config.golden.yaml",
-			features: map[string]bool{
-				xds_types.FeatureUnifiedResourceNaming: true,
-			},
 		}),
 	)
 })

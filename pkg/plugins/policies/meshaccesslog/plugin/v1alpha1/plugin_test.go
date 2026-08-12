@@ -22,7 +22,6 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	meshroute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
@@ -137,18 +136,13 @@ var _ = Describe("MeshAccessLog", func() {
 						AddEndpoint("other-service-http", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service")).
 						AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
 				).
-				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-				AddServiceProtocol("other-service-http", core_meta.ProtocolHTTP).
-				AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
 				Build()
 
 			inboundBuilder := builders.Inbound().
 				WithService("backend").
 				WithAddress("127.0.0.1").
 				WithPort(17777).
-				WithTags(map[string]string{
-					mesh_proto.ProtocolTag: "http",
-				})
+				WithProtocol("http")
 			if given.inboundName != "" {
 				inboundBuilder = inboundBuilder.WithName(given.inboundName)
 			}
@@ -167,9 +161,6 @@ var _ = Describe("MeshAccessLog", func() {
 				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithMetadata(&core_xds.DataplaneMetadata{
 					WorkDir: "/tmp",
-					// Outbounds are always built from real resources, so every
-					// proxy here supports unified resource naming.
-					Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
 				}).
 				WithDataplane(dpBuilder).
 				WithPolicies(
@@ -347,7 +338,7 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			},
-			expectedListeners: []string{"basic_outbound_meshhttproute_unified_naming.listener.golden.yaml"},
+			expectedListeners: []string{"basic_outbound_meshhttproute_resource_name.listener.golden.yaml"},
 		}),
 		Entry("disable MAL for MeshHTTPRoute", sidecarTestCase{
 			resources: []core_xds.Resource{
@@ -676,19 +667,6 @@ var _ = Describe("MeshAccessLog", func() {
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
-						},
-					}},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Conf: api.Conf{
@@ -726,24 +704,9 @@ var _ = Describe("MeshAccessLog", func() {
 					WithService("backend-canary").
 					WithAddress("127.0.0.1").
 					WithPort(17777).
-					WithTags(map[string]string{
-						mesh_proto.ProtocolTag: "http",
-					}),
+					WithProtocol("http"),
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
-						},
-					}},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Conf: api.Conf{
@@ -782,19 +745,6 @@ var _ = Describe("MeshAccessLog", func() {
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								Type: api.FileBackendType,
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
-						},
-					}},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Conf: api.Conf{
@@ -1035,8 +985,6 @@ var _ = Describe("MeshAccessLog", func() {
 					AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/service", "backend")).
 					AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
 			).
-			AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-			AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
 			Build()
 
 		proxy := xds_builders.Proxy().
@@ -1056,9 +1004,7 @@ var _ = Describe("MeshAccessLog", func() {
 							WithService("backend").
 							WithAddress("127.0.0.1").
 							WithPort(17777).
-							WithTags(map[string]string{
-								mesh_proto.ProtocolTag: "http",
-							}),
+							WithProtocol("http"),
 					),
 			).
 			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, core_rules.ToRules{
@@ -1126,8 +1072,6 @@ var _ = Describe("MeshAccessLog", func() {
 					AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/service", "backend")).
 					AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
 			).
-			AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-			AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
 			Build()
 
 		proxy := xds_builders.Proxy().
@@ -1147,9 +1091,7 @@ var _ = Describe("MeshAccessLog", func() {
 							WithService("backend").
 							WithAddress("127.0.0.1").
 							WithPort(17777).
-							WithTags(map[string]string{
-								mesh_proto.ProtocolTag: "http",
-							}),
+							WithProtocol("http"),
 					),
 			).
 			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, core_rules.ToRules{
@@ -1229,7 +1171,8 @@ func outboundRealServiceTCPListener(serviceResourceKRI kri.Identifier, port int3
 				Port:     uint32(port),
 				Resource: destinationKRI(serviceResourceKRI, port),
 			},
-			Protocol: core_meta.ProtocolTCP,
+			Protocol:            core_meta.ProtocolTCP,
+			DestinationResource: destinationName(serviceResourceKRI, port),
 		},
 		[]envoy_common.Split{
 			xds.NewSplitBuilder().WithClusterName(destinationName(serviceResourceKRI, port)).Build(),
@@ -1250,7 +1193,8 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 				Port:     uint32(port),
 				Resource: destinationKRI(serviceResourceKRI, port),
 			},
-			Protocol: core_meta.ProtocolHTTP,
+			Protocol:            core_meta.ProtocolHTTP,
+			DestinationResource: destinationName(serviceResourceKRI, port),
 		},
 		routes,
 		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},

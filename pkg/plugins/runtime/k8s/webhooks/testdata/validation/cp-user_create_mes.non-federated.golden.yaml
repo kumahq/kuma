@@ -1,14 +1,20 @@
 Patches: null
-allowed: true
+allowed: false
 status:
-  code: 200
+  code: 422
+  details:
+    causes:
+    - field: name
+      message: a DNS-1035 label must consist of lower case alphanumeric characters
+        or '-', start with an alphabetic character, and end with an alphanumeric character
+        (e.g. 'my-name',  or 'abc-123', regex used for validation is '[a-z]([-a-z0-9]*[a-z0-9])?')
+      reason: FieldValueInvalid
+    kind: MeshExternalService
+    name: mes.kuma-global
+  message: 'name: a DNS-1035 label must consist of lower case alphanumeric characters
+    or ''-'', start with an alphabetic character, and end with an alphanumeric character
+    (e.g. ''my-name'',  or ''abc-123'', regex used for validation is ''[a-z]([-a-z0-9]*[a-z0-9])?'')'
   metadata: {}
+  reason: Invalid
+  status: Failure
 uid: "12345"
-warnings:
-- 'Invalid MeshExternalService resource name: ''mes.kuma-global''. It does not conform
-  to the DNS format (RFC 1035). This is deprecated. Errors: a DNS-1035 label must
-  consist of lower case alphanumeric characters or ''-'', start with an alphabetic
-  character, and end with an alphanumeric character (e.g. ''my-name'',  or ''abc-123'',
-  regex used for validation is ''[a-z]([-a-z0-9]*[a-z0-9])?'')'
-- 'Invalid MeshExternalService SNI (port "80"): name "mes.kuma-global" does not conform
-  to RFC 1123: must not contain dots. This is deprecated.'

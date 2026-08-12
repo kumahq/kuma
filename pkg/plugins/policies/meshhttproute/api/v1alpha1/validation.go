@@ -13,7 +13,6 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 )
 
 func (r *MeshHTTPRouteResource) validate() error {
@@ -24,13 +23,13 @@ func (r *MeshHTTPRouteResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TopLevelTargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
 	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.Dataplane,
@@ -38,7 +37,7 @@ func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) val
 			GatewayListenerTagsAllowed: true,
 		})
 	default:
-		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.Dataplane,
@@ -47,8 +46,8 @@ func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) val
 	}
 }
 
-func validateToRef(targetRef common_api.TargetRef) validators.ValidationError {
-	return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+func validateToRef(targetRef common_api.OutboundTargetRef) validators.ValidationError {
+	return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.MeshService,
 			common_api.MeshExternalService,
@@ -254,7 +253,6 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef.TargetRef, &mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
-						common_api.LegacyMeshServiceSubsetKind(),
 						common_api.MeshExternalService,
 						common_api.MeshMultiZoneService,
 					},
@@ -339,12 +337,10 @@ func validateBackendRefs(
 			mesh.ValidateTargetRef(backendRef.TargetRef, &mesh.ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.MeshService,
-					common_api.LegacyMeshServiceSubsetKind(),
 					common_api.MeshExternalService,
 					common_api.MeshMultiZoneService,
 				},
-				AllowedInvalidNames: []string{metadata.UnresolvedBackendServiceTag},
-				IsBackendRef:        true,
+				IsBackendRef: true,
 			}),
 		)
 		errs.AddErrorAt(

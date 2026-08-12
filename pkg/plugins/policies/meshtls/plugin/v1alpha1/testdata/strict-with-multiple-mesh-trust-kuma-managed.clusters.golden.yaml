@@ -17,12 +17,13 @@ resources:
                   exact: spiffe://default/outgoing
                 sanType: URI
             validationContextSdsSecretConfig:
-              name: system_mtls_ca_default
+              name: system_trust_bundle
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: system_mtls_identity_default
+          - name: my-secret-name
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
+        sni: outgoing

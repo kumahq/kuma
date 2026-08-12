@@ -95,9 +95,6 @@ var _ = Describe("Resource Manager", func() {
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
 								Port: 1234,
-								Tags: map[string]string{
-									"kuma.io/service": "backend",
-								},
 							},
 						},
 					},

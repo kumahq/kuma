@@ -20,13 +20,6 @@ const FeatureTransparentProxyInDataplaneMetadata string = "feature-transparent-p
 // FeatureBindOutbounds indicates that the DP runs with outbound listeners bound to 127.0.0.0/8 range addresses
 const FeatureBindOutbounds string = "feature-bind-outbounds"
 
-// FeatureUnifiedResourceNaming indicates that the proxy (data plane, zone ingress, or zone egress)
-// uses the unified naming format for Envoy resources and stats. This includes KRI-based naming for
-// distinct Kuma resources, contextual naming for proxy-scoped resources like inbounds and transparent
-// proxy passthrough, and system format for internal Kuma resources that users typically
-// don't need to care about unless debugging Kuma.
-const FeatureUnifiedResourceNaming string = "feature-unified-resource-naming"
-
 // FeatureSpire indicates whether the sidecar has mounted a volume that includes the socket for the Spire agent to retrieve its identity.
 // Currently supported only on Kubernetes.
 const FeatureSpire string = "feature-spire"

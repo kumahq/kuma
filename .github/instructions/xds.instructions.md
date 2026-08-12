@@ -157,7 +157,7 @@ type ResourceGenerator interface {
 **Hierarchy:**
 ```
 GlobalContext (zone-scoped)
-  ├── Meshes, ZoneIngress, ZoneEgress
+  ├── Meshes, zone proxy Dataplanes
   └── hash: FNV128a
       ↓
 BaseMeshContext (mesh policies, changes less often)
@@ -201,7 +201,7 @@ Efficient, deterministic:
 
 **Supported Protocols:**
 - HTTP, HTTP2, gRPC (L7 routing, HCM filters)
-- TCP, Kafka (L4 routing, TCP proxy)
+- TCP (L4 routing, TCP proxy)
 - ProtocolUnknown (fallback to TCP)
 
 **Protocol-Specific Logic:**
@@ -211,7 +211,7 @@ Efficient, deterministic:
 switch protocol {
 case ProtocolHTTP, ProtocolHTTP2, ProtocolGRPC:
     // Configure HCM: IdleTimeout, StreamIdleTimeout, MaxStreamDuration
-case ProtocolUnknown, ProtocolTCP, ProtocolKafka:
+case ProtocolUnknown, ProtocolTCP:
     // Configure TCP Proxy: IdleTimeout
 }
 ```
@@ -279,7 +279,7 @@ UPDATE_GOLDEN_FILES=true make test
 ```
 
 **Protocol Scenarios:**
-- Test all protocols: HTTP, HTTP2, gRPC, TCP, Kafka
+- Test all protocols: HTTP, HTTP2, gRPC, TCP
 - K8s + Universal mode compatibility
 - Multi-zone scenarios
 
@@ -297,7 +297,7 @@ UPDATE_GOLDEN_FILES=true make test
 - No unnecessary goroutines
 
 **Correctness:**
-- All protocols handled (HTTP/HTTP2/gRPC/TCP/Kafka)
+- All protocols handled (HTTP/HTTP2/gRPC/TCP)
 - Metadata included for debugging
 - Error handling (return errors, don't panic)
 - Golden files updated

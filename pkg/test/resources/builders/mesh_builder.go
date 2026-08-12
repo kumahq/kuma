@@ -32,9 +32,6 @@ func Mesh() *MeshBuilder {
 }
 
 func (m *MeshBuilder) Build() *core_mesh.MeshResource {
-	if err := m.res.Validate(); err != nil {
-		panic(err)
-	}
 	return m.res
 }
 
@@ -48,52 +45,6 @@ func (m *MeshBuilder) Key() core_model.ResourceKey {
 
 func (m *MeshBuilder) WithName(name string) *MeshBuilder {
 	m.res.Meta.(*test_model.ResourceMeta).Name = name
-	return m
-}
-
-func (m *MeshBuilder) WithEnabledMTLSBackend(name string) *MeshBuilder {
-	if m.res.Spec.Mtls == nil {
-		m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
-	}
-	m.res.Spec.Mtls.EnabledBackend = name
-	return m
-}
-
-func (m *MeshBuilder) WithBuiltinMTLSBackend(name string) *MeshBuilder {
-	if m.res.Spec.Mtls == nil {
-		m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
-	}
-	return m.AddBuiltinMTLSBackend(name)
-}
-
-func (m *MeshBuilder) WithoutBackendValidation() *MeshBuilder {
-	if m.res.Spec.Mtls == nil {
-		m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
-	}
-	m.res.Spec.Mtls.SkipValidation = true
-	return m
-}
-
-func (m *MeshBuilder) WithoutMTLSBackends() *MeshBuilder {
-	m.res.Spec.Mtls.Backends = nil
-	return m
-}
-
-func (m *MeshBuilder) WithPermissiveMTLSBackends() *MeshBuilder {
-	for _, backend := range m.res.Spec.Mtls.Backends {
-		backend.Mode = mesh_proto.CertificateAuthorityBackend_PERMISSIVE
-	}
-	return m
-}
-
-func (m *MeshBuilder) AddBuiltinMTLSBackend(name string) *MeshBuilder {
-	if m.res.Spec.Mtls == nil {
-		m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
-	}
-	m.res.Spec.Mtls.Backends = append(m.res.Spec.Mtls.Backends, &mesh_proto.CertificateAuthorityBackend{
-		Name: name,
-		Type: "builtin",
-	})
 	return m
 }
 

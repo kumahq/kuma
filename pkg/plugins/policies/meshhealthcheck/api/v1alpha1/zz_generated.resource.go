@@ -195,11 +195,9 @@ var MeshHealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
-	HasFromTargetRef:             false,
 	HasRulesTargetRef:            false,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mhc",
-	IsFromAsRules:                false,
 	Order:                        1200,
 }

@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"maps"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -14,17 +12,16 @@ import (
 	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
 	bldrs_matcher "github.com/kumahq/kuma/v3/pkg/envoy/builders/matcher"
 	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
@@ -54,14 +51,6 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(
-	dataplane *core_mesh.DataplaneResource,
-	resources xds_context.Resources,
-	opts ...core_plugins.MatchedPoliciesOption,
-) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshTLSType, dataplane, resources, opts...)
-}
-
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.Dataplane == nil {
 		return nil
@@ -72,39 +61,18 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		"mesh", ctx.Mesh.Resource.GetMeta().GetName(),
 	)
 
-	switch {
-	case ctx.Mesh.Resource.MTLSEnabled():
-	case proxy.WorkloadIdentity != nil:
-	default:
-		log.V(1).Info("skip applying MeshTLS, mTLS is disabled")
+	if proxy.WorkloadIdentity == nil {
+		log.V(1).Info("skip applying MeshTLS, the proxy has no workload identity")
 		return nil
 	}
 
 	log.V(1).Info("applying")
 
 	policies := proxy.Policies.Dynamic[api.MeshTLSType]
-	// Check if MeshTLS policy or workload identity applies to this Dataplane
-	// - proxy.WorkloadIdentity != nil means the Dataplane has an assigned workload identity
-	// - non empty FromRules or GatewayRules mean a MeshTLS policy applies
-	// If neither condition is true, skip processing to avoid generating unused xDS config
-	switch {
-	case proxy.WorkloadIdentity != nil:
-	case len(policies.FromRules.InboundRules) > 0:
-	case len(policies.GatewayRules.InboundRules) > 0:
-	default:
-		return nil
-	}
 
 	listeners := policies_xds.GatherListeners(rs)
-	clusters := policies_xds.GatherClusters(rs)
 
 	if err := applyToInbounds(rs, policies.FromRules, listeners.Inbound, proxy, ctx); err != nil {
-		return err
-	}
-	if err := applyToOutbounds(policies.FromRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds, ctx); err != nil {
-		return err
-	}
-	if err := applyToGateways(policies.GatewayRules, clusters.Gateway, ctx); err != nil {
 		return err
 	}
 	if err := applyToRealResources(policies.FromRules, rs); err != nil {
@@ -121,22 +89,15 @@ func applyToInbounds(
 	proxy *core_xds.Proxy,
 	ctx xds_context.Context,
 ) error {
-	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
-		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
-
-		listenerKey := core_rules.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
-		}
-
-		listener, ok := inboundListeners[listenerKey]
+	return policies_xds.ForEachInbound[api.Conf](proxy.Dataplane, fromRules, func(m policies_xds.InboundMatch[api.Conf]) error {
+		listener, ok := inboundListeners[m.Listener]
 		if !ok {
-			continue
+			return nil
 		}
 
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
+		conf := m.Conf
 
-		if resource, err := configureListener(proxy, ctx, iface, inbound, conf); err != nil {
+		if resource, err := configureListener(proxy, ctx, m.Interface, m.Inbound, conf); err != nil {
 			return err
 		} else if resource != nil {
 			rs.Remove(envoy_resource.ListenerType, listener.GetName())
@@ -147,7 +108,7 @@ func applyToInbounds(
 			})
 		}
 
-		if resource, err := configureInboundPassthroughListener(proxy, ctx, conf, false); err != nil {
+		if resource, err := configureInboundPassthroughListener(proxy, conf, false); err != nil {
 			return err
 		} else if resource != nil {
 			rs.Remove(envoy_resource.ListenerType, resource.GetName())
@@ -158,7 +119,7 @@ func applyToInbounds(
 			})
 		}
 
-		if resource, err := configureInboundPassthroughListener(proxy, ctx, conf, true); err != nil {
+		if resource, err := configureInboundPassthroughListener(proxy, conf, true); err != nil {
 			return err
 		} else if resource != nil {
 			rs.Remove(envoy_resource.ListenerType, resource.GetName())
@@ -168,73 +129,16 @@ func applyToInbounds(
 				Resource: resource,
 			})
 		}
-	}
 
-	return nil
-}
-
-func applyToOutbounds(
-	fromRules core_rules.FromRules,
-	outboundClusters map[string]*envoy_cluster.Cluster,
-	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
-	outbounds xds_types.Outbounds,
-	ctx xds_context.Context,
-) error {
-	targetedClusters := policies_xds.GatherTargetedClusters(
-		outbounds.Filter(xds_types.NonBackendRefFilter),
-		outboundSplitClusters,
-		outboundClusters,
-	)
-	for cluster, serviceName := range targetedClusters {
-		// we shouldn't modify ExternalService
-		// MeshExternalService has different origin
-		if ctx.Mesh.IsExternalService(serviceName) {
-			continue
-		}
-		// there is only one rule always because we're in `Mesh/Mesh`
-		var conf api.Conf
-		for _, r := range fromRules.InboundRules {
-			conf = rules_inbound.MatchesAllIncomingTraffic[api.Conf](r)
-			break
-		}
-		if err := configureTLSParams(conf, cluster); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func applyToGateways(
-	gatewayRules core_rules.GatewayRules,
-	gatewayClusters map[string]*envoy_cluster.Cluster,
-	ctx xds_context.Context,
-) error {
-	for serviceName, cluster := range gatewayClusters {
-		// we shouldn't modify ExternalService
-		// MeshExternalService has different origin
-		if ctx.Mesh.IsExternalService(serviceName) {
-			continue
-		}
-		// there is only one rule always because we're in `Mesh/Mesh`
-		var conf api.Conf
-		for _, r := range gatewayRules.InboundRules {
-			conf = rules_inbound.MatchesAllIncomingTraffic[api.Conf](r)
-			break
-		}
-
-		if err := configureTLSParams(conf, cluster); err != nil {
-			return err
-		}
-	}
-	return nil
+		return nil
+	})
 }
 
 func applyToRealResources(
 	fromRules core_rules.FromRules,
 	rs *core_xds.ResourceSet,
 ) error {
-	for _, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService, core_xds.NonGatewayResources) {
+	return policies_xds.ForEachOrigin(rs, func(_ kri.Identifier, resType core_xds.ResourcesByType) error {
 		// there is only one rule always because we're in `Mesh/Mesh`
 		var conf api.Conf
 		for _, r := range fromRules.InboundRules {
@@ -247,9 +151,9 @@ func applyToRealResources(
 				return err
 			}
 		}
-	}
 
-	return nil
+		return nil
+	}, core_xds.NonMeshExternalService)
 }
 
 func configureTLSParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
@@ -301,23 +205,20 @@ func configureTLSParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
 
 func configureInboundPassthroughListener(
 	proxy *core_xds.Proxy,
-	xdsCtx xds_context.Context,
 	conf api.Conf,
 	ipv6 bool,
 ) (envoy_common.NamedResource, error) {
+	// mirror the conditions under which TransparentProxyGenerator emits the
+	// passthrough listener, otherwise we replace a listener that doesn't exist
+	// and point it at a cluster that was never generated
 	tpCfg := proxy.GetTransparentProxy()
-	if tpCfg == nil {
+	if tpCfg == nil || !tpCfg.Redirect.Outbound.Enabled || proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
 		return nil, nil
 	}
-	caBackend := xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend()
-	if caBackend == nil && proxy.WorkloadIdentity == nil && !proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts) {
+	if ipv6 && !tpCfg.EnabledIPv6() {
 		return nil, nil
 	}
-	tlsMode := getMeshTLSMode(
-		conf.Mode,
-		proxy.WorkloadIdentity,
-		caBackend,
-	)
+	tlsMode := getMeshTLSMode(conf.Mode)
 	address := metadata.TransparentAllIPv4
 	inboundName := naming.ContextualTransparentProxyName("inbound", 4)
 	if ipv6 {
@@ -352,62 +253,32 @@ func configureListener(
 ) (envoy_common.NamedResource, error) {
 	inboundContextualID := naming.MustContextualInboundName(proxy.Dataplane, iface.InboundName)
 
-	listenerName := inboundContextualID
-	statPrefix := inboundContextualID
-	clusterName := inboundContextualID
-
-	listenerTags := maps.Clone(proxy.Dataplane.GetMeta().GetLabels())
-	if listenerTags == nil {
-		listenerTags = map[string]string{}
-	}
-	if protocol := inbound.GetProtocolFallback(); protocol != "" {
-		listenerTags[mesh_proto.ProtocolTag] = protocol
-	}
-
-	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
+	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, inboundContextualID).
 		Configure(envoy_listeners.InboundListener(iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
-		Configure(envoy_listeners.StatPrefix(statPrefix)).
+		Configure(envoy_listeners.StatPrefix(inboundContextualID)).
 		Configure(envoy_listeners.TransparentProxying(proxy)).
-		Configure(envoy_listeners.TagsMetadata(generator.InboundListenerTags(listenerTags, inboundContextualID)))
+		Configure(envoy_listeners.TagsMetadata(generator.InboundListenerTags(proxy.Dataplane, inboundContextualID)))
 
 	downstreamCtx, err := downstreamTLSContext(xdsCtx, proxy, conf)
 	if err != nil {
 		return nil, err
 	}
 
-	protocol := core_meta.ParseProtocol(inbound.GetProtocolFallback())
-	ciphers := pointer.Deref(conf.TlsCiphers)
+	protocol := core_meta.ParseProtocol(inbound.GetProtocol())
 
-	filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {
-		return generator.FilterChainBuilder(
-			serverSideMTLS,
-			protocol,
-			proxy,
-			clusterName,
-			xdsCtx,
-			iface,
-			conf.TlsVersion,
-			ciphers,
-		)
-	}
-
-	filterChainKumaTLS := filterChainBuilder(true).
+	filterChainKumaTLS := generator.FilterChainBuilder(protocol, proxy, iface).
 		Configure(envoy_listeners.DownstreamTlsContext(downstreamCtx))
 
-	if getMeshTLSMode(
-		conf.Mode,
-		proxy.WorkloadIdentity,
-		xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend(),
-	) == api.ModeStrict {
+	if getMeshTLSMode(conf.Mode) == api.ModeStrict {
 		return listener.Configure(envoy_listeners.FilterChain(filterChainKumaTLS)).Build()
 	}
 
-	filterChainRawBuffer := filterChainBuilder(false).
+	filterChainRawBuffer := generator.FilterChainBuilder(protocol, proxy, iface).
 		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolRawBuffer))
 
 	// we need to differentiate between just TLS and Kuma's TLS, because with permissive mode the app
 	// itself might be protected by TLS
-	filterChainTLS := filterChainBuilder(false).
+	filterChainTLS := generator.FilterChainBuilder(protocol, proxy, iface).
 		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS))
 
 	filterChainKumaTLS.
@@ -492,22 +363,11 @@ func downstreamTLSContext(xdsCtx xds_context.Context, proxy *core_xds.Proxy, con
 		Build()
 }
 
-func getMeshTLSMode(
-	confMode *api.Mode,
-	workloadIdentity *core_xds.WorkloadIdentity,
-	caBackend *mesh_proto.CertificateAuthorityBackend,
-) api.Mode {
-	switch {
-	case confMode != nil:
-		// Use the mode defined in the MeshTLS policy configuration
+// getMeshTLSMode resolves the TLS mode of an inbound. Only a MeshTLS policy can
+// select Permissive, everything else defaults to Strict.
+func getMeshTLSMode(confMode *api.Mode) api.Mode {
+	if confMode != nil {
 		return *confMode
-	case workloadIdentity != nil:
-		// If no confMode is set but the workload has an identity, default to strict mode
-		return api.ModeStrict
-	case caBackend != nil && caBackend.Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
-		// If the CA backend is configured as permissive, use permissive mode
-		return api.ModePermissive
-	default:
-		return api.ModeStrict
 	}
+	return api.ModeStrict
 }

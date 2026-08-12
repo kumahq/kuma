@@ -12,7 +12,6 @@ import (
 	api_server "github.com/kumahq/kuma/v3/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
@@ -30,10 +29,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 // BuilderContext provides access to Builder's interim state.
@@ -52,7 +51,6 @@ type BuilderContext interface {
 	Metrics() metrics.Metrics
 	EventBus() events.EventBus
 	APIManager() api_server.APIManager
-	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
 	ResourceValidators() ResourceValidators
 	KDSContext() *kds_context.Context
@@ -78,7 +76,6 @@ type Builder struct {
 	rm             core_manager.CustomizableResourceManager
 	rom            core_manager.ReadOnlyResourceManager
 	gis            globalinsight.GlobalInsightService
-	cam            core_ca.Managers
 	dsl            datasource.Loader
 	ext            context.Context
 	configm        config_manager.ConfigManager
@@ -89,12 +86,12 @@ type Builder struct {
 	erf            events.EventBus
 	apim           api_server.APIManager
 	xds            xds_runtime.XDSRuntimeContext
-	cap            secrets.CaProvider
 	dps            *dp_server.DpServer
 	kdsctx         *kds_context.Context
 	rv             ResourceValidators
 	au             authn.Authenticator
 	acc            Access
+	certWatchers   *util_tls.Watchers
 	appCtx         context.Context
 	extraReportsFn ExtraReportsFn
 	tokenIssuers   builtin.TokenIssuers
@@ -117,8 +114,8 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
 	return &Builder{
 		cfg:               cfg,
 		ext:               context.Background(),
-		cam:               core_ca.Managers{},
 		RuntimeInfo:       NewRuntimeInfo(fmt.Sprintf("%s-%s", hostname, suffix), cfg.Mode),
+		certWatchers:      util_tls.NewWatchers(appCtx, core.Log.WithName("cert-watcher")),
 		appCtx:            appCtx,
 		identityProviders: providers.IdentityProviders{},
 	}, nil
@@ -161,16 +158,6 @@ func (b *Builder) WithResourceManager(rm core_manager.CustomizableResourceManage
 
 func (b *Builder) WithReadOnlyResourceManager(rom core_manager.ReadOnlyResourceManager) *Builder {
 	b.rom = rom
-	return b
-}
-
-func (b *Builder) WithCaManagers(cam core_ca.Managers) *Builder {
-	b.cam = cam
-	return b
-}
-
-func (b *Builder) WithCaManager(name string, cam core_ca.Manager) *Builder {
-	b.cam[name] = cam
 	return b
 }
 
@@ -221,11 +208,6 @@ func (b *Builder) WithEventBus(erf events.EventBus) *Builder {
 
 func (b *Builder) WithAPIManager(apim api_server.APIManager) *Builder {
 	b.apim = apim
-	return b
-}
-
-func (b *Builder) WithCAProvider(c secrets.CaProvider) *Builder {
-	b.cap = c
 	return b
 }
 
@@ -350,9 +332,6 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.xds == (xds_runtime.XDSRuntimeContext{}) {
 		return nil, errors.New("xds is not configured")
 	}
-	if b.cap == nil {
-		return nil, errors.Errorf("CAProvider has not been configured")
-	}
 	if b.dps == nil {
 		return nil, errors.Errorf("DpServer has not been configured")
 	}
@@ -395,7 +374,6 @@ func (b *Builder) Build() (Runtime, error) {
 			rs:                       b.rs,
 			txs:                      b.txs,
 			ss:                       b.ss,
-			cam:                      b.cam,
 			gis:                      b.gis,
 			dsl:                      b.dsl,
 			ext:                      b.ext,
@@ -407,12 +385,12 @@ func (b *Builder) Build() (Runtime, error) {
 			erf:                      b.erf,
 			apim:                     b.apim,
 			xds:                      b.xds,
-			cap:                      b.cap,
 			dps:                      b.dps,
 			kdsctx:                   b.kdsctx,
 			rv:                       b.rv,
 			au:                       b.au,
 			acc:                      b.acc,
+			certWatchers:             b.certWatchers,
 			appCtx:                   b.appCtx,
 			extraReportsFn:           b.extraReportsFn,
 			tokenIssuers:             b.tokenIssuers,
@@ -460,10 +438,6 @@ func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 	return b.rom
 }
 
-func (b *Builder) CaManagers() core_ca.Managers {
-	return b.cam
-}
-
 func (b *Builder) Config() kuma_cp.Config {
 	return b.cfg
 }
@@ -500,10 +474,6 @@ func (b *Builder) APIManager() api_server.APIManager {
 	return b.apim
 }
 
-func (b *Builder) CAProvider() secrets.CaProvider {
-	return b.cap
-}
-
 func (b *Builder) DpServer() *dp_server.DpServer {
 	return b.dps
 }
@@ -522,6 +492,10 @@ func (b *Builder) APIServerAuthenticator() authn.Authenticator {
 
 func (b *Builder) Access() Access {
 	return b.acc
+}
+
+func (b *Builder) CertWatchers() *util_tls.Watchers {
+	return b.certWatchers
 }
 
 func (b *Builder) AppCtx() context.Context {

@@ -54,10 +54,6 @@ type resourceEndpoints struct {
 
 func typeToLegacyOverviewPath(resourceType core_model.ResourceType) string {
 	switch resourceType {
-	case core_mesh.ZoneEgressType:
-		return "zoneegressoverviews"
-	case core_mesh.ZoneIngressType:
-		return "zoneingresses+insights"
 	case core_mesh.DataplaneType:
 		return "dataplanes+insights"
 	case system.ZoneType:

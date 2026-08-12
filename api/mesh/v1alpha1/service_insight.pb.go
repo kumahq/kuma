@@ -321,9 +321,9 @@ var File_api_mesh_v1alpha1_service_insight_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_service_insight_proto_rawDesc = "" +
 	"\n" +
-	"'api/mesh/v1alpha1/service_insight.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\"\xdb\b\n" +
+	"'api/mesh/v1alpha1/service_insight.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\"\x9c\b\n" +
 	"\x0eServiceInsight\x12L\n" +
-	"\bservices\x18\x02 \x03(\v20.kuma.mesh.v1alpha1.ServiceInsight.ServicesEntryR\bservices\x1a\xa4\x06\n" +
+	"\bservices\x18\x02 \x03(\v20.kuma.mesh.v1alpha1.ServiceInsight.ServicesEntryR\bservices\x1a\xe5\x05\n" +
 	"\aService\x12I\n" +
 	"\x06status\x18\x01 \x01(\x0e21.kuma.mesh.v1alpha1.ServiceInsight.Service.StatusR\x06status\x12X\n" +
 	"\n" +
@@ -351,8 +351,7 @@ const file_api_mesh_v1alpha1_service_insight_proto_rawDesc = "" +
 	"\binternal\x10\x00\x12\f\n" +
 	"\bexternal\x10\x01\x12\x15\n" +
 	"\x11gateway_delegated\x10\x02\x12\x13\n" +
-	"\x0fgateway_builtin\x10\x03:=\xaa\x8c\x89\xa6\x017\n" +
-	"\x17ServiceOverviewResource\x12\x0fServiceOverview\"\x04mesh0\x01`\x01\xa8\x01\x01\x1ag\n" +
+	"\x0fgateway_builtin\x10\x03\x1ag\n" +
 	"\rServicesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12@\n" +
 	"\x05value\x18\x02 \x01(\v2*.kuma.mesh.v1alpha1.ServiceInsight.ServiceR\x05value:\x028\x01:e\xaa\x8c\x89\xa6\x01_\n" +

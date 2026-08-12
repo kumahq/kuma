@@ -17,7 +17,6 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
-	"github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/v3/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
@@ -184,7 +183,6 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		Extensions:      rt.Extensions(),
 		K8sStore:        rt.Config().Store.Type == store.KubernetesStore,
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
-		CaManagers:      rt.CaManagers(),
 		CpMode:          rt.Config().Mode,
 		CpZone:          rt.Config().Multizone.Zone.Name,
 	}
@@ -296,11 +294,8 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		return errors.Errorf("secret client hasn't been configured")
 	}
 	secretValidator := &k8s_webhooks.SecretValidator{
-		Decoder:      admissionDecoder,
-		Client:       client,
-		Validator:    manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
-		UnsafeDelete: rt.Config().Store.UnsafeDelete,
-		CpMode:       rt.Config().Mode,
+		Decoder: admissionDecoder,
+		Client:  client,
 	}
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 

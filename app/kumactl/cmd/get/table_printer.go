@@ -1,7 +1,6 @@
 package get
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/printers"
@@ -23,23 +22,6 @@ var CustomTablePrinters = map[model.ResourceType]RowPrinter{
 				dataplane.DisplayTags().String(), // TAGS
 				address,                          // ADDRESS
 				table.TimeSince(dataplane.Meta.GetModificationTime(), rootTime), // AGE
-			}
-		},
-	},
-	model.ScopeMesh: {
-		Headers: []string{"NAME", "mTLS", "AGE"},
-		RowFn: func(rootTime time.Time, item model.Resource) []string {
-			mesh := item.(*mesh.MeshResource)
-
-			mtls := "off"
-			if mesh.MTLSEnabled() {
-				backend := mesh.GetEnabledCertificateAuthorityBackend()
-				mtls = fmt.Sprintf("%s/%s", backend.Type, backend.Name)
-			}
-			return []string{
-				mesh.GetMeta().GetName(), // NAME
-				mtls,                     // mTLS
-				table.TimeSince(mesh.GetMeta().GetModificationTime(), rootTime), // AGE
 			}
 		},
 	},
