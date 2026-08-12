@@ -15,11 +15,12 @@ import (
 )
 
 type RoutesConfigurer struct {
-	Name         string
-	Match        api.Match
-	Filters      []api.Filter
-	MirrorSplits map[int]envoy_common.Split
-	Split        []envoy_common.Split
+	Name                     string
+	Match                    api.Match
+	Filters                  []api.Filter
+	AllBackendRefsUnresolved bool
+	MirrorSplits             map[int]envoy_common.Split
+	Split                    []envoy_common.Split
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
@@ -53,6 +54,12 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 			}
 		}
 
+		// A rule whose backendRefs all fail to resolve answers 500, unless a
+		// filter already terminates the request without an upstream.
+		if c.AllBackendRefsUnresolved && !hasTerminalFilter(c.Filters) {
+			rb.Configure(envoy_routes.RouteActionDirectResponse(500, ""))
+		}
+
 		r, err := rb.Build()
 		if err != nil {
 			return err
@@ -62,6 +69,17 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 	}
 
 	return nil
+}
+
+// hasTerminalFilter reports whether a filter sets the route action itself, so
+// the route serves a response without reaching any backend.
+func hasTerminalFilter(filters []api.Filter) bool {
+	for _, filter := range filters {
+		if filter.Type == api.RequestRedirectType {
+			return true
+		}
+	}
+	return false
 }
 
 type routeMatch struct {

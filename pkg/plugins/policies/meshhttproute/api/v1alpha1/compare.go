@@ -101,6 +101,9 @@ type Route struct {
 	Match       Match
 	Filters     []Filter
 	BackendRefs []resolve.ResolvedBackendRef
+	// AllBackendRefsUnresolved is true when the rule declares backendRefs and
+	// none of them resolve, which is the case the Gateway API answers with 500.
+	AllBackendRefsUnresolved bool
 	// MirrorBackendRefs contains resolved backendRefs of RequestMirror filters,
 	// keyed by the index of the filter in Filters.
 	MirrorBackendRefs map[int]resolve.ResolvedBackendRef
