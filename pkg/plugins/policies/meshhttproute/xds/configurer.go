@@ -18,6 +18,7 @@ type RoutesConfigurer struct {
 	Name         string
 	Match        api.Match
 	Filters      []api.Filter
+	Unresolved   bool
 	MirrorSplits map[int]envoy_common.Split
 	Split        []envoy_common.Split
 }
@@ -51,6 +52,10 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 			case api.RequestMirrorType:
 				rb.Configure(filters.NewRequestMirror(*filter.RequestMirror, c.MirrorSplits[i]))
 			}
+		}
+
+		if c.Unresolved {
+			rb.Configure(envoy_routes.RouteActionDirectResponse(503, ""))
 		}
 
 		r, err := rb.Build()

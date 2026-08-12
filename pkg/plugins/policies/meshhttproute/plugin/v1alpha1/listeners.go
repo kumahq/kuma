@@ -106,9 +106,12 @@ func generateFromService(
 	var routes []xds.OutboundRoute
 
 	for _, route := range prepareRoutes(rules, svc, meshCtx) {
-		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
-		if len(split) == 0 {
-			continue
+		var split []envoy_common.Split
+		if !route.UnresolvedBackendRefs {
+			split = meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
+			if len(split) == 0 {
+				continue
+			}
 		}
 		// mirrored requests go to a cluster of their own, it has no weight so
 		// keep the split only to know which cluster was created for the mirror
@@ -129,11 +132,12 @@ func generateFromService(
 			mirrorSplits[i] = mirrorSplit[0]
 		}
 		routes = append(routes, xds.OutboundRoute{
-			Name:         route.Name,
-			Match:        route.Match,
-			Filters:      route.Filters,
-			MirrorSplits: mirrorSplits,
-			Split:        split,
+			Name:                  route.Name,
+			Match:                 route.Match,
+			Filters:               route.Filters,
+			UnresolvedBackendRefs: route.UnresolvedBackendRefs,
+			MirrorSplits:          mirrorSplits,
+			Split:                 split,
 		})
 	}
 
@@ -234,6 +238,7 @@ func prepareRoutes(
 	for _, rule := range apiRules {
 		filters := pointer.Deref(rule.Default.Filters)
 		backendRefs := pointer.Deref(rule.Default.BackendRefs)
+		hasExplicitBackendRefs := len(backendRefs) > 0
 		matchesHash := api.HashMatches(rule.Matches)
 		routeName := string(matchesHash)
 		origin := originByMatches[matchesHash]
@@ -267,12 +272,13 @@ func prepareRoutes(
 			routes = append(
 				routes,
 				api.Route{
-					Name:              routeName,
-					Origin:            originID,
-					Match:             match,
-					Filters:           filters,
-					BackendRefs:       refs,
-					MirrorBackendRefs: mirrorRefs,
+					Name:                  routeName,
+					Origin:                originID,
+					Match:                 match,
+					Filters:               filters,
+					BackendRefs:           refs,
+					UnresolvedBackendRefs: hasExplicitBackendRefs && len(refs) == 0,
+					MirrorBackendRefs:     mirrorRefs,
 				},
 			)
 		}
@@ -311,7 +317,7 @@ func prepareRoutes(
 			route.Match.Path = pointer.To(catchAllPathMatch)
 		}
 
-		if len(route.BackendRefs) == 0 {
+		if len(route.BackendRefs) == 0 && !route.UnresolvedBackendRefs {
 			route.BackendRefs = []resolve.ResolvedBackendRef{
 				*svc.DefaultBackendRef(),
 			}

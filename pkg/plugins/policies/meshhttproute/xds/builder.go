@@ -12,9 +12,10 @@ import (
 )
 
 type OutboundRoute struct {
-	Name    string
-	Match   api.Match
-	Filters []api.Filter
+	Name                  string
+	Match                 api.Match
+	Filters               []api.Filter
+	UnresolvedBackendRefs bool
 	// MirrorSplits contains splits of the clusters created for RequestMirror
 	// filters, keyed by the index of the filter in Filters
 	MirrorSplits map[int]envoy_common.Split
@@ -38,6 +39,7 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 				Name:         route.Name,
 				Match:        route.Match,
 				Filters:      route.Filters,
+				Unresolved:   route.UnresolvedBackendRefs,
 				MirrorSplits: route.MirrorSplits,
 				Split:        route.Split,
 			})

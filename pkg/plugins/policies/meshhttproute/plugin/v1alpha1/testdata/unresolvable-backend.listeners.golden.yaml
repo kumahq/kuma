@@ -28,18 +28,20 @@ resources:
               - '*'
               name: kri_msvc_default___backend_80
               routes:
-              - match:
+              - directResponse:
+                  body:
+                    inlineString: ""
+                  status: 503
+                match:
                   path: /v2
                 name: kri_mhttpr_default___test-origin_rule_0
-                route:
-                  cluster: kri_msvc_default___backend_80
-                  timeout: 0s
-              - match:
+              - directResponse:
+                  body:
+                    inlineString: ""
+                  status: 503
+                match:
                   prefix: /v2/
                 name: kri_mhttpr_default___test-origin_rule_0
-                route:
-                  cluster: kri_msvc_default___backend_80
-                  timeout: 0s
               - match:
                   path: /v1
                 name: kri_mhttpr_default___test-origin_rule_0

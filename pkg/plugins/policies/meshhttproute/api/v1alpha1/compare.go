@@ -96,11 +96,12 @@ func CompareMatch(a Match, b Match) int {
 }
 
 type Route struct {
-	Name        string
-	Origin      kri.Identifier
-	Match       Match
-	Filters     []Filter
-	BackendRefs []resolve.ResolvedBackendRef
+	Name                  string
+	Origin                kri.Identifier
+	Match                 Match
+	Filters               []Filter
+	BackendRefs           []resolve.ResolvedBackendRef
+	UnresolvedBackendRefs bool
 	// MirrorBackendRefs contains resolved backendRefs of RequestMirror filters,
 	// keyed by the index of the filter in Filters.
 	MirrorBackendRefs map[int]resolve.ResolvedBackendRef
