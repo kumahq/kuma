@@ -85,8 +85,8 @@ func (r *ZoneConfig) Validate() error {
 	if r.Name == "" {
 		return errors.Errorf("Name is mandatory")
 	}
-	if violations := k8s_validation.IsDNS1123Label(r.Name); len(violations) > 0 {
-		return errors.Errorf("Zone name %q has to be a valid RFC1123 DNS label: %s", r.Name, strings.Join(violations, ", "))
+	if violations := k8s_validation.IsDNS1035Label(r.Name); len(violations) > 0 {
+		return errors.Errorf("Zone name %q has to be a valid RFC1035 DNS label: %s", r.Name, strings.Join(violations, ", "))
 	}
 	if r.GlobalAddress != "" {
 		u, err := url.Parse(r.GlobalAddress)

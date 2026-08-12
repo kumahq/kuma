@@ -150,6 +150,7 @@ var _ = Describe("TrafficRoute", func() {
 				meshServices: []*meshservice_api.MeshServiceResource{
 					builders.MeshService().
 						WithName("kong.kong-system").
+						WithLabels(map[string]string{mesh_proto.DisplayName: "kong", mesh_proto.KubeNamespaceTag: "kong-system"}).
 						WithDataplaneLabelsSelectorKV("app", "kong").
 						AddIntPort(8080, 80, "http").
 						AddIntPort(8081, 8001, "http").
@@ -185,7 +186,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"kri_msvc_default___kong.kong-system_8080": []core_xds.Endpoint{
+					"kri_msvc_default__kong-system_kong_8080": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
 							Port:     80,
@@ -194,7 +195,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"kri_msvc_default___kong.kong-system_8081": []core_xds.Endpoint{
+					"kri_msvc_default__kong-system_kong_8081": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
 							Port:     8001,
