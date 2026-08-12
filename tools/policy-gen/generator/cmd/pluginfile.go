@@ -45,7 +45,10 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 				for _, version := range versions {
 					pluginDir := filepath.Join(rootArgs.pluginDir, "plugin", version)
 					if _, err := os.Stat(pluginDir); err != nil {
-						continue
+						if os.IsNotExist(err) {
+							continue
+						}
+						return err
 					}
 
 					matcherData := struct {
