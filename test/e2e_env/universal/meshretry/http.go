@@ -233,7 +233,7 @@ mesh: "%s"
 name: mesh-fault-injecton
 spec:
   targetRef:
-    kind: MeshService
+    kind: Dataplane
     labels:
       kuma.io/display-name: test-server
   rules:
