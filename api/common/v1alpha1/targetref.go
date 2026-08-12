@@ -35,6 +35,15 @@ func (k TargetRefKind) Compare(o TargetRefKind) int {
 	return order[k] - order[o]
 }
 
+// IsKnownKind reports whether the kind is one this version still understands.
+// Policies stored before a kind was removed (e.g. the legacy MeshSubset and
+// MeshServiceSubset) stay readable, so code that turns a stored kind into a
+// resource type must skip unknown kinds instead.
+func (k TargetRefKind) IsKnownKind() bool {
+	_, ok := order[k]
+	return ok
+}
+
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
 	// This is needed to not sync policies with empty topLevelTarget ref to old zones that does not support it

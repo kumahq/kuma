@@ -35,6 +35,13 @@ func (q query) findPort(ports []core.Port) core.Port {
 }
 
 func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, reader kri.ResourceReader) []*ResourceSection {
+	// Removed kinds (e.g. the legacy MeshSubset and MeshServiceSubset) are
+	// rejected on create/update but stay readable, so a stored one must not be
+	// looked up as a resource type.
+	if !targetRef.Kind.IsKnownKind() {
+		return nil
+	}
+
 	rtype := core_model.ResourceType(targetRef.Kind)
 
 	// Mesh is a real resource but, unlike MeshService and friends, it carries no
