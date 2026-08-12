@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhealthcheck/plugin/xds"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -49,31 +50,17 @@ func labelTagSet(dataplane *core_mesh.DataplaneResource) mesh_proto.MultiValueTa
 	return mesh_proto.MultiValueTagSetFrom(data)
 }
 
-func applyToRealResource(meshCtx xds_context.MeshContext, rules outbound.ResourceRules, tagSet mesh_proto.MultiValueTagSet, uri kri.Identifier, resourcesByType core_xds.ResourcesByType) error {
-	conf := rules.Compute(uri, meshCtx.Resources)
-	if conf == nil {
-		return nil
-	}
-
-	for typ, resources := range resourcesByType {
-		if typ == envoy_resource.ClusterType {
-			err := configureClusters(resources, conf.Conf[0].(api.Conf), tagSet)
-			if err != nil {
-				return err
+func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules, meshCtx xds_context.MeshContext, tagSet mesh_proto.MultiValueTagSet, filters ...func(*core_xds.Resource) bool) error {
+	return policies_xds.ForEachOutboundRule(rs, rules, meshCtx.Resources, func(uri kri.Identifier, conf api.Conf, resourcesByType core_xds.ResourcesByType) error {
+		for typ, resources := range resourcesByType {
+			if typ == envoy_resource.ClusterType {
+				if err := configureClusters(resources, conf, tagSet); err != nil {
+					return err
+				}
 			}
 		}
-	}
-
-	return nil
-}
-
-func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules, meshCtx xds_context.MeshContext, tagSet mesh_proto.MultiValueTagSet, filters ...func(*core_xds.Resource) bool) error {
-	for uri, resType := range rs.IndexByOrigin(filters...) {
-		if err := applyToRealResource(meshCtx, rules, tagSet, uri, resType); err != nil {
-			return err
-		}
-	}
-	return nil
+		return nil
+	}, filters...)
 }
 
 func configureClusters(resources []*core_xds.Resource, conf api.Conf, tagSet mesh_proto.MultiValueTagSet) error {

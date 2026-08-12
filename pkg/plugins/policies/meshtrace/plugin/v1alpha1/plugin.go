@@ -175,12 +175,12 @@ func buildListenerScopedProxyConf(policies xds.TypedMatchingPolicies, sectionNam
 }
 
 func applyToRealResources(ctx xds_context.Context, policyConf *core_rules.ProxyConf, rs *xds.ResourceSet, proxy *xds.Proxy) error {
-	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
+	return policies_xds.ForEachOrigin(rs, func(uri kri.Identifier, resType xds.ResourcesByType) error {
 		service, port, found := meshroute.DestinationPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
 			Resource: uri,
 		})
 		if !found {
-			continue
+			return nil
 		}
 		for typ, resources := range resType {
 			if typ == envoy_resource.ListenerType {
@@ -192,8 +192,8 @@ func applyToRealResources(ctx xds_context.Context, policyConf *core_rules.ProxyC
 				}
 			}
 		}
-	}
-	return nil
+		return nil
+	}, xds.NonMeshExternalService)
 }
 
 func configureListener(ctx xds_context.Context, policyConf *core_rules.ProxyConf, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, direction envoy_core.TrafficDirection) error {

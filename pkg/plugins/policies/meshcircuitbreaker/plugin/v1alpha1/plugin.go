@@ -74,40 +74,22 @@ func applyToInbounds(
 	})
 }
 
-func applyToRealResource(
-	meshCtx xds_context.MeshContext,
-	rules outbound.ResourceRules,
-	uri kri.Identifier,
-	resourcesByType core_xds.ResourcesByType,
-) error {
-	conf := rules.Compute(uri, meshCtx.Resources)
-	if conf == nil {
-		return nil
-	}
-
-	for typ, resources := range resourcesByType {
-		if typ == envoy_resource.ClusterType {
-			err := configureClusters(resources, conf.Conf[0].(api.Conf))
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func applyToRealResources(
 	meshCtx xds_context.MeshContext,
 	rs *core_xds.ResourceSet,
 	rules outbound.ResourceRules,
 	filters ...func(*core_xds.Resource) bool,
 ) error {
-	for uri, resType := range rs.IndexByOrigin(filters...) {
-		if err := applyToRealResource(meshCtx, rules, uri, resType); err != nil {
-			return err
+	return policies_xds.ForEachOutboundRule(rs, rules, meshCtx.Resources, func(uri kri.Identifier, conf api.Conf, resourcesByType core_xds.ResourcesByType) error {
+		for typ, resources := range resourcesByType {
+			if typ == envoy_resource.ClusterType {
+				if err := configureClusters(resources, conf); err != nil {
+					return err
+				}
+			}
 		}
-	}
-	return nil
+		return nil
+	}, filters...)
 }
 
 func configureClusters(resources []*core_xds.Resource, conf api.Conf) error {

@@ -12,6 +12,7 @@ import (
 	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
+	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
@@ -137,7 +138,7 @@ func applyToRealResources(
 	fromRules core_rules.FromRules,
 	rs *core_xds.ResourceSet,
 ) error {
-	for _, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
+	return policies_xds.ForEachOrigin(rs, func(_ kri.Identifier, resType core_xds.ResourcesByType) error {
 		// there is only one rule always because we're in `Mesh/Mesh`
 		var conf api.Conf
 		for _, r := range fromRules.InboundRules {
@@ -150,9 +151,9 @@ func applyToRealResources(
 				return err
 			}
 		}
-	}
 
-	return nil
+		return nil
+	}, core_xds.NonMeshExternalService)
 }
 
 func configureTLSParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
