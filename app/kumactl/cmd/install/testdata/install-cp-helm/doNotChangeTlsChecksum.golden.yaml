@@ -773,6 +773,7 @@ webhooks:
           - v1alpha1
         operations:
           - CREATE
+          - UPDATE
         resources:
           - meshaccesslogs
           - meshcircuitbreakers

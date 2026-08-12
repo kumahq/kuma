@@ -8936,7 +8936,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 1fa6f39d97a8aad47eff6f6670269d3333a30c2e107b0a9d14b2aa23e0f3bf24
-        checksum/tls-secrets: 01c5dbaaff5e871deac824962de1b2f22ea141c03c2e5f3d8eb7dac089831a3a
+        checksum/tls-secrets: 9d76be2d856c9a56eacb3ae8be762fdcc4f7b2831b3b15c6f17c787e95276f83
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -9226,6 +9226,7 @@ webhooks:
           - v1alpha1
         operations:
           - CREATE
+          - UPDATE
         resources:
           - meshaccesslogs
           - meshcircuitbreakers

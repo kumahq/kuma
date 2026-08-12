@@ -262,7 +262,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	resourceAdmissionChecker := k8s_webhooks.ResourceAdmissionChecker{
 		AllowedUsers: append(
 			rt.Config().Runtime.Kubernetes.AllowedUsers,
-			"system:serviceaccount:kube-system:generic-garbage-collector",
+			k8s_webhooks.GarbageCollectorUser,
 		),
 		Mode:                         rt.Config().Mode,
 		FederatedZone:                rt.Config().IsFederatedZoneCP(),
@@ -364,7 +364,7 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 	resourceAdmissionChecker := k8s_webhooks.ResourceAdmissionChecker{
 		AllowedUsers: append(
 			rt.Config().Runtime.Kubernetes.AllowedUsers,
-			"system:serviceaccount:kube-system:generic-garbage-collector",
+			k8s_webhooks.GarbageCollectorUser,
 		),
 		Mode:                         rt.Config().Mode,
 		FederatedZone:                rt.Config().IsFederatedZoneCP(),

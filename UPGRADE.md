@@ -1252,6 +1252,14 @@ spec:
 
 Zones without a `MeshZoneAddress` are not reachable cross-zone: their `MeshService` destinations get no endpoints in other zones. The control plane logs `no MeshZoneAddress found for zone` when this happens.
 
+### Mesh owner reference is kept in sync on update
+
+The `owner-reference.kuma-admission.kuma.io` mutating webhook now also runs on `UPDATE`. When a resource is moved to another mesh, the owner reference to the previous `Mesh` is dropped and replaced with the current one, and a reference to a `Mesh` that was deleted and created again gets its UID refreshed. Previously the owner reference was set on creation only, so deleting the previous mesh garbage collected resources that had since been moved to a different mesh.
+
+**Action required**
+
+None. Resources with a stale owner reference are repaired on their next update.
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.

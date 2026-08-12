@@ -513,7 +513,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 29b18f39ff6a91dbd502d8d3e340bdf5466548962e995dfb4fff5b1420888685
-        checksum/tls-secrets: 81c78eae9a7690b4f7074bbea4fc6d26f2de1ad5cc1f4b5a091c9e0f85a73569
+        checksum/tls-secrets: 9843730ca33dbbf730ed0ddea6aec6ec592abf6ce2c00cffe486797b27783e47
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -807,6 +807,7 @@ webhooks:
           - v1alpha1
         operations:
           - CREATE
+          - UPDATE
         resources:
           - meshaccesslogs
           - meshcircuitbreakers
