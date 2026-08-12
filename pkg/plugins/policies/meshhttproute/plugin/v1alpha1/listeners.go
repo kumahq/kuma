@@ -262,10 +262,13 @@ func prepareRoutes(
 
 		for _, match := range rule.Matches {
 			var refs []resolve.ResolvedBackendRef
+			hasUnresolvedBackendRefs := false
 
 			for _, br := range backendRefs {
 				if rbr, ok := resolve.BackendRef(originID, br, meshCtx.ResolveResourceIdentifier); ok {
 					refs = append(refs, rbr)
+				} else {
+					hasUnresolvedBackendRefs = true
 				}
 			}
 
@@ -277,7 +280,7 @@ func prepareRoutes(
 					Match:                 match,
 					Filters:               filters,
 					BackendRefs:           refs,
-					UnresolvedBackendRefs: hasExplicitBackendRefs && len(refs) == 0,
+					UnresolvedBackendRefs: hasExplicitBackendRefs && hasUnresolvedBackendRefs,
 					MirrorBackendRefs:     mirrorRefs,
 				},
 			)

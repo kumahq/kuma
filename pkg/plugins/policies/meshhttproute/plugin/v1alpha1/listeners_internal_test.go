@@ -127,4 +127,86 @@ var _ = Describe("prepareRoutes", func() {
 		Entry("policy in team-a", "team-a"),
 		Entry("policy in team-b", "team-b"),
 	)
+
+	It("should fail closed when any explicit backendRef does not resolve", func() {
+		backend := builders.MeshService().
+			WithName("backend").
+			WithMesh(core_model.DefaultMesh).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+		payments := builders.MeshService().
+			WithName("payments-hash").
+			WithMesh(core_model.DefaultMesh).
+			WithLabels(map[string]string{
+				mesh_proto.DisplayName:      "payments",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			}).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+
+		meshCtx := xds_builders.Context().
+			WithMeshLocalResources([]core_model.Resource{backend, payments}).
+			Build().
+			Mesh
+
+		matches := []api.Match{{
+			Path: &api.PathMatch{Type: api.PathPrefix, Value: "/split"},
+		}}
+		policyMeta := &test_model.ResourceMeta{
+			Name: "web-route",
+			Mesh: core_model.DefaultMesh,
+			Labels: map[string]string{
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			},
+		}
+		toRules := core_rules.ToRules{
+			ResourceRules: outbound.ResourceRules{
+				kri.From(backend): {
+					Resource: backend.GetMeta(),
+					Conf: []any{api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: matches,
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{
+									{
+										TargetRef: builders.TargetRefMeshService("payments", "kuma-demo", ""),
+										Port:      pointer.To(uint32(8080)),
+									},
+									{
+										TargetRef: builders.TargetRefMeshService("missing-backend", "kuma-demo", ""),
+										Port:      pointer.To(uint32(8080)),
+									},
+								},
+							},
+						}},
+					}},
+					OriginByMatches: map[common_api.MatchesHash]common.Origin{
+						api.HashMatches(matches): {Resource: policyMeta},
+					},
+				},
+			},
+		}
+		svc := meshroute_xds.DestinationService{
+			Outbound: &xds_types.Outbound{
+				Resource: kri.WithSectionName(kri.From(backend), "8080"),
+				Port:     8080,
+			},
+			Protocol: core_meta.ProtocolHTTP,
+		}
+
+		routes := prepareRoutes(toRules, svc, meshCtx)
+
+		var matched *api.Route
+		for i := range routes {
+			if routes[i].Match.Path != nil && routes[i].Match.Path.Value == "/split" {
+				matched = &routes[i]
+				break
+			}
+		}
+		Expect(matched).ToNot(BeNil())
+		Expect(matched.UnresolvedBackendRefs).To(BeTrue())
+		Expect(matched.BackendRefs).To(HaveLen(1))
+		Expect(matched.BackendRefs[0].ReferencesRealResource()).To(BeTrue())
+		Expect(matched.BackendRefs[0].Resource()).To(Equal(kri.WithSectionName(kri.From(payments), "8080")))
+	})
 })

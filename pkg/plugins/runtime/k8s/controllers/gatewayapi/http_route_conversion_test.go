@@ -16,7 +16,6 @@ import (
 	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 )
 
 var _ = Describe("uncheckedGapiToKumaRef", func() {
@@ -90,7 +89,8 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(targetRef).To(Equal(common_api.TargetRef{
 			Kind: common_api.MeshService,
 			Labels: pointer.To(map[string]string{
-				mesh_proto.DisplayName: metadata.UnresolvedBackendServiceName,
+				mesh_proto.DisplayName:      "missing-backend",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
 			}),
 		}))
 	})
