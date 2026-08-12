@@ -206,11 +206,9 @@ var MeshTrustResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             false,
 	HasToTargetRef:               false,
-	HasFromTargetRef:             false,
 	HasRulesTargetRef:            false,
 	HasStatus:                    true,
 	AllowedOnSystemNamespaceOnly: true,
 	ShortName:                    "mtrust",
-	IsFromAsRules:                false,
 	Order:                        0,
 }

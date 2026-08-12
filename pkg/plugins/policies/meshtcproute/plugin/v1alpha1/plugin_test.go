@@ -1015,7 +1015,7 @@ var _ = Describe("MeshTCPRoute", func() {
 
 func meshContextForMeshExternalService(resources ...core_model.Resource) *xds_context.MeshContext {
 	resourceStore := memory.NewStore()
-	mesh := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").Build()
+	mesh := builders.Mesh().Build()
 	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", core_model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 

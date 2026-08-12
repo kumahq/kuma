@@ -8,6 +8,20 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `Mesh.mtls` is removed from the API
+
+The `mtls` field is gone from the `Mesh` resource, together with `CertificateAuthorityBackend` and everything it carried: `enabledBackend`, `backends`, `skipValidation`, `dpCert.rotation.expiration`, `dpCert.requestTimeout`, `conf`, `mode` and `rootChain.requestTimeout`. The field number is reserved, so it can never be reused for something else. The empty `Mesh.routing` message goes with it — every field it held had already been removed.
+
+`mtls` had been inert since the legacy SDS path and the CA plugin subsystem were removed: it issued nothing, was provisioned by nothing and validated by nothing. Removing the field only removes the ability to write it down.
+
+Nothing breaks on the way in: `mtls` is now an unknown field, and the control plane accepts unknown fields, so an existing `Mesh` still loads and a manifest that still carries `mtls` still applies. The field is silently dropped the next time the resource is written, so reading a `Mesh` back (`kumactl get mesh`, `kubectl get mesh -o yaml` after a rewrite) no longer shows `mtls`. The Kubernetes `Mesh` CRD is unaffected — its `spec` is `x-kubernetes-preserve-unknown-fields`, so `mtls` was never part of the CRD schema and a stored `Mesh` keeps it in etcd until it is rewritten.
+
+Two user-visible surfaces change with it. `kumactl get meshes` no longer prints the `mTLS` column, so the table is now `NAME` and `AGE`. `kumactl export --profile federation` no longer rewrites `builtin` backends into `provided` ones pointing at the CA secrets, because there is no backend left to rewrite; the orphaned `<mesh>.ca-builtin-*` Secrets are still exported like any other secret.
+
+**Action required**
+
+None to keep the control plane running. Drop `mtls` from the manifests you keep under source control so they describe what is actually stored. If you have not migrated to `MeshIdentity` yet, do that first: see the sections below for what that migration involves.
+
 ### `Mesh.mtls` no longer produces mTLS
 
 The transport socket builders no longer read `Mesh.spec.mtls`. A proxy gets an mTLS transport socket — inbound and outbound — only when a `MeshIdentity` matches it; the identity certificate and the trust bundle come from `MeshIdentity` and `MeshTrust`, never from the mesh CA backend. A mesh whose only identity source is `mtls` now serves and accepts plaintext, and `MeshTLS` and `MeshTrafficPermission` no longer apply to its proxies.

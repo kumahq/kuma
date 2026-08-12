@@ -29,22 +29,13 @@ import (
 )
 
 var meshBuilder = func(idx int) *mesh.MeshResource {
-	ca := fmt.Sprintf("ca-%d", idx)
 	meshName := fmt.Sprintf("mesh-%d", idx)
 	return &mesh.MeshResource{
 		Meta: &model2.ResourceMeta{
 			Name: meshName,
 		},
 		Spec: &mesh_proto.Mesh{
-			Mtls: &mesh_proto.Mesh_Mtls{
-				EnabledBackend: ca,
-				Backends: []*mesh_proto.CertificateAuthorityBackend{
-					{
-						Name: ca,
-						Type: "builtin",
-					},
-				},
-			},
+			SkipCreatingInitialPolicies: []string{fmt.Sprintf("policy-%d", idx)},
 		},
 	}
 }
@@ -217,7 +208,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 
 		// try to add resource without the label
 		mesh2 = meshBuilder(2)
-		mesh2.Spec.Mtls.EnabledBackend = "modified-ca"
+		mesh2.Spec.SkipCreatingInitialPolicies = []string{"modified-policy"}
 		Expect(upstream.AddItem(mesh1)).To(Succeed())
 		Expect(upstream.AddItem(mesh2)).To(Succeed())
 		Expect(upstream.AddItem(mesh3)).To(Succeed())
@@ -368,8 +359,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 	// produces an update rather than a create.
 	changedMesh := func() *mesh.MeshResource {
 		m := meshBuilder(1)
-		m.Spec.Mtls.EnabledBackend = "ca-changed"
-		m.Spec.Mtls.Backends[0].Name = "ca-changed"
+		m.Spec.SkipCreatingInitialPolicies = []string{"policy-changed"}
 		return m
 	}
 
@@ -403,7 +393,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 
 		actual := mesh.NewMeshResource()
 		Expect(resourceStore.Get(context.Background(), actual, store.GetBy(key))).To(Succeed())
-		Expect(actual.Spec.Mtls.EnabledBackend).To(Equal("ca-changed"))
+		Expect(actual.Spec.SkipCreatingInitialPolicies).To(Equal([]string{"policy-changed"}))
 		Expect(resourceStore.updates).To(Equal(2))
 		// create, then the concurrent writer, then the retried sync: without a
 		// rebase on the fresh copy the retry would carry version 1 and conflict again
@@ -421,7 +411,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 
 		actual := mesh.NewMeshResource()
 		Expect(resourceStore.Get(context.Background(), actual, store.GetBy(key))).To(Succeed())
-		Expect(actual.Spec.Mtls.EnabledBackend).To(Equal("ca-1"))
+		Expect(actual.Spec.SkipCreatingInitialPolicies).To(Equal([]string{"policy-1"}))
 	})
 
 	It("should apply the rest of the batch when one resource conflicts", func() {
@@ -435,8 +425,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 		upstream := &mesh.MeshResourceList{}
 		for i := 1; i <= 3; i++ {
 			m := meshBuilder(i)
-			m.Spec.Mtls.EnabledBackend = "ca-changed"
-			m.Spec.Mtls.Backends[0].Name = "ca-changed"
+			m.Spec.SkipCreatingInitialPolicies = []string{"policy-changed"}
 			Expect(upstream.AddItem(m)).To(Succeed())
 		}
 		err, nackError := syncer.Sync(context.Background(), kds_client.UpstreamResponse{
@@ -450,7 +439,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 		Expect(resourceStore.List(context.Background(), actual)).To(Succeed())
 		Expect(actual.Items).To(HaveLen(3))
 		for _, item := range actual.Items {
-			Expect(item.Spec.Mtls.EnabledBackend).To(Equal("ca-changed"))
+			Expect(item.Spec.SkipCreatingInitialPolicies).To(Equal([]string{"policy-changed"}))
 		}
 		// 3 updates in the transaction, 1 retried after it
 		Expect(resourceStore.updates).To(Equal(4))
