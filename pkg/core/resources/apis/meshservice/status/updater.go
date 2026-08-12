@@ -146,7 +146,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			ms.Spec.Identities = &identities
 		}
 
-		tls := s.buildTLS(ms.Status.TLS, dpps, insightsByKey, mesh, mids, trustDomains)
+		tls := s.buildTLS(ms.Status.TLS, dpps, mids, trustDomains)
 		if !reflect.DeepEqual(ms.Status.TLS, tls) {
 			changeReasons = append(changeReasons, "tls status")
 			ms.Status.TLS = tls
@@ -222,22 +222,17 @@ func buildDataplaneProxies(
 func (s *StatusUpdater) buildTLS(
 	existing meshservice_api.TLS,
 	dpps []*core_mesh.DataplaneResource,
-	insightsByName map[core_model.ResourceKey]*core_mesh.DataplaneInsightResource,
-	mesh *core_mesh.MeshResource,
 	meshIdentities []*meshidentity_api.MeshIdentityResource,
 	trustDomains map[string]struct{},
 ) meshservice_api.TLS {
-	mtlsEnabled := mesh.MTLSEnabled()
-	// a workload identity comes either from the legacy Mesh.mtls backend or from a MeshIdentity
-	workloadIdentityEnabled := mtlsEnabled || len(meshIdentities) > 0
-	if !workloadIdentityEnabled {
+	if len(meshIdentities) == 0 {
 		return meshservice_api.TLS{
 			Status: meshservice_api.TLSNotReady,
 		}
 	}
 	if existing.Status == meshservice_api.TLSReady {
-		// If mTLS is enabled, the status should go only one way.
-		// Every new instance always starts with mTLS, so we don't want to count issued backends.
+		// Once a workload identity is in place, the status should go only one way.
+		// Every new instance always starts with an identity, so we don't want to count issued backends.
 		// Otherwise, we could get into race when new Dataplane did not receive cert yet,
 		// We would flip TLS to NotReady for a short period of time.
 		return existing
@@ -245,16 +240,6 @@ func (s *StatusUpdater) buildTLS(
 
 	tlsReadyDpps := 0
 	for _, dpp := range dpps {
-		if mtlsEnabled {
-			// Cert issued by any backend means that mTLS cert was issued to the DP
-			// We don't want to check specific backend value, because we might be in a middle of CA rotation.
-			if insight := insightsByName[core_model.MetaToResourceKey(dpp.Meta)]; insight != nil &&
-				insight.Spec.GetMTLS().GetIssuedBackend() != "" {
-				tlsReadyDpps++
-				continue
-			}
-		}
-		// a proxy that the legacy backend did not cover can still get its identity from a MeshIdentity
 		if s.hasReadyIdentity(dpp, meshIdentities, trustDomains) {
 			tlsReadyDpps++
 		}

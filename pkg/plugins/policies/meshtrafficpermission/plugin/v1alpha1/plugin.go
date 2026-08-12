@@ -45,8 +45,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
 
-	if !ctx.Mesh.Resource.MTLSEnabled() && proxy.WorkloadIdentity == nil {
-		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
+	if proxy.WorkloadIdentity == nil {
+		log.V(1).Info("skip applying MeshTrafficPermission, the proxy has no workload identity",
 			"proxyName", proxy.Dataplane.GetMeta().GetName(),
 			"mesh", ctx.Mesh.Resource.GetMeta().GetName())
 		return nil
@@ -68,49 +68,26 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			Port:    dpAddress.GetPortValue(),
 		}
 
-		inboundRules, ok := mtp.FromRules.InboundRules[key]
-		if (!ok || len(inboundRules) == 0) && proxy.WorkloadIdentity == nil {
-			if err := p.configureDefaultDeny(listener, res); err != nil {
+		// an inbound with no matching rule gets an RBAC filter with no matchers,
+		// which denies everything
+		inboundRules := mtp.FromRules.InboundRules[key]
+		configurer := &v3.RBACConfigurer{
+			StatsName:    res.Name,
+			InboundRules: inboundRules,
+		}
+		for _, filterChain := range listener.FilterChains {
+			if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
+				// we only want to configure RBAC on listeners protected by Kuma's TLS
+				continue
+			}
+			if err := configurer.Configure(filterChain); err != nil {
 				return err
 			}
-		} else {
-			configurer := &v3.RBACConfigurer{
-				StatsName:    res.Name,
-				InboundRules: inboundRules,
-			}
-			for _, filterChain := range listener.FilterChains {
-				if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
-					// we only want to configure RBAC on listeners protected by Kuma's TLS
-					continue
-				}
-				if err := configurer.Configure(filterChain); err != nil {
-					return err
-				}
-			}
-			if hasSNIMatch(inboundRules) {
-				if err := envoy_listeners_v3.EnsureTLSInspector(listener); err != nil {
-					return err
-				}
-			}
 		}
-	}
-	return nil
-}
-
-// configureDefaultDeny fails an inbound closed when no MeshTrafficPermission
-// rule matched it. Legacy TrafficPermission no longer contributes to xDS
-// generation, so an unmatched inbound can only mean deny.
-func (p plugin) configureDefaultDeny(listener *envoy_listener.Listener, resource *core_xds.Resource) error {
-	configurer := &v3.DenyAllRBACConfigurer{
-		StatsName: resource.Name,
-	}
-	for _, filterChain := range listener.FilterChains {
-		if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
-			// we only want to configure RBAC on listeners protected by Kuma's TLS
-			continue
-		}
-		if err := configurer.Configure(filterChain); err != nil {
-			return err
+		if hasSNIMatch(inboundRules) {
+			if err := envoy_listeners_v3.EnsureTLSInspector(listener); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

@@ -182,7 +182,7 @@ var _ = Describe("GenerateClusters", func() {
 			Build()
 
 		meshCtx := xds_context.MeshContext{
-			Resource: builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").Build(),
+			Resource: builders.Mesh().Build(),
 			BaseMeshContext: &xds_context.BaseMeshContext{
 				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{mes}),
 			},

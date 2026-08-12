@@ -191,7 +191,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Routing: *paymentsAndBackendRouting().Build(),
 			},
 			context: *xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				Build(),
 		}),
 		Entry("locality_aware_basic", testCase{
@@ -369,7 +369,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				).
 				Build(),
 			context: *xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				Build(),
 		}),
 		Entry("locality_aware_no_cross_zone", testCase{
@@ -491,7 +491,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				).
 				Build(),
 			context: *xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				Build(),
 		}),
 		Entry("locality_aware_cross_zone", testCase{
@@ -622,7 +622,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				).
 				Build(),
 			context: *xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				Build(),
 		}),
 		Entry("locality_aware_split", testCase{
@@ -793,7 +793,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				).
 				Build(),
 			context: *xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				Build(),
 		}),
 		Entry("route", testCase{
@@ -873,7 +873,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Build(),
 			},
 			context: *xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				Build(),
 		}),
 		Entry("locality_aware_tag_free_endpoints", testCase{
@@ -1049,7 +1049,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				).
 				Build(),
 			context: *xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				Build(),
 		}),
 	)
