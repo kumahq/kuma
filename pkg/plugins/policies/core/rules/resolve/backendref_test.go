@@ -32,7 +32,6 @@ var _ = Describe("Resolve BackendRef", func() {
 			})
 
 			Expect(ok).To(BeTrue())
-			Expect(resolved.LegacyBackendRef()).To(BeNil())
 			Expect(resolved.RealResourceBackendRef()).ToNot(BeNil())
 			Expect(resolved.Resource()).To(Equal(expected))
 			Expect(capturedType).To(Equal(expectedType))
@@ -70,7 +69,6 @@ var _ = Describe("Resolve BackendRef", func() {
 
 		Expect(ok).To(BeTrue())
 		Expect(resolved.ReferencesRealResource()).To(BeTrue())
-		Expect(resolved.LegacyBackendRef()).To(BeNil())
 		Expect(resolved.Resource()).To(Equal(expected))
 	})
 
@@ -124,45 +122,28 @@ var _ = Describe("Resolve BackendRef", func() {
 		Expect(resolved.Resource()).To(Equal(kri.WithSectionName(expected, "8080")))
 	})
 
-	It("should fall back to a legacy MeshService backendRef when display-name-only labels do not resolve", func() {
-		origin := kri.Identifier{Mesh: "mesh-1", Namespace: "kuma-demo"}
-		labels := map[string]string{mesh_proto.DisplayName: "payments"}
+	// An unresolved MeshService has no cluster to route to, so the ref is
+	// dropped rather than kept as a tag-based one.
+	DescribeTable("should drop a MeshService backendRef that does not resolve",
+		func(labels map[string]string) {
+			origin := kri.Identifier{Mesh: "mesh-1", Namespace: "kuma-demo"}
 
-		resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind:   common_api.MeshService,
-				Labels: pointer.To(labels),
-			},
-		}, func(_ core_model.ResourceType, _ map[string]string) kri.Identifier {
-			return kri.Identifier{}
-		})
+			resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
+				TargetRef: common_api.TargetRef{
+					Kind:   common_api.MeshService,
+					Labels: pointer.To(labels),
+				},
+			}, func(_ core_model.ResourceType, _ map[string]string) kri.Identifier {
+				return kri.Identifier{}
+			})
 
-		Expect(ok).To(BeTrue())
-		Expect(resolved.ReferencesRealResource()).To(BeFalse())
-		Expect(resolved.LegacyBackendRef()).To(Equal(&resolve.LegacyBackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind:   common_api.MeshService,
-				Labels: pointer.To(labels),
-			},
-		}))
-	})
-
-	It("should not fall back to legacy for unresolved namespace-qualified MeshService backendRefs", func() {
-		origin := kri.Identifier{Mesh: "mesh-1", Namespace: "kuma-demo"}
-
-		resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Labels: pointer.To(map[string]string{
-					mesh_proto.DisplayName:      "payments",
-					mesh_proto.KubeNamespaceTag: "kuma-demo",
-				}),
-			},
-		}, func(_ core_model.ResourceType, _ map[string]string) kri.Identifier {
-			return kri.Identifier{}
-		})
-
-		Expect(ok).To(BeFalse())
-		Expect(resolved.Ref).To(BeNil())
-	})
+			Expect(ok).To(BeFalse())
+			Expect(resolved.Ref).To(BeNil())
+		},
+		Entry("display-name only", map[string]string{mesh_proto.DisplayName: "payments"}),
+		Entry("namespace-qualified", map[string]string{
+			mesh_proto.DisplayName:      "payments",
+			mesh_proto.KubeNamespaceTag: "kuma-demo",
+		}),
+	)
 })

@@ -254,7 +254,6 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef.TargetRef, &mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
-						common_api.LegacyMeshServiceSubsetKind(),
 						common_api.MeshExternalService,
 						common_api.MeshMultiZoneService,
 					},
@@ -339,7 +338,6 @@ func validateBackendRefs(
 			mesh.ValidateTargetRef(backendRef.TargetRef, &mesh.ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.MeshService,
-					common_api.LegacyMeshServiceSubsetKind(),
 					common_api.MeshExternalService,
 					common_api.MeshMultiZoneService,
 				},
