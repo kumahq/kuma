@@ -5,11 +5,9 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	meshroute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	meshhttproute "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -18,24 +16,13 @@ import (
 )
 
 func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) (*api.Rule, common.Origin) {
-	// compute for old MeshService
-	var tcpConf *api.Rule
-	var origin common.Origin
-
-	ruleTCP := toRules.Rules.Compute(subsetutils.KumaServiceTagElement(svc.KumaServiceTagValue))
-	if ruleTCP != nil {
-		tcpConf = pointer.To(ruleTCP.Conf.(api.Rule))
-		origin = impactfulOriginFromMeta(ruleTCP.Origin)
-	}
-	// check if there is configuration for real MeshService and prioritize it
 	if r, ok := svc.Outbound.AssociatedServiceResource(); ok {
 		resourceConf := toRules.ResourceRules.Compute(r, meshCtx.Resources)
 		if resourceConf != nil && len(resourceConf.Conf) != 0 {
-			tcpConf = pointer.To(resourceConf.Conf[0].(api.Rule))
-			origin = impactfulOrigin(resourceConf.Origin)
+			return pointer.To(resourceConf.Conf[0].(api.Rule)), impactfulOrigin(resourceConf.Origin)
 		}
 	}
-	return tcpConf, origin
+	return nil, common.Origin{}
 }
 
 // impactfulOrigin returns the origin policy that contributed the backendRefs
@@ -44,14 +31,6 @@ func impactfulOrigin(os []common.Origin) common.Origin {
 		return common.Origin{}
 	}
 	return os[len(os)-1]
-}
-
-// impactfulOriginFromMeta returns the origin policy that contributed the backendRefs
-func impactfulOriginFromMeta(ms []core_model.ResourceMeta) common.Origin {
-	if len(ms) == 0 {
-		return common.Origin{}
-	}
-	return common.Origin{Resource: ms[len(ms)-1]}
 }
 
 func getBackendRefs(

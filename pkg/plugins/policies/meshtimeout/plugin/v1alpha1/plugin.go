@@ -22,7 +22,6 @@ import (
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/plugin/xds"
@@ -60,16 +59,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 	if err := applyToZoneProxyListeners(policies, listeners, clusters, proxy); err != nil {
 		return err
-	}
-	for serviceName, cluster := range clusters.Outbound {
-		if err := applyToClusters(policies.ToRules.Rules, serviceName, ctx.Mesh.GetServiceProtocol(serviceName), cluster); err != nil {
-			return err
-		}
-	}
-	for serviceName, clusters := range clusters.OutboundSplit {
-		if err := applyToClusters(policies.ToRules.Rules, serviceName, ctx.Mesh.GetServiceProtocol(serviceName), clusters...); err != nil {
-			return err
-		}
 	}
 
 	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
@@ -128,22 +117,6 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 		}
 	}
 
-	return nil
-}
-
-func applyToClusters(
-	rules core_rules.Rules,
-	serviceName string,
-	protocol core_meta.Protocol,
-	clusters ...*envoy_cluster.Cluster,
-) error {
-	conf, _ := getConf(rules, subsetutils.KumaServiceTagElement(serviceName))
-	configurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
-	for _, cluster := range clusters {
-		if err := configurer.Configure(cluster); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -335,16 +308,6 @@ func buildListenerScopedInboundRules(
 	}
 
 	return rules_inbound.BuildRules(filtered)
-}
-
-func getConf(
-	rules core_rules.Rules,
-	element subsetutils.Element,
-) (api.Conf, bool) {
-	if computed := rules.Compute(element); computed != nil {
-		return computed.Conf.(api.Conf), true
-	}
-	return api.Conf{}, false
 }
 
 func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.Resource) error {

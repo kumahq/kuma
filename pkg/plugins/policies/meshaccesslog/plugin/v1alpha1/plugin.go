@@ -30,7 +30,6 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/plugin/xds"
@@ -104,10 +103,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToZoneProxyListeners(rs, policies.FromRules, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
-	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
+	if err := applyToTransparentProxyListeners(ctx.Mesh.Resource, policies.ToRules, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
-	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
+	if err := applyToDirectAccess(ctx.Mesh.Resource, policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
 	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
@@ -231,11 +230,11 @@ func applyToZoneProxyListeners(
 }
 
 func applyToTransparentProxyListeners(
-	policies core_xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+	mesh *core_mesh.MeshResource, toRules core_rules.ToRules, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
 	backends *EndpointAccumulator, path string, zone string, workloadKRI string,
 ) error {
-	conf := core_rules.ComputeConf[api.Conf](policies.ToRules.Rules, subsetutils.KumaServiceTagElement(core_meta.PassThroughServiceName))
-	if conf == nil {
+	conf := outbound.RootContext[api.Conf](mesh, toRules.ResourceRules).Conf()
+	if conf == (api.Conf{}) {
 		return nil
 	}
 
@@ -250,24 +249,24 @@ func applyToTransparentProxyListeners(
 	}
 
 	if ipv4 != nil {
-		if err := configureListener(*conf, ipv4, backends, core_meta.ProtocolTCP, kumaValues, path); err != nil {
+		if err := configureListener(conf, ipv4, backends, core_meta.ProtocolTCP, kumaValues, path); err != nil {
 			return err
 		}
 	}
 
 	if ipv6 != nil {
-		return configureListener(*conf, ipv6, backends, core_meta.ProtocolTCP, kumaValues, path)
+		return configureListener(conf, ipv6, backends, core_meta.ProtocolTCP, kumaValues, path)
 	}
 
 	return nil
 }
 
 func applyToDirectAccess(
-	rules core_rules.ToRules, directAccess map[model.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+	mesh *core_mesh.MeshResource, rules core_rules.ToRules, directAccess map[model.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
 	backends *EndpointAccumulator, path string, zone string, workloadKRI string,
 ) error {
-	conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.KumaServiceTagElement(core_meta.PassThroughServiceName))
-	if conf == nil {
+	conf := outbound.RootContext[api.Conf](mesh, rules.ResourceRules).Conf()
+	if conf == (api.Conf{}) {
 		return nil
 	}
 
@@ -281,7 +280,7 @@ func applyToDirectAccess(
 			WorkloadKRI:        workloadKRI,
 			TrafficDirection:   envoy.TrafficDirectionOutbound,
 		}
-		return configureListener(*conf, listener, backends, core_meta.ProtocolTCP, kumaValues, path)
+		return configureListener(conf, listener, backends, core_meta.ProtocolTCP, kumaValues, path)
 	}
 
 	return nil
