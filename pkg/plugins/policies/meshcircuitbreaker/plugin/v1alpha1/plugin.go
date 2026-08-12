@@ -10,7 +10,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
-	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
@@ -64,28 +63,15 @@ func applyToInbounds(
 	inboundClusters map[string]*envoy_cluster.Cluster,
 	dataplane *core_mesh.DataplaneResource,
 ) error {
-	for _, inbound := range dataplane.Spec.Networking.GetInbound() {
-		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
-
-		listenerKey := core_rules.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
-		}
-
-		clusterName := naming.MustContextualInboundName(dataplane, iface.InboundName)
+	return policies_xds.ForEachInbound[api.Conf](dataplane, fromRules, func(m policies_xds.InboundMatch[api.Conf]) error {
+		clusterName := naming.MustContextualInboundName(dataplane, m.Interface.InboundName)
 		cluster, ok := inboundClusters[clusterName]
 		if !ok {
-			continue
+			return nil
 		}
 
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
-		err := plugin_xds.NewConfigurer(conf).ConfigureCluster(cluster)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+		return plugin_xds.NewConfigurer(m.Conf).ConfigureCluster(cluster)
+	})
 }
 
 func applyToRealResource(

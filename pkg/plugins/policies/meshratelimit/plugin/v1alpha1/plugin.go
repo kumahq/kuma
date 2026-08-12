@@ -59,32 +59,20 @@ func applyToInbounds(
 	inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	proxy *core_xds.Proxy,
 ) error {
-	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
-		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
-
-		listenerKey := core_rules.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
-		}
-		listener, ok := inboundListeners[listenerKey]
+	return xds.ForEachInbound[api.Conf](proxy.Dataplane, fromRules, func(m xds.InboundMatch[api.Conf]) error {
+		listener, ok := inboundListeners[m.Listener]
 		if !ok {
-			continue
+			return nil
 		}
 
-		inboundRules := fromRules.InboundRules[listenerKey]
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
-		applyCommonConf := len(inboundRules) == 0 || hasCatchAllInboundRule(inboundRules)
+		applyCommonConf := len(m.Rules) == 0 || hasCatchAllInboundRule(m.Rules)
 		configurer := plugin_xds.ListenerConfigurer{
-			Conf:             conf,
-			Rules:            inboundRules,
+			Conf:             m.Conf,
+			Rules:            m.Rules,
 			SkipCommonConfig: !applyCommonConf,
 		}
-		if err := configurer.ConfigureListener(listener); err != nil {
-			return err
-		}
-	}
-
-	return nil
+		return configurer.ConfigureListener(listener)
+	})
 }
 
 func applyToZoneProxyListeners(

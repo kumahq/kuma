@@ -88,22 +88,15 @@ func applyToInbounds(
 	proxy *core_xds.Proxy,
 	ctx xds_context.Context,
 ) error {
-	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
-		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
-
-		listenerKey := core_rules.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
-		}
-
-		listener, ok := inboundListeners[listenerKey]
+	return policies_xds.ForEachInbound[api.Conf](proxy.Dataplane, fromRules, func(m policies_xds.InboundMatch[api.Conf]) error {
+		listener, ok := inboundListeners[m.Listener]
 		if !ok {
-			continue
+			return nil
 		}
 
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
+		conf := m.Conf
 
-		if resource, err := configureListener(proxy, ctx, iface, inbound, conf); err != nil {
+		if resource, err := configureListener(proxy, ctx, m.Interface, m.Inbound, conf); err != nil {
 			return err
 		} else if resource != nil {
 			rs.Remove(envoy_resource.ListenerType, listener.GetName())
@@ -135,9 +128,9 @@ func applyToInbounds(
 				Resource: resource,
 			})
 		}
-	}
 
-	return nil
+		return nil
+	})
 }
 
 func applyToRealResources(

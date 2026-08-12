@@ -81,27 +81,18 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 }
 
 func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, inboundClusters map[string]*envoy_cluster.Cluster, dataplane *core_mesh.DataplaneResource) error {
-	for _, inbound := range dataplane.Spec.Networking.GetInbound() {
-		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
-
-		listenerKey := core_rules.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
-		}
-
-		listener, ok := inboundListeners[listenerKey]
+	return xds.ForEachInbound[api.Conf](dataplane, fromRules, func(m xds.InboundMatch[api.Conf]) error {
+		listener, ok := inboundListeners[m.Listener]
 		if !ok {
-			continue
+			return nil
 		}
 
-		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
+		protocol := core_meta.ParseProtocol(m.Inbound.GetProtocol())
 
-		inboundRules := fromRules.InboundRules[listenerKey]
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
-		applyCommonConf := len(inboundRules) == 0 || hasCatchAllInboundRule(inboundRules)
+		applyCommonConf := len(m.Rules) == 0 || hasCatchAllInboundRule(m.Rules)
 		configurer := plugin_xds.ListenerConfigurer{
-			Conf:             conf,
-			Rules:            inboundRules,
+			Conf:             m.Conf,
+			Rules:            m.Rules,
 			SkipCommonConfig: !applyCommonConf,
 		}
 
@@ -109,21 +100,21 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			return err
 		}
 
-		clusterName := naming.MustContextualInboundName(dataplane, iface.InboundName)
+		clusterName := naming.MustContextualInboundName(dataplane, m.Interface.InboundName)
 		cluster, ok := inboundClusters[clusterName]
 		if !ok {
-			continue
+			return nil
 		}
 
 		if applyCommonConf {
-			clusterConfigurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
+			clusterConfigurer := plugin_xds.ClusterConfigurerFromConf(m.Conf, protocol)
 			if err := clusterConfigurer.Configure(cluster); err != nil {
 				return err
 			}
 		}
-	}
 
-	return nil
+		return nil
+	})
 }
 
 func applyToClusters(

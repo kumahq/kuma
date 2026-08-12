@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -76,7 +77,10 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 }
 
 func applyToInbounds(ctx xds_context.Context, policies xds.TypedMatchingPolicies, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
-	sectionNames := inboundSectionNames(proxy.Dataplane.Spec.GetNetworking())
+	sectionNames, err := inboundSectionNames(proxy.Dataplane)
+	if err != nil {
+		return err
+	}
 	for key, inboundListener := range inboundListeners {
 		listenerPolicyConf, err := buildListenerScopedProxyConf(policies, sectionNames[key])
 		if err != nil {
@@ -93,14 +97,13 @@ func applyToInbounds(ctx xds_context.Context, policies xds.TypedMatchingPolicies
 	return nil
 }
 
-func inboundSectionNames(n *mesh_proto.Dataplane_Networking) map[core_rules.InboundListener]string {
+func inboundSectionNames(dataplane *core_mesh.DataplaneResource) (map[core_rules.InboundListener]string, error) {
 	result := map[core_rules.InboundListener]string{}
-	for _, inb := range n.GetInbound() {
-		iface := n.ToInboundInterface(inb)
-		key := core_rules.InboundListener{Address: iface.DataplaneIP, Port: iface.DataplanePort}
-		result[key] = inb.GetSectionName()
-	}
-	return result
+	err := policies_xds.ForEachInbound[api.Conf](dataplane, core_rules.FromRules{}, func(m policies_xds.InboundMatch[api.Conf]) error {
+		result[m.Listener] = m.Inbound.GetSectionName()
+		return nil
+	})
+	return result, err
 }
 
 func applyToZoneProxyListeners(ctx xds_context.Context, policies xds.TypedMatchingPolicies, rs *xds.ResourceSet, proxy *xds.Proxy) error {
