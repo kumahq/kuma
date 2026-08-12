@@ -1,0 +1,50 @@
+package framework
+
+import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("findNacks", func() {
+	DescribeTable("should report NACK counters over their tolerance",
+		func(metrics string, expected []string) {
+			nacks, err := findNacks(metrics)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(nacks).To(ConsistOf(expected))
+		},
+		Entry("no NACK series at all", `
+# HELP kds_delta_requests_received Number of confirmations requests from a client
+# TYPE kds_delta_requests_received counter
+kds_delta_requests_received{confirmation="ACK",error_type="no_error",type_url="Dataplane",zone="Global"} 12
+# HELP xds_requests_received Number of confirmations requests from a client
+# TYPE xds_requests_received counter
+xds_requests_received{confirmation="ACK",error_type="no_error",type_url="type.googleapis.com/envoy.config.cluster.v3.Cluster"} 4
+`, nil),
+		// A zone that keeps sending a resource this CP rejects, as in the
+		// helm upgrade suite where a 2.14 zone leaks VIP outbounds onto a
+		// Dataplane. kds_nack_total has no confirmation label.
+		Entry("KDS NACK sent by this CP", `
+# HELP kds_nack_total Total KDS NACKs sent by zone and resource type.
+# TYPE kds_nack_total counter
+kds_nack_total{resource_type="Dataplane",zone="Global",zone_name="kuma-2"} 1
+`, []string{`kds_nack_total{resource_type="Dataplane",zone="Global",zone_name="kuma-2"} = 1 (tolerated 0)`}),
+		Entry("KDS NACK received from the peer CP", `
+# HELP kds_delta_requests_received Number of confirmations requests from a client
+# TYPE kds_delta_requests_received counter
+kds_delta_requests_received{confirmation="ACK",error_type="no_error",type_url="Mesh",zone="Global"} 3
+kds_delta_requests_received{confirmation="NACK",error_type="other",type_url="Mesh",zone="Global"} 1
+`, []string{`kds_delta_requests_received{confirmation="NACK",error_type="other",type_url="Mesh",zone="Global"} = 1 (tolerated 0)`}),
+		// Proxy-facing xDS keeps its existing tolerance: an Envoy NACK can
+		// resolve itself on the next config push.
+		Entry("proxy xDS NACKs within tolerance", `
+# HELP xds_requests_received Number of confirmations requests from a client
+# TYPE xds_requests_received counter
+xds_requests_received{confirmation="NACK",error_type="other",type_url="type.googleapis.com/envoy.config.listener.v3.Listener"} 2
+`, nil),
+		Entry("proxy xDS NACKs over tolerance", `
+# HELP xds_requests_received Number of confirmations requests from a client
+# TYPE xds_requests_received counter
+xds_requests_received{confirmation="NACK",error_type="other",type_url="type.googleapis.com/envoy.config.listener.v3.Listener"} 3
+`, []string{`xds_requests_received{confirmation="NACK",error_type="other",type_url="type.googleapis.com/envoy.config.listener.v3.Listener"} = 3 (tolerated 2)`}),
+	)
+})
