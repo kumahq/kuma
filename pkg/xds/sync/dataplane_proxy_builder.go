@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
@@ -39,9 +40,17 @@ type DataplaneProxyBuilder struct {
 }
 
 func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meta *core_xds.DataplaneMetadata, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
-	dp, found := meshContext.DataplanesByName[key.Name]
+	cached, found := meshContext.DataplanesByName[key.Name]
 	if !found {
 		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
+	}
+	// resolveVIPOutbounds writes the VIP outbounds onto the Dataplane, and the
+	// one in the mesh context is a shared instance from the resource cache.
+	// Mutating it leaks those outbounds into every other reader, notably the API
+	// server and the KDS payload sent to global.
+	dp := &core_mesh.DataplaneResource{
+		Meta: cached.Meta,
+		Spec: proto.Clone(cached.Spec).(*mesh_proto.Dataplane),
 	}
 
 	tpEnabled := tproxy_dp.GetDataplaneConfig(dp, meta).Enabled()
