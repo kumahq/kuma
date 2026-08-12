@@ -75,7 +75,12 @@ func generateFromService(
 		return nil, nil
 	}
 
-	splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx)
+	splits := meshroute_xds.MakeTCPSplit(proxy, clusterCache, servicesAccumulator, backendRefs, meshCtx)
+	// Every backendRef was dropped - an unreachable MeshExternalService, for example.
+	// A listener whose TCPProxy has no cluster to send to is worse than no listener.
+	if len(splits) == 0 {
+		return nil, nil
+	}
 
 	listener, err := GenerateOutboundListener(proxy, svc, splits)
 	if err != nil {

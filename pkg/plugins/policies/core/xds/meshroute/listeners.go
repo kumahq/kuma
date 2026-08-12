@@ -20,6 +20,7 @@ import (
 )
 
 func MakeTCPSplit(
+	proxy *core_xds.Proxy,
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
@@ -33,6 +34,7 @@ func MakeTCPSplit(
 			core_meta.ProtocolHTTP2:   {},
 			core_meta.ProtocolGRPC:    {},
 		},
+		proxy,
 		clusterCache,
 		servicesAcc,
 		refs,
@@ -41,6 +43,7 @@ func MakeTCPSplit(
 }
 
 func MakeHTTPSplit(
+	proxy *core_xds.Proxy,
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
@@ -52,6 +55,7 @@ func MakeHTTPSplit(
 			core_meta.ProtocolHTTP2: {},
 			core_meta.ProtocolGRPC:  {},
 		},
+		proxy,
 		clusterCache,
 		servicesAcc,
 		refs,
@@ -186,6 +190,7 @@ func DestinationPortFromRef(
 
 func makeSplits(
 	protocols map[core_meta.Protocol]struct{},
+	proxy *core_xds.Proxy,
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []resolve.ResolvedBackendRef,
@@ -195,7 +200,7 @@ func makeSplits(
 
 	splitFromRef := func(ref resolve.ResolvedBackendRef) envoy_common.Split {
 		if ref.ReferencesRealResource() {
-			return handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx)
+			return handleRealResources(protocols, proxy, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx)
 		}
 
 		return handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef())
@@ -216,6 +221,7 @@ func makeSplits(
 
 func handleRealResources(
 	protocols map[core_meta.Protocol]struct{},
+	proxy *core_xds.Proxy,
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	ref *resolve.RealResourceBackendRef,
@@ -234,6 +240,16 @@ func handleRealResources(
 		return nil
 	}
 
+	isExternalService := ref.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType
+
+	// Drop a MeshExternalService this proxy has no way to reach, so no route is
+	// left pointing at a cluster GenerateClusters goes on to skip.
+	if isExternalService {
+		if _, _, ok := EgressRouteForExternalService(proxy, meshCtx, ref, port); !ok {
+			return nil
+		}
+	}
+
 	if common_api.TargetRefKind(ref.Resource.ResourceType) == common_api.MeshService && ref.Resource.SectionName == "" {
 		ref.Resource = kri.WithSectionName(ref.Resource, port.GetName())
 	}
@@ -241,8 +257,6 @@ func handleRealResources(
 	service := destinationname.MustResolve(dest, port)
 
 	clusterName := ref.Resource.String()
-
-	isExternalService := ref.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType
 
 	// todo(lobkovilya): instead of computing hash we should use ResourceIdentifier as a key in clusterCache (or maybe we don't need clusterCache)
 	refHash := common_api.BackendRefHash(ref.Resource.String())

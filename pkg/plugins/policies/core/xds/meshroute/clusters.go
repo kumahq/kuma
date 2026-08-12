@@ -48,23 +48,8 @@ func GenerateClusters(
 				if !ok {
 					continue
 				}
-				// A MeshExternalService is only reachable through a zone egress,
-				// and the egress listener is generated only when the proxy has a
-				// WorkloadIdentity (see ZoneProxyListenerGenerator). Without one
-				// there is nothing to terminate the connection, so skip the cluster.
-				if proxy.WorkloadIdentity == nil {
-					continue
-				}
-				sni, ok := SNIForRealResource(realResourceRef, port)
+				sni, egressSANs, ok := EgressRouteForExternalService(proxy, meshCtx, realResourceRef, port)
 				if !ok {
-					continue
-				}
-				// we only want to route when are mesh-scoped zone egresses
-				if len(meshCtx.ZoneEgresses) == 0 {
-					continue
-				}
-				egressSANs := meshCtx.ZoneEgressSANs()
-				if len(egressSANs) == 0 {
 					continue
 				}
 				upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
@@ -198,6 +183,40 @@ func SNIForRealResource(
 		return "", false
 	}
 	return core_sni.FromKRI(kriID), true
+}
+
+// EgressRouteForExternalService returns how this proxy reaches a MeshExternalService:
+// the SNI that identifies the destination to the zone egress, and the SANs of the
+// egresses allowed to terminate the connection.
+//
+// A MeshExternalService is only reachable through a zone egress, over mTLS from the
+// proxy's own identity, and the egress listener itself is generated only for proxies
+// with a WorkloadIdentity (see ZoneProxyListenerGenerator). Without an identity, an
+// egress, or an egress SAN there is no way to reach the destination at all, so callers
+// drop it whole - no split, and therefore no listener, cluster, or endpoints. Emitting
+// only some of those leaves a route pointing at a cluster that never arrives, which
+// Envoy answers with a 503 instead of a config error.
+func EgressRouteForExternalService(
+	proxy *core_xds.Proxy,
+	meshCtx xds_context.MeshContext,
+	backendRef *resolve.RealResourceBackendRef,
+	port core_resources.Port,
+) (string, []string, bool) {
+	if proxy.WorkloadIdentity == nil {
+		return "", nil, false
+	}
+	if len(meshCtx.ZoneEgresses) == 0 {
+		return "", nil, false
+	}
+	egressSANs := meshCtx.ZoneEgressSANs()
+	if len(egressSANs) == 0 {
+		return "", nil, false
+	}
+	sni, ok := SNIForRealResource(backendRef, port)
+	if !ok {
+		return "", nil, false
+	}
+	return sni, egressSANs, true
 }
 
 func Identities(

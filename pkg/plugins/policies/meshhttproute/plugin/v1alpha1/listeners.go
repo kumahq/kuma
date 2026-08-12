@@ -106,7 +106,7 @@ func generateFromService(
 	var routes []xds.OutboundRoute
 
 	for _, route := range prepareRoutes(rules, svc, meshCtx) {
-		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
+		split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs, meshCtx)
 		if len(split) == 0 {
 			continue
 		}
@@ -119,7 +119,7 @@ func generateFromService(
 				continue
 			}
 			mirrorSplit := meshroute_xds.MakeHTTPSplit(
-				clusterCache, servicesAcc,
+				proxy, clusterCache, servicesAcc,
 				[]resolve.ResolvedBackendRef{ref},
 				meshCtx,
 			)
