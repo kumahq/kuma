@@ -16,6 +16,8 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshservice_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -44,7 +46,7 @@ func (r *HTTPRouteReconciler) gapiToMeshRules(
 		rules = append(rules, kumaRule)
 	}
 
-	return rules, prepareConditions(conditions), nil
+	return rules, conditions, nil
 }
 
 func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
@@ -99,6 +101,72 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 					mesh_proto.KubeNamespaceTag: parent.GetNamespace(),
 				},
 				SectionName: pointer.To(sectionName),
+			},
+			Rules: rules,
+		})
+	}
+
+	return &v1alpha1.MeshHTTPRoute{
+		TargetRef: &targetRef,
+		To:        &tos,
+	}
+}
+
+// meshServiceRefLabels returns the labels that identify the destination
+// MeshService, mirroring KubernetesMetaAdapter.GetLabels so a display-name
+// annotation override and a headless Service's hashed MeshService name both
+// resolve to the same MeshService the referenced object represents.
+func meshServiceRefLabels(ms *meshservice_k8s.MeshService) map[string]string {
+	displayName := ms.GetName()
+	if annotated, ok := ms.GetAnnotations()[mesh_proto.DisplayName]; ok {
+		displayName = annotated
+	}
+	return map[string]string{
+		mesh_proto.DisplayName:      displayName,
+		mesh_proto.KubeNamespaceTag: ms.GetNamespace(),
+	}
+}
+
+func (r *HTTPRouteReconciler) gapiMeshServiceToMeshRoute(
+	routeNamespace string,
+	rules []v1alpha1.Rule,
+	parent *meshservice_k8s.MeshService,
+	parentPort *gatewayapi_v1.PortNumber,
+) core_model.ResourceSpec {
+	// consumer route
+	targetRef := common_api.TopLevelTargetRef{
+		Kind: common_api.TopLevelTargetRefKindDataplane,
+		Labels: &map[string]string{
+			mesh_proto.KubeNamespaceTag: routeNamespace,
+		},
+	}
+
+	// producer route
+	if routeNamespace == parent.GetNamespace() {
+		targetRef = common_api.TopLevelTargetRef{
+			Kind: common_api.TopLevelTargetRefKindMesh,
+		}
+	}
+
+	var tos []v1alpha1.To
+
+	var ports []meshservice_api.Port
+	if parent.Spec != nil {
+		for _, port := range parent.Spec.Ports {
+			if parentPort != nil && port.Port != *parentPort {
+				continue
+			}
+			ports = append(ports, port)
+		}
+	}
+
+	labels := meshServiceRefLabels(parent)
+	for _, port := range ports {
+		tos = append(tos, v1alpha1.To{
+			TargetRef: common_api.OutboundTargetRef{
+				Kind:        common_api.OutboundTargetRefKindMeshService,
+				Labels:      &labels,
+				SectionName: pointer.To(port.GetName()),
 			},
 			Rules: rules,
 		})
@@ -437,10 +505,59 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		}, nil, nil
 	}
 
+	if gk.Kind == "MeshService" && gk.Group == meshservice_k8s.GroupVersion.Group {
+		ms := &meshservice_k8s.MeshService{}
+		if err := r.Get(ctx, namespacedName, ms); err != nil {
+			if kube_apierrs.IsNotFound(err) {
+				return unresolvedTargetRef,
+					&ResolvedRefsConditionFalse{
+						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
+						Message: fmt.Sprintf("backend reference references a non-existent MeshService %q", namespacedName.String()),
+					},
+					nil
+			}
+			return common_api.TargetRef{}, nil, err
+		}
+
+		labels := meshServiceRefLabels(ms)
+
+		if ref.Port == nil {
+			return common_api.TargetRef{
+				Kind:   common_api.MeshService,
+				Labels: &labels,
+			}, nil, nil
+		}
+
+		port := *ref.Port
+		var sectionName string
+		if ms.Spec != nil {
+			for _, msPort := range ms.Spec.Ports {
+				if msPort.Port == port {
+					sectionName = msPort.GetName()
+					break
+				}
+			}
+		}
+		if sectionName == "" {
+			return unresolvedTargetRef,
+				&ResolvedRefsConditionFalse{
+					Reason:  string(gatewayapi.RouteReasonBackendNotFound),
+					Message: fmt.Sprintf("MeshService %q does not have a port %d", namespacedName.String(), port),
+				},
+				nil
+		}
+
+		return common_api.TargetRef{
+			Kind:        common_api.MeshService,
+			Labels:      &labels,
+			SectionName: pointer.To(sectionName),
+		}, nil, nil
+	}
+
 	return unresolvedTargetRef,
 		&ResolvedRefsConditionFalse{
 			Reason:  string(gatewayapi.RouteReasonInvalidKind),
-			Message: "backend reference must be Service",
+			Message: "backend reference must be Service or MeshService",
 		},
 		nil
 }
