@@ -168,12 +168,6 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 						Reason:  string(gatewayapi_v1.RouteReasonNoMatchingParent),
 						Message: fmt.Sprintf("MeshService %q does not exist", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
 					},
-					kube_meta.Condition{
-						Type:    string(gatewayapi.RouteConditionResolvedRefs),
-						Status:  kube_meta.ConditionFalse,
-						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
-						Message: fmt.Sprintf("MeshService %q does not exist", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
-					},
 				)
 
 				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))

@@ -105,7 +105,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 		Expect(condition.Status).To(Equal(kube_meta.ConditionTrue))
 	})
 
-	It("reports ResolvedRefs=False and generates no MeshHTTPRoute when the MeshService does not exist", func() {
+	It("reports Accepted=False and generates no MeshHTTPRoute when the MeshService does not exist", func() {
 		route := newRoute("kuma-demo", "my-route", meshServiceParentRef("kuma-demo", "missing"))
 
 		client := newClientBuilder(route)
@@ -123,14 +123,15 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 		var updatedRoute gatewayapi.HTTPRoute
 		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
 		Expect(updatedRoute.Status.Parents).To(HaveLen(1))
-		condition := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionResolvedRefs))
-		Expect(condition).ToNot(BeNil())
-		Expect(condition.Status).To(Equal(kube_meta.ConditionFalse))
-		Expect(condition.Reason).To(Equal(string(gatewayapi.RouteReasonBackendNotFound)))
-
 		accepted := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionAccepted))
 		Expect(accepted).ToNot(BeNil())
 		Expect(accepted.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(accepted.Reason).To(Equal(string(gatewayapi_v1.RouteReasonNoMatchingParent)))
+
+		// backendRefs resolve fine; a missing parent is not a backend problem
+		condition := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionResolvedRefs))
+		Expect(condition).ToNot(BeNil())
+		Expect(condition.Status).To(Equal(kube_meta.ConditionTrue))
 	})
 })
 

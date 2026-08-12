@@ -59,7 +59,7 @@ The generated route's Kubernetes object name is
 
 ### Missing parent handling
 
-When a `MeshService` parentRef cannot be resolved, the ref's status gets `Accepted=False` (reason `NoMatchingParent`) and `ResolvedRefs=False` (reason `BackendNotFound`), and no route is generated for that ref — instead of silently dropping it, which is what the pre-existing `Service` parentRef path still does (a stop condition in this MADR's originating plan: the `Service` path's behavior is left as-is, TODO and all, to keep this change minimal).
+When a `MeshService` parentRef cannot be resolved, the ref's status gets `Accepted=False` (reason `NoMatchingParent`) and no route is generated for that ref — instead of silently dropping it, which is what the pre-existing `Service` parentRef path still does (a stop condition in this MADR's originating plan: the `Service` path's behavior is left as-is, TODO and all, to keep this change minimal). `ResolvedRefs` stays untouched by the parent lookup, because it reports on the route's own `backendRefs` and filters: a missing parent is not a backend problem, and reporting `BackendNotFound` there would tell a user whose `backendRefs` all resolve that they do not.
 
 ### Re-reconciling on MeshService changes
 
@@ -81,7 +81,7 @@ None known; the enterprise fork does not currently define its own Gateway API Me
 
 ## Decision
 
-`group: kuma.io, kind: MeshService` is accepted as a Gateway API `parentRef` and `backendRef` kind, alongside the existing `Service` kind, in the GAMMA `HTTPRoute` translator. `port` is optional on a `MeshService` `backendRef`; when set it must match a `MeshService` port, and when omitted the reference targets every port. A `MeshService` that does not exist, or a `port` that does not match any of its ports, reports `ResolvedRefs=False` rather than dropping the route silently. `HTTPRoute`s re-reconcile when a referenced `MeshService` changes. The `Service` path — its conditions, sub-route names, and NotFound handling — is left byte-identical.
+`group: kuma.io, kind: MeshService` is accepted as a Gateway API `parentRef` and `backendRef` kind, alongside the existing `Service` kind, in the GAMMA `HTTPRoute` translator. `port` is optional on a `MeshService` `backendRef`; when set it must match a `MeshService` port, and when omitted the reference targets every port. A `backendRef` to a `MeshService` that does not exist, or with a `port` that does not match any of its ports, reports `ResolvedRefs=False`; an unresolvable `parentRef` reports `Accepted=False` rather than dropping the route silently. `HTTPRoute`s re-reconcile when a referenced `MeshService` changes. The `Service` path — its conditions, sub-route names, and NotFound handling — is left byte-identical.
 
 Out of scope for this decision: `MeshMultiZoneService` and `MeshExternalService` references, which are deferred to follow-up work once this shape has proven out; and any change to the pre-existing gaps in the `Service` path (its missing parentRef index, its silent drop on a missing parent).
 
