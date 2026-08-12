@@ -22,11 +22,6 @@ type Context struct {
 	Mesh         MeshContext
 }
 
-type ConnectionInfo struct {
-	// Authority defines the URL that was used by the data plane to connect to the control plane
-	Authority string
-}
-
 // ControlPlaneContext contains shared global data and components that are required for generating XDS
 // This data is the same regardless of a data plane proxy and mesh we are generating the data for.
 type ControlPlaneContext struct {
@@ -99,8 +94,6 @@ type MeshContext struct {
 	DataplaneZoneEgressEndpointMap xds.EgressEndpointMap
 }
 
-type ReachableBackends map[kri.Identifier]bool
-
 // ResolveResourceIdentifier resolves one resource identifier based on the labels.
 // If multiple resources match the labels, the oldest one is returned.
 // The reason is that picking the oldest one is the less likely to break existing traffic after introducing new resources.
@@ -132,23 +125,4 @@ type AggregatedMeshContexts struct {
 	Hash               string
 	Meshes             []*core_mesh.MeshResource
 	MeshContextsByName map[string]MeshContext
-}
-
-// MustGetMeshContext panics if there is no mesh context for given mesh. Call it when iterating over .Meshes
-// There is a guarantee that for every Mesh in .Meshes there is a MeshContext.
-func (m AggregatedMeshContexts) MustGetMeshContext(meshName string) MeshContext {
-	meshCtx, ok := m.MeshContextsByName[meshName]
-	if !ok {
-		panic("there should be a corresponding mesh context for every mesh in mesh contexts")
-	}
-	return meshCtx
-}
-
-func (m AggregatedMeshContexts) AllDataplanes() []*core_mesh.DataplaneResource {
-	var resources []*core_mesh.DataplaneResource
-	for _, mesh := range m.Meshes {
-		meshCtx := m.MustGetMeshContext(mesh.Meta.GetName())
-		resources = append(resources, meshCtx.Resources.Dataplanes().Items...)
-	}
-	return resources
 }
