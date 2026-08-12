@@ -227,6 +227,16 @@ Policies that select real resources through `spec.targetRef` or `spec.to[].targe
 
 Migrate any policy that still selects those resources by `name` and/or `namespace` to use `labels` instead before upgrading. `sectionName` remains supported for `Dataplane` inbound selection and `MeshService` port selection.
 
+### A `MeshHTTPRoute` rule whose backendRefs all fail to resolve answers 500
+
+A rule that declares `backendRefs` and resolves none of them no longer falls back to the destination service. The rule now serves `500` to every request it matches, which is what the Gateway API requires of an invalid backendRef. A rule that resolves at least one of its backendRefs keeps routing to those backends, and a rule with a `RequestRedirect` filter still redirects.
+
+This covers every `MeshHTTPRoute`, not only the ones the Gateway API translation generates. A route pointing at a resource that does not exist yet — a `MeshService` that KDS has not synced to the zone, for example — fails its matching requests instead of sending them to the destination service, until the reference resolves.
+
+**Action required**
+
+None, as long as every `backendRefs` entry names a resource that exists. Check the routes that reference a resource from another zone or another namespace before upgrading: those are the ones whose masked misconfiguration becomes visible traffic loss.
+
 ### `MeshService.spec.identities` now accepts SPIFFE IDs only
 
 `MeshService.spec.identities[].type` no longer accepts `ServiceTag`. `MeshService.spec.identities` now publishes SPIFFE IDs only, while service-tag-based routing keeps using the `kuma.io/service` label or the MeshService resource name as its fallback naming signal.

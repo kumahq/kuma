@@ -106,12 +106,9 @@ func generateFromService(
 	var routes []xds.OutboundRoute
 
 	for _, route := range prepareRoutes(rules, svc, meshCtx) {
-		var split []envoy_common.Split
-		if !route.UnresolvedBackendRefs {
-			split = meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
-			if len(split) == 0 {
-				continue
-			}
+		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
+		if len(split) == 0 && !route.AllBackendRefsUnresolved {
+			continue
 		}
 		// mirrored requests go to a cluster of their own, it has no weight so
 		// keep the split only to know which cluster was created for the mirror
@@ -132,12 +129,12 @@ func generateFromService(
 			mirrorSplits[i] = mirrorSplit[0]
 		}
 		routes = append(routes, xds.OutboundRoute{
-			Name:                  route.Name,
-			Match:                 route.Match,
-			Filters:               route.Filters,
-			UnresolvedBackendRefs: route.UnresolvedBackendRefs,
-			MirrorSplits:          mirrorSplits,
-			Split:                 split,
+			Name:                     route.Name,
+			Match:                    route.Match,
+			Filters:                  route.Filters,
+			AllBackendRefsUnresolved: route.AllBackendRefsUnresolved,
+			MirrorSplits:             mirrorSplits,
+			Split:                    split,
 		})
 	}
 
@@ -262,26 +259,23 @@ func prepareRoutes(
 
 		for _, match := range rule.Matches {
 			var refs []resolve.ResolvedBackendRef
-			hasUnresolvedBackendRefs := false
 
 			for _, br := range backendRefs {
 				if rbr, ok := resolve.BackendRef(originID, br, meshCtx.ResolveResourceIdentifier); ok {
 					refs = append(refs, rbr)
-				} else {
-					hasUnresolvedBackendRefs = true
 				}
 			}
 
 			routes = append(
 				routes,
 				api.Route{
-					Name:                  routeName,
-					Origin:                originID,
-					Match:                 match,
-					Filters:               filters,
-					BackendRefs:           refs,
-					UnresolvedBackendRefs: hasExplicitBackendRefs && hasUnresolvedBackendRefs,
-					MirrorBackendRefs:     mirrorRefs,
+					Name:                     routeName,
+					Origin:                   originID,
+					Match:                    match,
+					Filters:                  filters,
+					BackendRefs:              refs,
+					AllBackendRefsUnresolved: hasExplicitBackendRefs && len(refs) == 0,
+					MirrorBackendRefs:        mirrorRefs,
 				},
 			)
 		}
@@ -320,7 +314,7 @@ func prepareRoutes(
 			route.Match.Path = pointer.To(catchAllPathMatch)
 		}
 
-		if len(route.BackendRefs) == 0 && !route.UnresolvedBackendRefs {
+		if len(route.BackendRefs) == 0 && !route.AllBackendRefsUnresolved {
 			route.BackendRefs = []resolve.ResolvedBackendRef{
 				*svc.DefaultBackendRef(),
 			}

@@ -128,7 +128,7 @@ var _ = Describe("prepareRoutes", func() {
 		Entry("policy in team-b", "team-b"),
 	)
 
-	It("should fail closed when any explicit backendRef does not resolve", func() {
+	DescribeTable("should fail closed only when no explicit backendRef resolves", func(refNames []string, expectedAllUnresolved bool, expectedResolved []string) {
 		backend := builders.MeshService().
 			WithName("backend").
 			WithMesh(core_model.DefaultMesh).
@@ -159,6 +159,13 @@ var _ = Describe("prepareRoutes", func() {
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 			},
 		}
+		var backendRefs []common_api.BackendRef
+		for _, name := range refNames {
+			backendRefs = append(backendRefs, common_api.BackendRef{
+				TargetRef: builders.TargetRefMeshService(name, "kuma-demo", ""),
+				Port:      pointer.To(uint32(8080)),
+			})
+		}
 		toRules := core_rules.ToRules{
 			ResourceRules: outbound.ResourceRules{
 				kri.From(backend): {
@@ -167,16 +174,7 @@ var _ = Describe("prepareRoutes", func() {
 						Rules: []api.Rule{{
 							Matches: matches,
 							Default: api.RuleConf{
-								BackendRefs: &[]common_api.BackendRef{
-									{
-										TargetRef: builders.TargetRefMeshService("payments", "kuma-demo", ""),
-										Port:      pointer.To(uint32(8080)),
-									},
-									{
-										TargetRef: builders.TargetRefMeshService("missing-backend", "kuma-demo", ""),
-										Port:      pointer.To(uint32(8080)),
-									},
-								},
+								BackendRefs: &backendRefs,
 							},
 						}},
 					}},
@@ -204,9 +202,14 @@ var _ = Describe("prepareRoutes", func() {
 			}
 		}
 		Expect(matched).ToNot(BeNil())
-		Expect(matched.UnresolvedBackendRefs).To(BeTrue())
-		Expect(matched.BackendRefs).To(HaveLen(1))
-		Expect(matched.BackendRefs[0].ReferencesRealResource()).To(BeTrue())
-		Expect(matched.BackendRefs[0].Resource()).To(Equal(kri.WithSectionName(kri.From(payments), "8080")))
-	})
+		Expect(matched.AllBackendRefsUnresolved).To(Equal(expectedAllUnresolved))
+		Expect(matched.BackendRefs).To(HaveLen(len(expectedResolved)))
+		for i, name := range expectedResolved {
+			Expect(matched.BackendRefs[i].ReferencesRealResource()).To(BeTrue())
+			Expect(matched.BackendRefs[i].Resource().Name).To(Equal(name))
+		}
+	},
+		Entry("a resolving backendRef keeps its traffic", []string{"payments", "missing-backend"}, false, []string{"payments"}),
+		Entry("no resolving backendRef fails closed", []string{"missing-backend", "other-missing"}, true, nil),
+	)
 })

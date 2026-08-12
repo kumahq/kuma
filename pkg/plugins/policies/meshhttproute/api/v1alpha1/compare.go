@@ -96,12 +96,14 @@ func CompareMatch(a Match, b Match) int {
 }
 
 type Route struct {
-	Name                  string
-	Origin                kri.Identifier
-	Match                 Match
-	Filters               []Filter
-	BackendRefs           []resolve.ResolvedBackendRef
-	UnresolvedBackendRefs bool
+	Name        string
+	Origin      kri.Identifier
+	Match       Match
+	Filters     []Filter
+	BackendRefs []resolve.ResolvedBackendRef
+	// AllBackendRefsUnresolved is true when the rule declares backendRefs and
+	// none of them resolve, which is the case the Gateway API answers with 500.
+	AllBackendRefsUnresolved bool
 	// MirrorBackendRefs contains resolved backendRefs of RequestMirror filters,
 	// keyed by the index of the filter in Filters.
 	MirrorBackendRefs map[int]resolve.ResolvedBackendRef
