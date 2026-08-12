@@ -127,12 +127,16 @@ func meshServiceRefLabels(ms *meshservice_k8s.MeshService) map[string]string {
 	}
 }
 
+// gapiMeshServiceToMeshRoute returns the MeshHTTPRoute for a MeshService
+// parentRef. It reports false when the parentRef names a port the MeshService
+// does not have, which the caller turns into an unaccepted parent.
 func (r *HTTPRouteReconciler) gapiMeshServiceToMeshRoute(
 	routeNamespace string,
 	rules []v1alpha1.Rule,
 	parent *meshservice_k8s.MeshService,
 	parentPort *gatewayapi_v1.PortNumber,
-) core_model.ResourceSpec {
+	parentSectionName *gatewayapi_v1.SectionName,
+) (core_model.ResourceSpec, bool) {
 	// consumer route
 	targetRef := common_api.TopLevelTargetRef{
 		Kind: common_api.TopLevelTargetRefKindDataplane,
@@ -156,8 +160,21 @@ func (r *HTTPRouteReconciler) gapiMeshServiceToMeshRoute(
 			if parentPort != nil && port.Port != *parentPort {
 				continue
 			}
+			// Port.GetName falls back to the stringified port, so a
+			// sectionName matches a named and an unnamed port alike.
+			if parentSectionName != nil && port.GetName() != string(*parentSectionName) {
+				continue
+			}
 			ports = append(ports, port)
 		}
+	}
+
+	// A parentRef that names a port the MeshService does not have is a user
+	// error worth reporting. A MeshService with no ports at all is not: its
+	// port list is briefly empty while its controller observes endpoints, and
+	// reporting that would flap the route status.
+	if len(ports) == 0 && (parentPort != nil || parentSectionName != nil) {
+		return nil, false
 	}
 
 	labels := meshServiceRefLabels(parent)
@@ -175,7 +192,7 @@ func (r *HTTPRouteReconciler) gapiMeshServiceToMeshRoute(
 	return &v1alpha1.MeshHTTPRoute{
 		TargetRef: &targetRef,
 		To:        &tos,
-	}
+	}, true
 }
 
 func (r *HTTPRouteReconciler) gapiToKumaMeshRule(

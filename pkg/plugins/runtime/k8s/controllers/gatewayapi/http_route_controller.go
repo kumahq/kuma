@@ -182,7 +182,22 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				parent.GetNamespace(),
 			)
 
-			routes[routeSubName] = r.gapiMeshServiceToMeshRoute(route.Namespace, rules, &parent, ref.Port)
+			meshRoute, ok := r.gapiMeshServiceToMeshRoute(route.Namespace, rules, &parent, ref.Port, ref.SectionName)
+			if !ok {
+				parentConditions = append(parentConditions,
+					kube_meta.Condition{
+						Type:    string(gatewayapi.RouteConditionAccepted),
+						Status:  kube_meta.ConditionFalse,
+						Reason:  string(gatewayapi_v1.RouteReasonNoMatchingParent),
+						Message: fmt.Sprintf("MeshService %q has no port matching the parentRef", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
+					},
+				)
+
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
+				continue
+			}
+
+			routes[routeSubName] = meshRoute
 		}
 
 		conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))

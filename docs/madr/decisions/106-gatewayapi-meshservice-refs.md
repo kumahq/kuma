@@ -46,13 +46,23 @@ Gateway API requires `port` on a `Service` `backendRef`, because a `Service` can
 
 An unresolvable reference — the `MeshService` does not exist, or `port` does not match any `spec.ports[].port` — reports `ResolvedRefs=False` with reason `BackendNotFound`, the same behavior an unresolvable `Service` `backendRef` already has today.
 
+### parentRef sectionName
+
+Gateway API interprets `sectionName` on a `Service` parentRef as a port name, and requires an implementation that accepts another parent kind to state how it reads `sectionName` for that kind. On a `MeshService` parentRef it names a port too: it matches `Port.GetName()`, which is the port's `name` when it has one and the stringified `port` when it does not, so `sectionName: http` and `sectionName: "80"` both select a port. `sectionName` is Core support in Gateway API and `port` is experimental, so a `MeshService` parentRef honours the name, not only the number.
+
+When a parentRef sets both, a port has to match both, which is what Gateway API asks for: the name and the port of the selected port must match both specified values. Setting neither targets every port the `MeshService` exposes.
+
+The `Service` parentRef path still reads `port` alone. #17987 covers it, and it should adopt the same rule.
+
 ### Zero-port MeshServices
 
-A `MeshService` can be created with no `spec.ports` at all (e.g. before its controller has observed any endpoints). A parentRef or backendRef to such a `MeshService` resolves successfully — it is not treated as `BackendNotFound` — but produces zero `to[]` entries in the generated `MeshHTTPRoute`, i.e. a route that matches but sends traffic nowhere. This mirrors what already happens for a `Service` with no ports, and avoids flapping the route's status every time the `MeshService`'s port list is briefly empty during reconciliation.
+A `MeshService` can be created with no `spec.ports` at all (e.g. before its controller has observed any endpoints). A parentRef that names no port resolves successfully against such a `MeshService` — it is not treated as `NoMatchingParent` — and produces zero `to[]` entries, i.e. a route that matches but sends traffic nowhere. That keeps the route's status still while the `MeshService`'s port list is briefly empty during reconciliation.
+
+A parentRef that does name a port, by `port` or by `sectionName`, is a different case. Nothing can match it, there is no flapping to protect against, and the reference is a plain user error, so the ref reports `Accepted=False` with reason `NoMatchingParent` and generates no route.
 
 ### parentRef routing and naming
 
-A `MeshService` parentRef produces a `MeshHTTPRoute.kuma.io`, exactly like a `Service` parentRef does: a producer route (`targetRef.kind: Mesh`) when the `HTTPRoute` and the `MeshService` share a namespace, a consumer route (`targetRef.kind: Dataplane`, labeled by the route's namespace) otherwise. One `to[]` entry is generated per `MeshService` port (filtered to the referenced port when `parentRef.port` is set), each entry's `targetRef.kind` is `MeshService`, addressed by `kuma.io/display-name` and `k8s.kuma.io/namespace` labels — the same labels `KubernetesMetaAdapter.GetLabels` computes, so a display-name annotation override or a headless `Service`'s hashed `MeshService` name resolve identically whether the `MeshService` was hand-written or `Service`-generated.
+A `MeshService` parentRef produces a `MeshHTTPRoute.kuma.io`, exactly like a `Service` parentRef does: a producer route (`targetRef.kind: Mesh`) when the `HTTPRoute` and the `MeshService` share a namespace, a consumer route (`targetRef.kind: Dataplane`, labeled by the route's namespace) otherwise. One `to[]` entry is generated per `MeshService` port (filtered to the referenced port when `parentRef.port` or `parentRef.sectionName` is set), each entry's `targetRef.kind` is `MeshService`, addressed by `kuma.io/display-name` and `k8s.kuma.io/namespace` labels — the same labels `KubernetesMetaAdapter.GetLabels` computes, so a display-name annotation override or a headless `Service`'s hashed `MeshService` name resolve identically whether the `MeshService` was hand-written or `Service`-generated.
 
 The generated route's Kubernetes object name is
 `<route>-<route-ns>-meshservice-<parent>.<parent-ns>`, with an explicit `meshservice` infix, unlike the `Service` path's `<route>-<route-ns>-<parent>.<parent-ns>`. This is required, not cosmetic: a `Service` auto-generates a `MeshService` of the same name and namespace, so an `HTTPRoute` that names both the `Service` and its generated `MeshService` as parents would produce the same sub-route key for both without the infix, and the second `Reconcile` write would silently overwrite the first in `common.ReconcileLabelledObject`'s owned-object map. The `Service` path's names are left unchanged to avoid regenerating every existing `MeshHTTPRoute` on upgrade.
@@ -81,7 +91,7 @@ None known; the enterprise fork does not currently define its own Gateway API Me
 
 ## Decision
 
-`group: kuma.io, kind: MeshService` is accepted as a Gateway API `parentRef` and `backendRef` kind, alongside the existing `Service` kind, in the GAMMA `HTTPRoute` translator. `port` is optional on a `MeshService` `backendRef`; when set it must match a `MeshService` port, and when omitted the reference targets every port. A `backendRef` to a `MeshService` that does not exist, or with a `port` that does not match any of its ports, reports `ResolvedRefs=False`; an unresolvable `parentRef` reports `Accepted=False` rather than dropping the route silently. `HTTPRoute`s re-reconcile when a referenced `MeshService` changes. The `Service` path — its conditions, sub-route names, and NotFound handling — is left byte-identical.
+`group: kuma.io, kind: MeshService` is accepted as a Gateway API `parentRef` and `backendRef` kind, alongside the existing `Service` kind, in the GAMMA `HTTPRoute` translator. `port` is optional on a `MeshService` `backendRef`; when set it must match a `MeshService` port, and when omitted the reference targets every port. A `backendRef` to a `MeshService` that does not exist, or with a `port` that does not match any of its ports, reports `ResolvedRefs=False`; an unresolvable `parentRef` reports `Accepted=False` rather than dropping the route silently. A `MeshService` `parentRef` reads `sectionName` as a port name and `port` as a port number, and a parentRef that names a port the `MeshService` does not have reports `Accepted=False`. `HTTPRoute`s re-reconcile when a referenced `MeshService` changes. The `Service` path — its conditions, sub-route names, and NotFound handling — is left byte-identical.
 
 Out of scope for this decision: `MeshMultiZoneService` and `MeshExternalService` references, which are deferred to follow-up work once this shape has proven out; and any change to the pre-existing gaps in the `Service` path (its missing parentRef index, its silent drop on a missing parent).
 

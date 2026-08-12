@@ -193,8 +193,9 @@ var _ = Describe("gapiMeshServiceToMeshRoute", func() {
 	reconciler := &HTTPRouteReconciler{}
 
 	It("produces a producer route (Mesh targetRef) when the route shares the MeshService namespace", func() {
-		spec := reconciler.gapiMeshServiceToMeshRoute("kuma-demo", nil,
-			meshService(meshservice_api.Port{Port: 80, Name: pointer.To("http")}), nil)
+		spec, matched := reconciler.gapiMeshServiceToMeshRoute("kuma-demo", nil,
+			meshService(meshservice_api.Port{Port: 80, Name: pointer.To("http")}), nil, nil)
+		Expect(matched).To(BeTrue())
 
 		route, ok := spec.(*v1alpha1.MeshHTTPRoute)
 		Expect(ok).To(BeTrue())
@@ -202,8 +203,9 @@ var _ = Describe("gapiMeshServiceToMeshRoute", func() {
 	})
 
 	It("produces a consumer route (Dataplane targetRef) when the route is in a different namespace", func() {
-		spec := reconciler.gapiMeshServiceToMeshRoute("other-ns", nil,
-			meshService(meshservice_api.Port{Port: 80, Name: pointer.To("http")}), nil)
+		spec, matched := reconciler.gapiMeshServiceToMeshRoute("other-ns", nil,
+			meshService(meshservice_api.Port{Port: 80, Name: pointer.To("http")}), nil, nil)
+		Expect(matched).To(BeTrue())
 
 		route, ok := spec.(*v1alpha1.MeshHTTPRoute)
 		Expect(ok).To(BeTrue())
@@ -214,10 +216,11 @@ var _ = Describe("gapiMeshServiceToMeshRoute", func() {
 	})
 
 	It("creates one `to` entry per MeshService port with the port name as sectionName", func() {
-		spec := reconciler.gapiMeshServiceToMeshRoute("kuma-demo", nil,
+		spec, matched := reconciler.gapiMeshServiceToMeshRoute("kuma-demo", nil,
 			meshService(meshservice_api.Port{Port: 80, Name: pointer.To("http")},
 				meshservice_api.Port{Port: 443, Name: pointer.To("https")},
-			), nil)
+			), nil, nil)
+		Expect(matched).To(BeTrue())
 
 		entries := toEntries(spec)
 		Expect(entries).To(HaveLen(2))
@@ -232,18 +235,63 @@ var _ = Describe("gapiMeshServiceToMeshRoute", func() {
 
 	It("selects only the port referenced by parentPort", func() {
 		port := gatewayapi_v1.PortNumber(443)
-		spec := reconciler.gapiMeshServiceToMeshRoute("kuma-demo", nil,
+		spec, matched := reconciler.gapiMeshServiceToMeshRoute("kuma-demo", nil,
 			meshService(meshservice_api.Port{Port: 80, Name: pointer.To("http")},
 				meshservice_api.Port{Port: 443, Name: pointer.To("https")},
-			), &port)
+			), &port, nil)
+		Expect(matched).To(BeTrue())
 
 		entries := toEntries(spec)
 		Expect(entries).To(HaveLen(1))
 		Expect(pointer.Deref(entries[0].TargetRef.SectionName)).To(Equal("https"))
 	})
 
+	It("selects only the port named by parentSectionName", func() {
+		sectionName := gatewayapi_v1.SectionName("https")
+		spec, matched := reconciler.gapiMeshServiceToMeshRoute("kuma-demo", nil,
+			meshService(meshservice_api.Port{Port: 80, Name: pointer.To("http")},
+				meshservice_api.Port{Port: 443, Name: pointer.To("https")},
+			), nil, &sectionName)
+		Expect(matched).To(BeTrue())
+
+		entries := toEntries(spec)
+		Expect(entries).To(HaveLen(1))
+		Expect(pointer.Deref(entries[0].TargetRef.SectionName)).To(Equal("https"))
+	})
+
+	It("names an unnamed port by its number", func() {
+		sectionName := gatewayapi_v1.SectionName("443")
+		spec, matched := reconciler.gapiMeshServiceToMeshRoute("kuma-demo", nil,
+			meshService(meshservice_api.Port{Port: 443}), nil, &sectionName)
+		Expect(matched).To(BeTrue())
+
+		entries := toEntries(spec)
+		Expect(entries).To(HaveLen(1))
+		Expect(pointer.Deref(entries[0].TargetRef.SectionName)).To(Equal("443"))
+	})
+
+	It("reports no match when parentPort and parentSectionName disagree", func() {
+		port := gatewayapi_v1.PortNumber(80)
+		sectionName := gatewayapi_v1.SectionName("https")
+		_, matched := reconciler.gapiMeshServiceToMeshRoute("kuma-demo", nil,
+			meshService(meshservice_api.Port{Port: 80, Name: pointer.To("http")},
+				meshservice_api.Port{Port: 443, Name: pointer.To("https")},
+			), &port, &sectionName)
+
+		Expect(matched).To(BeFalse())
+	})
+
+	It("reports no match when the referenced port does not exist", func() {
+		port := gatewayapi_v1.PortNumber(8080)
+		_, matched := reconciler.gapiMeshServiceToMeshRoute("kuma-demo", nil,
+			meshService(meshservice_api.Port{Port: 80, Name: pointer.To("http")}), &port, nil)
+
+		Expect(matched).To(BeFalse())
+	})
+
 	It("produces no `to` entries for a MeshService with no ports", func() {
-		spec := reconciler.gapiMeshServiceToMeshRoute("kuma-demo", nil, meshService(), nil)
+		spec, matched := reconciler.gapiMeshServiceToMeshRoute("kuma-demo", nil, meshService(), nil, nil)
+		Expect(matched).To(BeTrue())
 
 		Expect(toEntries(spec)).To(BeEmpty())
 	})
