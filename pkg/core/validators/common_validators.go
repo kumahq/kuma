@@ -295,14 +295,15 @@ func ValidateLength(path PathBuilder, maxLength int, v string) ValidationError {
 
 // ValidateRFC1035Name checks that the name is a valid RFC 1035 label. Names of
 // resources that are rendered into DNS hostnames by HostnameGenerator have to
-// conform to it. An empty name is skipped, it's rejected by the meta validation.
+// conform to it. An empty name is skipped, it's rejected by mesh.ValidateMeta
+// which every resource goes through before Validate() is called.
 func ValidateRFC1035Name(path PathBuilder, name string) ValidationError {
 	var err ValidationError
 	if name == "" {
 		return err
 	}
 	if violations := apimachineryvalidation.NameIsDNS1035Label(name, false); len(violations) > 0 {
-		err.AddViolationAt(path, strings.Join(violations, "; "))
+		err.AddViolationAt(path, strings.Join(violations, ", "))
 	}
 
 	return err

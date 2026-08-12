@@ -1,6 +1,8 @@
 package mesh
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
@@ -48,6 +50,11 @@ var _ = Describe("Mesh", func() {
                     or '-', start with an alphabetic character, and end with an alphanumeric
                     character (e.g. 'my-name',  or 'abc-123', regex used for validation is
                     '[a-z]([-a-z0-9]*[a-z0-9])?')`),
+			Entry("name of 63 characters", strings.Repeat("m", 63), "null"),
+			Entry("name of 64 characters", strings.Repeat("m", 64), `
+                violations:
+                - field: name
+                  message: must be no more than 63 characters`),
 		)
 	})
 })
