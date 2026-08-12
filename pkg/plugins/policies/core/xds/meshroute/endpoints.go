@@ -14,10 +14,10 @@ import (
 )
 
 // GenerateEndpoints creates a ClusterLoadAssignment for every cluster in
-// generatedClusters. Clusters that GenerateClusters skipped - a
-// MeshExternalService with no zone egress to reach it through, for example -
-// are skipped here too: an endpoint resource that no cluster references makes
-// the whole snapshot inconsistent, and the proxy is then sent nothing at all.
+// generatedClusters. A split can outlive its cluster - a destination whose KRI
+// does not encode to a valid SNI gets a split but no cluster - and an endpoint
+// resource that no cluster references makes the whole snapshot inconsistent,
+// so the proxy is then sent nothing at all. Skip those.
 func GenerateEndpoints(
 	proxy *core_xds.Proxy,
 	ctx xds_context.Context,

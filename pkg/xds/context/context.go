@@ -6,7 +6,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
@@ -111,27 +110,6 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 
 func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destination {
 	return mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
-}
-
-// GetServiceProtocol returns the protocol of a destination port, addressed by the
-// KRI of that port. Every destination is backed by a real resource, so the port
-// declares the protocol and there is nothing to infer from the endpoints behind it.
-// Names that are not a destination port KRI, and ports that no longer exist,
-// resolve to an unknown protocol.
-func (mc *MeshContext) GetServiceProtocol(serviceName string) core_meta.Protocol {
-	id, err := kri.FromString(serviceName)
-	if err != nil {
-		return core_meta.ProtocolUnknown
-	}
-	dest := mc.GetServiceByKRI(id)
-	if dest == nil {
-		return core_meta.ProtocolUnknown
-	}
-	port, found := dest.FindPortByName(id.SectionName)
-	if !found {
-		return core_meta.ProtocolUnknown
-	}
-	return port.GetProtocol()
 }
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {

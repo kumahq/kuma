@@ -226,8 +226,6 @@ func handleRealResources(
 		return nil
 	}
 
-	isExternalService := ref.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType
-
 	if common_api.TargetRefKind(ref.Resource.ResourceType) == common_api.MeshService && ref.Resource.SectionName == "" {
 		ref.Resource = kri.WithSectionName(ref.Resource, port.GetName())
 	}
@@ -235,6 +233,8 @@ func handleRealResources(
 	service := destinationname.MustResolve(dest, port)
 
 	clusterName := ref.Resource.String()
+
+	isExternalService := ref.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType
 
 	// todo(lobkovilya): instead of computing hash we should use ResourceIdentifier as a key in clusterCache (or maybe we don't need clusterCache)
 	refHash := common_api.BackendRefHash(ref.Resource.String())

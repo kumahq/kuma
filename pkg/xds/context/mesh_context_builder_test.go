@@ -641,12 +641,12 @@ var _ = Describe("EndpointMap", func() {
 		msKey := destinationname.MustResolve(ms, ms.Spec.Ports[0])
 		Expect(mc.EndpointMap).ToNot(HaveKey(msKey))
 
-		// and the external service resolves to the egress, and its protocol is
-		// read off the resource itself
+		// and the external service resolves to the egress, carrying the protocol
+		// declared on the resource
 		esKey := destinationname.MustResolve(externalService, externalService.Spec.Match)
 		Expect(mc.EndpointMap[esKey]).ToNot(BeEmpty())
 		Expect(mc.EndpointMap[esKey][0].IsExternalService()).To(BeTrue())
-		Expect(mc.GetServiceProtocol(esKey)).To(Equal(core_meta.ProtocolHTTP))
+		Expect(mc.EndpointMap[esKey][0].ExternalService.Protocol).To(Equal(core_meta.ProtocolHTTP))
 
 		// and gateway dataplanes (builtin and delegated) are not destinations
 		Expect(mc.EndpointMap).ToNot(HaveKey("gateway-builtin"))
