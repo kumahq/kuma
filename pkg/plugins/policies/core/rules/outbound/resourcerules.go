@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -13,7 +14,9 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type ResourceRule struct {
@@ -73,14 +76,14 @@ type ToEntry interface {
 // BuildRules constructs ResourceRules from the given policies and resource reader.
 // It first extracts 'to' entries from the policies and then builds the rules based on these entries.
 func BuildRules(policies core_model.ResourceList, reader kri.ResourceReader) (ResourceRules, error) {
-	entries, err := GetEntries(policies)
+	entries, err := GetEntries(policies, reader)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get 'to' entries")
 	}
 	return buildRules(entries, reader)
 }
 
-func GetEntries(policies core_model.ResourceList) ([]common.WithPolicyAttributes[ToEntry], error) {
+func GetEntries(policies core_model.ResourceList, reader kri.ResourceReader) ([]common.WithPolicyAttributes[ToEntry], error) {
 	policiesWithTo, ok := common.Cast[core_model.PolicyWithToList](policies.GetItems())
 	if !ok {
 		return nil, nil
@@ -89,7 +92,11 @@ func GetEntries(policies core_model.ResourceList) ([]common.WithPolicyAttributes
 	entries := []common.WithPolicyAttributes[ToEntry]{}
 
 	for i, pwt := range policiesWithTo {
-		for j, item := range pwt.GetToList() {
+		items, err := buildToListWithRoutes(policies.GetItems()[i].GetMeta(), pwt, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
+		if err != nil {
+			return nil, err
+		}
+		for j, item := range items {
 			entries = append(entries, common.WithPolicyAttributes[ToEntry]{
 				Entry:     item,
 				Meta:      policies.GetItems()[i].GetMeta(),
@@ -99,6 +106,85 @@ func GetEntries(policies core_model.ResourceList) ([]common.WithPolicyAttributes
 		}
 	}
 	return entries, nil
+}
+
+func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model.PolicyWithToList, httpRoutes []core_model.Resource) ([]ToEntry, error) {
+	if policyWithTo.GetTargetRef().Kind != common_api.MeshHTTPRoute {
+		return toEntries(policyWithTo.GetToList()), nil
+	}
+
+	routeLabels := pointer.Deref(policyWithTo.GetTargetRef().Labels)
+	if len(routeLabels) == 0 {
+		return nil, errors.New("can't resolve MeshHTTPRoute policy")
+	}
+
+	targetSubset := subsetutils.NewSubset(routeLabels)
+	var matchedRoutes []*meshhttproute_api.MeshHTTPRouteResource
+	for _, route := range httpRoutes {
+		if !targetSubset.IsSubset(subsetutils.NewSubset(route.GetMeta().GetLabels())) {
+			continue
+		}
+		if !policySelectsByNamespace(meta, route.GetMeta()) {
+			continue
+		}
+		if r, ok := route.(*meshhttproute_api.MeshHTTPRouteResource); ok {
+			matchedRoutes = append(matchedRoutes, r)
+		}
+	}
+	if len(matchedRoutes) == 0 {
+		return nil, errors.New("can't resolve MeshHTTPRoute policy")
+	}
+
+	var entries []ToEntry
+	for _, route := range matchedRoutes {
+		for _, routeTo := range pointer.Deref(route.Spec.To) {
+			targetRef := routeTo.TargetRef.ToTargetRef()
+			if targetRef.Kind == common_api.MeshService && pointer.Deref(targetRef.Labels)[mesh_proto.DisplayName] == "" {
+				return nil, errors.Errorf("can't resolve %s targetRef to a service: kuma.io/display-name label is required", routeTo.TargetRef.Kind)
+			}
+			for range routeTo.Rules {
+				for _, to := range policyWithTo.GetToList() {
+					entries = append(entries, &artificialToEntry{
+						targetRef: targetRef,
+						conf:      to.GetDefault(),
+					})
+				}
+			}
+		}
+	}
+
+	return entries, nil
+}
+
+func policySelectsByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) bool {
+	switch core_model.PolicyRole(policyMeta) {
+	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
+		ns, ok := policyMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
+		return ok && ns == resourceMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
+	default:
+		return true
+	}
+}
+
+func toEntries(items []core_model.PolicyItem) []ToEntry {
+	entries := make([]ToEntry, 0, len(items))
+	for _, item := range items {
+		entries = append(entries, item)
+	}
+	return entries
+}
+
+type artificialToEntry struct {
+	targetRef common_api.TargetRef
+	conf      any
+}
+
+func (a *artificialToEntry) GetTargetRef() common_api.TargetRef {
+	return a.targetRef
+}
+
+func (a *artificialToEntry) GetDefault() any {
+	return a.conf
 }
 
 func buildRules[T interface {

@@ -70,7 +70,7 @@ var _ = Describe("MeshReconciler", func() {
 
 	createMesh := func() {
 		mesh := mesh.NewMeshResource()
-		mesh.Spec = samples.MeshMTLS().Spec
+		mesh.Spec = samples.MeshDefault().Spec
 		Expect(
 			resourceManager.Create(context.Background(), mesh, core_store.CreateByKey("default", core_model.NoMesh)),
 		).To(Succeed())

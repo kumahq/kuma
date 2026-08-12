@@ -6,10 +6,8 @@ import (
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
@@ -26,10 +24,6 @@ func (p plugin) Order() int { return api.MeshPassthroughResourceTypeDescriptor.O
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshPassthroughType, dataplane, resources, opts...)
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {

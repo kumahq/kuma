@@ -26,11 +26,9 @@ import (
 	bldrs_listener "github.com/kumahq/kuma/v3/pkg/envoy/builders/listener"
 	bldrs_matcher "github.com/kumahq/kuma/v3/pkg/envoy/builders/matcher"
 	bldrs_route "github.com/kumahq/kuma/v3/pkg/envoy/builders/route"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/plugin/xds"
@@ -54,10 +52,6 @@ func (p plugin) Order() int { return api.MeshAccessLogResourceTypeDescriptor.Ord
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshAccessLogType, dataplane, resources, opts...)
 }
 
 func workloadIdentity(proxy *core_xds.Proxy) (string, string) {
@@ -104,10 +98,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToZoneProxyListeners(rs, policies.FromRules, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
-	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
+	if err := applyToTransparentProxyListeners(ctx.Mesh.Resource, policies.ToRules, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
-	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
+	if err := applyToDirectAccess(ctx.Mesh.Resource, policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, accessLogSocketPath, zone, workloadKRI); err != nil {
 		return err
 	}
 	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
@@ -149,36 +143,27 @@ func applyToInbounds(
 	workloadKRI string,
 ) error {
 	configured := map[core_rules.InboundListener]struct{}{}
-	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
-		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
-
-		listenerKey := core_rules.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
+	return policies_xds.ForEachInbound[api.Conf](dataplane, rules, func(m policies_xds.InboundMatch[api.Conf]) error {
+		if _, ok := configured[m.Listener]; ok {
+			return nil
 		}
-		if _, ok := configured[listenerKey]; ok {
-			continue
-		}
-		listener, ok := inboundListeners[listenerKey]
+		listener, ok := inboundListeners[m.Listener]
 		if !ok {
-			continue
+			return nil
 		}
-		configured[listenerKey] = struct{}{}
-		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
+		configured[m.Listener] = struct{}{}
+		protocol := core_meta.ParseProtocol(m.Inbound.GetProtocol())
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
 			SourceIP:           dataplane.GetAddress(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
-			DestinationService: dataplane.InboundIdentifyingName(inbound),
+			DestinationService: dataplane.InboundIdentifyingName(m.Inbound),
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
 			WorkloadKRI:        workloadKRI,
 			TrafficDirection:   envoy.TrafficDirectionInbound,
 		}
-		if err := configureListenerFromRules(rules.InboundRules[listenerKey], listener, backends, DefaultFormat(protocol), kumaValues, accessLogSocketPath); err != nil {
-			return err
-		}
-	}
-	return nil
+		return configureListenerFromRules(m.Rules, listener, backends, DefaultFormat(protocol), kumaValues, accessLogSocketPath)
+	})
 }
 
 func applyToZoneProxyListeners(
@@ -231,11 +216,11 @@ func applyToZoneProxyListeners(
 }
 
 func applyToTransparentProxyListeners(
-	policies core_xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+	mesh *core_mesh.MeshResource, toRules core_rules.ToRules, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
 	backends *EndpointAccumulator, path string, zone string, workloadKRI string,
 ) error {
-	conf := core_rules.ComputeConf[api.Conf](policies.ToRules.Rules, subsetutils.KumaServiceTagElement(core_meta.PassThroughServiceName))
-	if conf == nil {
+	conf := outbound.RootContext[api.Conf](mesh, toRules.ResourceRules).Conf()
+	if conf == (api.Conf{}) {
 		return nil
 	}
 
@@ -250,24 +235,24 @@ func applyToTransparentProxyListeners(
 	}
 
 	if ipv4 != nil {
-		if err := configureListener(*conf, ipv4, backends, core_meta.ProtocolTCP, kumaValues, path); err != nil {
+		if err := configureListener(conf, ipv4, backends, core_meta.ProtocolTCP, kumaValues, path); err != nil {
 			return err
 		}
 	}
 
 	if ipv6 != nil {
-		return configureListener(*conf, ipv6, backends, core_meta.ProtocolTCP, kumaValues, path)
+		return configureListener(conf, ipv6, backends, core_meta.ProtocolTCP, kumaValues, path)
 	}
 
 	return nil
 }
 
 func applyToDirectAccess(
-	rules core_rules.ToRules, directAccess map[model.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+	mesh *core_mesh.MeshResource, rules core_rules.ToRules, directAccess map[model.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
 	backends *EndpointAccumulator, path string, zone string, workloadKRI string,
 ) error {
-	conf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.KumaServiceTagElement(core_meta.PassThroughServiceName))
-	if conf == nil {
+	conf := outbound.RootContext[api.Conf](mesh, rules.ResourceRules).Conf()
+	if conf == (api.Conf{}) {
 		return nil
 	}
 
@@ -281,7 +266,7 @@ func applyToDirectAccess(
 			WorkloadKRI:        workloadKRI,
 			TrafficDirection:   envoy.TrafficDirectionOutbound,
 		}
-		return configureListener(*conf, listener, backends, core_meta.ProtocolTCP, kumaValues, path)
+		return configureListener(conf, listener, backends, core_meta.ProtocolTCP, kumaValues, path)
 	}
 
 	return nil

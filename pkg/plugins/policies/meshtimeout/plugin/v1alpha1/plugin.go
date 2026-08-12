@@ -17,12 +17,10 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/plugin/xds"
@@ -42,10 +40,6 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshTimeoutType, dataplane, resources, opts...)
-}
-
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshTimeoutType]
 	if !ok {
@@ -60,16 +54,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 	if err := applyToZoneProxyListeners(policies, listeners, clusters, proxy); err != nil {
 		return err
-	}
-	for serviceName, cluster := range clusters.Outbound {
-		if err := applyToClusters(policies.ToRules.Rules, serviceName, ctx.Mesh.GetServiceProtocol(serviceName), cluster); err != nil {
-			return err
-		}
-	}
-	for serviceName, clusters := range clusters.OutboundSplit {
-		if err := applyToClusters(policies.ToRules.Rules, serviceName, ctx.Mesh.GetServiceProtocol(serviceName), clusters...); err != nil {
-			return err
-		}
 	}
 
 	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
@@ -86,27 +70,18 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 }
 
 func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, inboundClusters map[string]*envoy_cluster.Cluster, dataplane *core_mesh.DataplaneResource) error {
-	for _, inbound := range dataplane.Spec.Networking.GetInbound() {
-		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
-
-		listenerKey := core_rules.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
-		}
-
-		listener, ok := inboundListeners[listenerKey]
+	return xds.ForEachInbound[api.Conf](dataplane, fromRules, func(m xds.InboundMatch[api.Conf]) error {
+		listener, ok := inboundListeners[m.Listener]
 		if !ok {
-			continue
+			return nil
 		}
 
-		protocol := core_meta.ParseProtocol(inbound.GetProtocol())
+		protocol := core_meta.ParseProtocol(m.Inbound.GetProtocol())
 
-		inboundRules := fromRules.InboundRules[listenerKey]
-		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](inboundRules)
-		applyCommonConf := len(inboundRules) == 0 || hasCatchAllInboundRule(inboundRules)
+		applyCommonConf := len(m.Rules) == 0 || hasCatchAllInboundRule(m.Rules)
 		configurer := plugin_xds.ListenerConfigurer{
-			Conf:             conf,
-			Rules:            inboundRules,
+			Conf:             m.Conf,
+			Rules:            m.Rules,
 			SkipCommonConfig: !applyCommonConf,
 		}
 
@@ -114,37 +89,21 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			return err
 		}
 
-		clusterName := naming.MustContextualInboundName(dataplane, iface.InboundName)
+		clusterName := naming.MustContextualInboundName(dataplane, m.Interface.InboundName)
 		cluster, ok := inboundClusters[clusterName]
 		if !ok {
-			continue
+			return nil
 		}
 
 		if applyCommonConf {
-			clusterConfigurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
+			clusterConfigurer := plugin_xds.ClusterConfigurerFromConf(m.Conf, protocol)
 			if err := clusterConfigurer.Configure(cluster); err != nil {
 				return err
 			}
 		}
-	}
 
-	return nil
-}
-
-func applyToClusters(
-	rules core_rules.Rules,
-	serviceName string,
-	protocol core_meta.Protocol,
-	clusters ...*envoy_cluster.Cluster,
-) error {
-	conf, _ := getConf(rules, subsetutils.KumaServiceTagElement(serviceName))
-	configurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
-	for _, cluster := range clusters {
-		if err := configurer.Configure(cluster); err != nil {
-			return err
-		}
-	}
-	return nil
+		return nil
+	})
 }
 
 func applyToZoneProxyListeners(
@@ -335,16 +294,6 @@ func buildListenerScopedInboundRules(
 	}
 
 	return rules_inbound.BuildRules(filtered)
-}
-
-func getConf(
-	rules core_rules.Rules,
-	element subsetutils.Element,
-) (api.Conf, bool) {
-	if computed := rules.Compute(element); computed != nil {
-		return computed.Conf.(api.Conf), true
-	}
-	return api.Conf{}, false
 }
 
 func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.Resource) error {

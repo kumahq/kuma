@@ -72,7 +72,8 @@ var _ = Describe("MatchedPolicies", func() {
 		return res
 	}
 
-	DescribeTable("should return a list of DataplanePolicies ordered by levels for the given DPP",
+	DescribeTable(
+		"should return a list of DataplanePolicies ordered by levels for the given DPP",
 		func(given testCase) {
 			// given DPP resource
 			dpp := readDPP(given.dppFile)
@@ -103,7 +104,8 @@ var _ = Describe("MatchedPolicies", func() {
 		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "dataplanepolicies")),
 	)
 
-	DescribeTable("should return FromRules",
+	DescribeTable(
+		"should return FromRules",
 		func(given testCase) {
 			// given DPP resource
 			dpp := readDPP(given.dppFile)
@@ -123,7 +125,8 @@ var _ = Describe("MatchedPolicies", func() {
 		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "fromrules")),
 	)
 
-	DescribeTable("should return ToRules",
+	DescribeTable(
+		"should return ToRules",
 		func(given testCase) {
 			// given DPP resource
 			dpp := readDPP(given.dppFile)
@@ -156,7 +159,8 @@ var _ = Describe("MatchedPolicies", func() {
 		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "torules")),
 	)
 
-	DescribeTable("should return ToRules for MeshExternalService",
+	DescribeTable(
+		"should return ToRules for MeshExternalService",
 		func(given testCase) {
 			// given DPP resource
 			dpp := readDPP(given.dppFile)
@@ -201,31 +205,32 @@ var _ = Describe("MatchedPolicies", func() {
 		goldenFile    string
 	}
 	DescribeTableSubtree("should match by kind Dataplane", func(givenResources testCase) {
-		DescribeTable("should TODO", func(given dataplaneTestCase) {
-			// given
-			dpp := readDPP(givenResources.dppFile)
-			test_resources.UpdateResourceMeta(given.dataplaneMeta, dpp)
+		DescribeTable(
+			"should TODO", func(given dataplaneTestCase) {
+				// given
+				dpp := readDPP(givenResources.dppFile)
+				test_resources.UpdateResourceMeta(given.dataplaneMeta, dpp)
 
-			resources, resTypes := readPolicies(givenResources.policiesFile)
+				resources, resTypes := readPolicies(givenResources.policiesFile)
 
-			resType := getResourceType(resTypes)
-			test_resources.UpdateResourcesMeta(given.policyMeta, resources.MeshLocalResources[resType])
+				resType := getResourceType(resTypes)
+				test_resources.UpdateResourcesMeta(given.policyMeta, resources.MeshLocalResources[resType])
 
-			// when
-			policies, err := matchers.MatchedPolicies(resType, dpp, resources)
-			Expect(err).ToNot(HaveOccurred())
+				// when
+				policies, err := matchers.MatchedPolicies(resType, dpp, resources)
+				Expect(err).ToNot(HaveOccurred())
 
-			// then
-			matchedPolicyList, err := registry.Global().NewList(resType)
-			Expect(err).ToNot(HaveOccurred())
+				// then
+				matchedPolicyList, err := registry.Global().NewList(resType)
+				Expect(err).ToNot(HaveOccurred())
 
-			for _, policy := range policies.DataplanePolicies {
-				Expect(matchedPolicyList.AddItem(policy)).To(Succeed())
-			}
-			bytes, err := yaml.Marshal(rest.From.ResourceList(matchedPolicyList))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(bytes)).To(test_matchers.MatchGoldenYAML(given.goldenFile))
-		},
+				for _, policy := range policies.DataplanePolicies {
+					Expect(matchedPolicyList.AddItem(policy)).To(Succeed())
+				}
+				bytes, err := yaml.Marshal(rest.From.ResourceList(matchedPolicyList))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(bytes)).To(test_matchers.MatchGoldenYAML(given.goldenFile))
+			},
 			Entry("uni zone", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneUni,
 				policyMeta:    test_resources.ZoneUni,

@@ -15,6 +15,9 @@ type OutboundRoute struct {
 	Name    string
 	Match   api.Match
 	Filters []api.Filter
+	// AllBackendRefsUnresolved is true when the rule declares backendRefs and
+	// none of them resolve, which is the case the Gateway API answers with 500.
+	AllBackendRefsUnresolved bool
 	// MirrorSplits contains splits of the clusters created for RequestMirror
 	// filters, keyed by the index of the filter in Filters
 	MirrorSplits map[int]envoy_common.Split
@@ -35,11 +38,12 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 	for _, route := range c.Routes {
 		route := envoy_virtual_hosts.AddVirtualHostConfigurer(
 			&RoutesConfigurer{
-				Name:         route.Name,
-				Match:        route.Match,
-				Filters:      route.Filters,
-				MirrorSplits: route.MirrorSplits,
-				Split:        route.Split,
+				Name:                     route.Name,
+				Match:                    route.Match,
+				Filters:                  route.Filters,
+				AllBackendRefsUnresolved: route.AllBackendRefsUnresolved,
+				MirrorSplits:             route.MirrorSplits,
+				Split:                    route.Split,
 			})
 		virtualHostBuilder = virtualHostBuilder.Configure(route)
 	}

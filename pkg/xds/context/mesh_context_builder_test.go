@@ -359,8 +359,9 @@ status:
 	})
 
 	It("recomputes the mesh context when a remote MeshService and its MeshZoneAddress newly appear", func() {
-		// given an mTLS-enabled mesh, matching the e2e repro
-		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
+		// given a mesh whose proxies get a workload identity, matching the e2e repro
+		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())
+		Expect(builders.MeshIdentity().Create(resourceStore)).To(Succeed())
 
 		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
 		Expect(err).ToNot(HaveOccurred())
@@ -396,7 +397,8 @@ status:
 			},
 			"zone-1",
 		)
-		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
+		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())
+		Expect(builders.MeshIdentity().Create(resourceStore)).To(Succeed())
 		Expect(test_store.LoadResources(context.Background(), resourceStore, remoteMeshZoneAddressWithHostname)).To(Succeed())
 		Expect(samples.MeshServiceSyncedBackendBuilder().Create(resourceStore)).To(Succeed())
 
@@ -415,8 +417,9 @@ status:
 	})
 
 	It("recomputes the mesh context through the staged arrival matching the real KDS sequence", func() {
-		// given an mTLS-enabled mesh
-		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
+		// given a mesh whose proxies get a workload identity
+		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())
+		Expect(builders.MeshIdentity().Create(resourceStore)).To(Succeed())
 
 		ctx0, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
 		Expect(err).ToNot(HaveOccurred())

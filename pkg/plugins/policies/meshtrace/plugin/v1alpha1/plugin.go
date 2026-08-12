@@ -24,7 +24,6 @@ import (
 	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
@@ -49,10 +48,6 @@ func (p plugin) Order() int { return api.MeshTraceResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshTraceType, dataplane, resources, opts...)
 }
 
 func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.Proxy) error {
@@ -82,7 +77,10 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 }
 
 func applyToInbounds(ctx xds_context.Context, policies xds.TypedMatchingPolicies, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, proxy *xds.Proxy) error {
-	sectionNames := inboundSectionNames(proxy.Dataplane.Spec.GetNetworking())
+	sectionNames, err := inboundSectionNames(proxy.Dataplane)
+	if err != nil {
+		return err
+	}
 	for key, inboundListener := range inboundListeners {
 		listenerPolicyConf, err := buildListenerScopedProxyConf(policies, sectionNames[key])
 		if err != nil {
@@ -99,14 +97,13 @@ func applyToInbounds(ctx xds_context.Context, policies xds.TypedMatchingPolicies
 	return nil
 }
 
-func inboundSectionNames(n *mesh_proto.Dataplane_Networking) map[core_rules.InboundListener]string {
+func inboundSectionNames(dataplane *core_mesh.DataplaneResource) (map[core_rules.InboundListener]string, error) {
 	result := map[core_rules.InboundListener]string{}
-	for _, inb := range n.GetInbound() {
-		iface := n.ToInboundInterface(inb)
-		key := core_rules.InboundListener{Address: iface.DataplaneIP, Port: iface.DataplanePort}
-		result[key] = inb.GetSectionName()
-	}
-	return result
+	err := policies_xds.ForEachInbound[api.Conf](dataplane, core_rules.FromRules{}, func(m policies_xds.InboundMatch[api.Conf]) error {
+		result[m.Listener] = m.Inbound.GetSectionName()
+		return nil
+	})
+	return result, err
 }
 
 func applyToZoneProxyListeners(ctx xds_context.Context, policies xds.TypedMatchingPolicies, rs *xds.ResourceSet, proxy *xds.Proxy) error {
@@ -178,12 +175,12 @@ func buildListenerScopedProxyConf(policies xds.TypedMatchingPolicies, sectionNam
 }
 
 func applyToRealResources(ctx xds_context.Context, policyConf *core_rules.ProxyConf, rs *xds.ResourceSet, proxy *xds.Proxy) error {
-	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
+	return policies_xds.ForEachOrigin(rs, func(uri kri.Identifier, resType xds.ResourcesByType) error {
 		service, port, found := meshroute.DestinationPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
 			Resource: uri,
 		})
 		if !found {
-			continue
+			return nil
 		}
 		for typ, resources := range resType {
 			if typ == envoy_resource.ListenerType {
@@ -195,8 +192,8 @@ func applyToRealResources(ctx xds_context.Context, policyConf *core_rules.ProxyC
 				}
 			}
 		}
-	}
-	return nil
+		return nil
+	}, xds.NonMeshExternalService)
 }
 
 func configureListener(ctx xds_context.Context, policyConf *core_rules.ProxyConf, proxy *xds.Proxy, listener *envoy_listener.Listener, destination string, direction envoy_core.TrafficDirection) error {

@@ -15,7 +15,11 @@ resources:
           alpnProtocols:
           - kuma
           combinedValidationContext:
-            defaultValidationContext: {}
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://default/zone-egress
+                sanType: URI
             validationContextSdsSecretConfig:
               name: system_trust_bundle
               sdsConfig:
@@ -32,4 +36,4 @@ resources:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
-          http2ProtocolOptions: {}
+          httpProtocolOptions: {}

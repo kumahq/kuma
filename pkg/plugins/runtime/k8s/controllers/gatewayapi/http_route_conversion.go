@@ -21,7 +21,6 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 )
 
 func (r *HTTPRouteReconciler) gapiToMeshRules(
@@ -470,18 +469,18 @@ func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_
 func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	ctx context.Context, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
-	unresolvedTargetRef := common_api.TargetRef{
-		Kind: common_api.MeshService,
-		Labels: &map[string]string{
-			mesh_proto.DisplayName: metadata.UnresolvedBackendServiceTag,
-		},
-	}
-
 	gk := kube_schema.GroupKind{Kind: string(*ref.Kind), Group: string(*ref.Group)}
 	// the backendRef's namespace, falling back to the route's namespace when unset
 	refNamespace := objectNamespace
 	if ref.Namespace != nil {
 		refNamespace = string(*ref.Namespace)
+	}
+	unresolvedTargetRef := common_api.TargetRef{
+		Kind: common_api.MeshService,
+		Labels: &map[string]string{
+			mesh_proto.DisplayName:      string(ref.Name),
+			mesh_proto.KubeNamespaceTag: refNamespace,
+		},
 	}
 	namespacedName := kube_types.NamespacedName{Namespace: refNamespace, Name: string(ref.Name)}
 
