@@ -225,14 +225,13 @@ func (s *StatusUpdater) buildTLS(
 	meshIdentities []*meshidentity_api.MeshIdentityResource,
 	trustDomains map[string]struct{},
 ) meshservice_api.TLS {
+	notReady := meshservice_api.TLS{Status: meshservice_api.TLSNotReady}
 	if len(meshIdentities) == 0 {
-		return meshservice_api.TLS{
-			Status: meshservice_api.TLSNotReady,
-		}
+		return notReady
 	}
 	if existing.Status == meshservice_api.TLSReady {
 		// Once a workload identity is in place, the status should go only one way.
-		// Every new instance always starts with an identity, so we don't want to count issued backends.
+		// Every new instance always starts with mTLS, so we don't want to count ready identities.
 		// Otherwise, we could get into race when new Dataplane did not receive cert yet,
 		// We would flip TLS to NotReady for a short period of time.
 		return existing
@@ -244,13 +243,11 @@ func (s *StatusUpdater) buildTLS(
 			tlsReadyDpps++
 		}
 	}
-	if tlsReadyDpps == len(dpps) {
-		return meshservice_api.TLS{
-			Status: meshservice_api.TLSReady,
-		}
+	if tlsReadyDpps != len(dpps) {
+		return notReady
 	}
 	return meshservice_api.TLS{
-		Status: meshservice_api.TLSNotReady,
+		Status: meshservice_api.TLSReady,
 	}
 }
 

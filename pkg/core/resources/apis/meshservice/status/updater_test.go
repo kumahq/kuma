@@ -105,7 +105,7 @@ var _ = Describe("Updater", func() {
 		}, "10s", "100ms").Should(Succeed())
 	})
 
-	It("should add identities to status of service based on multiple MeshIdentities", func() {
+	It("should add identity to status of service based on multiple MeshIdentities", func() {
 		// when
 		mid := builders.MeshIdentity().WithName("identity-1").WithBundled().WithMesh("tls-mesh").WithSelector(&common_api.LabelSelector{
 			MatchLabels: &map[string]string{
@@ -200,20 +200,17 @@ var _ = Describe("Updater", func() {
 	})
 
 	type testCase struct {
-		meshBuilder            *builders.MeshBuilder
-		meshIdentities         []*meshidentity_api.MeshIdentityResource
-		meshTrusts             []*meshtrust_api.MeshTrustResource
-		dppLabels              map[string]string
-		dpInsightIssuedBackend string
-		dpInsightMissing       bool
-		existingTLSStatus      meshservice_api.TLSStatus
-		expectedTLSStatus      meshservice_api.TLSStatus
+		meshIdentities    []*meshidentity_api.MeshIdentityResource
+		meshTrusts        []*meshtrust_api.MeshTrustResource
+		dppLabels         map[string]string
+		existingTLSStatus meshservice_api.TLSStatus
+		expectedTLSStatus meshservice_api.TLSStatus
 	}
 
 	DescribeTable("mTLS updater",
 		func(given testCase) {
 			// given
-			Expect(given.meshBuilder.WithName("test").Create(resManager)).To(Succeed())
+			Expect(samples.MeshDefaultBuilder().WithName("test").Create(resManager)).To(Succeed())
 			for _, mid := range given.meshIdentities {
 				Expect(resManager.Create(context.TODO(), mid, store.CreateByKey(mid.Meta.GetName(), "test"))).To(Succeed())
 			}
@@ -226,12 +223,6 @@ var _ = Describe("Updater", func() {
 			dppLabels := map[string]string{metadata.KumaWorkload: "backend"}
 			maps.Copy(dppLabels, given.dppLabels)
 			Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().WithMesh("test").Build(), store.CreateByKey("dp-1", "test"), store.CreateWithLabels(dppLabels))).To(Succeed())
-			if !given.dpInsightMissing {
-				Expect(samples.DataplaneInsightBackendBuilder().
-					WithMesh("test").
-					WithMTLSIssuedBackend(given.dpInsightIssuedBackend).
-					Create(resManager)).To(Succeed())
-			}
 			Expect(samples.MeshServiceBackendBuilder().
 				WithMesh("test").
 				WithTLSStatus(given.existingTLSStatus).
@@ -248,27 +239,11 @@ var _ = Describe("Updater", func() {
 			}, "10s", "50ms").MustPassRepeatedly(3).Should(Succeed())
 			// MustPassRepeatedly is to make sure that when existingTLSStatus == expectedTLSStatus we actually preserve it.
 		},
-		Entry("should set TLS to NotReady when the mesh has no MeshIdentity", testCase{
-			meshBuilder:            samples.MeshDefaultBuilder(),
-			dpInsightIssuedBackend: "builtin-1",
-			existingTLSStatus:      meshservice_api.TLSReady,
-			expectedTLSStatus:      meshservice_api.TLSNotReady,
-		}),
-		Entry("should set TLS to NotReady when the mesh has no MeshIdentity and no previous status", testCase{
-			meshBuilder:            samples.MeshDefaultBuilder(),
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      "",
-			expectedTLSStatus:      meshservice_api.TLSNotReady,
-		}),
-		Entry("should set TLS to NotReady when DP has no insight", testCase{
-			meshBuilder:            samples.MeshDefaultBuilder(),
-			dpInsightMissing:       true,
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      "",
-			expectedTLSStatus:      meshservice_api.TLSNotReady,
+		Entry("should set TLS to NotReady when there is no MeshIdentity", testCase{
+			existingTLSStatus: meshservice_api.TLSReady,
+			expectedTLSStatus: meshservice_api.TLSNotReady,
 		}),
 		Entry("should set TLS to Ready when there is MeshIdentity and Trust", testCase{
-			meshBuilder: samples.MeshDefaultBuilder(),
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{
 				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
 					MatchLabels: &map[string]string{
@@ -283,12 +258,10 @@ var _ = Describe("Updater", func() {
 				"app":                         "test",
 				"k8s.kuma.io/service-account": "default",
 			},
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      "",
-			expectedTLSStatus:      meshservice_api.TLSReady,
+			existingTLSStatus: "",
+			expectedTLSStatus: meshservice_api.TLSReady,
 		}),
 		Entry("should set TLS to NotReady when there is no matching MeshIdentity", testCase{
-			meshBuilder: samples.MeshDefaultBuilder(),
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{
 				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
 					MatchLabels: &map[string]string{
@@ -303,12 +276,10 @@ var _ = Describe("Updater", func() {
 				"app":                         "test",
 				"k8s.kuma.io/service-account": "default",
 			},
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      "",
-			expectedTLSStatus:      meshservice_api.TLSNotReady,
+			existingTLSStatus: "",
+			expectedTLSStatus: meshservice_api.TLSNotReady,
 		}),
 		Entry("should set TLS to NotReady when there is no MeshTrust for identity", testCase{
-			meshBuilder: samples.MeshDefaultBuilder(),
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{
 				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
 					MatchLabels: &map[string]string{
@@ -323,12 +294,10 @@ var _ = Describe("Updater", func() {
 				"app":                         "test",
 				"k8s.kuma.io/service-account": "default",
 			},
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      "",
-			expectedTLSStatus:      meshservice_api.TLSNotReady,
+			existingTLSStatus: "",
+			expectedTLSStatus: meshservice_api.TLSNotReady,
 		}),
-		Entry("should set TLS to Ready when the DPP takes its identity from MeshIdentity", testCase{
-			meshBuilder: samples.MeshDefaultBuilder(),
+		Entry("should preserve TLS Ready even through we did not issue certs to all DPPs with MeshIdentity", testCase{
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{
 				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
 					MatchLabels: &map[string]string{
@@ -343,29 +312,8 @@ var _ = Describe("Updater", func() {
 				"app":                         "test",
 				"k8s.kuma.io/service-account": "default",
 			},
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      "",
-			expectedTLSStatus:      meshservice_api.TLSReady,
-		}),
-		Entry("should preserve TLS Ready even though not every DPP has a ready identity", testCase{
-			meshBuilder: samples.MeshDefaultBuilder(),
-			meshIdentities: []*meshidentity_api.MeshIdentityResource{
-				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
-					MatchLabels: &map[string]string{
-						"app": "test",
-					},
-				}).WithInitializedStatus().Build(),
-			},
-			meshTrusts: []*meshtrust_api.MeshTrustResource{
-				builders.MeshTrust().WithTrustDomain("test.east.mesh.local").Build(),
-			},
-			dppLabels: map[string]string{
-				"app":                         "test",
-				"k8s.kuma.io/service-account": "default",
-			},
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      meshservice_api.TLSReady,
-			expectedTLSStatus:      meshservice_api.TLSReady,
+			existingTLSStatus: meshservice_api.TLSReady,
+			expectedTLSStatus: meshservice_api.TLSReady,
 		}),
 	)
 
