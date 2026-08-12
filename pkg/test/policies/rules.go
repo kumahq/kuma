@@ -22,7 +22,6 @@ func newTestOrigin() common.Origin {
 	}
 }
 
-//nolint:staticcheck // SA1019 Test utility: creates deprecated core_rules.Rule for testing
 func NewRule(s subsetutils.Subset, conf any) *core_rules.Rule {
 	originByMatches := map[common_api.MatchesHash]core_model.ResourceMeta{}
 

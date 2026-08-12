@@ -537,11 +537,6 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 				return
 			}
 			if res.Type == meshhttproute_api.MeshHTTPRouteType {
-				for _, pol := range res.ToRules.Rules {
-					for _, r := range pol.Conf.(meshhttproute_api.PolicyDefault).Rules {
-						matchesByHash[meshhttproute_api.HashMatches(r.Matches)] = r.Matches
-					}
-				}
 				for _, resourceRule := range res.ToRules.ResourceRules {
 					for _, conf := range resourceRule.Conf {
 						if pd, ok := conf.(meshhttproute_api.PolicyDefault); ok {
@@ -553,7 +548,7 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 				}
 			}
 
-			if len(res.ToRules.Rules) == 0 && len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.InboundRules) == 0 && res.ProxyConf == nil {
+			if len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.InboundRules) == 0 && res.ProxyConf == nil {
 				continue
 			}
 			var proxyRule *api_common.ProxyRule
