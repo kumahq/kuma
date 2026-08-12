@@ -9,17 +9,14 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	meshroute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
-	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -43,10 +40,16 @@ func GenerateOutboundListener(
 	legacyRouteConfigName := envoy_names.GetOutboundRouteName(svc.KumaServiceTagValue)
 	legacyListenerName := envoy_names.GetOutboundListenerName(address, port)
 
-	routeConfigName := svc.ConditionallyResolveKRIWithFallback(true, legacyRouteConfigName)
-	virtualHostName := svc.ConditionallyResolveKRIWithFallback(true, svc.KumaServiceTagValue)
-	listenerStatPrefix := svc.ConditionallyResolveKRIWithFallback(true, "")
-	listenerName := svc.ConditionallyResolveKRIWithFallback(true, legacyListenerName)
+	routeConfigName := legacyRouteConfigName
+	virtualHostName := svc.KumaServiceTagValue
+	listenerStatPrefix := ""
+	listenerName := legacyListenerName
+	if svc.DestinationResource != "" {
+		routeConfigName = svc.DestinationResource
+		virtualHostName = svc.DestinationResource
+		listenerStatPrefix = svc.DestinationResource
+		listenerName = svc.DestinationResource
+	}
 
 	route := &xds.HttpOutboundRouteConfigurer{
 		RouteConfigName: routeConfigName,
@@ -186,21 +189,10 @@ func ComputeHTTPRouteConf(
 	svc meshroute_xds.DestinationService,
 	meshCtx xds_context.MeshContext,
 ) (*api.PolicyDefault, map[common_api.MatchesHash]common.Origin) {
-	// check if there is configuration for real MeshService and prioritize it
 	if r, ok := svc.Outbound.AssociatedServiceResource(); ok {
 		if rule := toRules.ResourceRules.Compute(r, meshCtx.Resources); rule != nil && len(rule.Conf) > 0 {
 			return pointer.To(rule.Conf[0].(api.PolicyDefault)), rule.OriginByMatches
 		}
-	}
-
-	// compute for old MeshService
-	if rule := toRules.Rules.Compute(subsetutils.KumaServiceTagElement(svc.KumaServiceTagValue)); rule != nil {
-		return pointer.To(rule.Conf.(api.PolicyDefault)), util_maps.MapValues(
-			rule.OriginByMatches,
-			func(_ common_api.MatchesHash, o core_model.ResourceMeta) common.Origin {
-				return common.Origin{Resource: o}
-			},
-		)
 	}
 
 	return nil, make(map[common_api.MatchesHash]common.Origin)

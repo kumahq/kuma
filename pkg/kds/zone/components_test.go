@@ -2,13 +2,12 @@ package zone_test
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -21,11 +20,12 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
 	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
-	kds_client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
-	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	meshtrafficpermission_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/grpc"
 	"github.com/kumahq/kuma/v3/pkg/test/kds/samples"
@@ -37,24 +37,6 @@ var _ = Describe("Zone Sync", func() {
 	var globalStore store.ResourceStore
 	var closeFunc func()
 	zoneName := "zone-1"
-
-	ingressFunc := func(zone string) *mesh_proto.ZoneIngress {
-		return &mesh_proto.ZoneIngress{
-			Zone: zone,
-			Networking: &mesh_proto.ZoneIngress_Networking{
-				Address: "192.168.0.1",
-				Port:    1212,
-			},
-			AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
-				{
-					Tags: map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    fmt.Sprintf("not-%s", zone),
-					},
-				},
-			},
-		}
-	}
 
 	VerifySyncResourcesFromGlobalToLocal := func() {
 		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))
@@ -74,42 +56,10 @@ var _ = Describe("Zone Sync", func() {
 		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
 	}
 
-	VerifySyncOfIngressesFromGlobalToZone := func() {
-		labelFn := func(zoneName string) map[string]string {
-			return map[string]string{
-				mesh_proto.ZoneTag:             zoneName,
-				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
-			}
-		}
-		// create Ingress for current zone, shouldn't be synced
-		err := globalStore.Create(context.Background(), &mesh.ZoneIngressResource{Spec: ingressFunc(zoneName)}, store.CreateByKey("dp-1", model.NoMesh), store.CreateWithLabels(labelFn(zoneName)))
-		Expect(err).ToNot(HaveOccurred())
-		err = globalStore.Create(context.Background(), &system.ZoneResource{Spec: &v1alpha1.Zone{}}, store.CreateByKey("another-zone-1", model.NoMesh))
-		Expect(err).ToNot(HaveOccurred())
-		err = globalStore.Create(context.Background(), &system.ZoneResource{Spec: &v1alpha1.Zone{}}, store.CreateByKey("another-zone-2", model.NoMesh))
-		Expect(err).ToNot(HaveOccurred())
-		err = globalStore.Create(context.Background(), &mesh.ZoneIngressResource{Spec: ingressFunc("another-zone-1")}, store.CreateByKey("dp-2", model.NoMesh), store.CreateWithLabels(labelFn("another-zone-1")))
-		Expect(err).ToNot(HaveOccurred())
-		err = globalStore.Create(context.Background(), &mesh.ZoneIngressResource{Spec: ingressFunc("another-zone-2")}, store.CreateByKey("dp-3", model.NoMesh), store.CreateWithLabels(labelFn("another-zone-2")))
-		Expect(err).ToNot(HaveOccurred())
-
-		Eventually(func() int {
-			actual := mesh.ZoneIngressResourceList{}
-			err := zoneStore.List(context.Background(), &actual)
-			Expect(err).ToNot(HaveOccurred())
-			return len(actual.Items)
-		}, "5s", "100ms").Should(Equal(2))
-
-		actual := mesh.ZoneIngressResourceList{}
-		err = zoneStore.List(context.Background(), &actual)
-		Expect(err).ToNot(HaveOccurred())
-	}
-
 	VerifyUpToDateListOfConsumedTypes := func() {
 		excludeTypes := map[model.ResourceType]bool{
 			mesh.DataplaneInsightType:  true,
 			mesh.DataplaneOverviewType: true,
-			mesh.ServiceOverviewType:   true,
 			mesh.DataplaneType:         true,
 			workload_api.WorkloadType:  true,
 		}
@@ -122,7 +72,6 @@ var _ = Describe("Zone Sync", func() {
 		// plus the global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
-			mesh.ZoneIngressType,
 			system.ConfigType,
 			system.GlobalSecretType,
 			hostnamegenerator_api.HostnameGeneratorType,
@@ -178,7 +127,7 @@ var _ = Describe("Zone Sync", func() {
 	}
 
 	Context("GlobalToZone", func() {
-		var zoneSyncer sync_store_v2.ResourceSyncer
+		var zoneSyncer kds_sync_store.ResourceSyncer
 
 		BeforeEach(func() {
 			globalStore = memory.NewStore()
@@ -210,20 +159,20 @@ var _ = Describe("Zone Sync", func() {
 			zoneStore = memory.NewStore()
 			metrics, err := core_metrics.NewMetrics("")
 			Expect(err).ToNot(HaveOccurred())
-			zoneSyncer, err = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, store.NoTransactions{}, metrics, context.Background())
+			zoneSyncer, err = kds_sync_store.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, store.NoTransactions{}, metrics, context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			wg.Add(1)
 			go func() {
 				defer GinkgoRecover()
 				defer wg.Done()
-				kdsStream := kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, "global-inst", "", len(kdsCtx.TypesSentByGlobal))
-				syncClient := kds_client_v2.NewKDSSyncClient(
+				kdsStream := kds_client.NewDeltaKDSStream(clientStream, zoneName, "global-inst", "", len(kdsCtx.TypesSentByGlobal))
+				syncClient := kds_client.NewKDSSyncClient(
 					core.Log.WithName("kds-sink"),
 					kdsCtx.TypesSentByGlobal,
 					kdsStream,
-					sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
-					kds_client_v2.SyncClientConfig{},
+					kds_sync_store.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
+					kds_client.SyncClientConfig{},
 				)
 				_ = syncClient.Receive()
 			}()
@@ -244,49 +193,47 @@ var _ = Describe("Zone Sync", func() {
 		})
 
 		It("should sync policies from global store to the local after resource is valid", func() {
-			// incorrct mesh
-			invalidMesh := &mesh_proto.Mesh{
-				Mtls: &mesh_proto.Mesh_Mtls{
-					EnabledBackend: "ca-1",
-				},
+			// a policy without rules does not pass validation, so the zone NACKs it
+			invalidPolicy := &meshtrafficpermission_api.MeshTrafficPermission{
+				TargetRef: &common_api.TopLevelTargetRef{Kind: common_api.TopLevelTargetRefKindMesh},
 			}
-			err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: invalidMesh}, store.CreateByKey("mesh-1", model.NoMesh))
+			err := globalStore.Create(
+				context.Background(),
+				&meshtrafficpermission_api.MeshTrafficPermissionResource{Spec: invalidPolicy},
+				store.CreateByKey("mtp-1", model.DefaultMesh),
+			)
 			Expect(err).ToNot(HaveOccurred())
 
 			// should not be synchronized
 			Consistently(func(g Gomega) {
-				actual := mesh.MeshResourceList{}
+				actual := meshtrafficpermission_api.MeshTrafficPermissionResourceList{}
 				err := zoneStore.List(context.Background(), &actual)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(actual.Items).To(BeEmpty())
 			}, "1s", "100ms").Should(Succeed())
 
-			mesh1 := mesh.NewMeshResource()
-			err = globalStore.Get(context.Background(), mesh1, store.GetByKey("mesh-1", model.NoMesh))
+			policy := meshtrafficpermission_api.NewMeshTrafficPermissionResource()
+			err = globalStore.Get(context.Background(), policy, store.GetByKey("mtp-1", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
 
-			// when mesh is a valid resource
-			mesh1.Spec = samples.Mesh1
-			err = globalStore.Update(context.Background(), mesh1)
+			// when the policy becomes a valid resource
+			policy.Spec = samples.MeshTrafficPermission
+			err = globalStore.Update(context.Background(), policy)
 			Expect(err).ToNot(HaveOccurred())
 
 			// should be synchronized
 			Eventually(func(g Gomega) {
-				actual := mesh.MeshResourceList{}
+				actual := meshtrafficpermission_api.MeshTrafficPermissionResourceList{}
 				err := zoneStore.List(context.Background(), &actual)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(actual.Items).To(HaveLen(1))
-			}, "1s", "100ms").Should(Succeed())
+			}, "5s", "100ms").Should(Succeed())
 
-			actual := mesh.MeshResourceList{}
+			actual := meshtrafficpermission_api.MeshTrafficPermissionResourceList{}
 			err = zoneStore.List(context.Background(), &actual)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
-		})
-
-		It("should sync ingresses", func() {
-			VerifySyncOfIngressesFromGlobalToZone()
+			Expect(actual.Items[0].Spec).To(Equal(samples.MeshTrafficPermission))
 		})
 
 		It("should have up to date list of consumed types", func() {

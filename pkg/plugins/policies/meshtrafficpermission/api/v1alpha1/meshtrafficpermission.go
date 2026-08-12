@@ -11,7 +11,7 @@ type MeshTrafficPermission struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef *common_api.TopLevelTargetRef `json:"targetRef,omitempty"`
 	// Rules defines inbound permissions configuration
 	Rules *[]Rule `json:"rules,omitempty"`
 }

@@ -54,6 +54,21 @@ selector:
 `,
 			},
 		),
+		Entry(
+			"unsupported port appProtocol",
+			ResourceValidationCase{
+				Violations: []validators.Violation{{
+					Field:   `spec.ports[0].appProtocol`,
+					Message: `appProtocol must be one of: grpc, http, http2, tcp`,
+				}},
+				Name: "meshservice",
+				Resource: `
+ports:
+  - port: 9092
+    appProtocol: kafka
+`,
+			},
+		),
 	)
 	DescribeValidCases(
 		api.NewMeshServiceResource,
@@ -62,6 +77,38 @@ selector:
 			ResourceValidationCase{
 				Name:     "meshservice",
 				Resource: "",
+			},
+		),
+		Entry(
+			"accepts port without appProtocol",
+			ResourceValidationCase{
+				Name: "meshservice",
+				Resource: `
+ports:
+  - port: 8080
+`,
+			},
+		),
+		Entry(
+			"accepts supported port appProtocol",
+			ResourceValidationCase{
+				Name: "meshservice",
+				Resource: `
+ports:
+  - port: 8080
+    appProtocol: http
+`,
+			},
+		),
+		Entry(
+			"accepts supported port appProtocol regardless of case",
+			ResourceValidationCase{
+				Name: "meshservice",
+				Resource: `
+ports:
+  - port: 8080
+    appProtocol: TCP
+`,
 			},
 		),
 		Entry(

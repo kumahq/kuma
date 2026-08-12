@@ -25,7 +25,7 @@ func DataplaneWebBuilder() *builders.DataplaneBuilder {
 	return builders.Dataplane().
 		WithName("web-01").
 		WithAddress("192.168.0.2").
-		WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+		WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
 		WithLabels(map[string]string{metadata.KumaWorkload: "web"}).
 		AddOutboundToService("backend")
 }

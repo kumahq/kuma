@@ -195,11 +195,9 @@ var MeshTLSResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               false,
-	HasFromTargetRef:             false,
 	HasRulesTargetRef:            true,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	ShortName:                    "mtls",
-	IsFromAsRules:                false,
 	Order:                        300,
 }

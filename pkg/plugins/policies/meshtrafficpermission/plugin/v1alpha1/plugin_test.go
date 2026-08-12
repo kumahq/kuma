@@ -16,7 +16,6 @@ import (
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	policies_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	meshtrafficpermission "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -24,27 +23,35 @@ import (
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
+// kumaDownstreamTLS marks a filter chain as protected by Kuma's TLS, which is
+// the only property MeshTrafficPermission keys off when placing RBAC filters.
+func kumaDownstreamTLS() listeners.FilterChainBuilderOpt {
+	return listeners.DownstreamTlsContext(&envoy_tls.DownstreamTlsContext{
+		CommonTlsContext:         &envoy_tls.CommonTlsContext{},
+		RequireClientCertificate: util_proto.Bool(true),
+	})
+}
+
 var _ = Describe("RBAC", func() {
 	Context("for Dataplane", func() {
-		It("should enrich matching listener with RBAC filter", func() {
+		It("should default-deny every TLS inbound listener with no rules", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			// listener that matches
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -60,7 +67,7 @@ var _ = Describe("RBAC", func() {
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener2", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -74,7 +81,7 @@ var _ = Describe("RBAC", func() {
 			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener3", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -104,24 +111,10 @@ var _ = Describe("RBAC", func() {
 						WithMesh("mesh-1").
 						WithServices("backend"),
 				).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
-						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
-							Rules: map[core_rules.InboundListener]core_rules.Rules{
-								{
-									Address: "192.168.0.1", Port: 8080,
-								}: {
-									{
-										Subset: []subsetutils.Tag{
-											{Key: mesh_proto.ServiceTag, Value: "frontend"},
-										},
-										Conf: policies_api.Conf{
-											Action: pointer.To[policies_api.Action]("Allow"),
-										},
-									},
-								},
-							},
-						}),
+						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{}),
 				).
 				Build()
 			// when
@@ -137,17 +130,17 @@ var _ = Describe("RBAC", func() {
 			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply.golden.yaml")))
 		})
 
-		It("should ignore legacy 'from' MTP and default-deny under WorkloadIdentity", func() {
+		It("should default-deny under WorkloadIdentity when no rules match", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -162,16 +155,7 @@ var _ = Describe("RBAC", func() {
 				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
-						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
-							Rules: map[core_rules.InboundListener]core_rules.Rules{
-								{Address: "192.168.0.1", Port: 8080}: {
-									{
-										Subset: []subsetutils.Tag{{Key: mesh_proto.ServiceTag, Value: "frontend"}},
-										Conf:   policies_api.Conf{Action: pointer.To[policies_api.Action]("Allow")},
-									},
-								},
-							},
-						}),
+						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{}),
 				).
 				Build()
 
@@ -191,14 +175,14 @@ var _ = Describe("RBAC", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			// listener that matches
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -212,7 +196,7 @@ var _ = Describe("RBAC", func() {
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener2", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -226,7 +210,7 @@ var _ = Describe("RBAC", func() {
 			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener3", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -255,6 +239,7 @@ var _ = Describe("RBAC", func() {
 						WithMesh("mesh-1").
 						WithServices("backend"),
 				).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
 						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
@@ -322,13 +307,13 @@ var _ = Describe("RBAC", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -340,6 +325,7 @@ var _ = Describe("RBAC", func() {
 
 			proxy := xds_builders.Proxy().
 				WithDataplane(builders.Dataplane().WithName("dp1").WithMesh("mesh-1").WithServices("backend")).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
 						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
@@ -376,13 +362,13 @@ var _ = Describe("RBAC", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false)).
+					Configure(kumaDownstreamTLS()).
 					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -394,6 +380,7 @@ var _ = Describe("RBAC", func() {
 
 			proxy := xds_builders.Proxy().
 				WithDataplane(builders.Dataplane().WithName("dp1").WithMesh("mesh-1").WithServices("backend")).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
 						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
@@ -461,7 +448,7 @@ var _ = Describe("RBAC", func() {
 			rs.Add(buildZEListener("192.168.0.1", 10002, "ze-listener")())
 
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			proxy := xds_builders.Proxy().
@@ -487,7 +474,7 @@ var _ = Describe("RBAC", func() {
 			rs.Add(buildZEListener("192.168.0.1", 10002, "ze-listener")())
 
 			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).
 				Build()
 
 			proxy := xds_builders.Proxy().

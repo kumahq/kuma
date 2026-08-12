@@ -20,27 +20,16 @@ import (
 
 func HeadlessServices() {
 	meshName := "headless-svc"
+	identityName := "headless-svc-identity"
 	namespace := "headless-svc"
 
-	mtlsMesh := func(name string) InstallFunc {
-		return YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-`, name))
-	}
+	trustDomain := fmt.Sprintf("%s.default.mesh.local", meshName)
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(mtlsMesh(meshName)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			Install(MeshKubernetes(meshName)).
+			Install(MeshIdentityBundledKubernetes(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName, trustDomain)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
 				democlient.Install(

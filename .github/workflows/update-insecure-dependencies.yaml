@@ -3,7 +3,8 @@ on:
   workflow_dispatch: {}
   schedule:
     - cron: 0 3 * * *
-permissions: read-all
+permissions:
+  contents: read
 env:
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
@@ -30,7 +31,7 @@ jobs:
           ref: ${{ matrix.branch }}
       - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
         with:
-          version: 2026.7.11
+          version: 2026.7.16
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: "Install tools"

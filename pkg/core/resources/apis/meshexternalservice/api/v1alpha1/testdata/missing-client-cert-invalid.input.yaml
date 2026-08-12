@@ -8,4 +8,7 @@ endpoints:
 tls:
   verification:
     clientKey:
-      secret: "123"
+      type: Secret
+      secretRef:
+        kind: Secret
+        name: "123"

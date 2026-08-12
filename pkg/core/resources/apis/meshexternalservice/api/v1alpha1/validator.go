@@ -7,6 +7,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
+	datasource_api "github.com/kumahq/kuma/v3/api/common/v1alpha1/datasource"
 	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -39,6 +40,12 @@ func (r *MeshExternalServiceResource) validate() error {
 		if r.Spec.Tls != nil {
 			verr.AddErrorAt(path.Field("tls"), validateTls(r.Spec.Tls))
 		}
+	} else if r.Spec.Tls != nil && r.Spec.Tls.Verification != nil {
+		// an extension owns the rest of the tls validation, but never the data source
+		// shape: File/EnvVar are read from the control plane process itself, and the
+		// remaining types must still carry their required fields, or loadSecureBytes
+		// will silently drop the destination after write-time validation accepted it.
+		verr.AddErrorAt(path.Field("tls"), validateVerificationDataSources(r.Spec.Tls.Verification))
 	}
 
 	if r.Spec.Extension != nil && r.Spec.Extension.Type == "" {
@@ -76,8 +83,47 @@ func validateTls(tls *Tls) validators.ValidationError {
 		if tls.Verification.ClientCert == nil && tls.Verification.ClientKey != nil {
 			verr.AddViolation(path.Field("clientCert").String(), validators.MustBeDefined+" when clientKey is defined")
 		}
+
+		verr.Add(validateSecureDataSource(path.Field("caCert"), tls.Verification.CaCert))
+		verr.Add(validateSecureDataSource(path.Field("clientCert"), tls.Verification.ClientCert))
+		verr.Add(validateSecureDataSource(path.Field("clientKey"), tls.Verification.ClientKey))
 	}
 
+	return verr
+}
+
+func validateVerificationDataSources(verification *Verification) validators.ValidationError {
+	var verr validators.ValidationError
+	path := validators.RootedAt("verification")
+	verr.Add(validateSecureDataSource(path.Field("caCert"), verification.CaCert))
+	verr.Add(validateSecureDataSource(path.Field("clientCert"), verification.ClientCert))
+	verr.Add(validateSecureDataSource(path.Field("clientKey"), verification.ClientKey))
+	return verr
+}
+
+// validateSecureDataSourceType rejects the data source types that make the control plane read its
+// own filesystem or environment, which a MeshExternalService author must never be able to request.
+func validateSecureDataSourceType(path validators.PathBuilder, sds *datasource_api.SecureDataSource) validators.ValidationError {
+	var verr validators.ValidationError
+	if sds == nil {
+		return verr
+	}
+	switch sds.Type {
+	case datasource_api.SecureDataSourceFile, datasource_api.SecureDataSourceEnvVar:
+		verr.AddViolationAt(path.Field("type"), validators.MustBeOneOf(string(sds.Type), string(datasource_api.SecureDataSourceSecretRef), string(datasource_api.SecureDataSourceInline)))
+	}
+	return verr
+}
+
+func validateSecureDataSource(path validators.PathBuilder, sds *datasource_api.SecureDataSource) validators.ValidationError {
+	var verr validators.ValidationError
+	if sds == nil {
+		return verr
+	}
+	if typeErr := validateSecureDataSourceType(path, sds); typeErr.HasViolations() {
+		return typeErr
+	}
+	verr.Add(sds.ValidateSecureDataSource(path))
 	return verr
 }
 

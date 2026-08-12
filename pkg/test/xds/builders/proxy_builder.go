@@ -1,9 +1,14 @@
 package builders
 
 import (
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
+	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
@@ -55,11 +60,6 @@ func (p *ProxyBuilder) WithMetadata(metadata *core_xds.DataplaneMetadata) *Proxy
 	return p
 }
 
-func (p *ProxyBuilder) WithSecretsTracker(secretsTracker core_xds.SecretsTracker) *ProxyBuilder {
-	p.res.SecretsTracker = secretsTracker
-	return p
-}
-
 func (p *ProxyBuilder) WithWorkloadIdentity(workloadIdentity *core_xds.WorkloadIdentity) *ProxyBuilder {
 	p.res.WorkloadIdentity = workloadIdentity
 	return p
@@ -88,4 +88,17 @@ func (p *ProxyBuilder) WithID(id core_xds.ProxyId) *ProxyBuilder {
 func (p *ProxyBuilder) WithInternalAddresses(addresses ...core_xds.InternalAddress) *ProxyBuilder {
 	p.res.InternalAddresses = append(p.res.InternalAddresses, addresses...)
 	return p
+}
+
+// WorkloadIdentity returns the workload identity every proxy carries, sourcing
+// its certificate from the SDS secret the bundled provider generates.
+func WorkloadIdentity() *core_xds.WorkloadIdentity {
+	return &core_xds.WorkloadIdentity{
+		IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+			return bldrs_tls.SdsSecretConfigSource(
+				"identity_cert:secret:default",
+				bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+			)
+		},
+	}
 }

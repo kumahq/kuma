@@ -73,7 +73,6 @@ var _ = Describe("MADS http service", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			"",
-			nil,
 		)
 		newMetrics, err := metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
@@ -185,8 +184,8 @@ var _ = Describe("MADS http service", func() {
 				Mesh: testMesh.GetMeta().GetName(),
 			},
 			Spec: &meshmetric_api.MeshMetric{
-				TargetRef: &common_api.TargetRef{
-					Kind: common_api.Mesh,
+				TargetRef: &common_api.TopLevelTargetRef{
+					Kind: common_api.TopLevelTargetRefKindMesh,
 				},
 				Default: meshmetric_api.Conf{
 					Backends: &[]meshmetric_api.Backend{
@@ -235,21 +234,11 @@ var _ = Describe("MADS http service", func() {
 						{
 							Port:        80,
 							ServicePort: 8080,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-								"env":             "prod",
-								"version":         "v1",
-							},
 						},
 						{
 							Address:     "192.168.0.2",
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend-https",
-								"env":             "prod",
-								"version":         "v2",
-							},
 						},
 					},
 				},

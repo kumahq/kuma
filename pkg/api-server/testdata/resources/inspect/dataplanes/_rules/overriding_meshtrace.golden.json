@@ -8,7 +8,6 @@
  },
  "rules": [
   {
-   "fromRules": [],
    "inboundRules": [],
    "proxyRule": {
     "conf": {
@@ -59,7 +58,6 @@
     ]
    },
    "toResourceRules": [],
-   "toRules": [],
    "type": "MeshTrace",
    "warnings": []
   }

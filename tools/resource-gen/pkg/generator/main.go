@@ -27,8 +27,6 @@ import (
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-	builtin_config "github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin/config"
-	provided_config "github.com/kumahq/kuma/v3/pkg/plugins/ca/provided/config"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	commontemplate "github.com/kumahq/kuma/v3/tools/common/template"
 	"github.com/kumahq/kuma/v3/tools/common/types"
@@ -456,8 +454,6 @@ func Run() {
 }
 
 var AdditionalProtoTypes = []reflect.Type{
-	reflect.TypeFor[provided_config.ProvidedCertificateAuthorityConfig](),
-	reflect.TypeFor[builtin_config.BuiltinCertificateAuthorityConfig](),
 	reflect.TypeFor[v1alpha1.DataplaneOverview](),
 	reflect.TypeFor[system_proto.Zone](),
 }
@@ -500,7 +496,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			ReadOnly:    true,
 			Description: "Time at which the resource was updated",
 		})
-		s, err := reflector.reflectFromType(tpe, true)
+		s, err := reflector.reflectFromType(tpe)
 		if err != nil {
 			return err
 		}
@@ -602,7 +598,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 
 	if pkg == "mesh" {
 		for _, tpe := range AdditionalProtoTypes {
-			s, err := reflector.reflectFromType(tpe, true)
+			s, err := reflector.reflectFromType(tpe)
 			if err != nil {
 				return err
 			}
@@ -678,19 +674,16 @@ type reflector struct {
 	pkg     string
 }
 
-func (r *reflector) reflectFromType(t reflect.Type, withBackendCheck bool) (*jsonschema.Schema, error) {
+func (r *reflector) reflectFromType(t reflect.Type) (*jsonschema.Schema, error) {
 	rflctr := &jsonschema.Reflector{
 		DoNotReference:            true,
 		AllowAdditionalProperties: true,
 		IgnoredTypes:              []any{structpb.Struct{}},
 		KeyNamer: func(key string) string {
-			if key == "RSAbits" {
-				return "rsaBits"
-			}
 			return lowerFirst(snakeToCamel(key))
 		},
 		Mapper: func(t reflect.Type) *jsonschema.Schema {
-			s, err := r.mapper(t, withBackendCheck)
+			s, err := r.mapper(t)
 			if err != nil {
 				fmt.Printf("error occurred during mapping: %v\n", err)
 				return nil
@@ -753,27 +746,11 @@ func lowerFirst(s string) string {
 	return string(unicode.ToLower(r)) + s[size:]
 }
 
-func (r *reflector) mapper(t reflect.Type, withBackendCheck bool) (*jsonschema.Schema, error) {
+func (r *reflector) mapper(t reflect.Type) (*jsonschema.Schema, error) {
 	if hasOneofField(t) {
 		return r.handleOneOf(t)
 	}
-
-	backendConf := BackendToOneOfs[t.Name()]
-	if !withBackendCheck || backendConf == nil {
-		return valueMapper(t), nil
-	}
-
-	schema, err := r.reflectFromType(t, false)
-	if err != nil {
-		return nil, err
-	}
-	schema.ID = ""
-	schema.Version = ""
-	schema.Properties.Set("conf", &jsonschema.Schema{
-		Type:  "object",
-		OneOf: backendConf,
-	})
-	return schema, nil
+	return valueMapper(t), nil
 }
 
 func (r reflector) handleOneOf(t reflect.Type) (*jsonschema.Schema, error) {
@@ -802,7 +779,7 @@ func (r reflector) handleOneOf(t reflect.Type) (*jsonschema.Schema, error) {
 				continue
 			}
 			r.typeSet[t] = struct{}{}
-			schema, err := r.reflectFromType(t, true)
+			schema, err := r.reflectFromType(t)
 			if err != nil {
 				return nil, err
 			}
@@ -839,13 +816,6 @@ func TemplateGeneratorFn(tmpl *template.Template) GeneratorFn {
 		}
 		return nil
 	}
-}
-
-var BackendToOneOfs = map[string][]*jsonschema.Schema{
-	"CertificateAuthorityBackend": {
-		{Ref: "/specs/protoresources/providedcertificateauthorityconfig/schema.yaml#/components/schemas/ProvidedCertificateAuthorityConfig"},
-		{Ref: "/specs/protoresources/builtincertificateauthorityconfig/schema.yaml#/components/schemas/BuiltinCertificateAuthorityConfig"},
-	},
 }
 
 func valueMapper(r reflect.Type) *jsonschema.Schema {

@@ -10,7 +10,7 @@
                 },
                 "resource_type": {
                     "type": "string",
-                    "description": "Type of resource (Dataplane, ZoneIngress, ZoneEgress)"
+                    "description": "Type of resource (Dataplane)"
                 },
                 "resource_name": {
                     "type": "string",
@@ -18,7 +18,7 @@
                 },
                 "resource_mesh": {
                     "type": "string",
-                    "description": "Mesh of the resource on which we execute config dump. Should be empty for ZoneIngress, ZoneEgress."
+                    "description": "Mesh of the resource on which we execute config dump."
                 },
                 "include_eds": {
                     "type": "boolean",

@@ -24,7 +24,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.extraLabels | object | `{}` | Labels to add to resources in addition to default labels |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
 | controlPlane.logOutputPath | string | `""` | Kuma CP log output path: Defaults to /dev/stdout |
-| controlPlane.mode | string | `"zone"` | Kuma CP modes: one of zone,standalone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart |
+| controlPlane.mode | string | `"zone"` | Kuma CP modes: zone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |
@@ -45,7 +45,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Control Plane pods. This is rendered as a template, so you can use variables to generate match labels. |
 | controlPlane.priorityClassName | string | `""` | Priority Class Name of the Kuma Control Plane |
 | controlPlane.injectorFailurePolicy | string | `"Fail"` | Failure policy of the mutating webhook implemented by the Kuma Injector component |
-| controlPlane.madsServer.enabled | bool | `true` | Whether the Monitoring Assignment Discovery Service (MADS) server is enabled |
+| controlPlane.madsServer.enabled | bool | `true` | Whether the Monitoring Assignment Discovery Service (MADS) server is enabled. Only applies when controlPlane.environment is "universal" |
 | controlPlane.service.apiServer.http.nodePort | int | `30681` | Port on which Http api server Service is exposed on Node for service of type NodePort |
 | controlPlane.service.apiServer.https.nodePort | int | `30682` | Port on which Https api server Service is exposed on Node for service of type NodePort |
 | controlPlane.service.enabled | bool | `true` | Whether to create a service resource. |
@@ -78,7 +78,6 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.tls.general.certManager.issuerRef.kind | string | `"Issuer"` | Kind of the issuer: "Issuer" or "ClusterIssuer" |
 | controlPlane.tls.general.certManager.dnsNames | list | `["{{ include \"kuma.controlPlane.serviceName\" . }}.{{ .Release.Namespace }}","{{ include \"kuma.controlPlane.serviceName\" . }}.{{ .Release.Namespace }}.svc","{{ include \"kuma.controlPlane.serviceName\" . }}.{{ .Release.Namespace }}.svc.cluster.local"]` | DNS names to include in the certificate SANs. Supports Helm template strings (evaluated via tpl). |
 | controlPlane.tls.apiServer.secretName | string | `""` | Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS |
-| controlPlane.tls.apiServer.clientCertsSecretName | string | `""` | Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS |
 | controlPlane.tls.kdsZoneClient.secretName | string | `""` | Name of the K8s Secret resource that contains ca.crt which was used to sign the certificate of KDS Global Server. If you set this and don't set create=true, you have to create the secret manually. |
 | controlPlane.tls.kdsZoneClient.create | bool | `false` | Whether to create the TLS secret in helm. |
 | controlPlane.tls.kdsZoneClient.cert | string | `""` | CA bundle that was used to sign the certificate of KDS Global Server. |
@@ -134,7 +133,6 @@ A Helm chart for the Kuma Control Plane
 | dataPlane.initContainer | object | `{"resources":{"limits":{"cpu":"0","memory":"50M"},"requests":{"cpu":"20m","memory":"20M"}}}` | Resource limits and requests for the kuma-init container. Set cpu limit to "0" to disable the CPU limit (default). |
 | dataPlane.validationContainer | object | `{"resources":{"limits":{"cpu":"0","memory":"50M"},"requests":{"cpu":"20m","memory":"20M"}}}` | Resource limits and requests for the kuma-validation init container. Set cpu limit to "0" to disable the CPU limit (default). |
 | dataPlane.sidecarContainer | object | `{"resources":{"limits":{"cpu":"0","memory":"512Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}}` | Resource limits and requests for the kuma-sidecar container. Set cpu limit to "0" to disable the CPU limit (default). |
-| dataPlane.features.unifiedResourceNaming | bool | `true` | Enables automatic injection of the unified naming for Envoy resources and stats feature flag. When set to true, it sets the environment variable KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED=true in the control plane, which causes the sidecar injector to add KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true to each injected kuma-sidecar container. This option only automates setting the required flags and does not enable or disable the feature itself. You can still opt in manually by setting KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true in data plane proxies using a ContainerPatch |
 | zoneProxyImage.registry | string | `"registry.k8s.io"` | The pause image registry |
 | zoneProxyImage.repository | string | `"pause"` | The pause image repository |
 | zoneProxyImage.tag | string | `"3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"` | The pause image tag |

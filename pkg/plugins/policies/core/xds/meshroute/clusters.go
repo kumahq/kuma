@@ -1,19 +1,17 @@
 package meshroute
 
 import (
-	"sort"
+	"slices"
 
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
@@ -26,157 +24,121 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
-	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
 
+// destination is everything a cluster needs to know about what it talks to: the
+// identities this proxy has to accept when it originates mTLS, and the upstream
+// options to apply.
+type destination struct {
+	sans []string
+	// upstreamHTTP is nil when the connection carries opaque bytes.
+	upstreamHTTP envoy_clusters.ClusterBuilderOpt
+	// terminatesTLS is false while the destination cannot accept mTLS, which
+	// keeps its cluster without a transport socket.
+	terminatesTLS bool
+}
+
+// upstreamHTTPOptions returns the upstream options matching the protocol the
+// destination speaks, or nil when the connection carries opaque bytes.
+func upstreamHTTPOptions(protocol core_meta.Protocol) envoy_clusters.ClusterBuilderOpt {
+	switch protocol {
+	case core_meta.ProtocolHTTP:
+		return envoy_clusters.Http()
+	case core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
+		return envoy_clusters.Http2()
+	default:
+		return nil
+	}
+}
+
+// GenerateClusters builds one EDS cluster per outbound destination. Every
+// destination is reachable through a mesh-scoped zone proxy, so a cluster
+// originates mTLS towards the KRI SNI of the destination port once this proxy
+// has an identity to present and the destination can terminate TLS.
 func GenerateClusters(
 	proxy *core_xds.Proxy,
 	meshCtx xds_context.MeshContext,
 	services envoy_common.Services,
-	systemNamespace string,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
+	// A proxy without a workload identity has no certificate to present, which
+	// happens until the MeshIdentity matching it reports initialized, so it
+	// cannot originate mTLS towards any destination yet.
+	hasIdentity := proxy.WorkloadIdentity != nil
+
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
-		protocol := meshCtx.GetServiceProtocol(serviceName)
-		tlsReady := service.TLSReady()
+
+		backendRef := service.BackendRef().RealResourceBackendRef()
+		if backendRef == nil {
+			continue
+		}
+		destResource, port, ok := DestinationPortFromRef(meshCtx, backendRef)
+		if !ok {
+			continue
+		}
+
+		var dest destination
+		switch backendRef.Resource.ResourceType {
+		case meshservice_api.MeshServiceType:
+			ms := destResource.(*meshservice_api.MeshServiceResource)
+			dest = destination{
+				sans: meshServiceIdentities(meshCtx, backendRef.Resource),
+				// The hop between the two proxies is HTTP/2 no matter which
+				// protocol the application speaks.
+				upstreamHTTP:  envoy_clusters.Http2(),
+				terminatesTLS: ms.TerminatesTLS(),
+			}
+		case meshmultizoneservice_api.MeshMultiZoneServiceType:
+			// Another zone is only reachable through a zone proxy, which always
+			// terminates TLS.
+			dest = destination{
+				sans:          meshMultiZoneServiceIdentities(meshCtx, backendRef.Resource),
+				upstreamHTTP:  envoy_clusters.Http2(),
+				terminatesTLS: true,
+			}
+		case meshexternalservice_api.MeshExternalServiceType:
+			// An external service is only reachable through a zone egress: the
+			// egress terminates this connection and matches the KRI SNI, so the
+			// egress identity is what this proxy has to trust. The egress
+			// forwards the original protocol, so the upstream keeps speaking it.
+			// Without an egress the destination has no endpoints either, so the
+			// cluster stays plaintext rather than being dropped - a cluster
+			// missing under an emitted load assignment costs the proxy its
+			// entire configuration.
+			egressSANs := meshCtx.ZoneEgressSANs()
+			dest = destination{
+				sans:          egressSANs,
+				upstreamHTTP:  upstreamHTTPOptions(port.GetProtocol()),
+				terminatesTLS: len(egressSANs) > 0,
+			}
+		default:
+			continue
+		}
+
+		var transportSocket envoy_clusters.ClusterBuilderOpt
+		if hasIdentity && dest.terminatesTLS {
+			sni, ok := SNIForRealResource(backendRef, port)
+			if !ok {
+				continue
+			}
+			upstreamCtx, err := UpstreamTLSContext(proxy, sni, dest.sans)
+			if err != nil {
+				return nil, err
+			}
+			transportSocket = envoy_clusters.UpstreamTLSContext(upstreamCtx)
+		}
 
 		for _, cluster := range service.Clusters() {
 			clusterName := cluster.Name()
-			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
-			clusterTags := []envoy_tags.Tags{cluster.Tags()}
-			if meshCtx.IsExternalService(serviceName) {
-				if !isMeshExternalService(meshCtx.EndpointMap[serviceName]) {
-					continue
-				}
-				realResourceRef := service.BackendRef().RealResourceBackendRef()
-				dest, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
-				if !ok {
-					continue
-				}
-				if proxy.WorkloadIdentity != nil {
-					// The destination advertises its SNI from the resolved port
-					// name, so normalize a numeric backend-ref section (named port
-					// targeted by number) to the port name before deriving the KRI SNI.
-					kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
-					if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
-						continue
-					}
-					sni := core_sni.FromKRI(kriID)
-					// we only want to route when are mesh-scoped zone egresses
-					if len(meshCtx.ZoneEgresses) == 0 {
-						continue
-					}
-					egressSANs := meshCtx.ZoneEgressSANs()
-					if len(egressSANs) == 0 {
-						continue
-					}
-					upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
-					if err != nil {
-						return nil, err
-					}
-					edsClusterBuilder.
-						Configure(envoy_clusters.EdsCluster()).
-						Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
-				} else {
-					sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
-					edsClusterBuilder.
-						Configure(envoy_clusters.EdsCluster()).
-						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
-							proxy.SecretsTracker,
-							meshCtx.Resource,
-							mesh_proto.ZoneEgressServiceName,
-							true,
-							sni,
-							false,
-						))
-				}
-
-				switch protocol {
-				case core_meta.ProtocolHTTP:
-					edsClusterBuilder.Configure(envoy_clusters.Http())
-				case core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-					edsClusterBuilder.Configure(envoy_clusters.Http2())
-				default:
-				}
-			} else {
-				edsClusterBuilder.
-					Configure(envoy_clusters.EdsCluster()).
-					Configure(envoy_clusters.Http2())
-
-				if upstreamMeshName := cluster.Mesh(); upstreamMeshName != "" {
-					for _, otherMesh := range meshCtx.Resources.Meshes().Items {
-						if otherMesh.GetMeta().GetName() == upstreamMeshName {
-							edsClusterBuilder.Configure(
-								envoy_clusters.CrossMeshClientSideMTLS(
-									proxy.SecretsTracker, meshCtx.Resource, otherMesh, serviceName, tlsReady, clusterTags,
-								),
-							)
-							break
-						}
-					}
-				} else {
-					if realResourceRef := service.BackendRef().RealResourceBackendRef(); realResourceRef != nil {
-						dest, port, ok := DestinationPortFromRef(meshCtx, realResourceRef)
-						if !ok {
-							continue
-						}
-						tlsReady = true // tls readiness is only relevant for MeshService
-						isLocalMeshService := false
-						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
-							ms := dest.(*meshservice_api.MeshServiceResource)
-							// we only check TLS status for local service
-							// services that are synced can be accessed only with TLS through ZoneIngress
-							isLocalMeshService = ms.IsLocalMeshService()
-							tlsReady = !isLocalMeshService || ms.Status.TLS.Status == meshservice_api.TLSReady
-							protocol = port.GetProtocol()
-						}
-						// Every zone is reachable through a mesh-scoped zone proxy, which
-						// matches the KRI SNI, so a proxy with WorkloadIdentity always uses it.
-						kriSNI := proxy.WorkloadIdentity != nil
-						var sni string
-						if kriSNI {
-							// The destination advertises its SNI from the resolved
-							// port name, so normalize a numeric backend-ref section
-							// (named port targeted by number) to the port name
-							// before deriving the KRI SNI.
-							kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
-							if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
-								continue
-							}
-							sni = core_sni.FromKRI(kriID)
-						} else {
-							sni = SniForBackendRef(realResourceRef, dest, port, systemNamespace)
-						}
-						// ClientSideMultiIdentitiesMTLS validate MTLS enabled on the mesh
-						if proxy.WorkloadIdentity != nil {
-							sans := Identities(realResourceRef, meshCtx, true)
-							upstreamCtx, err := UpstreamTLSContext(proxy, sni, sans)
-							if err != nil {
-								return nil, err
-							}
-							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
-						} else {
-							edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
-								proxy.SecretsTracker,
-								meshCtx.Resource,
-								tlsReady,
-								sni,
-								Identities(realResourceRef, meshCtx, false),
-								len(meshCtx.CAsByTrustDomain) > 0,
-							))
-						}
-					} else {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(proxy.SecretsTracker, meshCtx.Resource, serviceName, tlsReady, clusterTags, len(meshCtx.CAsByTrustDomain) > 0))
-					}
-				}
-			}
-
-			edsCluster, err := edsClusterBuilder.Build()
+			edsCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
+				Configure(envoy_clusters.EdsCluster()).
+				ConfigureIf(dest.upstreamHTTP != nil, dest.upstreamHTTP).
+				ConfigureIf(transportSocket != nil, transportSocket).
+				Build()
 			if err != nil {
 				return nil, errors.Wrapf(err, "build CDS for cluster %s failed", clusterName)
 			}
@@ -185,8 +147,8 @@ func GenerateClusters(
 				Name:           clusterName,
 				Origin:         metadata.OriginOutbound,
 				Resource:       edsCluster,
-				ResourceOrigin: service.BackendRef().Resource(),
-				Protocol:       protocol,
+				ResourceOrigin: backendRef.Resource,
+				Protocol:       port.GetProtocol(),
 			})
 		}
 	}
@@ -237,83 +199,53 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 		Build()
 }
 
-func SniForBackendRef(
-	backendRef *resolve.RealResourceBackendRef,
-	dest core_resources.Destination,
-	port core_resources.Port,
-	systemNamespace string,
-) string {
-	name := core_model.GetDisplayName(dest.GetMeta())
-	if backendRef.Resource.ResourceType == meshservice_api.MeshServiceType {
-		name = dest.(*meshservice_api.MeshServiceResource).SNIName(systemNamespace)
+// SNIForRealResource returns the KRI SNI the destination port advertises, and
+// false when the resulting KRI cannot be encoded as an SNI.
+func SNIForRealResource(backendRef *resolve.RealResourceBackendRef, port core.Port) (string, bool) {
+	// The destination advertises SNI from the resolved port name, so numeric
+	// backend-ref sections must be normalized before deriving the KRI SNI.
+	kriID := kri.WithSectionName(backendRef.Resource, port.GetName())
+	if errs := core_sni.ValidateKRI(kriID); len(errs) > 0 {
+		return "", false
 	}
-
-	return tls.SNIForResource(name, dest.GetMeta().GetMesh(), dest.Descriptor().Name, port.GetValue(), nil)
+	return core_sni.FromKRI(kriID), true
 }
 
-func Identities(
-	backendRef *resolve.RealResourceBackendRef,
-	meshCtx xds_context.MeshContext,
-	includeSpiffeID bool,
-) []string {
-	var result []string
-	serviceTagTransformer := func(serviceTag string) string {
-		return serviceTag
+// meshServiceIdentities returns the SPIFFE IDs advertised by a MeshService.
+func meshServiceIdentities(meshCtx xds_context.MeshContext, id kri.Identifier) []string {
+	ms, ok := meshCtx.GetServiceByKRI(id).(*meshservice_api.MeshServiceResource)
+	if !ok {
+		return nil
 	}
-	// we don't use function which transform service tag to the spiffe id on cluster configuration
-	// instead we want to set it here. It's not required for SpiffeID type, only ServiceTag
-	if includeSpiffeID {
-		serviceTagTransformer = func(serviceTag string) string {
-			return tls.ServiceSpiffeID(meshCtx.Resource.Meta.GetName(), serviceTag)
+	var identities []string
+	for _, identity := range pointer.Deref(ms.Spec.Identities) {
+		if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
+			identities = append(identities, identity.Value)
 		}
 	}
-	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
-	case common_api.MeshService:
-		ms := meshCtx.GetServiceByKRI(backendRef.Resource)
-		if ms == nil {
-			return result
-		}
-		for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
-			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
-				result = append(result, serviceTagTransformer(identity.Value))
-			}
-			if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
-				result = append(result, identity.Value)
-			}
-		}
-	case common_api.MeshMultiZoneService:
-		svc := meshCtx.GetServiceByKRI(backendRef.Resource)
-		if svc == nil {
-			return result
-		}
-		identities := map[string]struct{}{}
-		for _, matchedMs := range svc.(*meshmultizoneservice_api.MeshMultiZoneServiceResource).Status.MeshServices {
-			ri := kri.Identifier{
-				ResourceType: meshservice_api.MeshServiceType,
-				Name:         matchedMs.Name,
-				Namespace:    matchedMs.Namespace,
-				Zone:         matchedMs.Zone,
-				Mesh:         matchedMs.Mesh,
-			}
-			ms := meshCtx.GetServiceByKRI(ri)
-			if ms == nil {
-				continue
-			}
-			for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
-				identities[identity.Value] = struct{}{}
-			}
-		}
-		result = util_maps.SortedKeys(identities)
-	}
-	sort.SliceStable(result, func(i, j int) bool {
-		return result[i] < result[j]
-	})
-	return result
+	slices.Sort(identities)
+	return identities
 }
 
-func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
-	if len(endpoints) > 0 {
-		return endpoints[0].IsMeshExternalService()
+// meshMultiZoneServiceIdentities returns the SPIFFE IDs advertised by every
+// MeshService the MeshMultiZoneService matched, across all zones.
+func meshMultiZoneServiceIdentities(meshCtx xds_context.MeshContext, id kri.Identifier) []string {
+	mzms, ok := meshCtx.GetServiceByKRI(id).(*meshmultizoneservice_api.MeshMultiZoneServiceResource)
+	if !ok {
+		return nil
 	}
-	return false
+	identities := map[string]struct{}{}
+	for _, matched := range mzms.Status.MeshServices {
+		msID := kri.Identifier{
+			ResourceType: meshservice_api.MeshServiceType,
+			Name:         matched.Name,
+			Namespace:    matched.Namespace,
+			Zone:         matched.Zone,
+			Mesh:         matched.Mesh,
+		}
+		for _, identity := range meshServiceIdentities(meshCtx, msID) {
+			identities[identity] = struct{}{}
+		}
+	}
+	return util_maps.SortedKeys(identities)
 }

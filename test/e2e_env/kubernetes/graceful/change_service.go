@@ -22,6 +22,9 @@ import (
 func ChangeService() {
 	const namespace = "changesvc"
 	const mesh = "changesvc"
+	const identityName = "changesvc-identity"
+
+	trustDomain := fmt.Sprintf("%s.default.mesh.local", mesh)
 
 	firstTestServerLabels := map[string]string{
 		"app":                  "test-server",
@@ -65,8 +68,9 @@ func ChangeService() {
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshKubernetes(mesh)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
+			Install(MeshKubernetes(mesh)).
+			Install(MeshIdentityBundledKubernetes(mesh, identityName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(mesh, trustDomain)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
 				testserver.Install(

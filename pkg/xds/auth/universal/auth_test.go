@@ -62,7 +62,11 @@ var _ = Describe("Authentication flow", func() {
 		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("demo"), "demo")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
-		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"), core_store.CreateWithLabels(map[string]string{"team": "web", "env": "prod"}))
+		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"), core_store.CreateWithLabels(map[string]string{
+			"team":                "web",
+			"env":                 "prod",
+			mesh_proto.ServiceTag: "web-api",
+		}))
 		Expect(err).ToNot(HaveOccurred())
 
 		dpResWithWorkload = *samples.DataplaneWebBuilder().
@@ -388,26 +392,6 @@ var _ = Describe("Authentication flow", func() {
 
 			// when / then
 			Expect(authenticator.Authenticate(ctx, &zoneProxyRes, token)).To(Succeed())
-		})
-
-		It("should reject a standalone ZoneIngress resource", func() {
-			// given
-			ziRes := core_mesh.ZoneIngressResource{
-				Meta: &test_model.ResourceMeta{Name: "zi-1"},
-				Spec: &mesh_proto.ZoneIngress{
-					Networking: &mesh_proto.ZoneIngress_Networking{
-						Address: "127.0.0.1",
-					},
-				},
-			}
-			token, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{Mesh: "default"}, 24*time.Hour)
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			err = authenticator.Authenticate(ctx, &ziRes, token)
-
-			// then
-			Expect(err).To(MatchError(ContainSubstring("no matching authenticator for ZoneIngress resource")))
 		})
 	})
 })

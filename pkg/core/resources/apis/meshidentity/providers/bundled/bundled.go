@@ -52,7 +52,7 @@ const (
 	cacheExpirationTime = 5 * time.Second
 )
 
-var DefaultWorkloadCertValidityPeriod = k8s.Duration{Duration: 24 * time.Hour}
+var DefaultWorkloadCertValidityPeriod = k8s.Duration{Duration: 5 * 24 * time.Hour}
 
 var _ providers.IdentityProvider = &bundledIdentityProvider{}
 
@@ -82,20 +82,28 @@ func NewBundledIdentityProvider(roSecretManager manager.ReadOnlyResourceManager,
 }
 
 func (b *bundledIdentityProvider) Validate(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) error {
-	if !pointer.DerefOr(identity.Spec.Provider.Bundled.InsecureAllowSelfSigned, false) {
-		if identity.Spec.Provider.Bundled.Autogenerate != nil && pointer.DerefOr(identity.Spec.Provider.Bundled.Autogenerate.Enabled, false) {
+	bundled := identity.Spec.Provider.Bundled
+	allowSelfSigned := pointer.DerefOr(bundled.InsecureAllowSelfSigned, false)
+	if bundled.Autogenerate != nil && pointer.DerefOr(bundled.Autogenerate.Enabled, false) {
+		if !allowSelfSigned {
 			return errors.Errorf("self-signed certificates are not allowed")
 		}
-		ca, err := b.getRootCA(ctx, identity)
+	} else {
+		pair, err := b.loadCAKeyPair(ctx, identity, identity.Meta.GetMesh())
 		if err != nil {
 			return err
 		}
-		selfSigned, err := isSelfSigned(ca)
-		if err != nil {
+		if err := ValidateCaCert(*pair); err != nil {
 			return err
 		}
-		if selfSigned {
-			return errors.Errorf("self-signed certificates are not allowed")
+		if !allowSelfSigned {
+			selfSigned, err := isSelfSigned(pair.CertPEM)
+			if err != nil {
+				return err
+			}
+			if selfSigned {
+				return errors.Errorf("self-signed certificates are not allowed")
+			}
 		}
 	}
 	b.logger.V(1).Info("identity is valid", "identity", model.MetaToResourceKey(identity.GetMeta()))
@@ -177,41 +185,45 @@ func (b *bundledIdentityProvider) GetMeshTrustCA(ctx context.Context, identity *
 func (b *bundledIdentityProvider) getCAKeyPair(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, mesh string) (*util_tls.KeyPair, error) {
 	cacheKey := fmt.Sprintf("ca_pair:%s:%s", mesh, model.GetDisplayName(identity.GetMeta()))
 	ca, err := b.cache.GetOrRetrieve(ctx, cacheKey, once.RetrieverFunc(func(ctx context.Context, cacheKey string) (any, error) {
-		bundled := identity.Spec.Provider.Bundled
-		var err error
-		var cert, key []byte
-		if (bundled.Autogenerate == nil || !pointer.DerefOr(bundled.Autogenerate.Enabled, false)) && bundled.CA != nil {
-			cert, err = bundled.CA.Certificate.ReadByControlPlane(ctx, b.secretManager, mesh)
-			if err != nil {
-				return nil, err
-			}
-			key, err = bundled.CA.PrivateKey.ReadByControlPlane(ctx, b.secretManager, mesh)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			// ca
-			ca := core_system.NewSecretResource()
-			if err := b.roSecretManager.Get(ctx, ca, core_store.GetByKey(RootCAName(model.GetDisplayName(identity.GetMeta())), mesh)); err != nil {
-				return nil, err
-			}
-			cert = ca.Spec.Data.GetValue()
-			// privateKey
-			caKey := core_system.NewSecretResource()
-			if err := b.roSecretManager.Get(ctx, caKey, core_store.GetByKey(PrivateKeyName(model.GetDisplayName(identity.GetMeta())), mesh)); err != nil {
-				return nil, err
-			}
-			key = caKey.Spec.Data.GetValue()
-		}
-		return &util_tls.KeyPair{
-			CertPEM: cert,
-			KeyPEM:  key,
-		}, nil
+		return b.loadCAKeyPair(ctx, identity, mesh)
 	}))
 	if err != nil {
 		return nil, err
 	}
 	return ca.(*util_tls.KeyPair), nil
+}
+
+func (b *bundledIdentityProvider) loadCAKeyPair(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, mesh string) (*util_tls.KeyPair, error) {
+	bundled := identity.Spec.Provider.Bundled
+	var err error
+	var cert, key []byte
+	if (bundled.Autogenerate == nil || !pointer.DerefOr(bundled.Autogenerate.Enabled, false)) && bundled.CA != nil {
+		cert, err = bundled.CA.Certificate.ReadByControlPlane(ctx, b.secretManager, mesh)
+		if err != nil {
+			return nil, err
+		}
+		key, err = bundled.CA.PrivateKey.ReadByControlPlane(ctx, b.secretManager, mesh)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// ca
+		ca := core_system.NewSecretResource()
+		if err := b.roSecretManager.Get(ctx, ca, core_store.GetByKey(RootCAName(model.GetDisplayName(identity.GetMeta())), mesh)); err != nil {
+			return nil, err
+		}
+		cert = ca.Spec.Data.GetValue()
+		// privateKey
+		caKey := core_system.NewSecretResource()
+		if err := b.roSecretManager.Get(ctx, caKey, core_store.GetByKey(PrivateKeyName(model.GetDisplayName(identity.GetMeta())), mesh)); err != nil {
+			return nil, err
+		}
+		key = caKey.Spec.Data.GetValue()
+	}
+	return &util_tls.KeyPair{
+		CertPEM: cert,
+		KeyPEM:  key,
+	}, nil
 }
 
 func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, proxy *xds.Proxy) (*xds.WorkloadIdentity, error) {
@@ -334,7 +346,7 @@ func generateKey(caPrivateKey crypto.PrivateKey) (crypto.PublicKey, crypto.Priva
 	case ed25519.PrivateKey:
 		var pub ed25519.PublicKey
 		var priv ed25519.PrivateKey
-		pub, priv, err = ed25519.GenerateKey(nil)
+		pub, priv, err = ed25519.GenerateKey(rand.Reader)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to generate ed25519 key: %w", err)
 		}

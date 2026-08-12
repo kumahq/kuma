@@ -516,8 +516,6 @@ paths:
                   - $ref: '#/components/schemas/MeshTimeoutItem'
                   - $ref: '#/components/schemas/MeshTraceItem'
                   - $ref: '#/components/schemas/MeshTrafficPermissionItem'
-                  - $ref: '#/components/schemas/ZoneEgressItem'
-                  - $ref: '#/components/schemas/ZoneIngressItem'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -2865,202 +2863,6 @@ paths:
       summary: Creates or Updates Secret entity
       tags:
         - Secret
-  /zoneegresses:
-    get:
-      operationId: getZoneEgressList
-      parameters:
-        - description: offset in the list of entities
-          example: 0
-          in: query
-          name: offset
-          required: false
-          schema:
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneEgressList'
-      summary: Returns a list of ZoneEgress in the mesh.
-      tags:
-        - ZoneEgress
-  /zoneegresses/{name}:
-    delete:
-      operationId: deleteZoneEgress
-      parameters:
-        - description: name of the ZoneEgress
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneEgressDeleteSuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Deletes ZoneEgress entity
-      tags:
-        - ZoneEgress
-    get:
-      operationId: getZoneEgress
-      parameters:
-        - description: name of the ZoneEgress
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneEgressItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Returns ZoneEgress entity
-      tags:
-        - ZoneEgress
-    put:
-      operationId: putZoneEgress
-      parameters:
-        - description: name of the ZoneEgress
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ZoneEgressItem'
-        description: Put request
-        required: true
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneEgressCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/ZoneEgressCreateOrUpdateSuccessResponse'
-      summary: Creates or Updates ZoneEgress entity
-      tags:
-        - ZoneEgress
-  /zoneingresses:
-    get:
-      operationId: getZoneIngressList
-      parameters:
-        - description: offset in the list of entities
-          example: 0
-          in: query
-          name: offset
-          required: false
-          schema:
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneIngressList'
-      summary: Returns a list of ZoneIngress in the mesh.
-      tags:
-        - ZoneIngress
-  /zoneingresses/{name}:
-    delete:
-      operationId: deleteZoneIngress
-      parameters:
-        - description: name of the ZoneIngress
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneIngressDeleteSuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Deletes ZoneIngress entity
-      tags:
-        - ZoneIngress
-    get:
-      operationId: getZoneIngress
-      parameters:
-        - description: name of the ZoneIngress
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneIngressItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Returns ZoneIngress entity
-      tags:
-        - ZoneIngress
-    put:
-      operationId: putZoneIngress
-      parameters:
-        - description: name of the ZoneIngress
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ZoneIngressItem'
-        description: Put request
-        required: true
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
-      summary: Creates or Updates ZoneIngress entity
-      tags:
-        - ZoneIngress
   /hostnamegenerators/{name}:
     get:
       operationId: getHostnameGenerator
@@ -4754,45 +4556,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Meta'
-    RuleMatcher:
-      type: object
-      required:
-        - key
-        - value
-        - not
-      description: A matcher to select which traffic this conf applies to
-      properties:
-        key:
-          type: string
-          description: the key to match against
-          example: kuma.io/service
-        value:
-          type: string
-          description: the value for the key to match against
-          example: my-cool-service
-        not:
-          type: boolean
-          description: whether we check on the absence of this key:value pair
-    Rule:
-      type: object
-      required:
-        - matchers
-        - conf
-        - origin
-      properties:
-        matchers:
-          type: array
-          items:
-            $ref: '#/components/schemas/RuleMatcher'
-        conf:
-          description: The actual conf generated
-          type: object
-          additionalProperties: true
-          x-go-type: interface{}
-        origin:
-          type: array
-          items:
-            $ref: '#/components/schemas/Meta'
     ResourceRuleOrigin:
       type: object
       properties:
@@ -4842,18 +4605,6 @@ components:
           x-go-type: map[string]string
         port:
           type: integer
-    FromRule:
-      type: object
-      required:
-        - rules
-        - inbound
-      properties:
-        inbound:
-          $ref: '#/components/schemas/Inbound'
-        rules:
-          type: array
-          items:
-            $ref: '#/components/schemas/Rule'
     InboundRule:
       type: object
       required:
@@ -4919,13 +4670,6 @@ components:
           description: the type of the policy
         proxyRule:
           $ref: '#/components/schemas/ProxyRule'
-        toRules:
-          type: array
-          description: >-
-            a set of rules for the outbounds of this proxy. The field is not set
-            when 'meshService.mode' on Mesh is set to 'Exclusive'.
-          items:
-            $ref: '#/components/schemas/Rule'
         toResourceRules:
           type: array
           description: >-
@@ -4933,17 +4677,9 @@ components:
             MeshService, MeshExternalService, MeshMultiZoneService).
           items:
             $ref: '#/components/schemas/ResourceRule'
-        fromRules:
-          type: array
-          description: a set of rules for each inbound of this proxy
-          items:
-            $ref: '#/components/schemas/FromRule'
         inboundRules:
           type: array
-          description: >-
-            a set of rules for each inbound port of the proxy. When the policy
-            descriptor has 'isFromAsRules' set to true, this field supersedes
-            'fromRules' and should be used instead.
+          description: a set of rules for each inbound port of the proxy.
           items:
             $ref: '#/components/schemas/InboundRulesEntry'
         warnings:
@@ -5510,21 +5246,6 @@ components:
                     oneOf:
                       - type: string
                       - type: integer
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: >-
-                      Tags associated with an application this data plane proxy
-                      is deployed
-
-                      next to, e.g. `kuma.io/service=web`, `version=1.0`. You
-                      can then
-
-                      reference these tags in policies like
-                      MeshTrafficPermission.
-
-                      `kuma.io/service` tag is mandatory.
-                    type: object
                 type: object
               type: array
             listeners:
@@ -5598,9 +5319,7 @@ components:
                       Headless Service. Defaults to 127.0.0.1
                     type: string
                   backendRef:
-                    description: |-
-                      BackendRef is a way to target MeshService.
-                      Experimental. Do not use on production yet.
+                    description: BackendRef is a way to target MeshService.
                     properties:
                       kind:
                         description: >-
@@ -5637,17 +5356,6 @@ components:
 
                       port.
                     type: integer
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: >-
-                      Tags of consumed data plane proxies.
-
-                      These tags can then be referenced in `to` section in
-                      policies like
-
-                      MeshAccessLog.
-                    type: object
                 type: object
               type: array
             transparentProxying:
@@ -5727,122 +5435,12 @@ components:
                   type: integer
               type: object
           type: object
-        probes:
-          description: >-
-            Probes describe a list of endpoints that will be exposed without
-            mTLS.
-
-            This is useful to expose the health endpoints of the application so
-            the
-
-            orchestration system (e.g. Kubernetes) can still health check the
-
-            application.
-
-
-            See
-
-            https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
-
-            for more information.
-
-            Deprecated: this feature will be removed for Universal; on
-            Kubernetes, it's
-
-            not needed anymore.
-          properties:
-            endpoints:
-              description: List of endpoints to expose without mTLS.
-              items:
-                properties:
-                  inboundPath:
-                    description: >-
-                      Inbound path is a path of the application from which we
-                      expose the
-
-                      endpoint. It is recommended to be as specific as possible.
-                    type: string
-                  inboundPort:
-                    description: >-
-                      Inbound port is a port of the application from which we
-                      expose the
-
-                      endpoint.
-                    type: integer
-                  path:
-                    description: >-
-                      Path is a path on which we expose inbound path on the
-                      probes port.
-                    type: string
-                type: object
-              type: array
-            port:
-              description: >-
-                Port on which the probe endpoints will be exposed. This cannot
-                overlap
-
-                with any other ports.
-              type: integer
-          type: object
         type:
           type: string
       required:
         - type
         - name
         - mesh
-      type: object
-    DataSource_File:
-      properties:
-        file:
-          description: |-
-            Data source is a path to a file.
-            Deprecated, use other sources of a data.
-          type: string
-      type: object
-    DataSource_Inline:
-      properties:
-        inline:
-          description: Data source is inline bytes.
-          format: byte
-          type: string
-      type: object
-    DataSource_InlineString:
-      properties:
-        inlineString:
-          description: Data source is inline string
-          type: string
-      type: object
-    DataSource_Secret:
-      properties:
-        secret:
-          description: Data source is a secret with given Secret key.
-          type: string
-      type: object
-    ProvidedCertificateAuthorityConfig:
-      properties:
-        cert:
-          oneOf:
-            - $ref: '#/components/schemas/DataSource_File'
-            - $ref: '#/components/schemas/DataSource_Inline'
-            - $ref: '#/components/schemas/DataSource_InlineString'
-            - $ref: '#/components/schemas/DataSource_Secret'
-        key:
-          oneOf:
-            - $ref: '#/components/schemas/DataSource_File'
-            - $ref: '#/components/schemas/DataSource_Inline'
-            - $ref: '#/components/schemas/DataSource_InlineString'
-            - $ref: '#/components/schemas/DataSource_Secret'
-      type: object
-    BuiltinCertificateAuthorityConfig:
-      properties:
-        caCert:
-          properties:
-            expiration:
-              type: string
-            rsaBits:
-              format: uint32
-              type: integer
-          type: object
       type: object
     MeshItem:
       properties:
@@ -5864,96 +5462,8 @@ components:
           format: date-time
           readOnly: true
           type: string
-        mtls:
-          description: |-
-            mTLS settings.
-            +optional
-          properties:
-            backends:
-              description: List of available Certificate Authority backends
-              items:
-                description: >-
-                  CertificateAuthorityBackend defines Certificate Authority
-                  backend
-                properties:
-                  conf:
-                    oneOf:
-                      - $ref: >-
-                          #/components/schemas/ProvidedCertificateAuthorityConfig
-                      - $ref: '#/components/schemas/BuiltinCertificateAuthorityConfig'
-                    type: object
-                  dpCert:
-                    description: Dataplane certificate settings
-                    properties:
-                      requestTimeout:
-                        description: >-
-                          Timeout on request to CA for DP certificate generation
-                          and retrieval
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
-                      rotation:
-                        description: Rotation settings
-                        properties:
-                          expiration:
-                            description: >-
-                              Time after which generated certificate for
-                              Dataplane will expire
-                            type: string
-                        type: object
-                    type: object
-                  mode:
-                    description: >-
-                      Mode defines the behaviour of inbound listeners with
-                      regard to traffic
-
-                      encryption
-                    oneOf:
-                      - type: string
-                      - type: integer
-                  name:
-                    description: Name of the backend
-                    type: string
-                  rootChain:
-                    properties:
-                      requestTimeout:
-                        description: >-
-                          Timeout on request for to CA for root certificate
-                          chain.
-
-                          If not specified, defaults to 10s.
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
-                    type: object
-                  type:
-                    description: >-
-                      Type of the backend. Has to be one of the loaded plugins
-                      (Kuma ships with
-
-                      builtin and provided)
-                    type: string
-                type: object
-              type: array
-            enabledBackend:
-              description: Name of the enabled backend
-              type: string
-            skipValidation:
-              description: If enabled, skips CA validation.
-              type: boolean
-          type: object
         name:
           type: string
-        routing:
-          description: Routing settings of the mesh
-          properties: {}
-          type: object
         skipCreatingInitialPolicies:
           description: >-
             List of policies to skip creating by default when the mesh is
@@ -6288,12 +5798,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -6315,15 +5819,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -6540,13 +6035,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -6569,15 +6061,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -6592,13 +6075,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshAccessLog resource.
           properties:
@@ -7185,12 +6668,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -7212,15 +6689,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -7709,13 +7177,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -7738,15 +7203,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -7760,13 +7216,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshFaultInjectionItem:
       type: object
       description: >-
@@ -7980,12 +7436,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -8007,15 +7457,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -8137,13 +7578,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -8166,15 +7604,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -8188,13 +7617,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshHTTPRouteItem:
       type: object
       description: >-
@@ -8261,12 +7690,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -8288,15 +7711,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -8334,7 +7748,6 @@ components:
                                     description: Kind of the referenced resource
                                     enum:
                                       - Mesh
-                                      - MeshSubset
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -8374,9 +7787,9 @@ components:
                                       type: string
                                     description: >-
                                       Tags used to select a subset of proxies by
-                                      tags. Can only be used with kinds
+                                      tags. Can only be used with kind
 
-                                      `MeshSubset` and `MeshServiceSubset`
+                                      `MeshServiceSubset`
                                     type: object
                                   weight:
                                     default: 1
@@ -8455,7 +7868,6 @@ components:
                                             description: Kind of the referenced resource
                                             enum:
                                               - Mesh
-                                              - MeshSubset
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
@@ -8495,9 +7907,9 @@ components:
                                               type: string
                                             description: >-
                                               Tags used to select a subset of proxies
-                                              by tags. Can only be used with kinds
+                                              by tags. Can only be used with kind
 
-                                              `MeshSubset` and `MeshServiceSubset`
+                                              `MeshServiceSubset`
                                             type: object
                                           weight:
                                             default: 1
@@ -8826,13 +8238,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -8855,15 +8264,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -8878,13 +8278,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshHealthCheckItem:
       type: object
       description: >-
@@ -8941,12 +8341,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -8968,15 +8362,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -9255,13 +8640,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -9284,15 +8666,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -9306,13 +8679,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshLoadBalancingStrategyItem:
       type: object
       description: >-
@@ -9372,12 +8745,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -9399,15 +8766,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -9526,7 +8884,6 @@ components:
                                 - Header
                                 - Cookie
                                 - Connection
-                                - SourceIP
                                 - QueryParameter
                                 - FilterState
                               type: string
@@ -9847,13 +9204,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -9876,15 +9230,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -9898,13 +9243,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshMetricItem:
       type: object
       description: >-
@@ -10178,12 +9523,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -10205,15 +9544,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -10223,13 +9553,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshMetric resource.
           properties:
@@ -10400,12 +9730,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -10427,15 +9751,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -10445,13 +9760,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshProxyPatchItem:
       type: object
       description: >-
@@ -11079,12 +10394,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -11106,15 +10415,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -11126,13 +10426,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshRateLimitItem:
       type: object
       description: >-
@@ -11382,12 +10682,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -11409,15 +10703,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -11576,13 +10861,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -11605,15 +10887,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -11627,13 +10900,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshRetryItem:
       type: object
       description: >-
@@ -11690,12 +10963,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -11717,15 +10984,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -12178,13 +11436,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -12207,15 +11462,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -12229,13 +11475,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshTCPRouteItem:
       type: object
       description: >-
@@ -12301,12 +11547,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -12328,15 +11568,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -12371,7 +11602,6 @@ components:
                                     description: Kind of the referenced resource
                                     enum:
                                       - Mesh
-                                      - MeshSubset
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
@@ -12411,9 +11641,9 @@ components:
                                       type: string
                                     description: >-
                                       Tags used to select a subset of proxies by
-                                      tags. Can only be used with kinds
+                                      tags. Can only be used with kind
 
-                                      `MeshSubset` and `MeshServiceSubset`
+                                      `MeshServiceSubset`
                                     type: object
                                   weight:
                                     default: 1
@@ -12440,13 +11670,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -12469,15 +11696,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -12493,13 +11711,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshTLSItem:
       type: object
       description: >-
@@ -12621,12 +11839,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -12648,15 +11860,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -12666,13 +11869,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshTimeoutItem:
       type: object
       description: >-
@@ -12873,12 +12076,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -12900,15 +12097,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -13013,13 +12201,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -13042,15 +12227,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -13064,13 +12240,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshTraceItem:
       type: object
       description: >-
@@ -13365,12 +12541,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -13392,15 +12562,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -13410,13 +12571,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshTrace resource.
           properties:
@@ -13703,12 +12864,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -13730,15 +12885,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -13748,157 +12894,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
-    ZoneEgressItem:
-      properties:
-        creationTime:
-          description: Time at which the resource was created
-          format: date-time
-          readOnly: true
-          type: string
-        kri:
-          description: Kuma Resource Identifier (KRI) of the given resource
-          readOnly: true
-          type: string
-        labels:
-          additionalProperties:
-            type: string
-          type: object
-        modificationTime:
-          description: Time at which the resource was updated
-          format: date-time
-          readOnly: true
-          type: string
-        name:
-          type: string
-        networking:
-          description: Networking defines the address and port of the Egress to listen on.
-          properties:
-            address:
-              description: Address on which inbound listener will be exposed
-              type: string
-            admin:
-              description: Admin contains configuration related to Envoy Admin API
-              properties:
-                port:
-                  description: Port on which Envoy Admin API server will be listening
-                  type: integer
-              type: object
-            port:
-              description: >-
-                Port of the inbound interface that will forward requests to the
-                service.
-              type: integer
-          type: object
-        type:
-          type: string
-        zone:
-          description: |-
-            Zone field contains Zone name where egress is serving, field will be
-            automatically set by Global Kuma CP
-          type: string
-      required:
-        - type
-        - name
-      type: object
-    ZoneIngressItem:
-      properties:
-        availableServices:
-          description: |-
-            AvailableService contains tags that represent unique subset of
-            endpoints
-          items:
-            properties:
-              externalService:
-                description: instance of external service available from the zone
-                type: boolean
-              instances:
-                description: number of instances available for given tags
-                type: integer
-              mesh:
-                description: mesh of the instances available for given tags
-                type: string
-              tags:
-                additionalProperties:
-                  type: string
-                description: tags of the service
-                type: object
-            type: object
-          type: array
-        creationTime:
-          description: Time at which the resource was created
-          format: date-time
-          readOnly: true
-          type: string
-        kri:
-          description: Kuma Resource Identifier (KRI) of the given resource
-          readOnly: true
-          type: string
-        labels:
-          additionalProperties:
-            type: string
-          type: object
-        modificationTime:
-          description: Time at which the resource was updated
-          format: date-time
-          readOnly: true
-          type: string
-        name:
-          type: string
-        networking:
-          description: >-
-            Networking defines the address and port of the Ingress to listen on.
-
-            Additionally publicly advertised address and port could be
-            specified.
-          properties:
-            address:
-              description: Address on which inbound listener will be exposed
-              type: string
-            admin:
-              description: Admin contains configuration related to Envoy Admin API
-              properties:
-                port:
-                  description: Port on which Envoy Admin API server will be listening
-                  type: integer
-              type: object
-            advertisedAddress:
-              description: |-
-                AdvertisedAddress defines IP or DNS name on which ZoneIngress is
-                accessible to other Kuma clusters.
-              type: string
-            advertisedPort:
-              description: >-
-                AdvertisedPort defines port on which ZoneIngress is accessible
-                to other
-
-                Kuma clusters.
-              type: integer
-            port:
-              description: >-
-                Port of the inbound interface that will forward requests to the
-                service.
-              type: integer
-          type: object
-        type:
-          type: string
-        zone:
-          description: >-
-            Zone field contains Zone name where ingress is serving, field will
-            be
-
-            automatically set by Global Kuma CP
-          type: string
-      required:
-        - type
-        - name
-      type: object
+          example: '1901-01-01T00:00:00.000Z'
     DataplaneOverviewWithMeta:
       allOf:
         - $ref: '#/components/schemas/Meta'
@@ -14168,21 +13170,6 @@ components:
                         oneOf:
                           - type: string
                           - type: integer
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags associated with an application this data plane
-                          proxy is deployed
-
-                          next to, e.g. `kuma.io/service=web`, `version=1.0`.
-                          You can then
-
-                          reference these tags in policies like
-                          MeshTrafficPermission.
-
-                          `kuma.io/service` tag is mandatory.
-                        type: object
                     type: object
                   type: array
                 listeners:
@@ -14259,9 +13246,7 @@ components:
                           Headless Service. Defaults to 127.0.0.1
                         type: string
                       backendRef:
-                        description: |-
-                          BackendRef is a way to target MeshService.
-                          Experimental. Do not use on production yet.
+                        description: BackendRef is a way to target MeshService.
                         properties:
                           kind:
                             description: >-
@@ -14299,17 +13284,6 @@ components:
 
                           port.
                         type: integer
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags of consumed data plane proxies.
-
-                          These tags can then be referenced in `to` section in
-                          policies like
-
-                          MeshAccessLog.
-                        type: object
                     type: object
                   type: array
                 transparentProxying:
@@ -14390,65 +13364,6 @@ components:
                         transparently redirected.
                       type: integer
                   type: object
-              type: object
-            probes:
-              description: >-
-                Probes describe a list of endpoints that will be exposed without
-                mTLS.
-
-                This is useful to expose the health endpoints of the application
-                so the
-
-                orchestration system (e.g. Kubernetes) can still health check
-                the
-
-                application.
-
-
-                See
-
-                https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
-
-                for more information.
-
-                Deprecated: this feature will be removed for Universal; on
-                Kubernetes, it's
-
-                not needed anymore.
-              properties:
-                endpoints:
-                  description: List of endpoints to expose without mTLS.
-                  items:
-                    properties:
-                      inboundPath:
-                        description: >-
-                          Inbound path is a path of the application from which
-                          we expose the
-
-                          endpoint. It is recommended to be as specific as
-                          possible.
-                        type: string
-                      inboundPort:
-                        description: >-
-                          Inbound port is a port of the application from which
-                          we expose the
-
-                          endpoint.
-                        type: integer
-                      path:
-                        description: >-
-                          Path is a path on which we expose inbound path on the
-                          probes port.
-                        type: string
-                    type: object
-                  type: array
-                port:
-                  description: >-
-                    Port on which the probe endpoints will be exposed. This
-                    cannot overlap
-
-                    with any other ports.
-                  type: integer
               type: object
           type: object
         dataplaneInsight:
@@ -14853,13 +13768,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshExternalServiceItem:
       type: object
       description: >-
@@ -15032,44 +13947,140 @@ components:
                     caCert:
                       description: CaCert defines a certificate of CA.
                       properties:
-                        inline:
-                          description: Data source is inline bytes.
-                          format: byte
+                        envVar:
+                          properties:
+                            name:
+                              type: string
+                          required:
+                            - name
+                          type: object
+                        file:
+                          properties:
+                            path:
+                              type: string
+                          required:
+                            - path
+                          type: object
+                        insecureInline:
+                          properties:
+                            value:
+                              type: string
+                          required:
+                            - value
+                          type: object
+                        secretRef:
+                          properties:
+                            kind:
+                              enum:
+                                - Secret
+                              type: string
+                            name:
+                              type: string
+                          required:
+                            - kind
+                            - name
+                          type: object
+                        type:
+                          enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                           type: string
-                        inlineString:
-                          description: Data source is inline string`
-                          type: string
-                        secret:
-                          description: Data source is a secret with given Secret key.
-                          type: string
+                      required:
+                        - type
                       type: object
                     clientCert:
                       description: ClientCert defines a certificate of a client.
                       properties:
-                        inline:
-                          description: Data source is inline bytes.
-                          format: byte
+                        envVar:
+                          properties:
+                            name:
+                              type: string
+                          required:
+                            - name
+                          type: object
+                        file:
+                          properties:
+                            path:
+                              type: string
+                          required:
+                            - path
+                          type: object
+                        insecureInline:
+                          properties:
+                            value:
+                              type: string
+                          required:
+                            - value
+                          type: object
+                        secretRef:
+                          properties:
+                            kind:
+                              enum:
+                                - Secret
+                              type: string
+                            name:
+                              type: string
+                          required:
+                            - kind
+                            - name
+                          type: object
+                        type:
+                          enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                           type: string
-                        inlineString:
-                          description: Data source is inline string`
-                          type: string
-                        secret:
-                          description: Data source is a secret with given Secret key.
-                          type: string
+                      required:
+                        - type
                       type: object
                     clientKey:
                       description: ClientKey defines a client private key.
                       properties:
-                        inline:
-                          description: Data source is inline bytes.
-                          format: byte
+                        envVar:
+                          properties:
+                            name:
+                              type: string
+                          required:
+                            - name
+                          type: object
+                        file:
+                          properties:
+                            path:
+                              type: string
+                          required:
+                            - path
+                          type: object
+                        insecureInline:
+                          properties:
+                            value:
+                              type: string
+                          required:
+                            - value
+                          type: object
+                        secretRef:
+                          properties:
+                            kind:
+                              enum:
+                                - Secret
+                              type: string
+                            name:
+                              type: string
+                          required:
+                            - kind
+                            - name
+                          type: object
+                        type:
+                          enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                           type: string
-                        inlineString:
-                          description: Data source is inline string`
-                          type: string
-                        secret:
-                          description: Data source is a secret with given Secret key.
-                          type: string
+                      required:
+                        - type
                       type: object
                     mode:
                       default: Secured
@@ -15148,13 +14159,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshExternalService
@@ -15505,13 +14516,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshIdentity resource.
           properties:
@@ -15680,13 +14691,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshMultiZoneService
@@ -16041,13 +15052,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshOpenTelemetryBackend
@@ -16177,7 +15188,6 @@ components:
                 properties:
                   type:
                     enum:
-                      - ServiceTag
                       - SpiffeID
                     type: string
                   value:
@@ -16246,13 +15256,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshService resource.
           properties:
@@ -16463,13 +15473,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshTrust resource.
           properties:
@@ -16543,13 +15553,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     WorkloadItem:
       type: object
       description: >-
@@ -16600,13 +15610,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma Workload resource.
           properties:
@@ -17650,100 +16660,6 @@ components:
               items:
                 items:
                   $ref: '#/components/schemas/SecretItem'
-                type: array
-              next:
-                description: URL to the next page
-                type: string
-              total:
-                description: The total number of entities
-                type: number
-            type: object
-      description: List
-    ZoneEgressCreateOrUpdateSuccessResponse:
-      content:
-        application/json:
-          schema:
-            properties:
-              warnings:
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-                readOnly: true
-                type: array
-            type: object
-      description: Successful response
-    ZoneEgressDeleteSuccessResponse:
-      content:
-        application/json:
-          schema:
-            type: object
-      description: Successful response
-    ZoneEgressItem:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ZoneEgressItem'
-      description: Successful response
-    ZoneEgressList:
-      content:
-        application/json:
-          schema:
-            properties:
-              items:
-                items:
-                  $ref: '#/components/schemas/ZoneEgressItem'
-                type: array
-              next:
-                description: URL to the next page
-                type: string
-              total:
-                description: The total number of entities
-                type: number
-            type: object
-      description: List
-    ZoneIngressCreateOrUpdateSuccessResponse:
-      content:
-        application/json:
-          schema:
-            properties:
-              warnings:
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-                readOnly: true
-                type: array
-            type: object
-      description: Successful response
-    ZoneIngressDeleteSuccessResponse:
-      content:
-        application/json:
-          schema:
-            type: object
-      description: Successful response
-    ZoneIngressItem:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ZoneIngressItem'
-      description: Successful response
-    ZoneIngressList:
-      content:
-        application/json:
-          schema:
-            properties:
-              items:
-                items:
-                  $ref: '#/components/schemas/ZoneIngressItem'
                 type: array
               next:
                 description: URL to the next page

@@ -22,7 +22,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_time "github.com/kumahq/kuma/v3/pkg/util/time"
@@ -147,7 +146,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			ms.Spec.Identities = &identities
 		}
 
-		tls := s.buildTLS(ms.Status.TLS, dpps, insightsByKey, mesh, mids, trustDomains)
+		tls := s.buildTLS(ms.Status.TLS, dpps, mids, trustDomains)
 		if !reflect.DeepEqual(ms.Status.TLS, tls) {
 			changeReasons = append(changeReasons, "tls status")
 			ms.Status.TLS = tls
@@ -223,89 +222,62 @@ func buildDataplaneProxies(
 func (s *StatusUpdater) buildTLS(
 	existing meshservice_api.TLS,
 	dpps []*core_mesh.DataplaneResource,
-	insightsByName map[core_model.ResourceKey]*core_mesh.DataplaneInsightResource,
-	mesh *core_mesh.MeshResource,
 	meshIdentities []*meshidentity_api.MeshIdentityResource,
 	trustDomains map[string]struct{},
 ) meshservice_api.TLS {
-	if !mesh.MTLSEnabled() && len(meshIdentities) == 0 {
-		return meshservice_api.TLS{
-			Status: meshservice_api.TLSNotReady,
-		}
+	notReady := meshservice_api.TLS{Status: meshservice_api.TLSNotReady}
+	if len(meshIdentities) == 0 {
+		return notReady
 	}
-	if existing.Status == meshservice_api.TLSReady && (mesh.MTLSEnabled() || len(meshIdentities) > 0) {
-		// If mTLS is enabled, the status should go only one way.
-		// Every new instance always starts with mTLS, so we don't want to count issued backends.
+	if existing.Status == meshservice_api.TLSReady {
+		// Once a workload identity is in place, the status should go only one way.
+		// Every new instance always starts with mTLS, so we don't want to count ready identities.
 		// Otherwise, we could get into race when new Dataplane did not receive cert yet,
 		// We would flip TLS to NotReady for a short period of time.
 		return existing
 	}
 
-	issuedBackends := 0
-	allTrustDomainsSupported := true
-	dppsWithIdentities := 0
+	tlsReadyDpps := 0
 	for _, dpp := range dpps {
-		if insight := insightsByName[core_model.MetaToResourceKey(dpp.Meta)]; insight != nil {
-			// Cert issued by any backend means that mTLS cert was issued to the DP
-			// We don't want to check specific backend value, because we might be in a middle of CA rotation.
-			if insight.Spec.GetMTLS().GetIssuedBackend() != "" {
-				issuedBackends++
-			}
-		}
-		if identity, matches := meshidentity_api.BestMatched(dpp.Meta.GetLabels(), meshIdentities); matches {
-			if identity.Status.IsInitialized() {
-				// spire manages trusts so we don't need to validate if trustDomain is supported
-				if identity.Spec.Provider != nil && identity.Spec.Provider.Type == meshidentity_api.SpireType {
-					allTrustDomainsSupported = true
-					dppsWithIdentities++
-					continue
-				}
-				td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
-				if err != nil {
-					s.logger.Error(err, "cannot resolve trust domain")
-					allTrustDomainsSupported = false
-					continue
-				}
-				if _, exists := trustDomains[td]; exists {
-					dppsWithIdentities++
-				} else {
-					allTrustDomainsSupported = false
-				}
-			}
+		if s.hasReadyIdentity(dpp, meshIdentities, trustDomains) {
+			tlsReadyDpps++
 		}
 	}
-	if mesh.MTLSEnabled() {
-		if issuedBackends == len(dpps) {
-			return meshservice_api.TLS{
-				Status: meshservice_api.TLSReady,
-			}
-		} else {
-			return meshservice_api.TLS{
-				Status: meshservice_api.TLSNotReady,
-			}
-		}
-	} else {
-		if dppsWithIdentities == len(dpps) && allTrustDomainsSupported {
-			return meshservice_api.TLS{
-				Status: meshservice_api.TLSReady,
-			}
-		} else {
-			return meshservice_api.TLS{
-				Status: meshservice_api.TLSNotReady,
-			}
-		}
+	if tlsReadyDpps != len(dpps) {
+		return notReady
+	}
+	return meshservice_api.TLS{
+		Status: meshservice_api.TLSReady,
 	}
 }
 
+// hasReadyIdentity tells whether the proxy is matched by an initialized MeshIdentity
+// that issues certificates in a trust domain the mesh knows about.
+func (s *StatusUpdater) hasReadyIdentity(
+	dpp *core_mesh.DataplaneResource,
+	meshIdentities []*meshidentity_api.MeshIdentityResource,
+	trustDomains map[string]struct{},
+) bool {
+	identity, matches := meshidentity_api.BestMatched(dpp.Meta.GetLabels(), meshIdentities)
+	if !matches || identity.Status == nil || !identity.Status.IsInitialized() {
+		return false
+	}
+	// spire manages trusts so we don't need to validate if trustDomain is supported
+	if identity.Spec.Provider != nil && identity.Spec.Provider.Type == meshidentity_api.SpireType {
+		return true
+	}
+	td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
+	if err != nil {
+		s.logger.Error(err, "cannot resolve trust domain")
+		return false
+	}
+	_, exists := trustDomains[td]
+	return exists
+}
+
 func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, meshIdentities []*meshidentity_api.MeshIdentityResource) []meshservice_api.MeshServiceIdentity {
-	serviceTagIdentities := map[string]struct{}{}
 	spiffeIDs := map[string]struct{}{}
 	for _, dpp := range dpps {
-		// Must mirror pkg/xds/secrets.identityTags: identity comes from the
-		// workload label, the same signal the mTLS identity path relies on.
-		if workload := dpp.GetMeta().GetLabels()[metadata.KumaWorkload]; workload != "" {
-			serviceTagIdentities[workload] = struct{}{}
-		}
 		for _, identity := range meshidentity_api.AllMatched(dpp.Meta.GetLabels(), meshIdentities) {
 			if identity.Status == nil || (!identity.Status.IsInitialized() && !identity.Status.IsPartiallyReady()) {
 				continue
@@ -325,12 +297,6 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 	}
 	var identites []meshservice_api.MeshServiceIdentity
 
-	for _, identity := range maps.SortedKeys(serviceTagIdentities) {
-		identites = append(identites, meshservice_api.MeshServiceIdentity{
-			Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-			Value: identity,
-		})
-	}
 	for _, identity := range maps.SortedKeys(spiffeIDs) {
 		identites = append(identites, meshservice_api.MeshServiceIdentity{
 			Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,

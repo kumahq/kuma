@@ -54,17 +54,17 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 	parentPort *gatewayapi_v1.PortNumber,
 ) core_model.ResourceSpec {
 	// consumer route
-	targetRef := common_api.TargetRef{
-		Kind: common_api.LegacyMeshSubsetKind(),
-		Tags: &map[string]string{
+	targetRef := common_api.TopLevelTargetRef{
+		Kind: common_api.TopLevelTargetRefKindDataplane,
+		Labels: &map[string]string{
 			mesh_proto.KubeNamespaceTag: routeNamespace,
 		},
 	}
 
 	// producer route
 	if routeNamespace == parent.GetNamespace() {
-		targetRef = common_api.TargetRef{
-			Kind: common_api.Mesh,
+		targetRef = common_api.TopLevelTargetRef{
+			Kind: common_api.TopLevelTargetRefKindMesh,
 		}
 	}
 
@@ -92,8 +92,8 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 			sectionName = fmt.Sprintf("%d", port.Port)
 		}
 		tos = append(tos, v1alpha1.To{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
+			TargetRef: common_api.OutboundTargetRef{
+				Kind: common_api.OutboundTargetRefKindMeshService,
 				Labels: &map[string]string{
 					mesh_proto.DisplayName:      parent.GetName(),
 					mesh_proto.KubeNamespaceTag: parent.GetNamespace(),

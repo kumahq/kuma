@@ -409,7 +409,7 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("15. application probe proxy: config - enabled, pod - disabled; fallback to virtual probe", testCase{
+		Entry("15. application probe proxy: config - enabled, pod - disabled", testCase{
 			num: "15",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -477,7 +477,7 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config-ports.yaml",
 		}),
-		Entry("19. application probe proxy - disabled, virtual probes - disabled, pod - empty", testCase{
+		Entry("19. application probe proxy - disabled, pod - empty", testCase{
 			num: "19",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -492,9 +492,9 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.vp-disabled.config.yaml",
+			cfgFile: "inject.probe-proxy-disabled.config.yaml",
 		}),
-		Entry("20. virtual probes: config - disabled, pod - enabled", testCase{
+		Entry("20. application probe proxy: config - disabled, pod - startup probe", testCase{
 			num: "20",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -509,7 +509,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.vp-disabled.config.yaml",
+			cfgFile: "inject.probe-proxy-disabled.config.yaml",
 		}),
 		Entry("21. application probe proxy: named port", testCase{
 			num: "21",
@@ -558,7 +558,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.builtindns.config.yaml",
+			cfgFile: "inject.builtin-dns.config.yaml",
 		}),
 		Entry("24. sidecar with high concurrency", testCase{
 			num: "24",
@@ -574,7 +574,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.builtindns.config.yaml",
+			cfgFile: "inject.builtin-dns.config.yaml",
 		}),
 		Entry("25. sidecar with high resource limit", testCase{
 			num: "25",
@@ -654,7 +654,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.builtindns.config.yaml",
+			cfgFile: "inject.builtin-dns.config.yaml",
 		}),
 		Entry("31. with duplicate container/sidecar uid", testCase{
 			num: "31",
@@ -822,7 +822,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.vp-disabled.config.yaml",
+			cfgFile: "inject.probe-proxy-disabled.config.yaml",
 		}),
 		Entry("41. gateway provided with cni enabled", testCase{
 			num: "41",

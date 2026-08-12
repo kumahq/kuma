@@ -99,10 +99,10 @@ type TargetRef struct {
 	UsesSyntacticSugar bool `json:"-"`
 
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
+	// +kubebuilder:validation:Enum=Mesh;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
 	Kind TargetRefKind `json:"kind"`
-	// Tags used to select a subset of proxies by tags. Can only be used with kinds
-	// `MeshSubset` and `MeshServiceSubset`
+	// Tags used to select a subset of proxies by tags. Can only be used with kind
+	// `MeshServiceSubset`
 	Tags *map[string]string `json:"tags,omitempty"`
 	// Labels are used to select referenced real resources and to carry legacy
 	// service identity when a common TargetRef must still target old
@@ -111,6 +111,87 @@ type TargetRef struct {
 	// SectionName is used to target specific section of resource.
 	// For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
 	SectionName *string `json:"sectionName,omitempty"`
+}
+
+// TopLevelTargetRefKind is the set of TargetRefKind values valid for the
+// top-level spec.targetRef field.
+type TopLevelTargetRefKind string
+
+const (
+	TopLevelTargetRefKindMesh      TopLevelTargetRefKind = "Mesh"
+	TopLevelTargetRefKindDataplane TopLevelTargetRefKind = "Dataplane"
+)
+
+// TopLevelTargetRef defines the structure of the top-level targetRef field,
+// used to attach a policy's default configuration to a Mesh or Dataplane.
+type TopLevelTargetRef struct {
+	// This is needed to not sync policies with empty topLevelTarget ref to old zones that does not support it
+	// This can be removed in 2.11.x
+	UsesSyntacticSugar bool `json:"-"`
+
+	// Kind of the referenced resource
+	// +kubebuilder:validation:Enum=Mesh;Dataplane
+	Kind TopLevelTargetRefKind `json:"kind"`
+	// Labels are used to select referenced real resources and to carry legacy
+	// service identity when a common TargetRef must still target old
+	// service-tag based paths.
+	Labels *map[string]string `json:"labels,omitempty"`
+	// SectionName is used to target specific section of resource.
+	// For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+	SectionName *string `json:"sectionName,omitempty"`
+}
+
+// ToTargetRef converts a TopLevelTargetRef to the shared TargetRef
+// representation used by the policy matching engine. Safe to call on a nil
+// receiver: an unset top-level targetRef defaults to Mesh, mirroring the
+// default previously applied by generated GetTargetRef() helpers.
+func (t *TopLevelTargetRef) ToTargetRef() TargetRef {
+	if t == nil {
+		return TargetRef{Kind: Mesh, UsesSyntacticSugar: true}
+	}
+	return TargetRef{
+		UsesSyntacticSugar: t.UsesSyntacticSugar,
+		Kind:               TargetRefKind(t.Kind),
+		Labels:             t.Labels,
+		SectionName:        t.SectionName,
+	}
+}
+
+// OutboundTargetRefKind is the set of TargetRefKind values valid for the
+// spec.to[].targetRef field.
+type OutboundTargetRefKind string
+
+const (
+	OutboundTargetRefKindMesh                 OutboundTargetRefKind = "Mesh"
+	OutboundTargetRefKindMeshService          OutboundTargetRefKind = "MeshService"
+	OutboundTargetRefKindMeshExternalService  OutboundTargetRefKind = "MeshExternalService"
+	OutboundTargetRefKindMeshMultiZoneService OutboundTargetRefKind = "MeshMultiZoneService"
+	OutboundTargetRefKindMeshHTTPRoute        OutboundTargetRefKind = "MeshHTTPRoute"
+)
+
+// OutboundTargetRef defines the structure of the spec.to[].targetRef field,
+// used to match a group of destinations a policy configuration applies to.
+type OutboundTargetRef struct {
+	// Kind of the referenced resource
+	// +kubebuilder:validation:Enum=Mesh;MeshService;MeshExternalService;MeshMultiZoneService;MeshHTTPRoute
+	Kind OutboundTargetRefKind `json:"kind"`
+	// Labels are used to select referenced real resources and to carry legacy
+	// service identity when a common TargetRef must still target old
+	// service-tag based paths.
+	Labels *map[string]string `json:"labels,omitempty"`
+	// SectionName is used to target specific section of resource.
+	// For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+	SectionName *string `json:"sectionName,omitempty"`
+}
+
+// ToTargetRef converts an OutboundTargetRef to the shared TargetRef
+// representation used by the policy matching engine.
+func (t OutboundTargetRef) ToTargetRef() TargetRef {
+	return TargetRef{
+		Kind:        TargetRefKind(t.Kind),
+		Labels:      t.Labels,
+		SectionName: t.SectionName,
+	}
 }
 
 func (t TargetRef) CompareDataplaneKind(other TargetRef) int {

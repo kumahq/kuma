@@ -57,7 +57,7 @@ var _ = Describe("ProxiedApplicationProbe", func() {
 	})
 
 	Context("ToVirtual - HTTP", func() {
-		It("should convert pod probe to virtual probe", func() {
+		It("should convert pod probe to a probe proxy endpoint", func() {
 			podProbeYaml := `
                 httpGet:
                   path: /c1/health/liveness

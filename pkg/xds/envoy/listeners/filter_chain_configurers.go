@@ -7,9 +7,7 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
-	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -20,12 +18,6 @@ import (
 
 func GrpcStats() FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.GrpcStatsConfigurer{})
-}
-
-func Kafka(statsName string) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.KafkaConfigurer{
-		StatsName: statsName,
-	})
 }
 
 func StaticEndpoints(ipv6Enabled bool, virtualHostName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
@@ -48,22 +40,6 @@ func DirectResponse(virtualHostName string, endpoints []v3.DirectResponseEndpoin
 func NetworkDirectResponse(response string) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.NetworkDirectResponseConfigurer{
 		Response: []byte(response),
-	})
-}
-
-func ServerSideMTLS(
-	mesh *core_mesh.MeshResource,
-	secrets core_xds.SecretsTracker,
-	tlsVersion *common_tls.Version,
-	tlsCiphers []common_tls.TlsCipher,
-	useMeshTrust bool,
-) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
-		Mesh:           mesh,
-		SecretsTracker: secrets,
-		TlsVersion:     tlsVersion,
-		TlsCiphers:     tlsCiphers,
-		UseMeshTrust:   useMeshTrust,
 	})
 }
 

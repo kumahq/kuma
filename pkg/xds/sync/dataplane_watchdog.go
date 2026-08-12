@@ -79,7 +79,6 @@ func (d *DataplaneWatchdog) Sync(ctx context.Context) (SyncResult, error) {
 
 func (d *DataplaneWatchdog) Cleanup() error {
 	proxyID := core_xds.FromResourceKey(d.key)
-	d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key)
 	d.EnvoyCpCtx.IdentityManager.Cleanup(d.key)
 	d.lastOtelStatus = nil
 	d.otelStatusSynced = false
@@ -107,24 +106,19 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 		return result, nil
 	}
 
-	certInfo := d.EnvoyCpCtx.Secrets.Info(mesh_proto.DataplaneProxyType, d.key)
-	syncForCert := certInfo != nil && certInfo.ExpiringSoon() // check if we need to regenerate config because identity cert is expiring soon.
-	syncForConfig := meshCtx.Hash != d.lastHash               // check if we need to regenerate config because Kuma policies has changed.
+	syncForConfig := meshCtx.Hash != d.lastHash // check if we need to regenerate config because Kuma policies has changed.
 	identity := d.EnvoyCpCtx.IdentityManager.SelectedIdentity(dpp, meshCtx.Resources.MeshIdentities().Items)
 	identityHash := base64.StdEncoding.EncodeToString(hashMeshIdentity(identity))
 	syncIdentity := identityHash != d.lastIdentityHash ||
 		// check if is expired
 		(d.workloadIdentity != nil && d.workloadIdentity.ManagementMode == core_xds.KumaManagementMode && d.workloadIdentity.ExpiringSoon()) ||
 		(d.workloadIdentity != nil && identity == nil) // check if someone changed identity and it doesn't target the dpp anymore
-	if !syncForCert && !syncForConfig && !syncIdentity {
+	if !syncForConfig && !syncIdentity {
 		result.Status = SkipStatus
 		return result, nil
 	}
 	if syncForConfig {
 		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", meshCtx.Hash)
-	}
-	if syncForCert {
-		d.log.V(1).Info("certs expiring soon, reconcile")
 	}
 	if syncIdentity {
 		d.log.V(1).Info("config generation based on identity change, reconcile")
@@ -165,9 +159,6 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 		return SyncResult{}, errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
-	if !envoyCtx.Mesh.Resource.MTLSEnabled() {
-		d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key) // we need to cleanup secrets if mtls is disabled
-	}
 	changed, err := d.DataplaneReconciler.Reconcile(ctx, *envoyCtx, proxy)
 	if err != nil {
 		return SyncResult{}, errors.Wrap(err, "could not reconcile")

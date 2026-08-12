@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
+	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/kumahq/kuma/v3/pkg/config"
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
@@ -47,6 +47,11 @@ func DefaultGlobalConfig() *GlobalConfig {
 			TlsCipherSuites:          []string{},
 			NackBackoff:              config_types.Duration{Duration: 5 * time.Second},
 			LogPayloads:              false,
+			EventBasedWatchdog: GlobalEventBasedWatchdogConfig{
+				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
+				DelayFullResync:    false,
+			},
 			Tracing: KDSServerTracing{
 				Enabled: true,
 			},
@@ -66,9 +71,6 @@ type ZoneConfig struct {
 	KDS *KdsClientConfig `json:"kds,omitempty"`
 	// DisableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
 	DisableOriginLabelValidation bool `json:"disableOriginLabelValidation,omitempty" envconfig:"kuma_multizone_zone_disable_origin_label_validation"`
-	// IngressUpdateInterval is the interval between the CP updating the list of
-	// available services on ZoneIngress.
-	IngressUpdateInterval config_types.Duration `json:"ingressUpdateInterval,omitempty" envconfig:"kuma_multizone_zone_ingress_update_interval"`
 }
 
 func (r *ZoneConfig) Sanitize() {
@@ -83,8 +85,8 @@ func (r *ZoneConfig) Validate() error {
 	if r.Name == "" {
 		return errors.Errorf("Name is mandatory")
 	}
-	if violations := apimachineryvalidation.NameIsDNS1035Label(r.Name, false); len(violations) > 0 {
-		return errors.Errorf("Zone name %s is invalid: %s", r.Name, strings.Join(violations, "; "))
+	if violations := k8s_validation.IsDNS1035Label(r.Name); len(violations) > 0 {
+		return errors.Errorf("Zone name %q has to be a valid RFC1035 DNS label: %s", r.Name, strings.Join(violations, ", "))
 	}
 	if r.GlobalAddress != "" {
 		u, err := url.Parse(r.GlobalAddress)
@@ -125,9 +127,13 @@ func DefaultZoneConfig() *ZoneConfig {
 			MsgSendTimeout: config_types.Duration{Duration: 60 * time.Second},
 			NackBackoff:    config_types.Duration{Duration: 5 * time.Second},
 			LogPayloads:    false,
+			EventBasedWatchdog: ZoneEventBasedWatchdogConfig{
+				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
+				DelayFullResync:    false,
+			},
 		},
 		DisableOriginLabelValidation: false,
-		IngressUpdateInterval:        config_types.Duration{Duration: 1 * time.Second},
 	}
 }
 

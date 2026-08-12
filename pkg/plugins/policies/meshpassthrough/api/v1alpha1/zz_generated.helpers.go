@@ -6,11 +6,10 @@ package v1alpha1
 import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (x *MeshPassthrough) GetTargetRef() common_api.TargetRef {
-	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
+	return x.TargetRef.ToTargetRef()
 }
 
 func (x *MeshPassthrough) GetDefault() interface{} {
