@@ -388,7 +388,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	unresolvedTargetRef := common_api.TargetRef{
 		Kind: common_api.MeshService,
 		Labels: &map[string]string{
-			mesh_proto.DisplayName: metadata.UnresolvedBackendServiceTag,
+			mesh_proto.DisplayName: metadata.UnresolvedBackendServiceName,
 		},
 	}
 

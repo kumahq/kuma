@@ -16,6 +16,7 @@ import (
 	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 )
 
 var _ = Describe("uncheckedGapiToKumaRef", func() {
@@ -58,6 +59,39 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 			}),
 			SectionName: pointer.To("80"),
+		}))
+	})
+
+	It("should return a valid unresolved MeshService targetRef when the backend Service is missing", func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		reconciler := &HTTPRouteReconciler{
+			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).Build(),
+			Zone:   "zone-1",
+		}
+
+		group := gatewayapi.Group("")
+		kind := gatewayapi.Kind("Service")
+		namespace := gatewayapi.Namespace("kuma-demo")
+		port := gatewayapi.PortNumber(80)
+		ref := gatewayapi.BackendObjectReference{
+			Group:     &group,
+			Kind:      &kind,
+			Name:      "missing-backend",
+			Namespace: &namespace,
+			Port:      &port,
+		}
+
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", ref)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(condition).ToNot(BeNil())
+		Expect(targetRef).To(Equal(common_api.TargetRef{
+			Kind: common_api.MeshService,
+			Labels: pointer.To(map[string]string{
+				mesh_proto.DisplayName: metadata.UnresolvedBackendServiceName,
+			}),
 		}))
 	})
 })

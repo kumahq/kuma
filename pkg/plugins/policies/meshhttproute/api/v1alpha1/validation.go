@@ -13,7 +13,6 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 )
 
 func (r *MeshHTTPRouteResource) validate() error {
@@ -343,8 +342,7 @@ func validateBackendRefs(
 					common_api.MeshExternalService,
 					common_api.MeshMultiZoneService,
 				},
-				AllowedInvalidNames: []string{metadata.UnresolvedBackendServiceTag},
-				IsBackendRef:        true,
+				IsBackendRef: true,
 			}),
 		)
 		errs.AddErrorAt(
