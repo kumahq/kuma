@@ -14,7 +14,6 @@ import (
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
@@ -203,7 +202,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		EndpointMap:                     endpointMap,
 		VIPDomains:                      domains,
 		VIPOutbounds:                    outbounds,
-		ServicesInformation:             m.generateServicesInformation(endpointMap),
 		DataSourceLoader:                loader,
 		CAsByTrustDomain:                casByTrustDomain,
 		ZoneEgresses:                    zoneEgressList,
@@ -364,26 +362,6 @@ func modifyAllEntries(list core_model.ResourceList, fn func(resource core_model.
 	return newList, nil
 }
 
-func (m *meshContextBuilder) generateServicesInformation(
-	endpointMap xds.EndpointMap,
-) map[string]*ServiceInformation {
-	servicesInformation := map[string]*ServiceInformation{}
-	m.resolveProtocol(endpointMap, servicesInformation)
-	return servicesInformation
-}
-
-func (m *meshContextBuilder) resolveProtocol(
-	endpointMap xds.EndpointMap,
-	servicesInformation map[string]*ServiceInformation,
-) {
-	for svc, endpoints := range endpointMap {
-		serviceInfo := getServiceInformation(servicesInformation, svc)
-		serviceInfo.Protocol = inferServiceProtocol(endpoints)
-		serviceInfo.IsExternalService = isExternalService(endpoints)
-		servicesInformation[svc] = serviceInfo
-	}
-}
-
 func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
 	slices.Sort(managedTypes)
 	hasher := fnv.New128a()
@@ -424,40 +402,6 @@ func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalCont
 		}
 	}
 	return hasher.Sum(nil)
-}
-
-func getServiceInformation(servicesInformation map[string]*ServiceInformation, serviceName string) *ServiceInformation {
-	if info, found := servicesInformation[serviceName]; found {
-		return info
-	}
-	return &ServiceInformation{
-		Protocol: core_meta.ProtocolUnknown,
-	}
-}
-
-func isExternalService(endpoints []xds.Endpoint) bool {
-	for _, endpoint := range endpoints {
-		return endpoint.IsExternalService()
-	}
-	return false
-}
-
-func inferServiceProtocol(endpoints []xds.Endpoint) core_meta.Protocol {
-	if len(endpoints) == 0 {
-		return core_meta.ProtocolUnknown
-	}
-	serviceProtocol := core_meta.ParseProtocol(endpoints[0].Tags[mesh_proto.ProtocolTag])
-	if endpoints[0].ExternalService != nil && endpoints[0].ExternalService.Protocol != "" {
-		serviceProtocol = endpoints[0].ExternalService.Protocol
-	}
-	for _, endpoint := range endpoints[1:] {
-		endpointProtocol := core_meta.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
-		if endpoint.ExternalService != nil && endpoint.ExternalService.Protocol != "" {
-			endpointProtocol = endpoint.ExternalService.Protocol
-		}
-		serviceProtocol = core_meta.GetCommonProtocol(serviceProtocol, endpointProtocol)
-	}
-	return serviceProtocol
 }
 
 func resolveZoneEgresses(

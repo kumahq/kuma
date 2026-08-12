@@ -136,9 +136,6 @@ var _ = Describe("MeshAccessLog", func() {
 						AddEndpoint("other-service-http", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service")).
 						AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
 				).
-				AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-				AddServiceProtocol("other-service-http", core_meta.ProtocolHTTP).
-				AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
 				Build()
 
 			inboundBuilder := builders.Inbound().
@@ -988,8 +985,6 @@ var _ = Describe("MeshAccessLog", func() {
 					AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/service", "backend")).
 					AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
 			).
-			AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-			AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
 			Build()
 
 		proxy := xds_builders.Proxy().
@@ -1077,8 +1072,6 @@ var _ = Describe("MeshAccessLog", func() {
 					AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/service", "backend")).
 					AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
 			).
-			AddServiceProtocol("backend", core_meta.ProtocolHTTP).
-			AddServiceProtocol("other-service-tcp", core_meta.ProtocolTCP).
 			Build()
 
 		proxy := xds_builders.Proxy().

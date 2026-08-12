@@ -93,8 +93,6 @@ var _ = Describe("MeshTimeout", func() {
 		context := *xds_builders.Context().
 			WithMeshBuilder(samples.MeshDefaultBuilder()).
 			WithResources(xds_context.NewResources()).
-			AddServiceProtocol("other-service", core_meta.ProtocolHTTP).
-			AddServiceProtocol("second-service", core_meta.ProtocolTCP).
 			Build()
 		proxyBuilder := xds_builders.Proxy().
 			WithDataplane(builders.Dataplane().

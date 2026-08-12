@@ -100,7 +100,6 @@ var _ = Describe("GenerateClusters", func() {
 			BaseMeshContext: &xds_context.BaseMeshContext{
 				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{ms}),
 			},
-			ServicesInformation: map[string]*xds_context.ServiceInformation{},
 		}
 
 		backendRef := resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
@@ -192,20 +191,18 @@ var _ = Describe("GenerateClusters", func() {
 				Port:    10002,
 				SAN:     "spiffe://default/zone-egress",
 			}},
-			ServicesInformation: map[string]*xds_context.ServiceInformation{
-				"external-backend": {
-					Protocol:          core_meta.ProtocolHTTP,
-					IsExternalService: true,
-				},
-			},
 		}
 
+		mesKRI := kri.WithSectionName(kri.From(mes), "9000")
 		backendRef := resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
-			Resource: kri.WithSectionName(kri.From(mes), "9000"),
+			Resource: mesKRI,
 			Weight:   100,
 		})
 		services := envoy_common.NewServicesAccumulator()
-		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("external-backend").Build())
+		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().
+			WithService(mesKRI.String()).
+			WithExternalService(true).
+			Build())
 
 		rs, err := meshroute.GenerateClusters(
 			xds_builders.Proxy().
@@ -229,7 +226,7 @@ var _ = Describe("GenerateClusters", func() {
 
 		clusters := rs.Resources(envoy_resource.ClusterType)
 		Expect(clusters).To(HaveLen(1))
-		cluster, ok := clusters["external-backend"].Resource.(*envoy_cluster.Cluster)
+		cluster, ok := clusters[mesKRI.String()].Resource.(*envoy_cluster.Cluster)
 		Expect(ok).To(BeTrue())
 		Expect(cluster.TransportSocket).ToNot(BeNil())
 
@@ -251,7 +248,6 @@ var _ = Describe("GenerateClusters", func() {
 			BaseMeshContext: &xds_context.BaseMeshContext{
 				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{mzms}),
 			},
-			ServicesInformation: map[string]*xds_context.ServiceInformation{},
 		}
 
 		backendRef := resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
