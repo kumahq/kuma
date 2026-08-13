@@ -100,10 +100,6 @@ func GetOpenTelemetryClusterName(backendName string) string {
 	return Join(GetOpenTelemetryClusterPrefix(), backendName)
 }
 
-func GetPrometheusListenerName() string {
-	return Join("kuma", "metrics", "prometheus")
-}
-
 func GetAdminListenerName() string {
 	return Join("kuma", "envoy", "admin")
 }
