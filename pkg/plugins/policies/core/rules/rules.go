@@ -17,8 +17,6 @@ import (
 	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 )
 
-const RuleMatchesHashTag = "__rule-matches-hash__"
-
 type InboundListener struct {
 	Address string
 	Port    uint32
@@ -108,51 +106,6 @@ func BuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceRe
 		return ToRules{}, err
 	}
 	return ToRules{ResourceRules: resourceRules}, nil
-}
-
-func ComputeConf[T any](rs Rules, element subsetutils.Element) *T {
-	for _, rule := range rs {
-		if ruleMatchesElement(rule.Subset, element) {
-			conf := rule.Conf.(T)
-			return &conf
-		}
-	}
-	return nil
-}
-
-func ruleMatchesElement(ss subsetutils.Subset, other subsetutils.Element) bool {
-	if len(ss) == 0 {
-		return true
-	}
-	if len(other) == 0 {
-		return false
-	}
-
-	hasOverlapKey := false
-	for _, tag := range ss {
-		otherVal, ok := other[tag.Key]
-		if ok {
-			hasOverlapKey = true
-			switch {
-			case tag.Value == otherVal && tag.Not:
-				return false
-			case tag.Value == otherVal && !tag.Not:
-				continue
-			case tag.Value != otherVal && tag.Not:
-				continue
-			default:
-				return false
-			}
-		} else if !tag.Not {
-			return false
-		}
-	}
-
-	if !hasOverlapKey && ss.NumPositive() == 0 {
-		return true
-	}
-
-	return hasOverlapKey
 }
 
 func BuildProxyConf(matchedPolicies []core_model.Resource) (*ProxyConf, error) {
