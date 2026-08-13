@@ -29,6 +29,20 @@ func MeshTCPRoute(config *Config) func() {
 				v1alpha1.MeshTCPRouteResourceTypeDescriptor,
 				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
 			)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				responses, err := client.CollectResponses(
+					kubernetes.Cluster,
+					"demo-client",
+					fmt.Sprintf("http://%s/test-server", config.KicIP),
+					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
+					client.WithNumberOfRequests(10),
+					client.WithoutRetries(),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(responses).ToNot(BeEmpty())
+				g.Expect(responses).To(HaveEach(HaveField("Instance", HavePrefix("test-server"))))
+			}, "30s", "1s").Should(Succeed())
 		})
 
 		It("should split traffic between internal and external services "+
