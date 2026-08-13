@@ -64,8 +64,7 @@ pkg/plugins/policies/<policy-name>/
 - Helper functions: `validateFrom()`, `validateTo()`, `validateRules()`, `validateDefault()`
 - Top-level targetRef kinds: `Mesh`, `Dataplane`. Outbound (`to[].targetRef`) kinds:
   `Mesh`, `MeshService`, `MeshExternalService`, `MeshMultiZoneService`,
-  `MeshHTTPRoute`. `MeshServiceSubset` is valid only as a route
-  `backendRefs[].kind`
+  `MeshHTTPRoute`
 - Inbound (`from`) and outbound (`to`) rules if applicable
 
 **Testing (validator_test.go):**

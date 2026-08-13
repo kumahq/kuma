@@ -325,8 +325,6 @@ to:
       default:
         backendRefs:
           - kind: MeshServiceSubset
-            tags:
-              version: v1
 
 `),
 		ErrorCases("missing port in backendRefs",
@@ -416,8 +414,6 @@ to:
             requestMirror:
               backendRef:
                 kind: MeshServiceSubset
-                tags:
-                  version: v1
 `),
 		ErrorCases("missing port in requestMirror backendRef",
 			[]validators.Violation{{
