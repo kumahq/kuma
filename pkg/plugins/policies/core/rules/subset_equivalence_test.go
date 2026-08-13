@@ -1,4 +1,4 @@
-package subsetutils
+package rules
 
 import (
 	"testing"

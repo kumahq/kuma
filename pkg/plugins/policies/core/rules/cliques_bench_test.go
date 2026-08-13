@@ -2,20 +2,14 @@ package rules_test
 
 import (
 	"fmt"
-	"sync"
 	"testing"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
-	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
-	core_apis "github.com/kumahq/kuma/v2/pkg/core/resources/apis"
-	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/plugins/policies"
-	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
-	meshtrafficpermission_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v2/pkg/util/pointer"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 )
 
 // These benchmarks exercise the legacy `from`-list rule builder that this branch
@@ -32,17 +26,7 @@ import (
 // (2) versus namespace-wide ones (6).
 //
 // All names and identities are synthetic.
-const (
-	benchMesh = "mesh-a"
-	benchZone = "zone-a"
-)
-
-// Benchmarks don't go through test.RunSpecs, which is what normally registers the
-// policy plugins, so the resource types have to be registered here.
-var initPolicyPlugins = sync.OnceFunc(func() {
-	core_plugins.InitAll(core_apis.NameToModule)
-	core_plugins.InitAll(policies.NameToModule)
-})
+const benchMesh = "mesh-a"
 
 var (
 	// benchFromItems is the total number of `from` entries across all policies
@@ -54,10 +38,10 @@ var (
 // benchMTPList builds one MeshTrafficPermission per `from` entry, each admitting a
 // single distinct caller. tagsPerCaller controls how many tags identify a caller:
 // 1 is the common `kuma.io/service` case, 2 adds a version dimension.
-func benchMTPList(fromItems int, tagsPerCaller int) core_model.ResourceList {
-	items := make([]*meshtrafficpermission_api.MeshTrafficPermissionResource, 0, fromItems)
+func benchMTPList(fromItems int, tagsPerCaller int) []core_model.Resource {
+	items := make([]core_model.Resource, 0, fromItems)
 
-	for i := range fromItems {
+	for i := 0; i < fromItems; i++ {
 		tags := map[string]string{
 			mesh_proto.ServiceTag: fmt.Sprintf("caller-%d", i),
 		}
@@ -65,27 +49,23 @@ func benchMTPList(fromItems int, tagsPerCaller int) core_model.ResourceList {
 			tags["version"] = fmt.Sprintf("v%d", i%3)
 		}
 
-		res := builders.MeshTrafficPermission().
+		items = append(items, builders.MeshTrafficPermission().
 			WithMesh(benchMesh).
 			WithName(fmt.Sprintf("mtp-%d", i)).
 			WithTargetRef(common_api.TargetRef{Kind: common_api.Mesh}).
 			AddFrom(common_api.TargetRef{
 				Kind: common_api.MeshSubset,
-				Tags: pointer.To(tags),
+				Tags: tags,
 			}, meshtrafficpermission_api.Allow).
-			Build()
-		// The builder has no setter for labels, and matching needs the zone.
-		res.Meta.(*test_model.ResourceMeta).Labels = map[string]string{mesh_proto.ZoneTag: benchZone}
-
-		items = append(items, res)
+			Build())
 	}
 
-	return &meshtrafficpermission_api.MeshTrafficPermissionResourceList{Items: items}
+	return items
 }
 
-func benchByInbound(inbounds int, list core_model.ResourceList) map[core_rules.InboundListener]core_model.ResourceList {
-	byInbound := map[core_rules.InboundListener]core_model.ResourceList{}
-	for i := range inbounds {
+func benchByInbound(inbounds int, list []core_model.Resource) map[core_rules.InboundListener][]core_model.Resource {
+	byInbound := map[core_rules.InboundListener][]core_model.Resource{}
+	for i := 0; i < inbounds; i++ {
 		byInbound[core_rules.InboundListener{
 			Address: "10.0.0.1",
 			Port:    uint32(8080 + i),
@@ -97,8 +77,6 @@ func benchByInbound(inbounds int, list core_model.ResourceList) map[core_rules.I
 // BenchmarkBuildFromRulesCliques measures the production entry point: the whole
 // per-inbound loop, including the clique enumeration and createRule expansion.
 func BenchmarkBuildFromRulesCliques(b *testing.B) {
-	initPolicyPlugins()
-
 	for _, tagsPerCaller := range []int{1, 2} {
 		for _, inbounds := range benchInbounds {
 			for _, fromItems := range benchFromItems {
