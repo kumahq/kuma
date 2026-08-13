@@ -195,6 +195,7 @@ spec:
 		"MeshProxyPatch":            delegated.MeshProxyPatch(&config),
 		"MeshHealthCheck":           delegated.MeshHealthCheck(&config),
 		"MeshRetry":                 delegated.MeshRetry(&config),
+		"MeshTCPRoute":              delegated.MeshTCPRoute(&config),
 		"MeshHTTPRoute":             delegated.MeshHTTPRoute(&config),
 		"MeshHTTPRouteMeshService":  delegated.MeshHTTPRouteMeshService(&config),
 		"MeshTimeout":               delegated.MeshTimeout(&config),
