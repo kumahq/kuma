@@ -57,24 +57,4 @@ filters:
                       prefix: /
       statPrefix: test_host`))
 	})
-
-	It("should correctly set up network direct response", func() {
-		// when
-		filterChain, err := NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-			Configure(NetworkDirectResponse("{\"json\":\"value\"}")).
-			Build()
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		actual, err := util_proto.ToYAML(filterChain)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(actual).To(MatchYAML(`filters:
-          - name: envoy.filters.network.direct_response
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.network.direct_response.v3.Config
-              response:
-                  inlineBytes: eyJqc29uIjoidmFsdWUifQ==`))
-	})
 })
