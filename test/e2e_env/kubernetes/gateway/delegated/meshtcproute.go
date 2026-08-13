@@ -93,18 +93,26 @@ spec:
       kind: MeshService
       labels:
         kuma.io/display-name: test-server
+        k8s.kuma.io/namespace: %[3]s
     rules: 
     - default:
         backendRefs:
         - kind: MeshService
-          name: test-server_%[2]s_svc_80
-        - kind: MeshExternalService
-          name: external-http-service-mtcprd
+          labels:
+            kuma.io/display-name: test-server
+            k8s.kuma.io/namespace: %[3]s
           port: 80
         - kind: MeshExternalService
-          name: external-tcp-service-mtcprd
+          labels:
+            kuma.io/display-name: external-http-service-mtcprd
+            k8s.kuma.io/namespace: %[1]s
           port: 80
-`, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
+        - kind: MeshExternalService
+          labels:
+            kuma.io/display-name: external-tcp-service-mtcprd
+            k8s.kuma.io/namespace: %[1]s
+          port: 80
+`, config.CpNamespace, config.Mesh, config.Namespace))(kubernetes.Cluster)).To(Succeed())
 
 			// then
 			Eventually(func() ([]types.EchoResponse, error) {
