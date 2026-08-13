@@ -145,7 +145,8 @@ func (h *validatingHandler) validateMeshOwnerReference(obj k8s_model.KubernetesO
 		}
 		if ref.Name != obj.GetMesh() {
 			verr.AddViolationAt(path.Index(i).Field("name"), fmt.Sprintf(
-				"must be the same as the mesh of the resource %q. A resource cannot be moved between meshes, delete it and apply it again in the new mesh", obj.GetMesh()))
+				"must be the same as the mesh of the resource %q, got %q. A resource cannot be moved between meshes, delete it and apply it again in the new mesh", obj.GetMesh(), ref.Name,
+			))
 		}
 	}
 	return verr

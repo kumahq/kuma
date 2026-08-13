@@ -5,14 +5,15 @@ status:
   details:
     causes:
     - field: metadata.ownerReferences[0].name
-      message: must be the same as the mesh of the resource "default". A resource
-        cannot be moved between meshes, delete it and apply it again in the new mesh
+      message: must be the same as the mesh of the resource "default", got "other".
+        A resource cannot be moved between meshes, delete it and apply it again in
+        the new mesh
       reason: FieldValueInvalid
     kind: MeshTimeout
     name: backend-v3
   message: 'metadata.ownerReferences[0].name: must be the same as the mesh of the
-    resource "default". A resource cannot be moved between meshes, delete it and apply
-    it again in the new mesh'
+    resource "default", got "other". A resource cannot be moved between meshes, delete
+    it and apply it again in the new mesh'
   metadata: {}
   reason: Invalid
   status: Failure
