@@ -29,6 +29,9 @@ func MeshTCPRoute(config *Config) func() {
 				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
 			)).To(Succeed())
 
+			// Connections opened while the route was still applied keep reaching
+			// the old backends until Envoy drains the previous listener, which
+			// takes up to the drain time kuma-dp configures.
 			Eventually(func(g Gomega) {
 				responses, err := client.CollectResponses(
 					kubernetes.Cluster,
@@ -41,7 +44,7 @@ func MeshTCPRoute(config *Config) func() {
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(responses).ToNot(BeEmpty())
 				g.Expect(responses).To(HaveEach(HaveField("Instance", HavePrefix("test-server"))))
-			}, "30s", "1s").Should(Succeed())
+			}, "90s", "1s").Should(Succeed())
 		})
 
 		It("should split traffic between internal and external services "+
@@ -128,22 +131,34 @@ spec:
 `, config.CpNamespace, config.Mesh, config.Namespace))(kubernetes.Cluster)).To(Succeed())
 
 			// then
+			// The route makes the gateway outbound a TCP proxy, so a backend is
+			// picked once per connection instead of per request, and the gateway
+			// keeps its upstream connections to the sidecar alive. Delaying every
+			// response keeps all requests of a single round in flight at the same
+			// time, which forces a separate connection per request, and instances
+			// are accumulated across rounds.
+			var instances []string
 			Eventually(func(g Gomega) {
-				response, err := client.CollectResponsesByInstance(
+				responses, err := client.CollectResponsesByInstance(
 					kubernetes.Cluster,
 					"demo-client",
 					fmt.Sprintf("http://%s/test-server", config.KicIP),
 					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
-					client.WithNumberOfRequests(100),
+					client.WithNumberOfRequests(10),
+					client.WithMaxConcurrentRequests(10),
+					client.WithHeader("x-set-response-delay-ms", "2000"),
+					client.WithMaxTime(10),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response).To(HaveLen(3))
-				g.Expect(response).To(And(
-					HaveKey(Equal(`test-server`)),
-					HaveKey(Equal(`external-service`)),
-					HaveKey(Equal(`external-tcp-service`)),
+				for instance := range responses {
+					instances = append(instances, instance)
+				}
+				g.Expect(instances).To(ContainElements(
+					HavePrefix("test-server"),
+					HavePrefix("external-service"),
+					HavePrefix("external-tcp-service"),
 				))
-			}, "30s", "5s").Should(Succeed())
+			}, "60s", "1s").Should(Succeed())
 		})
 	}
 }
