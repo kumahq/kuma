@@ -232,7 +232,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func() {
 	const routeNamespace = "kuma-demo"
 
-	serviceParentRef := func(name string) gatewayapi.ParentReference {
+	serviceParentRef := func() gatewayapi.ParentReference {
 		group := gatewayapi.Group("")
 		kind := gatewayapi.Kind("Service")
 		ns := gatewayapi.Namespace(routeNamespace)
@@ -240,7 +240,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 			Group:     &group,
 			Kind:      &kind,
 			Namespace: &ns,
-			Name:      gatewayapi.ObjectName(name),
+			Name:      gatewayapi.ObjectName("backend"),
 		}
 	}
 
@@ -294,7 +294,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 				},
 			},
 		}
-		route := newRoute(withSectionName(serviceParentRef("backend"), "https"))
+		route := newRoute(withSectionName(serviceParentRef(), "https"))
 
 		client := newClientBuilder(svc, route)
 		reconciler.Client = client
@@ -332,8 +332,8 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 			},
 		}
 		route := newRoute(
-			withSectionName(serviceParentRef("backend"), "http"),
-			withSectionName(serviceParentRef("backend"), "https"),
+			withSectionName(serviceParentRef(), "http"),
+			withSectionName(serviceParentRef(), "https"),
 		)
 
 		client := newClientBuilder(svc, route)
@@ -371,7 +371,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
 			},
 		}
-		route := newRoute(withSectionName(serviceParentRef("backend"), "grpc"))
+		route := newRoute(withSectionName(serviceParentRef(), "grpc"))
 
 		client := newClientBuilder(svc, route)
 		reconciler.Client = client
@@ -401,7 +401,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
 			},
 		}
-		route := newRoute(withSectionName(serviceParentRef("backend"), "http"))
+		route := newRoute(withSectionName(serviceParentRef(), "http"))
 
 		client := newClientBuilder(svc, route)
 		reconciler.Client = client
@@ -445,7 +445,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
 			},
 		}
-		route := newRoute(withSectionName(serviceParentRef("backend"), "grpc"))
+		route := newRoute(withSectionName(serviceParentRef(), "grpc"))
 
 		client := newClientBuilder(svc, route)
 		reconciler.Client = client
