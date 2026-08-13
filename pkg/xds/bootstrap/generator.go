@@ -125,7 +125,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		AppProbeProxyEnabled: request.AppProbeProxyEnabled,
 		ProxyType:            request.ProxyType,
 		Features:             features,
-		Resources:            request.Resources,
 		Workdir:              request.Workdir,
 		MetricsCertPath:      request.MetricsResources.CertPath,
 		MetricsKeyPath:       request.MetricsResources.KeyPath,

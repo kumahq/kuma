@@ -32,9 +32,6 @@ const (
 	// The value is part of the user-facing API (MeshProxyPatch `match.origin`) and must not change.
 	OriginProxyTemplateModifications Origin = "proxy-template-modifications"
 
-	// OriginTracing is the origin for resources produced by the tracing proxy/generator
-	OriginTracing Origin = "tracing"
-
 	// OriginTransparent is the origin for resources produced by the transparent proxy generator
 	OriginTransparent Origin = "transparent"
 )
