@@ -386,8 +386,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 		port := (*v1alpha1.PortNumber)(redirect.Port)
 		if redirect.Scheme != nil && redirect.Port == nil {
 			// See https://github.com/kubernetes-sigs/gateway-api/pull/1880
-			// this would have been a breaking change for MeshGateway, so handle
-			// it here.
+			// which dropped the implied default port, so derive it here.
 			switch *redirect.Scheme {
 			case "http":
 				port = (*v1alpha1.PortNumber)(pointer.To(int32(80)))

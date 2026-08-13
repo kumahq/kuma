@@ -580,7 +580,7 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 					}
 				}
 				var tags map[string]string
-				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
+				if dp.Spec.IsDelegatedGateway() {
 					tags = dp.Spec.Networking.Gateway.Tags
 				}
 				inboundRules = append(inboundRules, api_common.InboundRulesEntry{

@@ -45,15 +45,11 @@ components:
                     type:
                       description: |-
                         Type of gateway this data plane proxy manages.
-                        There are two types: `DELEGATED` and `BUILTIN`. Defaults to
-                        `DELEGATED`.
 
-                        A `DELEGATED` gateway is an independently deployed proxy (e.g., Kong,
-                        Contour, etc) that receives inbound traffic that is not proxied by
-                        Kuma, and it sends outbound traffic into the data plane proxy.
-
-                        The `BUILTIN` gateway type causes the data plane proxy itself to be
-                        configured as a gateway.
+                        The only supported type is `DELEGATED`: an independently deployed proxy
+                        (e.g., Kong, Contour, etc) that receives inbound traffic that is not
+                        proxied by Kuma, and it sends outbound traffic into the data plane
+                        proxy.
 
                         See https://kuma.io/docs/latest/explore/gateway/ for more information.
                       oneOf:

@@ -122,11 +122,11 @@ type DpFilter func(*mesh_proto.Dataplane_Networking_Gateway) bool
 
 func gatewayModeFilterFromParameter(request *restful.Request) (DpFilter, error) {
 	mode := strings.ToLower(request.QueryParameter("gateway"))
-	if mode != "" && mode != "true" && mode != "false" && mode != "builtin" && mode != "delegated" {
+	if mode != "" && mode != "true" && mode != "false" && mode != "delegated" {
 		verr := validators.ValidationError{}
 		verr.AddViolationAt(
 			validators.RootedAt(request.SelectedRoutePath()).Field("gateway"),
-			"shoud use `true`, `false`, 'builtin' or 'delegated' instead of "+mode)
+			"shoud use `true`, `false` or 'delegated' instead of "+mode)
 		return nil, &verr
 	}
 
@@ -141,10 +141,6 @@ func gatewayModeFilterFromParameter(request *restful.Request) (DpFilter, error) 
 	case "false":
 		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
 			return isnil(a)
-		}, nil
-	case "builtin":
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return !isnil(a) && a.Type == mesh_proto.Dataplane_Networking_Gateway_BUILTIN
 		}, nil
 	case "delegated":
 		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {

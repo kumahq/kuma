@@ -27,7 +27,6 @@ func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.To
 			common_api.Mesh,
 			common_api.Dataplane,
 		},
-		GatewayListenerTagsAllowed: true,
 	})
 	return targetRefErr
 }

@@ -152,8 +152,6 @@ type Proxy struct {
 	// WorkloadIdentity stores information about identity of the proxy.
 	WorkloadIdentity *WorkloadIdentity
 
-	// RuntimeExtensions a set of extensions to add for custom extensions (.e.g MeshGateway)
-	RuntimeExtensions map[string]any
 	// Zone the zone the proxy is in
 	Zone string
 	// InternalAddresses is a set of address prefixes that are considered internal to the mesh, it will be configured to in Envoy HCM config

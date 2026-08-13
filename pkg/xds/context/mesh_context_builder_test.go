@@ -611,21 +611,7 @@ var _ = Describe("EndpointMap", func() {
 		}
 		Expect(resourceStore.Create(context.Background(), zoneEgress, store.CreateByKey("zone-egress-dp", meshName))).To(Succeed())
 
-		// and a builtin and a delegated gateway dataplane, neither of which is a regular service
-		builtinGateway := &core_mesh.DataplaneResource{
-			Meta: &test_model.ResourceMeta{Mesh: meshName, Name: "gateway-builtin-dp"},
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: "127.0.0.1",
-					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-						Tags: map[string]string{mesh_proto.ServiceTag: "gateway-builtin"},
-						Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
-					},
-				},
-			},
-		}
-		Expect(resourceStore.Create(context.Background(), builtinGateway, store.CreateByKey("gateway-builtin-dp", meshName))).To(Succeed())
-
+		// and a delegated gateway dataplane, which is not a regular service
 		delegatedGatewayBuilder := builders.Dataplane().
 			WithMesh(meshName).
 			WithName("gateway-delegated-dp").
@@ -648,8 +634,7 @@ var _ = Describe("EndpointMap", func() {
 		Expect(mc.EndpointMap[esKey][0].IsExternalService()).To(BeTrue())
 		Expect(mc.EndpointMap[esKey][0].ExternalService.Protocol).To(Equal(core_meta.ProtocolHTTP))
 
-		// and gateway dataplanes (builtin and delegated) are not destinations
-		Expect(mc.EndpointMap).ToNot(HaveKey("gateway-builtin"))
+		// and gateway dataplanes are not destinations
 		Expect(mc.EndpointMap).ToNot(HaveKey("gateway-delegated"))
 	})
 })

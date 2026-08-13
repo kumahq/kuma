@@ -20,13 +20,12 @@ type ProxyBuilder struct {
 func Proxy() *ProxyBuilder {
 	return &ProxyBuilder{
 		res: &core_xds.Proxy{
-			APIVersion:        envoy_common.APIV3,
-			Dataplane:         &core_mesh.DataplaneResource{},
-			Metadata:          &core_xds.DataplaneMetadata{},
-			Policies:          core_xds.MatchedPolicies{},
-			Routing:           core_xds.Routing{},
-			RuntimeExtensions: map[string]any{},
-			Zone:              "test-zone",
+			APIVersion: envoy_common.APIV3,
+			Dataplane:  &core_mesh.DataplaneResource{},
+			Metadata:   &core_xds.DataplaneMetadata{},
+			Policies:   core_xds.MatchedPolicies{},
+			Routing:    core_xds.Routing{},
+			Zone:       "test-zone",
 		},
 	}
 }

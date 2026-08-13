@@ -564,11 +564,6 @@ func (d *Dataplane) IsDelegatedGateway() bool {
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_DELEGATED
 }
 
-func (d *Dataplane) IsBuiltinGateway() bool {
-	return d.GetNetworking().GetGateway() != nil &&
-		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_BUILTIN
-}
-
 func (t MultiValueTagSet) String() string {
 	var tags []string
 	for tag := range t {

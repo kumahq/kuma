@@ -261,7 +261,7 @@ var _ = Describe("Compute", func() {
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "127.0.0.1",
 						Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-							Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+							Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
 							Tags: map[string]string{
 								mesh_proto.ServiceTag: "test-gateway",
 							},

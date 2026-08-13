@@ -37,8 +37,7 @@ func (r *MeshAccessLogResource) validateTop(targetRef common_api.TargetRef, isIn
 			common_api.Mesh,
 			common_api.Dataplane,
 		},
-		GatewayListenerTagsAllowed: true,
-		IsInboundPolicy:            isInboundPolicy,
+		IsInboundPolicy: isInboundPolicy,
 	})
 	return targetRefErr
 }

@@ -43,7 +43,11 @@ message ServiceInsight {
       internal = 0;
       external = 1;
       gateway_delegated = 2;
-      gateway_builtin = 3;
+
+      // `gateway_builtin = 3` was removed with the built-in gateway. The
+      // ordinal stays reserved so it is never reused for a new type.
+      reserved 3;
+      reserved "gateway_builtin";
     }
     Type serviceType = 4;
     string addressPort = 5;

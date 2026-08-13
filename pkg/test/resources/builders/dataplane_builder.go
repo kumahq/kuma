@@ -242,20 +242,6 @@ func (d *DataplaneBuilder) WithDelegatedGateway(name string) *DataplaneBuilder {
 	return d
 }
 
-// WithBuiltInGateway builds a BUILTIN gateway dataplane. Kuma no longer accepts
-// BUILTIN on create/update (DataplaneResource.Validate rejects it), so this
-// exists only to construct legacy, pre-upgrade-shaped fixtures for testing
-// backward-compat read paths (e.g. label computation, insight resync).
-func (d *DataplaneBuilder) WithBuiltInGateway(name string) *DataplaneBuilder {
-	d.res.Spec.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{
-		Tags: map[string]string{
-			mesh_proto.ServiceTag: name,
-		},
-		Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
-	}
-	return d
-}
-
 func (d *DataplaneBuilder) AddGatewayTags(tags map[string]string) *DataplaneBuilder {
 	maps.Copy(d.res.Spec.Networking.Gateway.Tags, tags)
 	return d

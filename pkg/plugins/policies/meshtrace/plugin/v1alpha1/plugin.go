@@ -228,7 +228,6 @@ func configureListener(ctx xds_context.Context, policyConf *core_rules.ProxyConf
 		Service:           serviceName,
 		TrafficDirection:  direction,
 		Destination:       destination,
-		IsGateway:         proxy.Dataplane.Spec.IsBuiltinGateway(),
 		Mesh:              proxy.Dataplane.GetMeta().GetMesh(),
 		Zone:              proxy.Zone,
 		WorkloadKRI:       workloadKRI,

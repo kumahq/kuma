@@ -1,7 +1,6 @@
 package names
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -114,23 +113,4 @@ func GetTracingClusterName(backendName string) string {
 
 func GetDNSListenerName() string {
 	return Join("kuma", "dns")
-}
-
-func GetGatewayListenerName(gatewayName string, protoName string, port uint32) string {
-	return Join(gatewayName, protoName, formatPort(port))
-}
-
-// ParseGatewayListenerName returns gateway name, protocol and port
-func ParseGatewayListenerName(listenerName string) (string, string, uint32, error) {
-	parts := strings.Split(listenerName, Separator)
-	if len(parts) != 3 {
-		return "", "", 0, fmt.Errorf("invalid listener name format: expected 3 parts, got %d", len(parts))
-	}
-
-	portUint64, err := strconv.ParseUint(parts[2], 10, 32)
-	if err != nil {
-		return "", "", 0, fmt.Errorf("invalid port value: %w", err)
-	}
-
-	return parts[0], parts[1], uint32(portUint64), nil
 }
