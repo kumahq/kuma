@@ -38,7 +38,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -964,7 +963,7 @@ func httpInboundListenerWith() envoy_common.NamedResource {
 	return createListener(
 		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP, true),
 		HttpInboundRoute(
-			envoy_names.GetInboundRouteName("backend"),
+			"inbound:backend",
 			"backend",
 			plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 		))

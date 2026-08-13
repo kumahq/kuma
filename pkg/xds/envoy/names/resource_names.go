@@ -1,7 +1,6 @@
 package names
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -27,13 +26,6 @@ func GetLocalClusterName(port uint32) string {
 	return Join("localhost", formatPort(port))
 }
 
-func GetInboundClusterName(servicePort uint32, listenerPort uint32) string {
-	if servicePort != 0 {
-		return GetLocalClusterName(servicePort)
-	}
-	return GetLocalClusterName(listenerPort)
-}
-
 func GetPortForLocalClusterName(cluster string) (uint32, error) {
 	parts := strings.Split(cluster, Separator)
 	if len(parts) != 2 {
@@ -56,10 +48,6 @@ func GetOutboundListenerName(address string, port uint32) string {
 		net.JoinHostPort(address, formatPort(port)))
 }
 
-func GetInboundRouteName(service string) string {
-	return Join("inbound", service)
-}
-
 func GetOutboundRouteName(service string) string {
 	return Join("outbound", service)
 }
@@ -70,10 +58,6 @@ func GetEnvoyAdminClusterName() string {
 
 func GetMetricsHijackerClusterName() string {
 	return Join("kuma", "metrics", "hijacker")
-}
-
-func GetDPPReadinessClusterName() string {
-	return Join("kuma", "readiness")
 }
 
 func GetInternalClusterNamePrefix() string {
@@ -88,49 +72,6 @@ func GetAccessLogSinkClusterName() string {
 	return "access_log_sink"
 }
 
-func GetOpenTelemetryListenerName(backendName string) string {
-	return Join("_kuma", "metrics", "opentelemetry", backendName)
-}
-
 func GetOpenTelemetryClusterPrefix() string {
 	return Join("_kuma", "metrics", "opentelemetry")
-}
-
-func GetOpenTelemetryClusterName(backendName string) string {
-	return Join(GetOpenTelemetryClusterPrefix(), backendName)
-}
-
-func GetAdminListenerName() string {
-	return Join("kuma", "envoy", "admin")
-}
-
-func GetTracingClusterPrefix() string {
-	return Join("tracing")
-}
-
-func GetTracingClusterName(backendName string) string {
-	return Join(GetTracingClusterPrefix(), backendName)
-}
-
-func GetDNSListenerName() string {
-	return Join("kuma", "dns")
-}
-
-func GetGatewayListenerName(gatewayName string, protoName string, port uint32) string {
-	return Join(gatewayName, protoName, formatPort(port))
-}
-
-// ParseGatewayListenerName returns gateway name, protocol and port
-func ParseGatewayListenerName(listenerName string) (string, string, uint32, error) {
-	parts := strings.Split(listenerName, Separator)
-	if len(parts) != 3 {
-		return "", "", 0, fmt.Errorf("invalid listener name format: expected 3 parts, got %d", len(parts))
-	}
-
-	portUint64, err := strconv.ParseUint(parts[2], 10, 32)
-	if err != nil {
-		return "", "", 0, fmt.Errorf("invalid port value: %w", err)
-	}
-
-	return parts[0], parts[1], uint32(portUint64), nil
 }

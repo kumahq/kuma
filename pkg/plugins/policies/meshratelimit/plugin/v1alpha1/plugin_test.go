@@ -35,7 +35,6 @@ import (
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -96,7 +95,7 @@ var _ = Describe("MeshRateLimit", func() {
 							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 							Configure(
 								HttpInboundRoute(
-									envoy_names.GetInboundRouteName("backend"),
+									"inbound:backend",
 									"backend",
 									plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 								),
@@ -194,7 +193,7 @@ var _ = Describe("MeshRateLimit", func() {
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
 							HttpInboundRoute(
-								envoy_names.GetInboundRouteName("backend"),
+								"inbound:backend",
 								"backend",
 								plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 							),
@@ -250,7 +249,7 @@ var _ = Describe("MeshRateLimit", func() {
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
 							HttpInboundRoute(
-								envoy_names.GetInboundRouteName("backend"),
+								"inbound:backend",
 								"backend",
 								plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 							),
@@ -281,7 +280,7 @@ var _ = Describe("MeshRateLimit", func() {
 						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
 						Configure(
 							HttpInboundRoute(
-								envoy_names.GetInboundRouteName("backend"),
+								"inbound:backend",
 								"backend",
 								plugins_xds.NewClusterBuilder().WithService("backend").Build(),
 							),
