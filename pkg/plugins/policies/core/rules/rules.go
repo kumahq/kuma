@@ -211,19 +211,22 @@ func (ss Subset) IsSubset(other Subset) bool {
 	if len(ss) == 0 {
 		return true
 	}
-	otherByKeys := map[string][]Tag{}
-	for _, t := range other {
-		otherByKeys[t.Key] = append(otherByKeys[t.Key], t)
-	}
+	// Subsets hold a handful of tags, so scanning 'other' per tag is cheaper than
+	// indexing it by key, and it keeps this allocation-free. It is on the hot path of
+	// rule building, which calls it once per item per generated subset.
 	for _, tag := range ss {
-		oTags, ok := otherByKeys[tag.Key]
-		if !ok {
-			return false
-		}
-		for _, otherTag := range oTags {
+		keyPresent := false
+		for _, otherTag := range other {
+			if otherTag.Key != tag.Key {
+				continue
+			}
+			keyPresent = true
 			if !isSubset(tag, otherTag) {
 				return false
 			}
+		}
+		if !keyPresent {
+			return false
 		}
 	}
 	return true
@@ -288,22 +291,17 @@ func (ss Subset) Intersect(other Subset) bool {
 	if len(ss) == 0 || len(other) == 0 {
 		return true
 	}
-	otherByKeysOnlyPositive := map[string][]Tag{}
-	for _, t := range other {
-		if t.Not {
-			continue
-		}
-		otherByKeysOnlyPositive[t.Key] = append(otherByKeysOnlyPositive[t.Key], t)
-	}
+	// Same reasoning as IsSubset: a linear scan over the few tags in 'other' avoids
+	// building a map. This one is called O(n^2) times when the intersection graph is
+	// constructed.
 	for _, tag := range ss {
 		if tag.Not {
 			continue
 		}
-		oTags, ok := otherByKeysOnlyPositive[tag.Key]
-		if !ok {
-			continue
-		}
-		for _, otherTag := range oTags {
+		for _, otherTag := range other {
+			if otherTag.Not || otherTag.Key != tag.Key {
+				continue
+			}
 			if otherTag != tag {
 				return false
 			}
@@ -429,58 +427,10 @@ func BuildFromRules(
 	}, nil
 }
 
-<<<<<<< HEAD
 func BuildToRules(matchedPolicies []core_model.Resource, httpRoutes []core_model.Resource) (ToRules, error) {
 	toList := []PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
 		tl, err := buildToList(mp, httpRoutes)
-=======
-func BuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceReader) (ToRules, error) {
-	rules, err := legacyBuildToRules(matchedPolicies, reader)
-	if err != nil {
-		return ToRules{}, err
-	}
-
-	// we have to exclude top-level targetRef 'MeshHTTPRoute' as new outbound rules work with MeshHTTPRoute differently,
-	// see docs/madr/decisions/066-policy-matching-with-real-resources.md
-	excludeTopLevelMeshHTTPRoute, err := registry.Global().NewList(matchedPolicies.GetItemType())
-	if err != nil {
-		return ToRules{}, err
-	}
-	for _, item := range matchedPolicies.GetItems() {
-		if item.GetSpec().(core_model.Policy).GetTargetRef().Kind != common_api.MeshHTTPRoute {
-			if err := excludeTopLevelMeshHTTPRoute.AddItem(item); err != nil {
-				return ToRules{}, err
-			}
-		}
-	}
-	resourceRules, err := outbound.BuildRules(excludeTopLevelMeshHTTPRoute, reader)
-	if err != nil {
-		return ToRules{}, err
-	}
-
-	return ToRules{Rules: rules, ResourceRules: resourceRules}, nil
-}
-
-func legacyBuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceReader) (Rules, error) {
-	// GetItems() allocates and fills a new []core_model.Resource on every call, so it
-	// is called once here and indexed below. Cast is all-or-nothing, so policiesWithTo
-	// stays aligned with items.
-	items := matchedPolicies.GetItems()
-	policiesWithTo, ok := common.Cast[core_model.PolicyWithToList](items)
-	if !ok {
-		return Rules{}, nil
-	}
-	toList := []PolicyItemWithMeta{}
-	for i, pwtl := range policiesWithTo {
-		if idx := slices.IndexFunc(pwtl.GetToList(), func(item core_model.PolicyItem) bool {
-			return item.GetTargetRef().Kind == common_api.MeshHTTPRoute
-		}); idx >= 0 {
-			continue
-		}
-		meta := items[i].GetMeta()
-		tl, err := buildToListWithRoutes(meta, pwtl, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
->>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
 		if err != nil {
 			return ToRules{}, err
 		}
@@ -650,17 +600,11 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 	rules := Rules{}
 
 	uniqueKeys := map[string]struct{}{}
-<<<<<<< HEAD
-	// 1. Convert list of rules into the list of subsets
-	var subsets []Subset
-	for _, item := range list {
-=======
 	// 1. Convert list of rules into the list of subsets.
-	// itemSubsets stays index-aligned with oldKindsItems and is never reassigned, so
-	// createRule can look up an item's subset instead of recomputing it.
-	itemSubsets := make([]subsetutils.Subset, 0, len(oldKindsItems))
-	for _, item := range oldKindsItems {
->>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
+	// itemSubsets stays index-aligned with list and is never reassigned, so createRule
+	// can look up an item's subset instead of recomputing it.
+	itemSubsets := make([]Subset, 0, len(list))
+	for _, item := range list {
 		ss, err := asSubset(item.GetTargetRef())
 		if err != nil {
 			return nil, err
@@ -681,11 +625,7 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 		subsets = Deduplicate(subsets)
 
 		for _, ss := range subsets {
-<<<<<<< HEAD
-			if r, err := createRule(ss, list); err != nil {
-=======
-			if r, err := createRule(ss, oldKindsItems, itemSubsets); err != nil {
->>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
+			if r, err := createRule(ss, list, itemSubsets); err != nil {
 				return nil, err
 			} else {
 				rules = append(rules, r...)
@@ -756,11 +696,7 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 			}
 
 			// 5. For each combination determine a configuration
-<<<<<<< HEAD
-			if r, err := createRule(ss, list); err != nil {
-=======
-			if r, err := createRule(ss, oldKindsItems, itemSubsets); err != nil {
->>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
+			if r, err := createRule(ss, list, itemSubsets); err != nil {
 				return nil, err
 			} else {
 				rules = append(rules, r...)
@@ -775,14 +711,10 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 	return rules, nil
 }
 
-<<<<<<< HEAD
-func createRule(ss Subset, items []PolicyItemWithMeta) ([]*Rule, error) {
-=======
 // createRule builds the rules for subset ss. itemSubsets holds the subset of every
 // entry in items, index-aligned, so the caller's step-1 conversion is reused rather
 // than recomputed on every call.
-func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta, itemSubsets []subsetutils.Subset) ([]*Rule, error) {
->>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
+func createRule(ss Subset, items []PolicyItemWithMeta, itemSubsets []Subset) ([]*Rule, error) {
 	rules := []*Rule{}
 	confs := []interface{}{}
 	distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
