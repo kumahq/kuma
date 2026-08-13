@@ -53,7 +53,8 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 	rules []v1alpha1.Rule,
 	parent *kube_core.Service,
 	parentPort *gatewayapi_v1.PortNumber,
-) core_model.ResourceSpec {
+	parentSectionName *gatewayapi_v1.SectionName,
+) (core_model.ResourceSpec, bool) {
 	// consumer route
 	targetRef := common_api.TopLevelTargetRef{
 		Kind: common_api.TopLevelTargetRefKindDataplane,
@@ -71,27 +72,22 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 
 	var tos []v1alpha1.To
 
-	var servicePorts []kube_core.ServicePort
-	if parentPort != nil {
-		for _, port := range parent.Spec.Ports {
-			if port.Port == *parentPort {
-				servicePorts = append(servicePorts, port)
-			}
+	for _, port := range parent.Spec.Ports {
+		if parentPort != nil && port.Port != *parentPort {
+			continue
 		}
-	} else {
-		servicePorts = parent.Spec.Ports
-	}
 
-	for _, port := range servicePorts {
 		// The MeshService section name is the Service port name, falling back to
 		// the stringified port value for unnamed ports (see meshservice_controller).
-		// It must match how the MeshService is generated: a mismatched sectionName
-		// won't resolve to the intended port, so this `to` entry won't apply to
-		// traffic for that port.
 		sectionName := port.Name
 		if sectionName == "" {
 			sectionName = fmt.Sprintf("%d", port.Port)
 		}
+
+		if parentSectionName != nil && sectionName != string(*parentSectionName) {
+			continue
+		}
+
 		tos = append(tos, v1alpha1.To{
 			TargetRef: common_api.OutboundTargetRef{
 				Kind: common_api.OutboundTargetRefKindMeshService,
@@ -105,10 +101,14 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 		})
 	}
 
+	if len(tos) == 0 && (parentPort != nil || parentSectionName != nil) {
+		return nil, false
+	}
+
 	return &v1alpha1.MeshHTTPRoute{
 		TargetRef: &targetRef,
 		To:        &tos,
-	}
+	}, true
 }
 
 // meshServiceRefLabels returns the labels that identify the destination
