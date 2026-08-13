@@ -394,6 +394,50 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		Expect(accepted.Reason).To(Equal(string(gatewayapi_v1.RouteReasonNoMatchingParent)))
 	})
 
+	It("reports Accepted=False after deleting a Service referenced only as a parentRef", func() {
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		route := newRoute(withSectionName(serviceParentRef("backend"), "http"))
+
+		client := newClientBuilder(svc, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+
+		deletedSvc := svc.DeepCopy()
+		Expect(client.Delete(context.Background(), svc)).To(Succeed())
+
+		requests := routesForService(logr.Discard(), client)(context.Background(), deletedSvc)
+		Expect(requests).To(ConsistOf(kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		}))
+
+		_, err = reconciler.Reconcile(context.Background(), requests[0])
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(BeEmpty())
+
+		var updatedRoute gatewayapi.HTTPRoute
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
+		Expect(updatedRoute.Status.Parents).To(HaveLen(1))
+		accepted := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionAccepted))
+		Expect(accepted).ToNot(BeNil())
+		Expect(accepted.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(accepted.Reason).To(Equal(string(gatewayapi_v1.RouteReasonNoMatchingParent)))
+	})
+
 	It("requeues a parent-only route when a Service update makes its sectionName valid", func() {
 		svc := &kube_core.Service{
 			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},

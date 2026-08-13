@@ -135,7 +135,18 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				if !kube_apierrs.IsNotFound(err) {
 					return nil, nil, err
 				}
-				continue // TODO what does the spec say? does NoMatchingParent apply?
+
+				parentConditions = append(parentConditions,
+					kube_meta.Condition{
+						Type:    string(gatewayapi.RouteConditionAccepted),
+						Status:  kube_meta.ConditionFalse,
+						Reason:  string(gatewayapi_v1.RouteReasonNoMatchingParent),
+						Message: fmt.Sprintf("Service %q does not exist", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
+					},
+				)
+
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
+				continue
 			}
 
 			routeSubName := fmt.Sprintf(
