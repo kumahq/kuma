@@ -69,6 +69,9 @@ type nackCounter struct {
 	// series in the family is a NACK by construction.
 	label string
 	value string
+	// skipErrorType exempts series carrying this error_type. Used for
+	// "user", which marks a NACK the user caused rather than a CP defect.
+	skipErrorType string
 	// maxTolerated is the highest value that still passes.
 	maxTolerated float64
 }
@@ -89,10 +92,15 @@ type nackCounter struct {
 // resource on every resync, so the stream never converges and the two CPs
 // disagree about state for as long as the resource exists. The proxy-facing
 // thresholds are left as they were.
+//
+// The exception is error_type="user", which KDS sets when the peer sent a
+// resource that conflicts with one the user already created locally. The CP
+// skips it and NACKs on purpose (pkg/kds/store/sync.go), and
+// test/e2e_env/multizone/sync asserts exactly that, so it is not a defect.
 var nackCounters = []nackCounter{
 	{family: "xds_requests_received", label: "confirmation", value: "NACK", maxTolerated: 2},
 	{family: "delta_xds_requests_received", label: "confirmation", value: "NACK", maxTolerated: 2},
-	{family: "kds_delta_requests_received", label: "confirmation", value: "NACK", maxTolerated: 0},
+	{family: "kds_delta_requests_received", label: "confirmation", value: "NACK", skipErrorType: "user", maxTolerated: 0},
 	{family: "kds_nack_total", maxTolerated: 0},
 }
 
@@ -126,6 +134,9 @@ func findNacks(raw string) ([]string, error) {
 		}
 		for _, metric := range family.GetMetric() {
 			if counter.label != "" && !hasLabel(metric.GetLabel(), counter.label, counter.value) {
+				continue
+			}
+			if counter.skipErrorType != "" && hasLabel(metric.GetLabel(), "error_type", counter.skipErrorType) {
 				continue
 			}
 			value := metric.GetCounter().GetValue()

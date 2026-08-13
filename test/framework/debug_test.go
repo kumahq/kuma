@@ -34,6 +34,20 @@ kds_nack_total{resource_type="Dataplane",zone="Global",zone_name="kuma-2"} 1
 kds_delta_requests_received{confirmation="ACK",error_type="no_error",type_url="Mesh",zone="Global"} 3
 kds_delta_requests_received{confirmation="NACK",error_type="other",type_url="Mesh",zone="Global"} 1
 `, []string{`kds_delta_requests_received{confirmation="NACK",error_type="other",type_url="Mesh",zone="Global"} = 1 (tolerated 0)`}),
+		// A Secret the user created on both global and the zone: the zone
+		// declines to overwrite its own copy and NACKs on purpose, which
+		// test/e2e_env/multizone/sync asserts.
+		Entry("user-caused KDS NACK is not a defect", `
+# HELP kds_delta_requests_received Number of confirmations requests from a client
+# TYPE kds_delta_requests_received counter
+kds_delta_requests_received{confirmation="NACK",error_type="user",type_url="Secret",zone="Global"} 1
+`, nil),
+		Entry("user-caused NACK does not mask a real one on the same family", `
+# HELP kds_delta_requests_received Number of confirmations requests from a client
+# TYPE kds_delta_requests_received counter
+kds_delta_requests_received{confirmation="NACK",error_type="user",type_url="Secret",zone="Global"} 1
+kds_delta_requests_received{confirmation="NACK",error_type="other",type_url="Mesh",zone="Global"} 1
+`, []string{`kds_delta_requests_received{confirmation="NACK",error_type="other",type_url="Mesh",zone="Global"} = 1 (tolerated 0)`}),
 		// Proxy-facing xDS keeps its existing tolerance: an Envoy NACK can
 		// resolve itself on the next config push.
 		Entry("proxy xDS NACKs within tolerance", `
