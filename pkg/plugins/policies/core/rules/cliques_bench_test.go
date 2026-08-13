@@ -16,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
 
-// These benchmarks exercise the legacy `from`-list rule builder that release-2.11
+// These benchmarks exercise the legacy `from`-list rule builder that this branch
 // uses for MeshTrafficPermission. BuildFromRules flattens the `from` entries of
 // every matched policy into one list per inbound listener, then BuildRules turns
 // that list into an intersection graph, enumerates maximal cliques
