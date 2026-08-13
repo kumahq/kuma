@@ -484,10 +484,31 @@ func BuildToRules(matchedPolicies []core_model.Resource, reader ResourceReader) 
 	return ToRules{Rules: rules, ResourceRules: resourceRules}, nil
 }
 
+<<<<<<< HEAD
 func BuildToList(matchedPolicies []core_model.Resource, reader ResourceReader) ([]PolicyItemWithMeta, error) {
 	toList := []PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
 		tl, err := buildToList(mp, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
+=======
+func legacyBuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceReader) (Rules, error) {
+	// GetItems() allocates and fills a new []core_model.Resource on every call, so it
+	// is called once here and indexed below. Cast is all-or-nothing, so policiesWithTo
+	// stays aligned with items.
+	items := matchedPolicies.GetItems()
+	policiesWithTo, ok := common.Cast[core_model.PolicyWithToList](items)
+	if !ok {
+		return Rules{}, nil
+	}
+	toList := []PolicyItemWithMeta{}
+	for i, pwtl := range policiesWithTo {
+		if idx := slices.IndexFunc(pwtl.GetToList(), func(item core_model.PolicyItem) bool {
+			return item.GetTargetRef().Kind == common_api.MeshHTTPRoute
+		}); idx >= 0 {
+			continue
+		}
+		meta := items[i].GetMeta()
+		tl, err := buildToListWithRoutes(meta, pwtl, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
+>>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
 		if err != nil {
 			return nil, err
 		}
@@ -665,8 +686,15 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 	}
 
 	uniqueKeys := map[string]struct{}{}
+<<<<<<< HEAD
 	// 1. Convert list of rules into the list of subsets
 	var subsets []Subset
+=======
+	// 1. Convert list of rules into the list of subsets.
+	// itemSubsets stays index-aligned with oldKindsItems and is never reassigned, so
+	// createRule can look up an item's subset instead of recomputing it.
+	itemSubsets := make([]subsetutils.Subset, 0, len(oldKindsItems))
+>>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
 	for _, item := range oldKindsItems {
 		ss, err := asSubset(item.GetTargetRef())
 		if err != nil {
@@ -675,8 +703,9 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 		for _, tag := range ss {
 			uniqueKeys[tag.Key] = struct{}{}
 		}
-		subsets = append(subsets, ss)
+		itemSubsets = append(itemSubsets, ss)
 	}
+	subsets := itemSubsets
 
 	// we don't need to generate all permutations when there is no negations
 	// and we have only 0 or one tag, in other cases we need to generate.
@@ -687,7 +716,7 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 		subsets = Deduplicate(subsets)
 
 		for _, ss := range subsets {
-			if r, err := createRule(ss, oldKindsItems); err != nil {
+			if r, err := createRule(ss, oldKindsItems, itemSubsets); err != nil {
 				return nil, err
 			} else {
 				rules = append(rules, r...)
@@ -758,7 +787,7 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 			}
 
 			// 5. For each combination determine a configuration
-			if r, err := createRule(ss, oldKindsItems); err != nil {
+			if r, err := createRule(ss, oldKindsItems, itemSubsets); err != nil {
 				return nil, err
 			} else {
 				rules = append(rules, r...)
@@ -773,17 +802,22 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 	return rules, nil
 }
 
+<<<<<<< HEAD
 func createRule(ss Subset, items []PolicyItemWithMeta) ([]*Rule, error) {
 	rules := Rules{}
 	confs := []interface{}{}
+=======
+// createRule builds the rules for subset ss. itemSubsets holds the subset of every
+// entry in items, index-aligned, so the caller's step-1 conversion is reused rather
+// than recomputed on every call.
+func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta, itemSubsets []subsetutils.Subset) ([]*Rule, error) {
+	rules := []*Rule{}
+	confs := []any{}
+>>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
 	var relevant []PolicyItemWithMeta
 	for i := 0; i < len(items); i++ {
 		item := items[i]
-		itemSubset, err := asSubset(item.GetTargetRef())
-		if err != nil {
-			return nil, err
-		}
-		if itemSubset.IsSubset(ss) {
+		if itemSubsets[i].IsSubset(ss) {
 			confs = append(confs, item.GetDefault())
 			relevant = append(relevant, item)
 		}
