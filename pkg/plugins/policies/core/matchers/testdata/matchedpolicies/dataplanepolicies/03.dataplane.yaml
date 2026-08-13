@@ -5,11 +5,5 @@ networking:
   address: 1.1.1.1
   inbound:
     - port: 8080
-      tags:
-        version: v1
     - port: 8081
-      tags:
-        env: dev
     - port: 8082
-      tags:
-        team: mesh

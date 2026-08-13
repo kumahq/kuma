@@ -8,9 +8,5 @@ networking:
   inbound:
     - port: 8080
       name: main-port
-      tags:
-        version: v1
     - port: 8081
       name: secondary-port
-      tags:
-        version: v3

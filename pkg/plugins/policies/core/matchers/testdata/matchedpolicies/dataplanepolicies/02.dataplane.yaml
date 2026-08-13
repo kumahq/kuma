@@ -8,5 +8,3 @@ networking:
   address: 1.1.1.1
   inbound:
     - port: 8080
-      tags:
-        version: v1
