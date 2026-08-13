@@ -8,10 +8,12 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_apis "github.com/kumahq/kuma/v2/pkg/core/resources/apis"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies"
 	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	meshtrafficpermission_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 )
@@ -54,7 +56,6 @@ var (
 // 1 is the common `kuma.io/service` case, 2 adds a version dimension.
 func benchMTPList(fromItems int, tagsPerCaller int) core_model.ResourceList {
 	items := make([]*meshtrafficpermission_api.MeshTrafficPermissionResource, 0, fromItems)
-	action := meshtrafficpermission_api.Allow
 
 	for i := range fromItems {
 		tags := map[string]string{
@@ -64,23 +65,19 @@ func benchMTPList(fromItems int, tagsPerCaller int) core_model.ResourceList {
 			tags["version"] = fmt.Sprintf("v%d", i%3)
 		}
 
-		items = append(items, &meshtrafficpermission_api.MeshTrafficPermissionResource{
-			Meta: &test_model.ResourceMeta{
-				Mesh:   benchMesh,
-				Name:   fmt.Sprintf("mtp-%d", i),
-				Labels: map[string]string{mesh_proto.ZoneTag: benchZone},
-			},
-			Spec: &meshtrafficpermission_api.MeshTrafficPermission{
-				TargetRef: &common_api.TargetRef{Kind: common_api.Mesh},
-				From: &[]meshtrafficpermission_api.From{{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.MeshSubset,
-						Tags: pointer.To(tags),
-					},
-					Default: meshtrafficpermission_api.Conf{Action: &action},
-				}},
-			},
-		})
+		res := builders.MeshTrafficPermission().
+			WithMesh(benchMesh).
+			WithName(fmt.Sprintf("mtp-%d", i)).
+			WithTargetRef(common_api.TargetRef{Kind: common_api.Mesh}).
+			AddFrom(common_api.TargetRef{
+				Kind: common_api.MeshSubset,
+				Tags: pointer.To(tags),
+			}, meshtrafficpermission_api.Allow).
+			Build()
+		// The builder has no setter for labels, and matching needs the zone.
+		res.Meta.(*test_model.ResourceMeta).Labels = map[string]string{mesh_proto.ZoneTag: benchZone}
+
+		items = append(items, res)
 	}
 
 	return &meshtrafficpermission_api.MeshTrafficPermissionResourceList{Items: items}

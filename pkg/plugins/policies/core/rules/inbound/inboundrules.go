@@ -86,7 +86,9 @@ func getEntries(resources core_model.ResourceList) ([]common.WithPolicyAttribute
 		return nil, nil
 	}
 
-	entries := []common.WithPolicyAttributes[RuleEntry]{}
+	// One policy can contribute several entries, so len(items) is a floor rather than a
+	// bound, but it saves the regrowth from an empty slice.
+	entries := make([]common.WithPolicyAttributes[RuleEntry], 0, len(items))
 
 	for i, policy := range policies {
 		switch {

@@ -246,7 +246,11 @@ func BuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceRe
 }
 
 func legacyBuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceReader) (Rules, error) {
-	policiesWithTo, ok := common.Cast[core_model.PolicyWithToList](matchedPolicies.GetItems())
+	// GetItems() allocates and fills a new []core_model.Resource on every call, so it
+	// is called once here and indexed below. Cast is all-or-nothing, so policiesWithTo
+	// stays aligned with items.
+	items := matchedPolicies.GetItems()
+	policiesWithTo, ok := common.Cast[core_model.PolicyWithToList](items)
 	if !ok {
 		return Rules{}, nil
 	}
@@ -257,7 +261,7 @@ func legacyBuildToRules(matchedPolicies core_model.ResourceList, reader kri.Reso
 		}); idx >= 0 {
 			continue
 		}
-		meta := matchedPolicies.GetItems()[i].GetMeta()
+		meta := items[i].GetMeta()
 		tl, err := buildToListWithRoutes(meta, pwtl, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
 		if err != nil {
 			return nil, err

@@ -8,6 +8,7 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	core_apis "github.com/kumahq/kuma/v2/pkg/core/resources/apis"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies"

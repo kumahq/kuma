@@ -2,6 +2,9 @@ package subsetutils
 
 import (
 	"testing"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // IsSubset and Intersect were rewritten to scan 'other' directly instead of
@@ -10,7 +13,7 @@ import (
 // entries apply to a client, so the rewrite must not change a single verdict.
 //
 // The functions below are the original map-based implementations, kept verbatim as
-// a reference. The tests assert that the current implementations agree with them on
+// a reference. The specs assert that the current implementations agree with them on
 // every pair of subsets built from a small tag alphabet.
 
 func isSubsetReference(ss Subset, other Subset) bool {
@@ -99,59 +102,35 @@ func allSubsets(maxLen int) []Subset {
 	return subsets
 }
 
-func TestIsSubsetMatchesReference(t *testing.T) {
-	subsets := allSubsets(2)
-	for _, ss := range subsets {
-		for _, other := range subsets {
-			got := ss.IsSubset(other)
-			want := isSubsetReference(ss, other)
-			if got != want {
-				t.Fatalf("IsSubset(%v, %v) = %v, reference = %v", ss, other, got, want)
-			}
-		}
-	}
-}
-
-func TestIntersectMatchesReference(t *testing.T) {
-	subsets := allSubsets(2)
-	for _, ss := range subsets {
-		for _, other := range subsets {
-			got := ss.Intersect(other)
-			want := intersectReference(ss, other)
-			if got != want {
-				t.Fatalf("Intersect(%v, %v) = %v, reference = %v", ss, other, got, want)
-			}
-		}
-	}
-}
-
-// The length-3 sweep is the same check over a larger space. It is a separate test so
-// the cheap one still runs when this is skipped in short mode.
-func TestIsSubsetAndIntersectMatchReferenceDeep(t *testing.T) {
-	if testing.Short() {
-		t.Skip("exhaustive length-3 sweep")
-	}
+var _ = Describe("Subset", func() {
+	// Sequences up to length 3 are enough to hit every case the map-based versions
+	// grouped: a repeated key with two different values, plus a third tag that can
+	// disagree with either of them.
 	subsets := allSubsets(3)
-	for _, ss := range subsets {
-		for _, other := range subsets {
-			if got, want := ss.IsSubset(other), isSubsetReference(ss, other); got != want {
-				t.Fatalf("IsSubset(%v, %v) = %v, reference = %v", ss, other, got, want)
-			}
-			if got, want := ss.Intersect(other), intersectReference(ss, other); got != want {
-				t.Fatalf("Intersect(%v, %v) = %v, reference = %v", ss, other, got, want)
+
+	It("IsSubset agrees with the map-based implementation on every pair", func() {
+		for _, ss := range subsets {
+			for _, other := range subsets {
+				got, want := ss.IsSubset(other), isSubsetReference(ss, other)
+				Expect(got).To(Equal(want), "IsSubset(%v, %v)", ss, other)
 			}
 		}
-	}
-}
+	})
 
-func TestIsSubsetAndIntersectDoNotAllocate(t *testing.T) {
-	ss := Subset{{Key: "kuma.io/service", Value: "caller-1"}}
-	other := Subset{{Key: "kuma.io/service", Value: "caller-1"}, {Key: "version", Value: "v1"}}
+	It("Intersect agrees with the map-based implementation on every pair", func() {
+		for _, ss := range subsets {
+			for _, other := range subsets {
+				got, want := ss.Intersect(other), intersectReference(ss, other)
+				Expect(got).To(Equal(want), "Intersect(%v, %v)", ss, other)
+			}
+		}
+	})
 
-	if allocs := testing.AllocsPerRun(100, func() { _ = ss.IsSubset(other) }); allocs != 0 {
-		t.Errorf("IsSubset allocated %v times per run, want 0", allocs)
-	}
-	if allocs := testing.AllocsPerRun(100, func() { _ = ss.Intersect(other) }); allocs != 0 {
-		t.Errorf("Intersect allocated %v times per run, want 0", allocs)
-	}
-}
+	It("does not allocate in IsSubset or Intersect", func() {
+		ss := Subset{{Key: "kuma.io/service", Value: "caller-1"}}
+		other := Subset{{Key: "kuma.io/service", Value: "caller-1"}, {Key: "version", Value: "v1"}}
+
+		Expect(testing.AllocsPerRun(100, func() { _ = ss.IsSubset(other) })).To(BeZero())
+		Expect(testing.AllocsPerRun(100, func() { _ = ss.Intersect(other) })).To(BeZero())
+	})
+})
