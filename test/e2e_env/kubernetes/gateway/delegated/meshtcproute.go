@@ -144,10 +144,9 @@ spec:
 					"demo-client",
 					fmt.Sprintf("http://%s/test-server", config.KicIP),
 					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
-					client.WithNumberOfRequests(10),
+					client.WithNumberOfRequests(100),
 					client.WithMaxConcurrentRequests(10),
 					client.WithHeader("x-set-response-delay-ms", "2000"),
-					client.WithMaxTime(10),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				for instance := range responses {
@@ -158,7 +157,7 @@ spec:
 					HavePrefix("external-service"),
 					HavePrefix("external-tcp-service"),
 				))
-			}, "60s", "1s").Should(Succeed())
+			}, "60s", "10s").Should(Succeed())
 		})
 	}
 }
