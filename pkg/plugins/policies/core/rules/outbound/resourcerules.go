@@ -81,18 +81,24 @@ func BuildRules(policies core_model.ResourceList, reader kri.ResourceReader) (Re
 }
 
 func GetEntries(policies core_model.ResourceList) ([]common.WithPolicyAttributes[ToEntry], error) {
-	policiesWithTo, ok := common.Cast[core_model.PolicyWithToList](policies.GetItems())
+	// GetItems() allocates and fills a new []core_model.Resource on every call, so it
+	// is called once here and indexed below. Cast is all-or-nothing, so policiesWithTo
+	// stays aligned with items.
+	items := policies.GetItems()
+	policiesWithTo, ok := common.Cast[core_model.PolicyWithToList](items)
 	if !ok {
 		return nil, nil
 	}
 
-	entries := []common.WithPolicyAttributes[ToEntry]{}
+	// One policy can contribute several 'to' entries, so len(items) is a floor rather
+	// than a bound, but it saves the regrowth from an empty slice.
+	entries := make([]common.WithPolicyAttributes[ToEntry], 0, len(items))
 
 	for i, pwt := range policiesWithTo {
 		for j, item := range pwt.GetToList() {
 			entries = append(entries, common.WithPolicyAttributes[ToEntry]{
 				Entry:     item,
-				Meta:      policies.GetItems()[i].GetMeta(),
+				Meta:      items[i].GetMeta(),
 				TopLevel:  pwt.GetTargetRef(),
 				RuleIndex: j,
 			})
