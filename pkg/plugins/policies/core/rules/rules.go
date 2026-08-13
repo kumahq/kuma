@@ -429,10 +429,58 @@ func BuildFromRules(
 	}, nil
 }
 
+<<<<<<< HEAD
 func BuildToRules(matchedPolicies []core_model.Resource, httpRoutes []core_model.Resource) (ToRules, error) {
 	toList := []PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
 		tl, err := buildToList(mp, httpRoutes)
+=======
+func BuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceReader) (ToRules, error) {
+	rules, err := legacyBuildToRules(matchedPolicies, reader)
+	if err != nil {
+		return ToRules{}, err
+	}
+
+	// we have to exclude top-level targetRef 'MeshHTTPRoute' as new outbound rules work with MeshHTTPRoute differently,
+	// see docs/madr/decisions/066-policy-matching-with-real-resources.md
+	excludeTopLevelMeshHTTPRoute, err := registry.Global().NewList(matchedPolicies.GetItemType())
+	if err != nil {
+		return ToRules{}, err
+	}
+	for _, item := range matchedPolicies.GetItems() {
+		if item.GetSpec().(core_model.Policy).GetTargetRef().Kind != common_api.MeshHTTPRoute {
+			if err := excludeTopLevelMeshHTTPRoute.AddItem(item); err != nil {
+				return ToRules{}, err
+			}
+		}
+	}
+	resourceRules, err := outbound.BuildRules(excludeTopLevelMeshHTTPRoute, reader)
+	if err != nil {
+		return ToRules{}, err
+	}
+
+	return ToRules{Rules: rules, ResourceRules: resourceRules}, nil
+}
+
+func legacyBuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceReader) (Rules, error) {
+	// GetItems() allocates and fills a new []core_model.Resource on every call, so it
+	// is called once here and indexed below. Cast is all-or-nothing, so policiesWithTo
+	// stays aligned with items.
+	items := matchedPolicies.GetItems()
+	policiesWithTo, ok := common.Cast[core_model.PolicyWithToList](items)
+	if !ok {
+		return Rules{}, nil
+	}
+	toList := []PolicyItemWithMeta{}
+	for i, pwtl := range policiesWithTo {
+		if idx := slices.IndexFunc(pwtl.GetToList(), func(item core_model.PolicyItem) bool {
+			return item.GetTargetRef().Kind == common_api.MeshHTTPRoute
+		}); idx >= 0 {
+			continue
+		}
+		meta := items[i].GetMeta()
+		tl, err := buildToListWithRoutes(meta, pwtl, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
+>>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
 		if err != nil {
 			return ToRules{}, err
 		}
@@ -602,9 +650,17 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 	rules := Rules{}
 
 	uniqueKeys := map[string]struct{}{}
+<<<<<<< HEAD
 	// 1. Convert list of rules into the list of subsets
 	var subsets []Subset
 	for _, item := range list {
+=======
+	// 1. Convert list of rules into the list of subsets.
+	// itemSubsets stays index-aligned with oldKindsItems and is never reassigned, so
+	// createRule can look up an item's subset instead of recomputing it.
+	itemSubsets := make([]subsetutils.Subset, 0, len(oldKindsItems))
+	for _, item := range oldKindsItems {
+>>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
 		ss, err := asSubset(item.GetTargetRef())
 		if err != nil {
 			return nil, err
@@ -612,8 +668,9 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 		for _, tag := range ss {
 			uniqueKeys[tag.Key] = struct{}{}
 		}
-		subsets = append(subsets, ss)
+		itemSubsets = append(itemSubsets, ss)
 	}
+	subsets := itemSubsets
 
 	// we don't need to generate all permutations when there is no negations
 	// and we have only 0 or one tag, in other cases we need to generate.
@@ -624,7 +681,11 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 		subsets = Deduplicate(subsets)
 
 		for _, ss := range subsets {
+<<<<<<< HEAD
 			if r, err := createRule(ss, list); err != nil {
+=======
+			if r, err := createRule(ss, oldKindsItems, itemSubsets); err != nil {
+>>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
 				return nil, err
 			} else {
 				rules = append(rules, r...)
@@ -695,7 +756,11 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 			}
 
 			// 5. For each combination determine a configuration
+<<<<<<< HEAD
 			if r, err := createRule(ss, list); err != nil {
+=======
+			if r, err := createRule(ss, oldKindsItems, itemSubsets); err != nil {
+>>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
 				return nil, err
 			} else {
 				rules = append(rules, r...)
@@ -710,17 +775,20 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 	return rules, nil
 }
 
+<<<<<<< HEAD
 func createRule(ss Subset, items []PolicyItemWithMeta) ([]*Rule, error) {
+=======
+// createRule builds the rules for subset ss. itemSubsets holds the subset of every
+// entry in items, index-aligned, so the caller's step-1 conversion is reused rather
+// than recomputed on every call.
+func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta, itemSubsets []subsetutils.Subset) ([]*Rule, error) {
+>>>>>>> 5ce1c0bfca (perf(rules): cut allocations in rule building (#17954))
 	rules := []*Rule{}
 	confs := []interface{}{}
 	distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
 	for i := 0; i < len(items); i++ {
 		item := items[i]
-		itemSubset, err := asSubset(item.GetTargetRef())
-		if err != nil {
-			return nil, err
-		}
-		if itemSubset.IsSubset(ss) {
+		if itemSubsets[i].IsSubset(ss) {
 			confs = append(confs, item.GetDefault())
 			distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
 		}
