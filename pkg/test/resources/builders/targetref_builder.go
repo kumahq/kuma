@@ -103,10 +103,9 @@ func ToTopLevelTargetRef(ref common_api.TargetRef) common_api.TopLevelTargetRef 
 		panic("unsupported top-level targetRef kind: " + string(ref.Kind))
 	}
 	return common_api.TopLevelTargetRef{
-		UsesSyntacticSugar: ref.UsesSyntacticSugar,
-		Kind:               kind,
-		Labels:             ref.Labels,
-		SectionName:        ref.SectionName,
+		Kind:        kind,
+		Labels:      ref.Labels,
+		SectionName: ref.SectionName,
 	}
 }
 

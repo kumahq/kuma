@@ -94,10 +94,6 @@ func (x TargetRefKindSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
-	// This is needed to not sync policies with empty topLevelTarget ref to old zones that does not support it
-	// This can be removed in 2.11.x
-	UsesSyntacticSugar bool `json:"-"`
-
 	// Kind of the referenced resource
 	// +kubebuilder:validation:Enum=Mesh;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
 	Kind TargetRefKind `json:"kind"`
@@ -125,10 +121,6 @@ const (
 // TopLevelTargetRef defines the structure of the top-level targetRef field,
 // used to attach a policy's default configuration to a Mesh or Dataplane.
 type TopLevelTargetRef struct {
-	// This is needed to not sync policies with empty topLevelTarget ref to old zones that does not support it
-	// This can be removed in 2.11.x
-	UsesSyntacticSugar bool `json:"-"`
-
 	// Kind of the referenced resource
 	// +kubebuilder:validation:Enum=Mesh;Dataplane
 	Kind TopLevelTargetRefKind `json:"kind"`
@@ -147,13 +139,12 @@ type TopLevelTargetRef struct {
 // default previously applied by generated GetTargetRef() helpers.
 func (t *TopLevelTargetRef) ToTargetRef() TargetRef {
 	if t == nil {
-		return TargetRef{Kind: Mesh, UsesSyntacticSugar: true}
+		return TargetRef{Kind: Mesh}
 	}
 	return TargetRef{
-		UsesSyntacticSugar: t.UsesSyntacticSugar,
-		Kind:               TargetRefKind(t.Kind),
-		Labels:             t.Labels,
-		SectionName:        t.SectionName,
+		Kind:        TargetRefKind(t.Kind),
+		Labels:      t.Labels,
+		SectionName: t.SectionName,
 	}
 }
 
