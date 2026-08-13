@@ -25,7 +25,7 @@ const (
 	// OriginOutbound is the origin for outbound listeners, clusters, and related resources
 	OriginOutbound Origin = "outbound"
 
-	// OriginPrometheus is the origin for resources produced by the Prometheus endpoint generator
+	// OriginPrometheus is the origin for the Prometheus listener and cluster produced by MeshMetric
 	OriginPrometheus Origin = "prometheus"
 
 	// OriginProxyTemplateModifications is the origin for resources created by MeshProxyPatch.

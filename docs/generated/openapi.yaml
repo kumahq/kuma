@@ -7751,7 +7751,6 @@ components:
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshServiceSubset
                                       - MeshHTTPRoute
                                       - Dataplane
                                     type: string
@@ -7782,15 +7781,6 @@ components:
                                       MeshService.ports[] by its name. Only
                                       traffic to this port will be affected.
                                     type: string
-                                  tags:
-                                    additionalProperties:
-                                      type: string
-                                    description: >-
-                                      Tags used to select a subset of proxies by
-                                      tags. Can only be used with kind
-
-                                      `MeshServiceSubset`
-                                    type: object
                                   weight:
                                     default: 1
                                     minimum: 0
@@ -7871,7 +7861,6 @@ components:
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
-                                              - MeshServiceSubset
                                               - MeshHTTPRoute
                                               - Dataplane
                                             type: string
@@ -7902,15 +7891,6 @@ components:
                                               MeshService.ports[] by its name. Only
                                               traffic to this port will be affected.
                                             type: string
-                                          tags:
-                                            additionalProperties:
-                                              type: string
-                                            description: >-
-                                              Tags used to select a subset of proxies
-                                              by tags. Can only be used with kind
-
-                                              `MeshServiceSubset`
-                                            type: object
                                           weight:
                                             default: 1
                                             minimum: 0
@@ -11605,7 +11585,6 @@ components:
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshServiceSubset
                                       - MeshHTTPRoute
                                       - Dataplane
                                     type: string
@@ -11636,15 +11615,6 @@ components:
                                       MeshService.ports[] by its name. Only
                                       traffic to this port will be affected.
                                     type: string
-                                  tags:
-                                    additionalProperties:
-                                      type: string
-                                    description: >-
-                                      Tags used to select a subset of proxies by
-                                      tags. Can only be used with kind
-
-                                      `MeshServiceSubset`
-                                    type: object
                                   weight:
                                     default: 1
                                     minimum: 0

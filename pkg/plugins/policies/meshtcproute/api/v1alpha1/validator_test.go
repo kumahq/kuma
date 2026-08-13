@@ -81,8 +81,6 @@ to:
   - default:
       backendRefs:
       - kind: MeshServiceSubset
-        tags:
-          version: v1
 `),
 		ErrorCase("missing port in backendRefs",
 			validators.Violation{

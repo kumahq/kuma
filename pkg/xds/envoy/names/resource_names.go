@@ -100,10 +100,6 @@ func GetOpenTelemetryClusterName(backendName string) string {
 	return Join(GetOpenTelemetryClusterPrefix(), backendName)
 }
 
-func GetPrometheusListenerName() string {
-	return Join("kuma", "metrics", "prometheus")
-}
-
 func GetAdminListenerName() string {
 	return Join("kuma", "envoy", "admin")
 }
@@ -137,11 +133,4 @@ func ParseGatewayListenerName(listenerName string) (string, string, uint32, erro
 	}
 
 	return parts[0], parts[1], uint32(portUint64), nil
-}
-
-// GetMeshClusterName will be used everywhere where there is a potential of name
-// clashes (i.e. when Zone Egress is configuring clusters for services with
-// the same name but in different meshes)
-func GetMeshClusterName(meshName string, serviceName string) string {
-	return Join(meshName, serviceName)
 }

@@ -97,15 +97,6 @@ func TestBackendRefReferencesRealObject(t *testing.T) {
 			},
 			expected: true,
 		},
-		"legacy mesh service subset is not real": {
-			ref: BackendRef{
-				TargetRef: TargetRef{
-					Kind:   LegacyMeshServiceSubsetKind(),
-					Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
-				},
-			},
-			expected: false,
-		},
 		"empty ref is not real": {
 			ref:      BackendRef{},
 			expected: false,
@@ -341,19 +332,19 @@ func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
 		}
 	})
 
-	t.Run("legacy backend refs hash service identity from labels", func(t *testing.T) {
+	t.Run("backend refs hash distinguishes derived ports", func(t *testing.T) {
 		t.Parallel()
 
 		base := BackendRef{
 			TargetRef: TargetRef{
-				Kind:   LegacyMeshServiceSubsetKind(),
+				Kind:   MeshService,
 				Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
 			},
 			Port: pointer.To(uint32(8080)),
 		}
 		otherPort := BackendRef{
 			TargetRef: TargetRef{
-				Kind:   LegacyMeshServiceSubsetKind(),
+				Kind:   MeshService,
 				Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
 			},
 			Port: pointer.To(uint32(9090)),
