@@ -85,7 +85,7 @@ type DataplaneXDSConfig struct {
 	Diff *[]externalRef0.JsonPatchItem `json:"diff,omitempty"`
 
 	// Xds The raw XDS config as an inline JSON object
-	Xds map[string]any `json:"xds"`
+	Xds map[string]interface{} `json:"xds"`
 }
 
 // DataplanesStats Dataplanes statistics
