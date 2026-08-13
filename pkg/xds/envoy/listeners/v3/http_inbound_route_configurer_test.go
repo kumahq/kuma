@@ -4,6 +4,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -16,19 +18,21 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 		listenerProtocol xds.SocketAddressProtocol
 		listenerAddress  string
 		listenerPort     uint32
-		statsName        string
-		service          string
 		cluster          envoy_common.Cluster
 		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
+			// given: the inbound is named the way InboundProxyGenerator names it
+			inboundName := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), given.listenerPort)
+
 			// when
-			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
+			listener, err := NewListenerBuilder(envoy_common.APIV3, inboundName).
+				Configure(InboundListener(given.listenerAddress, given.listenerPort, given.listenerProtocol, true)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(HttpConnectionManager(given.statsName, true, nil, true)).
-					Configure(HttpInboundRoute("inbound:"+given.service, given.service, given.cluster)))).
+					Configure(HttpConnectionManager(inboundName, true, nil, true)).
+					Configure(HttpInboundRoute(inboundName, inboundName, given.cluster)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -42,11 +46,9 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 		Entry("basic http_connection_manager with a single destination cluster", testCase{
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
-			statsName:       "localhost:8080",
-			service:         "backend",
-			cluster:         plugins_xds.NewClusterBuilder().WithService("localhost:8080").Build(),
+			cluster:         plugins_xds.NewClusterBuilder().WithName("self_inbound_dp_8080").Build(),
 			expected: `
-            name: inbound:192.168.0.1:8080
+            name: self_inbound_dp_8080
             trafficDirection: INBOUND
             enableReusePort: true
             address:
@@ -66,21 +68,21 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   routeConfig:
-                    name: inbound:backend
+                    name: self_inbound_dp_8080
                     validateClusters: false
                     requestHeadersToRemove:
                     - x-kuma-tags
                     virtualHosts:
                     - domains:
                       - '*'
-                      name: backend
+                      name: self_inbound_dp_8080
                       routes:
                       - match:
                           prefix: /
                         route:
-                          cluster: localhost:8080
+                          cluster: self_inbound_dp_8080
                           timeout: 0s
-                  statPrefix: localhost_8080
+                  statPrefix: self_inbound_dp_8080
                   internalAddressConfig:
                     cidrRanges:
                       - addressPrefix: 127.0.0.1

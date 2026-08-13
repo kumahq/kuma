@@ -14,7 +14,9 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -41,6 +43,13 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
+)
+
+// inbounds are named the way InboundProxyGenerator names them: the contextual
+// name of the Dataplane section, here the inbound port
+var (
+	inboundName17777 = naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(17777))
+	inboundName17778 = naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(17778))
 )
 
 func identitySource(secretName string) func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
@@ -309,26 +318,28 @@ func outgoingCluster(proxy *core_xds.Proxy) *envoy_cluster.Cluster {
 func getMeshServiceResources(proxy *core_xds.Proxy) []*core_xds.Resource {
 	return []*core_xds.Resource{
 		{
-			Name:   "inbound:127.0.0.1:17777",
+			Name:   inboundName17777,
 			Origin: metadata.OriginInbound,
-			Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+			Resource: listeners.NewListenerBuilder(envoy_common.APIV3, inboundName17777).
+				Configure(listeners.InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+					Configure(listeners.HttpConnectionManager(inboundName17777, false, nil, true)).
 					Configure(
 						listeners.HttpInboundRoute(
-							"inbound:backend",
-							"backend",
-							plugins_xds.NewClusterBuilder().WithService("backend").Build(),
+							inboundName17777,
+							inboundName17777,
+							plugins_xds.NewClusterBuilder().WithName(inboundName17777).Build(),
 						),
 					),
 				)).MustBuild(),
 		},
 		{
-			Name:   "inbound:127.0.0.1:17778",
+			Name:   inboundName17778,
 			Origin: metadata.OriginInbound,
-			Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
+			Resource: listeners.NewListenerBuilder(envoy_common.APIV3, inboundName17778).
+				Configure(listeners.InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true)).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", plugins_xds.NewClusterBuilder().WithName("frontend").Build())),
+					Configure(listeners.TcpProxyDeprecated(inboundName17778, plugins_xds.NewClusterBuilder().WithName(inboundName17778).Build())),
 				)).MustBuild(),
 		},
 		{

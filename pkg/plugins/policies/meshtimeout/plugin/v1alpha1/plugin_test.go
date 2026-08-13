@@ -960,12 +960,16 @@ func httpListenerWithSeveralMeshHTTPRoutes(service string, meshHTTPRoute kri.Ide
 }
 
 func httpInboundListenerWith() envoy_common.NamedResource {
+	// the listener, its route and its cluster all carry the contextual inbound
+	// name, exactly like InboundProxyGenerator names them
+	inboundName := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))
 	return createListener(
-		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP, true),
+		NewListenerBuilder(envoy_common.APIV3, inboundName).
+			Configure(InboundListener("127.0.0.1", 80, core_xds.SocketAddressProtocolTCP, true)),
 		HttpInboundRoute(
-			"inbound:backend",
-			"backend",
-			plugins_xds.NewClusterBuilder().WithService("backend").Build(),
+			inboundName,
+			inboundName,
+			plugins_xds.NewClusterBuilder().WithName(inboundName).Build(),
 		))
 }
 
