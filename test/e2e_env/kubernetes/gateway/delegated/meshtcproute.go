@@ -11,17 +11,7 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
-	"github.com/kumahq/kuma/v3/test/server/types"
 )
-
-// Adding or removing the MeshTCPRoute flips the gateway outbound listener
-// between HTTP routing and TCP proxying. Kong pools its upstream connections,
-// and Envoy keeps serving established connections from the old listener until
-// it is drained, which kuma-dp configures to 30s by default. Traffic therefore
-// keeps hitting the previous backends for up to a drain period after the
-// resource is applied or deleted, so both convergence windows have to outlast
-// it instead of racing it.
-const tcpRouteConvergenceTimeout = "90s"
 
 func MeshTCPRoute(config *Config) func() {
 	GinkgoHelper()
@@ -51,7 +41,7 @@ func MeshTCPRoute(config *Config) func() {
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(responses).ToNot(BeEmpty())
 				g.Expect(responses).To(HaveEach(HaveField("Instance", HavePrefix("test-server"))))
-			}, tcpRouteConvergenceTimeout, "1s").Should(Succeed())
+			}, "30s", "1s").Should(Succeed())
 		})
 
 		It("should split traffic between internal and external services "+
@@ -138,21 +128,22 @@ spec:
 `, config.CpNamespace, config.Mesh, config.Namespace))(kubernetes.Cluster)).To(Succeed())
 
 			// then
-			Eventually(func() ([]types.EchoResponse, error) {
-				return client.CollectResponses(
+			Eventually(func(g Gomega) {
+				response, err := client.CollectResponsesByInstance(
 					kubernetes.Cluster,
 					"demo-client",
 					fmt.Sprintf("http://%s/test-server", config.KicIP),
 					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
-					client.WithNumberOfRequests(10),
-					client.WithHeader("x-set-response-delay-ms", "2000"),
-					client.WithoutRetries(),
+					client.WithNumberOfRequests(100),
 				)
-			}, tcpRouteConvergenceTimeout, "1s").Should(ContainElements(
-				HaveField("Instance", HavePrefix("test-server")),
-				HaveField("Instance", HavePrefix("external-service")),
-				HaveField("Instance", HavePrefix("external-tcp-service")),
-			))
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response).To(HaveLen(3))
+				g.Expect(response).To(And(
+					HaveKey(Equal(`test-server`)),
+					HaveKey(Equal(`external-service`)),
+					HaveKey(Equal(`external-tcp-service`)),
+				))
+			}, "30s", "5s").Should(Succeed())
 		})
 	}
 }
