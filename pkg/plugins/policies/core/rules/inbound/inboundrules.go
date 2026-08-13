@@ -69,15 +69,21 @@ func getEntries(resources core_model.ResourceList) ([]common.WithPolicyAttribute
 		return nil, err
 	}
 
+	// GetItems() allocates and fills a new []core_model.Resource on every call, so it
+	// is called once here and indexed below. Cast is all-or-nothing, so policies stays
+	// aligned with items.
+	items := resources.GetItems()
 	policies, ok := common.Cast[interface {
 		PolicyWithRules
 		core_model.PolicyWithFromList
-	}](resources.GetItems())
+	}](items)
 	if !ok {
 		return nil, nil
 	}
 
-	entries := []common.WithPolicyAttributes[RuleEntry]{}
+	// One policy can contribute several entries, so len(items) is a floor rather than a
+	// bound, but it saves the regrowth from an empty slice.
+	entries := make([]common.WithPolicyAttributes[RuleEntry], 0, len(items))
 
 	for i, policy := range policies {
 		switch {
@@ -85,7 +91,7 @@ func getEntries(resources core_model.ResourceList) ([]common.WithPolicyAttribute
 			for j, rule := range policy.GetRules() {
 				entries = append(entries, common.WithPolicyAttributes[RuleEntry]{
 					Entry:     rule,
-					Meta:      resources.GetItems()[i].GetMeta(),
+					Meta:      items[i].GetMeta(),
 					TopLevel:  policy.GetTargetRef(),
 					RuleIndex: j,
 				})
@@ -94,7 +100,7 @@ func getEntries(resources core_model.ResourceList) ([]common.WithPolicyAttribute
 			for j, fromEntry := range policy.GetFromList() {
 				entries = append(entries, common.WithPolicyAttributes[RuleEntry]{
 					Entry:     newRuleEntryAdapter(fromEntry),
-					Meta:      resources.GetItems()[i].GetMeta(),
+					Meta:      items[i].GetMeta(),
 					TopLevel:  policy.GetTargetRef(),
 					RuleIndex: j,
 				})
