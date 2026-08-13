@@ -7,7 +7,6 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/once"
@@ -52,22 +51,5 @@ func (c *CachedRetriever) GetCLA(ctx context.Context, meshName, meshHash string,
 type Retriever struct{}
 
 func (r *Retriever) GetCLA(_ context.Context, _, _ string, cluster envoy_common.Cluster, apiVersion xds.APIVersion, endpointMap xds.EndpointMap) (proto.Message, error) {
-	matchTags := map[string]string{}
-	for tag, val := range cluster.Tags() {
-		if tag != mesh_proto.ServiceTag {
-			matchTags[tag] = val
-		}
-	}
-
-	// For the majority of cases we don't have custom tags, we can just take a slice
-	endpoints := endpointMap[cluster.Service()]
-	if len(matchTags) > 0 {
-		endpoints = []xds.Endpoint{}
-		for _, endpoint := range endpointMap[cluster.Service()] {
-			if endpoint.ContainsTags(matchTags) {
-				endpoints = append(endpoints, endpoint)
-			}
-		}
-	}
-	return envoy_endpoints.CreateClusterLoadAssignment(cluster.Name(), endpoints, apiVersion)
+	return envoy_endpoints.CreateClusterLoadAssignment(cluster.Name(), endpointMap[cluster.Service()], apiVersion)
 }

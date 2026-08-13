@@ -287,18 +287,6 @@ func (e Endpoint) HasLocality() bool {
 	return e.Locality != nil
 }
 
-// ContainsTags returns 'true' if for every key presented both in 'tags' and 'Endpoint#Tags'
-// values are equal
-func (e Endpoint) ContainsTags(tags map[string]string) bool {
-	for otherKey, otherValue := range tags {
-		endpointValue, ok := e.Tags[otherKey]
-		if !ok || otherValue != endpointValue {
-			return false
-		}
-	}
-	return true
-}
-
 func BuildProxyId(mesh, name string) *ProxyId {
 	return &ProxyId{
 		name: name,
