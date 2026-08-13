@@ -14,6 +14,15 @@ import (
 	"github.com/kumahq/kuma/v3/test/server/types"
 )
 
+// Adding or removing the MeshTCPRoute flips the gateway outbound listener
+// between HTTP routing and TCP proxying. Kong pools its upstream connections,
+// and Envoy keeps serving established connections from the old listener until
+// it is drained, which kuma-dp configures to 30s by default. Traffic therefore
+// keeps hitting the previous backends for up to a drain period after the
+// resource is applied or deleted, so both convergence windows have to outlast
+// it instead of racing it.
+const tcpRouteConvergenceTimeout = "90s"
+
 func MeshTCPRoute(config *Config) func() {
 	GinkgoHelper()
 
@@ -42,7 +51,7 @@ func MeshTCPRoute(config *Config) func() {
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(responses).ToNot(BeEmpty())
 				g.Expect(responses).To(HaveEach(HaveField("Instance", HavePrefix("test-server"))))
-			}, "30s", "1s").Should(Succeed())
+			}, tcpRouteConvergenceTimeout, "1s").Should(Succeed())
 		})
 
 		It("should split traffic between internal and external services "+
@@ -139,7 +148,7 @@ spec:
 					client.WithHeader("x-set-response-delay-ms", "2000"),
 					client.WithoutRetries(),
 				)
-			}, "30s", "1s").Should(ContainElements(
+			}, tcpRouteConvergenceTimeout, "1s").Should(ContainElements(
 				HaveField("Instance", HavePrefix("test-server")),
 				HaveField("Instance", HavePrefix("external-service")),
 				HaveField("Instance", HavePrefix("external-tcp-service")),
