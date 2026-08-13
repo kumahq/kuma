@@ -27,7 +27,6 @@ var (
 	DomainRegexp         = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
 	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
 	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
-	selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9.\-_:/]*|\*)$`)
 )
 
 type (
@@ -55,20 +54,6 @@ type ValidateTargetRefOpts struct {
 	AllowedInvalidNames []string
 	IsInboundPolicy     bool
 	IsBackendRef        bool
-}
-
-func ValidateSelector(path validators.PathBuilder, tags map[string]string, opts ValidateTagsOpts) validators.ValidationError {
-	opts.ExtraTagValueValidators = append([]TagValueValidatorFunc{
-		func(path validators.PathBuilder, key, value string) validators.ValidationError {
-			var err validators.ValidationError
-			if !selectorCharacterSet.MatchString(value) {
-				err.AddViolationAt(path.Key(key), `tag value must consist of alphanumeric characters, dots, dashes, slashes and underscores or be "*"`)
-			}
-			return err
-		},
-	}, opts.ExtraTagValueValidators...)
-
-	return validateTagKeyValues(path, tags, opts)
 }
 
 func ValidateTags(path validators.PathBuilder, tags map[string]string, opts ValidateTagsOpts) validators.ValidationError {
@@ -319,35 +304,21 @@ func ValidateTargetRef(
 
 	switch ref.Kind {
 	case common_api.Mesh:
-		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
 	case common_api.Dataplane:
-		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		if !opts.IsInboundPolicy && pointer.Deref(ref.SectionName) != "" {
 			err.AddViolation("sectionName", "can only be used with inbound policies")
 		}
-	case common_api.LegacyMeshSubsetKind():
-		err.Add(ValidateTags(validators.RootedAt("tags"), pointer.Deref(ref.Tags), ValidateTagsOpts{}))
-		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
-		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
 	case common_api.MeshService:
-		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
 	case common_api.MeshHTTPRoute:
-		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
 		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
-	case common_api.LegacyMeshServiceSubsetKind():
-		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
-		err.Add(ValidateSelector(validators.RootedAt("tags"), pointer.Deref(ref.Tags), ValidateTagsOpts{}))
-		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
 	case common_api.MeshExternalService:
-		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
 		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
 	case common_api.MeshMultiZoneService:
-		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		// sectionName selects a MeshMultiZoneService port and stays allowed,
 		// mirroring MeshService and the pre-refactor behavior.
 		err.Add(requiredField("labels", pointer.Deref(ref.Labels), ref.Kind))
