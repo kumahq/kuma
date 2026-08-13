@@ -284,12 +284,6 @@ func GlobalProvidedFilter(rm manager.ResourceManager) kds_reconcile.ResourceFilt
 
 		switch {
 		case isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToZonesFlag):
-			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
-				policy := r.GetSpec().(core_model.Policy)
-				if policy.GetTargetRef().UsesSyntacticSugar && !features.HasFeature(kds.FeatureOptionalTopLevelTargetRef) {
-					return false
-				}
-			}
 			return true
 		case !isGlobal && r.Descriptor().KDSFlags.Has(core_model.SyncedAcrossZonesFlag):
 			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
@@ -297,9 +291,6 @@ func GlobalProvidedFilter(rm manager.ResourceManager) kds_reconcile.ResourceFilt
 					return false
 				}
 				policy := r.GetSpec().(core_model.Policy)
-				if policy.GetTargetRef().UsesSyntacticSugar && !features.HasFeature(kds.FeatureOptionalTopLevelTargetRef) {
-					return false
-				}
 				// if declared role is not 'producer' then no syncing
 				if core_model.PolicyRole(r.GetMeta()) != mesh_proto.ProducerPolicyRole {
 					return false

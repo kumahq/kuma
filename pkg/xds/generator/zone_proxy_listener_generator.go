@@ -91,7 +91,6 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	listener *mesh_proto.Dataplane_Networking_Listener,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
-	meshName := xdsCtx.Mesh.Resource.GetMeta().GetName()
 
 	address := listener.Address
 	port := listener.Port
@@ -130,13 +129,13 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 		return nil, nil
 	}
 
-	cds, err := zoneproxy.GenerateCDS(proxy, services, meshName, metadata.OriginIngress)
+	cds, err := zoneproxy.GenerateCDS(proxy, services, metadata.OriginIngress)
 	if err != nil {
 		return nil, err
 	}
 	rs.AddSet(cds)
 
-	eds, err := zoneproxy.GenerateEDS(proxy, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, services, meshName, metadata.OriginIngress)
+	eds, err := zoneproxy.GenerateEDS(proxy, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, services, metadata.OriginIngress)
 	if err != nil {
 		return nil, err
 	}

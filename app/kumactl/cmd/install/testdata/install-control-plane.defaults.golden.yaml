@@ -369,7 +369,6 @@ spec:
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshServiceSubset
                                       - MeshHTTPRoute
                                       - Dataplane
                                       type: string
@@ -391,13 +390,6 @@ spec:
                                         SectionName is used to target specific section of resource.
                                         For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                                       type: string
-                                    tags:
-                                      additionalProperties:
-                                        type: string
-                                      description: |-
-                                        Tags used to select a subset of proxies by tags. Can only be used with kind
-                                        `MeshServiceSubset`
-                                      type: object
                                     weight:
                                       default: 1
                                       minimum: 0
@@ -473,7 +465,6 @@ spec:
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
-                                              - MeshServiceSubset
                                               - MeshHTTPRoute
                                               - Dataplane
                                               type: string
@@ -496,13 +487,6 @@ spec:
                                                 SectionName is used to target specific section of resource.
                                                 For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                                               type: string
-                                            tags:
-                                              additionalProperties:
-                                                type: string
-                                              description: |-
-                                                Tags used to select a subset of proxies by tags. Can only be used with kind
-                                                `MeshServiceSubset`
-                                              type: object
                                             weight:
                                               default: 1
                                               minimum: 0
@@ -4195,7 +4179,6 @@ spec:
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshServiceSubset
                                       - MeshHTTPRoute
                                       - Dataplane
                                       type: string
@@ -4217,13 +4200,6 @@ spec:
                                         SectionName is used to target specific section of resource.
                                         For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                                       type: string
-                                    tags:
-                                      additionalProperties:
-                                        type: string
-                                      description: |-
-                                        Tags used to select a subset of proxies by tags. Can only be used with kind
-                                        `MeshServiceSubset`
-                                      type: object
                                     weight:
                                       default: 1
                                       minimum: 0

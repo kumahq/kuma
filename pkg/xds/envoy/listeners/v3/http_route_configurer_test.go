@@ -8,7 +8,6 @@ import (
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 )
 
 var _ = Describe("HttpDynamicRouteConfigurer", func() {
@@ -55,20 +54,5 @@ var _ = Describe("HttpDynamicRouteConfigurer", func() {
       name: inbound
       trafficDirection: INBOUND
       enableReusePort: true`))
-	})
-})
-
-var _ = Describe("HttpScopedRouteConfigurer", func() {
-	It("should fail", func() {
-		_, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP, true).
-			WithOverwriteName("inbound").
-			Configure(
-				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).Configure(
-					HttpConnectionManager("inbound", false, nil, true),
-					AddFilterChainConfigurer(&HttpScopedRouteConfigurer{}),
-				)),
-			).Build()
-
-		Expect(err).To(HaveOccurred())
 	})
 })
