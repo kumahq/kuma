@@ -434,8 +434,7 @@ func buildRulesInternal(list []PolicyItemWithMeta, withNegations bool, useClique
 	uniqueKeys := map[string]struct{}{}
 	// 1. Convert list of rules into the list of subsets.
 	// itemSubsets stays index-aligned with oldKindsItems and is never reassigned, so
-	// createRule can look up an item's subset instead of recomputing it. subsets is
-	// the working copy that later steps are free to deduplicate.
+	// createRule can look up an item's subset instead of recomputing it.
 	itemSubsets := make([]subsetutils.Subset, 0, len(oldKindsItems))
 	for _, item := range oldKindsItems {
 		ss, err := asSubset(item.GetTargetRef())
