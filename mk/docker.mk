@@ -150,6 +150,24 @@ docker/info/registry: ## Output the Docker registry
 docker/info/enabled-arches: ## Output the arches `images/<name>` builds for
 	@echo $(ENABLED_GOARCHES)
 
+# Maps an image name to the binary whose `version` output must match the image tag.
+# Empty means the image ships no versioned CLI (kuma-cni is a plugin binary, not a
+# CLI) and callers skip the assert. Keep in sync with the `image/<name>/<arch>`
+# prerequisites above - this is what CI uses to gate the push on a tag.
+image_binary = $(patsubst kuma-init,kumactl,$(patsubst kuma-universal,kuma-cp,$(filter-out kuma-cni,$(1))))
+
+# Distributions that rename images (e.g. a `ubi-` prefix) override this to reuse
+# `image_binary` with the upstream name, the same way RESOLVE_CONTAINER_TEST_FILE
+# is overridden for container structure tests.
+RESOLVE_IMAGE_BINARY ?= $(call image_binary,$(1))
+
+define IMAGE_INFO_TARGETS_BY_IMAGE
+.PHONY: docker/info/binary/$(1)
+docker/info/binary/$(1): ## Output the binary whose `version` must match the image tag ('' if the image ships none)
+	@echo $$(call RESOLVE_IMAGE_BINARY,$(1))
+endef
+$(foreach image,$(IMAGES_RELEASE) $(IMAGES_TEST),$(eval $(call IMAGE_INFO_TARGETS_BY_IMAGE,$(image))))
+
 # The awk command is ok because we're passing a list of container image names which won't contain ' ' or '"'
 # This outputs something like: ["docker.io/kumahq/kuma-cp:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-dp:0.0.0-preview.vlocal-build","docker.io/kumahq/kumactl:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-init:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-cni:0.0.0-preview.vlocal-build"]
 .PHONY: manifests/json/release
