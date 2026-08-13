@@ -38,6 +38,7 @@ const (
 // Benchmarks don't go through test.RunSpecs, which is what normally registers the
 // policy plugins, so the resource types have to be registered here.
 var initPolicyPlugins = sync.OnceFunc(func() {
+	core_plugins.InitAll(core_apis.NameToModule)
 	core_plugins.InitAll(policies.NameToModule)
 })
 
