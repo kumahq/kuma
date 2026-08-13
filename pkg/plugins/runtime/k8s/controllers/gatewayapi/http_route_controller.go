@@ -27,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	k8s_util "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 // HTTPRouteReconciler reconciles a GatewayAPI object into Kuma-native objects
@@ -160,7 +161,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
-			routes[routeSubName] = meshRoute
+			storeMeshHTTPRoute(routes, routeSubName, meshRoute)
 		case attachment.MeshService:
 			namespace := route.Namespace
 			if ref.Namespace != nil {
@@ -212,13 +213,48 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
-			routes[routeSubName] = meshRoute
+			storeMeshHTTPRoute(routes, routeSubName, meshRoute)
 		}
 
 		conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
 	}
 
 	return routes, conditions, nil
+}
+
+func storeMeshHTTPRoute(routes map[string]core_model.ResourceSpec, name string, spec core_model.ResourceSpec) {
+	route, ok := spec.(*meshhttproute_api.MeshHTTPRoute)
+	if !ok {
+		routes[name] = spec
+		return
+	}
+
+	existing, ok := routes[name]
+	if !ok {
+		routes[name] = spec
+		return
+	}
+
+	existingRoute, ok := existing.(*meshhttproute_api.MeshHTTPRoute)
+	if !ok {
+		routes[name] = spec
+		return
+	}
+
+	merged := pointer.Deref(existingRoute.To)
+	for _, candidate := range pointer.Deref(route.To) {
+		duplicate := false
+		for _, existingTo := range merged {
+			if reflect.DeepEqual(existingTo, candidate) {
+				duplicate = true
+				break
+			}
+		}
+		if !duplicate {
+			merged = append(merged, candidate)
+		}
+	}
+	existingRoute.To = pointer.To(merged)
 }
 
 // routesForService returns a function that calculates which HTTPRoutes might

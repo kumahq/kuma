@@ -320,6 +320,49 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		Expect(accepted.Status).To(Equal(kube_meta.ConditionTrue))
 	})
 
+	It("merges multiple section-specific parentRefs for the same Service", func() {
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{
+					{Name: "http", Port: 80},
+					{Name: "https", Port: 443},
+				},
+			},
+		}
+		route := newRoute(
+			withSectionName(serviceParentRef("backend"), "http"),
+			withSectionName(serviceParentRef("backend"), "https"),
+		)
+
+		client := newClientBuilder(svc, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+
+		spec := routes.Items[0].Spec
+		Expect(spec).ToNot(BeNil())
+		Expect(*spec.To).To(HaveLen(2))
+		Expect(*(*spec.To)[0].TargetRef.SectionName).To(Equal("http"))
+		Expect(*(*spec.To)[1].TargetRef.SectionName).To(Equal("https"))
+
+		var updatedRoute gatewayapi.HTTPRoute
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
+		Expect(updatedRoute.Status.Parents).To(HaveLen(2))
+		for _, parent := range updatedRoute.Status.Parents {
+			accepted := kube_apimeta.FindStatusCondition(parent.Conditions, string(gatewayapi.RouteConditionAccepted))
+			Expect(accepted).ToNot(BeNil())
+			Expect(accepted.Status).To(Equal(kube_meta.ConditionTrue))
+		}
+	})
+
 	It("reports Accepted=False when the parentRef names a Service port the Service does not have", func() {
 		svc := &kube_core.Service{
 			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
