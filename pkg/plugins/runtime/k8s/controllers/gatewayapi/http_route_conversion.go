@@ -11,6 +11,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -457,7 +458,7 @@ type ResolvedRefsConditionFalse struct {
 func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_meta.Condition) {
 	if c != nil && kube_apimeta.FindStatusCondition(*conditions, string(gatewayapi.RouteConditionResolvedRefs)) == nil {
 		condition := kube_meta.Condition{
-			Type:    string(gatewayapi.RouteReasonResolvedRefs),
+			Type:    string(gatewayapi.RouteConditionResolvedRefs),
 			Status:  kube_meta.ConditionFalse,
 			Reason:  c.Reason,
 			Message: c.Message,
@@ -469,12 +470,12 @@ func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_
 func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	ctx context.Context, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
-	gk := kube_schema.GroupKind{Kind: string(*ref.Kind), Group: string(*ref.Group)}
-	// the backendRef's namespace, falling back to the route's namespace when unset
+	details, ok := backendObjectReferenceInfo(objectNamespace, ref)
 	refNamespace := objectNamespace
-	if ref.Namespace != nil {
-		refNamespace = string(*ref.Namespace)
+	if ok {
+		refNamespace = details.Namespace
 	}
+
 	unresolvedTargetRef := common_api.TargetRef{
 		Kind: common_api.MeshService,
 		Labels: &map[string]string{
@@ -482,9 +483,42 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 			mesh_proto.KubeNamespaceTag: refNamespace,
 		},
 	}
-	namespacedName := kube_types.NamespacedName{Namespace: refNamespace, Name: string(ref.Name)}
+	if !ok {
+		return unresolvedTargetRef,
+			&ResolvedRefsConditionFalse{
+				Reason:  string(gatewayapi.RouteReasonInvalidKind),
+				Message: "backend reference must be Service or MeshService",
+			},
+			nil
+	}
+
+	namespacedName := kube_types.NamespacedName{Namespace: details.Namespace, Name: details.Name}
+	gk := kube_schema.GroupKind{Kind: details.Kind, Group: details.Group}
+
+	if details.Namespace != objectNamespace {
+		allowed, err := r.referenceGrantAllowsBackendRef(ctx, objectNamespace, details)
+		if err != nil {
+			return common_api.TargetRef{}, nil, err
+		}
+		if !allowed {
+			return unresolvedTargetRef,
+				&ResolvedRefsConditionFalse{
+					Reason:  string(gatewayapi.RouteReasonRefNotPermitted),
+					Message: fmt.Sprintf("backend reference to %s %q is not permitted by any ReferenceGrant", gk.String(), namespacedName.String()),
+				},
+				nil
+		}
+	}
 
 	if gk.Kind == "Service" && gk.Group == "" {
+		if ref.Port == nil {
+			return unresolvedTargetRef,
+				&ResolvedRefsConditionFalse{
+					Reason:  string(gatewayapi.RouteReasonInvalidKind),
+					Message: "backend reference to Service must include a port",
+				},
+				nil
+		}
 		// References to Services are required by GAPI to include a port
 		port := *ref.Port
 
@@ -570,10 +604,24 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		}, nil, nil
 	}
 
-	return unresolvedTargetRef,
-		&ResolvedRefsConditionFalse{
-			Reason:  string(gatewayapi.RouteReasonInvalidKind),
-			Message: "backend reference must be Service or MeshService",
-		},
-		nil
+	return unresolvedTargetRef, nil, nil
+}
+
+func (r *HTTPRouteReconciler) referenceGrantAllowsBackendRef(
+	ctx context.Context,
+	routeNamespace string,
+	backendRef backendObjectReferenceDetails,
+) (bool, error) {
+	var grants gatewayapi.ReferenceGrantList
+	if err := r.List(ctx, &grants, kube_client.InNamespace(backendRef.Namespace)); err != nil {
+		return false, err
+	}
+
+	for i := range grants.Items {
+		if backendObjectReferenceMatchesGrant(&grants.Items[i], routeNamespace, backendRef) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

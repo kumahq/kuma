@@ -15,6 +15,8 @@ import (
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshservice_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
 	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
@@ -485,6 +487,282 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		accepted := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionAccepted))
 		Expect(accepted).ToNot(BeNil())
 		Expect(accepted.Status).To(Equal(kube_meta.ConditionTrue))
+	})
+})
+
+var _ = Describe("HTTPRouteReconciler.Reconcile with cross-namespace backendRefs", func() {
+	serviceBackendRef := func(namespace, name string, port gatewayapi.PortNumber) gatewayapi.HTTPBackendRef {
+		group := gatewayapi.Group("")
+		kind := gatewayapi.Kind("Service")
+		ns := gatewayapi.Namespace(namespace)
+		weight := int32(1)
+		return gatewayapi.HTTPBackendRef{
+			BackendRef: gatewayapi.BackendRef{
+				BackendObjectReference: gatewayapi.BackendObjectReference{
+					Group:     &group,
+					Kind:      &kind,
+					Namespace: &ns,
+					Name:      gatewayapi.ObjectName(name),
+					Port:      &port,
+				},
+				Weight: &weight,
+			},
+		}
+	}
+
+	referenceGrant := func(grantNamespace, routeNamespace, targetName string) *gatewayapi.ReferenceGrant {
+		return &gatewayapi.ReferenceGrant{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "allow-route", Namespace: grantNamespace},
+			Spec: gatewayapi.ReferenceGrantSpec{
+				From: []gatewayapi.ReferenceGrantFrom{{
+					Group:     gatewayapi.Group(gatewayapi.GroupVersion.Group),
+					Kind:      gatewayapi.Kind("HTTPRoute"),
+					Namespace: gatewayapi.Namespace(routeNamespace),
+				}},
+				To: []gatewayapi.ReferenceGrantTo{{
+					Group: gatewayapi.Group(""),
+					Kind:  gatewayapi.Kind("Service"),
+					Name:  pointer.To(gatewayapi.ObjectName(targetName)),
+				}},
+			},
+		}
+	}
+
+	parentRef := func(namespace, name string) gatewayapi.ParentReference {
+		group := gatewayapi.Group("")
+		kind := gatewayapi.Kind("Service")
+		ns := gatewayapi.Namespace(namespace)
+		return gatewayapi.ParentReference{
+			Group:     &group,
+			Kind:      &kind,
+			Namespace: &ns,
+			Name:      gatewayapi.ObjectName(name),
+		}
+	}
+
+	newRoute := func() *gatewayapi.HTTPRoute {
+		return &gatewayapi.HTTPRoute{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "my-route", Namespace: "route-ns"},
+			Spec: gatewayapi.HTTPRouteSpec{
+				CommonRouteSpec: gatewayapi.CommonRouteSpec{
+					ParentRefs: []gatewayapi.ParentReference{parentRef("route-ns", "frontend")},
+				},
+				Rules: []gatewayapi.HTTPRouteRule{{
+					BackendRefs: []gatewayapi.HTTPBackendRef{
+						serviceBackendRef("backend-ns", "backend", 8080),
+					},
+				}},
+			},
+		}
+	}
+
+	var reconciler *HTTPRouteReconciler
+	var newClientBuilder func(objs ...kube_client.Object) kube_client.Client
+
+	BeforeEach(func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		newClientBuilder = func(objs ...kube_client.Object) kube_client.Client {
+			base := []kube_client.Object{
+				&kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "route-ns"}},
+				&kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "backend-ns"}},
+			}
+			return kube_client_fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithStatusSubresource(&gatewayapi.HTTPRoute{}).
+				WithIndex(&gatewayapi.HTTPRoute{}, servicesOfRouteField, servicesOfRoute).
+				WithIndex(&gatewayapi.HTTPRoute{}, meshServicesOfRouteField, meshServicesOfRoute).
+				WithObjects(append(base, objs...)...).
+				Build()
+		}
+
+		reconciler = &HTTPRouteReconciler{
+			Log:             logr.Discard(),
+			TypeRegistry:    k8s_registry.Global(),
+			SystemNamespace: "kuma-system",
+		}
+	})
+
+	It("reports RefNotPermitted and keeps an unresolved backend targetRef when no ReferenceGrant exists", func() {
+		frontend := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "frontend", Namespace: "route-ns"},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		backend := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "backend-ns"},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 8080}},
+			},
+		}
+		route := newRoute()
+
+		client := newClientBuilder(frontend, backend, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		backendRefs := *(*routes.Items[0].Spec.To)[0].Rules[0].Default.BackendRefs
+		Expect(backendRefs).To(HaveLen(1))
+		Expect(backendRefs[0].TargetRef).To(Equal(common_api.TargetRef{
+			Kind: common_api.MeshService,
+			Labels: pointer.To(map[string]string{
+				mesh_proto.DisplayName:      "backend",
+				mesh_proto.KubeNamespaceTag: "backend-ns",
+			}),
+		}))
+
+		var updatedRoute gatewayapi.HTTPRoute
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
+		resolvedRefs := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionResolvedRefs))
+		Expect(resolvedRefs).ToNot(BeNil())
+		Expect(resolvedRefs.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(resolvedRefs.Reason).To(Equal(string(gatewayapi.RouteReasonRefNotPermitted)))
+		Expect(resolvedRefs.Message).To(ContainSubstring("backend-ns/backend"))
+	})
+
+	It("requeues and allows the route after grant creation, then denies it again after grant deletion", func() {
+		frontend := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "frontend", Namespace: "route-ns"},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		backend := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "backend-ns"},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 8080}},
+			},
+		}
+		route := newRoute()
+
+		client := newClientBuilder(frontend, backend, route)
+		reconciler.Client = client
+
+		req := kube_ctrl.Request{NamespacedName: kube_client.ObjectKeyFromObject(route)}
+		_, err := reconciler.Reconcile(context.Background(), req)
+		Expect(err).ToNot(HaveOccurred())
+
+		grant := referenceGrant("backend-ns", "route-ns", "backend")
+		Expect(client.Create(context.Background(), grant)).To(Succeed())
+
+		requests := routesForReferenceGrant(logr.Discard(), client)(context.Background(), grant)
+		Expect(requests).To(ConsistOf(req))
+
+		_, err = reconciler.Reconcile(context.Background(), req)
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		backendRefs := *(*routes.Items[0].Spec.To)[0].Rules[0].Default.BackendRefs
+		Expect(backendRefs).To(HaveLen(1))
+		Expect(backendRefs[0].TargetRef.SectionName).To(Equal(pointer.To("http")))
+
+		var updatedRoute gatewayapi.HTTPRoute
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
+		resolvedRefs := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionResolvedRefs))
+		Expect(resolvedRefs).ToNot(BeNil())
+		Expect(resolvedRefs.Status).To(Equal(kube_meta.ConditionTrue))
+
+		deletedGrant := grant.DeepCopy()
+		Expect(client.Delete(context.Background(), grant)).To(Succeed())
+		requests = routesForReferenceGrant(logr.Discard(), client)(context.Background(), deletedGrant)
+		Expect(requests).To(ConsistOf(req))
+
+		_, err = reconciler.Reconcile(context.Background(), req)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
+		resolvedRefs = kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionResolvedRefs))
+		Expect(resolvedRefs).ToNot(BeNil())
+		Expect(resolvedRefs.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(resolvedRefs.Reason).To(Equal(string(gatewayapi.RouteReasonRefNotPermitted)))
+	})
+})
+
+var _ = Describe("routesForReferenceGrant", func() {
+	serviceBackendRef := func(namespace, name string) gatewayapi.HTTPBackendRef {
+		group := gatewayapi.Group("")
+		kind := gatewayapi.Kind("Service")
+		ns := gatewayapi.Namespace(namespace)
+		port := gatewayapi.PortNumber(80)
+		weight := int32(1)
+		return gatewayapi.HTTPBackendRef{
+			BackendRef: gatewayapi.BackendRef{
+				BackendObjectReference: gatewayapi.BackendObjectReference{
+					Group:     &group,
+					Kind:      &kind,
+					Namespace: &ns,
+					Name:      gatewayapi.ObjectName(name),
+					Port:      &port,
+				},
+				Weight: &weight,
+			},
+		}
+	}
+
+	It("requeues only routes matched by the grant source and destination rules", func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		matchingRoute := &gatewayapi.HTTPRoute{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "matching", Namespace: "route-ns"},
+			Spec: gatewayapi.HTTPRouteSpec{
+				Rules: []gatewayapi.HTTPRouteRule{{
+					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("backend-ns", "backend")},
+				}},
+			},
+		}
+		sameNamespaceRoute := &gatewayapi.HTTPRoute{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "same-ns", Namespace: "backend-ns"},
+			Spec: gatewayapi.HTTPRouteSpec{
+				Rules: []gatewayapi.HTTPRouteRule{{
+					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("backend-ns", "backend")},
+				}},
+			},
+		}
+		wrongBackendRoute := &gatewayapi.HTTPRoute{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "wrong-backend", Namespace: "route-ns"},
+			Spec: gatewayapi.HTTPRouteSpec{
+				Rules: []gatewayapi.HTTPRouteRule{{
+					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("backend-ns", "other-backend")},
+				}},
+			},
+		}
+		grant := &gatewayapi.ReferenceGrant{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "allow-route", Namespace: "backend-ns"},
+			Spec: gatewayapi.ReferenceGrantSpec{
+				From: []gatewayapi.ReferenceGrantFrom{{
+					Group:     gatewayapi.Group(gatewayapi.GroupVersion.Group),
+					Kind:      gatewayapi.Kind("HTTPRoute"),
+					Namespace: gatewayapi.Namespace("route-ns"),
+				}},
+				To: []gatewayapi.ReferenceGrantTo{{
+					Group: gatewayapi.Group(""),
+					Kind:  gatewayapi.Kind("Service"),
+					Name:  pointer.To(gatewayapi.ObjectName("backend")),
+				}},
+			},
+		}
+
+		client := kube_client_fake.NewClientBuilder().
+			WithScheme(scheme).
+			WithObjects(matchingRoute, sameNamespaceRoute, wrongBackendRoute).
+			Build()
+
+		requests := routesForReferenceGrant(logr.Discard(), client)(context.Background(), grant)
+		Expect(requests).To(ConsistOf(kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(matchingRoute),
+		}))
 	})
 })
 

@@ -22,7 +22,8 @@ import (
 )
 
 var requiredGatewayCRDs = map[string]string{
-	"HTTPRoute": gatewayCRDNameWithGroupKindAndVersion("HTTPRoute"),
+	"HTTPRoute":      gatewayCRDNameWithGroupKindAndVersion("HTTPRoute"),
+	"ReferenceGrant": gatewayCRDNameWithGroupKindAndVersion("ReferenceGrant"),
 }
 
 func gatewayCRDNameWithGroupKindAndVersion(name string) string {
