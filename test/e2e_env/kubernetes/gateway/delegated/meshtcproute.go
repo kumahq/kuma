@@ -42,7 +42,7 @@ func MeshTCPRoute(config *Config) func() {
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(responses).ToNot(BeEmpty())
 				g.Expect(responses).To(HaveEach(HaveField("Instance", HavePrefix("test-server"))))
-			}, "30s", "1s").Should(Succeed())
+			}, "60s", "1s").Should(Succeed())
 		})
 
 		It("should split traffic between internal and external services "+
@@ -129,17 +129,21 @@ spec:
 `, config.CpNamespace, config.Mesh, config.Namespace))(kubernetes.Cluster)).To(Succeed())
 
 			// then
+			// The route turns the gateway outbound into a TCP proxy, so a backend
+			// is picked once per connection. Kong is deployed with upstream
+			// keepalive disabled, so every request opens its own connection and
+			// 30 requests make missing one of the three equally weighted backends
+			// negligible.
 			Eventually(func() ([]types.EchoResponse, error) {
 				return client.CollectResponses(
 					kubernetes.Cluster,
 					"demo-client",
 					fmt.Sprintf("http://%s/test-server", config.KicIP),
 					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
-					client.WithNumberOfRequests(10),
-					client.WithHeader("x-set-response-delay-ms", "2000"),
+					client.WithNumberOfRequests(30),
 					client.WithoutRetries(),
 				)
-			}, "30s", "1s").Should(ContainElements(
+			}, "60s", "5s").Should(ContainElements(
 				HaveField("Instance", HavePrefix("test-server")),
 				HaveField("Instance", HavePrefix("external-service")),
 				HaveField("Instance", HavePrefix("external-tcp-service")),

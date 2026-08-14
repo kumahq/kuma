@@ -37,12 +37,3 @@ func CommonRouteConfiguration() RouteConfigurationBuilderOpt {
 	return AddRouteConfigurationConfigurer(
 		&v3.CommonRouteConfigurationConfigurer{})
 }
-
-func IgnorePortInHostMatching() RouteConfigurationBuilderOpt {
-	return AddRouteConfigurationConfigurer(
-		v3.RouteConfigurationConfigureFunc(func(rc *envoy_config_route_v3.RouteConfiguration) error {
-			rc.IgnorePortInHostMatching = true
-			return nil
-		}),
-	)
-}
