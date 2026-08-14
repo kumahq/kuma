@@ -5,7 +5,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web-api
+      app: web-api
   to:
     - targetRef:
         kind: MeshService
@@ -36,7 +36,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web-api
+      app: web-api
   to:
     - targetRef:
         kind: MeshService
@@ -57,7 +57,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web-api
+      app: web-api
   to:
     - targetRef:
         kind: Mesh
@@ -72,7 +72,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web-api
+      app: web-api
   to:
     - targetRef:
         kind: Mesh
