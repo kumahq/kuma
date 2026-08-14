@@ -9,9 +9,13 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/workqueue"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	kube_event "sigs.k8s.io/controller-runtime/pkg/event"
+	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -687,10 +691,10 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with cross-namespace backendRefs
 })
 
 var _ = Describe("routesForReferenceGrant", func() {
-	serviceBackendRef := func(namespace, name string) gatewayapi.HTTPBackendRef {
+	serviceBackendRef := func(name string) gatewayapi.HTTPBackendRef {
 		group := gatewayapi.Group("")
 		kind := gatewayapi.Kind("Service")
-		ns := gatewayapi.Namespace(namespace)
+		ns := gatewayapi.Namespace("backend-ns")
 		port := gatewayapi.PortNumber(80)
 		weight := int32(1)
 		return gatewayapi.HTTPBackendRef{
@@ -715,7 +719,7 @@ var _ = Describe("routesForReferenceGrant", func() {
 			ObjectMeta: kube_meta.ObjectMeta{Name: "matching", Namespace: "route-ns"},
 			Spec: gatewayapi.HTTPRouteSpec{
 				Rules: []gatewayapi.HTTPRouteRule{{
-					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("backend-ns", "backend")},
+					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("backend")},
 				}},
 			},
 		}
@@ -723,7 +727,7 @@ var _ = Describe("routesForReferenceGrant", func() {
 			ObjectMeta: kube_meta.ObjectMeta{Name: "same-ns", Namespace: "backend-ns"},
 			Spec: gatewayapi.HTTPRouteSpec{
 				Rules: []gatewayapi.HTTPRouteRule{{
-					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("backend-ns", "backend")},
+					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("backend")},
 				}},
 			},
 		}
@@ -731,7 +735,7 @@ var _ = Describe("routesForReferenceGrant", func() {
 			ObjectMeta: kube_meta.ObjectMeta{Name: "wrong-backend", Namespace: "route-ns"},
 			Spec: gatewayapi.HTTPRouteSpec{
 				Rules: []gatewayapi.HTTPRouteRule{{
-					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("backend-ns", "other-backend")},
+					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("other-backend")},
 				}},
 			},
 		}
@@ -760,6 +764,63 @@ var _ = Describe("routesForReferenceGrant", func() {
 		Expect(requests).To(ConsistOf(kube_ctrl.Request{
 			NamespacedName: kube_client.ObjectKeyFromObject(matchingRoute),
 		}))
+	})
+
+	It("requeues routes matched by the previous grant spec when an update revokes access", func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		matchingRoute := &gatewayapi.HTTPRoute{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "matching", Namespace: "route-ns"},
+			Spec: gatewayapi.HTTPRouteSpec{
+				Rules: []gatewayapi.HTTPRouteRule{{
+					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("backend")},
+				}},
+			},
+		}
+		oldGrant := &gatewayapi.ReferenceGrant{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "allow-route", Namespace: "backend-ns"},
+			Spec: gatewayapi.ReferenceGrantSpec{
+				From: []gatewayapi.ReferenceGrantFrom{{
+					Group:     gatewayapi.Group(gatewayapi.GroupVersion.Group),
+					Kind:      gatewayapi.Kind("HTTPRoute"),
+					Namespace: gatewayapi.Namespace("route-ns"),
+				}},
+				To: []gatewayapi.ReferenceGrantTo{{
+					Group: gatewayapi.Group(""),
+					Kind:  gatewayapi.Kind("Service"),
+					Name:  pointer.To(gatewayapi.ObjectName("backend")),
+				}},
+			},
+		}
+		updatedGrant := oldGrant.DeepCopy()
+		updatedGrant.Spec.From = []gatewayapi.ReferenceGrantFrom{{
+			Group:     gatewayapi.Group(gatewayapi.GroupVersion.Group),
+			Kind:      gatewayapi.Kind("HTTPRoute"),
+			Namespace: gatewayapi.Namespace("other-route-ns"),
+		}}
+
+		client := kube_client_fake.NewClientBuilder().
+			WithScheme(scheme).
+			WithObjects(matchingRoute).
+			Build()
+
+		queue := workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[kube_reconcile.Request]())
+		DeferCleanup(queue.ShutDown)
+
+		kube_handler.EnqueueRequestsFromMapFunc(routesForReferenceGrant(logr.Discard(), client)).Update(
+			context.Background(),
+			kube_event.UpdateEvent{ObjectOld: oldGrant, ObjectNew: updatedGrant},
+			queue,
+		)
+
+		Expect(queue.Len()).To(Equal(1))
+		req, shutdown := queue.Get()
+		Expect(shutdown).To(BeFalse())
+		Expect(req).To(Equal(kube_reconcile.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(matchingRoute),
+		}))
+		queue.Done(req)
 	})
 })
 

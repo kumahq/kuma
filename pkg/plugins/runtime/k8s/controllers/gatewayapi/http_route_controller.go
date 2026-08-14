@@ -411,7 +411,8 @@ func routesForMeshService(l logr.Logger, client kube_client.Client) kube_handler
 }
 
 // routesForReferenceGrant returns the routes that may change validity when a
-// grant in the target namespace is added, updated, or deleted.
+// grant in the target namespace is added, updated, or deleted. Update events
+// run this mapper for both the old and new grant objects.
 func routesForReferenceGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("referencegrant-to-routes-mapper")
 
@@ -467,12 +468,6 @@ func isServiceParentRef(group *gatewayapi.Group, kind *gatewayapi.Kind) bool {
 		return false
 	}
 	return string(*group) == kube_core.GroupName || string(*group) == gatewayapi.GroupName
-}
-
-// isServiceBackendRef reports whether the given group/kind pair references a
-// core Kubernetes Service backend.
-func isServiceBackendRef(group *gatewayapi.Group, kind *gatewayapi.Kind) bool {
-	return group != nil && kind != nil && string(*group) == kube_core.SchemeGroupVersion.Group && string(*kind) == "Service"
 }
 
 // meshServicesOfRoute returns the namespaced names of the MeshServices

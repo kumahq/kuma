@@ -21,9 +21,10 @@ import (
 )
 
 var _ = Describe("uncheckedGapiToKumaRef", func() {
-	serviceRef := func(namespace, name string, port gatewayapi.PortNumber) gatewayapi.BackendObjectReference {
+	serviceRef := func(namespace, name string) gatewayapi.BackendObjectReference {
 		group := gatewayapi.Group("")
 		kind := gatewayapi.Kind("Service")
+		port := gatewayapi.PortNumber(80)
 		ref := gatewayapi.BackendObjectReference{
 			Group: &group,
 			Kind:  &kind,
@@ -81,7 +82,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Zone:   "zone-1",
 		}
 
-		ref := serviceRef("kuma-demo", "backend", 80)
+		ref := serviceRef("kuma-demo", "backend")
 
 		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", ref)
 
@@ -221,7 +222,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(svc).Build(),
 		}
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", serviceRef("backend-ns", "backend", 80))
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", serviceRef("backend-ns", "backend"))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).ToNot(BeNil())
@@ -246,7 +247,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(svc, grant).Build(),
 		}
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", serviceRef("backend-ns", "backend", 80))
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", serviceRef("backend-ns", "backend"))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).To(BeNil())
@@ -297,7 +298,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(svc, grant).Build(),
 		}
 
-		_, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", serviceRef("backend-ns", "backend", 80))
+		_, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", serviceRef("backend-ns", "backend"))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).ToNot(BeNil())
@@ -313,7 +314,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Zone:   "zone-1",
 		}
 
-		ref := serviceRef("kuma-demo", "missing-backend", 80)
+		ref := serviceRef("kuma-demo", "missing-backend")
 
 		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", ref)
 
