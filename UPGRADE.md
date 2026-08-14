@@ -275,6 +275,25 @@ This covers every `MeshHTTPRoute`, not only the ones the Gateway API translation
 
 None, as long as every `backendRefs` entry names a resource that exists. Check the routes that reference a resource from another zone or another namespace before upgrading: those are the ones whose masked misconfiguration becomes visible traffic loss.
 
+### Gateway API cross-namespace `backendRefs` now require a `ReferenceGrant`
+
+The Gateway API `HTTPRoute` translation now enforces `ReferenceGrant` for any
+backend reference that points across namespaces, for both core `Service`
+backends and Kuma `MeshService` backends. A cross-namespace backend without a
+matching grant is no longer programmed into the generated `MeshHTTPRoute`; the
+route reports `ResolvedRefs=False` with reason `RefNotPermitted` instead.
+
+To evaluate those grants, the control plane ClusterRole now includes `get`,
+`list`, and `watch` on `gateway.networking.k8s.io/referencegrants`.
+
+**Action required**
+
+Create a `ReferenceGrant` in the backend namespace for every cross-namespace
+`HTTPRoute` backend that should remain valid after upgrading. If you manage
+RBAC outside Helm (for example via GitOps or manual manifests), also add
+`get`, `list`, and `watch` on `referencegrants` in the
+`gateway.networking.k8s.io` API group to the control plane ClusterRole.
+
 ### `MeshService.spec.identities` now accepts SPIFFE IDs only
 
 `MeshService.spec.identities[].type` no longer accepts `ServiceTag`. `MeshService.spec.identities` now publishes SPIFFE IDs only, while service-tag-based routing keeps using the `kuma.io/service` label or the MeshService resource name as its fallback naming signal.
