@@ -26,6 +26,11 @@ type ResourceAdmissionChecker struct {
 	ZoneName                     string
 }
 
+const (
+	GenericGarbageCollectorUser = "system:serviceaccount:kube-system:generic-garbage-collector"
+	StorageVersionMigratorUser  = "system:serviceaccount:kube-system:storage-version-migrator-controller"
+)
+
 func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {
 	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
 		return admission.Allowed("")
@@ -74,8 +79,8 @@ func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns s
 func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
 	// Assume this means one of the following:
 	// - sync from another zone
-	// - GC cleanup resources due to OwnerRef. ("system:serviceaccount:kube-system:generic-garbage-collector")
-	// - storageversionmigratior
+	// - GC cleanup resources due to OwnerRef.
+	// - storage-version migration
 	// Not security; protecting user from self.
 	return slices.Contains(allowedUsers, userInfo.Username)
 }
