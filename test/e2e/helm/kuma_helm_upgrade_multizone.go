@@ -53,8 +53,15 @@ func UpgradingZoneWithHelmChart() {
 	})
 
 	E2EAfterEach(func() {
-		ControlPlaneAssertions(global)
-		ControlPlaneAssertions(zoneK8s)
+		// A 2.14 zone sends Dataplanes whose VIP outbounds carry no
+		// backendRef, which this Global rejects on every resync until the
+		// zone is upgraded. Both ends count it: Global as the sync client
+		// that sends the NACK, the zone as the delta server that receives
+		// it. Fixed in 2.14.x, so both come off once a release carrying the
+		// fix is out and SupportedVersionEntriesAtLeast picks it up.
+		const vipOutboundNack = "2.14 zones send VIP outbounds without backendRef, fixed but not yet released"
+		ControlPlaneAssertions(global, KnownNack("kds_nack_total", vipOutboundNack))
+		ControlPlaneAssertions(zoneK8s, KnownNack("kds_delta_requests_received", vipOutboundNack))
 		ControlPlaneAssertions(zoneUniversal)
 		grp := sync.WaitGroup{}
 		grp.Add(3)

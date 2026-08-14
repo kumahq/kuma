@@ -25,7 +25,30 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
-func ControlPlaneAssertions(cluster Cluster) {
+// CPAssertionOpt relaxes one of the control plane assertions for a single
+// call site.
+type CPAssertionOpt func(*cpAssertionOpts)
+
+type cpAssertionOpts struct {
+	// knownNacks maps a NACK counter family to why it is exempt.
+	knownNacks map[string]string
+}
+
+// KnownNack exempts a NACK counter family on this cluster from the NACK
+// assertion. Use it only for a NACK a spec provokes on purpose, or a product
+// bug that is already fixed but not yet released, and say which in reason.
+// Everything else on the cluster stays asserted, including the other NACK
+// families.
+func KnownNack(family string, reason string) CPAssertionOpt {
+	return func(opts *cpAssertionOpts) {
+		if opts.knownNacks == nil {
+			opts.knownNacks = map[string]string{}
+		}
+		opts.knownNacks[family] = reason
+	}
+}
+
+func ControlPlaneAssertions(cluster Cluster, opts ...CPAssertionOpt) {
 	ginkgo.GinkgoHelper()
 	defer ginkgo.GinkgoRecover() // Ensures that Ginkgo can recover from any failures
 	logs := cluster.GetKumaCPLogs()
@@ -43,7 +66,7 @@ func ControlPlaneAssertions(cluster Cluster) {
 	default:
 		ginkgo.Fail("unknown cluster")
 	}
-	assertNoXdsNacks(cluster)
+	assertNoXdsNacks(cluster, opts...)
 	assertNoXdsChurn(cluster, logs)
 }
 
@@ -107,19 +130,28 @@ var nackCounters = []nackCounter{
 // assertNoXdsNacks scrapes the CP /metrics endpoint and fails if any xDS or
 // KDS request has been answered with a NACK. A non-zero counter means the CP
 // produced a config that Envoy or a peer control plane rejected.
-func assertNoXdsNacks(cluster Cluster) {
+func assertNoXdsNacks(cluster Cluster, opts ...CPAssertionOpt) {
 	ginkgo.GinkgoHelper()
+	options := cpAssertionOpts{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+	for family, reason := range options.knownNacks {
+		Logf("[WARNING]: not asserting %s on CP %s: %s", family, cluster.Name(), reason)
+	}
+
 	raw, err := cluster.GetKuma().GetMetrics()
 	Expect(err).ToNot(HaveOccurred(), "failed to scrape metrics from CP %s", cluster.Name())
 
-	nacks, err := findNacks(raw)
+	nacks, err := findNacks(raw, options.knownNacks)
 	Expect(err).ToNot(HaveOccurred(), "failed to parse metrics from CP %s", cluster.Name())
 	Expect(nacks).To(BeEmpty(), "CP %s reported NACK(s): %s", cluster.Name(), strings.Join(nacks, ", "))
 }
 
 // findNacks returns one description per NACK counter that exceeds its
-// tolerance in a Prometheus text exposition.
-func findNacks(raw string) ([]string, error) {
+// tolerance in a Prometheus text exposition, skipping the families named in
+// knownNacks.
+func findNacks(raw string, knownNacks map[string]string) ([]string, error) {
 	parser := expfmt.NewTextParser(model.UTF8Validation)
 	families, err := parser.TextToMetricFamilies(strings.NewReader(raw))
 	if err != nil {
@@ -128,6 +160,9 @@ func findNacks(raw string) ([]string, error) {
 
 	var nacks []string
 	for _, counter := range nackCounters {
+		if _, known := knownNacks[counter.family]; known {
+			continue
+		}
 		family, ok := families[counter.family]
 		if !ok {
 			continue

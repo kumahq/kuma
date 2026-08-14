@@ -5,10 +5,43 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var _ = Describe("KnownNack", func() {
+	// The signature the helm upgrade suite exempts while the 2.14 fix waits
+	// on a release.
+	const metrics = `
+# HELP kds_nack_total Total KDS NACKs sent by zone and resource type.
+# TYPE kds_nack_total counter
+kds_nack_total{resource_type="Dataplane",zone="Global",zone_name="kuma-2"} 2
+# HELP kds_delta_requests_received Number of confirmations requests from a client
+# TYPE kds_delta_requests_received counter
+kds_delta_requests_received{confirmation="NACK",error_type="other",type_url="Mesh",zone="Global"} 1
+`
+
+	exempt := func(opts ...CPAssertionOpt) map[string]string {
+		options := cpAssertionOpts{}
+		for _, opt := range opts {
+			opt(&options)
+		}
+		return options.knownNacks
+	}
+
+	It("should exempt only the named family", func() {
+		nacks, err := findNacks(metrics, exempt(KnownNack("kds_nack_total", "fixed, waiting on release")))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(nacks).To(ConsistOf(`kds_delta_requests_received{confirmation="NACK",error_type="other",type_url="Mesh",zone="Global"} = 1 (tolerated 0)`))
+	})
+
+	It("should report the family when it is not exempt", func() {
+		nacks, err := findNacks(metrics, nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(nacks).To(ContainElement(`kds_nack_total{resource_type="Dataplane",zone="Global",zone_name="kuma-2"} = 2 (tolerated 0)`))
+	})
+})
+
 var _ = Describe("findNacks", func() {
 	DescribeTable("should report NACK counters over their tolerance",
 		func(metrics string, expected []string) {
-			nacks, err := findNacks(metrics)
+			nacks, err := findNacks(metrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(nacks).To(ConsistOf(expected))
 		},
