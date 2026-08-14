@@ -72,7 +72,8 @@ var _ = Describe("Validating Webhook", func() {
 func newValidatingWebhook(mode core.CpMode, federatedZone bool) *kube_admission.Webhook {
 	checker := webhooks.ResourceAdmissionChecker{
 		AllowedUsers: []string{
-			"system:serviceaccount:kube-system:generic-garbage-collector",
+			webhooks.GenericGarbageCollectorUser,
+			webhooks.StorageVersionMigratorUser,
 			"system:serviceaccount:kuma-system:kuma-control-plane",
 		},
 		Mode:                         mode,

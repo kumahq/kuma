@@ -229,6 +229,326 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 	})
 })
 
+var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func() {
+	const routeNamespace = "kuma-demo"
+
+	serviceParentRef := func() gatewayapi.ParentReference {
+		group := gatewayapi.Group("")
+		kind := gatewayapi.Kind("Service")
+		ns := gatewayapi.Namespace(routeNamespace)
+		return gatewayapi.ParentReference{
+			Group:     &group,
+			Kind:      &kind,
+			Namespace: &ns,
+			Name:      gatewayapi.ObjectName("backend"),
+		}
+	}
+
+	withSectionName := func(ref gatewayapi.ParentReference, sectionName string) gatewayapi.ParentReference {
+		ref.SectionName = pointer.To(gatewayapi.SectionName(sectionName))
+		return ref
+	}
+
+	newRoute := func(parentRefs ...gatewayapi.ParentReference) *gatewayapi.HTTPRoute {
+		return &gatewayapi.HTTPRoute{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "my-route", Namespace: routeNamespace},
+			Spec: gatewayapi.HTTPRouteSpec{
+				CommonRouteSpec: gatewayapi.CommonRouteSpec{ParentRefs: parentRefs},
+			},
+		}
+	}
+
+	var reconciler *HTTPRouteReconciler
+	var namespace *kube_core.Namespace
+	var newClientBuilder func(objs ...kube_client.Object) kube_client.Client
+
+	BeforeEach(func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		namespace = &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: routeNamespace}}
+
+		newClientBuilder = func(objs ...kube_client.Object) kube_client.Client {
+			return kube_client_fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithStatusSubresource(&gatewayapi.HTTPRoute{}).
+				WithIndex(&gatewayapi.HTTPRoute{}, servicesOfRouteField, servicesOfRoute).
+				WithObjects(append([]kube_client.Object{namespace}, objs...)...).
+				Build()
+		}
+
+		reconciler = &HTTPRouteReconciler{
+			Log:             logr.Discard(),
+			TypeRegistry:    k8s_registry.Global(),
+			SystemNamespace: "kuma-system",
+		}
+	})
+
+	It("applies a parentRef sectionName as the Service port name", func() {
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{
+					{Name: "http", Port: 80},
+					{Name: "https", Port: 443},
+				},
+			},
+		}
+		route := newRoute(withSectionName(serviceParentRef(), "https"))
+
+		client := newClientBuilder(svc, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+
+		spec := routes.Items[0].Spec
+		Expect(spec).ToNot(BeNil())
+		Expect(*spec.To).To(HaveLen(1))
+		Expect(*(*spec.To)[0].TargetRef.SectionName).To(Equal("https"))
+
+		var updatedRoute gatewayapi.HTTPRoute
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
+		Expect(updatedRoute.Status.Parents).To(HaveLen(1))
+		accepted := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionAccepted))
+		Expect(accepted).ToNot(BeNil())
+		Expect(accepted.Status).To(Equal(kube_meta.ConditionTrue))
+	})
+
+	It("merges multiple section-specific parentRefs for the same Service", func() {
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{
+					{Name: "http", Port: 80},
+					{Name: "https", Port: 443},
+				},
+			},
+		}
+		route := newRoute(
+			withSectionName(serviceParentRef(), "http"),
+			withSectionName(serviceParentRef(), "https"),
+		)
+
+		client := newClientBuilder(svc, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+
+		spec := routes.Items[0].Spec
+		Expect(spec).ToNot(BeNil())
+		Expect(*spec.To).To(HaveLen(2))
+		Expect(*(*spec.To)[0].TargetRef.SectionName).To(Equal("http"))
+		Expect(*(*spec.To)[1].TargetRef.SectionName).To(Equal("https"))
+
+		var updatedRoute gatewayapi.HTTPRoute
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
+		Expect(updatedRoute.Status.Parents).To(HaveLen(2))
+		for _, parent := range updatedRoute.Status.Parents {
+			accepted := kube_apimeta.FindStatusCondition(parent.Conditions, string(gatewayapi.RouteConditionAccepted))
+			Expect(accepted).ToNot(BeNil())
+			Expect(accepted.Status).To(Equal(kube_meta.ConditionTrue))
+		}
+	})
+
+	It("reports Accepted=False when the parentRef names a Service port the Service does not have", func() {
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		route := newRoute(withSectionName(serviceParentRef(), "grpc"))
+
+		client := newClientBuilder(svc, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(BeEmpty())
+
+		var updatedRoute gatewayapi.HTTPRoute
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
+		Expect(updatedRoute.Status.Parents).To(HaveLen(1))
+		accepted := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionAccepted))
+		Expect(accepted).ToNot(BeNil())
+		Expect(accepted.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(accepted.Reason).To(Equal(string(gatewayapi_v1.RouteReasonNoMatchingParent)))
+	})
+
+	It("reports Accepted=False after deleting a Service referenced only as a parentRef", func() {
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		route := newRoute(withSectionName(serviceParentRef(), "http"))
+
+		client := newClientBuilder(svc, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+
+		deletedSvc := svc.DeepCopy()
+		Expect(client.Delete(context.Background(), svc)).To(Succeed())
+
+		requests := routesForService(logr.Discard(), client)(context.Background(), deletedSvc)
+		Expect(requests).To(ConsistOf(kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		}))
+
+		_, err = reconciler.Reconcile(context.Background(), requests[0])
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(BeEmpty())
+
+		var updatedRoute gatewayapi.HTTPRoute
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
+		Expect(updatedRoute.Status.Parents).To(HaveLen(1))
+		accepted := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionAccepted))
+		Expect(accepted).ToNot(BeNil())
+		Expect(accepted.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(accepted.Reason).To(Equal(string(gatewayapi_v1.RouteReasonNoMatchingParent)))
+	})
+
+	It("requeues a parent-only route when a Service update makes its sectionName valid", func() {
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		route := newRoute(withSectionName(serviceParentRef(), "grpc"))
+
+		client := newClientBuilder(svc, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(BeEmpty())
+
+		var updatedSvc kube_core.Service
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(svc), &updatedSvc)).To(Succeed())
+		updatedSvc.Spec.Ports = []kube_core.ServicePort{{Name: "grpc", Port: 50051}}
+		Expect(client.Update(context.Background(), &updatedSvc)).To(Succeed())
+
+		requests := routesForService(logr.Discard(), client)(context.Background(), &updatedSvc)
+		Expect(requests).To(ConsistOf(kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		}))
+
+		_, err = reconciler.Reconcile(context.Background(), requests[0])
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		spec := routes.Items[0].Spec
+		Expect(spec).ToNot(BeNil())
+		Expect(*spec.To).To(HaveLen(1))
+		Expect(*(*spec.To)[0].TargetRef.SectionName).To(Equal("grpc"))
+
+		var updatedRoute gatewayapi.HTTPRoute
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
+		Expect(updatedRoute.Status.Parents).To(HaveLen(1))
+		accepted := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionAccepted))
+		Expect(accepted).ToNot(BeNil())
+		Expect(accepted.Status).To(Equal(kube_meta.ConditionTrue))
+	})
+})
+
+var _ = Describe("servicesOfRoute", func() {
+	serviceRef := func(namespace, name string) *gatewayapi.BackendObjectReference {
+		group := gatewayapi.Group(kube_core.GroupName)
+		kind := gatewayapi.Kind("Service")
+		ref := &gatewayapi.BackendObjectReference{
+			Group: &group,
+			Kind:  &kind,
+			Name:  gatewayapi.ObjectName(name),
+		}
+		if namespace != "" {
+			ns := gatewayapi.Namespace(namespace)
+			ref.Namespace = &ns
+		}
+		return ref
+	}
+
+	parentRef := func(ref *gatewayapi.BackendObjectReference) gatewayapi.ParentReference {
+		return gatewayapi.ParentReference{
+			Group:     ref.Group,
+			Kind:      ref.Kind,
+			Namespace: ref.Namespace,
+			Name:      ref.Name,
+		}
+	}
+
+	It("indexes parentRefs, backendRefs and request-mirror backendRefs, defaulting namespace to the route", func() {
+		route := &gatewayapi.HTTPRoute{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "my-route", Namespace: "kuma-demo"},
+			Spec: gatewayapi.HTTPRouteSpec{
+				CommonRouteSpec: gatewayapi.CommonRouteSpec{
+					ParentRefs: []gatewayapi.ParentReference{
+						parentRef(serviceRef("", "parent-svc")),
+					},
+				},
+				Rules: []gatewayapi.HTTPRouteRule{
+					{
+						BackendRefs: []gatewayapi.HTTPBackendRef{
+							{BackendRef: gatewayapi.BackendRef{BackendObjectReference: *serviceRef("other-ns", "backend-svc")}},
+						},
+						Filters: []gatewayapi.HTTPRouteFilter{
+							{
+								Type: gatewayapi_v1.HTTPRouteFilterRequestMirror,
+								RequestMirror: &gatewayapi.HTTPRequestMirrorFilter{
+									BackendRef: *serviceRef("mirror-ns", "mirror-svc"),
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		names := servicesOfRoute(route)
+		Expect(names).To(ConsistOf(
+			"kuma-demo/parent-svc",
+			"other-ns/backend-svc",
+			"mirror-ns/mirror-svc",
+		))
+	})
+})
+
 var _ = Describe("meshServicesOfRoute", func() {
 	meshServiceRef := func(namespace, name string) *gatewayapi.BackendObjectReference {
 		group := gatewayapi.Group(meshservice_k8s.GroupVersion.Group)

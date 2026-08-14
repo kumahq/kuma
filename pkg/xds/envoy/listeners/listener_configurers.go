@@ -2,7 +2,6 @@ package listeners
 
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
@@ -80,27 +79,6 @@ func FilterChain(builder *FilterChainBuilder) ListenerBuilderOpt {
 			return nil
 		}),
 	)
-}
-
-func ConnectionBufferLimit(bytes uint32) ListenerBuilderOpt {
-	return AddListenerConfigurer(
-		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
-			l.PerConnectionBufferLimitBytes = wrapperspb.UInt32(bytes)
-		}))
-}
-
-func EnableReusePort(enable bool) ListenerBuilderOpt {
-	return AddListenerConfigurer(
-		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
-			l.EnableReusePort = &wrapperspb.BoolValue{Value: enable}
-		}))
-}
-
-func EnableFreebind(enable bool) ListenerBuilderOpt {
-	return AddListenerConfigurer(
-		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
-			l.Freebind = wrapperspb.Bool(enable)
-		}))
 }
 
 func TagsMetadata(tags map[string]string) ListenerBuilderOpt {

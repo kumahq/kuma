@@ -149,7 +149,7 @@ type KubernetesRuntimeConfig struct {
 	// cache is turned off
 	MarshalingCacheExpirationTime config_types.Duration `json:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
 	// List of names of Service Accounts that admission requests are allowed.
-	// This list is appended with Control Plane's Service Account and generic-garbage-collector
+	// This list is appended with Control Plane's Service Account, generic-garbage-collector, and storage-version-migrator-controller.
 	AllowedUsers []string `json:"allowedUsers,omitempty" envconfig:"kuma_runtime_kubernetes_allowed_users"`
 	// ControlPlaneServiceName defines service name of the Kuma control plane. It is used to point Kuma DP to proper URL.
 	ControlPlaneServiceName string `json:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
