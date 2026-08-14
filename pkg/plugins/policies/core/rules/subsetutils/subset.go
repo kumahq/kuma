@@ -93,19 +93,22 @@ func (ss Subset) IsSubset(other Subset) bool {
 	if len(ss) == 0 {
 		return true
 	}
-	otherByKeys := map[string][]Tag{}
-	for _, t := range other {
-		otherByKeys[t.Key] = append(otherByKeys[t.Key], t)
-	}
+	// Subsets hold a handful of tags, so scanning 'other' per tag is cheaper than
+	// indexing it by key, and it keeps this allocation-free. It is on the hot path of
+	// rule building, which calls it once per item per generated subset.
 	for _, tag := range ss {
-		oTags, ok := otherByKeys[tag.Key]
-		if !ok {
-			return false
-		}
-		for _, otherTag := range oTags {
+		keyPresent := false
+		for _, otherTag := range other {
+			if otherTag.Key != tag.Key {
+				continue
+			}
+			keyPresent = true
 			if !isSubset(tag, otherTag) {
 				return false
 			}
+		}
+		if !keyPresent {
+			return false
 		}
 	}
 	return true
@@ -170,22 +173,17 @@ func (ss Subset) Intersect(other Subset) bool {
 	if len(ss) == 0 || len(other) == 0 {
 		return true
 	}
-	otherByKeysOnlyPositive := map[string][]Tag{}
-	for _, t := range other {
-		if t.Not {
-			continue
-		}
-		otherByKeysOnlyPositive[t.Key] = append(otherByKeysOnlyPositive[t.Key], t)
-	}
+	// Same reasoning as IsSubset: a linear scan over the few tags in 'other' avoids
+	// building a map. This one is called O(n^2) times when the intersection graph is
+	// constructed.
 	for _, tag := range ss {
 		if tag.Not {
 			continue
 		}
-		oTags, ok := otherByKeysOnlyPositive[tag.Key]
-		if !ok {
-			continue
-		}
-		for _, otherTag := range oTags {
+		for _, otherTag := range other {
+			if otherTag.Not || otherTag.Key != tag.Key {
+				continue
+			}
 			if otherTag != tag {
 				return false
 			}

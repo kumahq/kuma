@@ -9,9 +9,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v2/pkg/core/config/manager"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/dns/vips"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
@@ -142,6 +145,31 @@ var _ = Describe("hash", func() {
 			Expect(afterContext).To(Equal(beforeContext), "context should be the exact same object")
 		}
 	}, test.EntriesForFolder("meshcontext_hash"))
+
+	It("returns an error instead of panicking when listing resources fails", func() {
+		// given a mesh exists but listing any other resource fails (e.g. DB connection lost).
+		// MeshService is a destination type, whose fetched list used to be read before the
+		// error check - that is where the nil-pointer panic happened
+		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())
+		builder := xds_context.NewMeshContextBuilder(
+			&failingListManager{ReadOnlyResourceManager: resourceStore},
+			[]core_model.ResourceType{meshservice_api.MeshServiceType},
+			lookupIPFunc,
+			"zone-1",
+			vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
+			"mesh",
+			80,
+			xds_context.AnyToAnyReachableServicesGraphBuilder,
+			nil,
+		)
+
+		// when building the base mesh context
+		_, err := builder.BuildBaseMeshContextIfChanged(context.Background(), "default", nil)
+
+		// then the error is surfaced rather than causing a nil-pointer panic
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("failed to build base mesh context"))
+	})
 })
 
 // remoteMeshZoneAddressWithHostname is the public address of the zone proxy in zone
@@ -207,3 +235,12 @@ var _ = Describe("MeshZoneAddress", func() {
 		Expect(endpointTargets(meshCtx)).To(ConsistOf("10.0.0.1"))
 	})
 })
+
+// failingListManager delegates Get to a real manager but fails every List, simulating a store error.
+type failingListManager struct {
+	core_manager.ReadOnlyResourceManager
+}
+
+func (f *failingListManager) List(context.Context, core_model.ResourceList, ...store.ListOptionsFunc) error {
+	return errors.New("store unavailable")
+}

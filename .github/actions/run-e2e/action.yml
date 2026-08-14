@@ -17,6 +17,9 @@ inputs:
     default: ""
   parallel_runner_id:
     required: true
+  shards:
+    required: false
+    default: "1"
 runs:
   using: composite
   steps:
@@ -67,6 +70,7 @@ runs:
         E2E_SIDECAR_CONTAINERS: ${{ inputs.sidecar_containers }}
         E2E_TARGET: ${{ inputs.target }}
         E2E_PARALLEL_RUNNER_ID: ${{ inputs.parallel_runner_id }}
+        E2E_SHARDS: ${{ inputs.shards }}
       run: |
         if [[ "$E2E_K8S_VERSION" == "kindIpv6" ]]; then
           export IPV6=true
@@ -90,6 +94,9 @@ runs:
 
         if [[ "$E2E_TARGET" == "" ]]; then
           export GINKGO_E2E_LABEL_FILTERS="job-$E2E_PARALLEL_RUNNER_ID"
+        elif [[ "$E2E_TARGET" != "" && "${E2E_SHARDS:-1}" != "1" ]]; then
+          ./.github/workflows/scripts/validate-e2e-shards.sh "$E2E_TARGET" "$E2E_SHARDS"
+          export GINKGO_E2E_LABEL_FILTERS="job-$E2E_PARALLEL_RUNNER_ID"
         fi
         env
         if [[ "$E2E_TARGET" == "multizone" ]]; then
@@ -97,10 +104,16 @@ runs:
           export KUMA_DEFAULT_TIMEOUT="6s"
         fi
 
+        # Keep imported node image layers hot in the page cache so the concurrent pod-startup wave doesn't stall on cold binary page-in (kumahq/kuma#17426).
+        ./.github/workflows/scripts/e2e-prewarm-layers.sh &
+        PREWARM_PID=$!
+
         function on_exit()
         {
-          docker logout docker.io
+          kill "${PREWARM_PID}" 2>/dev/null || true
+          docker logout docker.io 2>/dev/null || true
         }
+        trap "on_exit" EXIT
 
         # we pull a few images during the E2E run, sometimes we get rate-limited by docker hub
         # to prevent this, we support specifying a pull credential here
@@ -108,7 +121,6 @@ runs:
           DOCKER_USER=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 1)
           DOCKER_PWD=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 2)
           echo -n "$DOCKER_PWD" | docker login -u "$DOCKER_USER" --password-stdin
-          trap "on_exit" EXIT
         fi
 
         if [[ "$E2E_TARGET" != "" ]]; then
