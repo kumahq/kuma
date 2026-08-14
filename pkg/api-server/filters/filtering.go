@@ -126,7 +126,7 @@ func gatewayModeFilterFromParameter(request *restful.Request) (DpFilter, error) 
 		verr := validators.ValidationError{}
 		verr.AddViolationAt(
 			validators.RootedAt(request.SelectedRoutePath()).Field("gateway"),
-			"shoud use `true`, `false` or 'delegated' instead of "+mode)
+			"should use `true`, `false` or `delegated` instead of "+mode)
 		return nil, &verr
 	}
 
