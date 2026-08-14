@@ -81,6 +81,13 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 		if kube_apierrs.IsAlreadyExists(err) {
 			return store.ErrorResourceAlreadyExists(r.Descriptor().Name, opts.Name, opts.Mesh)
 		}
+		// k8sNameNamespace only splits the name, it doesn't validate it. The API
+		// server is what rejects a name that is too long or not DNS-1123, and a
+		// label value over 63 characters. Those are properties of the object, so
+		// the same bytes fail every time and the caller has to drop it.
+		if kube_apierrs.IsInvalid(err) {
+			return store.ErrorInvalid(err.Error())
+		}
 		return errors.Wrap(err, "failed to create k8s resource")
 	}
 	err = s.Converter.ToCoreResource(obj, r)
@@ -223,6 +230,9 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	return nil
 }
 
+// k8sNameNamespace rejects a name Kubernetes cannot represent: the name is a
+// property of the resource, so the same input always fails and the caller has to
+// drop it rather than retry it.
 func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, error) {
 	if coreName == "" {
 		return "", "", store.ErrorInvalid("name can't be empty")
