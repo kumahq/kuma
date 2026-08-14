@@ -227,13 +227,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(condition).ToNot(BeNil())
 		Expect(condition.Reason).To(Equal(string(gatewayapi.RouteReasonRefNotPermitted)))
 		Expect(condition.Message).To(ContainSubstring("backend-ns/backend"))
-		Expect(targetRef).To(Equal(common_api.TargetRef{
-			Kind: common_api.MeshService,
-			Labels: pointer.To(map[string]string{
-				mesh_proto.DisplayName:      "backend",
-				mesh_proto.KubeNamespaceTag: "backend-ns",
-			}),
-		}))
+		Expect(targetRef).To(BeZero())
 	})
 
 	It("should allow a cross-namespace Service backendRef when an exact-name ReferenceGrant matches", func() {

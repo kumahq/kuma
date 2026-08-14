@@ -15,8 +15,6 @@ import (
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshservice_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
 	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
@@ -584,7 +582,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with cross-namespace backendRefs
 		}
 	})
 
-	It("reports RefNotPermitted and keeps an unresolved backend targetRef when no ReferenceGrant exists", func() {
+	It("reports RefNotPermitted and omits the denied backend targetRef when no ReferenceGrant exists", func() {
 		frontend := &kube_core.Service{
 			ObjectMeta: kube_meta.ObjectMeta{Name: "frontend", Namespace: "route-ns"},
 			Spec: kube_core.ServiceSpec{
@@ -610,15 +608,8 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with cross-namespace backendRefs
 		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
 		Expect(client.List(context.Background(), routes)).To(Succeed())
 		Expect(routes.Items).To(HaveLen(1))
-		backendRefs := *(*routes.Items[0].Spec.To)[0].Rules[0].Default.BackendRefs
-		Expect(backendRefs).To(HaveLen(1))
-		Expect(backendRefs[0].TargetRef).To(Equal(common_api.TargetRef{
-			Kind: common_api.MeshService,
-			Labels: pointer.To(map[string]string{
-				mesh_proto.DisplayName:      "backend",
-				mesh_proto.KubeNamespaceTag: "backend-ns",
-			}),
-		}))
+		backendRefs := pointer.Deref((*routes.Items[0].Spec.To)[0].Rules[0].Default.BackendRefs)
+		Expect(backendRefs).To(BeEmpty())
 
 		var updatedRoute gatewayapi.HTTPRoute
 		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
@@ -663,7 +654,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with cross-namespace backendRefs
 		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
 		Expect(client.List(context.Background(), routes)).To(Succeed())
 		Expect(routes.Items).To(HaveLen(1))
-		backendRefs := *(*routes.Items[0].Spec.To)[0].Rules[0].Default.BackendRefs
+		backendRefs := pointer.Deref((*routes.Items[0].Spec.To)[0].Rules[0].Default.BackendRefs)
 		Expect(backendRefs).To(HaveLen(1))
 		Expect(backendRefs[0].TargetRef.SectionName).To(Equal(pointer.To("http")))
 
@@ -680,6 +671,12 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with cross-namespace backendRefs
 
 		_, err = reconciler.Reconcile(context.Background(), req)
 		Expect(err).ToNot(HaveOccurred())
+
+		routes = &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		backendRefs = pointer.Deref((*routes.Items[0].Spec.To)[0].Rules[0].Default.BackendRefs)
+		Expect(backendRefs).To(BeEmpty())
 
 		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
 		resolvedRefs = kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionResolvedRefs))

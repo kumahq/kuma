@@ -240,6 +240,9 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 		}
 
 		refCondition.AddIfFalseAndNotPresent(&conditions)
+		if refCondition.preventsBackendTarget() {
+			continue
+		}
 
 		backendRefs = append(backendRefs, common_api.BackendRef{
 			TargetRef: ref,
@@ -467,6 +470,10 @@ func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_
 	}
 }
 
+func (c *ResolvedRefsConditionFalse) preventsBackendTarget() bool {
+	return c != nil && c.Reason == string(gatewayapi.RouteReasonRefNotPermitted)
+}
+
 func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	ctx context.Context, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
@@ -501,7 +508,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 			return common_api.TargetRef{}, nil, err
 		}
 		if !allowed {
-			return unresolvedTargetRef,
+			return common_api.TargetRef{},
 				&ResolvedRefsConditionFalse{
 					Reason:  string(gatewayapi.RouteReasonRefNotPermitted),
 					Message: fmt.Sprintf("backend reference to %s %q is not permitted by any ReferenceGrant", gk.String(), namespacedName.String()),
