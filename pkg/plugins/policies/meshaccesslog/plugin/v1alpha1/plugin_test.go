@@ -14,7 +14,9 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -42,11 +44,17 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshAccessLog", func() {
+	// listeners carry the names the proxy generators give them: contextual
+	// inbound names for inbounds, contextual listener names for zone proxies
+	inboundName17777 := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(17777))
+	inboundNameHTTP := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), "http")
+	zoneEgressName := naming.ContextualZoneEgressListenerName("ze-port")
+	zoneIngressName := naming.ContextualZoneIngressListenerName("zi-port")
+
 	otherMeshExternalServiceHTTP := &kri.Identifier{
 		ResourceType: "MeshExternalService",
 		Mesh:         "default",
@@ -653,15 +661,16 @@ var _ = Describe("MeshAccessLog", func() {
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
 							Configure(
 								HttpInboundRoute(
-									envoy_names.GetInboundRouteName("backend"),
-									"backend",
-									xds.NewClusterBuilder().WithService("backend").Build(),
+									inboundName17777,
+									inboundName17777,
+									xds.NewClusterBuilder().WithName(inboundName17777).Build(),
 								),
 							),
 					)).MustBuild(),
@@ -686,15 +695,16 @@ var _ = Describe("MeshAccessLog", func() {
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
 							Configure(
 								HttpInboundRoute(
-									envoy_names.GetInboundRouteName("backend"),
-									"backend",
-									xds.NewClusterBuilder().WithService("backend").Build(),
+									inboundName17777,
+									inboundName17777,
+									xds.NewClusterBuilder().WithName(inboundName17777).Build(),
 								),
 							),
 					)).MustBuild(),
@@ -726,15 +736,16 @@ var _ = Describe("MeshAccessLog", func() {
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+				Resource: NewListenerBuilder(envoy_common.APIV3, inboundNameHTTP).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(HttpConnectionManager(inboundNameHTTP, false, nil, true)).
 							Configure(
 								HttpInboundRoute(
-									envoy_names.GetInboundRouteName("backend"),
-									"backend",
-									xds.NewClusterBuilder().WithService("backend").Build(),
+									inboundNameHTTP,
+									inboundNameHTTP,
+									xds.NewClusterBuilder().WithName(inboundNameHTTP).Build(),
 								),
 							),
 					)).MustBuild(),
@@ -841,15 +852,16 @@ var _ = Describe("MeshAccessLog", func() {
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
 							Configure(
 								HttpInboundRoute(
-									envoy_names.GetInboundRouteName("backend"),
-									"backend",
-									xds.NewClusterBuilder().WithService("backend").Build(),
+									inboundName17777,
+									inboundName17777,
+									xds.NewClusterBuilder().WithName(inboundName17777).Build(),
 								),
 							),
 					)).MustBuild(),
@@ -886,9 +898,10 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("zone egress listener with rules[].matches[].sni", sidecarTestCase{
 			resources: []core_xds.Resource{{
-				Name:   "outbound:zoneegress",
+				Name:   zoneEgressName,
 				Origin: metadata.OriginEgress,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true).
+				Resource: NewListenerBuilder(envoy_common.APIV3, zoneEgressName).
+					Configure(InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
@@ -918,9 +931,10 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 		Entry("zone ingress listener with rules[].matches[].spiffeID", sidecarTestCase{
 			resources: []core_xds.Resource{{
-				Name:   "inbound:zoneingress",
+				Name:   zoneIngressName,
 				Origin: metadata.OriginIngress,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "10.20.30.40", 10001, core_xds.SocketAddressProtocolTCP, true).
+				Resource: NewListenerBuilder(envoy_common.APIV3, zoneIngressName).
+					Configure(InboundListener("10.20.30.40", 10001, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).

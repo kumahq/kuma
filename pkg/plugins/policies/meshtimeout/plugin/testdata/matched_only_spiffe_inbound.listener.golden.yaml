@@ -34,14 +34,14 @@ resources:
             - addressPrefix: ::1
               prefixLen: 128
           routeConfig:
-            name: inbound:backend
+            name: self_inbound_dp_80
             requestHeadersToRemove:
             - x-kuma-tags
             validateClusters: false
             virtualHosts:
             - domains:
               - '*'
-              name: backend
+              name: self_inbound_dp_80
               routes:
               - match:
                   filterState:
@@ -50,7 +50,7 @@ resources:
                       exact: spiffe://default/client
                   prefix: /
                 route:
-                  cluster: backend
+                  cluster: self_inbound_dp_80
                   idleTimeout: 3s
                   timeout: 2s
               - match:
@@ -60,14 +60,14 @@ resources:
                       exact: spiffe://default/client-stream
                   prefix: /
                 route:
-                  cluster: backend
+                  cluster: self_inbound_dp_80
                   idleTimeout: 4s
                   timeout: 0s
               - match:
                   prefix: /
                 route:
-                  cluster: backend
+                  cluster: self_inbound_dp_80
                   timeout: 0s
-          statPrefix: inbound_127_0_0_1_80
-    name: inbound:127.0.0.1:80
+          statPrefix: self_inbound_dp_80
+    name: self_inbound_dp_80
     trafficDirection: INBOUND

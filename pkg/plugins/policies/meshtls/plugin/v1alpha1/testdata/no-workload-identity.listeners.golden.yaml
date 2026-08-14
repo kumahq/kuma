@@ -1,5 +1,5 @@
 resources:
-- name: inbound:127.0.0.1:17777
+- name: self_inbound_dp_17777
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -23,24 +23,24 @@ resources:
             - addressPrefix: ::1
               prefixLen: 128
           routeConfig:
-            name: inbound:backend
+            name: self_inbound_dp_17777
             requestHeadersToRemove:
             - x-kuma-tags
             validateClusters: false
             virtualHosts:
             - domains:
               - '*'
-              name: backend
+              name: self_inbound_dp_17777
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: backend
+                  cluster: self_inbound_dp_17777
                   timeout: 0s
-          statPrefix: "127_0_0_1_17777"
-    name: inbound:127.0.0.1:17777
+          statPrefix: self_inbound_dp_17777
+    name: self_inbound_dp_17777
     trafficDirection: INBOUND
-- name: inbound:127.0.0.1:17778
+- name: self_inbound_dp_17778
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -53,7 +53,7 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: frontend
-          statPrefix: "127_0_0_1_17778"
-    name: inbound:127.0.0.1:17778
+          cluster: self_inbound_dp_17778
+          statPrefix: self_inbound_dp_17778
+    name: self_inbound_dp_17778
     trafficDirection: INBOUND
