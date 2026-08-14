@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
+	"github.com/kumahq/kuma/v3/test/server/types"
 )
 
 func MeshTCPRoute(config *Config) func() {
@@ -29,9 +30,6 @@ func MeshTCPRoute(config *Config) func() {
 				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
 			)).To(Succeed())
 
-			// Connections opened while the route was still applied keep reaching
-			// the old backends until Envoy drains the previous listener, which
-			// takes up to the drain time kuma-dp configures.
 			Eventually(func(g Gomega) {
 				responses, err := client.CollectResponses(
 					kubernetes.Cluster,
@@ -44,7 +42,7 @@ func MeshTCPRoute(config *Config) func() {
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(responses).ToNot(BeEmpty())
 				g.Expect(responses).To(HaveEach(HaveField("Instance", HavePrefix("test-server"))))
-			}, "90s", "1s").Should(Succeed())
+			}, "60s", "1s").Should(Succeed())
 		})
 
 		It("should split traffic between internal and external services "+
@@ -131,33 +129,25 @@ spec:
 `, config.CpNamespace, config.Mesh, config.Namespace))(kubernetes.Cluster)).To(Succeed())
 
 			// then
-			// The route makes the gateway outbound a TCP proxy, so a backend is
-			// picked once per connection instead of per request, and the gateway
-			// keeps its upstream connections to the sidecar alive. Delaying every
-			// response keeps all requests of a single round in flight at the same
-			// time, which forces a separate connection per request, and instances
-			// are accumulated across rounds.
-			var instances []string
-			Eventually(func(g Gomega) {
-				responses, err := client.CollectResponsesByInstance(
+			// The route turns the gateway outbound into a TCP proxy, so a backend
+			// is picked once per connection. Kong is deployed with upstream
+			// keepalive disabled, so every request opens its own connection and
+			// 30 requests make missing one of the three equally weighted backends
+			// negligible.
+			Eventually(func() ([]types.EchoResponse, error) {
+				return client.CollectResponses(
 					kubernetes.Cluster,
 					"demo-client",
 					fmt.Sprintf("http://%s/test-server", config.KicIP),
 					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
-					client.WithNumberOfRequests(100),
-					client.WithMaxConcurrentRequests(10),
-					client.WithHeader("x-set-response-delay-ms", "2000"),
+					client.WithNumberOfRequests(30),
+					client.WithoutRetries(),
 				)
-				g.Expect(err).ToNot(HaveOccurred())
-				for instance := range responses {
-					instances = append(instances, instance)
-				}
-				g.Expect(instances).To(ContainElements(
-					HavePrefix("test-server"),
-					HavePrefix("external-service"),
-					HavePrefix("external-tcp-service"),
-				))
-			}, "60s", "10s").Should(Succeed())
+			}, "60s", "5s").Should(ContainElements(
+				HaveField("Instance", HavePrefix("test-server")),
+				HaveField("Instance", HavePrefix("external-service")),
+				HaveField("Instance", HavePrefix("external-tcp-service")),
+			))
 		})
 	}
 }
