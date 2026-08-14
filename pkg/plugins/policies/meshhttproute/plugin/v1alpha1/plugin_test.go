@@ -2660,6 +2660,318 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("request-mirror-real-resources", func() outboundsTestCase {
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend", Mesh: "default",
+					Labels: map[string]string{
+						"app": "backend",
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
+						AppProtocol: core_meta.ProtocolHTTP,
+						Name:        pointer.To("test-port"),
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/backend",
+						},
+					},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.1",
+					}},
+				},
+			}
+			mirrorSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "payments-mirror", Mesh: "default",
+					Labels: map[string]string{
+						"app": "payments-mirror",
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8086)),
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{
+							Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+							Value: "spiffe://default/payments-mirror",
+						},
+					},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.2",
+					}},
+				},
+			}
+			mirrorMZSvc := meshmultizoneservice_api.MeshMultiZoneServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "payments-mz-mirror", Mesh: "default",
+					Labels: map[string]string{
+						"app": "payments-mz-mirror",
+					},
+				},
+				Spec: &meshmultizoneservice_api.MeshMultiZoneService{
+					Selector: meshmultizoneservice_api.Selector{
+						MeshService: common_api.LabelSelector{
+							MatchLabels: &map[string]string{
+								"app": "payments-mirror",
+							},
+						},
+					},
+					Ports: []meshmultizoneservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+				},
+				Status: &meshmultizoneservice_api.MeshMultiZoneServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.3",
+					}},
+					MeshServices: []meshmultizoneservice_api.MatchedMeshService{
+						{
+							Name: "payments-mirror",
+							Mesh: "default",
+						},
+					},
+				},
+			}
+
+			mirrorMESvc := meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "payments-mes-mirror", Mesh: "default",
+					Labels: map[string]string{
+						"app": "payments-mes-mirror",
+					},
+				},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Port:     9090,
+						Protocol: core_meta.ProtocolHTTP,
+					},
+					Endpoints: &[]meshexternalservice_api.Endpoint{{
+						Address: "payments.example.com",
+						Port:    10000,
+					}},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{
+					VIP: meshexternalservice_api.VIP{
+						IP: "10.20.20.1",
+					},
+				},
+			}
+
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc, &mirrorSvc},
+			}
+			resources.MeshLocalResources[meshmultizoneservice_api.MeshMultiZoneServiceType] = &meshmultizoneservice_api.MeshMultiZoneServiceResourceList{
+				Items: []*meshmultizoneservice_api.MeshMultiZoneServiceResource{&mirrorMZSvc},
+			}
+			resources.MeshLocalResources[meshexternalservice_api.MeshExternalServiceType] = &meshexternalservice_api.MeshExternalServiceResourceList{
+				Items: []*meshexternalservice_api.MeshExternalServiceResource{&mirrorMESvc},
+			}
+
+			dpBuilder := builders.Dataplane().
+				WithName("web-01").
+				WithAddress("192.168.0.2").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")
+			mc := meshContextWithResources(builders.Mesh(), dpBuilder.Build(), &meshSvc, &mirrorSvc, &mirrorMZSvc, &mirrorMESvc)
+
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("default_backend___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
+				AddEndpoint("default_payments-mirror___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.6").
+					WithPort(8086).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "payments-mirror", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
+				AddEndpoint("default_payments-mz-mirror___mzsvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.7").
+					WithPort(8086).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "payments-mirror", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
+				AddEndpoint("default_payments-mes-mirror___extsvc_9090", xds_builders.Endpoint().
+					WithTarget("payments.example.com").
+					WithPort(10000).
+					WithWeight(1).
+					With(func(e *core_xds.Endpoint) {
+						e.ExternalService = &core_xds.ExternalService{
+							Protocol:      core_meta.ProtocolHTTP,
+							OwnerResource: kri.From(&mirrorMESvc),
+						}
+					}))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithResources(resources).
+					WithMeshContext(mc).
+					WithEndpointMap(outboundTargets).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(
+						dpBuilder,
+					).
+					WithOutbounds(xds_types.Outbounds{
+						{
+							Port:     builders.FirstOutboundPort,
+							Resource: kri.WithSectionName(kri.From(&meshSvc), "test-port"),
+						},
+					}).
+					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+									backendMeshServiceIdentifier: test_policies.NewOutboundRule(meshSvc.Meta, api.PolicyDefault{
+										Rules: []api.Rule{
+											{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/ms",
+													},
+												}},
+												Default: api.RuleConf{
+													Filters: &[]api.Filter{{
+														Type: api.RequestMirrorType,
+														RequestMirror: &api.RequestMirror{
+															Percentage: pointer.To(intstr.FromString("99.9")),
+															BackendRef: common_api.BackendRef{
+																TargetRef: common_api.TargetRef{
+																	Kind:   common_api.MeshService,
+																	Labels: &map[string]string{"app": "payments-mirror"},
+																},
+																Port: pointer.To(uint32(80)),
+															},
+														},
+													}},
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: common_api.TargetRef{
+															Kind:   common_api.MeshService,
+															Labels: &map[string]string{"app": "backend"},
+														},
+														Weight: pointer.To(uint(100)),
+														Port:   pointer.To(uint32(80)),
+													}},
+												},
+											},
+											{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/mzms",
+													},
+												}},
+												Default: api.RuleConf{
+													Filters: &[]api.Filter{{
+														Type: api.RequestMirrorType,
+														RequestMirror: &api.RequestMirror{
+															BackendRef: common_api.BackendRef{
+																TargetRef: common_api.TargetRef{
+																	Kind:   common_api.MeshMultiZoneService,
+																	Labels: &map[string]string{"app": "payments-mz-mirror"},
+																},
+																Port: pointer.To(uint32(80)),
+															},
+														},
+													}},
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: common_api.TargetRef{
+															Kind:   common_api.MeshService,
+															Labels: &map[string]string{"app": "backend"},
+														},
+														Weight: pointer.To(uint(100)),
+														Port:   pointer.To(uint32(80)),
+													}},
+												},
+											},
+											{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/mes",
+													},
+												}},
+												Default: api.RuleConf{
+													Filters: &[]api.Filter{{
+														Type: api.RequestMirrorType,
+														RequestMirror: &api.RequestMirror{
+															BackendRef: common_api.BackendRef{
+																TargetRef: common_api.TargetRef{
+																	Kind:   common_api.MeshExternalService,
+																	Labels: &map[string]string{"app": "payments-mes-mirror"},
+																},
+																Port: pointer.To(uint32(9090)),
+															},
+														},
+													}},
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: common_api.TargetRef{
+															Kind:   common_api.MeshService,
+															Labels: &map[string]string{"app": "backend"},
+														},
+														Weight: pointer.To(uint(100)),
+														Port:   pointer.To(uint32(80)),
+													}},
+												},
+											},
+											{
+												// mirror to a MeshService that doesn't exist, the route
+												// is generated without any mirror policy
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/missing",
+													},
+												}},
+												Default: api.RuleConf{
+													Filters: &[]api.Filter{{
+														Type: api.RequestMirrorType,
+														RequestMirror: &api.RequestMirror{
+															BackendRef: common_api.BackendRef{
+																TargetRef: common_api.TargetRef{
+																	Kind:   common_api.MeshService,
+																	Labels: &map[string]string{"app": "not-existing-mirror"},
+																},
+																Port: pointer.To(uint32(80)),
+															},
+														},
+													}},
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: common_api.TargetRef{
+															Kind:   common_api.MeshService,
+															Labels: &map[string]string{"app": "backend"},
+														},
+														Weight: pointer.To(uint(100)),
+														Port:   pointer.To(uint32(80)),
+													}},
+												},
+											},
+										},
+									}),
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
 		Entry("gateway", func() outboundsTestCase {
 			gateway := &core_mesh.MeshGatewayResource{
 				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
