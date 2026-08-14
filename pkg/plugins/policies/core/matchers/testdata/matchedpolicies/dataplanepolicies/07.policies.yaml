@@ -1,4 +1,4 @@
-# 07. policies select ignored inbounds by tags
+# 07. policies select ignored inbounds by labels
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-1
@@ -6,7 +6,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web
+      app: web
       version: v1
   rules:
     - default:

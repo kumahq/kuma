@@ -359,27 +359,87 @@ var _ = Describe("gapiServiceToMeshRoute", func() {
 	reconciler := &HTTPRouteReconciler{}
 
 	It("uses the Service port name as the MeshService section name", func() {
-		spec := reconciler.gapiServiceToMeshRoute("other-ns", nil,
-			service(kube_core.ServicePort{Name: "http", Port: 80}), nil)
+		spec, matched := reconciler.gapiServiceToMeshRoute("other-ns", nil,
+			service(kube_core.ServicePort{Name: "http", Port: 80}), nil, nil)
 
+		Expect(matched).To(BeTrue())
 		Expect(sectionNames(spec)).To(Equal([]string{"http"}))
 	})
 
 	It("falls back to the stringified port value for unnamed ports", func() {
-		spec := reconciler.gapiServiceToMeshRoute("other-ns", nil,
-			service(kube_core.ServicePort{Port: 80}), nil)
+		spec, matched := reconciler.gapiServiceToMeshRoute("other-ns", nil,
+			service(kube_core.ServicePort{Port: 80}), nil, nil)
 
+		Expect(matched).To(BeTrue())
 		Expect(sectionNames(spec)).To(Equal([]string{"80"}))
 	})
 
-	It("selects the named port referenced by parentRef", func() {
+	It("selects the port referenced by parentPort", func() {
 		port := gatewayapi_v1.PortNumber(80)
-		spec := reconciler.gapiServiceToMeshRoute("other-ns", nil,
+		spec, matched := reconciler.gapiServiceToMeshRoute("other-ns", nil,
 			service(
 				kube_core.ServicePort{Name: "http", Port: 80},
 				kube_core.ServicePort{Name: "https", Port: 443},
-			), &port)
+			), &port, nil)
 
+		Expect(matched).To(BeTrue())
 		Expect(sectionNames(spec)).To(Equal([]string{"http"}))
+	})
+
+	It("selects the port referenced by parentSectionName", func() {
+		sectionName := gatewayapi_v1.SectionName("https")
+		spec, matched := reconciler.gapiServiceToMeshRoute("other-ns", nil,
+			service(
+				kube_core.ServicePort{Name: "http", Port: 80},
+				kube_core.ServicePort{Name: "https", Port: 443},
+			), nil, &sectionName)
+
+		Expect(matched).To(BeTrue())
+		Expect(sectionNames(spec)).To(Equal([]string{"https"}))
+	})
+
+	It("selects the port when parentPort and parentSectionName agree", func() {
+		port := gatewayapi_v1.PortNumber(443)
+		sectionName := gatewayapi_v1.SectionName("https")
+		spec, matched := reconciler.gapiServiceToMeshRoute("other-ns", nil,
+			service(
+				kube_core.ServicePort{Name: "http", Port: 80},
+				kube_core.ServicePort{Name: "https", Port: 443},
+			), &port, &sectionName)
+
+		Expect(matched).To(BeTrue())
+		Expect(sectionNames(spec)).To(Equal([]string{"https"}))
+	})
+
+	It("reports no match when parentPort and parentSectionName disagree", func() {
+		port := gatewayapi_v1.PortNumber(80)
+		sectionName := gatewayapi_v1.SectionName("https")
+		_, matched := reconciler.gapiServiceToMeshRoute("other-ns", nil,
+			service(
+				kube_core.ServicePort{Name: "http", Port: 80},
+				kube_core.ServicePort{Name: "https", Port: 443},
+			), &port, &sectionName)
+
+		Expect(matched).To(BeFalse())
+	})
+
+	It("reports no match when parentSectionName does not exist", func() {
+		sectionName := gatewayapi_v1.SectionName("grpc")
+		_, matched := reconciler.gapiServiceToMeshRoute("other-ns", nil,
+			service(
+				kube_core.ServicePort{Name: "http", Port: 80},
+				kube_core.ServicePort{Name: "https", Port: 443},
+			), nil, &sectionName)
+
+		Expect(matched).To(BeFalse())
+	})
+
+	It("matches an unnamed port by its numeric fallback sectionName", func() {
+		sectionName := gatewayapi_v1.SectionName("443")
+		spec, matched := reconciler.gapiServiceToMeshRoute("other-ns", nil,
+			service(kube_core.ServicePort{Port: 443}), nil, &sectionName)
+
+		Expect(matched).To(BeTrue())
+		Expect(sectionNames(spec)).To(Equal([]string{"443"}))
 	})
 })

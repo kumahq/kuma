@@ -19,10 +19,8 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/merge"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	core_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -64,114 +62,6 @@ func (lc *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listene
 	return nil
 }
 
-type Configurer struct {
-	Element subsetutils.Element
-	Rules   core_rules.Rules
-	Conf    *api.Conf
-}
-
-func (c *Configurer) ConfigureFilterChain(filterChain *envoy_listener.FilterChain) error {
-	conf := c.getConf(c.Element)
-	if conf == nil || conf.Local == nil {
-		return nil
-	}
-
-	if conf.Local.HTTP != nil {
-		if err := configureHttpListener(filterChain, conf.Local.HTTP); err != nil {
-			return err
-		}
-	}
-	if conf.Local.TCP != nil {
-		if err := configureTcpListener(filterChain, conf.Local.TCP); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error {
-	conf := c.getConf(c.Element)
-	if route == nil || conf == nil || conf.Local == nil {
-		return nil
-	}
-
-	rlConf := RateLimitConfigurationFromPolicy(conf.Local.HTTP)
-	if rlConf == nil {
-		return nil
-	}
-
-	rateLimit, err := envoy_routes_v3.NewRateLimitConfiguration(rlConf)
-	if err != nil {
-		return err
-	}
-
-	for _, vh := range route.VirtualHosts {
-		for _, r := range vh.Routes {
-			addRateLimitToRoute(r, rateLimit)
-		}
-	}
-
-	return nil
-}
-
-func (c *Configurer) ConfigureGatewayRoute(route *envoy_route.RouteConfiguration, filterChains ...*envoy_listener.FilterChain) error {
-	if route == nil {
-		return nil
-	}
-
-	conf := c.getConf(c.Element)
-	var defaultConf *envoy_routes_v3.RateLimitConfiguration
-	if conf != nil && conf.Local != nil && conf.Local.HTTP != nil {
-		defaultConf = RateLimitConfigurationFromPolicy(conf.Local.HTTP)
-	}
-
-	var err error
-	var defaultRateLimit *anypb.Any
-	needsHTTPFilter := defaultConf != nil
-	if defaultConf != nil {
-		defaultRateLimit, err = envoy_routes_v3.NewRateLimitConfiguration(defaultConf)
-	}
-	if err != nil {
-		return err
-	}
-
-	for _, vh := range route.VirtualHosts {
-		for _, r := range vh.Routes {
-			conf := c.getConf(c.Element.WithKeyValue(core_rules.RuleMatchesHashTag, r.Name))
-			var routeConf *envoy_routes_v3.RateLimitConfiguration
-			var rateLimit *anypb.Any
-			if conf != nil && conf.Local != nil && conf.Local.HTTP != nil {
-				routeConf = RateLimitConfigurationFromPolicy(conf.Local.HTTP)
-			}
-			if routeConf != nil {
-				needsHTTPFilter = true
-				rateLimit, err = envoy_routes_v3.NewRateLimitConfiguration(routeConf)
-			}
-			if err != nil {
-				return err
-			}
-			if defaultConf == nil && routeConf == nil {
-				continue
-			}
-			if routeConf == nil {
-				rateLimit = defaultRateLimit
-			}
-			addRateLimitToRoute(r, rateLimit)
-		}
-	}
-
-	if !needsHTTPFilter {
-		return nil
-	}
-	for _, filterChain := range filterChains {
-		if err := ensureHTTPLocalRateLimitFilter(filterChain); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func ConfigureFilterChain(conf api.Conf, filterChain *envoy_listener.FilterChain) error {
 	if conf.Local == nil {
 		return nil
@@ -186,30 +76,6 @@ func ConfigureFilterChain(conf api.Conf, filterChain *envoy_listener.FilterChain
 			return err
 		}
 	}
-	return nil
-}
-
-func ConfigureRoute(conf api.Conf, route *envoy_route.RouteConfiguration) error {
-	if route == nil || conf.Local == nil {
-		return nil
-	}
-
-	rlConf := RateLimitConfigurationFromPolicy(conf.Local.HTTP)
-	if rlConf == nil {
-		return nil
-	}
-
-	rateLimit, err := envoy_routes_v3.NewRateLimitConfiguration(rlConf)
-	if err != nil {
-		return err
-	}
-
-	for _, vh := range route.VirtualHosts {
-		for _, r := range vh.Routes {
-			addRateLimitToRoute(r, rateLimit)
-		}
-	}
-
 	return nil
 }
 
@@ -251,18 +117,6 @@ func ConfigureMatchedRoutesOnFilterChain(filterChain *envoy_listener.FilterChain
 		}
 		return ConfigureMatchedRoutes(hcm.GetRouteConfig(), effectiveRules)
 	}); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
-		return err
-	}
-
-	return nil
-}
-
-func ensureHTTPLocalRateLimitFilter(filterChain *envoy_listener.FilterChain) error {
-	if filterChain == nil {
-		return nil
-	}
-
-	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, ensureHTTPLocalRateLimitFilterOnHCM); err != nil {
 		return err
 	}
 
@@ -447,16 +301,6 @@ func setRateLimitOnRoute(route *envoy_route.Route, rateLimit *anypb.Any) {
 		return
 	}
 	route.TypedPerFilterConfig[httpLocalRateLimitFilterName] = rateLimit
-}
-
-func (c *Configurer) getConf(element subsetutils.Element) *api.Conf {
-	if c.Conf != nil {
-		return c.Conf
-	}
-	if c.Rules == nil {
-		return &api.Conf{}
-	}
-	return core_rules.ComputeConf[api.Conf](c.Rules, element)
 }
 
 type effectiveMatchedRouteRule struct {

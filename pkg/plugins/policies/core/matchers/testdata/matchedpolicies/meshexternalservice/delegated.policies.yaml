@@ -35,7 +35,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: kong_kong_svc_80
+      app: kong
   to:
     - targetRef:
         kind: MeshExternalService

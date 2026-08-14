@@ -2,11 +2,13 @@ package webhooks
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	v1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -16,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
 )
@@ -75,6 +78,12 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
+		if !h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) && coreRes.Descriptor().Scope == core_model.ScopeMesh {
+			if err := h.validateMeshOwnerReference(k8sObj); err.HasViolations() {
+				return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
+			}
+		}
+
 		if err := validator.Validate(coreRes); err != nil {
 			if kumaErr, ok := err.(*validators.ValidationError); ok {
 				// we assume that coreRes.Validate() returns validation errors of the spec
@@ -121,6 +130,23 @@ func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validator
 	if origin, ok := core_model.ResourceOrigin(rm); ok {
 		if err := origin.IsValid(); err != nil {
 			verr.AddViolationAt(labelsPath.Key(mesh_proto.ResourceOriginLabel), err.Error())
+		}
+	}
+	return verr
+}
+
+func (h *validatingHandler) validateMeshOwnerReference(obj k8s_model.KubernetesObject) validators.ValidationError {
+	var verr validators.ValidationError
+	path := validators.RootedAt("metadata").Field("ownerReferences")
+	for i, ref := range obj.GetObjectMeta().GetOwnerReferences() {
+		gv, err := schema.ParseGroupVersion(ref.APIVersion)
+		if err != nil || gv.Group != mesh_k8s.GroupVersion.Group || ref.Kind != string(core_mesh.MeshType) {
+			continue
+		}
+		if ref.Name != obj.GetMesh() {
+			verr.AddViolationAt(path.Index(i).Field("name"), fmt.Sprintf(
+				"must be the same as the mesh of the resource %q, got %q. A resource cannot be moved between meshes, delete it and apply it again in the new mesh", obj.GetMesh(), ref.Name,
+			))
 		}
 	}
 	return verr

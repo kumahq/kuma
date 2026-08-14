@@ -27,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	k8s_util "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 // HTTPRouteReconciler reconciles a GatewayAPI object into Kuma-native objects
@@ -134,7 +135,18 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				if !kube_apierrs.IsNotFound(err) {
 					return nil, nil, err
 				}
-				continue // TODO what does the spec say? does NoMatchingParent apply?
+
+				parentConditions = append(parentConditions,
+					kube_meta.Condition{
+						Type:    string(gatewayapi.RouteConditionAccepted),
+						Status:  kube_meta.ConditionFalse,
+						Reason:  string(gatewayapi_v1.RouteReasonNoMatchingParent),
+						Message: fmt.Sprintf("Service %q does not exist", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
+					},
+				)
+
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
+				continue
 			}
 
 			routeSubName := fmt.Sprintf(
@@ -145,7 +157,22 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				parent.GetNamespace(),
 			)
 
-			routes[routeSubName] = r.gapiServiceToMeshRoute(route.Namespace, rules, &parent, ref.Port)
+			meshRoute, ok := r.gapiServiceToMeshRoute(route.Namespace, rules, &parent, ref.Port, ref.SectionName)
+			if !ok {
+				parentConditions = append(parentConditions,
+					kube_meta.Condition{
+						Type:    string(gatewayapi.RouteConditionAccepted),
+						Status:  kube_meta.ConditionFalse,
+						Reason:  string(gatewayapi_v1.RouteReasonNoMatchingParent),
+						Message: fmt.Sprintf("Service %q has no port matching the parentRef", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
+					},
+				)
+
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
+				continue
+			}
+
+			storeMeshHTTPRoute(routes, routeSubName, meshRoute)
 		case attachment.MeshService:
 			namespace := route.Namespace
 			if ref.Namespace != nil {
@@ -197,13 +224,48 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
-			routes[routeSubName] = meshRoute
+			storeMeshHTTPRoute(routes, routeSubName, meshRoute)
 		}
 
 		conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
 	}
 
 	return routes, conditions, nil
+}
+
+func storeMeshHTTPRoute(routes map[string]core_model.ResourceSpec, name string, spec core_model.ResourceSpec) {
+	route, ok := spec.(*meshhttproute_api.MeshHTTPRoute)
+	if !ok {
+		routes[name] = spec
+		return
+	}
+
+	existing, ok := routes[name]
+	if !ok {
+		routes[name] = spec
+		return
+	}
+
+	existingRoute, ok := existing.(*meshhttproute_api.MeshHTTPRoute)
+	if !ok {
+		routes[name] = spec
+		return
+	}
+
+	merged := pointer.Deref(existingRoute.To)
+	for _, candidate := range pointer.Deref(route.To) {
+		duplicate := false
+		for _, existingTo := range merged {
+			if reflect.DeepEqual(existingTo, candidate) {
+				duplicate = true
+				break
+			}
+		}
+		if !duplicate {
+			merged = append(merged, candidate)
+		}
+	}
+	existingRoute.To = pointer.To(merged)
 }
 
 // routesForService returns a function that calculates which HTTPRoutes might
@@ -277,6 +339,21 @@ func isMeshServiceRef(group *gatewayapi.Group, kind *gatewayapi.Kind) bool {
 	return group != nil && kind != nil && string(*group) == meshservice_k8s.GroupVersion.Group && string(*kind) == "MeshService"
 }
 
+// isServiceParentRef reports whether the given group/kind pair references a
+// Service that can be used as a route parent.
+func isServiceParentRef(group *gatewayapi.Group, kind *gatewayapi.Kind) bool {
+	if group == nil || kind == nil || string(*kind) != "Service" {
+		return false
+	}
+	return string(*group) == kube_core.GroupName || string(*group) == gatewayapi.GroupName
+}
+
+// isServiceBackendRef reports whether the given group/kind pair references a
+// core Kubernetes Service backend.
+func isServiceBackendRef(group *gatewayapi.Group, kind *gatewayapi.Kind) bool {
+	return group != nil && kind != nil && string(*group) == kube_core.SchemeGroupVersion.Group && string(*kind) == "Service"
+}
+
 // meshServicesOfRoute returns the namespaced names of the MeshServices
 // referenced by the given HTTPRoute's parentRefs, backendRefs and
 // request-mirror backendRefs, defaulting an omitted namespace to the route's.
@@ -328,43 +405,62 @@ func meshServicesOfRoute(obj kube_client.Object) []string {
 	return names
 }
 
+// servicesOfRoute returns the namespaced names of the Services referenced by
+// the given HTTPRoute's parentRefs, backendRefs and request-mirror backendRefs,
+// defaulting an omitted namespace to the route's.
+func servicesOfRoute(obj kube_client.Object) []string {
+	route := obj.(*gatewayapi.HTTPRoute)
+
+	var names []string
+
+	for _, parentRef := range route.Spec.ParentRefs {
+		if !isServiceParentRef(parentRef.Group, parentRef.Kind) {
+			continue
+		}
+		namespace := route.Namespace
+		if parentRef.Namespace != nil {
+			namespace = string(*parentRef.Namespace)
+		}
+		names = append(
+			names,
+			kube_types.NamespacedName{Namespace: namespace, Name: string(parentRef.Name)}.String(),
+		)
+	}
+
+	for _, rule := range route.Spec.Rules {
+		var allBackendRefs []gatewayapi.BackendObjectReference
+		for _, backendRef := range rule.BackendRefs {
+			allBackendRefs = append(allBackendRefs, backendRef.BackendObjectReference)
+		}
+		for _, filter := range rule.Filters {
+			if filter.Type == gatewayapi_v1.HTTPRouteFilterRequestMirror {
+				allBackendRefs = append(allBackendRefs, filter.RequestMirror.BackendRef)
+			}
+		}
+		for _, backendRef := range allBackendRefs {
+			if !isServiceBackendRef(backendRef.Group, backendRef.Kind) {
+				continue
+			}
+
+			namespace := route.Namespace
+			if backendRef.Namespace != nil {
+				namespace = string(*backendRef.Namespace)
+			}
+			names = append(
+				names,
+				kube_types.NamespacedName{Namespace: namespace, Name: string(backendRef.Name)}.String(),
+			)
+		}
+	}
+
+	return names
+}
+
 func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &gatewayapi.HTTPRoute{}, meshServicesOfRouteField, meshServicesOfRoute); err != nil {
 		return err
 	}
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &gatewayapi.HTTPRoute{}, servicesOfRouteField, func(obj kube_client.Object) []string {
-		route := obj.(*gatewayapi.HTTPRoute)
-
-		var names []string
-
-		for _, rule := range route.Spec.Rules {
-			var allBackendRefs []gatewayapi.BackendObjectReference
-			for _, backendRef := range rule.BackendRefs {
-				allBackendRefs = append(allBackendRefs, backendRef.BackendObjectReference)
-			}
-			for _, filter := range rule.Filters {
-				if filter.Type == gatewayapi_v1.HTTPRouteFilterRequestMirror {
-					allBackendRefs = append(allBackendRefs, filter.RequestMirror.BackendRef)
-				}
-			}
-			for _, backendRef := range allBackendRefs {
-				if string(*backendRef.Group) != kube_core.SchemeGroupVersion.Group || *backendRef.Kind != "Service" {
-					continue
-				}
-
-				namespace := route.Namespace
-				if backendRef.Namespace != nil {
-					namespace = string(*backendRef.Namespace)
-				}
-				names = append(
-					names,
-					kube_types.NamespacedName{Namespace: namespace, Name: string(backendRef.Name)}.String(),
-				)
-			}
-		}
-
-		return names
-	}); err != nil {
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &gatewayapi.HTTPRoute{}, servicesOfRouteField, servicesOfRoute); err != nil {
 		return err
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).

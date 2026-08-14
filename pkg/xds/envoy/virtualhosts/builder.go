@@ -15,18 +15,6 @@ type VirtualHostConfigurer interface {
 	Configure(virtualHost *envoy_config_route_v3.VirtualHost) error
 }
 
-// VirtualHostConfigureFunc adapts a configuration function to the
-// VirtualHostConfigurer interface.
-type VirtualHostConfigureFunc func(vh *envoy_config_route_v3.VirtualHost) error
-
-func (f VirtualHostConfigureFunc) Configure(vh *envoy_config_route_v3.VirtualHost) error {
-	if f != nil {
-		return f(vh)
-	}
-
-	return nil
-}
-
 // VirtualHostMustConfigureFunc adapts a configuration function that
 // never fails to the VirtualHostConfigurer interface.
 type VirtualHostMustConfigureFunc func(vh *envoy_config_route_v3.VirtualHost)

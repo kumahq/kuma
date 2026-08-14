@@ -1,9 +1,7 @@
 package clusters
 
 import (
-	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -102,23 +100,9 @@ func UpstreamBindConfig(address string, port uint32) ClusterBuilderOpt {
 	})
 }
 
-func ConnectionBufferLimit(bytes uint32) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(v3.ClusterMustConfigureFunc(func(c *envoy_cluster.Cluster) {
-			c.PerConnectionBufferLimitBytes = wrapperspb.UInt32(bytes)
-		}))
-	})
-}
-
 func Http2() ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.Http2Configurer{})
-	})
-}
-
-func Http2FromEdge() ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.Http2Configurer{EdgeProxyWindowSizes: true})
 	})
 }
 
