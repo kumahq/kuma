@@ -485,45 +485,6 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.listeners
                   message: listeners cannot be defined for delegated gateways`,
 		}),
-		Entry("networking: builtin gateway is rejected", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    type: BUILTIN
-                    tags:
-                      kuma.io/service: kong`,
-			expected: `
-                violations:
-                - field: networking.gateway.type
-                  message: BUILTIN gateways are no longer supported, use DELEGATED instead`,
-		}),
-		Entry("networking: builtin gateway with inbounds and listeners is still rejected at type", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    type: BUILTIN
-                    tags:
-                      kuma.io/service: kong
-                  inbound:
-                    - port: 3333
-                  listeners:
-                    - type: ZoneEgress
-                      address: 192.168.0.1
-                      port: 10002
-                      name: ze-port`,
-			expected: `
-                violations:
-                - field: networking.gateway.type
-                  message: BUILTIN gateways are no longer supported, use DELEGATED instead`,
-		}),
 		Entry("networking.inbound: port of the range", testCase{
 			dataplane: `
                 type: Dataplane
@@ -1206,6 +1167,28 @@ var _ = Describe("Dataplane", func() {
 			// then - empty tags = new setup, no service tag required
 			err = dataplane.Validate()
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should not accept BUILTIN as a gateway type", func() {
+			// given a Dataplane written against the removed built-in gateway
+			dataplane := core_mesh.NewDataplaneResource()
+
+			// when
+			err := util_proto.FromYAML([]byte(`
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  gateway:
+                    type: BUILTIN
+                    tags:
+                      kuma.io/service: kong
+`), dataplane.Spec)
+
+			// then the value is not a known gateway type anymore
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("BUILTIN"))
 		})
 	})
 })

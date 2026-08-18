@@ -4089,7 +4089,6 @@ components:
         - total
         - internal
         - external
-        - gatewayBuiltin
         - gatewayDelegated
       properties:
         internal:
@@ -4105,10 +4104,6 @@ components:
             total:
               type: integer
               example: 5
-        gatewayBuiltin:
-          description: Builtin Gateway services statistics
-          allOf:
-            - $ref: '#/components/schemas/FullStatus'
         gatewayDelegated:
           description: Delegated Gateway services statistics
           allOf:
@@ -4140,15 +4135,10 @@ components:
       description: Dataplanes statistics
       required:
         - standard
-        - gatewayBuiltin
         - gatewayDelegated
       properties:
         standard:
           description: Standard dataplane proxy statistics
-          allOf:
-            - $ref: '#/components/schemas/FullStatus'
-        gatewayBuiltin:
-          description: Builtin Gateway dataplane proxy statistics
           allOf:
             - $ref: '#/components/schemas/FullStatus'
         gatewayDelegated:
@@ -5055,25 +5045,17 @@ components:
                   description: >-
                     Type of gateway this data plane proxy manages.
 
-                    There are two types: `DELEGATED` and `BUILTIN`. Defaults to
 
-                    `DELEGATED`.
+                    The only supported type is `DELEGATED`: an independently
+                    deployed proxy
 
+                    (e.g., Kong, Contour, etc) that receives inbound traffic
+                    that is not
 
-                    A `DELEGATED` gateway is an independently deployed proxy
-                    (e.g., Kong,
+                    proxied by Kuma, and it sends outbound traffic into the data
+                    plane
 
-                    Contour, etc) that receives inbound traffic that is not
-                    proxied by
-
-                    Kuma, and it sends outbound traffic into the data plane
                     proxy.
-
-
-                    The `BUILTIN` gateway type causes the data plane proxy
-                    itself to be
-
-                    configured as a gateway.
 
 
                     See https://kuma.io/docs/latest/explore/gateway/ for more
@@ -12944,26 +12926,17 @@ components:
                       description: >-
                         Type of gateway this data plane proxy manages.
 
-                        There are two types: `DELEGATED` and `BUILTIN`. Defaults
-                        to
 
-                        `DELEGATED`.
+                        The only supported type is `DELEGATED`: an independently
+                        deployed proxy
 
+                        (e.g., Kong, Contour, etc) that receives inbound traffic
+                        that is not
 
-                        A `DELEGATED` gateway is an independently deployed proxy
-                        (e.g., Kong,
+                        proxied by Kuma, and it sends outbound traffic into the
+                        data plane
 
-                        Contour, etc) that receives inbound traffic that is not
-                        proxied by
-
-                        Kuma, and it sends outbound traffic into the data plane
                         proxy.
-
-
-                        The `BUILTIN` gateway type causes the data plane proxy
-                        itself to be
-
-                        configured as a gateway.
 
 
                         See https://kuma.io/docs/latest/explore/gateway/ for
@@ -17080,11 +17053,6 @@ components:
             online: 2
             offline: 1
             partiallyDegraded: 1
-          gatewayBuiltin:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
           internalByStatus:
             total: 4
             online: 2
@@ -17102,11 +17070,6 @@ components:
             total: 1
         dataplanes:
           standard:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
-          gatewayBuiltin:
             total: 4
             online: 2
             offline: 1

@@ -18,7 +18,6 @@ const (
 
 	// KumaGatewayAnnotation allows to mark Gateway pod,
 	// inbound listeners won't be generated in that case.
-	// It can be used to mark a pod as providing a builtin gateway.
 	KumaGatewayAnnotation = "kuma.io/gateway"
 
 	// KumaTagsAnnotation holds a JSON representation of desired tags
@@ -144,12 +143,6 @@ const (
 const (
 	IngressServiceUpstream      = "ingress.kubernetes.io/service-upstream"
 	NginxIngressServiceUpstream = "nginx.ingress.kubernetes.io/service-upstream"
-)
-
-const (
-	// Used with the KumaGatewayAnnotation to mark a pod as providing a builtin
-	// gateway.
-	AnnotationBuiltin = "builtin"
 )
 
 const (

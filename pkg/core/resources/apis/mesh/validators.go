@@ -45,9 +45,8 @@ type ValidateTagsOpts struct {
 }
 
 type ValidateTargetRefOpts struct {
-	SupportedKinds             []common_api.TargetRefKind
-	SupportedKindsError        string
-	GatewayListenerTagsAllowed bool
+	SupportedKinds      []common_api.TargetRefKind
+	SupportedKindsError string
 	// AllowedInvalidNames is kept for compatibility with callers that still pass
 	// legacy validation options while common TargetRef uses labels-only real
 	// resource selectors.

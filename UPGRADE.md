@@ -8,6 +8,35 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### The `BUILTIN` gateway type and its statistics are removed from the API
+
+The built-in gateway implementation was removed over the previous releases, and the Dataplane validator has been rejecting `networking.gateway.type: BUILTIN` since then. The remaining API surface is now gone too:
+
+- `Dataplane.networking.gateway.type` no longer has a `BUILTIN` value. `DELEGATED` is the only gateway type. A `Dataplane` carrying `type: BUILTIN` is now rejected while it is parsed, as an unknown enum value, instead of producing the previous `BUILTIN gateways are no longer supported, use DELEGATED instead` validation error.
+- `MeshInsight.dataplanesByType.gatewayBuiltin` and the `gateway_builtin` `ServiceInsight` service type are removed. `dataplanesByType.gateway` now reports the delegated gateway totals only.
+- `GET /meshes/{mesh}/dataplanes+insights?gateway=builtin` is no longer a valid filter. Use `gateway=delegated`, or `gateway=true` for any gateway.
+- `GET /meshes/{mesh}/service-insights?type=gateway_builtin` is no longer a valid filter and returns `400`. Use `type=gateway_delegated`.
+- The `gatewayBuiltin` object disappears from the `/global-insight` response, in both `dataplanes` and `services`.
+
+All three protobuf ordinals are reserved, so they can never be reused for something else, and a Zone control plane on an older version still syncs to a Global control plane on this one.
+
+**Action required**
+
+Delete every `Dataplane` with `networking.gateway.type: BUILTIN` before upgrading. `2.14.x` still accepts them, and after the upgrade the control plane fails to parse them as an unknown enum value, which breaks listing the `Dataplane`s of that mesh. Find them with `kumactl get dataplanes -o yaml` per mesh, or `kubectl get dataplanes -A -o yaml`, and grep for `BUILTIN`.
+
+Also drop `type: BUILTIN` from any manifest you still keep under source control, and stop consuming the `gatewayBuiltin` fields and the `gateway=builtin` / `type=gateway_builtin` filters if you query the API directly.
+
+### Control plane RBAC is narrowed on Kubernetes
+
+Two `ClusterRole` rules that existed only for the built-in gateway are reduced to what the control plane actually uses:
+
+- `apps`: `deployments` is dropped entirely and `replicasets` keeps only `get`, `list` and `watch`. The control plane reads ReplicaSets to resolve the workload behind a serviceless Pod and never writes either resource.
+- `core`: `services` loses `create` and `delete`. The control plane only annotates existing Services with `ingress.kubernetes.io/service-upstream`.
+
+**Action required**
+
+If you manage the control plane RBAC yourself, apply the same narrowing.
+
 ### Names of `Mesh`, `Zone`, `MeshService`, `MeshExternalService` and `MeshMultiZoneService` must be RFC 1035 labels
 
 Names of these resources are rendered into DNS hostnames by `HostnameGenerator`, so a name that is not a valid [RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html) label produces an invalid hostname. Since 2.10.x such names were accepted with a deprecation warning, now they are rejected:
@@ -1770,6 +1799,24 @@ On Kubernetes, a mesh-scoped resource can no longer end up owned by one `Mesh` w
 **Action required**
 
 If a resource in your cluster already has a `Mesh` ownerReference that disagrees with its mesh, it must be deleted and re-applied in the correct mesh — the webhook rejects any further edit to it until then.
+
+### The control plane and hook containers drop all Linux capabilities
+
+`controlPlane.containerSecurityContext` and `hooks.containerSecurityContext` now default to `allowPrivilegeEscalation: false` and `capabilities.drop: [ALL]`, alongside the `readOnlyRootFilesystem: true` they already carried.
+
+Neither the control plane nor the `kubectl` and `kumactl` hook jobs need a capability. Every port the control plane binds is above 1024, so it never needed `NET_BIND_SERVICE`, and nothing in the codebase opens a raw or packet socket. The injected sidecar and the zoneproxy have shipped with both settings for some time; this brings the control plane in line with them. The transparent proxy init container is unaffected and keeps the `NET_ADMIN` and `NET_RAW` it adds for `iptables`, as does the CNI container, which still runs as root.
+
+**Action required**
+
+Helm merges these values key by key, so overriding one key of `containerSecurityContext` no longer replaces the whole block: an override that sets only `readOnlyRootFilesystem` now also inherits the two new keys. If your control plane needs a capability, or you run a `SecurityContextConstraint` or admission policy that grants one, set it back explicitly:
+
+```yaml
+controlPlane:
+  containerSecurityContext:
+    allowPrivilegeEscalation: true
+    capabilities:
+      drop: []
+```
 
 ## Upgrade to `2.13.7`
 

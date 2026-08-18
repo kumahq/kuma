@@ -27,8 +27,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
 
-// getMatchedPolicies returns information about either sidecar dataplanes or
-// builtin gateway dataplanes as well as the proxy and a potential error.
+// getMatchedPolicies returns information about sidecar dataplanes as well as
+// the proxy and a potential error.
 func getMatchedPolicies(
 	ctx context.Context, cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey,
 ) (
@@ -110,7 +110,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 	}
 }
 
-// inspectMeshServiceDataplanes provides standardized /_dataplanes endpoint following MeshGateway/MeshGatewayRoute pattern.
+// inspectMeshServiceDataplanes provides the standardized /_dataplanes endpoint.
 // Uses exact tag matching via meshservice.MatchesDataplane() to fix multizone aggregation issues.
 func inspectMeshServiceDataplanes(
 	rm manager.ResourceManager,

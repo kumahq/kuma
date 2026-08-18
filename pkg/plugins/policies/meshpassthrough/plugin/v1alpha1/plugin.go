@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
-	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -32,10 +31,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshPassthroughType]
 	if !ok {
-		return nil
-	}
-	if proxy.Dataplane.Spec.GetNetworking().GetGateway().GetType() == v1alpha1.Dataplane_Networking_Gateway_BUILTIN {
-		policies.Warnings = append(policies.Warnings, "policy doesn't support builtin gateway")
 		return nil
 	}
 	if !proxy.GetTransparentProxy().Enabled() || proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {

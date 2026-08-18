@@ -78,12 +78,6 @@ func (gis *defaultGlobalInsightService) aggregateDataplanes(
 		globalInsight.Dataplanes.Standard.PartiallyDegraded += int(standard.GetPartiallyDegraded())
 		globalInsight.Dataplanes.Standard.Total += int(standard.GetTotal())
 
-		gatewayBuiltin := dataplanesByType.GetGatewayBuiltin()
-		globalInsight.Dataplanes.GatewayBuiltin.Online += int(gatewayBuiltin.GetOnline())
-		globalInsight.Dataplanes.GatewayBuiltin.Offline += int(gatewayBuiltin.GetOffline())
-		globalInsight.Dataplanes.GatewayBuiltin.PartiallyDegraded += int(gatewayBuiltin.GetPartiallyDegraded())
-		globalInsight.Dataplanes.GatewayBuiltin.Total += int(gatewayBuiltin.GetTotal())
-
 		gatewayDelegated := dataplanesByType.GetGatewayDelegated()
 		globalInsight.Dataplanes.GatewayDelegated.Online += int(gatewayDelegated.GetOnline())
 		globalInsight.Dataplanes.GatewayDelegated.Offline += int(gatewayDelegated.GetOffline())
@@ -194,8 +188,8 @@ type gatewayServiceStat struct {
 	total  int
 }
 
-// aggregateGatewayServices counts builtin and delegated gateway services from
-// gateway Dataplanes grouped by the service they belong to. Gateway Dataplanes are
+// aggregateGatewayServices counts delegated gateway services from gateway
+// Dataplanes grouped by the service they belong to. Gateway Dataplanes are
 // never turned into a MeshService, so they are the only source for these stats.
 func (gis *defaultGlobalInsightService) aggregateGatewayServices(
 	ctx context.Context,
@@ -222,24 +216,18 @@ func (gis *defaultGlobalInsightService) aggregateGatewayServices(
 		return err
 	}
 
-	builtin := map[string]*gatewayServiceStat{}
 	delegated := map[string]*gatewayServiceStat{}
 
 	for _, overview := range mesh.NewDataplaneOverviews(*dataplanes, *dataplaneInsights).Items {
-		gateway := overview.Spec.GetDataplane().GetNetworking().GetGateway()
-		if gateway == nil {
+		if overview.Spec.GetDataplane().GetNetworking().GetGateway() == nil {
 			continue
-		}
-		services := delegated
-		if gateway.GetType() == mesh_proto.Dataplane_Networking_Gateway_BUILTIN {
-			services = builtin
 		}
 
 		key := gatewayServiceKey(overview)
-		stat, ok := services[key]
+		stat, ok := delegated[key]
 		if !ok {
 			stat = &gatewayServiceStat{}
-			services[key] = stat
+			delegated[key] = stat
 		}
 		stat.total++
 		if status, _ := overview.Status(); status == mesh.Online {
@@ -247,9 +235,6 @@ func (gis *defaultGlobalInsightService) aggregateGatewayServices(
 		}
 	}
 
-	for _, stat := range builtin {
-		updateServiceStatus(stat.online, stat.total, &globalInsight.Services.GatewayBuiltin)
-	}
 	for _, stat := range delegated {
 		updateServiceStatus(stat.online, stat.total, &globalInsight.Services.GatewayDelegated)
 	}

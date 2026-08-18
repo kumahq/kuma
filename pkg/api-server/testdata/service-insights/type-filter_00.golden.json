@@ -18,7 +18,7 @@
   {
    "type": "ServiceInsight",
    "mesh": "mesh-1",
-   "name": "gw",
+   "name": "kong",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
    "status": "partially_degraded",
@@ -27,7 +27,7 @@
     "online": 19,
     "offline": 1
    },
-   "serviceType": "gateway_builtin"
+   "serviceType": "gateway_delegated"
   }
  ],
  "next": null

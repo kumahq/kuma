@@ -63,9 +63,6 @@ func (p plugin) configureDPP(
 	rs *core_xds.ResourceSet,
 	meshCtx xds_context.MeshContext,
 ) error {
-	if proxy.Dataplane.Spec.IsBuiltinGateway() {
-		return nil
-	}
 	affinityLabels := proxy.Dataplane.GetMeta().GetLabels()
 
 	rctx := rules_outbound.RootContext[api.Conf](meshCtx.Resource, toRules.ResourceRules)
