@@ -1800,6 +1800,24 @@ On Kubernetes, a mesh-scoped resource can no longer end up owned by one `Mesh` w
 
 If a resource in your cluster already has a `Mesh` ownerReference that disagrees with its mesh, it must be deleted and re-applied in the correct mesh — the webhook rejects any further edit to it until then.
 
+### The control plane and hook containers drop all Linux capabilities
+
+`controlPlane.containerSecurityContext` and `hooks.containerSecurityContext` now default to `allowPrivilegeEscalation: false` and `capabilities.drop: [ALL]`, alongside the `readOnlyRootFilesystem: true` they already carried.
+
+Neither the control plane nor the `kubectl` and `kumactl` hook jobs need a capability. Every port the control plane binds is above 1024, so it never needed `NET_BIND_SERVICE`, and nothing in the codebase opens a raw or packet socket. The injected sidecar and the zoneproxy have shipped with both settings for some time; this brings the control plane in line with them. The transparent proxy init container is unaffected and keeps the `NET_ADMIN` and `NET_RAW` it adds for `iptables`, as does the CNI container, which still runs as root.
+
+**Action required**
+
+Helm merges these values key by key, so overriding one key of `containerSecurityContext` no longer replaces the whole block: an override that sets only `readOnlyRootFilesystem` now also inherits the two new keys. If your control plane needs a capability, or you run a `SecurityContextConstraint` or admission policy that grants one, set it back explicitly:
+
+```yaml
+controlPlane:
+  containerSecurityContext:
+    allowPrivilegeEscalation: true
+    capabilities:
+      drop: []
+```
+
 ## Upgrade to `2.13.7`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.

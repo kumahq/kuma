@@ -347,6 +347,10 @@ controlPlane:
   # -- Security context at the container level for control plane.
   containerSecurityContext:
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
 
   # -- DNS configuration for the control-plane pod.
   # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
@@ -688,6 +692,10 @@ hooks:
   # -- Security context at the container level for crd/webhook/ns
   containerSecurityContext:
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
 
 transparentProxy:
   configMap:
