@@ -35,8 +35,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_DEBUG: ${{ runner.debug == '1' }}
+          INPUT_PR: ${{ inputs.PR }}
         run: |
           [[ "${GH_DEBUG}" == "true" ]] && set -x
+
+          if [[ ! "$INPUT_PR" =~ ^[0-9]+$ ]]; then
+            echo "PR input must be a numeric pull request number"
+            exit 1
+          fi
 
           function get_change_log() {
             awk '
@@ -60,8 +66,8 @@ jobs:
             ' <<< "$1"
           }
           
-          PR_INFO_JSON=$(gh pr view ${{ inputs.PR }} --json 'number,title,mergedAt,state,mergeCommit,baseRefName' || echo '{}')
-          PR_INFO_BODY=$(gh pr view ${{ inputs.PR }} --json 'body' -q '.body' || echo '')
+          PR_INFO_JSON=$(gh pr view "$INPUT_PR" --json 'number,title,mergedAt,state,mergeCommit,baseRefName' || echo '{}')
+          PR_INFO_BODY=$(gh pr view "$INPUT_PR" --json 'body' -q '.body' || echo '')
           
           TITLE=$(echo -n "$PR_INFO_JSON" | jq -r '.title //empty')
           CHANGE_LOG=$(get_change_log "$PR_INFO_BODY")
@@ -79,9 +85,12 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
       - name: ensure-pr-merged
+        env:
+          PR_NUMBER: ${{ inputs.PR }}
+          PR_STATE: ${{ steps.get-pr-info.outputs.pr_state }}
         run: |
-          if [[ "${{ steps.get-pr-info.outputs.pr_state }}" != "MERGED" ]]; then
-            echo "PR #${{ inputs.PR }} is not merged, current state: '$PR_STATE'"
+          if [[ "$PR_STATE" != "MERGED" ]]; then
+            echo "PR #$PR_NUMBER is not merged, current state: '$PR_STATE'"
             exit 1
           fi
   active-branches:
