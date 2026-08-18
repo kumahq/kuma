@@ -49,7 +49,7 @@ func NewEnvoyAdminProcessor(
 // uncompressed message, which is what proto.Size reports.
 func tooLargeError(rpcName string, size int, maxMsgSize int) string {
 	return fmt.Sprintf(
-		"the original %s response is %d bytes which exceeds the maximum KDS message size of %d bytes, increase maxMsgSize on both the zone CP and the global CP",
+		"the original %s response is %d bytes which exceeds the maximum KDS message size of %d bytes. A response this large usually means the proxy is configured for every service in the mesh, so prefer trimming its config with reachableBackends. Raising maxMsgSize on both the zone CP and the global CP also works, at the cost of more memory on both ends",
 		rpcName, size, maxMsgSize,
 	)
 }
