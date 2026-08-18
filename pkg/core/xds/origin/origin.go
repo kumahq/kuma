@@ -12,7 +12,7 @@ package origin
 // How it is set and used:
 //   - Generators and features set the origin when constructing resources. Common constants are defined in
 //     pkg/xds/generator/origin (e.g. "inbound", "outbound", "dns", "egress", "ingress", "transparent",
-//     "prometheus", "tracing", "probe", "proxy-template-modifications").
+//     "prometheus", "probe", "proxy-template-modifications").
 //   - Hooks, policy plugins, and reconcilers filter or select resources by origin. For example, see
 //     pkg/xds/hooks/resource_set.go.
 //

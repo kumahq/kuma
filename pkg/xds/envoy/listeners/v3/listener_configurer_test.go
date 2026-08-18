@@ -37,44 +37,5 @@ var _ = Describe("Miscellaneous Listener configurers", func() {
 			opt:      AddListenerConfigurer(v3.ListenerConfigureFunc(nil)),
 			expected: "name: test_listener",
 		}),
-		Entry("noop 2", testCase{
-			opt:      AddListenerConfigurer(v3.ListenerMustConfigureFunc(nil)),
-			expected: "name: test_listener",
-		}),
-		Entry("connection buffer limit", testCase{
-			opt: ConnectionBufferLimit(123),
-			expected: `
-name: test_listener
-perConnectionBufferLimitBytes: 123
-`,
-		}),
-		Entry("enable reuse port enabled", testCase{
-			opt: EnableReusePort(true),
-			expected: `
-enableReusePort: true
-name: test_listener
-`,
-		}),
-		Entry("enable reuse port disabled", testCase{
-			opt: EnableReusePort(false),
-			expected: `
-enableReusePort: false
-name: test_listener
-`,
-		}),
-		Entry("enable freebind", testCase{
-			opt: EnableFreebind(true),
-			expected: `
-freebind: true
-name: test_listener
-`,
-		}),
-		Entry("disable freebind", testCase{
-			opt: EnableFreebind(false),
-			expected: `
-freebind: false
-name: test_listener
-`,
-		}),
 	)
 })

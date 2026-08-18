@@ -129,10 +129,6 @@ var _ = Describe("MeshHealthCheck", func() {
 			context := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(xds_context.NewResources()).
-				AddServiceProtocol(httpServiceTag, core_meta.ProtocolHTTP).
-				AddServiceProtocol(tcpServiceTag, core_meta.ProtocolTCP).
-				AddServiceProtocol(grpcServiceTag, core_meta.ProtocolGRPC).
-				AddServiceProtocol(splitHttpServiceTag, core_meta.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).

@@ -12,6 +12,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type MeshServiceBuilder struct {
@@ -101,6 +102,14 @@ func (m *MeshServiceBuilder) AddIntPortWithName(port, target int32, protocol cor
 		AppProtocol: protocol,
 		Name:        &name,
 	})
+	return m
+}
+
+func (m *MeshServiceBuilder) AddSpiffeIDIdentity(identity string) *MeshServiceBuilder {
+	m.res.Spec.Identities = pointer.To(append(pointer.Deref(m.res.Spec.Identities), v1alpha1.MeshServiceIdentity{
+		Type:  v1alpha1.MeshServiceIdentitySpiffeIDType,
+		Value: identity,
+	}))
 	return m
 }
 

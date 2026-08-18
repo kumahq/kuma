@@ -6,7 +6,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
@@ -21,11 +20,6 @@ var logger = core.Log.WithName("xds").WithName("context")
 type Context struct {
 	ControlPlane *ControlPlaneContext
 	Mesh         MeshContext
-}
-
-type ConnectionInfo struct {
-	// Authority defines the URL that was used by the data plane to connect to the control plane
-	Authority string
 }
 
 // ControlPlaneContext contains shared global data and components that are required for generating XDS
@@ -77,17 +71,16 @@ type MeshContext struct {
 	Hash string
 	// PolicyMatchingHash hashes matching-relevant resources (policies, gateways, external services).
 	// Excludes Dataplane roster; stays stable across DP-registration waves.
-	PolicyMatchingHash  string
-	Resource            *core_mesh.MeshResource
-	BaseMeshContext     *BaseMeshContext
-	Resources           Resources
-	DataplanesByName    map[string]*core_mesh.DataplaneResource
-	EndpointMap         xds.EndpointMap
-	VIPDomains          []xds_types.VIPDomains
-	VIPOutbounds        xds_types.Outbounds
-	ServicesInformation map[string]*ServiceInformation
-	DataSourceLoader    datasource.Loader
-	CAsByTrustDomain    map[string][]PEMBytes
+	PolicyMatchingHash string
+	Resource           *core_mesh.MeshResource
+	BaseMeshContext    *BaseMeshContext
+	Resources          Resources
+	DataplanesByName   map[string]*core_mesh.DataplaneResource
+	EndpointMap        xds.EndpointMap
+	VIPDomains         []xds_types.VIPDomains
+	VIPOutbounds       xds_types.Outbounds
+	DataSourceLoader   datasource.Loader
+	CAsByTrustDomain   map[string][]PEMBytes
 	// ZoneEgresses holds one entry per zone egress instance, resolved from Dataplanes
 	// that expose a ZoneEgress listener. Each entry carries the address, port and, when
 	// WorkloadIdentity is enabled, the SPIFFE ID (SAN) that clients must verify when
@@ -101,13 +94,6 @@ type MeshContext struct {
 	DataplaneZoneEgressEndpointMap xds.EgressEndpointMap
 }
 
-type ServiceInformation struct {
-	Protocol          core_meta.Protocol
-	IsExternalService bool
-}
-
-type ReachableBackends map[kri.Identifier]bool
-
 // ResolveResourceIdentifier resolves one resource identifier based on the labels.
 // If multiple resources match the labels, the oldest one is returned.
 // The reason is that picking the oldest one is the less likely to break existing traffic after introducing new resources.
@@ -117,20 +103,6 @@ func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType
 
 func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destination {
 	return mc.BaseMeshContext.DestinationIndex.destinationByIdentifier[kri.NoSectionName(id)]
-}
-
-func (mc *MeshContext) GetServiceProtocol(serviceName string) core_meta.Protocol {
-	if info, found := mc.ServicesInformation[serviceName]; found {
-		return info.Protocol
-	}
-	return core_meta.ProtocolUnknown
-}
-
-func (mc *MeshContext) IsExternalService(serviceName string) bool {
-	if info, found := mc.ServicesInformation[serviceName]; found {
-		return info.IsExternalService
-	}
-	return false
 }
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {
@@ -153,23 +125,4 @@ type AggregatedMeshContexts struct {
 	Hash               string
 	Meshes             []*core_mesh.MeshResource
 	MeshContextsByName map[string]MeshContext
-}
-
-// MustGetMeshContext panics if there is no mesh context for given mesh. Call it when iterating over .Meshes
-// There is a guarantee that for every Mesh in .Meshes there is a MeshContext.
-func (m AggregatedMeshContexts) MustGetMeshContext(meshName string) MeshContext {
-	meshCtx, ok := m.MeshContextsByName[meshName]
-	if !ok {
-		panic("there should be a corresponding mesh context for every mesh in mesh contexts")
-	}
-	return meshCtx
-}
-
-func (m AggregatedMeshContexts) AllDataplanes() []*core_mesh.DataplaneResource {
-	var resources []*core_mesh.DataplaneResource
-	for _, mesh := range m.Meshes {
-		meshCtx := m.MustGetMeshContext(mesh.Meta.GetName())
-		resources = append(resources, meshCtx.Resources.Dataplanes().Items...)
-	}
-	return resources
 }

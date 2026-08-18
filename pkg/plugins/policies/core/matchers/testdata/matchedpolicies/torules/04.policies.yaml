@@ -42,7 +42,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web
+      app: web
       version: v1
       team: mesh
   to:

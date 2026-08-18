@@ -1,5 +1,5 @@
 #/meshes/default/meshservices/redis 201 method=PUT
 #/meshes/default/meshservices/redis 200
-#/meshes/default/meshservices/aa.a 201 method=PUT
+#/meshes/default/meshservices/aa.a 400 method=PUT
 type: Mesh
 name: default

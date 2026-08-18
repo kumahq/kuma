@@ -1,15 +1,12 @@
 package clusters
 
 import (
-	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters/v3"
-	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 func ClientSideTLS(endpoints []core_xds.Endpoint) ClusterBuilderOpt {
@@ -70,30 +67,6 @@ func ProvidedCustomEndpointCluster(hasIPv6 bool, allowsMixingEndpoints bool, end
 	})
 }
 
-// LbSubset is required for MetadataMatch in Weighted Cluster in TCP Proxy to work.
-// Subset loadbalancing is used in two use cases
-//  1. Route rules splitting traffic. Example: a route that splits 10% of the traffic to version 1 of the service backend and 90% traffic to version 2 of the service backend
-//  2. Multiple outbound sections with the same service
-//     Example:
-//     type: Dataplane
-//     networking:
-//     outbound:
-//     - port: 1234
-//     tags:
-//     kuma.io/service: backend
-//     - port: 1234
-//     tags:
-//     kuma.io/service: backend
-//     version: v1
-//     Only one cluster "backend" is generated for such dataplane, but with lb subset by version.
-func LbSubset(tagSets envoy_tags.TagKeysSlice) ClusterBuilderOptFunc {
-	return func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.LbSubsetConfigurer{
-			TagKeysSets: tagSets,
-		})
-	}
-}
-
 func Timeout(timeout envoy_common.Timeouts, protocol core_meta.Protocol) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.TimeoutConfigurer{
@@ -127,23 +100,9 @@ func UpstreamBindConfig(address string, port uint32) ClusterBuilderOpt {
 	})
 }
 
-func ConnectionBufferLimit(bytes uint32) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(v3.ClusterMustConfigureFunc(func(c *envoy_cluster.Cluster) {
-			c.PerConnectionBufferLimitBytes = wrapperspb.UInt32(bytes)
-		}))
-	})
-}
-
 func Http2() ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.Http2Configurer{})
-	})
-}
-
-func Http2FromEdge() ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.Http2Configurer{EdgeProxyWindowSizes: true})
 	})
 }
 

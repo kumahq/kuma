@@ -14,9 +14,10 @@ func TestZoneConfigValidateName(t *testing.T) {
 	}{
 		{name: "empty name", zoneName: "", wantErr: true, errSubstr: "Name is mandatory"},
 		{name: "valid lowercase name", zoneName: "zone-1", wantErr: false},
-		{name: "rejects uppercase letters", zoneName: "Zone-1", wantErr: true, errSubstr: "valid RFC1123 DNS label"},
-		{name: "rejects underscore", zoneName: "zone_1", wantErr: true, errSubstr: "valid RFC1123 DNS label"},
-		{name: "rejects name longer than 63 characters", zoneName: strings.Repeat("a", 64), wantErr: true, errSubstr: "valid RFC1123 DNS label"},
+		{name: "rejects uppercase letters", zoneName: "Zone-1", wantErr: true, errSubstr: "valid RFC1035 DNS label"},
+		{name: "rejects underscore", zoneName: "zone_1", wantErr: true, errSubstr: "valid RFC1035 DNS label"},
+		{name: "rejects name starting with a digit", zoneName: "1zone", wantErr: true, errSubstr: "valid RFC1035 DNS label"},
+		{name: "rejects name longer than 63 characters", zoneName: strings.Repeat("a", 64), wantErr: true, errSubstr: "valid RFC1035 DNS label"},
 	}
 
 	for _, c := range cases {

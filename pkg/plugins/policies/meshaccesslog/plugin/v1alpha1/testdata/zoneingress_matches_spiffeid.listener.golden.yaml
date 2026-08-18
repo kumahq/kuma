@@ -31,5 +31,5 @@ filterChains:
         flushAccessLogOnConnected: true
       cluster: backend
       statPrefix: backend
-name: inbound:10.20.30.40:10001
+name: self_zoneingress_dp_zi-port
 trafficDirection: INBOUND

@@ -34,14 +34,14 @@ filterChains:
         - addressPrefix: ::1
           prefixLen: 128
       routeConfig:
-        name: inbound:backend
+        name: self_inbound_dp_17777
         requestHeadersToRemove:
         - x-kuma-tags
         validateClusters: false
         virtualHosts:
         - domains:
           - '*'
-          name: backend
+          name: self_inbound_dp_17777
           routes:
           - match:
               filterState:
@@ -50,7 +50,7 @@ filterChains:
                   prefix: spiffe://default/ns/clients/
               prefix: /
             route:
-              cluster: backend
+              cluster: self_inbound_dp_17777
               timeout: 0s
             typedPerFilterConfig:
               envoy.filters.http.local_ratelimit:
@@ -73,7 +73,7 @@ filterChains:
           - match:
               prefix: /
             route:
-              cluster: backend
+              cluster: self_inbound_dp_17777
               timeout: 0s
             typedPerFilterConfig:
               envoy.filters.http.local_ratelimit:
@@ -91,6 +91,6 @@ filterChains:
                   fillInterval: 10s
                   maxTokens: 100
                   tokensPerFill: 100
-      statPrefix: "127_0_0_1_17777"
-name: inbound:127.0.0.1:17777
+      statPrefix: self_inbound_dp_17777
+name: self_inbound_dp_17777
 trafficDirection: INBOUND

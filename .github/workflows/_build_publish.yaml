@@ -68,9 +68,9 @@ jobs:
           key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             go-build-${{ runner.os }}-
-      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
+      - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4.2.5
         with:
-          version: 2026.7.16
+          version: 2026.8.2
       - id: annotate-image-tag
         name: Image tag
         run: |
@@ -143,9 +143,9 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
+      - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4.2.5
         with:
-          version: 2026.7.16
+          version: 2026.8.2
       - id: image_meta
         env:
           REGISTRY: ${{ inputs.REGISTRY }}
@@ -181,18 +181,19 @@ jobs:
           skip_cis_scan: false
         # TODO in the future we may want to have prerelease images and use `regctl image copy` to move them to their final location
       # Gates the push, not the build: a wrong version must never reach the registry.
-      # kuma-cni has no version subcommand (a CNI plugin binary, not a CLI), so
-      # there's nothing to assert for it.
+      # `docker/info/binary` returns empty for images that ship no versioned CLI
+      # (kuma-cni is a plugin binary), and lets distributions that rename images
+      # map their own names without patching this workflow.
       - name: Assert built binary reports tag version
-        if: ${{ github.ref_type == 'tag' && matrix.image != 'kuma-cni' }}
+        if: ${{ github.ref_type == 'tag' }}
         env:
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          case "${{ matrix.image }}" in
-            kuma-init) binary=kumactl ;;
-            kuma-universal) binary=kuma-cp ;;
-            *) binary="${{ matrix.image }}" ;;
-          esac
+          binary=$(make -s docker/info/binary/${{ matrix.image }})
+          if [ -z "${binary}" ]; then
+            echo "${{ matrix.image }} ships no versioned CLI, nothing to assert"
+            exit 0
+          fi
           for arch in $(make -s docker/info/enabled-arches); do
             make check/binary-version \
               BINARY_PATH="build/artifacts-linux-${arch}/${binary}/${binary}" \
@@ -280,9 +281,9 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
+      - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4.2.5
         with:
-          version: 2026.7.16
+          version: 2026.8.2
       - name: package-helm-chart
         id: package-helm
         env:

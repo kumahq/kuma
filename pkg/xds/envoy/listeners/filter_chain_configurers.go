@@ -1,15 +1,10 @@
 package listeners
 
 import (
-	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_extensions_compression_gzip_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
-	envoy_extensions_filters_http_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
-	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
@@ -34,12 +29,6 @@ func DirectResponse(virtualHostName string, endpoints []v3.DirectResponseEndpoin
 		Endpoints:         endpoints,
 		InternalAddresses: internalAddresses,
 		IPv6Enabled:       ipv6Enabled,
-	})
-}
-
-func NetworkDirectResponse(response string) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.NetworkDirectResponseConfigurer{
-		Response: []byte(response),
 	})
 }
 
@@ -135,14 +124,6 @@ func HttpStaticRoute(builder *envoy_routes.RouteConfigurationBuilder) FilterChai
 	})
 }
 
-// HttpDynamicRoute configures the listener filter chain to dynamically request
-// the named RouteConfiguration.
-func HttpDynamicRoute(name string) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.HttpDynamicRouteConfigurer{
-		RouteName: name,
-	})
-}
-
 func HttpInboundRoute(routeConfigName string, virtualHostName string, cluster envoy_common.Cluster) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.HttpInboundRouteConfigurer{
 		RouteConfigName: routeConfigName,
@@ -156,63 +137,4 @@ func Timeout(timeout envoy_common.Timeouts, protocol core_meta.Protocol) FilterC
 		Conf:     timeout,
 		Protocol: protocol,
 	})
-}
-
-// ServerHeader sets the value that the HttpConnectionManager will write
-// to the "Server" header in HTTP responses.
-func ServerHeader(name string) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(
-		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
-			hcm.ServerName = name
-		}),
-	)
-}
-
-// EnablePathNormalization enables HTTP request path normalization.
-func EnablePathNormalization() FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(
-		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
-			hcm.NormalizePath = util_proto.Bool(true)
-			hcm.MergeSlashes = true
-			hcm.PathWithEscapedSlashesAction = envoy_hcm.HttpConnectionManager_UNESCAPE_AND_REDIRECT
-		}),
-	)
-}
-
-// StripHostPort strips the port component before matching the HTTP host
-// header (authority) to the available virtual hosts.
-func StripHostPort() FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(
-		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
-			hcm.StripPortMode = &envoy_hcm.HttpConnectionManager_StripAnyHostPort{
-				StripAnyHostPort: true,
-			}
-		}),
-	)
-}
-
-// DefaultCompressorFilter adds a gzip compressor filter in its default configuration.
-func DefaultCompressorFilter() FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(
-		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
-			c := envoy_extensions_filters_http_compressor_v3.Compressor{
-				CompressorLibrary: &envoy_config_core.TypedExtensionConfig{
-					Name:        "gzip",
-					TypedConfig: util_proto.MustMarshalAny(&envoy_extensions_compression_gzip_compressor_v3.Gzip{}),
-				},
-				ResponseDirectionConfig: &envoy_extensions_filters_http_compressor_v3.Compressor_ResponseDirectionConfig{
-					DisableOnEtagHeader: true,
-				},
-			}
-
-			gzip := &envoy_hcm.HttpFilter{
-				Name: "gzip-compress",
-				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-					TypedConfig: util_proto.MustMarshalAny(&c),
-				},
-			}
-
-			hcm.HttpFilters = append(hcm.HttpFilters, gzip)
-		}),
-	)
 }

@@ -45,7 +45,27 @@ to:
 		ErrorCase("invalid backendRefs",
 			validators.Violation{
 				Field:   "spec.to[0].rules[0].default.backendRefs[0].labels",
-				Message: "must be set when kind is MeshServiceSubset",
+				Message: "must be set when kind is MeshService",
+			}, `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: backend
+  rules:
+  - default:
+      backendRefs:
+      - kind: MeshService
+`),
+		ErrorCase("legacy subset backendRefs",
+			validators.Violation{
+				Field:   "spec.to[0].rules[0].default.backendRefs[0].kind",
+				Message: "value 'MeshServiceSubset' is not supported",
 			}, `
 type: MeshTCPRoute
 mesh: mesh-1
@@ -61,8 +81,6 @@ to:
   - default:
       backendRefs:
       - kind: MeshServiceSubset
-        tags:
-          version: v1
 `),
 		ErrorCase("missing port in backendRefs",
 			validators.Violation{

@@ -88,6 +88,10 @@ var _ = Describe("MeshExternalService", func() {
 				name: "external-service-very-long-very-long-very-long-very-long-very-long-very-long-very-long",
 				file: "name-too-long",
 			}),
+			Entry("name not conforming to RFC 1035", testCase{
+				name: "1external.service",
+				file: "name-not-rfc-1035",
+			}),
 			Entry("name length 63", testCase{
 				name: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 				file: "name-length-63",

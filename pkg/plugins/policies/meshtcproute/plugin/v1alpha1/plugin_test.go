@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,10 +29,13 @@ import (
 	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
+	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
+	rules_common "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
@@ -62,6 +66,24 @@ var _ = Describe("MeshTCPRoute", func() {
 		Mesh:         "default",
 		Name:         "example",
 	}
+	backendMeshServiceMeta := func() *test_model.ResourceMeta {
+		return &test_model.ResourceMeta{
+			Mesh: core_model.DefaultMesh,
+			Name: "backend",
+			Labels: map[string]string{
+				mesh_proto.DisplayName: "backend",
+			},
+		}
+	}
+	routeOrigin := func(name string) rules_common.Origin {
+		return rules_common.Origin{
+			Resource: &test_model.ResourceMeta{
+				Mesh: core_model.DefaultMesh,
+				Name: name,
+			},
+			RuleIndex: 0,
+		}
+	}
 	type policiesTestCase struct {
 		dataplane      *core_mesh.DataplaneResource
 		resources      xds_context.Resources
@@ -80,6 +102,13 @@ var _ = Describe("MeshTCPRoute", func() {
 			dataplane: samples.DataplaneWeb(),
 			resources: xds_context.Resources{
 				MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+					meshservice_api.MeshServiceType: &meshservice_api.MeshServiceResourceList{
+						Items: []*meshservice_api.MeshServiceResource{{
+							Meta:   backendMeshServiceMeta(),
+							Spec:   &meshservice_api.MeshService{},
+							Status: &meshservice_api.MeshServiceStatus{},
+						}},
+					},
 					api.MeshTCPRouteType: &api.MeshTCPRouteResourceList{
 						Items: []*api.MeshTCPRouteResource{
 							{
@@ -111,17 +140,17 @@ var _ = Describe("MeshTCPRoute", func() {
 													Default: api.RuleConf{
 														BackendRefs: &[]common_api.BackendRef{
 															{
-																TargetRef: builders.TargetRefServiceSubset(
-																	"backend",
-																	"version", "v1",
-																),
+																TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{
+																	mesh_proto.DisplayName: "backend",
+																	"version":              "v1",
+																}, ""),
 																Weight: pointer.To(uint(50)),
 															},
 															{
-																TargetRef: builders.TargetRefServiceSubset(
-																	"backend",
-																	"version", "v2",
-																),
+																TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{
+																	mesh_proto.DisplayName: "backend",
+																	"version":              "v2",
+																}, ""),
 																Weight: pointer.To(uint(50)),
 															},
 														},
@@ -137,43 +166,36 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			},
 			expectedRoutes: core_rules.ToRules{
-				Rules: core_rules.Rules{
-					{
-						Subset: subsetutils.MeshService("backend"),
-						Conf: api.Rule{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					backendMeshServiceIdentifier: {
+						Resource: backendMeshServiceMeta(),
+						Conf: []any{api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: &[]common_api.BackendRef{
 									{
-										TargetRef: builders.TargetRefServiceSubset(
-											"backend",
-											"version", "v1",
-										),
+										TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{
+											mesh_proto.DisplayName: "backend",
+											"version":              "v1",
+										}, ""),
 										Weight: pointer.To(uint(50)),
 									},
 									{
-										TargetRef: builders.TargetRefServiceSubset(
-											"backend",
-											"version", "v2",
-										),
+										TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{
+											mesh_proto.DisplayName: "backend",
+											"version":              "v2",
+										}, ""),
 										Weight: pointer.To(uint(50)),
 									},
 								},
 							},
+						}},
+						Origin: []rules_common.Origin{
+							routeOrigin("route-1"),
+							routeOrigin("route-2"),
 						},
-						Origin: []core_model.ResourceMeta{
-							&test_model.ResourceMeta{
-								Mesh: "default",
-								Name: "route-1",
-							},
-							&test_model.ResourceMeta{
-								Mesh: "default",
-								Name: "route-2",
-							},
-						},
-						OriginByMatches: map[common_api.MatchesHash]core_model.ResourceMeta{},
+						OriginByMatches: map[common_api.MatchesHash]rules_common.Origin{},
 					},
 				},
-				ResourceRules: map[kri.Identifier]outbound.ResourceRule{},
 			},
 		}),
 	)
@@ -375,6 +397,13 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
+					With(func(ctx *xds_context.Context) {
+						// The MeshExternalService split is only reachable through an egress,
+						// and its cluster is only generated when one exists.
+						ctx.Mesh.ZoneEgresses = []core_xds.ZoneEgressInstance{
+							{Address: "10.0.0.1", Port: 10002, SAN: "spiffe://default/zone-egress"},
+						}
+					}).
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(
@@ -402,6 +431,14 @@ var _ = Describe("MeshTCPRoute", func() {
 							WithOutboundTargets(outboundTargets),
 					).
 					WithMetadata(&core_xds.DataplaneMetadata{}).
+					WithWorkloadIdentity(&core_xds.WorkloadIdentity{
+						IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+							return bldrs_tls.SdsSecretConfigSource(
+								"identity_cert:secret:default",
+								bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+							)
+						},
+					}).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
 			}

@@ -3,28 +3,19 @@ package rules
 import (
 	"encoding"
 	"fmt"
-	"slices"
-	"sort"
 
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
-	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 )
-
-const RuleMatchesHashTag = "__rule-matches-hash__"
 
 type InboundListener struct {
 	Address string
@@ -49,7 +40,6 @@ type FromRules struct {
 }
 
 type ToRules struct {
-	Rules         Rules
 	ResourceRules outbound.ResourceRules
 }
 
@@ -61,7 +51,15 @@ type ProxyConf struct {
 	Origin []core_model.ResourceMeta
 }
 
-// Deprecated: use common.WithPolicyAttributes instead
+type Rule struct {
+	Subset          subsetutils.Subset
+	Conf            any
+	Origin          []core_model.ResourceMeta
+	OriginByMatches map[common_api.MatchesHash]core_model.ResourceMeta
+}
+
+type Rules []*Rule
+
 type PolicyItemWithMeta struct {
 	core_model.PolicyItem
 	core_model.ResourceMeta
@@ -81,45 +79,8 @@ func (p PolicyItemWithMeta) GetRuleIndex() int {
 	return p.RuleIndex
 }
 
-func (p PolicyItemWithMeta) GetEntry() outbound.ToEntry {
+func (p PolicyItemWithMeta) GetEntry() core_model.PolicyItem {
 	return p.PolicyItem
-}
-
-// Rule contains a configuration for the given Subset. When rule is an inbound rule (from),
-// then Subset represents a group of clients. When rule is an outbound (to) then Subset
-// represents destinations.
-//
-// Deprecated: use inbound.Rule or outbound.ResourceRule instead
-type Rule struct {
-	Subset subsetutils.Subset
-	Conf   any
-	Origin []core_model.ResourceMeta
-
-	// OriginByMatches is an auxiliary structure for MeshHTTPRoute rules. It's a mapping between the rule (identified
-	// by the hash of rule's matches) and the meta of the MeshHTTPRoute policy that contributed the rule.
-	OriginByMatches map[common_api.MatchesHash]core_model.ResourceMeta
-}
-
-type Rules []*Rule
-
-// Compute returns Rule for the given element.
-func (rs Rules) Compute(element subsetutils.Element) *Rule {
-	for _, rule := range rs {
-		if rule.Subset.ContainsElement(element) {
-			return rule
-		}
-	}
-	return nil
-}
-
-// ComputeConf returns configuration for the given element.
-func ComputeConf[T any](rs Rules, element subsetutils.Element) *T {
-	computed := rs.Compute(element)
-	if computed != nil {
-		return pointer.To(computed.Conf.(T))
-	}
-
-	return nil
 }
 
 func BuildFromRules(
@@ -140,159 +101,11 @@ func BuildFromRules(
 }
 
 func BuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceReader) (ToRules, error) {
-	rules, err := legacyBuildToRules(matchedPolicies, reader)
+	resourceRules, err := outbound.BuildRules(matchedPolicies, reader)
 	if err != nil {
 		return ToRules{}, err
 	}
-
-	// we have to exclude top-level targetRef 'MeshHTTPRoute' as new outbound rules work with MeshHTTPRoute differently,
-	// see docs/madr/decisions/066-policy-matching-with-real-resources.md
-	excludeTopLevelMeshHTTPRoute, err := registry.Global().NewList(matchedPolicies.GetItemType())
-	if err != nil {
-		return ToRules{}, err
-	}
-	for _, item := range matchedPolicies.GetItems() {
-		if item.GetSpec().(core_model.Policy).GetTargetRef().Kind != common_api.MeshHTTPRoute {
-			if err := excludeTopLevelMeshHTTPRoute.AddItem(item); err != nil {
-				return ToRules{}, err
-			}
-		}
-	}
-	resourceRules, err := outbound.BuildRules(excludeTopLevelMeshHTTPRoute, reader)
-	if err != nil {
-		return ToRules{}, err
-	}
-
-	return ToRules{Rules: rules, ResourceRules: resourceRules}, nil
-}
-
-func legacyBuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceReader) (Rules, error) {
-	policiesWithTo, ok := common.Cast[core_model.PolicyWithToList](matchedPolicies.GetItems())
-	if !ok {
-		return Rules{}, nil
-	}
-	toList := []PolicyItemWithMeta{}
-	for i, pwtl := range policiesWithTo {
-		if idx := slices.IndexFunc(pwtl.GetToList(), func(item core_model.PolicyItem) bool {
-			return item.GetTargetRef().Kind == common_api.MeshHTTPRoute
-		}); idx >= 0 {
-			continue
-		}
-		meta := matchedPolicies.GetItems()[i].GetMeta()
-		tl, err := buildToListWithRoutes(meta, pwtl, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
-		if err != nil {
-			return nil, err
-		}
-		if len(tl) > 0 {
-			topLevel := pwtl.GetTargetRef()
-			toList = append(toList, BuildPolicyItemsWithMeta(tl, meta, topLevel)...)
-		}
-	}
-	return BuildRules(toList)
-}
-
-func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model.PolicyWithToList, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
-	var mhrs []*meshhttproute_api.MeshHTTPRouteResource
-	switch policyWithTo.GetTargetRef().Kind {
-	case common_api.MeshHTTPRoute:
-		routeLabels := pointer.Deref(policyWithTo.GetTargetRef().Labels)
-		if len(routeLabels) == 0 {
-			return nil, errors.New("can't resolve MeshHTTPRoute policy")
-		}
-		targetSubset := subsetutils.NewSubset(routeLabels)
-		for _, route := range httpRoutes {
-			if !targetSubset.IsSubset(subsetutils.NewSubset(route.GetMeta().GetLabels())) {
-				continue
-			}
-			// A label subset can match routes that share the same labels
-			// (e.g. kuma.io/display-name) across namespaces. Namespaced
-			// policies must only expand routes from their own namespace,
-			// otherwise route-derived config leaks across namespaces.
-			if !PolicySelectsByNamespace(meta, route.GetMeta()) {
-				continue
-			}
-			if r, ok := route.(*meshhttproute_api.MeshHTTPRouteResource); ok {
-				mhrs = append(mhrs, r)
-			}
-		}
-		if len(mhrs) == 0 {
-			return nil, errors.New("can't resolve MeshHTTPRoute policy")
-		}
-	default:
-		return policyWithTo.GetToList(), nil
-	}
-
-	rv := []core_model.PolicyItem{}
-	for _, mhr := range mhrs {
-		for _, mhrRules := range pointer.Deref(mhr.Spec.To) {
-			for _, mhrRule := range mhrRules.Rules {
-				matchesHash := meshhttproute_api.HashMatches(mhrRule.Matches)
-				for _, to := range policyWithTo.GetToList() {
-					var targetRef common_api.TargetRef
-					switch mhrRules.TargetRef.Kind {
-					case common_api.OutboundTargetRefKindMesh, common_api.OutboundTargetRefKind(common_api.LegacyMeshSubsetKind()):
-						targetRef = common_api.TargetRef{
-							Kind: common_api.LegacyMeshSubsetKind(),
-							Tags: &map[string]string{
-								RuleMatchesHashTag: string(matchesHash),
-							},
-						}
-					default:
-						// The legacy subset keys on kuma.io/service, so the
-						// route target must resolve to a service name. A label
-						// selector that doesn't carry kuma.io/display-name has
-						// no legacy equivalent; fail loudly rather than emitting
-						// an empty selector that silently matches nothing.
-						service := serviceTagValue(mhrRules.TargetRef.ToTargetRef())
-						if service == "" {
-							return nil, errors.Errorf("can't resolve %s targetRef to a service: kuma.io/display-name label is required", mhrRules.TargetRef.Kind)
-						}
-						targetRef = common_api.TargetRef{
-							Kind: common_api.LegacyMeshServiceSubsetKind(),
-							Labels: &map[string]string{
-								mesh_proto.DisplayName: service,
-							},
-							Tags: &map[string]string{
-								RuleMatchesHashTag: string(matchesHash),
-							},
-						}
-					}
-					rv = append(rv, &artificialPolicyItem{
-						targetRef: targetRef,
-						conf:      to.GetDefault(),
-					})
-				}
-			}
-		}
-	}
-
-	return rv, nil
-}
-
-type artificialPolicyItem struct {
-	conf      any
-	targetRef common_api.TargetRef
-}
-
-func (a *artificialPolicyItem) GetTargetRef() common_api.TargetRef {
-	return a.targetRef
-}
-
-func (a *artificialPolicyItem) GetDefault() any {
-	return a.conf
-}
-
-func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.ResourceMeta, topLevel common_api.TargetRef) []PolicyItemWithMeta {
-	var result []PolicyItemWithMeta
-	for i, item := range items {
-		result = append(result, PolicyItemWithMeta{
-			PolicyItem:   item,
-			ResourceMeta: meta,
-			TopLevel:     topLevel,
-			RuleIndex:    i,
-		})
-	}
-	return result
+	return ToRules{ResourceRules: resourceRules}, nil
 }
 
 func BuildProxyConf(matchedPolicies []core_model.Resource) (*ProxyConf, error) {
@@ -331,127 +144,4 @@ func BuildProxyConf(matchedPolicies []core_model.Resource) (*ProxyConf, error) {
 		Conf:   merged[0],
 		Origin: util_slices.Map(common.Origins(items, false), func(o common.Origin) core_model.ResourceMeta { return o.Resource }),
 	}, nil
-}
-
-// BuildRules creates rules for legacy outbound matching sorted from most to
-// least specific by subset size.
-func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
-	rules := Rules{}
-	oldKindsItems := []PolicyItemWithMeta{}
-	for _, item := range list {
-		if item.GetTargetRef().Kind.IsOldKind() {
-			oldKindsItems = append(oldKindsItems, item)
-		}
-	}
-	if len(oldKindsItems) == 0 {
-		return rules, nil
-	}
-
-	var subsets []subsetutils.Subset
-	for _, item := range oldKindsItems {
-		ss, err := asSubset(item.GetTargetRef())
-		if err != nil {
-			return nil, err
-		}
-		subsets = append(subsets, ss)
-	}
-
-	subsets = subsetutils.Deduplicate(subsets)
-	for _, ss := range subsets {
-		if r, err := createRule(ss, oldKindsItems); err != nil {
-			return nil, err
-		} else {
-			rules = append(rules, r...)
-		}
-	}
-
-	sort.SliceStable(rules, func(i, j int) bool {
-		return len(rules[i].Subset) > len(rules[j].Subset)
-	})
-
-	return rules, nil
-}
-
-func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta) ([]*Rule, error) {
-	rules := []*Rule{}
-	confs := []any{}
-	var relevant []PolicyItemWithMeta
-	for i := range items {
-		item := items[i]
-		itemSubset, err := asSubset(item.GetTargetRef())
-		if err != nil {
-			return nil, err
-		}
-		if itemSubset.IsSubset(ss) {
-			confs = append(confs, item.GetDefault())
-			relevant = append(relevant, item)
-		}
-	}
-
-	getMeta := func(o common.Origin) core_model.ResourceMeta {
-		return o.Resource
-	}
-
-	if len(relevant) > 0 {
-		merged, err := merge.Confs(confs)
-		if err != nil {
-			return nil, err
-		}
-		for _, mergedRule := range merged {
-			rules = append(rules, &Rule{
-				Subset: ss,
-				Conf:   mergedRule,
-				Origin: util_slices.Map(common.Origins(relevant, false), getMeta),
-				OriginByMatches: util_maps.MapValues(common.OriginByMatches(relevant), func(_ common_api.MatchesHash, v common.Origin) core_model.ResourceMeta {
-					return getMeta(v)
-				}),
-			})
-		}
-	}
-
-	return rules, nil
-}
-
-func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {
-	switch tr.Kind {
-	case common_api.Mesh:
-		return subsetutils.Subset{}, nil
-	case common_api.LegacyMeshSubsetKind():
-		ss := subsetutils.Subset{}
-		for k, v := range pointer.Deref(tr.Tags) {
-			ss = append(ss, subsetutils.Tag{Key: k, Value: v})
-		}
-		return ss, nil
-	case common_api.MeshService:
-		return subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: serviceTagValue(tr)}}, nil
-	case common_api.LegacyMeshServiceSubsetKind():
-		ss := subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: serviceTagValue(tr)}}
-		for k, v := range pointer.Deref(tr.Tags) {
-			ss = append(ss, subsetutils.Tag{Key: k, Value: v})
-		}
-		return ss, nil
-	default:
-		return nil, errors.Errorf("can't represent %s as tags", tr.Kind)
-	}
-}
-
-// PolicySelectsByNamespace reports whether a policy may reference a resource
-// living in the given namespace. Consumer and workload-owner policies are
-// namespaced, so they can only reference resources from their own namespace;
-// producer/system policies are namespace-agnostic.
-func PolicySelectsByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) bool {
-	switch core_model.PolicyRole(policyMeta) {
-	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
-		ns, ok := policyMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
-		return ok && ns == resourceMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
-	default:
-		return true
-	}
-}
-
-// serviceTagValue returns the kuma.io/service value identifying a legacy
-// MeshService targetRef. Under the labels-only contract the service name lives
-// in the kuma.io/display-name label, so fall back to it when name is unset.
-func serviceTagValue(tr common_api.TargetRef) string {
-	return pointer.Deref(tr.Labels)[mesh_proto.DisplayName]
 }
