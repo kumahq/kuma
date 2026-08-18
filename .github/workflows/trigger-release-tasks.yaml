@@ -52,7 +52,7 @@ jobs:
         !startsWith(github.event.workflow_run.head_branch, 'release-')
       )
     timeout-minutes: 5
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_14_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       contents: read # to confirm the ref is really a tag, via the git refs API
     outputs:
@@ -122,7 +122,7 @@ jobs:
       needs.guard.outputs.should_dispatch == 'true' &&
       (github.event_name != 'workflow_dispatch' || inputs.run_smoke)
     timeout-minutes: 5
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_14_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions: {}
     steps:
       - name: "Trigger downstream smoke test"
@@ -165,7 +165,7 @@ jobs:
       needs.guard.outputs.should_dispatch == 'true' &&
       (github.event_name != 'workflow_dispatch' || inputs.run_verify)
     timeout-minutes: 5
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: ${{ vars.RUNS_ON_RELEASE_2_14_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       # same-repo dispatch needs no cross-org token, unlike smoke; the default
       # GITHUB_TOKEN only gains workflow_dispatch rights with actions:write.
