@@ -6,7 +6,7 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
-## Upgrade to `2.14.4`, `2.13.11`, `2.12.15`, `2.11.19`, `2.9.14`, `2.7.30`
+## Upgrade to `2.12.15`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the change alters the pod spec of workloads the chart ships.
 
@@ -29,7 +29,6 @@ controlPlane:
     capabilities:
       drop: []
 ```
-
 
 ## Upgrade to `2.12.x`
 
