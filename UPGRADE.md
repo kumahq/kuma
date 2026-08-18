@@ -6,6 +6,30 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.13.11`
+
+Patch releases normally do not require upgrade instructions. The entry below is included because the change alters the pod spec of workloads the chart ships.
+
+### Control plane, hook, ingress and egress containers drop all Linux capabilities
+
+`controlPlane`, `hooks`, `ingress` and `egress` `containerSecurityContext` now default to `allowPrivilegeEscalation: false` and `capabilities.drop: [ALL]`, alongside the `readOnlyRootFilesystem: true` they already carried.
+
+None of those containers needs a capability. Every port they bind is above 1024, so `NET_BIND_SERVICE` was never required, and nothing in the codebase opens a raw or packet socket. The injected sidecar already ships with both settings.
+
+The transparent proxy init container is unaffected and keeps the `NET_ADMIN` and `NET_RAW` it adds for `iptables`, because the injector sets that in Go rather than from the chart. The CNI container reads `cni.containerSecurityContext`, which is unchanged and still runs as root.
+
+**Action required**
+
+Helm merges these values key by key, so overriding one key of `containerSecurityContext` no longer replaces the whole block: an override that sets only `readOnlyRootFilesystem` now also inherits the two new keys. If a container needs a capability, or you run a `SecurityContextConstraint` or admission policy that grants one, set it back explicitly:
+
+```yaml
+controlPlane:
+  containerSecurityContext:
+    allowPrivilegeEscalation: true
+    capabilities:
+      drop: []
+```
+
 ## Upgrade to `2.14.x`
 
 ### RBAC: Added `events.k8s.io` API group
