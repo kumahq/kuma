@@ -56,7 +56,8 @@ type ResourceSyncer interface {
 	// The first error cancels the connection, forcing the client to re-establish it.
 	// This can happen due to a database error.
 	//
-	// The second error is related to non-critical issues, such as `ResourceAlreadyExists`,
+	// The second error is related to non-critical issues, such as `ResourceAlreadyExists`
+	// or a resource the store rejects as invalid (a quota, a validation rule),
 	// which shouldn't prevent other resources from being stored.
 	// Instead, we return a NACK message with information for the user.
 	Sync(ctx context.Context, upstream kds_client.UpstreamResponse, fs ...SyncOptionFunc) (error, error)
@@ -283,9 +284,20 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse kds_c
 			r.SetMeta(nil)
 
 			if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
-				if opts.SkipConflictResource && store.IsAlreadyExists(err) {
+				switch {
+				case opts.SkipConflictResource && store.IsAlreadyExists(err):
 					nackError = std_errors.Join(util.ErrUserNack, nackError, err)
-				} else {
+				case store.IsInvalid(err):
+					// The store refused this one resource on its own merits (a quota, a
+					// name it cannot represent), so replaying it unchanged can never
+					// succeed. That is the user error the NACK channel exists for: skip
+					// the resource, keep the rest of the batch, and leave the stream up.
+					// Failing here would roll back every other create, update and delete
+					// in the response and cancel the connection, and the client would
+					// replay the same resource on reconnect forever.
+					log.Info("upstream resource rejected by the store, sending NACK", "name", rk.Name, "mesh", rk.Mesh, "err", err)
+					nackError = std_errors.Join(util.ErrUserNack, nackError, err)
+				default:
 					return err
 				}
 			}
