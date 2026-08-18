@@ -11523,6 +11523,10 @@ spec:
           image: "docker.io/kumahq/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
@@ -11704,6 +11708,10 @@ spec:
           image: "docker.io/kumahq/kuma-dp:0.0.1"
           imagePullPolicy: IfNotPresent
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
           env:
             - name: POD_NAME
@@ -11837,6 +11845,10 @@ spec:
           image: "docker.io/kumahq/kuma-dp:0.0.1"
           imagePullPolicy: IfNotPresent
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
           env:
             - name: POD_NAME
