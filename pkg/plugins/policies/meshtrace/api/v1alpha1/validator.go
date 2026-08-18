@@ -37,7 +37,6 @@ func (r *MeshTraceResource) validateTop(targetRef *common_api.TopLevelTargetRef)
 				common_api.Mesh,
 				common_api.Dataplane,
 			},
-			GatewayListenerTagsAllowed: false,
 		})
 	default:
 		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{

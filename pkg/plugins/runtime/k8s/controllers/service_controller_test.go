@@ -82,16 +82,6 @@ var _ = Describe("ServiceReconciler", func() {
 			},
 			&kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "builtin-gateway",
-					Name:      "service",
-					Annotations: map[string]string{
-						metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin,
-					},
-				},
-				Spec: kube_core.ServiceSpec{},
-			},
-			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "non-system-ns-with-sidecar-injection",
 					Name:      "external-name",
 					Annotations: map[string]string{
@@ -121,26 +111,6 @@ var _ = Describe("ServiceReconciler", func() {
 		// given
 		req := kube_ctrl.Request{
 			NamespacedName: kube_types.NamespacedName{Namespace: "non-system-ns-without-sidecar-injection", Name: "service"},
-		}
-
-		// when
-		result, err := reconciler.Reconcile(context.Background(), req)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(result).To(BeZero())
-
-		// and service is not annotated
-		svc := &kube_core.Service{}
-		err = kubeClient.Get(context.Background(), req.NamespacedName, svc)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(svc.GetAnnotations()).ToNot(HaveKey(metadata.IngressServiceUpstream))
-	})
-
-	It("should ignore service of builtin gateway", func() {
-		// given
-		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "builtin-gateway", Name: "service"},
 		}
 
 		// when

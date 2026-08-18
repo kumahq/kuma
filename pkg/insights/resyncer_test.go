@@ -36,10 +36,8 @@ func legacyMesh() *core_mesh.MeshResource {
 
 var _ = Describe("Insight Persistence", func() {
 	var rm manager.ResourceManager
-	// rawStore bypasses manager-level validation. It exists to seed dataplanes
-	// that predate an upgrade (e.g. a BUILTIN gateway created before the CP
-	// started rejecting them at admission) so resyncer read-path compat with
-	// already-persisted legacy data keeps being exercised.
+	// rawStore backs the resource manager and bypasses manager-level validation
+	// when a test needs to seed data directly.
 	var rawStore store.ResourceStore
 	var metric metrics.Metrics
 	minInterval := time.Second
@@ -394,23 +392,6 @@ var _ = Describe("Insight Persistence", func() {
 			},
 		}
 		err = rm.Create(context.Background(), delegatedGw, store.CreateByKey("dp2", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		// a builtin gateway, which is not reported in Exclusive mode
-		builtinGw := core_mesh.NewDataplaneResource()
-		builtinGw.Spec = &mesh_proto.Dataplane{
-			Networking: &mesh_proto.Dataplane_Networking{
-				Address: "10.0.0.3",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "builtin-gw"},
-					Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
-				},
-			},
-		}
-		// BUILTIN gateways are rejected by DataplaneResource.Validate() on
-		// creation, so seed this one directly through the store to simulate
-		// data that was already persisted before the upgrade.
-		err = rawStore.Create(context.Background(), builtinGw, store.CreateByKey("dp3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		externalService := samples2.MeshExternalServiceExampleBuilder().WithMesh("mesh-1").WithName("es1").Build()

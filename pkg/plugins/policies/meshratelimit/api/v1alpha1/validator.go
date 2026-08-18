@@ -40,8 +40,7 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TopLevelTarget
 				common_api.Mesh,
 				common_api.Dataplane,
 			},
-			GatewayListenerTagsAllowed: true,
-			IsInboundPolicy:            isInboundPolicy,
+			IsInboundPolicy: isInboundPolicy,
 		})
 	default:
 		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{

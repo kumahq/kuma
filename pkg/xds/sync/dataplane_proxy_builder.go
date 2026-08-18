@@ -60,7 +60,6 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		Policies:          *matchedPolicies,
 		Metadata:          meta,
 		Zone:              p.Zone,
-		RuntimeExtensions: map[string]any{},
 	}
 	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
 		err := pl.Apply(ctx, meshContext, proxy)

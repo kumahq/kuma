@@ -79,18 +79,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				},
 			},
 		})
-		createDpWithInsights("gateway-builtin", &v1alpha1.Dataplane{
-			Networking: &v1alpha1.Dataplane_Networking{
-				Address: "127.0.0.1",
-				Gateway: &v1alpha1.Dataplane_Networking_Gateway{
-					Type: v1alpha1.Dataplane_Networking_Gateway_BUILTIN,
-					Tags: map[string]string{
-						"service": "gateway",
-					},
-				},
-			},
-		})
-
 		dp1Labels := map[string]string{
 			"service":   "backend",
 			"version":   "v1",
@@ -220,9 +208,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 		}),
 		Entry("should list only gateway dataplanes", testCase{
 			url: "meshes/mesh1/dataplanes+insights?gateway=true",
-		}),
-		Entry("should list only gateway builtin", testCase{
-			url: "meshes/mesh1/dataplanes+insights?gateway=builtin",
 		}),
 		Entry("should list only gateway delegated", testCase{
 			url: "meshes/mesh1/dataplanes+insights?gateway=delegated",

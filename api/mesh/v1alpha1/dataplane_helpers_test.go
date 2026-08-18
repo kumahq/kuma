@@ -327,7 +327,6 @@ var _ = Describe("Dataplane classification", func() {
 				Networking: &Dataplane_Networking{},
 			}
 			Expect(dp.IsDelegatedGateway()).To(BeFalse())
-			Expect(dp.IsBuiltinGateway()).To(BeFalse())
 		})
 	})
 
@@ -339,7 +338,6 @@ var _ = Describe("Dataplane classification", func() {
 				},
 			}
 			Expect(gw.IsDelegatedGateway()).To(BeTrue())
-			Expect(gw.IsBuiltinGateway()).To(BeFalse())
 		})
 	})
 
@@ -353,21 +351,6 @@ var _ = Describe("Dataplane classification", func() {
 				},
 			}
 			Expect(gw.IsDelegatedGateway()).To(BeTrue())
-			Expect(gw.IsBuiltinGateway()).To(BeFalse())
-		})
-	})
-
-	Describe("with builtin gateway networking", func() {
-		It("should be a gateway", func() {
-			gw := Dataplane{
-				Networking: &Dataplane_Networking{
-					Gateway: &Dataplane_Networking_Gateway{
-						Type: Dataplane_Networking_Gateway_BUILTIN,
-					},
-				},
-			}
-			Expect(gw.IsDelegatedGateway()).To(BeFalse())
-			Expect(gw.IsBuiltinGateway()).To(BeTrue())
 		})
 	})
 })

@@ -58,7 +58,10 @@ message MeshInsight {
   message DataplanesByType {
     DataplaneStat standard = 1;
     DataplaneStat gateway = 2;
-    DataplaneStat gatewayBuiltin = 3;
+
+    reserved 3; // formerly gatewayBuiltin, removed with the built-in gateway
+    reserved "gatewayBuiltin";
+
     DataplaneStat gatewayDelegated = 4;
   }
   DataplanesByType dataplanesByType = 7;

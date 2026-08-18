@@ -91,9 +91,7 @@
                 "type": {
                     "enum": [
                         "DELEGATED",
-                        0,
-                        "BUILTIN",
-                        1
+                        0
                     ],
                     "oneOf": [
                         {

@@ -31,8 +31,7 @@ func (r *MeshCircuitBreakerResource) validateTop(targetRef *common_api.TopLevelT
 			common_api.Mesh,
 			common_api.Dataplane,
 		},
-		GatewayListenerTagsAllowed: true,
-		IsInboundPolicy:            isInboundPolicy,
+		IsInboundPolicy: isInboundPolicy,
 	})
 	return targetRefErr
 }

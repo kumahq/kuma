@@ -56,9 +56,6 @@ func (d *DataplaneResource) Validate() error {
 		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 
-	case d.Spec.IsBuiltinGateway():
-		err.AddViolationAt(net.Field("gateway").Field("type"), "BUILTIN gateways are no longer supported, use DELEGATED instead")
-
 	default:
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 		err.AddErrorAt(net.Field("listeners"), validateListeners(d.Spec.GetNetworking()))

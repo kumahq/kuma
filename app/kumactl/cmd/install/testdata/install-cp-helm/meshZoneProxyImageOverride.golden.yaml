@@ -253,18 +253,13 @@ rules:
       - create
       - patch
   - apiGroups:
-    # required by MeshGateway
+    # required to resolve the workload name behind a serviceless Pod
       - "apps"
     resources:
-      - deployments
       - replicasets
     verbs:
-      - create
-      - delete
       - get
       - list
-      - patch
-      - update
       - watch
   - apiGroups:
       - "batch"
@@ -275,16 +270,13 @@ rules:
       - list
       - watch
   - apiGroups:
-    # required by MeshGateway
       - ""
     resources:
       - services
     verbs:
       - get
-      - delete
       - list
       - watch
-      - create
       - update
       - patch
   - apiGroups:

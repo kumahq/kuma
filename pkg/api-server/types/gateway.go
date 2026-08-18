@@ -39,12 +39,6 @@ type GatewayDataplaneInspectResult struct {
 func (*GatewayDataplaneInspectResult) dataplaneInspectEntry() {
 }
 
-func NewGatewayDataplaneInspectResult() GatewayDataplaneInspectResult {
-	return GatewayDataplaneInspectResult{
-		Listeners: []GatewayListenerInspectEntry{},
-	}
-}
-
 type PolicyInspectGatewayRouteEntry struct {
 	Route        string      `json:"route"`
 	Destinations []tags.Tags `json:"destinations"`
@@ -68,11 +62,4 @@ type PolicyInspectGatewayEntry struct {
 }
 
 func (*PolicyInspectGatewayEntry) policyInspectEntry() {
-}
-
-func NewPolicyInspectGatewayEntry(key ResourceKeyEntry, gateway ResourceKeyEntry) PolicyInspectGatewayEntry {
-	return PolicyInspectGatewayEntry{
-		DataplaneKey: key,
-		Gateway:      gateway,
-	}
 }

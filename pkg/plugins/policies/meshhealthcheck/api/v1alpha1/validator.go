@@ -24,7 +24,6 @@ func (r *MeshHealthCheckResource) validateTop(targetRef *common_api.TopLevelTarg
 			common_api.Mesh,
 			common_api.Dataplane,
 		},
-		GatewayListenerTagsAllowed: true,
 	})
 	return targetRefErr
 }

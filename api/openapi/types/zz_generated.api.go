@@ -90,9 +90,6 @@ type DataplaneXDSConfig struct {
 
 // DataplanesStats Dataplanes statistics
 type DataplanesStats struct {
-	// GatewayBuiltin Builtin Gateway dataplane proxy statistics
-	GatewayBuiltin FullStatus `json:"gatewayBuiltin"`
-
 	// GatewayDelegated Delegated Gateway dataplane proxy statistics
 	GatewayDelegated FullStatus `json:"gatewayDelegated"`
 
@@ -215,9 +212,6 @@ type ServicesStats struct {
 	External struct {
 		Total int `json:"total"`
 	} `json:"external"`
-
-	// GatewayBuiltin Builtin Gateway services statistics
-	GatewayBuiltin FullStatus `json:"gatewayBuiltin"`
 
 	// GatewayDelegated Delegated Gateway services statistics
 	GatewayDelegated FullStatus `json:"gatewayDelegated"`

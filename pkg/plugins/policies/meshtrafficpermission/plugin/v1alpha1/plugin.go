@@ -33,7 +33,7 @@ func NewPlugin() core_plugins.Plugin {
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	if proxy.Dataplane == nil || proxy.Dataplane.Spec.IsBuiltinGateway() {
+	if proxy.Dataplane == nil {
 		return nil
 	}
 

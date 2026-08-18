@@ -131,15 +131,10 @@ rules:
   - apiGroups:
       - "apps"
     resources:
-      - deployments
       - replicasets
     verbs:
-      - create
-      - delete
       - get
       - list
-      - patch
-      - update
       - watch
   - apiGroups:
       - "batch"
@@ -155,10 +150,8 @@ rules:
       - services
     verbs:
       - get
-      - delete
       - list
       - watch
-      - create
       - update
       - patch
   - apiGroups:
