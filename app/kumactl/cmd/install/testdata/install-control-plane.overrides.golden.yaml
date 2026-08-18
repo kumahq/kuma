@@ -401,6 +401,10 @@ spec:
           image: "kuma-ci/kuma-cp:greatest"
           imagePullPolicy: Never
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
