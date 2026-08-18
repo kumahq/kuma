@@ -165,7 +165,7 @@ var _ = Describe("Client", func() {
 				"zone-1",
 				*rt.Config().Multizone.Zone.KDS,
 				metrics,
-				service.NewEnvoyAdminProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient()),
+				service.NewEnvoyAdminProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient(), rt.Config().Multizone.Zone.KDS.MaxMsgSize),
 				resourceSyncer,
 				rt,
 				&testZoneDeltaServer{},

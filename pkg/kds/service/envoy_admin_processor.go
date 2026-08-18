@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -23,6 +25,7 @@ type EnvoyAdminProcessor interface {
 type envoyAdminProcessor struct {
 	resManager  core_manager.ReadOnlyResourceManager
 	adminClient admin.EnvoyAdminClient
+	maxMsgSize  int
 }
 
 var _ EnvoyAdminProcessor = &envoyAdminProcessor{}
@@ -30,11 +33,25 @@ var _ EnvoyAdminProcessor = &envoyAdminProcessor{}
 func NewEnvoyAdminProcessor(
 	resManager core_manager.ReadOnlyResourceManager,
 	adminClient admin.EnvoyAdminClient,
+	maxMsgSize uint32,
 ) EnvoyAdminProcessor {
 	return &envoyAdminProcessor{
 		resManager:  resManager,
 		adminClient: adminClient,
+		maxMsgSize:  int(maxMsgSize),
 	}
+}
+
+// tooLargeError explains that a response can't be delivered over KDS. Sending it
+// would exceed the message size limit, which aborts the whole RPC stream and
+// takes down every other KDS stream multiplexed on the same connection, so we
+// answer with an error instead. The receiver enforces the limit on the
+// uncompressed message, which is what proto.Size reports.
+func tooLargeError(rpcName string, size int, maxMsgSize int) string {
+	return fmt.Sprintf(
+		"%s response is %d bytes which exceeds the maximum KDS message size of %d bytes, increase maxMsgSize on both the zone CP and the global CP",
+		rpcName, size, maxMsgSize,
+	)
 }
 
 func (s *envoyAdminProcessor) StartProcessingXDSConfigs(
@@ -63,6 +80,11 @@ func (s *envoyAdminProcessor) StartProcessingXDSConfigs(
 			if err != nil { // send the error to the client instead of terminating stream.
 				resp.Result = &mesh_proto.XDSConfigResponse_Error{
 					Error: err.Error(),
+				}
+			}
+			if size := proto.Size(resp); size > s.maxMsgSize {
+				resp.Result = &mesh_proto.XDSConfigResponse_Error{
+					Error: tooLargeError(ConfigDumpRPC, size, s.maxMsgSize),
 				}
 			}
 			if err := stream.Send(resp); err != nil {
@@ -101,6 +123,11 @@ func (s *envoyAdminProcessor) StartProcessingStats(
 					Error: err.Error(),
 				}
 			}
+			if size := proto.Size(resp); size > s.maxMsgSize {
+				resp.Result = &mesh_proto.StatsResponse_Error{
+					Error: tooLargeError(StatsRPC, size, s.maxMsgSize),
+				}
+			}
 			if err := stream.Send(resp); err != nil {
 				errorCh <- err
 				return
@@ -135,6 +162,11 @@ func (s *envoyAdminProcessor) StartProcessingClusters(
 			if err != nil { // send the error to the client instead of terminating stream.
 				resp.Result = &mesh_proto.ClustersResponse_Error{
 					Error: err.Error(),
+				}
+			}
+			if size := proto.Size(resp); size > s.maxMsgSize {
+				resp.Result = &mesh_proto.ClustersResponse_Error{
+					Error: tooLargeError(ClustersRPC, size, s.maxMsgSize),
 				}
 			}
 			if err := stream.Send(resp); err != nil {
