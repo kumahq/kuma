@@ -100,7 +100,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.hostNetwork | bool | `false` | Specifies if the deployment should be started in hostNetwork mode. |
 | controlPlane.admissionServerPort | int | `5443` | Define a new server port for the admission controller. Recommended to set in combination with hostNetwork to prevent multiple port bindings on the same port (like Calico in AWS EKS). |
 | controlPlane.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for control plane. |
-| controlPlane.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for control plane. |
+| controlPlane.containerSecurityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true}` | Security context at the container level for control plane. |
 | controlPlane.supportGatewaySecretsInAllNamespaces | bool | `false` | If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace. The downside is that control plane requires permission to read Secrets in all namespaces. |
 | controlPlane.dns | object | `{"config":{"nameservers":[],"searches":[]},"policy":""}` | DNS configuration for the control-plane pod. This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy). |
 | controlPlane.dns.policy | string | `""` | Defines how DNS resolution is configured for that Pod. |
@@ -169,7 +169,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Mesh Ingress pods. This is rendered as a template, so you can use variables to generate match labels. |
 | ingress.priorityClassName | string | `""` | Priority Class Name of the ingress |
 | ingress.podSecurityContext | object | `{"runAsGroup":5678,"runAsNonRoot":true,"runAsUser":5678}` | Security context at the pod level for ingress |
-| ingress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for ingress |
+| ingress.containerSecurityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true}` | Security context at the container level for ingress |
 | ingress.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
 | ingress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | ingress.dns | object | `{"config":{"nameservers":[],"searches":[]},"policy":""}` | DNS configuration for the ingress pod. This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy). |
@@ -207,7 +207,7 @@ A Helm chart for the Kuma Control Plane
 | egress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Egress pods. This is rendered as a template, so you can use variables to generate match labels. |
 | egress.priorityClassName | string | `""` | Priority Class Name of the egress |
 | egress.podSecurityContext | object | `{"runAsGroup":5678,"runAsNonRoot":true,"runAsUser":5678}` | Security context at the pod level for egress |
-| egress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for egress |
+| egress.containerSecurityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true}` | Security context at the container level for egress |
 | egress.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
 | egress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | egress.dns | object | `{"config":{"nameservers":[],"searches":[]},"policy":""}` | DNS configuration for the egress pod. This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy). |
@@ -223,7 +223,7 @@ A Helm chart for the Kuma Control Plane
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
-| hooks.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for crd/webhook/ns |
+| hooks.containerSecurityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true}` | Security context at the container level for crd/webhook/ns |
 | hooks.ebpfCleanup | object | `{"containerSecurityContext":{"readOnlyRootFilesystem":false},"podSecurityContext":{"runAsNonRoot":false}}` | ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs Changing below values will potentially break ebpf cleanup completely, so be cautious when doing so. |
 | hooks.ebpfCleanup.podSecurityContext | object | `{"runAsNonRoot":false}` | Security context at the pod level for crd/webhook/cleanup-ebpf |
 | hooks.ebpfCleanup.containerSecurityContext | object | `{"readOnlyRootFilesystem":false}` | Security context at the container level for crd/webhook/cleanup-ebpf |

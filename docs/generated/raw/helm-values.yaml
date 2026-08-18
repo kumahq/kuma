@@ -347,6 +347,10 @@ controlPlane:
   # -- Security context at the container level for control plane.
   containerSecurityContext:
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
 
   # -- If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
   # The downside is that control plane requires permission to read Secrets in all namespaces.
@@ -575,6 +579,10 @@ ingress:
   # -- Security context at the container level for ingress
   containerSecurityContext:
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
 
   # -- Annotations to add for Control Plane's Service Account
   serviceAccountAnnotations: { }
@@ -701,6 +709,10 @@ egress:
   # -- Security context at the container level for egress
   containerSecurityContext:
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
 
   # -- Annotations to add for Control Plane's Service Account
   serviceAccountAnnotations: { }
@@ -746,6 +758,10 @@ hooks:
   # -- Security context at the container level for crd/webhook/ns
   containerSecurityContext:
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
 
   # -- ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs
   # Changing below values will potentially break ebpf cleanup completely,
