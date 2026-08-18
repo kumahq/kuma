@@ -93,6 +93,10 @@ spec:
             - '--ignore-not-found'
             - kuma-validating-webhook-configuration
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
             runAsUser: 65534
           resources:
@@ -192,6 +196,10 @@ spec:
         - name: pre-install-job
           image: "registry.k8s.io/kubectl:v1.36.1@sha256:d08f476d04d0e30f426f06bc6ff6c38913aaa4591943046b77e2f74a72d3611c"
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
             runAsUser: 65534
           resources:
@@ -323,6 +331,10 @@ spec:
         - name: pre-upgrade-job
           image: "registry.k8s.io/kubectl:v1.36.1@sha256:d08f476d04d0e30f426f06bc6ff6c38913aaa4591943046b77e2f74a72d3611c"
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
             runAsUser: 65534
           resources:
@@ -341,6 +353,10 @@ spec:
         - name: pre-upgrade-job-init
           image: "docker.io/kumahq/kumactl:0.0.0-preview.vlocal-build"
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
           resources:
              requests:
