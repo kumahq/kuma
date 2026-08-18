@@ -42,15 +42,27 @@ func NewEnvoyAdminProcessor(
 	}
 }
 
-// tooLargeError explains that a response can't be delivered over KDS. Sending a
+// tooLargeError reports that a response can't be delivered over KDS. Sending a
 // message past the size limit makes gRPC abort the whole RPC stream, which takes
 // down every other KDS stream multiplexed on the same connection, so the
 // processor answers with this error instead. gRPC enforces the limit on the
 // uncompressed message, which is what proto.Size reports.
-func tooLargeError(rpcName string, size int, maxMsgSize int) string {
+//
+// The advice is deliberately limited to reachableBackends. Raising maxMsgSize is
+// not suggested: the binding limit is the one the global CP receives with, which
+// a zone operator may not control, and raising only the zone side lets messages
+// past this check that the global CP then rejects, dropping the stream.
+func (s *envoyAdminProcessor) tooLargeError(rpcName string, resourceName string, size int) string {
+	log.Info("Envoy admin response exceeds the maximum KDS message size, replying with an error instead of sending it",
+		"rpc", rpcName,
+		"resource", resourceName,
+		"size", size,
+		"maxMsgSize", s.maxMsgSize,
+		"hint", "trim the proxy config with reachableBackends",
+	)
 	return fmt.Sprintf(
-		"the original %s response is %d bytes which exceeds the maximum KDS message size of %d bytes. A response this large usually means the proxy is configured for every service in the mesh, so prefer trimming its config with reachableBackends. Raising maxMsgSize on both the zone CP and the global CP also works, at the cost of more memory on both ends",
-		rpcName, size, maxMsgSize,
+		"the original %s response is %d bytes which exceeds the maximum KDS message size of %d bytes. A response this large usually means the proxy is configured for every service in the mesh, consider trimming its config with reachableBackends",
+		rpcName, size, s.maxMsgSize,
 	)
 }
 
@@ -84,7 +96,7 @@ func (s *envoyAdminProcessor) StartProcessingXDSConfigs(
 			}
 			if size := proto.Size(resp); size > s.maxMsgSize {
 				resp.Result = &mesh_proto.XDSConfigResponse_Error{
-					Error: tooLargeError(ConfigDumpRPC, size, s.maxMsgSize),
+					Error: s.tooLargeError(ConfigDumpRPC, req.ResourceName, size),
 				}
 			}
 			if err := stream.Send(resp); err != nil {
@@ -125,7 +137,7 @@ func (s *envoyAdminProcessor) StartProcessingStats(
 			}
 			if size := proto.Size(resp); size > s.maxMsgSize {
 				resp.Result = &mesh_proto.StatsResponse_Error{
-					Error: tooLargeError(StatsRPC, size, s.maxMsgSize),
+					Error: s.tooLargeError(StatsRPC, req.ResourceName, size),
 				}
 			}
 			if err := stream.Send(resp); err != nil {
@@ -166,7 +178,7 @@ func (s *envoyAdminProcessor) StartProcessingClusters(
 			}
 			if size := proto.Size(resp); size > s.maxMsgSize {
 				resp.Result = &mesh_proto.ClustersResponse_Error{
-					Error: tooLargeError(ClustersRPC, size, s.maxMsgSize),
+					Error: s.tooLargeError(ClustersRPC, req.ResourceName, size),
 				}
 			}
 			if err := stream.Send(resp); err != nil {
