@@ -353,27 +353,11 @@ func (r *resourceCrudHandler) updateResource(
 
 	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
 
-	// Compute labels for current state BEFORE modifying spec
-	currentLabels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), currentRes.GetMeta(), meshName, currentRes.GetMeta().GetName())
-	if err != nil {
-		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
-		return
-	}
-
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 
-	// Compute labels for new request
 	labels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), newResRest.GetMeta(), meshName, currentRes.GetMeta().GetName())
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
-		return
-	}
-
-	// Validate immutable labels by comparing computed results
-	if validationErr := r.validateImmutableLabels(currentLabels, labels); validationErr.HasViolations() {
-		var err validators.ValidationError
-		err.AddError("labels", validationErr)
-		rest_errors.HandleError(ctx, response, &err, "Could not update a resource")
 		return
 	}
 
@@ -505,33 +489,6 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
 	}
-	return err
-}
-
-func (r *resourceCrudHandler) validateImmutableLabels(currentComputedLabels, newComputedLabels map[string]string) validators.ValidationError {
-	var err validators.ValidationError
-
-	immutableLabels := []string{
-		mesh_proto.ZoneTag,
-	}
-
-	for _, label := range immutableLabels {
-		currentVal, currentExists := currentComputedLabels[label]
-		newVal, newExists := newComputedLabels[label]
-
-		if currentExists && !newExists {
-			err.AddViolationAt(
-				validators.Root().Key(label),
-				fmt.Sprintf("is immutable, cannot be removed (was %q)", currentVal),
-			)
-		} else if currentExists && currentVal != newVal {
-			err.AddViolationAt(
-				validators.Root().Key(label),
-				fmt.Sprintf("is immutable, cannot be changed from %q to %q", currentVal, newVal),
-			)
-		}
-	}
-
 	return err
 }
 

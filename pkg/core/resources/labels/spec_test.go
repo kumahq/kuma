@@ -67,6 +67,15 @@ var _ = Describe("RequiredOn.Matches", func() {
 		Expect(r.Matches(ctx)).To(BeFalse())
 	})
 
+	It("requires a proxy descriptor when Proxy is set", func() {
+		r := labels.RequiredOn{Proxy: true}
+		Expect(r.Matches(baseCtx())).To(BeFalse())
+
+		ctx := baseCtx()
+		ctx.Descriptor.IsProxy = true
+		Expect(r.Matches(ctx)).To(BeTrue())
+	})
+
 	It("enforces ResourceTypes as an allowlist", func() {
 		r := labels.RequiredOn{ResourceTypes: []core_model.ResourceType{core_mesh.DataplaneType}}
 

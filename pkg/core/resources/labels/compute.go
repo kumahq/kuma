@@ -104,9 +104,9 @@ func WithPrivileged(privileged bool) Option {
 }
 
 // Compute returns the labels the control plane should store for a resource. It
-// force-sets / deletes control-plane-owned labels off the registry (see
-// specs.go) and force-sets kuma.io/origin from the CP mode. User- and
-// system-owned labels are left untouched.
+// force-sets every label declared in the registry (see specs.go) whose
+// predicate matches and deletes the ones whose predicate no longer does. Labels
+// outside the registry are left untouched.
 func Compute(
 	rd core_model.ResourceTypeDescriptor,
 	spec core_model.ResourceSpec,
@@ -148,20 +148,16 @@ func Compute(
 		ResourceMesh: resourceMesh,
 	}
 
-	labels[mesh_proto.ResourceOriginLabel] = expectedOrigin(ctx)
-
-	for key, specs := range registry {
-		ls, ok := matchedSpec(specs, ctx)
-		switch {
-		case ok && ls.Owner == OwnerControlPlane:
-			value, err := ls.Expected(ctx)
-			if err != nil {
-				return nil, err
-			}
-			labels[key] = value
-		case !ok && isControlPlaneKey(specs):
+	for key, ls := range registry {
+		if !ls.RequiredOn.Matches(ctx) {
 			delete(labels, key)
+			continue
 		}
+		value, err := ls.Expected(ctx)
+		if err != nil {
+			return nil, err
+		}
+		labels[key] = value
 	}
 
 	// Service account and workload are not derived from the resource spec but

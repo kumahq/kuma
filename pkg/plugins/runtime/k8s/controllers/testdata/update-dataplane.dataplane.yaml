@@ -8,7 +8,6 @@ metadata:
     kuma.io/display-name: example
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
-    kuma.io/zone: default
     version: "0.1"
   name: example
   namespace: playground

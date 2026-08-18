@@ -21,23 +21,6 @@ type ValidationContext struct {
 	ResourceMesh string
 }
 
-// Owner declares who is authoritative for a reserved label's value.
-type Owner string
-
-const (
-	// OwnerControlPlane: the control plane both writes the value and knows how
-	// to compute it (e.g. a zone knows the status of something). Compute
-	// force-sets these from the registry, overriding whatever the user sent.
-	OwnerControlPlane Owner = "control-plane"
-	// OwnerUser: the user sets the value; the control plane never computes it
-	// and only validates the format / allowed values.
-	OwnerUser Owner = "user"
-	// OwnerSystem: the value comes from another trusted component in the system
-	// that the control plane cannot compute itself (e.g. global trusts that the
-	// zone set the label correctly). Left untouched by Compute.
-	OwnerSystem Owner = "system"
-)
-
 type SpecTrait string
 
 const (
@@ -54,6 +37,7 @@ type RequiredOn struct {
 	ResourceTypes     []core_model.ResourceType
 	SpecTraits        []SpecTrait
 	Policy            bool
+	Proxy             bool
 	RequiresNamespace bool
 }
 
@@ -76,6 +60,9 @@ func (r RequiredOn) Matches(ctx ValidationContext) bool {
 		return false
 	}
 	if r.Policy && (!ctx.Descriptor.IsPolicy || !ctx.Descriptor.IsPluginOriginated) {
+		return false
+	}
+	if r.Proxy && !ctx.Descriptor.IsProxy {
 		return false
 	}
 	for _, trait := range r.SpecTraits {
@@ -111,77 +98,10 @@ func specTraitHolds(t SpecTrait, spec core_model.ResourceSpec) bool {
 	return false
 }
 
-// LabelSpec describes one reserved label. kuma.io/origin is separate.
+// LabelSpec describes one control-plane-computed label: when it applies and
+// what its value is. Compute force-sets it while RequiredOn matches and deletes
+// it as soon as it stops matching.
 type LabelSpec struct {
-	Key           string
-	Owner         Owner
-	AllowedValues []string
-	RequiredOn    RequiredOn
-	// nil means the CP has no opinion on the value.
-	Expected func(ctx ValidationContext) (string, error)
-}
-
-var registry = map[string][]LabelSpec{}
-
-// register adds a spec to the registry. It panics if a key already has a spec
-// whose RequiredOn could match the same context, guaranteeing that at most one
-// spec per key can match.
-func register(s LabelSpec) {
-	if s.Owner == OwnerControlPlane && s.Expected == nil {
-		panic("resource_labels: OwnerControlPlane spec must define Expected for key " + s.Key)
-	}
-	for _, existing := range registry[s.Key] {
-		if requiredOnOverlap(existing.RequiredOn, s.RequiredOn) {
-			panic("resource_labels: overlapping RequiredOn for key " + s.Key)
-		}
-	}
-	registry[s.Key] = append(registry[s.Key], s)
-}
-
-// requiredOnOverlap reports whether two predicates could both match some
-// context. It returns false only when they are provably disjoint on one of the
-// single-valued dimensions (a context carries exactly one Mode, Scope,
-// Environment and ResourceType); the flag/trait/bool dimensions are treated
-// conservatively as always-possibly-overlapping.
-func requiredOnOverlap(a, b RequiredOn) bool {
-	return !disjoint(a.Modes, b.Modes) &&
-		!disjoint(a.ResourceScopes, b.ResourceScopes) &&
-		!disjoint(a.Environments, b.Environments) &&
-		!disjoint(a.ResourceTypes, b.ResourceTypes)
-}
-
-// disjoint reports whether two allowlists can never be satisfied by the same
-// single value. An empty list means "any value", so it is never disjoint.
-func disjoint[T comparable](a, b []T) bool {
-	if len(a) == 0 || len(b) == 0 {
-		return false
-	}
-	for _, x := range a {
-		if slices.Contains(b, x) {
-			return false
-		}
-	}
-	return true
-}
-
-// matchedSpec returns the first spec whose RequiredOn matches. At most one spec
-// per key can match, as enforced by register.
-func matchedSpec(specs []LabelSpec, ctx ValidationContext) (LabelSpec, bool) {
-	for _, s := range specs {
-		if s.RequiredOn.Matches(ctx) {
-			return s, true
-		}
-	}
-	return LabelSpec{}, false
-}
-
-// isControlPlaneKey reports whether a registry key is control-plane-owned, and
-// therefore safe for Compute to force-set or delete.
-func isControlPlaneKey(specs []LabelSpec) bool {
-	for _, s := range specs {
-		if s.Owner == OwnerControlPlane {
-			return true
-		}
-	}
-	return false
+	RequiredOn RequiredOn
+	Expected   func(ctx ValidationContext) (string, error)
 }

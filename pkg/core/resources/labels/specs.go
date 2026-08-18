@@ -5,25 +5,37 @@ import (
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
-func init() {
-	// Control-plane-owned labels.
-	register(LabelSpec{
-		Key:   mesh_proto.MeshTag,
-		Owner: OwnerControlPlane,
+// registry declares every label the control plane computes. Duplicate keys are
+// a compile error, so exactly one spec owns a key.
+var registry = map[string]LabelSpec{
+	mesh_proto.ResourceOriginLabel: {
+		// Standalone is normalized to zone at CP startup, so Global and Zone
+		// cover every real CP mode.
+		RequiredOn: RequiredOn{
+			Modes: []config_core.CpMode{config_core.Global, config_core.Zone},
+		},
+		Expected: func(ctx ValidationContext) (string, error) {
+			if ctx.Mode == config_core.Global {
+				return string(mesh_proto.GlobalResourceOrigin), nil
+			}
+			return string(mesh_proto.ZoneResourceOrigin), nil
+		},
+	},
+
+	mesh_proto.MeshTag: {
 		RequiredOn: RequiredOn{
 			ResourceScopes: []core_model.ResourceScope{core_model.ScopeMesh},
 		},
 		Expected: func(ctx ValidationContext) (string, error) {
 			return ctx.ResourceMesh, nil
 		},
-	})
+	},
 
-	register(LabelSpec{
-		Key:   mesh_proto.ZoneTag,
-		Owner: OwnerControlPlane,
+	mesh_proto.ZoneTag: {
+		// If a resource can't be created on a zone (like Mesh), there is no
+		// point in adding 'kuma.io/zone' and 'kuma.io/env'.
 		RequiredOn: RequiredOn{
 			Modes:    []config_core.CpMode{config_core.Zone},
 			KDSFlags: []core_model.KDSFlagType{core_model.ProvidedByZoneFlag},
@@ -31,12 +43,9 @@ func init() {
 		Expected: func(ctx ValidationContext) (string, error) {
 			return ctx.ZoneName, nil
 		},
-	})
+	},
 
-	register(LabelSpec{
-		Key:           mesh_proto.EnvTag,
-		Owner:         OwnerControlPlane,
-		AllowedValues: []string{mesh_proto.KubernetesEnvironment, mesh_proto.UniversalEnvironment},
+	mesh_proto.EnvTag: {
 		RequiredOn: RequiredOn{
 			Modes:    []config_core.CpMode{config_core.Zone},
 			KDSFlags: []core_model.KDSFlagType{core_model.ProvidedByZoneFlag},
@@ -47,25 +56,15 @@ func init() {
 			}
 			return mesh_proto.UniversalEnvironment, nil
 		},
-	})
+	},
 
-	register(LabelSpec{
-		Key:   mesh_proto.DisplayName,
-		Owner: OwnerControlPlane,
+	mesh_proto.DisplayName: {
 		Expected: func(ctx ValidationContext) (string, error) {
 			return ctx.ResourceName, nil
 		},
-	})
+	},
 
-	register(LabelSpec{
-		Key:   mesh_proto.PolicyRoleLabel,
-		Owner: OwnerControlPlane,
-		AllowedValues: []string{
-			string(mesh_proto.SystemPolicyRole),
-			string(mesh_proto.ProducerPolicyRole),
-			string(mesh_proto.ConsumerPolicyRole),
-			string(mesh_proto.WorkloadOwnerPolicyRole),
-		},
+	mesh_proto.PolicyRoleLabel: {
 		RequiredOn: RequiredOn{
 			Policy:            true,
 			RequiresNamespace: true,
@@ -81,11 +80,9 @@ func init() {
 			}
 			return string(role), nil
 		},
-	})
+	},
 
-	register(LabelSpec{
-		Key:   mesh_proto.KubeNamespaceTag,
-		Owner: OwnerControlPlane,
+	mesh_proto.KubeNamespaceTag: {
 		RequiredOn: RequiredOn{
 			Environments:      []config_core.EnvironmentType{config_core.KubernetesEnvironment},
 			RequiresNamespace: true,
@@ -93,18 +90,10 @@ func init() {
 		Expected: func(ctx ValidationContext) (string, error) {
 			return ctx.Namespace.value, nil
 		},
-	})
+	},
 
-	register(LabelSpec{
-		Key:   mesh_proto.ProxyTypeLabel,
-		Owner: OwnerControlPlane,
-		RequiredOn: RequiredOn{
-			ResourceTypes: []core_model.ResourceType{
-				core_mesh.DataplaneType,
-				core_mesh.ZoneIngressType,
-				core_mesh.ZoneEgressType,
-			},
-		},
+	mesh_proto.ProxyTypeLabel: {
+		RequiredOn: RequiredOn{Proxy: true},
 		Expected: func(ctx ValidationContext) (string, error) {
 			proxy, ok := ctx.Spec.(core_model.ProxyResource)
 			if !ok {
@@ -112,11 +101,9 @@ func init() {
 			}
 			return string(proxy.GetProxyType()), nil
 		},
-	})
+	},
 
-	register(LabelSpec{
-		Key:   mesh_proto.ListenerZoneIngressLabel,
-		Owner: OwnerControlPlane,
+	mesh_proto.ListenerZoneIngressLabel: {
 		RequiredOn: RequiredOn{
 			ResourceTypes: []core_model.ResourceType{core_mesh.DataplaneType},
 			SpecTraits:    []SpecTrait{HasZoneIngressListener},
@@ -124,11 +111,9 @@ func init() {
 		Expected: func(ctx ValidationContext) (string, error) {
 			return "enabled", nil
 		},
-	})
+	},
 
-	register(LabelSpec{
-		Key:   mesh_proto.ListenerZoneEgressLabel,
-		Owner: OwnerControlPlane,
+	mesh_proto.ListenerZoneEgressLabel: {
 		RequiredOn: RequiredOn{
 			ResourceTypes: []core_model.ResourceType{core_mesh.DataplaneType},
 			SpecTraits:    []SpecTrait{HasZoneEgressListener},
@@ -136,58 +121,5 @@ func init() {
 		Expected: func(ctx ValidationContext) (string, error) {
 			return "enabled", nil
 		},
-	})
-
-	// System-owned labels.
-	register(LabelSpec{
-		Key:   metadata.KumaServiceAccount,
-		Owner: OwnerSystem,
-		RequiredOn: RequiredOn{
-			Environments:  []config_core.EnvironmentType{config_core.KubernetesEnvironment},
-			ResourceTypes: []core_model.ResourceType{core_mesh.DataplaneType},
-		},
-	})
-
-	register(LabelSpec{
-		Key:   metadata.KumaWorkload,
-		Owner: OwnerSystem,
-		RequiredOn: RequiredOn{
-			Modes:         []config_core.CpMode{config_core.Zone},
-			Environments:  []config_core.EnvironmentType{config_core.KubernetesEnvironment},
-			ResourceTypes: []core_model.ResourceType{core_mesh.DataplaneType},
-		},
-	})
-
-	register(LabelSpec{
-		Key:   mesh_proto.ManagedByLabel,
-		Owner: OwnerSystem,
-	})
-
-	register(LabelSpec{
-		Key:   mesh_proto.DeletionGracePeriodStartedLabel,
-		Owner: OwnerSystem,
-	})
-
-	// User-owned labels.
-	register(LabelSpec{
-		Key:           mesh_proto.EffectLabel,
-		Owner:         OwnerUser,
-		AllowedValues: []string{"", "shadow"},
-	})
-
-	register(LabelSpec{
-		Key:           mesh_proto.KDSSyncLabel,
-		Owner:         OwnerUser,
-		AllowedValues: []string{"", "enabled", "disabled"},
-	})
-
-	register(LabelSpec{
-		Key:   metadata.KumaWorkload,
-		Owner: OwnerUser,
-		RequiredOn: RequiredOn{
-			Modes:         []config_core.CpMode{config_core.Zone},
-			Environments:  []config_core.EnvironmentType{config_core.UniversalEnvironment},
-			ResourceTypes: []core_model.ResourceType{core_mesh.DataplaneType},
-		},
-	})
+	},
 }
