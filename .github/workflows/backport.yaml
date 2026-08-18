@@ -100,18 +100,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_DEBUG: ${{ runner.debug == '1' }}
+          INPUT_BRANCHES: ${{ inputs.branches }}
+          REPOSITORY: ${{ github.repository }}
+          PR_BASE_REF: ${{ steps.get-pr-info.outputs.pr_base_ref }}
         run: |
           if [[ "${{ runner.debug }}" == "1" ]]; then
             set -x
           fi
           
           # target_branches
-          if [[ "${{ inputs.branches }}" != "" ]]; then
-            TARGET_BRANCHES=$(echo "[\"${{ inputs.branches }}\"]" | sed 's/ //g' | sed 's/,/","/g')
+          if [[ -n "$INPUT_BRANCHES" ]]; then
+            TARGET_BRANCHES=$(echo "[\"$INPUT_BRANCHES\"]" | sed 's/ //g' | sed 's/,/","/g')
             echo "branches=${TARGET_BRANCHES}" >> $GITHUB_OUTPUT
           else
             # The head -1 is because GITHUB_OUTPUT is easier to work with single line output
-            TARGET_BRANCHES=$(gh api /repos/${{ github.repository }}/contents/${{ env.BRANCH_FILE_PATH }} --jq '.content | @base64d' | jq  -cM '.[:index("${{ steps.get-pr-info.outputs.pr_base_ref }}")]')
+            TARGET_BRANCHES=$(gh api "/repos/${REPOSITORY}/contents/${BRANCH_FILE_PATH}" --jq '.content | @base64d' | jq -cM --arg base "$PR_BASE_REF" '.[:index($base)]')
             echo "branches=${TARGET_BRANCHES}" >> $GITHUB_OUTPUT
           fi
   open-prs:
