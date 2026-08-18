@@ -122,7 +122,7 @@ var _ = Describe("Envoy Admin Processor", func() {
 			Expect(resp.RequestId).To(Equal("req-1"))
 			Expect(resp.GetError()).To(BeEmpty())
 			Expect(resp.GetConfig()).To(HaveLen(64))
-			Expect(errorCh).ToNot(Receive())
+			Consistently(errorCh, "100ms").ShouldNot(Receive())
 		})
 
 		It("should reply with an error and keep the stream alive when the config dump exceeds maxMsgSize", func() {
@@ -147,7 +147,7 @@ var _ = Describe("Envoy Admin Processor", func() {
 			Expect(resp.GetError()).To(ContainSubstring("exceeds the maximum KDS message size of 1024 bytes"))
 
 			// and the stream is not torn down
-			Expect(errorCh).ToNot(Receive())
+			Consistently(errorCh, "100ms").ShouldNot(Receive())
 
 			// and it keeps serving subsequent requests
 			stream.requests <- &mesh_proto.XDSConfigRequest{
@@ -181,7 +181,7 @@ var _ = Describe("Envoy Admin Processor", func() {
 			Eventually(stream.sent).Should(Receive(&resp))
 			Expect(resp.GetStats()).To(BeEmpty())
 			Expect(resp.GetError()).To(ContainSubstring("exceeds the maximum KDS message size of 1024 bytes"))
-			Expect(errorCh).ToNot(Receive())
+			Consistently(errorCh, "100ms").ShouldNot(Receive())
 		})
 	})
 
@@ -205,7 +205,7 @@ var _ = Describe("Envoy Admin Processor", func() {
 			Eventually(stream.sent).Should(Receive(&resp))
 			Expect(resp.GetClusters()).To(BeEmpty())
 			Expect(resp.GetError()).To(ContainSubstring("exceeds the maximum KDS message size of 1024 bytes"))
-			Expect(errorCh).ToNot(Receive())
+			Consistently(errorCh, "100ms").ShouldNot(Receive())
 		})
 	})
 })

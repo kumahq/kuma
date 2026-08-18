@@ -350,7 +350,7 @@ func (c *client) handleProcessingErrors(
 		return
 	}
 	if status.Code(err) == codes.ResourceExhausted {
-		log.Error(err, "rpc stream failed, because a message exceeded the maximum KDS message size. This rpc is unavailable until the CP restarts. Increase maxMsgSize on both the zone CP and the global CP.")
+		log.Error(err, "rpc stream failed, because a message exceeded the maximum KDS message size. This rpc is unavailable until the KDS connection is re-established. Increase maxMsgSize on both the zone CP and the global CP.")
 		// Do not rethrow the error. Retrying resends the same oversized message,
 		// so restarting the KDS multiplex would only take resource sync down
 		// with it in a loop.

@@ -42,14 +42,14 @@ func NewEnvoyAdminProcessor(
 	}
 }
 
-// tooLargeError explains that a response can't be delivered over KDS. Sending it
-// would exceed the message size limit, which aborts the whole RPC stream and
-// takes down every other KDS stream multiplexed on the same connection, so we
-// answer with an error instead. The receiver enforces the limit on the
+// tooLargeError explains that a response can't be delivered over KDS. Sending a
+// message past the size limit makes gRPC abort the whole RPC stream, which takes
+// down every other KDS stream multiplexed on the same connection, so the
+// processor answers with this error instead. gRPC enforces the limit on the
 // uncompressed message, which is what proto.Size reports.
 func tooLargeError(rpcName string, size int, maxMsgSize int) string {
 	return fmt.Sprintf(
-		"%s response is %d bytes which exceeds the maximum KDS message size of %d bytes, increase maxMsgSize on both the zone CP and the global CP",
+		"the original %s response is %d bytes which exceeds the maximum KDS message size of %d bytes, increase maxMsgSize on both the zone CP and the global CP",
 		rpcName, size, maxMsgSize,
 	)
 }
