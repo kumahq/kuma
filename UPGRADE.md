@@ -304,6 +304,31 @@ This covers every `MeshHTTPRoute`, not only the ones the Gateway API translation
 
 None, as long as every `backendRefs` entry names a resource that exists. Check the routes that reference a resource from another zone or another namespace before upgrading: those are the ones whose masked misconfiguration becomes visible traffic loss.
 
+### A `MeshHTTPRoute` `backendRef` naming a port the destination lacks now fails closed
+
+A `backendRef` whose destination exists but does not carry the referenced
+`sectionName`/port no longer counts as resolved. Previously it silently
+dropped out of the split: a missing `Service` port fell through to the
+parent service on a different port than the one requested, and a missing
+`MeshService` port fell through to another port of that same `MeshService`.
+Both now count against `AllBackendRefsUnresolved` the same way a
+nonexistent destination does, so a rule whose backendRefs all name a
+missing port answers `500` instead of routing traffic to a port nobody
+asked for.
+
+The Gateway API `HTTPRoute` translation reports `ResolvedRefs=False` with
+reason `BackendNotFound` for a `Service` backend missing the requested
+port; it already did for `MeshService`. Because a `MeshService`'s `Spec.Ports`
+can be briefly empty while it converges, a route that references one of its
+ports can fail matching requests during that window.
+
+**Action required**
+
+None, as long as every `backendRefs` entry names a port the destination
+actually has. Check routes with an explicit port or `sectionName` before
+upgrading: those are the ones that were silently reaching the wrong
+destination.
+
 ### Gateway API cross-namespace `backendRefs` now require a `ReferenceGrant`
 
 The Gateway API `HTTPRoute` translation now enforces `ReferenceGrant` for any

@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -211,5 +213,90 @@ var _ = Describe("prepareRoutes", func() {
 	},
 		Entry("a resolving backendRef keeps its traffic", []string{"payments", "missing-backend"}, false, []string{"payments"}),
 		Entry("no resolving backendRef fails closed", []string{"missing-backend", "other-missing"}, true, nil),
+	)
+
+	DescribeTable("should fail closed when a backendRef names a port the destination does not have", func(refPorts []uint32, expectedAllUnresolved bool, expectedResolved []uint32) {
+		backend := builders.MeshService().
+			WithName("backend").
+			WithMesh(core_model.DefaultMesh).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+		payments := builders.MeshService().
+			WithName("payments-hash").
+			WithMesh(core_model.DefaultMesh).
+			WithLabels(map[string]string{
+				mesh_proto.DisplayName:      "payments",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			}).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+
+		meshCtx := xds_builders.Context().
+			WithMeshLocalResources([]core_model.Resource{backend, payments}).
+			Build().
+			Mesh
+
+		matches := []api.Match{{
+			Path: &api.PathMatch{Type: api.PathPrefix, Value: "/split"},
+		}}
+		policyMeta := &test_model.ResourceMeta{
+			Name: "web-route",
+			Mesh: core_model.DefaultMesh,
+			Labels: map[string]string{
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			},
+		}
+		var backendRefs []common_api.BackendRef
+		for _, port := range refPorts {
+			backendRefs = append(backendRefs, common_api.BackendRef{
+				TargetRef: builders.TargetRefMeshService("payments", "kuma-demo", ""),
+				Port:      pointer.To(port),
+			})
+		}
+		toRules := core_rules.ToRules{
+			ResourceRules: outbound.ResourceRules{
+				kri.From(backend): {
+					Resource: backend.GetMeta(),
+					Conf: []any{api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: matches,
+							Default: api.RuleConf{
+								BackendRefs: &backendRefs,
+							},
+						}},
+					}},
+					OriginByMatches: map[common_api.MatchesHash]common.Origin{
+						api.HashMatches(matches): {Resource: policyMeta},
+					},
+				},
+			},
+		}
+		svc := meshroute_xds.DestinationService{
+			Outbound: &xds_types.Outbound{
+				Resource: kri.WithSectionName(kri.From(backend), "8080"),
+				Port:     8080,
+			},
+			Protocol: core_meta.ProtocolHTTP,
+		}
+
+		routes := prepareRoutes(toRules, svc, meshCtx)
+
+		var matched *api.Route
+		for i := range routes {
+			if routes[i].Match.Path != nil && routes[i].Match.Path.Value == "/split" {
+				matched = &routes[i]
+				break
+			}
+		}
+		Expect(matched).ToNot(BeNil())
+		Expect(matched.AllBackendRefsUnresolved).To(Equal(expectedAllUnresolved))
+		Expect(matched.BackendRefs).To(HaveLen(len(expectedResolved)))
+		for i, port := range expectedResolved {
+			Expect(matched.BackendRefs[i].ReferencesRealResource()).To(BeTrue())
+			Expect(matched.BackendRefs[i].Resource().SectionName).To(Equal(fmt.Sprintf("%d", port)))
+		}
+	},
+		Entry("a backendRef naming a missing port fails closed", []uint32{9999}, true, nil),
+		Entry("a backendRef naming an existing port next to one naming a missing port keeps only the resolving ref", []uint32{8080, 9999}, false, []uint32{8080}),
 	)
 })

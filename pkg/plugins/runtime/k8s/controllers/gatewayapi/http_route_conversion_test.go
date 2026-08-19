@@ -75,6 +75,9 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 				Name:      "backend",
 				Namespace: "kuma-demo",
 			},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Port: 80}},
+			},
 		}
 
 		reconciler := &HTTPRouteReconciler{
@@ -88,6 +91,44 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).To(BeNil())
+		Expect(targetRef).To(Equal(common_api.TargetRef{
+			Kind: common_api.MeshService,
+			Labels: pointer.To(map[string]string{
+				mesh_proto.DisplayName:      "backend",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			}),
+			SectionName: pointer.To("80"),
+		}))
+	})
+
+	It("should report ResolvedRefs=False when the referenced Service does not have the requested port", func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name:      "backend",
+				Namespace: "kuma-demo",
+			},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Port: 8080}},
+			},
+		}
+
+		reconciler := &HTTPRouteReconciler{
+			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(svc).Build(),
+			Zone:   "zone-1",
+		}
+
+		ref := serviceRef("kuma-demo", "backend")
+
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", ref)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(condition).ToNot(BeNil())
+		Expect(condition.Reason).To(Equal(string(gatewayapi.RouteReasonBackendNotFound)))
+		Expect(condition.Message).To(ContainSubstring("kuma-demo/backend"))
+		Expect(condition.Message).To(ContainSubstring("80"))
 		Expect(targetRef).To(Equal(common_api.TargetRef{
 			Kind: common_api.MeshService,
 			Labels: pointer.To(map[string]string{
@@ -204,7 +245,15 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).ToNot(BeNil())
 		Expect(condition.Reason).To(Equal(string(gatewayapi.RouteReasonBackendNotFound)))
-		Expect(targetRef.Kind).To(Equal(common_api.MeshService))
+		Expect(condition.Message).To(ContainSubstring("443"))
+		Expect(targetRef).To(Equal(common_api.TargetRef{
+			Kind: common_api.MeshService,
+			Labels: pointer.To(map[string]string{
+				mesh_proto.DisplayName:      "backend",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			}),
+			SectionName: pointer.To("443"),
+		}))
 	})
 
 	It("should deny a cross-namespace Service backendRef without a matching ReferenceGrant", func() {
