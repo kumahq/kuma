@@ -349,21 +349,18 @@ func (c *client) handleProcessingErrors(
 		// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
 		return
 	}
-	if status.Code(err) == codes.ResourceExhausted {
-		log.Error(err, "rpc stream failed, because a message exceeded the maximum KDS message size. This rpc is unavailable until the KDS connection is re-established. Increase maxMsgSize on both the zone CP and the global CP.")
+	switch {
+	case status.Code(err) == codes.ResourceExhausted:
+		log.Error(err, "rpc stream failed, because a message exceeded the maximum KDS message size. This rpc is unavailable until the KDS connection is re-established. Align maxMsgSize between the zone CP and the global CP, or trim the proxy config with reachableBackends.")
 		// Do not rethrow the error. Retrying resends the same oversized message,
 		// so restarting the KDS multiplex would only take resource sync down
 		// with it in a loop.
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-		return
-	}
-	if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
+		err = nil
+	case errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled:
 		log.Info("rpc stream shutting down")
 		// Let's not propagate this error further as we've already cancelled the context
 		err = nil
-	} else {
+	default:
 		log.Error(err, "rpc stream failed prematurely, will restart in background")
 	}
 	if err := stream.CloseSend(); err != nil {
