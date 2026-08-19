@@ -327,6 +327,98 @@ resource already exists: type="GlobalSecret" name="zone-token-signing-public-key
 	})
 })
 
+// rejectingStore refuses to create one specific resource the way a quota does:
+// with a verdict on that resource, not a database failure.
+type rejectingStore struct {
+	store.ResourceStore
+	rejectName string
+	rejectErr  error
+}
+
+func (r *rejectingStore) Create(ctx context.Context, res model.Resource, fs ...store.CreateOptionsFunc) error {
+	if store.NewCreateOptions(fs...).Name == r.rejectName {
+		return r.rejectErr
+	}
+	return r.ResourceStore.Create(ctx, res, fs...)
+}
+
+var _ = Describe("SyncResourceStoreDelta rejected resources", func() {
+	var syncer sync_store.ResourceSyncer
+	var resourceStore *rejectingStore
+
+	newSyncer := func(rejectErr error) {
+		GinkgoHelper()
+
+		resourceStore = &rejectingStore{ResourceStore: memory.NewStore(), rejectName: "mesh-2", rejectErr: rejectErr}
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		syncer, err = sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
+		Expect(err).ToNot(HaveOccurred())
+	}
+
+	BeforeEach(func() {
+		newSyncer(store.ErrorInvalid("limit reached"))
+	})
+
+	It("should fail the sync when the store fails for a reason unrelated to the resource", func() {
+		// given a store that fails without saying the resource is at fault, so the
+		// syncer cannot know that skipping it is safe
+		newSyncer(errors.New("connection refused"))
+
+		upstream := &mesh.MeshResourceList{}
+		Expect(upstream.AddItem(meshBuilder(2))).To(Succeed())
+
+		// when
+		err, nackError := syncer.Sync(context.Background(), client_v2.UpstreamResponse{
+			Type:           upstream.GetItemType(),
+			AddedResources: upstream,
+		})
+
+		// then the connection is canceled, as it was before
+		Expect(err).To(MatchError(ContainSubstring("connection refused")))
+		Expect(nackError).ToNot(HaveOccurred())
+	})
+
+	It("should NACK the rejected resource and apply the rest of the batch", func() {
+		// given a resource in the store that the upstream changed, and one it removed
+		stale := meshBuilder(3)
+		Expect(resourceStore.Create(context.Background(), stale, store.CreateBy(model.MetaToResourceKey(stale.GetMeta())))).To(Succeed())
+		removed := meshBuilder(4)
+		Expect(resourceStore.Create(context.Background(), removed, store.CreateBy(model.MetaToResourceKey(removed.GetMeta())))).To(Succeed())
+
+		// when the upstream sends a batch where a single create is rejected
+		changed := meshBuilder(3)
+		changed.Spec.SkipCreatingInitialPolicies = []string{"policy-changed"}
+		upstream := &mesh.MeshResourceList{}
+		Expect(upstream.AddItem(meshBuilder(1))).To(Succeed())
+		Expect(upstream.AddItem(meshBuilder(2))).To(Succeed())
+		Expect(upstream.AddItem(changed)).To(Succeed())
+
+		err, nackError := syncer.Sync(context.Background(), client_v2.UpstreamResponse{
+			Type:                upstream.GetItemType(),
+			AddedResources:      upstream,
+			RemovedResourcesKey: []model.ResourceKey{model.WithoutMesh("mesh-4")},
+		})
+
+		// then the stream survives and the user gets a NACK
+		Expect(err).ToNot(HaveOccurred())
+		Expect(util.IsUserError(nackError)).To(BeTrue())
+		Expect(nackError).To(MatchError(ContainSubstring("limit reached")))
+
+		// and every other create, update and delete in the batch was applied
+		actual := &mesh.MeshResourceList{}
+		Expect(resourceStore.List(context.Background(), actual)).To(Succeed())
+		names := []string{}
+		for _, item := range actual.Items {
+			names = append(names, item.GetMeta().GetName())
+		}
+		Expect(names).To(ConsistOf("mesh-1", "mesh-3"))
+		updated := mesh.NewMeshResource()
+		Expect(resourceStore.Get(context.Background(), updated, store.GetByKey("mesh-3", model.NoMesh))).To(Succeed())
+		Expect(updated.Spec.SkipCreatingInitialPolicies).To(ConsistOf("policy-changed"))
+	})
+})
+
 // conflictingStore simulates another writer winning the race on the first
 // 'conflicts' updates: the update is rejected and the stored record is bumped to
 // a new version, so a retry that doesn't rebase on a fresh copy keeps losing.
