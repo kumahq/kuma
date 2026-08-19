@@ -538,14 +538,16 @@ func zoneProxyLabels(existingLabels map[string]string, pod *kube_core.Pod) map[s
 }
 
 // zoneProxyReady reports whether a zone proxy Pod should be routed to. A terminating Pod never is, otherwise the
-// kubelet's Ready condition decides. An absent condition counts as ready, so a Pod whose status has not been
-// populated yet is not withheld from clients on the strength of missing information.
+// kubelet's ContainersReady condition decides. ContainersReady rather than Ready, because Ready is additionally
+// gated on the Pod's readiness gates, and a gate held by something that has nothing to do with the proxy would
+// withdraw a healthy instance from every client in the zone. An absent condition counts as ready, so a Pod whose
+// status has not been populated yet is not withheld from clients on the strength of missing information.
 func zoneProxyReady(pod *kube_core.Pod) bool {
 	if pod.DeletionTimestamp != nil {
 		return false
 	}
 	for _, condition := range pod.Status.Conditions {
-		if condition.Type == kube_core.PodReady {
+		if condition.Type == kube_core.ContainersReady {
 			return condition.Status != kube_core.ConditionFalse
 		}
 	}
