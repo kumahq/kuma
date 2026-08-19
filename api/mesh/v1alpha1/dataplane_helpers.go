@@ -95,6 +95,12 @@ const (
 	// "zoneingress", "zoneegress"
 	ProxyTypeLabel = "kuma.io/proxy-type"
 
+	// ProxyReadyLabel is auto-computed for zone proxies created out of a Pod. It is "false" while the Pod is
+	// terminating or not ready and "true" otherwise. Endpoint generation skips instances labeled "false", so a
+	// missing label means ready: proxies registered on Universal and resources written by an older CP keep
+	// receiving traffic.
+	ProxyReadyLabel = "kuma.io/proxy-ready"
+
 	// ManagedByLabel is used when a MeshService is auto-generated
 	ManagedByLabel = "kuma.io/managed-by"
 
