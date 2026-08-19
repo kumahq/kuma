@@ -11,11 +11,13 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	kube_discovery "k8s.io/api/discovery/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_events "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/yaml"
 
 	meshzoneaddress_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/k8s/v1alpha1"
@@ -28,6 +30,7 @@ const (
 	testZone      = "zone-1"
 	testNamespace = "kuma-system"
 	testSvcName   = "zone-ingress"
+	testSvcUID    = "11111111-1111-1111-1111-111111111111"
 )
 
 var _ = Describe("MeshZoneAddressReconciler", func() {
@@ -145,6 +148,90 @@ var _ = Describe("MeshZoneAddressReconciler", func() {
 		Entry("updates existing MeshZoneAddress", testCase{
 			inputFile:  "13.update-existing.resources.yaml",
 			outputFile: "13.update-existing.mza.yaml",
+		}),
+	)
+
+	// The fake client reads straight from its tracker, so these cases pin the decision the
+	// reconciler makes from stored state. Informer lag on a freshly written MeshZoneAddress
+	// is handled by the Owns() watch, not here.
+	type deleteCase struct {
+		mza             bool
+		ownerUID        kube_types.UID
+		expectedDeletes int
+		remaining       int
+	}
+
+	DescribeTable("should only delete a MeshZoneAddress owned by the Service",
+		func(given deleteCase) {
+			// given
+			objects := []kube_client.Object{
+				&kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: testNamespace}},
+				&kube_core.Service{ObjectMeta: kube_meta.ObjectMeta{
+					Name: testSvcName, Namespace: testNamespace, UID: testSvcUID,
+				}},
+			}
+			if given.mza {
+				meta := kube_meta.ObjectMeta{Name: testSvcName, Namespace: testNamespace}
+				if given.ownerUID != "" {
+					meta.OwnerReferences = []kube_meta.OwnerReference{{
+						APIVersion: "v1",
+						Kind:       "Service",
+						Name:       testSvcName,
+						UID:        given.ownerUID,
+					}}
+				}
+				objects = append(objects, &meshzoneaddress_k8s.MeshZoneAddress{ObjectMeta: meta})
+			}
+
+			deletes := 0
+			kubeClient := kube_client_fake.NewClientBuilder().
+				WithObjects(objects...).
+				WithScheme(k8sClientScheme).
+				WithInterceptorFuncs(interceptor.Funcs{
+					Delete: func(
+						ctx context.Context,
+						client kube_client.WithWatch,
+						obj kube_client.Object,
+						opts ...kube_client.DeleteOption,
+					) error {
+						deletes++
+						return client.Delete(ctx, obj, opts...)
+					},
+				}).
+				Build()
+
+			reconciler := &MeshZoneAddressReconciler{
+				Client:        kubeClient,
+				Log:           logr.Discard(),
+				Scheme:        k8sClientScheme,
+				EventRecorder: kube_events.NewFakeRecorder(10),
+				ZoneName:      testZone,
+			}
+
+			// when a Service without the zone-proxy label is reconciled
+			_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+				NamespacedName: kube_types.NamespacedName{Name: testSvcName, Namespace: testNamespace},
+			})
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(deletes).To(Equal(given.expectedDeletes))
+
+			mzas := &meshzoneaddress_k8s.MeshZoneAddressList{}
+			Expect(kubeClient.List(context.Background(), mzas)).To(Succeed())
+			Expect(mzas.Items).To(HaveLen(given.remaining))
+		},
+		Entry("no MeshZoneAddress to remove", deleteCase{
+			mza: false, expectedDeletes: 0, remaining: 0,
+		}),
+		Entry("stale MeshZoneAddress to remove", deleteCase{
+			mza: true, ownerUID: testSvcUID, expectedDeletes: 1, remaining: 0,
+		}),
+		Entry("keeps a MeshZoneAddress owned by another Service", deleteCase{
+			mza: true, ownerUID: "22222222-2222-2222-2222-222222222222", expectedDeletes: 0, remaining: 1,
+		}),
+		Entry("keeps a user-managed MeshZoneAddress", deleteCase{
+			mza: true, ownerUID: "", expectedDeletes: 0, remaining: 1,
 		}),
 	)
 })

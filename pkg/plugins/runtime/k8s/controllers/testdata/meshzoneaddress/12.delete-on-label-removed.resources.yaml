@@ -8,6 +8,7 @@ kind: Service
 metadata:
   name: zone-ingress
   namespace: kuma-system
+  uid: 11111111-1111-1111-1111-111111111111
 spec:
   type: LoadBalancer
 ---
@@ -16,6 +17,11 @@ kind: MeshZoneAddress
 metadata:
   name: zone-ingress
   namespace: kuma-system
+  ownerReferences:
+    - apiVersion: v1
+      kind: Service
+      name: zone-ingress
+      uid: 11111111-1111-1111-1111-111111111111
 spec:
   address: old.lb.example.com
   port: 10001

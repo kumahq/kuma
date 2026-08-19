@@ -75,7 +75,7 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 
 	// Only handle Services labeled as zone-proxy ingress.
 	if svc.GetLabels()[metadata.KumaZoneProxyTypeLabel] != KumaZoneProxyTypeIngress {
-		return kube_ctrl.Result{}, r.deleteIfExists(ctx, req.NamespacedName)
+		return kube_ctrl.Result{}, r.deleteIfExists(ctx, svc)
 	}
 
 	// Require at least one ready endpoint before publishing the address.
@@ -85,7 +85,7 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	}
 	if !ready {
 		log.V(1).Info("no ready endpoints, removing MeshZoneAddress")
-		return kube_ctrl.Result{}, r.deleteIfExists(ctx, req.NamespacedName)
+		return kube_ctrl.Result{}, r.deleteIfExists(ctx, svc)
 	}
 
 	// Resolve public address and port from the Service.
@@ -96,7 +96,7 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	if address == "" {
 		r.Eventf(svc, nil, kube_core.EventTypeWarning, NoPublicAddressForZoneProxyReason, "NoPublicAddress",
 			"unable to determine public address for zone ingress Service; ensure it exposes a reachable external address (LoadBalancer, NodePort with suitable node addresses, or spec.externalIPs) and that the address is ready")
-		return kube_ctrl.Result{}, r.deleteIfExists(ctx, req.NamespacedName)
+		return kube_ctrl.Result{}, r.deleteIfExists(ctx, svc)
 	}
 
 	meshName := util.MeshOfByLabel(svc, namespace)
@@ -111,12 +111,10 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	result, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, mza, func() error {
 		// If the MeshZoneAddress already exists and is not owned by this Service,
 		// skip mutation to avoid clobbering user-managed resources.
-		if mza.GetGeneration() != 0 {
-			if owners := mza.GetOwnerReferences(); len(owners) == 0 || owners[0].UID != svc.GetUID() {
-				r.Eventf(svc, nil, kube_core.EventTypeWarning, NoPublicAddressForZoneProxyReason, "Conflict",
-					"MeshZoneAddress %s already exists and is not owned by this Service", req.Name)
-				return errors.Errorf("MeshZoneAddress already exists and is not owned by Service")
-			}
+		if mza.GetGeneration() != 0 && !ownedBy(mza, svc) {
+			r.Eventf(svc, nil, kube_core.EventTypeWarning, NoPublicAddressForZoneProxyReason, "Conflict",
+				"MeshZoneAddress %s already exists and is not owned by this Service", req.Name)
+			return errors.Errorf("MeshZoneAddress already exists and is not owned by Service")
 		}
 		if mza.Labels == nil {
 			mza.Labels = map[string]string{}
@@ -235,17 +233,35 @@ func (r *MeshZoneAddressReconciler) hasReadyEndpoints(ctx context.Context, svc *
 	return false, nil
 }
 
-func (r *MeshZoneAddressReconciler) deleteIfExists(ctx context.Context, key kube_types.NamespacedName) error {
-	mza := &meshzoneaddress_k8s.MeshZoneAddress{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      key.Name,
-			Namespace: key.Namespace,
-		},
+func (r *MeshZoneAddressReconciler) deleteIfExists(ctx context.Context, svc *kube_core.Service) error {
+	// Look the MeshZoneAddress up in the cache first. This reconciler runs for every
+	// Service in the cluster and almost none of them have a MeshZoneAddress, so an
+	// unconditional Delete costs one API server call per Service event.
+	mza := &meshzoneaddress_k8s.MeshZoneAddress{}
+	if err := r.Get(ctx, kube_client.ObjectKeyFromObject(svc), mza); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return nil
+		}
+		return errors.Wrap(err, "unable to fetch MeshZoneAddress")
+	}
+	// Names collide with any Service in the namespace, so only collect what this
+	// Service owns. The create path refuses to mutate a foreign one for the same reason.
+	if !ownedBy(mza, svc) {
+		return nil
 	}
 	if err := r.Delete(ctx, mza); err != nil && !kube_apierrs.IsNotFound(err) {
 		return errors.Wrap(err, "unable to delete MeshZoneAddress")
 	}
 	return nil
+}
+
+func ownedBy(mza *meshzoneaddress_k8s.MeshZoneAddress, svc *kube_core.Service) bool {
+	for _, owner := range mza.GetOwnerReferences() {
+		if owner.UID == svc.GetUID() {
+			return true
+		}
+	}
+	return false
 }
 
 const zoneProxyTypeLabelIndex = "metadata.labels.zone-proxy-type"
@@ -265,6 +281,10 @@ func (r *MeshZoneAddressReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-mesh-zone-address-controller").
 		For(&kube_core.Service{}).
+		// The delete path decides from the cache, so a MeshZoneAddress written but not yet
+		// observed would leak until the next resync. Owning it re-queues the Service as soon
+		// as the write lands. MatchEveryOwner because we set a plain, non-controller owner ref.
+		Owns(&meshzoneaddress_k8s.MeshZoneAddress{}, builder.MatchEveryOwner).
 		Watches(
 			&kube_discovery.EndpointSlice{},
 			kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToServicesMapper(r.Log, mgr.GetClient())),
