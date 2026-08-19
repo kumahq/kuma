@@ -268,6 +268,71 @@ var _ = Describe("MeshZoneAddress", func() {
 	})
 })
 
+var _ = Describe("zone egress endpoints", func() {
+	lookupIPFunc := func(s string) ([]net.IP, error) {
+		return []net.IP{net.ParseIP(s)}, nil
+	}
+
+	It("skips zone egresses whose pod is terminating or not ready", func() {
+		// given
+		resourceStore := memory.NewStore()
+		meshContextBuilder := newMeshContextBuilder(resourceStore, lookupIPFunc)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+routing:
+  zoneEgress: true
+---
+type: ExternalService
+name: httpbin
+mesh: default
+networking:
+  address: httpbin.org:80
+tags:
+  kuma.io/service: httpbin
+---
+type: ZoneEgress
+name: egress-ready
+labels:
+  kuma.io/proxy-ready: "true"
+networking:
+  address: 192.168.0.1
+  port: 10002
+---
+type: ZoneEgress
+name: egress-terminating
+labels:
+  kuma.io/proxy-ready: "false"
+networking:
+  address: 192.168.0.2
+  port: 10002
+---
+type: ZoneEgress
+name: egress-universal
+networking:
+  address: 192.168.0.3
+  port: 10002
+`)).To(Succeed())
+
+		// when
+		meshContext, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+
+		// then the terminating instance is gone, while the one with no label at all - a Universal egress or one
+		// written by an older CP - is kept
+		Expect(err).ToNot(HaveOccurred())
+		var targets []string
+		for _, endpoint := range meshContext.EndpointMap["httpbin"] {
+			targets = append(targets, endpoint.Target)
+		}
+		Expect(targets).To(ConsistOf("192.168.0.1", "192.168.0.3"))
+	})
+})
+
 // failingListManager delegates Get to a real manager but fails every List, simulating a store error.
 type failingListManager struct {
 	core_manager.ReadOnlyResourceManager

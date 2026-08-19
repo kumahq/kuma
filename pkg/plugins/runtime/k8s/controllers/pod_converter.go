@@ -6,6 +6,7 @@ import (
 	"maps"
 	"reflect"
 	"regexp"
+	"strconv"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -159,7 +160,7 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 	labels, err := resource_labels.Compute(
 		core_mesh.ZoneEgressResourceTypeDescriptor,
 		currentSpec,
-		mergeLabels(zoneEgress.GetLabels(), pod.Labels),
+		zoneProxyLabels(zoneEgress.GetLabels(), pod),
 		model.NoMesh,
 		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
 		resource_labels.WithMode(p.Mode),
@@ -525,6 +526,30 @@ func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateM
 		aggregateConfig = append(aggregateConfig, config)
 	}
 	return aggregateConfig, nil
+}
+
+// zoneProxyLabels merges the Pod labels into the labels of a zone proxy resource and records whether the Pod is
+// currently serving. Endpoint generation reads that label to stop pointing at an instance the moment it starts
+// terminating, instead of waiting for the Pod object to be garbage collected.
+func zoneProxyLabels(existingLabels map[string]string, pod *kube_core.Pod) map[string]string {
+	labels := mergeLabels(existingLabels, pod.Labels)
+	labels[mesh_proto.ProxyReadyLabel] = strconv.FormatBool(zoneProxyReady(pod))
+	return labels
+}
+
+// zoneProxyReady reports whether a zone proxy Pod should be routed to. A terminating Pod never is, otherwise the
+// kubelet's Ready condition decides. An absent condition counts as ready, so a Pod whose status has not been
+// populated yet is not withheld from clients on the strength of missing information.
+func zoneProxyReady(pod *kube_core.Pod) bool {
+	if pod.DeletionTimestamp != nil {
+		return false
+	}
+	for _, condition := range pod.Status.Conditions {
+		if condition.Type == kube_core.PodReady {
+			return condition.Status != kube_core.ConditionFalse
+		}
+	}
+	return true
 }
 
 func mergeLabels(existingLabels map[string]string, labelSets ...map[string]string) map[string]string {
