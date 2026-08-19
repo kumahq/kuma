@@ -104,6 +104,29 @@ to:
         labels:
           kuma.io/display-name: test-server
 `),
+		ErrorCase("backendRef weight above uint32 max",
+			validators.Violation{
+				Field:   "spec.to[0].rules[0].default.backendRefs[0].weight",
+				Message: "must be in inclusive range [0, 4294967295]",
+			}, `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: backend
+  rules:
+  - default:
+      backendRefs:
+      - kind: MeshService
+        labels:
+          kuma.io/display-name: test-server
+        weight: 4294967296
+`),
 	)
 	DescribeValidCases(
 		api.NewMeshTCPRouteResource,

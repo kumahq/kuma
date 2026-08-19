@@ -362,5 +362,8 @@ func ValidateBackendRef(b common_api.BackendRef) ValidationError {
 	if b.Kind == common_api.MeshMultiZoneService && b.Port == nil {
 		verr.AddViolationAt(RootedAt("port"), MustBeDefined+" with kind MeshMultiZoneService")
 	}
+	if b.Weight != nil && *b.Weight > math.MaxUint32 {
+		verr.AddViolationAt(RootedAt("weight"), fmt.Sprintf(HasToBeInRangeFormat, 0, uint64(math.MaxUint32)))
+	}
 	return verr
 }

@@ -353,6 +353,44 @@ to:
             labels:
               kuma.io/display-name: test-server
 `),
+		ErrorCases("backendRef weights above uint32 max",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.backendRefs[0].weight`,
+				Message: "must be in inclusive range [0, 4294967295]",
+			}, {
+				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.weight`,
+				Message: "must be in inclusive range [0, 4294967295]",
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: frontend
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+          - kind: MeshService
+            labels:
+              kuma.io/display-name: test-server
+            weight: 4294967296
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshService
+                labels:
+                  kuma.io/display-name: mirror
+                weight: 4294967296
+`),
 		ErrorCases("hostnames and hostname to backend rewrite not allowed with services",
 			[]validators.Violation{{
 				Field:   `spec.to[0].hostnames`,
