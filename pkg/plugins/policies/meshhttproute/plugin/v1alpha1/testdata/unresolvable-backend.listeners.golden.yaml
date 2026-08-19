@@ -34,32 +34,14 @@ resources:
                   status: 500
                 match:
                   path: /v1
-                  runtimeFraction:
-                    defaultValue:
-                      numerator: 50
                 name: kri_mhttpr_default___test-origin_rule_0
-              - match:
-                  path: /v1
-                name: kri_mhttpr_default___test-origin_rule_0
-                route:
-                  cluster: kri_msvc_default___backend_80
-                  timeout: 0s
               - directResponse:
                   body:
                     inlineString: ""
                   status: 500
                 match:
                   prefix: /v1/
-                  runtimeFraction:
-                    defaultValue:
-                      numerator: 50
                 name: kri_mhttpr_default___test-origin_rule_0
-              - match:
-                  prefix: /v1/
-                name: kri_mhttpr_default___test-origin_rule_0
-                route:
-                  cluster: kri_msvc_default___backend_80
-                  timeout: 0s
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=

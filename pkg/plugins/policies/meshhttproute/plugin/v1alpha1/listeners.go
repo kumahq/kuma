@@ -254,11 +254,13 @@ func prepareRoutes(
 					unresolvedWeight += pointer.DerefOr(br.Weight, 1)
 					continue
 				}
-				if rr := rbr.RealResourceBackendRef(); rr != nil {
-					if _, _, ok := meshroute_xds.DestinationPortFromRef(meshCtx, rr); !ok {
+				if !backendRefProducesHTTPSplit(meshCtx, rbr) {
+					if rr := rbr.RealResourceBackendRef(); rr != nil {
 						unresolvedWeight += rr.Weight
-						continue
+					} else {
+						unresolvedWeight += pointer.DerefOr(br.Weight, 1)
 					}
+					continue
 				}
 				refs = append(refs, rbr)
 			}
@@ -320,4 +322,17 @@ func prepareRoutes(
 	}
 
 	return routes
+}
+
+func backendRefProducesHTTPSplit(
+	meshCtx xds_context.MeshContext,
+	ref resolve.ResolvedBackendRef,
+) bool {
+	rr := ref.RealResourceBackendRef()
+	if rr == nil || rr.Weight == 0 {
+		return false
+	}
+
+	_, port, ok := meshroute_xds.DestinationPortFromRef(meshCtx, rr)
+	return ok && core_meta.IsHTTPBased(port.GetProtocol())
 }

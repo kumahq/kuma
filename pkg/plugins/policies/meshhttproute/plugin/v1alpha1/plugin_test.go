@@ -1449,7 +1449,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
 													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
-													Weight:    pointer.To(uint(100)),
+													Weight:    pointer.To(uint(90)),
+												}, {
+													TargetRef: builders.TargetRefMeshService("other-tcp", "", "80"),
+													Weight:    pointer.To(uint(10)),
 												}},
 											},
 										}},
@@ -1526,10 +1529,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
 													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
-													Weight:    pointer.To(uint(1)),
+													Weight:    pointer.To(uint(0)),
 												}, {
 													TargetRef: builders.TargetRefMeshService("alias-backend", "", "80"),
-													Weight:    pointer.To(uint(1)),
+													Weight:    pointer.To(uint(100)),
 												}},
 											},
 										}},
