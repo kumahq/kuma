@@ -101,6 +101,9 @@ type Route struct {
 	Match       Match
 	Filters     []Filter
 	BackendRefs []resolve.ResolvedBackendRef
+	// UnresolvedBackendRefsWeight is the declared sum of backendRef weights that
+	// did not resolve to a routable backend for this rule.
+	UnresolvedBackendRefsWeight uint
 	// AllBackendRefsUnresolved is true when the rule declares backendRefs and
 	// none of them resolve, which is the case the Gateway API answers with 500.
 	AllBackendRefsUnresolved bool

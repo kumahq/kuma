@@ -126,12 +126,13 @@ func generateFromService(
 			mirrorSplits[i] = mirrorSplit[0]
 		}
 		routes = append(routes, xds.OutboundRoute{
-			Name:                     route.Name,
-			Match:                    route.Match,
-			Filters:                  route.Filters,
-			AllBackendRefsUnresolved: route.AllBackendRefsUnresolved,
-			MirrorSplits:             mirrorSplits,
-			Split:                    split,
+			Name:                        route.Name,
+			Match:                       route.Match,
+			Filters:                     route.Filters,
+			UnresolvedBackendRefsWeight: route.UnresolvedBackendRefsWeight,
+			AllBackendRefsUnresolved:    route.AllBackendRefsUnresolved,
+			MirrorSplits:                mirrorSplits,
+			Split:                       split,
 		})
 	}
 
@@ -245,14 +246,17 @@ func prepareRoutes(
 
 		for _, match := range rule.Matches {
 			var refs []resolve.ResolvedBackendRef
+			var unresolvedWeight uint
 
 			for _, br := range backendRefs {
 				rbr, ok := resolve.BackendRef(originID, br, meshCtx.ResolveResourceIdentifier)
 				if !ok {
+					unresolvedWeight += pointer.DerefOr(br.Weight, 1)
 					continue
 				}
 				if rr := rbr.RealResourceBackendRef(); rr != nil {
 					if _, _, ok := meshroute_xds.DestinationPortFromRef(meshCtx, rr); !ok {
+						unresolvedWeight += rr.Weight
 						continue
 					}
 				}
@@ -262,13 +266,14 @@ func prepareRoutes(
 			routes = append(
 				routes,
 				api.Route{
-					Name:                     routeName,
-					Origin:                   originID,
-					Match:                    match,
-					Filters:                  filters,
-					BackendRefs:              refs,
-					AllBackendRefsUnresolved: hasExplicitBackendRefs && len(refs) == 0,
-					MirrorBackendRefs:        mirrorRefs,
+					Name:                        routeName,
+					Origin:                      originID,
+					Match:                       match,
+					Filters:                     filters,
+					BackendRefs:                 refs,
+					UnresolvedBackendRefsWeight: unresolvedWeight,
+					AllBackendRefsUnresolved:    hasExplicitBackendRefs && len(refs) == 0,
+					MirrorBackendRefs:           mirrorRefs,
 				},
 			)
 		}

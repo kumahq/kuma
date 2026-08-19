@@ -130,7 +130,7 @@ var _ = Describe("prepareRoutes", func() {
 		Entry("policy in team-b", "team-b"),
 	)
 
-	DescribeTable("should fail closed only when no explicit backendRef resolves", func(refNames []string, expectedAllUnresolved bool, expectedResolved []string) {
+	DescribeTable("should keep resolved backendRefs while tracking unresolved declared weight", func(refNames []string, refWeights []uint, expectedAllUnresolved bool, expectedResolved []string, expectedUnresolvedWeight uint) {
 		backend := builders.MeshService().
 			WithName("backend").
 			WithMesh(core_model.DefaultMesh).
@@ -162,10 +162,11 @@ var _ = Describe("prepareRoutes", func() {
 			},
 		}
 		var backendRefs []common_api.BackendRef
-		for _, name := range refNames {
+		for i, name := range refNames {
 			backendRefs = append(backendRefs, common_api.BackendRef{
 				TargetRef: builders.TargetRefMeshService(name, "kuma-demo", ""),
 				Port:      pointer.To(uint32(8080)),
+				Weight:    pointer.To(refWeights[i]),
 			})
 		}
 		toRules := core_rules.ToRules{
@@ -205,17 +206,20 @@ var _ = Describe("prepareRoutes", func() {
 		}
 		Expect(matched).ToNot(BeNil())
 		Expect(matched.AllBackendRefsUnresolved).To(Equal(expectedAllUnresolved))
+		Expect(matched.UnresolvedBackendRefsWeight).To(Equal(expectedUnresolvedWeight))
 		Expect(matched.BackendRefs).To(HaveLen(len(expectedResolved)))
 		for i, name := range expectedResolved {
 			Expect(matched.BackendRefs[i].ReferencesRealResource()).To(BeTrue())
 			Expect(matched.BackendRefs[i].Resource().Name).To(Equal(name))
 		}
 	},
-		Entry("a resolving backendRef keeps its traffic", []string{"payments", "missing-backend"}, false, []string{"payments"}),
-		Entry("no resolving backendRef fails closed", []string{"missing-backend", "other-missing"}, true, nil),
+		Entry("equal split unresolved share", []string{"payments", "missing-backend"}, []uint{1, 1}, false, []string{"payments"}, uint(1)),
+		Entry("90/10 unresolved share", []string{"payments", "missing-backend"}, []uint{90, 10}, false, []string{"payments"}, uint(10)),
+		Entry("all unresolved missing resources", []string{"missing-backend", "other-missing"}, []uint{30, 70}, true, nil, uint(100)),
+		Entry("all resolved keeps zero unresolved share", []string{"payments", "payments"}, []uint{30, 70}, false, []string{"payments", "payments"}, uint(0)),
 	)
 
-	DescribeTable("should fail closed when a backendRef names a port the destination does not have", func(refPorts []uint32, expectedAllUnresolved bool, expectedResolved []uint32) {
+	DescribeTable("should keep resolved backendRefs while tracking missing-port declared weight", func(refPorts []uint32, refWeights []uint, expectedAllUnresolved bool, expectedResolved []uint32, expectedUnresolvedWeight uint) {
 		backend := builders.MeshService().
 			WithName("backend").
 			WithMesh(core_model.DefaultMesh).
@@ -247,10 +251,11 @@ var _ = Describe("prepareRoutes", func() {
 			},
 		}
 		var backendRefs []common_api.BackendRef
-		for _, port := range refPorts {
+		for i, port := range refPorts {
 			backendRefs = append(backendRefs, common_api.BackendRef{
 				TargetRef: builders.TargetRefMeshService("payments", "kuma-demo", ""),
 				Port:      pointer.To(port),
+				Weight:    pointer.To(refWeights[i]),
 			})
 		}
 		toRules := core_rules.ToRules{
@@ -290,13 +295,14 @@ var _ = Describe("prepareRoutes", func() {
 		}
 		Expect(matched).ToNot(BeNil())
 		Expect(matched.AllBackendRefsUnresolved).To(Equal(expectedAllUnresolved))
+		Expect(matched.UnresolvedBackendRefsWeight).To(Equal(expectedUnresolvedWeight))
 		Expect(matched.BackendRefs).To(HaveLen(len(expectedResolved)))
 		for i, port := range expectedResolved {
 			Expect(matched.BackendRefs[i].ReferencesRealResource()).To(BeTrue())
 			Expect(matched.BackendRefs[i].Resource().SectionName).To(Equal(fmt.Sprintf("%d", port)))
 		}
 	},
-		Entry("a backendRef naming a missing port fails closed", []uint32{9999}, true, nil),
-		Entry("a backendRef naming an existing port next to one naming a missing port keeps only the resolving ref", []uint32{8080, 9999}, false, []uint32{8080}),
+		Entry("all unresolved missing ports", []uint32{9999, 9998}, []uint{40, 60}, true, nil, uint(100)),
+		Entry("mixed missing-port share", []uint32{8080, 9999}, []uint{90, 10}, false, []uint32{8080}, uint(10)),
 	)
 })

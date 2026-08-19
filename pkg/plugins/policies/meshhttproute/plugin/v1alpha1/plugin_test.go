@@ -1516,36 +1516,23 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 									backendMeshServiceIdentifier: test_policies.NewOutboundRule(nil, api.PolicyDefault{
-										Rules: []api.Rule{
-											{
-												Matches: []api.Match{{
-													Path: &api.PathMatch{
-														Type:  api.PathPrefix,
-														Value: "/v2",
-													},
-												}},
-												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefMeshService("alias-backend", "", "80"),
-														Weight:    pointer.To(uint(100)),
-													}},
+										Rules: []api.Rule{{
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.PathPrefix,
+													Value: "/v1",
 												},
-											},
-											{
-												Matches: []api.Match{{
-													Path: &api.PathMatch{
-														Type:  api.PathPrefix,
-														Value: "/v1",
-													},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]common_api.BackendRef{{
+													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
+													Weight:    pointer.To(uint(1)),
+												}, {
+													TargetRef: builders.TargetRefMeshService("alias-backend", "", "80"),
+													Weight:    pointer.To(uint(1)),
 												}},
-												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefMeshService("backend", "", "80"),
-														Weight:    pointer.To(uint(100)),
-													}},
-												},
 											},
-										},
+										}},
 									}),
 								},
 							}),
@@ -1609,36 +1596,23 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 									backendMeshServiceIdentifier: test_policies.NewOutboundRule(nil, api.PolicyDefault{
-										Rules: []api.Rule{
-											{
-												Matches: []api.Match{{
-													Path: &api.PathMatch{
-														Type:  api.PathPrefix,
-														Value: "/v2",
-													},
-												}},
-												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefMeshService("backend", "", "9999"),
-														Weight:    pointer.To(uint(100)),
-													}},
+										Rules: []api.Rule{{
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.PathPrefix,
+													Value: "/v1",
 												},
-											},
-											{
-												Matches: []api.Match{{
-													Path: &api.PathMatch{
-														Type:  api.PathPrefix,
-														Value: "/v1",
-													},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]common_api.BackendRef{{
+													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
+													Weight:    pointer.To(uint(90)),
+												}, {
+													TargetRef: builders.TargetRefMeshService("backend", "", "9999"),
+													Weight:    pointer.To(uint(10)),
 												}},
-												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefMeshService("backend", "", "80"),
-														Weight:    pointer.To(uint(100)),
-													}},
-												},
 											},
-										},
+										}},
 									}),
 								},
 							}),
