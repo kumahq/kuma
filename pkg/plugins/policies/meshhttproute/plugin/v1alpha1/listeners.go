@@ -247,9 +247,16 @@ func prepareRoutes(
 			var refs []resolve.ResolvedBackendRef
 
 			for _, br := range backendRefs {
-				if rbr, ok := resolve.BackendRef(originID, br, meshCtx.ResolveResourceIdentifier); ok {
-					refs = append(refs, rbr)
+				rbr, ok := resolve.BackendRef(originID, br, meshCtx.ResolveResourceIdentifier)
+				if !ok {
+					continue
 				}
+				if rr := rbr.RealResourceBackendRef(); rr != nil {
+					if _, _, ok := meshroute_xds.DestinationPortFromRef(meshCtx, rr); !ok {
+						continue
+					}
+				}
+				refs = append(refs, rbr)
 			}
 
 			routes = append(

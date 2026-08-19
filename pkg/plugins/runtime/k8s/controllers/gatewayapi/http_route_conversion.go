@@ -542,8 +542,10 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		}
 
 		sectionName := fmt.Sprintf("%d", port)
+		portFound := false
 		for _, svcPort := range svc.Spec.Ports {
 			if svcPort.Port == port {
+				portFound = true
 				if svcPort.Name != "" {
 					sectionName = svcPort.Name
 				}
@@ -551,14 +553,25 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 			}
 		}
 
-		return common_api.TargetRef{
+		targetRef := common_api.TargetRef{
 			Kind: common_api.MeshService,
 			Labels: &map[string]string{
 				mesh_proto.DisplayName:      svc.GetName(),
 				mesh_proto.KubeNamespaceTag: svc.GetNamespace(),
 			},
 			SectionName: pointer.To(sectionName),
-		}, nil, nil
+		}
+
+		if !portFound {
+			return targetRef,
+				&ResolvedRefsConditionFalse{
+					Reason:  string(gatewayapi.RouteReasonBackendNotFound),
+					Message: fmt.Sprintf("Service %q does not have a port %d", namespacedName.String(), port),
+				},
+				nil
+		}
+
+		return targetRef, nil, nil
 	}
 
 	if gk.Kind == "MeshService" && gk.Group == meshservice_k8s.GroupVersion.Group {
@@ -585,17 +598,23 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		}
 
 		port := *ref.Port
-		var sectionName string
+		sectionName := fmt.Sprintf("%d", port)
+		portFound := false
 		if ms.Spec != nil {
 			for _, msPort := range ms.Spec.Ports {
 				if msPort.Port == port {
+					portFound = true
 					sectionName = msPort.GetName()
 					break
 				}
 			}
 		}
-		if sectionName == "" {
-			return unresolvedTargetRef,
+		if !portFound {
+			return common_api.TargetRef{
+					Kind:        common_api.MeshService,
+					Labels:      &labels,
+					SectionName: pointer.To(sectionName),
+				},
 				&ResolvedRefsConditionFalse{
 					Reason:  string(gatewayapi.RouteReasonBackendNotFound),
 					Message: fmt.Sprintf("MeshService %q does not have a port %d", namespacedName.String(), port),
