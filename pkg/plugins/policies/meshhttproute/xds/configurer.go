@@ -8,6 +8,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"google.golang.org/protobuf/proto"
 
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds/filters"
@@ -46,10 +47,10 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 		}
 
 		if c.UnresolvedBackendRefsWeight > 0 && !hasTerminalFilter(c.Filters) {
-			unresolvedMatch := *match.routeMatch
+			unresolvedMatch := proto.Clone(match.routeMatch).(*envoy_route.RouteMatch)
 			unresolvedMatch.RuntimeFraction = unresolvedRuntimeFraction(c.UnresolvedBackendRefsWeight, c.Split)
 
-			rb := c.routeBuilder(routeMatch{routeMatch: &unresolvedMatch, prefixMatch: match.prefixMatch})
+			rb := c.routeBuilder(routeMatch{routeMatch: unresolvedMatch, prefixMatch: match.prefixMatch})
 			rb.Configure(envoy_routes.RouteActionDirectResponse(500, ""))
 			r, err := rb.Build()
 			if err != nil {
