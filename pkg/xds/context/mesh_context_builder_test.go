@@ -241,6 +241,8 @@ var _ = Describe("MeshZoneAddress", func() {
 
 		// then the endpoint target is the resolved IP, not the hostname Envoy can't dial
 		Expect(endpointTargets(meshCtx)).To(ConsistOf("10.0.0.1"))
+		// and the zone stays classified as served by a mesh-scoped zone proxy, so consumers use the KRI SNI
+		Expect(meshCtx.ZonesWithMeshScopedProxy).To(Equal(map[string]bool{"east": true}))
 	})
 
 	It("falls back to the ZoneIngress when the MeshZoneAddress hostname doesn't resolve", func() {
@@ -260,6 +262,9 @@ var _ = Describe("MeshZoneAddress", func() {
 
 		// then the unresolvable MeshZoneAddress is dropped and the zone keeps its ZoneIngress endpoint
 		Expect(endpointTargets(meshCtx)).To(ConsistOf("20.0.0.1"))
+		// and the zone leaves ZonesWithMeshScopedProxy together with its endpoint, so consumers
+		// use the hash-based SNI that the legacy ZoneIngress they now dial actually serves
+		Expect(meshCtx.ZonesWithMeshScopedProxy).To(BeEmpty())
 	})
 })
 

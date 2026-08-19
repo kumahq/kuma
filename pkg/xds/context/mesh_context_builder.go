@@ -421,6 +421,9 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 
 			resolvedMeshZoneAddress, err := xds_topology.ResolveMeshZoneAddressPublicAddress(m.ipFunc, mza)
 			if err != nil {
+				// Dropping the resource also drops the zone from MeshContext.ZonesWithMeshScopedProxy,
+				// which is intended: the zone falls back to its legacy ZoneIngress for endpoints, and
+				// consumers have to fall back with it to the hash-based SNI that ingress serves.
 				l.Error(err, "failed to resolve meshZoneAddress's domain name, ignoring meshZoneAddress", "mesh", mza.GetMeta().GetMesh(), "name", mza.GetMeta().GetName())
 				return nil, nil
 			}
