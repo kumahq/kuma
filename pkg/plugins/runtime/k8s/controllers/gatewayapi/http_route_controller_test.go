@@ -528,7 +528,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		Expect(accepted.Message).To(ContainSubstring("has no MeshService to attach to"))
 	})
 
-	It("requeues a parent-only route when a headless Service becomes a ClusterIP Service", func() {
+	It("requeues a parent-only route when a headless Service is replaced by a ClusterIP Service", func() {
 		svc := &kube_core.Service{
 			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
 			Spec: kube_core.ServiceSpec{
@@ -549,12 +549,13 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		Expect(client.List(context.Background(), routes)).To(Succeed())
 		Expect(routes.Items).To(BeEmpty())
 
-		var updatedSvc kube_core.Service
-		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(svc), &updatedSvc)).To(Succeed())
-		updatedSvc.Spec.ClusterIP = "10.0.0.9"
-		Expect(client.Update(context.Background(), &updatedSvc)).To(Succeed())
+		recreatedSvc := svc.DeepCopy()
+		recreatedSvc.Spec.ClusterIP = "10.0.0.9"
+		Expect(client.Delete(context.Background(), svc)).To(Succeed())
+		recreatedSvc.ResourceVersion = ""
+		Expect(client.Create(context.Background(), recreatedSvc)).To(Succeed())
 
-		requests := routesForService(logr.Discard(), client)(context.Background(), &updatedSvc)
+		requests := routesForService(logr.Discard(), client)(context.Background(), recreatedSvc)
 		Expect(requests).To(ConsistOf(req))
 
 		_, err = reconciler.Reconcile(context.Background(), req)
