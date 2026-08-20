@@ -330,6 +330,23 @@ networking:
 			targets = append(targets, endpoint.Target)
 		}
 		Expect(targets).To(ConsistOf("192.168.0.1", "192.168.0.3"))
+
+		// and the terminating instance is still in the mesh context, so that it keeps being served its own
+		// configuration until it exits
+		var names []string
+		for _, ze := range meshContext.Resources.ZoneEgresses().Items {
+			names = append(names, ze.GetMeta().GetName())
+		}
+		Expect(names).To(ConsistOf("egress-ready", "egress-terminating", "egress-universal"))
+
+		// and it resolves by name, which is how the egress proxy builder finds it
+		aggregated, err := xds_context.AggregateMeshContexts(
+			context.Background(),
+			core_manager.NewResourceManager(resourceStore),
+			meshContextBuilder.Build,
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(aggregated.ZoneEgressByName).To(HaveKey("egress-terminating"))
 	})
 })
 
