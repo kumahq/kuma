@@ -160,7 +160,7 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 	labels, err := resource_labels.Compute(
 		core_mesh.ZoneEgressResourceTypeDescriptor,
 		currentSpec,
-		zoneProxyLabels(zoneEgress.GetLabels(), pod),
+		egressLabels(zoneEgress.GetLabels(), pod),
 		model.NoMesh,
 		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
 		resource_labels.WithMode(p.Mode),
@@ -528,21 +528,25 @@ func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateM
 	return aggregateConfig, nil
 }
 
-// zoneProxyLabels merges the Pod labels into the labels of a zone proxy resource and records whether the Pod is
-// currently serving. Endpoint generation reads that label to stop pointing at an instance the moment it starts
-// terminating, instead of waiting for the Pod object to be garbage collected.
-func zoneProxyLabels(existingLabels map[string]string, pod *kube_core.Pod) map[string]string {
+// egressLabels merges the Pod labels into the labels of a ZoneEgress and records whether the Pod is currently
+// serving. Endpoint generation reads that label to stop pointing at an instance the moment it starts terminating,
+// instead of waiting for the Pod object to be garbage collected. ZoneIngress has the same gap and is left alone
+// here, so it still goes through mergeLabels.
+func egressLabels(existingLabels map[string]string, pod *kube_core.Pod) map[string]string {
 	labels := mergeLabels(existingLabels, pod.Labels)
-	labels[mesh_proto.ProxyReadyLabel] = strconv.FormatBool(zoneProxyReady(pod))
+	labels[mesh_proto.ProxyReadyLabel] = strconv.FormatBool(egressReady(pod))
 	return labels
 }
 
-// zoneProxyReady reports whether a zone proxy Pod should be routed to. A terminating Pod never is, otherwise the
-// kubelet's ContainersReady condition decides. ContainersReady rather than Ready, because Ready is additionally
-// gated on the Pod's readiness gates, and a gate held by something that has nothing to do with the proxy would
-// withdraw a healthy instance from every client in the zone. An absent condition counts as ready, so a Pod whose
-// status has not been populated yet is not withheld from clients on the strength of missing information.
-func zoneProxyReady(pod *kube_core.Pod) bool {
+// egressReady reports whether an egress Pod should be routed to. A terminating Pod never is, otherwise the kubelet's
+// ContainersReady condition decides. ContainersReady rather than Ready, because Ready is additionally gated on the
+// Pod's readiness gates, and a gate held by something that has nothing to do with the egress would withdraw a
+// healthy instance from every client in the zone. An absent condition counts as ready, so a Pod whose status has not
+// been populated yet is not withheld from clients on the strength of missing information.
+//
+// This is deliberately not podReady() from inbound_converter.go: that one reads the status of the kuma-sidecar
+// container and of the container backing an inbound, and an egress Pod has neither.
+func egressReady(pod *kube_core.Pod) bool {
 	if pod.DeletionTimestamp != nil {
 		return false
 	}
