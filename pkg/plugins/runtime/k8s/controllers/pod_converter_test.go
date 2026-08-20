@@ -619,6 +619,16 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:      "05.dataplane.yaml",
 			node:           "05.node.yaml",
 		}),
+		Entry("06. Terminating egress is marked not ready", testCase{
+			pod:            "06.pod.yaml",
+			servicesForPod: "06.services-for-pod.yaml",
+			dataplane:      "06.dataplane.yaml",
+		}),
+		Entry("07. Egress that has not passed its readiness probe is marked not ready", testCase{
+			pod:            "07.pod.yaml",
+			servicesForPod: "07.services-for-pod.yaml",
+			dataplane:      "07.dataplane.yaml",
+		}),
 		Entry("Existing ZoneEgress should be updated when pod labels changes", testCase{ // KIND / Minikube use case
 			pod:               "egress-exists-labels.pod.yaml",
 			servicesForPod:    "egress-exists-labels.services-for-pod.yaml",
