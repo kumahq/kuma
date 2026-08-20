@@ -66,6 +66,8 @@ var (
 	_ = Describe("InboundPassthrough", Label("job-3"), inbound_communication.InboundPassthrough, Ordered)
 	_ = Describe("InboundPassthroughDisabled", Label("job-3"), inbound_communication.InboundPassthroughDisabled, Ordered)
 	_ = Describe("ZoneEgress Internal Services", Label("job-3"), zoneegress.InternalServices, Ordered)
+	// Serial: it scales the zone egress that every other spec in the zone routes through.
+	_ = Describe("ZoneEgress Scaling", Label("job-3"), zoneegress.Scaling, Ordered, Serial)
 	_ = Describe("Connectivity", Label("job-1"), connectivity.Connectivity, Ordered)
 	_ = Describe("Connectivity Gateway IPV6 CNI V2", Label("job-1"), connectivity.GatewayIPV6CNIV2, Ordered)
 	_ = Describe("Sync", Label("job-1"), multizone_sync.Sync, Ordered)
