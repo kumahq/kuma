@@ -4,6 +4,7 @@ metadata:
     app: example
     k8s.kuma.io/namespace: demo
     k8s.kuma.io/service-account: test-sa
+    kuma.io/display-name: ""
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
     kuma.io/workload: test-sa

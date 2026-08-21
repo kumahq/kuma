@@ -66,15 +66,32 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return resp
 	}
 
+<<<<<<< HEAD
 	computed, err := core_model.ComputeLabels(
+=======
+	displayName := resource.GetMeta().GetName()
+	if name, ok := resource.GetMeta().GetNameExtensions()[core_model.K8sNameComponent]; ok && name != "" {
+		displayName = name
+	}
+	computed, err := resource_labels.Compute(
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 		resource.Descriptor(),
 		resource.GetSpec(),
 		resource.GetMeta().GetLabels(),
 		resource.GetMeta().GetMesh(),
+<<<<<<< HEAD
 		core_model.WithNamespace(core_model.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
 		core_model.WithMode(h.Mode),
 		core_model.WithK8s(true),
 		core_model.WithZone(h.ZoneName),
+=======
+		displayName,
+		resource_labels.WithNamespace(resource_labels.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
+		resource_labels.WithMode(h.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(h.ZoneName),
+		resource_labels.WithPrivileged(h.isPrivilegedUser(h.AllowedUsers, req.UserInfo)),
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
