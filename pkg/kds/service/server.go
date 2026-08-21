@@ -143,6 +143,19 @@ type ZoneOpenedStream struct {
 	ConnTime time.Time
 }
 
+// recvError is the status an Envoy admin RPC terminates with when receiving a
+// response from the zone fails. ResourceExhausted is kept as-is instead of being
+// flattened into Internal: it means the zone sent a message past this CP's
+// receive limit, and the zone needs the code to tell that apart from a generic
+// transport failure. Retrying resends the same oversized message, so the zone
+// must keep the rpc down rather than restart the whole KDS multiplex.
+func recvError(err error) error {
+	if status.Code(err) == codes.ResourceExhausted {
+		return status.Error(codes.ResourceExhausted, "could not receive a message")
+	}
+	return status.Error(codes.Internal, "could not receive a message")
+}
+
 func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	rpcName string,
 	rpc util_grpc.ReverseUnaryRPCs,
@@ -214,7 +227,7 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 			}
 			if err != nil {
 				logger.Error(err, "could not receive a message")
-				streamResult <- status.Error(codes.Internal, "could not receive a message")
+				streamResult <- recvError(err)
 				return
 			}
 			logger.V(1).Info("Envoy Admin RPC response received", "requestId", resp.GetRequestId())

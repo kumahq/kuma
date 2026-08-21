@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -23,6 +25,7 @@ type EnvoyAdminProcessor interface {
 type envoyAdminProcessor struct {
 	resManager  core_manager.ReadOnlyResourceManager
 	adminClient admin.EnvoyAdminClient
+	maxMsgSize  int
 }
 
 var _ EnvoyAdminProcessor = &envoyAdminProcessor{}
@@ -30,11 +33,44 @@ var _ EnvoyAdminProcessor = &envoyAdminProcessor{}
 func NewEnvoyAdminProcessor(
 	resManager core_manager.ReadOnlyResourceManager,
 	adminClient admin.EnvoyAdminClient,
+	maxMsgSize uint32,
 ) EnvoyAdminProcessor {
 	return &envoyAdminProcessor{
 		resManager:  resManager,
 		adminClient: adminClient,
+		maxMsgSize:  int(maxMsgSize),
 	}
+}
+
+// tooLargeError reports that a response can't be delivered over KDS. Receiving a
+// message past the size limit makes gRPC abort the whole RPC stream, which takes
+// down every other KDS stream multiplexed on the same connection, so the
+// processor answers with this error instead.
+//
+// The limit that actually binds is the global CP's receive limit, which gRPC
+// applies to the decompressed message, so proto.Size is the size to check. That
+// limit is configured on the global CP and is not advertised over KDS, so this
+// check uses the zone's own maxMsgSize as the only locally known proxy for it.
+// The two match by default (10MiB on both sides) and are expected to be kept
+// aligned; a zone configured below the global's limit rejects responses the
+// global would have accepted.
+//
+// The advice is deliberately limited to reachableBackends. Raising maxMsgSize is
+// not suggested: it is the global side that has to be raised, which a zone
+// operator may not control, and raising only the zone side lets messages past
+// this check that the global CP then rejects, dropping the stream.
+func (s *envoyAdminProcessor) tooLargeError(rpcName string, resourceName string, size int) string {
+	log.Info("Envoy admin response exceeds the maximum KDS message size, replying with an error instead of sending it",
+		"rpc", rpcName,
+		"resource", resourceName,
+		"size", size,
+		"maxMsgSize", s.maxMsgSize,
+		"hint", "trim the proxy config with reachableBackends",
+	)
+	return fmt.Sprintf(
+		"the original %s response is %d bytes which exceeds the maximum KDS message size of %d bytes. A response this large usually means the proxy is configured for every service in the mesh, consider trimming its config with reachableBackends",
+		rpcName, size, s.maxMsgSize,
+	)
 }
 
 func (s *envoyAdminProcessor) StartProcessingXDSConfigs(
@@ -63,6 +99,11 @@ func (s *envoyAdminProcessor) StartProcessingXDSConfigs(
 			if err != nil { // send the error to the client instead of terminating stream.
 				resp.Result = &mesh_proto.XDSConfigResponse_Error{
 					Error: err.Error(),
+				}
+			}
+			if size := proto.Size(resp); size > s.maxMsgSize {
+				resp.Result = &mesh_proto.XDSConfigResponse_Error{
+					Error: s.tooLargeError(ConfigDumpRPC, req.ResourceName, size),
 				}
 			}
 			if err := stream.Send(resp); err != nil {
@@ -101,6 +142,11 @@ func (s *envoyAdminProcessor) StartProcessingStats(
 					Error: err.Error(),
 				}
 			}
+			if size := proto.Size(resp); size > s.maxMsgSize {
+				resp.Result = &mesh_proto.StatsResponse_Error{
+					Error: s.tooLargeError(StatsRPC, req.ResourceName, size),
+				}
+			}
 			if err := stream.Send(resp); err != nil {
 				errorCh <- err
 				return
@@ -135,6 +181,11 @@ func (s *envoyAdminProcessor) StartProcessingClusters(
 			if err != nil { // send the error to the client instead of terminating stream.
 				resp.Result = &mesh_proto.ClustersResponse_Error{
 					Error: err.Error(),
+				}
+			}
+			if size := proto.Size(resp); size > s.maxMsgSize {
+				resp.Result = &mesh_proto.ClustersResponse_Error{
+					Error: s.tooLargeError(ClustersRPC, req.ResourceName, size),
 				}
 			}
 			if err := stream.Send(resp); err != nil {
