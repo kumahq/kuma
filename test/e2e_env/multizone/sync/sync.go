@@ -272,7 +272,7 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 			Eventually(func(g Gomega) {
 				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(strings.Count(out, secretName)).To(Equal(1))
+				g.Expect(strings.Count(out, fmt.Sprintf("kuma.io/display-name: %s", secretName))).To(Equal(1))
 				g.Expect(strings.Count(out, "Z2xvYmFsCg==")).To(Equal(1))
 			}, "30s", "1s").Should(Succeed())
 			Consistently(func(g Gomega) {
@@ -287,7 +287,7 @@ data: bmV3Z2xvYmFsCg==`, meshName)
 			Eventually(func(g Gomega) {
 				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(strings.Count(out, "new-global-secret")).To(Equal(1))
+				g.Expect(strings.Count(out, "kuma.io/display-name: new-global-secret")).To(Equal(1))
 			}, "30s", "1s").Should(Succeed())
 			// should sync resource to the zone even if one is invalid
 			Eventually(func(g Gomega) {

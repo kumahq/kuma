@@ -3,6 +3,7 @@ metadata:
   labels:
     app: kuma-ingress
     k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: ""
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
     pod-template-hash: 74c9b794cf

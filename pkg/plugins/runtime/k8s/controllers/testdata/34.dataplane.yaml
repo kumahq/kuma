@@ -3,6 +3,7 @@ metadata:
   labels:
     app: example
     k8s.kuma.io/namespace: demo
+    kuma.io/display-name: ""
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
     kuma.io/sidecar-injection: enabled
