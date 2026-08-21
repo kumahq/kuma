@@ -8582,6 +8582,16 @@ components:
                           Maximum time to wait for a health check response.
                           If not specified then the default value is 15s
                         type: string
+                      unhealthyInterval:
+                        description: >-
+                          UnhealthyInterval is the time between consecutive
+                          health checks while
+
+                          the endpoint is unhealthy. If not specified, Interval
+                          is used for
+
+                          unhealthy endpoints as well.
+                        type: string
                       unhealthyThreshold:
                         description: >-
                           Number of consecutive unhealthy checks before
