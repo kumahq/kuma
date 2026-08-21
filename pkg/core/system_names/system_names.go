@@ -16,7 +16,7 @@ const (
 var cleanNameRegex = regexp.MustCompile(`([a-z0-9-]*_?)+`)
 
 func IsSystem(name string) bool {
-	return strings.HasPrefix(SystemPrefix, name)
+	return strings.HasPrefix(name, SystemPrefix)
 }
 
 func CleanName(name string) string {
