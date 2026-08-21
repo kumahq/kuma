@@ -231,6 +231,20 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
+			if parent.Spec.ClusterIP == kube_core.ClusterIPNone {
+				parentConditions = append(parentConditions,
+					kube_meta.Condition{
+						Type:    string(gatewayapi.RouteConditionAccepted),
+						Status:  kube_meta.ConditionFalse,
+						Reason:  string(gatewayapi_v1.RouteReasonNoMatchingParent),
+						Message: fmt.Sprintf("Service %q has no MeshService to attach to", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
+					},
+				)
+
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
+				continue
+			}
+
 			routeSubName := fmt.Sprintf(
 				"%s-%s-%s.%s",
 				route.Name,
