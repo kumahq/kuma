@@ -66,9 +66,19 @@ func (p *PodConverter) PodToDataplane(
 		map[string]string{},
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		dataplane.Mesh,
+<<<<<<< HEAD
 		p.Mode,
 		true,
 		p.Zone,
+=======
+		dataplane.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		resource_labels.WithMode(p.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(p.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+		resource_labels.WithWorkload(workloadName),
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	)
 	if err != nil {
 		return err
@@ -105,9 +115,18 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		map[string]string{},
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
+<<<<<<< HEAD
 		p.Mode,
 		true,
 		p.Zone,
+=======
+		zoneIngress.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		resource_labels.WithMode(p.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(p.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	)
 	if err != nil {
 		return err
@@ -144,9 +163,18 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 		map[string]string{},
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
+<<<<<<< HEAD
 		p.Mode,
 		true,
 		p.Zone,
+=======
+		zoneEgress.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		resource_labels.WithMode(p.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(p.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	)
 	if err != nil {
 		return err

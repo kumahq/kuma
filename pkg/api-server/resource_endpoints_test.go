@@ -257,6 +257,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 				mesh_proto.ZoneTag:             zone,
 				mesh_proto.MeshTag:             mesh,
 				mesh_proto.EnvTag:              "universal",
+				mesh_proto.DisplayName:         "mtp-1",
 			}))
 		},
 		Entry("non-federated zone", false),
@@ -296,6 +297,177 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.ZoneTag:             "default",
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
+<<<<<<< HEAD
 		}))
 	})
+=======
+			mesh_proto.ProxyTypeLabel:      string(mesh_proto.SidecarLabel),
+			mesh_proto.DisplayName:         "dpp-1",
+		}))
+	})
+
+	It("should return 500 and not panic when store returns non-NotFound error on GET during PUT", func() {
+		// given: store that fails Gets for MeshTrafficPermission with a non-NotFound error
+		realStore := core_store.NewPaginationStore(memory.NewStore())
+		failingStore := &errOnGetStore{
+			ResourceStore: realStore,
+			getErr:        fmt.Errorf("connection refused"),
+			getErrType:    v1alpha1.MeshTrafficPermissionType,
+		}
+		apiServerWithErr, _, stopErr := StartApiServer(
+			NewTestApiServerConfigurer().
+				WithStore(failingStore).
+				WithDisableOriginLabelValidation(true),
+		)
+		defer stopErr()
+
+		// pre-create the mesh (Create goes to real store, Mesh Gets go to real store)
+		err := realStore.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when: PUT a MeshTrafficPermission - Get will fail with non-NotFound error
+		res := &rest_v1alpha1.Resource{
+			ResourceMeta: rest_v1alpha1.ResourceMeta{
+				Name: "mtp-err",
+				Mesh: mesh,
+				Type: string(v1alpha1.MeshTrafficPermissionType),
+			},
+			Spec: builders.MeshTrafficPermission().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				Build().Spec,
+		}
+		resp, err := put(apiServerWithErr.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-err", res)
+
+		// then: returns an error response, does not panic
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
+	})
+
+	It("should compute labels on update of the resource", func() {
+		// given
+		apiServer, store, stop := createServer(false, false)
+		defer stop()
+		createMesh(store)
+		name := "ext-svc"
+
+		// when
+		res := &rest_v1alpha1.Resource{
+			ResourceMeta: rest_v1alpha1.ResourceMeta{
+				Name: name,
+				Mesh: mesh,
+				Type: string(meshexternalservice_api.MeshExternalServiceType),
+				Labels: map[string]string{
+					"kuma.io/origin": "zone",
+				},
+			},
+			Spec: &meshexternalservice_api.MeshExternalService{
+				Match: meshexternalservice_api.Match{
+					Type:     meshexternalservice_api.HostnameGeneratorType,
+					Port:     9000,
+					Protocol: core_meta.ProtocolHTTP,
+				},
+				Endpoints: &[]meshexternalservice_api.Endpoint{
+					{
+						Address: "192.168.0.1",
+						Port:    27017,
+					},
+				},
+			},
+		}
+		resp, err := put(apiServer.Address(), meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor, name, res)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+		// and then
+		actualMes := meshexternalservice_api.NewMeshExternalServiceResource()
+		Expect(store.Get(context.Background(), actualMes, core_store.GetByKey(name, mesh))).To(Succeed())
+		Expect(actualMes.Meta.GetLabels()).To(Equal(map[string]string{
+			mesh_proto.ResourceOriginLabel: "zone",
+			mesh_proto.ZoneTag:             "default",
+			mesh_proto.MeshTag:             mesh,
+			mesh_proto.EnvTag:              "universal",
+			mesh_proto.DisplayName:         "ext-svc",
+		}))
+
+		// after update it should have computed labels
+		resp, err = put(apiServer.Address(), meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor, name, res)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		// and then
+		actualMes = meshexternalservice_api.NewMeshExternalServiceResource()
+		Expect(store.Get(context.Background(), actualMes, core_store.GetByKey(name, mesh))).To(Succeed())
+		Expect(actualMes.Meta.GetLabels()).To(Equal(map[string]string{
+			mesh_proto.ResourceOriginLabel: "zone",
+			mesh_proto.ZoneTag:             "default",
+			mesh_proto.MeshTag:             mesh,
+			mesh_proto.EnvTag:              "universal",
+			mesh_proto.DisplayName:         "ext-svc",
+		}))
+	})
+
+	It("should return 500 and not drop the connection when the mesh context build fails on _rules", func() {
+		// given: a store that fails to List policies, so building the mesh context
+		// inside the _rules handler returns an error
+		realStore := core_store.NewPaginationStore(memory.NewStore())
+		failingStore := &errOnListStore{
+			ResourceStore: realStore,
+			listErr:       fmt.Errorf("connection refused"),
+			listErrType:   v1alpha1.MeshTrafficPermissionType,
+		}
+		apiServerWithErr, _, stopErr := StartApiServer(
+			NewTestApiServerConfigurer().
+				WithStore(failingStore).
+				WithDisableOriginLabelValidation(true),
+		)
+		defer stopErr()
+
+		// pre-create mesh + dataplane (Gets go to the real store and succeed)
+		Expect(realStore.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("default", model.NoMesh))).To(Succeed())
+		dp := builders.Dataplane().WithName("dp-1").WithServices("backend").Build()
+		Expect(realStore.Create(context.Background(), dp, core_store.CreateByKey("dp-1", "default"))).To(Succeed())
+
+		// when: GET _rules - BuildBaseMeshContextIfChanged fails on the policy List
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet,
+			fmt.Sprintf("http://%s/meshes/default/dataplanes/dp-1/_rules", apiServerWithErr.Address()), http.NoBody)
+		Expect(err).ToNot(HaveOccurred())
+		resp, err := http.DefaultClient.Do(req)
+
+		// then: a clean error response, not a panic that drops the connection
+		Expect(err).ToNot(HaveOccurred())
+		defer resp.Body.Close()
+		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
+	})
+
+	It("should return 400 when a policy carries a non-system policy-role label", func() {
+		// given
+		apiServer, store, stop := createServer(false, false)
+		defer stop()
+		createMesh(store)
+
+		// when: PUT a MeshTrafficPermission with a non-system kuma.io/policy-role
+		res := &rest_v1alpha1.Resource{
+			ResourceMeta: rest_v1alpha1.ResourceMeta{
+				Name: "mtp-role",
+				Mesh: mesh,
+				Type: string(v1alpha1.MeshTrafficPermissionType),
+				Labels: map[string]string{
+					mesh_proto.PolicyRoleLabel: string(mesh_proto.WorkloadOwnerPolicyRole),
+				},
+			},
+			Spec: builders.MeshTrafficPermission().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				Build().Spec,
+		}
+		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-role", res)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+	})
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 })

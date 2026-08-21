@@ -412,6 +412,44 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	}
 }
 
+<<<<<<< HEAD
+=======
+func (r *resourceEndpoints) clearMeshTrustOrigin(resRest rest.Resource, meshName string, name string) {
+	if r.descriptor.Name == meshtrust_api.MeshTrustType {
+		if resRest.GetStatus() != nil {
+			status, ok := resRest.GetStatus().(*meshtrust_api.MeshTrustStatus)
+			if ok && status != nil && status.Origin != nil {
+				log.Info("ignoring status.origin as it is read-only", "mesh", meshName, "name", name)
+				status.Origin = nil
+			}
+		}
+	}
+}
+
+// computeLabels derives the full label set for a resource from its descriptor,
+// spec and meta, applying the control-plane mode, zone, k8s and namespace context
+// shared by create and update.
+func (r *resourceEndpoints) computeLabels(
+	descriptor core_model.ResourceTypeDescriptor,
+	spec core_model.ResourceSpec,
+	meta core_model.ResourceMeta,
+	meshName string,
+	name string,
+) (map[string]string, error) {
+	return resource_labels.Compute(
+		descriptor,
+		spec,
+		meta.GetLabels(),
+		meshName,
+		name,
+		resource_labels.WithNamespace(resource_labels.GetNamespace(meta, r.systemNamespace)),
+		resource_labels.WithMode(r.mode),
+		resource_labels.WithK8s(r.isK8s),
+		resource_labels.WithZone(r.zoneName),
+	)
+}
+
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 func (r *resourceEndpoints) createResource(
 	ctx context.Context,
 	name string,
@@ -437,6 +475,7 @@ func (r *resourceEndpoints) createResource(
 		_ = res.SetStatus(resRest.GetStatus())
 	}
 
+<<<<<<< HEAD
 	labels, err := model.ComputeLabels(
 		res.Descriptor(),
 		res.GetSpec(),
@@ -447,6 +486,9 @@ func (r *resourceEndpoints) createResource(
 		r.isK8s,
 		r.zoneName,
 	)
+=======
+	labels, err := r.computeLabels(res.Descriptor(), res.GetSpec(), res.GetMeta(), meshName, name)
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
 		return
@@ -484,13 +526,32 @@ func (r *resourceEndpoints) updateResource(
 		return
 	}
 
+<<<<<<< HEAD
+=======
+	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
+
+	// Compute labels for current state BEFORE modifying spec
+	currentLabels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), currentRes.GetMeta(), meshName, currentRes.GetMeta().GetName())
+	if err != nil {
+		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
+		return
+	}
+
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 	if r.descriptor.HasStatus { // todo(jakubdyszkiewicz) should we always override this?
 		_ = currentRes.SetStatus(newResRest.GetStatus())
 	}
 
+<<<<<<< HEAD
 	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(newResRest.GetMeta().GetLabels())); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
+=======
+	// Compute labels for new request
+	labels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), newResRest.GetMeta(), meshName, currentRes.GetMeta().GetName())
+	if err != nil {
+		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 		return
 	}
 
@@ -619,6 +680,37 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 	return err
 }
 
+<<<<<<< HEAD
+=======
+func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newComputedLabels map[string]string) validators.ValidationError {
+	var err validators.ValidationError
+
+	immutableLabels := []string{
+		mesh_proto.ResourceOriginLabel,
+		mesh_proto.ZoneTag,
+	}
+
+	for _, label := range immutableLabels {
+		currentVal, currentExists := currentComputedLabels[label]
+		newVal, newExists := newComputedLabels[label]
+
+		if currentExists && !newExists {
+			err.AddViolationAt(
+				validators.Root().Key(label),
+				fmt.Sprintf("is immutable, cannot be removed (was %q)", currentVal),
+			)
+		} else if currentExists && currentVal != newVal {
+			err.AddViolationAt(
+				validators.Root().Key(label),
+				fmt.Sprintf("is immutable, cannot be changed from %q to %q", currentVal, newVal),
+			)
+		}
+	}
+
+	return err
+}
+
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 func (r *resourceEndpoints) validatePolicyRole(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
 	policyRole := core_model.PolicyRole(resource.GetMeta())
