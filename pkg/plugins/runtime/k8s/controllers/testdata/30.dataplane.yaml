@@ -3,6 +3,11 @@ metadata:
   labels:
     app: example
     k8s.kuma.io/namespace: demo
+<<<<<<< HEAD
+=======
+    k8s.kuma.io/service-account: test-sa
+    kuma.io/display-name: ""
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
     version: "0.1"

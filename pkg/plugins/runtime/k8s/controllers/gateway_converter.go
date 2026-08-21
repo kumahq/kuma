@@ -54,6 +54,26 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 		return nil
 	}
 
+<<<<<<< HEAD
+=======
+	labels, err := resource_labels.Compute(
+		core_mesh.DataplaneResourceTypeDescriptor,
+		dataplaneProto,
+		mergeLabels(dataplane.GetLabels(), pod.Labels),
+		dataplane.Mesh,
+		dataplane.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == r.PodConverter.SystemNamespace)),
+		resource_labels.WithMode(r.PodConverter.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(r.PodConverter.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+	)
+	if err != nil {
+		return err
+	}
+	dataplane.SetLabels(labels)
+
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
 		currentSpec, err := dataplane.GetSpec()
