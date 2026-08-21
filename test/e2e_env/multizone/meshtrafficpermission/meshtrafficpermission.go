@@ -100,14 +100,14 @@ func MeshTrafficPermission() {
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	trafficAllowed := func(url string) {
+	trafficAllowed := func(url string, intervals ...any) {
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				multizone.KubeZone1, "demo-client", url,
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}).Should(Succeed())
+		}, intervals...).Should(Succeed())
 	}
 
 	trafficBlocked := func(url string) {
@@ -231,7 +231,13 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		trafficAllowed("test-server.mesh")
+		// MeshTrafficPermission authorizes on the peer certificate, and the
+		// connection Envoy pooled during trafficBlocked still presents the
+		// pre-label SANs. Requests keep failing until that connection is recycled,
+		// which waits on the destination draining the filter chain this policy
+		// replaced. That drain takes the sidecar drain time, 30s, which is exactly
+		// the default Eventually window.
+		trafficAllowed("test-server.mesh", "2m")
 	})
 
 	It("should allow the traffic to the external service through the egress", func() {
