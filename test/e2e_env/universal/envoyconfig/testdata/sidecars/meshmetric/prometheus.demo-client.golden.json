@@ -513,6 +513,7 @@
                       "team": "client-owners"
                     },
                     "io.kuma.labels": {
+                      "kuma.io/display-name": "demo-client",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
@@ -561,6 +562,7 @@
                       "version": "v1"
                     },
                     "io.kuma.labels": {
+                      "kuma.io/display-name": "test-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",

@@ -4,6 +4,7 @@ metadata:
     app: postgres
     k8s.kuma.io/namespace: demo
     k8s.kuma.io/service-account: postgres-account
+    kuma.io/display-name: ""
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
     kuma.io/sidecar-injection: enabled

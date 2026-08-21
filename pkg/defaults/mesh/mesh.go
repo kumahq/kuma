@@ -130,6 +130,7 @@ func ensureDefaultResource(
 			res.GetSpec(),
 			existing,
 			resourceKey.Mesh,
+			resourceKey.Name,
 			resource_labels.WithMode(cpMode),
 			resource_labels.WithZone(cpZone),
 			resource_labels.WithK8s(k8sStore),
