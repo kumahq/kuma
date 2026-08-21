@@ -60,11 +60,20 @@ func (r *PodReconciler) createOrUpdateBuiltinGatewayDataplane(ctx context.Contex
 		dataplaneProto,
 		mergeLabels(dataplane.GetLabels(), pod.Labels),
 		dataplane.Mesh,
+<<<<<<< HEAD
 		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == r.PodConverter.SystemNamespace)),
 		model.WithMode(r.PodConverter.Mode),
 		model.WithK8s(true),
 		model.WithZone(r.PodConverter.Zone),
 		model.WithServiceAccount(pod.Spec.ServiceAccountName),
+=======
+		dataplane.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == r.PodConverter.SystemNamespace)),
+		resource_labels.WithMode(r.PodConverter.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(r.PodConverter.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	)
 	if err != nil {
 		return err

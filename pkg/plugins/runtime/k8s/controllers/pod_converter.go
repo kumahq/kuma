@@ -65,11 +65,21 @@ func (p *PodConverter) PodToDataplane(
 		currentSpec,
 		mergeLabels(dataplane.GetLabels(), pod.Labels),
 		dataplane.Mesh,
+<<<<<<< HEAD
 		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
 		model.WithMode(p.Mode),
 		model.WithK8s(true),
 		model.WithZone(p.Zone),
 		model.WithServiceAccount(pod.Spec.ServiceAccountName),
+=======
+		dataplane.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		resource_labels.WithMode(p.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(p.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+		resource_labels.WithWorkload(workloadName),
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	)
 	if err != nil {
 		return err
@@ -106,11 +116,20 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		currentSpec,
 		mergeLabels(zoneIngress.GetLabels(), pod.Labels),
 		model.NoMesh,
+<<<<<<< HEAD
 		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
 		model.WithMode(p.Mode),
 		model.WithK8s(true),
 		model.WithZone(p.Zone),
 		model.WithServiceAccount(pod.Spec.ServiceAccountName),
+=======
+		zoneIngress.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		resource_labels.WithMode(p.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(p.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	)
 	if err != nil {
 		return err
@@ -147,11 +166,20 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 		currentSpec,
 		mergeLabels(zoneEgress.GetLabels(), pod.Labels),
 		model.NoMesh,
+<<<<<<< HEAD
 		model.WithNamespace(model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
 		model.WithMode(p.Mode),
 		model.WithK8s(true),
 		model.WithZone(p.Zone),
 		model.WithServiceAccount(pod.Spec.ServiceAccountName),
+=======
+		zoneEgress.Name,
+		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
+		resource_labels.WithMode(p.Mode),
+		resource_labels.WithK8s(true),
+		resource_labels.WithZone(p.Zone),
+		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
+>>>>>>> 3bfbb2e00d (feat(labels): compute `kuma.io/display-name` for all resources (#17162))
 	)
 	if err != nil {
 		return err
