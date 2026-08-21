@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"slices"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -79,7 +81,7 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	}
 
 	// Require at least one ready endpoint before publishing the address.
-	ready, err := r.hasReadyEndpoints(ctx, svc)
+	endpointNodes, ready, err := r.readyEndpointNodes(ctx, svc)
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}
@@ -89,7 +91,7 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	}
 
 	// Resolve public address and port from the Service.
-	address, port, err := r.resolveCoordinates(ctx, log, svc)
+	address, port, err := r.resolveCoordinates(ctx, log, svc, endpointNodes)
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}
@@ -157,6 +159,7 @@ func (r *MeshZoneAddressReconciler) resolveCoordinates(
 	ctx context.Context,
 	log logr.Logger,
 	svc *kube_core.Service,
+	endpointNodes map[string]struct{},
 ) (string, int32, error) {
 	if len(svc.Spec.ExternalIPs) > 0 && len(svc.Spec.Ports) > 0 {
 		return svc.Spec.ExternalIPs[0], svc.Spec.Ports[0].Port, nil
@@ -165,7 +168,7 @@ func (r *MeshZoneAddressReconciler) resolveCoordinates(
 	case kube_core.ServiceTypeLoadBalancer:
 		return r.coordinatesFromLoadBalancer(log, svc)
 	case kube_core.ServiceTypeNodePort:
-		return r.coordinatesFromNodePort(ctx, svc)
+		return r.coordinatesFromNodePort(ctx, log, svc, endpointNodes)
 	default:
 		return "", 0, nil
 	}
@@ -194,7 +197,9 @@ func (r *MeshZoneAddressReconciler) coordinatesFromLoadBalancer(
 
 func (r *MeshZoneAddressReconciler) coordinatesFromNodePort(
 	ctx context.Context,
+	log logr.Logger,
 	svc *kube_core.Service,
+	endpointNodes map[string]struct{},
 ) (string, int32, error) {
 	if len(svc.Spec.Ports) == 0 {
 		return "", 0, nil
@@ -203,36 +208,92 @@ func (r *MeshZoneAddressReconciler) coordinatesFromNodePort(
 	if err := r.List(ctx, nodes); err != nil {
 		return "", 0, errors.Wrap(err, "unable to list Nodes")
 	}
-	if len(nodes.Items) == 0 {
-		return "", 0, errors.New("no nodes found")
+	candidates := candidateNodes(nodes.Items, endpointNodes, svc.Spec.ExternalTrafficPolicy == kube_core.ServiceExternalTrafficPolicyLocal)
+	if len(candidates) == 0 {
+		log.V(1).Info("no node able to serve the zone proxy NodePort")
+		return "", 0, nil
 	}
 	for _, addrType := range NodePortAddressPriority {
-		for _, addr := range nodes.Items[0].Status.Addresses {
-			if addr.Type == addrType {
-				return addr.Address, svc.Spec.Ports[0].NodePort, nil
+		for i := range candidates {
+			for _, addr := range candidates[i].Status.Addresses {
+				if addr.Type == addrType {
+					return addr.Address, svc.Spec.Ports[0].NodePort, nil
+				}
 			}
 		}
 	}
 	return "", 0, nil
 }
 
-func (r *MeshZoneAddressReconciler) hasReadyEndpoints(ctx context.Context, svc *kube_core.Service) (bool, error) {
-	slices := &kube_discovery.EndpointSliceList{}
-	if err := r.List(ctx, slices,
+// candidateNodes returns the Nodes that can be advertised for a NodePort Service,
+// sorted by name so that the pick is stable across reconciles instead of following
+// the cache iteration order.
+//
+// Nodes running a ready endpoint come first, so the advertised node is one that
+// actually serves the zone proxy. When there is none, we fall back to any Ready
+// and uncordoned node, which still routes through kube-proxy - unless
+// externalTrafficPolicy is Local, where only a node with a local endpoint works.
+func candidateNodes(nodes []kube_core.Node, endpointNodes map[string]struct{}, localTrafficPolicy bool) []kube_core.Node {
+	var serving, healthy []kube_core.Node
+	for i := range nodes {
+		node := nodes[i]
+		if !isNodeReady(&node) {
+			continue
+		}
+		if _, ok := endpointNodes[node.Name]; ok {
+			// A cordoned node is still serving the endpoint it already runs.
+			serving = append(serving, node)
+		} else if !node.Spec.Unschedulable {
+			healthy = append(healthy, node)
+		}
+	}
+	selected := serving
+	if len(selected) == 0 {
+		if localTrafficPolicy {
+			return nil
+		}
+		selected = healthy
+	}
+	slices.SortFunc(selected, func(a, b kube_core.Node) int { return strings.Compare(a.Name, b.Name) })
+	return selected
+}
+
+func isNodeReady(node *kube_core.Node) bool {
+	for _, cond := range node.Status.Conditions {
+		if cond.Type == kube_core.NodeReady {
+			return cond.Status == kube_core.ConditionTrue
+		}
+	}
+	return false
+}
+
+// readyEndpointNodes returns the names of the Nodes hosting a ready endpoint of the
+// Service, and whether the Service has any ready endpoint at all. Both are needed:
+// nodeName is optional in the EndpointSlice API, so the set can be empty even for a
+// Service that is perfectly ready.
+func (r *MeshZoneAddressReconciler) readyEndpointNodes(ctx context.Context, svc *kube_core.Service) (map[string]struct{}, bool, error) {
+	epSlices := &kube_discovery.EndpointSliceList{}
+	if err := r.List(ctx, epSlices,
 		kube_client.InNamespace(svc.Namespace),
 		kube_client.MatchingLabels{kube_discovery.LabelServiceName: svc.Name},
 	); err != nil {
-		return false, errors.Wrap(err, "unable to list EndpointSlices")
+		return nil, false, errors.Wrap(err, "unable to list EndpointSlices")
 	}
-	for i := range slices.Items {
-		for j := range slices.Items[i].Endpoints {
-			ep := &slices.Items[i].Endpoints[j]
-			if ep.Conditions.Ready != nil && *ep.Conditions.Ready {
-				return true, nil
+	nodes := map[string]struct{}{}
+	ready := false
+	for i := range epSlices.Items {
+		for j := range epSlices.Items[i].Endpoints {
+			ep := &epSlices.Items[i].Endpoints[j]
+			if ep.Conditions.Ready == nil || !*ep.Conditions.Ready {
+				continue
+			}
+			ready = true
+			if ep.NodeName != nil && *ep.NodeName != "" {
+				nodes[*ep.NodeName] = struct{}{}
 			}
 		}
 	}
-	return false, nil
+	return nodes, ready, nil
 }
 
 func (r *MeshZoneAddressReconciler) deleteIfExists(ctx context.Context, key kube_types.NamespacedName) error {
