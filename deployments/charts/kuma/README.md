@@ -59,6 +59,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.ingress.path | string | `"/"` | Ingress path. |
 | controlPlane.ingress.pathType | string | `"ImplementationSpecific"` | Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix) |
 | controlPlane.ingress.servicePort | int | `5681` | Port from kuma-cp to use to expose API and GUI. Switch to 5682 to expose TLS port |
+| controlPlane.ingress.tls | list | `[]` | TLS configuration for the Ingress, rendered verbatim under spec.tls. Each entry follows the networking.k8s.io/v1 IngressTLS schema (hosts, secretName). |
 | controlPlane.serviceMonitor.enabled | bool | `false` | Install CoreOS ServiceMonitor custom resource that configures metrics scraping. |
 | controlPlane.serviceMonitor.annotations | object | `{}` | Map of serviceMonitor annotations. |
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
