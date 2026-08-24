@@ -159,7 +159,7 @@ jobs:
           GOGC: "80"
         with:
           args: --fix=false --verbose
-          version: v2.11.3 # TODO: automate this version update via Renovate
+          version: v2.13.1 # TODO: automate this version update via Renovate
       # Lint and "make check" are redundant on a tag: release_sha_gate already
       # requires a green branch push run for this exact tree/SHA. We
       # intentionally keep metadata and SBOM/SCA on tag refs so release tags

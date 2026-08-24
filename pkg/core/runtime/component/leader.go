@@ -52,5 +52,5 @@ func (p *LeaderInfoComponent) setLeader(leader bool) {
 }
 
 func (p *LeaderInfoComponent) IsLeader() bool {
-	return atomic.LoadInt32(&(p.leader)) == 1
+	return atomic.LoadInt32(&p.leader) == 1
 }
