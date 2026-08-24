@@ -211,9 +211,8 @@ func (k *listener) createListerWatcher(gvk schema.GroupVersionKind) (cache.Liste
 		return nil, err
 	}
 	paramCodec := runtime.NewParameterCodec(k.mgr.GetScheme())
-	ctx := context.Background()
 	return &cache.ListWatch{
-		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			res := listObj.DeepCopyObject()
 			err := client.Get().
 				Resource(mapping.Resource.Resource).
@@ -223,7 +222,7 @@ func (k *listener) createListerWatcher(gvk schema.GroupVersionKind) (cache.Liste
 			return res, err
 		},
 		// Setup the watch function
-		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			// Watch needs to be set to true separately
 			opts.Watch = true
 			return client.Get().
