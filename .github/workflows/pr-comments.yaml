@@ -122,7 +122,7 @@ jobs:
 
       - name: "Free up disk space for E2E golden files"
         if: steps.parse-commands.outputs.golden_files_e2e == 'true' && steps.get-branch.outputs.is_cross_repository != 'true'
-        uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v3.2.2
+        uses: endersonmenezes/free-disk-space@2a22f8c59cae9cddae7194b33e6b92d023b2b4b8 # v4.0.0
         with:
           remove_android: true
           remove_dotnet: true
