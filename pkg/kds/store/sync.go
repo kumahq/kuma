@@ -281,6 +281,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse kds_c
 			}
 
 			// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
+			upstreamMeta := r.GetMeta()
 			r.SetMeta(nil)
 
 			if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
@@ -297,6 +298,17 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse kds_c
 					// replay the same resource on reconnect forever.
 					log.Info("upstream resource rejected by the store, sending NACK", "name", rk.Name, "mesh", rk.Mesh, "err", err)
 					nackError = std_errors.Join(util.ErrUserNack, nackError, err)
+				case store.IsAlreadyExists(err):
+					// The downstream copy existed but we did not see it when we listed:
+					// a Kubernetes informer that has not caught up with a create yet, or
+					// a copy the origin prefilter dropped because it lost its
+					// `kuma.io/origin` label. It is the same resource we are syncing, so
+					// take it over with an update. Failing here rolls back the whole
+					// response and cancels the connection, and the next connection lists
+					// the same stale copy and fails again, so the zone never converges.
+					log.Info("resource already exists in the downstream store, updating it instead", "name", rk.Name, "mesh", rk.Mesh)
+					r.SetMeta(upstreamMeta)
+					conflicted = append(conflicted, OnUpdate{r: r, opts: []store.UpdateOptionsFunc{store.UpdateWithLabels(upstreamMeta.GetLabels())}})
 				default:
 					return err
 				}
@@ -334,9 +346,10 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse kds_c
 	return s.retryConflictedUpdates(ctx, conflicted, opts, log), nackError
 }
 
-// retryConflictedUpdates reapplies updates that lost a write conflict, rebased on a
-// fresh copy: zone-local writers (VIP allocator, hostname generators) invalidate the
-// version read at List time. It runs after the transaction commits, so the waits
+// retryConflictedUpdates reapplies updates that lost a write conflict, and creates
+// that turned out to already exist downstream, rebased on a fresh copy: zone-local
+// writers (VIP allocator, hostname generators) invalidate the version read at List
+// time, and a cached store can hide a copy that the create then collides with. It runs after the transaction commits, so the waits
 // hold no connection or row locks, and the batch shares one wait per attempt. Sync
 // is no longer all-or-nothing, which is fine for a convergent reconciliation of a
 // single type, and the Kubernetes store has no transactions anyway. Exhausting the
@@ -349,9 +362,14 @@ func (s *syncResourceStore) retryConflictedUpdates(ctx context.Context, pending 
 	backoff := retry.WithMaxRetries(updateConflictRetries, retry.WithFullJitter(retry.NewConstant(updateConflictBackoff)))
 	err := retry.Do(ctx, backoff, func(ctx context.Context) error {
 		for _, upd := range pending {
-			log.Info("resource was modified in another place while syncing, retrying with a fresh copy",
+			log.Info("retrying a resource with a fresh copy of the downstream one",
 				"name", upd.r.GetMeta().GetName(), "mesh", upd.r.GetMeta().GetMesh())
 			if err := s.refreshForUpdate(ctx, upd, opts); err != nil {
+				if store.IsNotFound(err) {
+					// A cached store (Kubernetes informer) can still be behind the write
+					// we collided with, so wait for it instead of failing the response.
+					return retry.RetryableError(err)
+				}
 				return err
 			}
 		}
@@ -377,7 +395,7 @@ func (s *syncResourceStore) retryConflictedUpdates(ctx context.Context, pending 
 		}
 		return nil
 	})
-	if store.IsConflict(err) {
+	if store.IsConflict(err) || store.IsNotFound(err) {
 		log.Info("gave up syncing a resource that keeps being modified in another place, forcing a resync",
 			"name", pending[0].r.GetMeta().GetName(), "mesh", pending[0].r.GetMeta().GetMesh())
 	}
