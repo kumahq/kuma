@@ -333,7 +333,7 @@ func (b *Builder) Build() (*NetNS, error) {
 			}
 
 			if err := netlink.AddrAdd(*b.sharedLink, b.sharedLinkAddress); err != nil {
-				done <- fmt.Errorf("cannot add address %s to link %s interface: %s", b.sharedLinkAddress.String(), *(b.sharedLink), err)
+				done <- fmt.Errorf("cannot add address %s to link %s interface: %s", b.sharedLinkAddress.String(), *b.sharedLink, err)
 			}
 		}
 

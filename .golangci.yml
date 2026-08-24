@@ -125,7 +125,7 @@ linters:
     rules:
       - linters:
           - staticcheck
-        text: 'SA1019: "github.com/golang/protobuf' # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
+        text: 'SA1019: "?github.com/golang/protobuf' # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
       - linters:
           - staticcheck
         text: "SA1019: proto.MessageName is deprecated" # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
@@ -152,13 +152,22 @@ linters:
         text: "SA1019: l.ReusePort is deprecated"
       - linters:
           - staticcheck
-        text: "SA1019: cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead."
+        text: 'SA1019: .*AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead\.'
       - linters:
           - staticcheck
-        text: "SA1019: kumaCPConfig.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead."
+        text: 'SA1019: .*\.Grpc is deprecated: set parameters through Http section' # Kuma still supports the deprecated Grpc timeout field for backwards compatibility.
       - linters:
           - staticcheck
-        text: "SA1019: c.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead."
+        text: 'SA1019: .*\.(SafeRegexMatch|PrefixMatch) is deprecated: Marked as deprecated in envoy/config/route/v3/route_components\.proto' # TODO migrate to StringMatcher, deferred on a release branch.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*\.EventLogPath is deprecated: Marked as deprecated in envoy/config/core/v3/health_check\.proto' # TODO no drop-in replacement, deferred on a release branch.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*\.SplitSpansForRequest is deprecated: Marked as deprecated in envoy/config/trace/v3/zipkin\.proto' # TODO no drop-in replacement, deferred on a release branch.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*\.Requeue is deprecated: Use `RequeueAfter` instead' # Switching to RequeueAfter needs an explicit duration, which would change behaviour.
       - linters:
           - staticcheck
         text: "SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go"
