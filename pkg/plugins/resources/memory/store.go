@@ -172,7 +172,7 @@ func (c *memoryStore) Update(_ context.Context, r core_model.Resource, fs ...sto
 
 	opts := store.NewUpdateOptions(fs...)
 
-	meta, ok := (r.GetMeta()).(memoryMeta)
+	meta, ok := r.GetMeta().(memoryMeta)
 	if !ok {
 		return fmt.Errorf("MemoryStore.Update() requires r.GetMeta() to be of type memoryMeta")
 	}
@@ -228,7 +228,7 @@ func (c *memoryStore) Delete(ctx context.Context, r core_model.Resource, fs ...s
 func (c *memoryStore) delete(r core_model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
-	_, ok := (r.GetMeta()).(memoryMeta)
+	_, ok := r.GetMeta().(memoryMeta)
 	if r.GetMeta() != nil && !ok {
 		return fmt.Errorf("MemoryStore.Delete() requires r.GetMeta() either to be nil or to be of type memoryMeta")
 	}
