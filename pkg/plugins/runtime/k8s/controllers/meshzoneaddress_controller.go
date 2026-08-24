@@ -214,8 +214,8 @@ func (r *MeshZoneAddressReconciler) coordinatesFromNodePort(
 		return "", 0, nil
 	}
 	for _, addrType := range NodePortAddressPriority {
-		for i := range candidates {
-			for _, addr := range candidates[i].Status.Addresses {
+		for _, node := range candidates {
+			for _, addr := range node.Status.Addresses {
 				if addr.Type == addrType {
 					return addr.Address, svc.Spec.Ports[0].NodePort, nil
 				}
@@ -226,18 +226,24 @@ func (r *MeshZoneAddressReconciler) coordinatesFromNodePort(
 }
 
 // candidateNodes returns the Nodes that can be advertised for a NodePort Service,
-// sorted by name so that the pick is stable across reconciles instead of following
-// the cache iteration order.
+// ordered by preference. Nodes hosting a ready endpoint come first, so the advertised
+// node is one that actually serves the zone proxy, followed by any other Ready and
+// uncordoned node, which kube-proxy still routes from. Each group is sorted by name so
+// that the pick is stable across reconciles instead of following the cache iteration
+// order.
 //
-// Nodes running a ready endpoint come first, so the advertised node is one that
-// actually serves the zone proxy. When there is none, we fall back to any Ready
-// and uncordoned node, which still routes through kube-proxy - unless
-// externalTrafficPolicy is Local, where only a node with a local endpoint works.
-func candidateNodes(nodes []kube_core.Node, endpointNodes map[string]struct{}, localTrafficPolicy bool) []kube_core.Node {
-	var serving, healthy []kube_core.Node
+// The caller walks the candidates once per address type, so a reachable ExternalIP on a
+// non-serving node wins over a serving node that only has an InternalIP.
+//
+// Under externalTrafficPolicy: Local only a node with a local endpoint serves the
+// traffic, so the fallback group is dropped - unless we do not know where the endpoints
+// run, since nodeName is optional in the EndpointSlice API and publishing nothing at all
+// would be worse than kube-proxy's own guess.
+func candidateNodes(nodes []kube_core.Node, endpointNodes map[string]struct{}, localTrafficPolicy bool) []*kube_core.Node {
+	var serving, healthy []*kube_core.Node
 	for i := range nodes {
-		node := nodes[i]
-		if !isNodeReady(&node) {
+		node := &nodes[i]
+		if !isNodeReady(node) {
 			continue
 		}
 		if _, ok := endpointNodes[node.Name]; ok {
@@ -247,15 +253,13 @@ func candidateNodes(nodes []kube_core.Node, endpointNodes map[string]struct{}, l
 			healthy = append(healthy, node)
 		}
 	}
-	selected := serving
-	if len(selected) == 0 {
-		if localTrafficPolicy {
-			return nil
-		}
-		selected = healthy
+	byName := func(a, b *kube_core.Node) int { return strings.Compare(a.Name, b.Name) }
+	slices.SortFunc(serving, byName)
+	slices.SortFunc(healthy, byName)
+	if localTrafficPolicy && len(endpointNodes) > 0 {
+		return serving
 	}
-	slices.SortFunc(selected, func(a, b kube_core.Node) int { return strings.Compare(a.Name, b.Name) })
-	return selected
+	return append(serving, healthy...)
 }
 
 func isNodeReady(node *kube_core.Node) bool {

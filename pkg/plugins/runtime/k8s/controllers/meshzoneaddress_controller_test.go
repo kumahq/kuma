@@ -174,5 +174,13 @@ var _ = Describe("MeshZoneAddressReconciler", func() {
 			inputFile:  "20.nodeport-no-ready-nodes.resources.yaml",
 			outputFile: "20.nodeport-no-ready-nodes.mza.yaml",
 		}),
+		Entry("NodePort prefers an ExternalIP over a serving node with only an InternalIP", testCase{
+			inputFile:  "21.nodeport-external-ip-over-serving-node.resources.yaml",
+			outputFile: "21.nodeport-external-ip-over-serving-node.mza.yaml",
+		}),
+		Entry("NodePort with externalTrafficPolicy Local falls back when endpoints carry no node", testCase{
+			inputFile:  "22.nodeport-local-traffic-policy-no-node-name.resources.yaml",
+			outputFile: "22.nodeport-local-traffic-policy-no-node-name.mza.yaml",
+		}),
 	)
 })
