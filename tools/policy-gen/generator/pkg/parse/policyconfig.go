@@ -57,7 +57,7 @@ func Policy(path string) (PolicyConfig, error) {
 		return PolicyConfig{}, err
 	}
 
-	policyName := strings.Split(filepath.Base(path), ".")[0]
+	policyName, _, _ := strings.Cut(filepath.Base(path), ".")
 	var mainStruct *ast.TypeSpec
 	var mainComment *ast.CommentGroup
 	var packageName string
