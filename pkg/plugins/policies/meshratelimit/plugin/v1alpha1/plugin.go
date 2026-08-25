@@ -150,7 +150,7 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 			if !ok {
 				continue
 			}
-			//nolint:staticcheck // SA1019 Zone egress uses old Rules format for external services
+
 			for _, rule := range mrl.FromRules.Rules {
 				for _, filterChain := range listeners.Egress.FilterChains {
 					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {

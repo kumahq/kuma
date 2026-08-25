@@ -107,6 +107,9 @@ linters:
         - G602 # slice index out of range
         - G703 # path traversal via taint analysis
         - G704 # SSRF via taint analysis
+    govet:
+      disable:
+        - inline # only reports that a call could not be inlined, which is not a defect
     importas:
       alias:
         - pkg: github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh
@@ -161,13 +164,31 @@ linters:
     rules:
       - linters:
           - staticcheck
-        text: 'SA1019: "github.com/golang/protobuf/jsonpb"'
+        text: 'SA1019: "?github.com/golang/protobuf/jsonpb"?'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*\.Rules is deprecated: use InboundRules instead' # Migrating FromRules.Rules to InboundRules is deferred on a release branch.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead\.'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*\.Grpc is deprecated: set parameters through Http section' # Kuma still supports the deprecated Grpc timeout field for backwards compatibility.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*\.(SafeRegexMatch|PrefixMatch) is deprecated: Marked as deprecated in envoy/config/route/v3/route_components\.proto' # TODO migrate to StringMatcher, deferred on a release branch.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*\.EventLogPath is deprecated: Marked as deprecated in envoy/config/core/v3/health_check\.proto' # TODO no drop-in replacement, deferred on a release branch.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*\.SplitSpansForRequest is deprecated: Marked as deprecated in envoy/config/trace/v3/zipkin\.proto' # TODO no drop-in replacement, deferred on a release branch.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*\.Requeue is deprecated: Use `RequeueAfter` instead' # Switching to RequeueAfter needs an explicit duration, which would change behaviour.
       - linters:
           - staticcheck
         text: 'SA1019: .*CommonConfig is deprecated: Marked as deprecated in envoy/extensions/access_loggers/open_telemetry/v3/logs_service.proto'
-      - linters:
-          - staticcheck
-        text: 'SA1019: cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.'
       - linters:
           - staticcheck
         text: 'SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go'
