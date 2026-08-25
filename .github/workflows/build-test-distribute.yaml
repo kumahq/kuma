@@ -147,7 +147,7 @@ jobs:
         if: ${{ github.ref_type != 'tag' }}
         with:
           args: --fix=false --verbose
-          version: v2.11.3
+          version: v2.13.1
           skip-cache: true
       - if: ${{ github.ref_type != 'tag' }}
         run: |
