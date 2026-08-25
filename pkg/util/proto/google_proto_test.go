@@ -42,4 +42,38 @@ var _ = Describe("MergeKuma", func() {
 		Expect(dest.EdsClusterConfig.EdsConfig.InitialFetchTimeout.AsDuration()).To(Equal(time.Second))
 		Expect(dest.EdsClusterConfig.EdsConfig.ResourceApiVersion).To(Equal(envoy_config_core_v3.ApiVersion_V3))
 	})
+
+	It("should merge circuit breaker thresholds by priority instead of appending", func() {
+		dest := &envoy_cluster.Cluster{
+			Name: "cluster",
+			CircuitBreakers: &envoy_cluster.CircuitBreakers{
+				Thresholds: []*envoy_cluster.CircuitBreakers_Thresholds{
+					{
+						Priority:       envoy_config_core_v3.RoutingPriority_DEFAULT,
+						TrackRemaining: true,
+					},
+				},
+			},
+		}
+		src := &envoy_cluster.Cluster{
+			CircuitBreakers: &envoy_cluster.CircuitBreakers{
+				Thresholds: []*envoy_cluster.CircuitBreakers_Thresholds{
+					{
+						MaxConnections: util_proto.UInt32(8192),
+					},
+					{
+						Priority:       envoy_config_core_v3.RoutingPriority_HIGH,
+						MaxConnections: util_proto.UInt32(2048),
+					},
+				},
+			},
+		}
+		util_proto.Merge(dest, src)
+		Expect(dest.CircuitBreakers.Thresholds).To(HaveLen(2))
+		Expect(dest.CircuitBreakers.Thresholds[0].Priority).To(Equal(envoy_config_core_v3.RoutingPriority_DEFAULT))
+		Expect(dest.CircuitBreakers.Thresholds[0].TrackRemaining).To(BeTrue())
+		Expect(dest.CircuitBreakers.Thresholds[0].MaxConnections.GetValue()).To(Equal(uint32(8192)))
+		Expect(dest.CircuitBreakers.Thresholds[1].Priority).To(Equal(envoy_config_core_v3.RoutingPriority_HIGH))
+		Expect(dest.CircuitBreakers.Thresholds[1].MaxConnections.GetValue()).To(Equal(uint32(2048)))
+	})
 })

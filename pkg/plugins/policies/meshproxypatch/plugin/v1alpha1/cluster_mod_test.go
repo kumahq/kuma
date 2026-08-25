@@ -241,6 +241,43 @@ var _ = Describe("Cluster modifications", func() {
                   enforcingSuccessRate: 100
                 type: ORIGINAL_DST`,
 		}),
+		Entry("should patch circuit breaker threshold instead of appending a duplicate priority entry", testCase{
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    circuitBreakers:
+                      thresholds:
+                      - trackRemaining: true
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: outbound:passthrough:ipv4
+                    type: ORIGINAL_DST
+`,
+				},
+			},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: outbound:passthrough:ipv4
+                   value: |
+                     circuitBreakers:
+                       thresholds:
+                       - maxConnections: 8192`,
+			},
+			expected: `
+            resources:
+            - name: outbound:passthrough:ipv4
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                circuitBreakers:
+                  thresholds:
+                  - maxConnections: 8192
+                    trackRemaining: true
+                lbPolicy: CLUSTER_PROVIDED
+                name: outbound:passthrough:ipv4
+                type: ORIGINAL_DST`,
+		}),
 		Entry("should patch cluster matching origins with JsonPatch", testCase{
 			clusters: []testCaseCluster{
 				{

@@ -47,6 +47,7 @@ type (
 	MergeFunction func(dst, src protoreflect.Message)
 	mergeOptions  struct {
 		customMergeFn map[protoreflect.FullName]MergeFunction
+		keyedLists    map[protoreflect.FullName]protoreflect.Name
 	}
 )
 type OptionFn func(options mergeOptions) mergeOptions
@@ -54,6 +55,17 @@ type OptionFn func(options mergeOptions) mergeOptions
 func MergeFunctionOptionFn(name protoreflect.FullName, function MergeFunction) OptionFn {
 	return func(options mergeOptions) mergeOptions {
 		options.customMergeFn[name] = function
+		return options
+	}
+}
+
+// KeyedListOptionFn marks the repeated message field listField as a keyed
+// list: instead of appending, a src entry is merged into the dst entry whose
+// keyField has the same value, so merging never produces duplicates by key.
+// Entries with a key not present in dst are appended as usual.
+func KeyedListOptionFn(listField protoreflect.FullName, keyField protoreflect.Name) OptionFn {
+	return func(options mergeOptions) mergeOptions {
+		options.keyedLists[listField] = keyField
 		return options
 	}
 }
@@ -76,12 +88,20 @@ func Replace(dst, src proto.Message) {
 
 func Merge(dst, src proto.Message) {
 	duration := &durationpb.Duration{}
-	merge(dst, src, MergeFunctionOptionFn(duration.ProtoReflect().Descriptor().FullName(), ReplaceMergeFn))
+	merge(dst, src,
+		MergeFunctionOptionFn(duration.ProtoReflect().Descriptor().FullName(), ReplaceMergeFn),
+		// Envoy honors only the first threshold matching a routing priority,
+		// so appending a duplicate priority entry silently disables the merged one.
+		KeyedListOptionFn("envoy.config.cluster.v3.CircuitBreakers.thresholds", "priority"),
+	)
 }
 
 // Merge Code of proto.Merge with modifications to support custom types
 func merge(dst, src proto.Message, opts ...OptionFn) {
-	mo := mergeOptions{customMergeFn: map[protoreflect.FullName]MergeFunction{}}
+	mo := mergeOptions{
+		customMergeFn: map[protoreflect.FullName]MergeFunction{},
+		keyedLists:    map[protoreflect.FullName]protoreflect.Name{},
+	}
 	for _, opt := range opts {
 		mo = opt(mo)
 	}
@@ -98,7 +118,11 @@ func (o mergeOptions) mergeMessage(dst, src protoreflect.Message) {
 	src.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
 		switch {
 		case fd.IsList():
-			o.mergeList(dst.Mutable(fd).List(), v.List(), fd)
+			if keyField, ok := o.keyedLists[fd.FullName()]; ok {
+				o.mergeListByKey(dst.Mutable(fd).List(), v.List(), fd, keyField)
+			} else {
+				o.mergeList(dst.Mutable(fd).List(), v.List(), fd)
+			}
 		case fd.IsMap():
 			o.mergeMap(dst.Mutable(fd).Map(), v.Map(), fd.MapValue())
 		case fd.Message() != nil:
@@ -133,6 +157,35 @@ func (o mergeOptions) mergeList(dst, src protoreflect.List, fd protoreflect.Fiel
 			dst.Append(o.cloneBytes(v))
 		default:
 			dst.Append(v)
+		}
+	}
+}
+
+func (o mergeOptions) mergeListByKey(dst, src protoreflect.List, fd protoreflect.FieldDescriptor, keyField protoreflect.Name) {
+	var keyFd protoreflect.FieldDescriptor
+	if fd.Message() != nil {
+		keyFd = fd.Message().Fields().ByName(keyField)
+	}
+	if keyFd == nil {
+		o.mergeList(dst, src, fd)
+		return
+	}
+
+	for i, n := 0, src.Len(); i < n; i++ {
+		srcElem := src.Get(i).Message()
+		merged := false
+		for j := 0; j < dst.Len(); j++ {
+			dstElem := dst.Get(j).Message()
+			if dstElem.Get(keyFd).Equal(srcElem.Get(keyFd)) {
+				o.mergeMessage(dstElem, srcElem)
+				merged = true
+				break
+			}
+		}
+		if !merged {
+			dstv := dst.NewElement()
+			o.mergeMessage(dstv.Message(), srcElem)
+			dst.Append(dstv)
 		}
 	}
 }
