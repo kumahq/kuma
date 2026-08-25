@@ -235,6 +235,7 @@ components:
                                     type: string
                                   weight:
                                     default: 1
+                                    maximum: 4294967295
                                     minimum: 0
                                     type: integer
                                 required:
@@ -328,6 +329,7 @@ components:
                                             type: string
                                           weight:
                                             default: 1
+                                            maximum: 4294967295
                                             minimum: 0
                                             type: integer
                                         required:

@@ -21,6 +21,51 @@ import (
 )
 
 var _ = Describe("uncheckedGapiToKumaRef", func() {
+	serviceRef := func(namespace, name string) gatewayapi.BackendObjectReference {
+		group := gatewayapi.Group("")
+		kind := gatewayapi.Kind("Service")
+		port := gatewayapi.PortNumber(80)
+		ref := gatewayapi.BackendObjectReference{
+			Group: &group,
+			Kind:  &kind,
+			Name:  gatewayapi.ObjectName(name),
+			Port:  &port,
+		}
+		if namespace != "" {
+			ns := gatewayapi.Namespace(namespace)
+			ref.Namespace = &ns
+		}
+		return ref
+	}
+
+	referenceGrant := func(grantNamespace, routeNamespace, targetKind, targetName string) *gatewayapi.ReferenceGrant {
+		from := gatewayapi.ReferenceGrantFrom{
+			Group:     gatewayapi.Group(gatewayapi.GroupVersion.Group),
+			Kind:      gatewayapi.Kind("HTTPRoute"),
+			Namespace: gatewayapi.Namespace(routeNamespace),
+		}
+		to := gatewayapi.ReferenceGrantTo{
+			Group: gatewayapi.Group(""),
+			Kind:  gatewayapi.Kind(targetKind),
+		}
+		if targetKind == "MeshService" {
+			to.Group = gatewayapi.Group(meshservice_k8s.GroupVersion.Group)
+		}
+		if targetName != "" {
+			to.Name = pointer.To(gatewayapi.ObjectName(targetName))
+		}
+		return &gatewayapi.ReferenceGrant{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name:      "allow-route",
+				Namespace: grantNamespace,
+			},
+			Spec: gatewayapi.ReferenceGrantSpec{
+				From: []gatewayapi.ReferenceGrantFrom{from},
+				To:   []gatewayapi.ReferenceGrantTo{to},
+			},
+		}
+	}
+
 	It("should convert a Service backendRef to a MeshService targetRef without tags", func() {
 		scheme, err := bootstrap_k8s.NewScheme()
 		Expect(err).ToNot(HaveOccurred())
@@ -30,6 +75,9 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 				Name:      "backend",
 				Namespace: "kuma-demo",
 			},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Port: 80}},
+			},
 		}
 
 		reconciler := &HTTPRouteReconciler{
@@ -37,22 +85,50 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Zone:   "zone-1",
 		}
 
-		group := gatewayapi.Group("")
-		kind := gatewayapi.Kind("Service")
-		namespace := gatewayapi.Namespace("kuma-demo")
-		port := gatewayapi.PortNumber(80)
-		ref := gatewayapi.BackendObjectReference{
-			Group:     &group,
-			Kind:      &kind,
-			Name:      "backend",
-			Namespace: &namespace,
-			Port:      &port,
-		}
+		ref := serviceRef("kuma-demo", "backend")
 
 		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", ref)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).To(BeNil())
+		Expect(targetRef).To(Equal(common_api.TargetRef{
+			Kind: common_api.MeshService,
+			Labels: pointer.To(map[string]string{
+				mesh_proto.DisplayName:      "backend",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			}),
+			SectionName: pointer.To("80"),
+		}))
+	})
+
+	It("should report ResolvedRefs=False when the referenced Service does not have the requested port", func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name:      "backend",
+				Namespace: "kuma-demo",
+			},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Port: 8080}},
+			},
+		}
+
+		reconciler := &HTTPRouteReconciler{
+			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(svc).Build(),
+			Zone:   "zone-1",
+		}
+
+		ref := serviceRef("kuma-demo", "backend")
+
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", ref)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(condition).ToNot(BeNil())
+		Expect(condition.Reason).To(Equal(string(gatewayapi.RouteReasonBackendNotFound)))
+		Expect(condition.Message).To(ContainSubstring("kuma-demo/backend"))
+		Expect(condition.Message).To(ContainSubstring("80"))
 		Expect(targetRef).To(Equal(common_api.TargetRef{
 			Kind: common_api.MeshService,
 			Labels: pointer.To(map[string]string{
@@ -169,7 +245,113 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).ToNot(BeNil())
 		Expect(condition.Reason).To(Equal(string(gatewayapi.RouteReasonBackendNotFound)))
-		Expect(targetRef.Kind).To(Equal(common_api.MeshService))
+		Expect(condition.Message).To(ContainSubstring("443"))
+		Expect(targetRef).To(Equal(common_api.TargetRef{
+			Kind: common_api.MeshService,
+			Labels: pointer.To(map[string]string{
+				mesh_proto.DisplayName:      "backend",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			}),
+			SectionName: pointer.To("443"),
+		}))
+	})
+
+	It("should deny a cross-namespace Service backendRef without a matching ReferenceGrant", func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "backend-ns"},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Port: 80}},
+			},
+		}
+
+		reconciler := &HTTPRouteReconciler{
+			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(svc).Build(),
+		}
+
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", serviceRef("backend-ns", "backend"))
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(condition).ToNot(BeNil())
+		Expect(condition.Reason).To(Equal(string(gatewayapi.RouteReasonRefNotPermitted)))
+		Expect(condition.Message).To(ContainSubstring("backend-ns/backend"))
+		Expect(targetRef).To(BeZero())
+	})
+
+	It("should allow a cross-namespace Service backendRef when an exact-name ReferenceGrant matches", func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "backend-ns"},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		grant := referenceGrant("backend-ns", "route-ns", "Service", "backend")
+
+		reconciler := &HTTPRouteReconciler{
+			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(svc, grant).Build(),
+		}
+
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", serviceRef("backend-ns", "backend"))
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(condition).To(BeNil())
+		Expect(targetRef.SectionName).To(Equal(pointer.To("http")))
+	})
+
+	It("should allow a cross-namespace MeshService backendRef when a wildcard-name ReferenceGrant matches", func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		ms := &meshservice_k8s.MeshService{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "backend-ns"},
+			Spec: &meshservice_api.MeshService{
+				Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("http")}},
+			},
+		}
+		grant := referenceGrant("backend-ns", "route-ns", "MeshService", "")
+
+		reconciler := &HTTPRouteReconciler{
+			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(ms, grant).Build(),
+		}
+
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", func() gatewayapi.BackendObjectReference {
+			ref := meshServiceRef(pointer.To(gatewayapi.PortNumber(80)))
+			ns := gatewayapi.Namespace("backend-ns")
+			ref.Namespace = &ns
+			return ref
+		}())
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(condition).To(BeNil())
+		Expect(targetRef.SectionName).To(Equal(pointer.To("http")))
+	})
+
+	It("should deny a cross-namespace Service backendRef when the ReferenceGrant targets a different backend name", func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "backend-ns"},
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Port: 80}},
+			},
+		}
+		grant := referenceGrant("backend-ns", "route-ns", "Service", "other-backend")
+
+		reconciler := &HTTPRouteReconciler{
+			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(svc, grant).Build(),
+		}
+
+		_, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", serviceRef("backend-ns", "backend"))
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(condition).ToNot(BeNil())
+		Expect(condition.Reason).To(Equal(string(gatewayapi.RouteReasonRefNotPermitted)))
 	})
 
 	It("should return a valid unresolved MeshService targetRef when the backend Service is missing", func() {
@@ -181,17 +363,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Zone:   "zone-1",
 		}
 
-		group := gatewayapi.Group("")
-		kind := gatewayapi.Kind("Service")
-		namespace := gatewayapi.Namespace("kuma-demo")
-		port := gatewayapi.PortNumber(80)
-		ref := gatewayapi.BackendObjectReference{
-			Group:     &group,
-			Kind:      &kind,
-			Name:      "missing-backend",
-			Namespace: &namespace,
-			Port:      &port,
-		}
+		ref := serviceRef("kuma-demo", "missing-backend")
 
 		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", ref)
 

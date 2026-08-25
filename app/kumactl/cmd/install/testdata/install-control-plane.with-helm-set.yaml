@@ -392,6 +392,7 @@ spec:
                                       type: string
                                     weight:
                                       default: 1
+                                      maximum: 4294967295
                                       minimum: 0
                                       type: integer
                                   required:
@@ -489,6 +490,7 @@ spec:
                                               type: string
                                             weight:
                                               default: 1
+                                              maximum: 4294967295
                                               minimum: 0
                                               type: integer
                                           required:
@@ -4202,6 +4204,7 @@ spec:
                                       type: string
                                     weight:
                                       default: 1
+                                      maximum: 4294967295
                                       minimum: 0
                                       type: integer
                                   required:
@@ -8107,6 +8110,7 @@ rules:
       - gateway.networking.k8s.io
     resources:
       - httproutes
+      - referencegrants
     verbs:
       - get
       - list

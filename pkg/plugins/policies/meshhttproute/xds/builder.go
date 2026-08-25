@@ -15,6 +15,9 @@ type OutboundRoute struct {
 	Name    string
 	Match   api.Match
 	Filters []api.Filter
+	// UnresolvedBackendRefsWeight is the declared sum of backendRef weights that
+	// did not resolve to a routable backend for this rule.
+	UnresolvedBackendRefsWeight uint
 	// AllBackendRefsUnresolved is true when the rule declares backendRefs and
 	// none of them resolve, which is the case the Gateway API answers with 500.
 	AllBackendRefsUnresolved bool
@@ -38,12 +41,13 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 	for _, route := range c.Routes {
 		route := envoy_virtual_hosts.AddVirtualHostConfigurer(
 			&RoutesConfigurer{
-				Name:                     route.Name,
-				Match:                    route.Match,
-				Filters:                  route.Filters,
-				AllBackendRefsUnresolved: route.AllBackendRefsUnresolved,
-				MirrorSplits:             route.MirrorSplits,
-				Split:                    route.Split,
+				Name:                        route.Name,
+				Match:                       route.Match,
+				Filters:                     route.Filters,
+				UnresolvedBackendRefsWeight: route.UnresolvedBackendRefsWeight,
+				AllBackendRefsUnresolved:    route.AllBackendRefsUnresolved,
+				MirrorSplits:                route.MirrorSplits,
+				Split:                       route.Split,
 			})
 		virtualHostBuilder = virtualHostBuilder.Configure(route)
 	}

@@ -11,6 +11,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -239,6 +240,9 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 		}
 
 		refCondition.AddIfFalseAndNotPresent(&conditions)
+		if refCondition.preventsBackendTarget() {
+			continue
+		}
 
 		backendRefs = append(backendRefs, common_api.BackendRef{
 			TargetRef: ref,
@@ -456,7 +460,7 @@ type ResolvedRefsConditionFalse struct {
 func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_meta.Condition) {
 	if c != nil && kube_apimeta.FindStatusCondition(*conditions, string(gatewayapi.RouteConditionResolvedRefs)) == nil {
 		condition := kube_meta.Condition{
-			Type:    string(gatewayapi.RouteReasonResolvedRefs),
+			Type:    string(gatewayapi.RouteConditionResolvedRefs),
 			Status:  kube_meta.ConditionFalse,
 			Reason:  c.Reason,
 			Message: c.Message,
@@ -465,15 +469,19 @@ func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_
 	}
 }
 
+func (c *ResolvedRefsConditionFalse) preventsBackendTarget() bool {
+	return c != nil && c.Reason == string(gatewayapi.RouteReasonRefNotPermitted)
+}
+
 func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	ctx context.Context, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
-	gk := kube_schema.GroupKind{Kind: string(*ref.Kind), Group: string(*ref.Group)}
-	// the backendRef's namespace, falling back to the route's namespace when unset
+	details, ok := backendObjectReferenceInfo(objectNamespace, ref)
 	refNamespace := objectNamespace
-	if ref.Namespace != nil {
-		refNamespace = string(*ref.Namespace)
+	if ok {
+		refNamespace = details.Namespace
 	}
+
 	unresolvedTargetRef := common_api.TargetRef{
 		Kind: common_api.MeshService,
 		Labels: &map[string]string{
@@ -481,9 +489,42 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 			mesh_proto.KubeNamespaceTag: refNamespace,
 		},
 	}
-	namespacedName := kube_types.NamespacedName{Namespace: refNamespace, Name: string(ref.Name)}
+	if !ok {
+		return unresolvedTargetRef,
+			&ResolvedRefsConditionFalse{
+				Reason:  string(gatewayapi.RouteReasonInvalidKind),
+				Message: "backend reference must be Service or MeshService",
+			},
+			nil
+	}
+
+	namespacedName := kube_types.NamespacedName{Namespace: details.Namespace, Name: details.Name}
+	gk := kube_schema.GroupKind{Kind: details.Kind, Group: details.Group}
+
+	if details.Namespace != objectNamespace {
+		allowed, err := r.referenceGrantAllowsBackendRef(ctx, objectNamespace, details)
+		if err != nil {
+			return common_api.TargetRef{}, nil, err
+		}
+		if !allowed {
+			return common_api.TargetRef{},
+				&ResolvedRefsConditionFalse{
+					Reason:  string(gatewayapi.RouteReasonRefNotPermitted),
+					Message: fmt.Sprintf("backend reference to %s %q is not permitted by any ReferenceGrant", gk.String(), namespacedName.String()),
+				},
+				nil
+		}
+	}
 
 	if gk.Kind == "Service" && gk.Group == "" {
+		if ref.Port == nil {
+			return unresolvedTargetRef,
+				&ResolvedRefsConditionFalse{
+					Reason:  string(gatewayapi.RouteReasonInvalidKind),
+					Message: "backend reference to Service must include a port",
+				},
+				nil
+		}
 		// References to Services are required by GAPI to include a port
 		port := *ref.Port
 
@@ -501,8 +542,10 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		}
 
 		sectionName := fmt.Sprintf("%d", port)
+		portFound := false
 		for _, svcPort := range svc.Spec.Ports {
 			if svcPort.Port == port {
+				portFound = true
 				if svcPort.Name != "" {
 					sectionName = svcPort.Name
 				}
@@ -510,14 +553,25 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 			}
 		}
 
-		return common_api.TargetRef{
+		targetRef := common_api.TargetRef{
 			Kind: common_api.MeshService,
 			Labels: &map[string]string{
 				mesh_proto.DisplayName:      svc.GetName(),
 				mesh_proto.KubeNamespaceTag: svc.GetNamespace(),
 			},
 			SectionName: pointer.To(sectionName),
-		}, nil, nil
+		}
+
+		if !portFound {
+			return targetRef,
+				&ResolvedRefsConditionFalse{
+					Reason:  string(gatewayapi.RouteReasonBackendNotFound),
+					Message: fmt.Sprintf("Service %q does not have a port %d", namespacedName.String(), port),
+				},
+				nil
+		}
+
+		return targetRef, nil, nil
 	}
 
 	if gk.Kind == "MeshService" && gk.Group == meshservice_k8s.GroupVersion.Group {
@@ -544,17 +598,23 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		}
 
 		port := *ref.Port
-		var sectionName string
+		sectionName := fmt.Sprintf("%d", port)
+		portFound := false
 		if ms.Spec != nil {
 			for _, msPort := range ms.Spec.Ports {
 				if msPort.Port == port {
+					portFound = true
 					sectionName = msPort.GetName()
 					break
 				}
 			}
 		}
-		if sectionName == "" {
-			return unresolvedTargetRef,
+		if !portFound {
+			return common_api.TargetRef{
+					Kind:        common_api.MeshService,
+					Labels:      &labels,
+					SectionName: pointer.To(sectionName),
+				},
 				&ResolvedRefsConditionFalse{
 					Reason:  string(gatewayapi.RouteReasonBackendNotFound),
 					Message: fmt.Sprintf("MeshService %q does not have a port %d", namespacedName.String(), port),
@@ -569,10 +629,24 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		}, nil, nil
 	}
 
-	return unresolvedTargetRef,
-		&ResolvedRefsConditionFalse{
-			Reason:  string(gatewayapi.RouteReasonInvalidKind),
-			Message: "backend reference must be Service or MeshService",
-		},
-		nil
+	return unresolvedTargetRef, nil, nil
+}
+
+func (r *HTTPRouteReconciler) referenceGrantAllowsBackendRef(
+	ctx context.Context,
+	routeNamespace string,
+	backendRef backendObjectReferenceDetails,
+) (bool, error) {
+	var grants gatewayapi.ReferenceGrantList
+	if err := r.List(ctx, &grants, kube_client.InNamespace(backendRef.Namespace)); err != nil {
+		return false, err
+	}
+
+	for i := range grants.Items {
+		if backendObjectReferenceMatchesGrant(&grants.Items[i], routeNamespace, backendRef) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
