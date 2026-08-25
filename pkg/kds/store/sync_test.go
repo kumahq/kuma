@@ -219,7 +219,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		// when
 		err, nackError := syncer.Sync(context.Background(), upstreamResponse, kds_sync_store.PrefilterBy(func(r model.Resource) bool {
 			return r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] != "zone"
-		}), kds_sync_store.SkipConflictResource())
+		}))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -307,7 +307,7 @@ var _ = Describe("SyncResourceStoreDelta errors", func() {
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
-		err, nackError := syncer.Sync(context.Background(), upstreamResponse, kds_sync_store.SkipConflictResource())
+		err, nackError := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(util.IsUserError(nackError)).To(BeTrue())
 		Expect(util.IsUserErrorMessage(nackError.Error())).To(BeTrue())
@@ -588,5 +588,102 @@ var _ = Describe("SyncResourceStoreDelta write conflicts on zone-owned status", 
 		// the zone owns the status, and the retry must not roll it back to the copy
 		// read before the allocator wrote
 		Expect(actual.Status.VIPs).To(Equal([]meshservice_api.VIP{{IP: "10.0.0.2"}}))
+	})
+})
+
+// hidingStore hides one resource from reads while writes keep seeing it, the way a
+// Kubernetes informer that has not caught up hides a create from the syncer, and the
+// way the origin prefilter hides a downstream copy that lost its `kuma.io/origin`
+// label.
+type hidingStore struct {
+	store.ResourceStore
+	hidden model.ResourceKey
+}
+
+func (h *hidingStore) List(ctx context.Context, list model.ResourceList, fs ...store.ListOptionsFunc) error {
+	if err := h.ResourceStore.List(ctx, list, fs...); err != nil {
+		return err
+	}
+	meshes, ok := list.(*mesh.MeshResourceList)
+	if !ok {
+		return nil
+	}
+	var kept []*mesh.MeshResource
+	for _, item := range meshes.Items {
+		if model.MetaToResourceKey(item.GetMeta()) != h.hidden {
+			kept = append(kept, item)
+		}
+	}
+	meshes.Items = kept
+	return nil
+}
+
+var _ = Describe("SyncResourceStoreDelta creates that collide with a hidden resource", func() {
+	var resourceStore *hidingStore
+	var syncer kds_sync_store.ResourceSyncer
+	var key model.ResourceKey
+
+	syncUpstream := func(indexes ...int) (error, error) {
+		upstream := &mesh.MeshResourceList{}
+		for _, i := range indexes {
+			m := meshBuilder(i)
+			m.Spec.SkipCreatingInitialPolicies = []string{"policy-changed"}
+			m.Meta.(*model2.ResourceMeta).Labels = map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+			}
+			Expect(upstream.AddItem(m)).To(Succeed())
+		}
+		return syncer.Sync(context.Background(), kds_client.UpstreamResponse{
+			Type:             upstream.GetItemType(),
+			AddedResources:   upstream,
+			IsInitialRequest: true,
+		})
+	}
+
+	BeforeEach(func() {
+		resourceStore = &hidingStore{ResourceStore: memory.NewStore()}
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		syncer, err = kds_sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
+		Expect(err).ToNot(HaveOccurred())
+
+		// the copy the syncer cannot see: it is in the store, so the create fails
+		res := meshBuilder(1)
+		key = model.MetaToResourceKey(res.GetMeta())
+		Expect(resourceStore.Create(context.Background(), res, store.CreateBy(key), store.CreateWithLabels(map[string]string{
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+		}))).To(Succeed())
+		resourceStore.hidden = key
+	})
+
+	It("should NACK the colliding resource instead of failing the whole response", func() {
+		err, nackError := syncUpstream(1)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(util.IsUserError(nackError)).To(BeTrue())
+		Expect(nackError).To(MatchError(ContainSubstring("already exists")))
+	})
+
+	It("should leave the existing resource untouched", func() {
+		_, nackError := syncUpstream(1)
+		Expect(util.IsUserError(nackError)).To(BeTrue())
+
+		actual := mesh.NewMeshResource()
+		Expect(resourceStore.ResourceStore.Get(context.Background(), actual, store.GetBy(key))).To(Succeed())
+		Expect(actual.Spec.SkipCreatingInitialPolicies).To(Equal([]string{"policy-1"}))
+		// the resource keeps the labels that hid it, so every sync NACKs it again
+		Expect(actual.GetMeta().GetLabels()).To(HaveKeyWithValue(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)))
+	})
+
+	It("should apply the rest of the batch", func() {
+		err, nackError := syncUpstream(1, 2)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(util.IsUserError(nackError)).To(BeTrue())
+
+		actual := &mesh.MeshResourceList{}
+		Expect(resourceStore.ResourceStore.List(context.Background(), actual)).To(Succeed())
+		Expect(actual.Items).To(HaveLen(2))
+		created := mesh.NewMeshResource()
+		Expect(resourceStore.ResourceStore.Get(context.Background(), created, store.GetByKey("mesh-2", model.NoMesh))).To(Succeed())
+		Expect(created.Spec.SkipCreatingInitialPolicies).To(Equal([]string{"policy-changed"}))
 	})
 })

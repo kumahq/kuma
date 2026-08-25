@@ -64,10 +64,9 @@ type ResourceSyncer interface {
 }
 
 type SyncOption struct {
-	Predicate            func(r core_model.Resource) bool
-	SkipConflictResource bool
-	IgnoreStatusChange   bool
-	Zone                 string
+	Predicate          func(r core_model.Resource) bool
+	IgnoreStatusChange bool
+	Zone               string
 }
 
 type SyncOptionFunc func(*SyncOption)
@@ -83,12 +82,6 @@ func NewSyncOptions(fs ...SyncOptionFunc) *SyncOption {
 func Zone(name string) SyncOptionFunc {
 	return func(opts *SyncOption) {
 		opts.Zone = name
-	}
-}
-
-func SkipConflictResource() SyncOptionFunc {
-	return func(opts *SyncOption) {
-		opts.SkipConflictResource = true
 	}
 }
 
@@ -285,7 +278,14 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse kds_c
 
 			if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
 				switch {
-				case opts.SkipConflictResource && store.IsAlreadyExists(err):
+				case store.IsAlreadyExists(err):
+					// The key is taken by a copy the sync could not see: a Kubernetes
+					// informer that has not caught up with a create, or a copy the origin
+					// prefilter dropped because it lost its `kuma.io/origin` label. Skip
+					// the resource and NACK it. Failing here rolls back the whole response
+					// and cancels the connection, and the next connection reads the same
+					// store and fails again, so the zone never converges.
+					log.Info("resource already exists in the downstream store, skipping it", "name", rk.Name, "mesh", rk.Mesh)
 					nackError = std_errors.Join(util.ErrUserNack, nackError, err)
 				case store.IsInvalid(err):
 					// The store refused this one resource on its own merits (a quota, a
@@ -445,11 +445,6 @@ func ZoneSyncCallback(ctx context.Context, syncer ResourceSyncer, k8sStore bool,
 				// Therefore, we should ignore status field comparison, since the status is always synced as empty from the Global.
 				IgnoreStatusChange(),
 			}
-			// When there is no KDS hash suffix, we can have conflicts in resources so we simply skip them
-			if tDesc.SkipKDSHash {
-				syncOptions = append(syncOptions, SkipConflictResource())
-			}
-
 			return syncer.Sync(ctx, upstream, syncOptions...)
 		},
 	}
