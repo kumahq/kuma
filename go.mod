@@ -1,6 +1,6 @@
 module github.com/kumahq/kuma/v2
 
-go 1.26.6
+go 1.27.0
 
 require (
 	cirello.io/pglock v1.14.2
@@ -32,6 +32,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jackc/pgx/v5 v5.9.2
+	github.com/josephburnett/jd/v2 v2.0.0-20230813234251-7b2e87c80934
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/lib/pq v1.10.9
@@ -90,8 +91,6 @@ require (
 	sigs.k8s.io/gateway-api v1.0.1-0.20240229112436-da26d60306e1
 	sigs.k8s.io/yaml v1.6.0
 )
-
-require github.com/josephburnett/jd/v2 v2.0.0-20230813234251-7b2e87c80934
 
 require (
 	cel.dev/expr v0.25.1 // indirect
