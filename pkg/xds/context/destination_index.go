@@ -63,11 +63,9 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 		}
 
 		backendRef := common_api.BackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind:   common_api.TargetRefKind(kind),
-				Labels: &selectorLabels,
-			},
-			Port: port,
+			Kind:   common_api.TargetRefKind(kind),
+			Labels: &selectorLabels,
+			Port:   port,
 		}
 		if sectionName != "" {
 			backendRef.SectionName = pointer.To(sectionName)

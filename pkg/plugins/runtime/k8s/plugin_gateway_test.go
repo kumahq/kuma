@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -20,19 +19,15 @@ func TestRemoveGatewayClassFinalizers(t *testing.T) {
 	require.NoError(t, err)
 
 	kumaClass := &gatewayapi.GatewayClass{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:       "kuma",
-			Finalizers: []string{gatewayapi_v1.GatewayClassFinalizerGatewaysExist},
-		},
+		Name:       "kuma",
+		Finalizers: []string{gatewayapi_v1.GatewayClassFinalizerGatewaysExist},
 		Spec: gatewayapi.GatewayClassSpec{
 			ControllerName: common.ControllerName,
 		},
 	}
 	otherClass := &gatewayapi.GatewayClass{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:       "other",
-			Finalizers: []string{gatewayapi_v1.GatewayClassFinalizerGatewaysExist},
-		},
+		Name:       "other",
+		Finalizers: []string{gatewayapi_v1.GatewayClassFinalizerGatewaysExist},
 		Spec: gatewayapi.GatewayClassSpec{
 			ControllerName: "example.com/other",
 		},

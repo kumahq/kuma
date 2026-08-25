@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_events "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -113,10 +112,8 @@ func (r *WorkloadReconciler) createOrUpdateWorkload(ctx context.Context, workloa
 	log := r.Log.WithValues("workload", workloadName, "mesh", meshName, "namespace", namespace)
 
 	workload := &workload_k8s.Workload{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      workloadName,
-			Namespace: namespace,
-		},
+		Name:      workloadName,
+		Namespace: namespace,
 	}
 
 	result, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, workload, func() error {
@@ -174,10 +171,8 @@ func DataplaneToWorkloadMapper(l logr.Logger) kube_handler.MapFunc {
 
 		return []kube_reconcile.Request{
 			{
-				NamespacedName: kube_types.NamespacedName{
-					Namespace: dp.Namespace,
-					Name:      workloadName,
-				},
+				Namespace: dp.Namespace,
+				Name:      workloadName,
 			},
 		}
 	}

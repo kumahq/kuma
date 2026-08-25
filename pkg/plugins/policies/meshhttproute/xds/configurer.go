@@ -1,65 +1,65 @@
 package xds
 
 import (
+	"math"
 	"strings"
 
+	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"google.golang.org/protobuf/proto"
 
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds/filters"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
+	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/v3/pkg/xds/envoy/routes"
 )
 
 type RoutesConfigurer struct {
-	Name                     string
-	Match                    api.Match
-	Filters                  []api.Filter
-	AllBackendRefsUnresolved bool
-	MirrorSplits             map[int]envoy_common.Split
-	Split                    []envoy_common.Split
+	Name                        string
+	Match                       api.Match
+	Filters                     []api.Filter
+	UnresolvedBackendRefsWeight uint
+	AllBackendRefsUnresolved    bool
+	MirrorSplits                map[int]envoy_common.Split
+	Split                       []envoy_common.Split
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
 	matches := c.routeMatch(c.Match)
 
 	for _, match := range matches {
-		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, c.Name).
-			Configure(envoy_routes.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
-				// todo: create configurers for Match and Action
-				envoyRoute.Match = match.routeMatch
-				envoyRoute.Action = &envoy_route.Route_Route{
-					Route: c.routeAction(c.Split),
-				}
-			}))
-
-		// We pass the information about whether this match was created from
-		// a prefix match along to the filters because it's no longer
-		// possible to know for sure with just an envoy_route.Route
-		for i, filter := range c.Filters {
-			switch filter.Type {
-			case api.RequestHeaderModifierType:
-				rb.Configure(filters.NewRequestHeaderModifier(*filter.RequestHeaderModifier))
-			case api.ResponseHeaderModifierType:
-				rb.Configure(filters.NewResponseHeaderModifier(*filter.ResponseHeaderModifier))
-			case api.RequestRedirectType:
-				rb.Configure(filters.NewRequestRedirect(*filter.RequestRedirect, match.prefixMatch))
-			case api.URLRewriteType:
-				rb.Configure(filters.NewURLRewrite(*filter.URLRewrite, match.prefixMatch))
-			case api.RequestMirrorType:
-				rb.Configure(filters.NewRequestMirror(*filter.RequestMirror, c.MirrorSplits[i]))
-			}
-		}
-
 		// A rule whose backendRefs all fail to resolve answers 500, unless a
 		// filter already terminates the request without an upstream.
 		if c.AllBackendRefsUnresolved && !hasTerminalFilter(c.Filters) {
+			rb := c.routeBuilder(match)
 			rb.Configure(envoy_routes.RouteActionDirectResponse(500, ""))
+			r, err := rb.Build()
+			if err != nil {
+				return err
+			}
+			virtualHost.Routes = append(virtualHost.Routes, r.(*envoy_route.Route))
+			continue
 		}
 
+		if c.UnresolvedBackendRefsWeight > 0 && !hasTerminalFilter(c.Filters) {
+			unresolvedMatch := proto.Clone(match.routeMatch).(*envoy_route.RouteMatch)
+			unresolvedMatch.RuntimeFraction = unresolvedRuntimeFraction(c.UnresolvedBackendRefsWeight, c.Split)
+
+			rb := c.routeBuilder(routeMatch{routeMatch: unresolvedMatch, prefixMatch: match.prefixMatch})
+			rb.Configure(envoy_routes.RouteActionDirectResponse(500, ""))
+			r, err := rb.Build()
+			if err != nil {
+				return err
+			}
+			virtualHost.Routes = append(virtualHost.Routes, r.(*envoy_route.Route))
+		}
+
+		rb := c.routeBuilder(match)
 		r, err := rb.Build()
 		if err != nil {
 			return err
@@ -69,6 +69,37 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 	}
 
 	return nil
+}
+
+func (c RoutesConfigurer) routeBuilder(match routeMatch) *envoy_routes.RouteBuilder {
+	rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, c.Name).
+		Configure(envoy_routes.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
+			// todo: create configurers for Match and Action
+			envoyRoute.Match = match.routeMatch
+			envoyRoute.Action = &envoy_route.Route_Route{
+				Route: c.routeAction(c.Split),
+			}
+		}))
+
+	// We pass the information about whether this match was created from
+	// a prefix match along to the filters because it's no longer
+	// possible to know for sure with just an envoy_route.Route
+	for i, filter := range c.Filters {
+		switch filter.Type {
+		case api.RequestHeaderModifierType:
+			rb.Configure(filters.NewRequestHeaderModifier(*filter.RequestHeaderModifier))
+		case api.ResponseHeaderModifierType:
+			rb.Configure(filters.NewResponseHeaderModifier(*filter.ResponseHeaderModifier))
+		case api.RequestRedirectType:
+			rb.Configure(filters.NewRequestRedirect(*filter.RequestRedirect, match.prefixMatch))
+		case api.URLRewriteType:
+			rb.Configure(filters.NewURLRewrite(*filter.URLRewrite, match.prefixMatch))
+		case api.RequestMirrorType:
+			rb.Configure(filters.NewRequestMirror(*filter.RequestMirror, c.MirrorSplits[i]))
+		}
+	}
+
+	return rb
 }
 
 // hasTerminalFilter reports whether a filter sets the route action itself, so
@@ -271,4 +302,44 @@ func (c RoutesConfigurer) routeAction(split []envoy_common.Split) *envoy_route.R
 		}
 	}
 	return routeAction
+}
+
+func unresolvedRuntimeFraction(unresolvedWeight uint, split []envoy_common.Split) *envoy_config_core.RuntimeFractionalPercent {
+	totalWeight := uint64(unresolvedWeight)
+	for _, s := range split {
+		totalWeight += uint64(s.Weight())
+	}
+	if unresolvedWeight == 0 || totalWeight == 0 {
+		return nil
+	}
+
+	return &envoy_config_core.RuntimeFractionalPercent{
+		DefaultValue: fractionalPercent(uint64(unresolvedWeight), totalWeight),
+	}
+}
+
+func fractionalPercent(numerator uint64, denominator uint64) *envoy_type.FractionalPercent {
+	if denominator == 0 {
+		return nil
+	}
+
+	for _, candidate := range []struct {
+		scale       uint64
+		denominator envoy_type.FractionalPercent_DenominatorType
+	}{
+		{scale: 100, denominator: envoy_type.FractionalPercent_HUNDRED},
+		{scale: 10_000, denominator: envoy_type.FractionalPercent_TEN_THOUSAND},
+		{scale: 1_000_000, denominator: envoy_type.FractionalPercent_MILLION},
+	} {
+		scaled := numerator * candidate.scale
+		if scaled%denominator == 0 {
+			return &envoy_type.FractionalPercent{
+				Numerator:   uint32(scaled / denominator),
+				Denominator: candidate.denominator,
+			}
+		}
+	}
+
+	percentage := float64(numerator) * 100 / float64(denominator)
+	return envoy_listeners.ConvertPercentage(util_proto.Double(math.Round(percentage*10_000) / 10_000))
 }

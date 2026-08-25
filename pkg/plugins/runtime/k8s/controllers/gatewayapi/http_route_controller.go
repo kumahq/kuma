@@ -134,7 +134,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 			// We don't know the mesh, but we don't need it to delete our
 			// object.
 			if err := common.ReconcileLabelledObject(
-				ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &meshhttproute_api.MeshHTTPRoute{}, r.SystemNamespace, nil,
+				ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &meshhttproute_api.MeshHTTPRoute{}, nil,
 			); err != nil {
 				return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned MeshHTTPRoute.kuma.io")
 			}
@@ -158,7 +158,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	}
 
 	if err := common.ReconcileLabelledObject(
-		ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &meshhttproute_api.MeshHTTPRoute{}, r.SystemNamespace, meshRouteSpecs,
+		ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &meshhttproute_api.MeshHTTPRoute{}, meshRouteSpecs,
 	); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned MeshHTTPRoute.kuma.io")
 	}
@@ -178,8 +178,8 @@ type ParentConditions map[gatewayapi.ParentReference][]kube_meta.Condition
 func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	ctx context.Context,
 	route *gatewayapi.HTTPRoute,
-) (map[string]core_model.ResourceSpec, ParentConditions, error) {
-	routes := map[string]core_model.ResourceSpec{}
+) (map[string]common.OwnedObject, ParentConditions, error) {
+	routes := map[string]common.OwnedObject{}
 
 	// The conditions we accumulate for each ParentRef
 	conditions := ParentConditions{}
@@ -231,6 +231,20 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
+			if parent.Spec.ClusterIP == kube_core.ClusterIPNone {
+				parentConditions = append(parentConditions,
+					kube_meta.Condition{
+						Type:    string(gatewayapi.RouteConditionAccepted),
+						Status:  kube_meta.ConditionFalse,
+						Reason:  string(gatewayapi_v1.RouteReasonNoMatchingParent),
+						Message: fmt.Sprintf("Service %q has no MeshService to attach to", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
+					},
+				)
+
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
+				continue
+			}
+
 			routeSubName := fmt.Sprintf(
 				"%s-%s-%s.%s",
 				route.Name,
@@ -254,7 +268,12 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
-			storeMeshHTTPRoute(routes, routeSubName, meshRoute)
+			ownedNamespace := r.SystemNamespace
+			if route.Namespace == parent.GetNamespace() {
+				ownedNamespace = route.Namespace
+			}
+
+			storeMeshHTTPRoute(routes, routeSubName, ownedNamespace, meshRoute)
 		case attachment.MeshService:
 			namespace := route.Namespace
 			if ref.Namespace != nil {
@@ -306,7 +325,12 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
-			storeMeshHTTPRoute(routes, routeSubName, meshRoute)
+			ownedNamespace := r.SystemNamespace
+			if route.Namespace == parent.GetNamespace() {
+				ownedNamespace = route.Namespace
+			}
+
+			storeMeshHTTPRoute(routes, routeSubName, ownedNamespace, meshRoute)
 		}
 
 		conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
@@ -315,22 +339,22 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	return routes, conditions, nil
 }
 
-func storeMeshHTTPRoute(routes map[string]core_model.ResourceSpec, name string, spec core_model.ResourceSpec) {
+func storeMeshHTTPRoute(routes map[string]common.OwnedObject, name string, namespace string, spec core_model.ResourceSpec) {
 	route, ok := spec.(*meshhttproute_api.MeshHTTPRoute)
 	if !ok {
-		routes[name] = spec
+		routes[name] = common.OwnedObject{Namespace: namespace, Spec: spec}
 		return
 	}
 
 	existing, ok := routes[name]
 	if !ok {
-		routes[name] = spec
+		routes[name] = common.OwnedObject{Namespace: namespace, Spec: spec}
 		return
 	}
 
-	existingRoute, ok := existing.(*meshhttproute_api.MeshHTTPRoute)
+	existingRoute, ok := existing.Spec.(*meshhttproute_api.MeshHTTPRoute)
 	if !ok {
-		routes[name] = spec
+		routes[name] = common.OwnedObject{Namespace: namespace, Spec: spec}
 		return
 	}
 

@@ -25,7 +25,7 @@ const (
 // pglock does not rely on timestamps, which eliminates the problem of clock skews, but the cost is that first leader election can happen only after lease duration
 // pglock does optimistic locking under the hood, the alternative would be to use pg_advisory_lock
 type postgresLeaderElector struct {
-	leader     int32
+	leader     atomic.Int32
 	lockClient *pglock.Client
 	callbacks  []component.LeaderCallbacks
 }
@@ -103,11 +103,11 @@ func (p *postgresLeaderElector) setLeader(leader bool) {
 	if leader {
 		value = 1
 	}
-	atomic.StoreInt32(&p.leader, value)
+	p.leader.Store(value)
 }
 
 func (p *postgresLeaderElector) IsLeader() bool {
-	return atomic.LoadInt32(&(p.leader)) == 1
+	return p.leader.Load() == 1
 }
 
 type KumaPqLockLogger struct{}

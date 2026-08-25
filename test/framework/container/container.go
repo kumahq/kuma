@@ -90,17 +90,15 @@ func (b *ContainerBuilder) Start(ctx context.Context) (testcontainers.Container,
 	return testcontainers.GenericContainer(
 		ctx,
 		testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Image:      b.image,
-				Privileged: b.privileged,
-				Files:      b.files,
-				Cmd:        b.cmd,
-				LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
-					{PostStarts: buildContainerHooks(b.postStart)},
-				},
-				WaitingFor: wait.ForAll(b.waitingFor...),
+			Image:      b.image,
+			Privileged: b.privileged,
+			Files:      b.files,
+			Cmd:        b.cmd,
+			LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+				{PostStarts: buildContainerHooks(b.postStart)},
 			},
-			Started: true,
+			WaitingFor: wait.ForAll(b.waitingFor...),
+			Started:    true,
 		},
 	)
 }

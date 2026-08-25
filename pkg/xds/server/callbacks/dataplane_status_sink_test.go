@@ -517,7 +517,7 @@ func (d *DataplaneInsightStoreRecorder) Create(ctx context.Context, resource cor
 	}
 	opts := core_store.NewCreateOptions(optionsFunc...)
 	d.Creates <- DataplaneInsightOperation{
-		ResourceKey:           core_model.ResourceKey{Mesh: opts.Mesh, Name: opts.Name},
+		Mesh: opts.Mesh, Name: opts.Name,
 		Subscriptions:         resource.GetSpec().(*mesh_proto.DataplaneInsight).Subscriptions,
 		DataplaneInsight_MTLS: resource.GetSpec().(*mesh_proto.DataplaneInsight).MTLS,
 		OpenTelemetry:         resource.GetSpec().(*mesh_proto.DataplaneInsight).OpenTelemetry,
@@ -530,7 +530,7 @@ func (d *DataplaneInsightStoreRecorder) Update(ctx context.Context, resource cor
 		return err
 	}
 	d.Updates <- DataplaneInsightOperation{
-		ResourceKey:           core_model.ResourceKey{Mesh: resource.GetMeta().GetMesh(), Name: resource.GetMeta().GetName()},
+		Mesh: resource.GetMeta().GetMesh(), Name: resource.GetMeta().GetName(),
 		Subscriptions:         resource.GetSpec().(*mesh_proto.DataplaneInsight).Subscriptions,
 		DataplaneInsight_MTLS: resource.GetSpec().(*mesh_proto.DataplaneInsight).MTLS,
 		OpenTelemetry:         resource.GetSpec().(*mesh_proto.DataplaneInsight).OpenTelemetry,

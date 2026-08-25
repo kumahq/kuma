@@ -87,7 +87,7 @@ var _ = Describe("MeshZoneAddressReconciler", func() {
 
 			// when
 			_, err = reconciler.Reconcile(context.Background(), kube_ctrl.Request{
-				NamespacedName: kube_types.NamespacedName{Name: svcName, Namespace: testNamespace},
+				Name: svcName, Namespace: testNamespace,
 			})
 			Expect(err).ToNot(HaveOccurred())
 

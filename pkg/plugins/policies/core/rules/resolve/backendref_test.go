@@ -21,10 +21,8 @@ var _ = Describe("Resolve BackendRef", func() {
 			var capturedType core_model.ResourceType
 			var capturedLabels map[string]string
 			resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
-				TargetRef: common_api.TargetRef{
-					Kind:   kind,
-					Labels: pointer.To(labels),
-				},
+				Kind:   kind,
+				Labels: pointer.To(labels),
 			}, func(resType core_model.ResourceType, gotLabels map[string]string) kri.Identifier {
 				capturedType = resType
 				capturedLabels = gotLabels
@@ -56,13 +54,11 @@ var _ = Describe("Resolve BackendRef", func() {
 		expected := kri.Identifier{ResourceType: core_model.ResourceType(common_api.MeshService), Mesh: "mesh-1", Name: "backend"}
 
 		resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Labels: pointer.To(map[string]string{
-					mesh_proto.DisplayName:      "backend",
-					mesh_proto.KubeNamespaceTag: "kuma-demo",
-				}),
-			},
+			Kind: common_api.MeshService,
+			Labels: pointer.To(map[string]string{
+				mesh_proto.DisplayName:      "backend",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			}),
 		}, func(_ core_model.ResourceType, _ map[string]string) kri.Identifier {
 			return expected
 		})
@@ -77,14 +73,12 @@ var _ = Describe("Resolve BackendRef", func() {
 		expected := kri.Identifier{ResourceType: core_model.ResourceType(common_api.MeshService), Mesh: "mesh-1", Name: "backend"}
 
 		resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Labels: pointer.To(map[string]string{
-					mesh_proto.DisplayName:      "backend",
-					mesh_proto.KubeNamespaceTag: "default",
-				}),
-				SectionName: pointer.To("http"),
-			},
+			Kind: common_api.MeshService,
+			Labels: pointer.To(map[string]string{
+				mesh_proto.DisplayName:      "backend",
+				mesh_proto.KubeNamespaceTag: "default",
+			}),
+			SectionName: pointer.To("http"),
 		}, func(_ core_model.ResourceType, _ map[string]string) kri.Identifier {
 			return expected
 		})
@@ -100,13 +94,11 @@ var _ = Describe("Resolve BackendRef", func() {
 
 		var capturedLabels map[string]string
 		resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Labels: pointer.To(map[string]string{
-					mesh_proto.DisplayName:      "backend",
-					mesh_proto.KubeNamespaceTag: "kuma-demo",
-				}),
-			},
+			Kind: common_api.MeshService,
+			Labels: pointer.To(map[string]string{
+				mesh_proto.DisplayName:      "backend",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			}),
 			Port: pointer.To(uint32(8080)),
 		}, func(_ core_model.ResourceType, gotLabels map[string]string) kri.Identifier {
 			capturedLabels = gotLabels
@@ -129,10 +121,8 @@ var _ = Describe("Resolve BackendRef", func() {
 			origin := kri.Identifier{Mesh: "mesh-1", Namespace: "kuma-demo"}
 
 			resolved, ok := resolve.BackendRef(origin, common_api.BackendRef{
-				TargetRef: common_api.TargetRef{
-					Kind:   common_api.MeshService,
-					Labels: pointer.To(labels),
-				},
+				Kind:   common_api.MeshService,
+				Labels: pointer.To(labels),
 			}, func(_ core_model.ResourceType, _ map[string]string) kri.Identifier {
 				return kri.Identifier{}
 			})

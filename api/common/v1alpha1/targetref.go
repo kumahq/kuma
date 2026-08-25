@@ -186,6 +186,7 @@ type BackendRef struct {
 	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
 	TargetRef `json:","`
 	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=4294967295
 	// +kubebuilder:default=1
 	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
 	Weight *uint `json:"weight,omitempty"`

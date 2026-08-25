@@ -202,11 +202,9 @@ func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies) []*a
 
 	for _, attachment := range attachments {
 		entry := &api_server_types.DataplaneInspectEntry{
-			AttachmentEntry: api_server_types.AttachmentEntry{
-				Type:    attachment.Type.String(),
-				Name:    attachment.Name,
-				Service: attachment.Service,
-			},
+			Type:            attachment.Type.String(),
+			Name:            attachment.Name,
+			Service:         attachment.Service,
 			MatchedPolicies: map[core_model.ResourceType][]v1alpha1.ResourceMeta{},
 		}
 		for typ, resList := range attachmentMap[attachment] {

@@ -8,7 +8,6 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -90,10 +89,8 @@ func (r *NamespaceReconciler) hasNetworkAttachmentDefinition(ctx context.Context
 
 func (r *NamespaceReconciler) createOrUpdateNetworkAttachmentDefinition(ctx context.Context, namespace string) error {
 	nad := &network_v1.NetworkAttachmentDefinition{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace: namespace,
-			Name:      metadata.KumaCNI,
-		},
+		Namespace: namespace,
+		Name:      metadata.KumaCNI,
 	}
 	_, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, nad, func() error {
 		return nil
