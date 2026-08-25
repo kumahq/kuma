@@ -140,25 +140,23 @@ func webhookRequest(inputFile string) kube_admission.Request {
 	Expect(err).ToNot(HaveOccurred())
 
 	req := kube_admission.Request{
-		AdmissionRequest: admissionv1.AdmissionRequest{
-			UID: kube_types.UID("12345"),
-			Object: kube_runtime.RawExtension{
-				Raw: obj,
-			},
-			OldObject: kube_runtime.RawExtension{
-				Raw: oldObj,
-			},
-			Kind: kube_meta.GroupVersionKind{
-				Group:   gv.Group,
-				Version: gv.Version,
-				Kind:    gvk.Kind,
-			},
-			UserInfo: authenticationv1.UserInfo{
-				Username: user,
-			},
-			Operation: admissionv1.Operation(op),
-			Namespace: ns,
+		UID: kube_types.UID("12345"),
+		Object: kube_runtime.RawExtension{
+			Raw: obj,
 		},
+		OldObject: kube_runtime.RawExtension{
+			Raw: oldObj,
+		},
+		Kind: kube_meta.GroupVersionKind{
+			Group:   gv.Group,
+			Version: gv.Version,
+			Kind:    gvk.Kind,
+		},
+		UserInfo: authenticationv1.UserInfo{
+			Username: user,
+		},
+		Operation: admissionv1.Operation(op),
+		Namespace: ns,
 	}
 
 	return req

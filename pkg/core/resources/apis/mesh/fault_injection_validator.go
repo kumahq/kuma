@@ -38,19 +38,15 @@ func (f *FaultInjectionResource) HasFaultResponseBandwidth() bool {
 func (f *FaultInjectionResource) validateSources() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("sources"), f.Spec.GetSources(), ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
-		ValidateTagsOpts: ValidateTagsOpts{
-			RequireAtLeastOneTag: true,
-		},
+		RequireAtLeastOneTag:      true,
 	})
 }
 
 func (f *FaultInjectionResource) validateDestinations() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("destinations"), f.Spec.GetDestinations(), ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
-		ValidateTagsOpts: ValidateTagsOpts{
-			RequireAtLeastOneTag: true,
-			ExtraTagsValidators:  []TagsValidatorFunc{ProtocolValidator(core_meta.HTTPBasedProtocols)},
-		},
+		RequireAtLeastOneTag:      true,
+		ExtraTagsValidators:       []TagsValidatorFunc{ProtocolValidator(core_meta.HTTPBasedProtocols)},
 	})
 }
 

@@ -17,10 +17,8 @@ func (g *MeshGatewayResource) Validate() error {
 		ValidateSelectorsOpts{
 			RequireAtLeastOneSelector: true,
 			RequireAtMostOneSelector:  onlyOneSelector,
-			ValidateTagsOpts: ValidateTagsOpts{
-				RequireAtLeastOneTag: true,
-				RequireService:       true,
-			},
+			RequireAtLeastOneTag:      true,
+			RequireService:            true,
 		},
 	))
 

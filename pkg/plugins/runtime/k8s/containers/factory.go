@@ -179,12 +179,10 @@ func (i *DataplaneProxyFactory) NewContainer(
 			},
 		},
 		LivenessProbe: &kube_core.Probe{
-			ProbeHandler: kube_core.ProbeHandler{
-				HTTPGet: &kube_core.HTTPGetAction{
-					Path: "/ready",
-					Port: kube_intstr.IntOrString{
-						IntVal: int32(probePort),
-					},
+			HTTPGet: &kube_core.HTTPGetAction{
+				Path: "/ready",
+				Port: kube_intstr.IntOrString{
+					IntVal: int32(probePort),
 				},
 			},
 			InitialDelaySeconds: i.ContainerConfig.LivenessProbe.InitialDelaySeconds,
@@ -194,12 +192,10 @@ func (i *DataplaneProxyFactory) NewContainer(
 			FailureThreshold:    i.ContainerConfig.LivenessProbe.FailureThreshold,
 		},
 		ReadinessProbe: &kube_core.Probe{
-			ProbeHandler: kube_core.ProbeHandler{
-				HTTPGet: &kube_core.HTTPGetAction{
-					Path: "/ready",
-					Port: kube_intstr.IntOrString{
-						IntVal: int32(probePort),
-					},
+			HTTPGet: &kube_core.HTTPGetAction{
+				Path: "/ready",
+				Port: kube_intstr.IntOrString{
+					IntVal: int32(probePort),
 				},
 			},
 			InitialDelaySeconds: i.ContainerConfig.ReadinessProbe.InitialDelaySeconds,
@@ -219,12 +215,10 @@ func (i *DataplaneProxyFactory) NewContainer(
 	}
 	if i.sidecarContainersEnabled {
 		container.StartupProbe = &kube_core.Probe{
-			ProbeHandler: kube_core.ProbeHandler{
-				HTTPGet: &kube_core.HTTPGetAction{
-					Path: "/ready",
-					Port: kube_intstr.IntOrString{
-						IntVal: int32(probePort),
-					},
+			HTTPGet: &kube_core.HTTPGetAction{
+				Path: "/ready",
+				Port: kube_intstr.IntOrString{
+					IntVal: int32(probePort),
 				},
 			},
 			InitialDelaySeconds: i.ContainerConfig.StartupProbe.InitialDelaySeconds,

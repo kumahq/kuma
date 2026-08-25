@@ -23,13 +23,9 @@ type Secret struct {
 
 func NewSecret(typ v1.SecretType) *Secret {
 	return &Secret{
-		Secret: v1.Secret{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: v1.SchemeGroupVersion.String(),
-				Kind:       "Secret",
-			},
-			Type: typ,
-		},
+		APIVersion: v1.SchemeGroupVersion.String(),
+		Kind:       "Secret",
+		Type:       typ,
 	}
 }
 

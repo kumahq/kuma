@@ -29,14 +29,12 @@ var _ = Describe("Rest Resource", func() {
 			It("should marshal JSON with proper field order", func() {
 				// given
 				res := &v1alpha1.Resource{
-					ResourceMeta: v1alpha1.ResourceMeta{
-						Type:             "MeshTrafficPermission",
-						Mesh:             "default",
-						Name:             "one",
-						CreationTime:     t1,
-						ModificationTime: t2,
-					},
-					Spec: samples.MeshTrafficPermission,
+					Type:             "MeshTrafficPermission",
+					Mesh:             "default",
+					Name:             "one",
+					CreationTime:     t1,
+					ModificationTime: t2,
+					Spec:             samples.MeshTrafficPermission,
 				}
 
 				// when
@@ -75,17 +73,15 @@ var _ = Describe("Rest Resource", func() {
 
 			It("should include port-sorted snis for MeshService with multiple ports", func() {
 				res := &v1alpha1.Resource{
-					ResourceMeta: v1alpha1.ResourceMeta{
-						Type:             "MeshService",
-						Mesh:             "default",
-						Name:             "backend",
-						CreationTime:     t1,
-						ModificationTime: t2,
-						Labels: map[string]string{
-							mesh_proto.ZoneTag:             "east",
-							mesh_proto.KubeNamespaceTag:    "demo",
-							mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
-						},
+					Type:             "MeshService",
+					Mesh:             "default",
+					Name:             "backend",
+					CreationTime:     t1,
+					ModificationTime: t2,
+					Labels: map[string]string{
+						mesh_proto.ZoneTag:             "east",
+						mesh_proto.KubeNamespaceTag:    "demo",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 					},
 					Spec: &meshservice_api.MeshService{
 						Ports: []meshservice_api.Port{
@@ -112,13 +108,11 @@ var _ = Describe("Rest Resource", func() {
 
 			It("should include a single sni for MeshExternalService", func() {
 				res := &v1alpha1.Resource{
-					ResourceMeta: v1alpha1.ResourceMeta{
-						Type:             "MeshExternalService",
-						Mesh:             "default",
-						Name:             "google",
-						CreationTime:     t1,
-						ModificationTime: t2,
-					},
+					Type:             "MeshExternalService",
+					Mesh:             "default",
+					Name:             "google",
+					CreationTime:     t1,
+					ModificationTime: t2,
 					Spec: &meshexternalservice_api.MeshExternalService{
 						Match: meshexternalservice_api.Match{Port: 443},
 					},
@@ -138,13 +132,11 @@ var _ = Describe("Rest Resource", func() {
 
 			It("should include snis for MeshMultiZoneService", func() {
 				res := &v1alpha1.Resource{
-					ResourceMeta: v1alpha1.ResourceMeta{
-						Type:             "MeshMultiZoneService",
-						Mesh:             "default",
-						Name:             "agg",
-						CreationTime:     t1,
-						ModificationTime: t2,
-					},
+					Type:             "MeshMultiZoneService",
+					Mesh:             "default",
+					Name:             "agg",
+					CreationTime:     t1,
+					ModificationTime: t2,
 					Spec: &meshmultizoneservice_api.MeshMultiZoneService{
 						Ports: []meshmultizoneservice_api.Port{
 							{Port: 9090, Name: pointer.To("grpc")},
@@ -166,14 +158,12 @@ var _ = Describe("Rest Resource", func() {
 
 			It("should omit snis for MeshService with no ports", func() {
 				res := &v1alpha1.Resource{
-					ResourceMeta: v1alpha1.ResourceMeta{
-						Type:             "MeshService",
-						Mesh:             "default",
-						Name:             "empty",
-						CreationTime:     t1,
-						ModificationTime: t2,
-					},
-					Spec: &meshservice_api.MeshService{},
+					Type:             "MeshService",
+					Mesh:             "default",
+					Name:             "empty",
+					CreationTime:     t1,
+					ModificationTime: t2,
+					Spec:             &meshservice_api.MeshService{},
 				}
 
 				bytes, err := json.Marshal(res)
@@ -183,14 +173,12 @@ var _ = Describe("Rest Resource", func() {
 
 			It("should not include snis for non-destination resources", func() {
 				res := &v1alpha1.Resource{
-					ResourceMeta: v1alpha1.ResourceMeta{
-						Type:             "MeshTrafficPermission",
-						Mesh:             "default",
-						Name:             "one",
-						CreationTime:     t1,
-						ModificationTime: t2,
-					},
-					Spec: samples.MeshTrafficPermission,
+					Type:             "MeshTrafficPermission",
+					Mesh:             "default",
+					Name:             "one",
+					CreationTime:     t1,
+					ModificationTime: t2,
+					Spec:             samples.MeshTrafficPermission,
 				}
 
 				bytes, err := json.Marshal(res)
@@ -201,13 +189,11 @@ var _ = Describe("Rest Resource", func() {
 			It("should marshal JSON with proper field order and empty spec", func() {
 				// given
 				res := &v1alpha1.Resource{
-					ResourceMeta: v1alpha1.ResourceMeta{
-						Type:             "MeshTrafficPermission",
-						Mesh:             "default",
-						Name:             "one",
-						CreationTime:     t1,
-						ModificationTime: t2,
-					},
+					Type:             "MeshTrafficPermission",
+					Mesh:             "default",
+					Name:             "one",
+					CreationTime:     t1,
+					ModificationTime: t2,
 				}
 
 				// when

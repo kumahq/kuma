@@ -221,14 +221,12 @@ func NetworkAccessLog(
 	}
 
 	return AddFilterChainConfigurer(&v3.NetworkAccessLogConfigurer{
-		AccessLogConfigurer: v3.AccessLogConfigurer{
-			Mesh:               mesh,
-			TrafficDirection:   trafficDirection,
-			SourceService:      sourceService,
-			DestinationService: destinationService,
-			Backend:            backend,
-			Proxy:              proxy,
-		},
+		Mesh:               mesh,
+		TrafficDirection:   trafficDirection,
+		SourceService:      sourceService,
+		DestinationService: destinationService,
+		Backend:            backend,
+		Proxy:              proxy,
 	})
 }
 
@@ -245,14 +243,12 @@ func HttpAccessLog(
 	}
 
 	return AddFilterChainConfigurer(&v3.HttpAccessLogConfigurer{
-		AccessLogConfigurer: v3.AccessLogConfigurer{
-			Mesh:               mesh,
-			TrafficDirection:   trafficDirection,
-			SourceService:      sourceService,
-			DestinationService: destinationService,
-			Backend:            backend,
-			Proxy:              proxy,
-		},
+		Mesh:               mesh,
+		TrafficDirection:   trafficDirection,
+		SourceService:      sourceService,
+		DestinationService: destinationService,
+		Backend:            backend,
+		Proxy:              proxy,
 	})
 }
 

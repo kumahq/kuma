@@ -781,13 +781,11 @@ var _ = Describe("IngressGenerator", func() {
 												}},
 												Default: meshhttproute_api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: common_api.TargetRef{
-															Kind: common_api.MeshServiceSubset,
-															Name: pointer.To("backend"),
-															Tags: &map[string]string{
-																"version": "v1",
-																"region":  "eu",
-															},
+														Kind: common_api.MeshServiceSubset,
+														Name: pointer.To("backend"),
+														Tags: &map[string]string{
+															"version": "v1",
+															"region":  "eu",
 														},
 													}},
 												},
@@ -875,14 +873,12 @@ var _ = Describe("IngressGenerator", func() {
 												}},
 												Default: meshhttproute_api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: common_api.TargetRef{
-															Kind: common_api.MeshServiceSubset,
-															Name: pointer.To("backend"),
-															Tags: &map[string]string{
-																"version":      "v1",
-																"region":       "eu",
-																"kuma.io/zone": "zone",
-															},
+														Kind: common_api.MeshServiceSubset,
+														Name: pointer.To("backend"),
+														Tags: &map[string]string{
+															"version":      "v1",
+															"region":       "eu",
+															"kuma.io/zone": "zone",
 														},
 													}},
 												},
@@ -964,14 +960,12 @@ var _ = Describe("IngressGenerator", func() {
 											Rules: []meshtcproute_api.Rule{{
 												Default: meshtcproute_api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: common_api.TargetRef{
-															Kind: common_api.MeshServiceSubset,
-															Name: pointer.To("backend"),
-															Tags: &map[string]string{
-																"version":      "v1",
-																"region":       "eu",
-																"kuma.io/zone": "zone",
-															},
+														Kind: common_api.MeshServiceSubset,
+														Name: pointer.To("backend"),
+														Tags: &map[string]string{
+															"version":      "v1",
+															"region":       "eu",
+															"kuma.io/zone": "zone",
 														},
 													}},
 												},

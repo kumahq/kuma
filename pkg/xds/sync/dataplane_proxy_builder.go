@@ -261,12 +261,10 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 		if o.BackendRef != nil {
 			// convert proto BackendRef to common_api.BackendRef
 			backendRef := common_api.BackendRef{
-				TargetRef: common_api.TargetRef{
-					Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
-					Name:   pointer.To(o.BackendRef.Name),
-					Labels: pointer.To(o.BackendRef.Labels),
-				},
-				Port: pointer.To(o.BackendRef.Port),
+				Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
+				Name:   pointer.To(o.BackendRef.Name),
+				Labels: pointer.To(o.BackendRef.Labels),
+				Port:   pointer.To(o.BackendRef.Port),
 			}
 			ref, ok := resolve.BackendRef(kri.From(dataplane), backendRef, resolver)
 			if !ok {

@@ -41,11 +41,9 @@ var _ = Describe("DataplaneInspectEntry", func() {
 		}),
 		Entry("full example", testCase{
 			input: &types.DataplaneInspectEntry{
-				AttachmentEntry: types.AttachmentEntry{
-					Type:    "inbound",
-					Name:    "192.168.0.1:80",
-					Service: "web",
-				},
+				Type:    "inbound",
+				Name:    "192.168.0.1:80",
+				Service: "web",
 				MatchedPolicies: map[model.ResourceType][]v1alpha1.ResourceMeta{
 					core_mesh.TimeoutType: {
 						rest.From.Meta(&core_mesh.TimeoutResource{
@@ -63,10 +61,8 @@ var _ = Describe("DataplaneInspectEntry", func() {
 		}),
 		Entry("empty matched policies", testCase{
 			input: &types.DataplaneInspectEntry{
-				AttachmentEntry: types.AttachmentEntry{
-					Type: "inbound",
-					Name: "192.168.0.1:80",
-				},
+				Type:            "inbound",
+				Name:            "192.168.0.1:80",
 				MatchedPolicies: map[model.ResourceType][]v1alpha1.ResourceMeta{},
 			},
 			goldenFile: "empty_matched_policies.golden.json",
