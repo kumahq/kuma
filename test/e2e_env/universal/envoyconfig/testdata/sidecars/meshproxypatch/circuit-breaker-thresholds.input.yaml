@@ -1,0 +1,18 @@
+type: MeshProxyPatch
+name: mpp-cb-thresholds
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    appendModifications:
+      - cluster:
+          operation: Patch
+          match:
+            name: self_transparentproxy_passthrough_outbound_ipv4
+          value: |
+            circuitBreakers:
+              thresholds:
+                - maxConnections: 8192
