@@ -263,7 +263,9 @@ var _ = Describe("Cluster modifications", func() {
                    value: |
                      circuitBreakers:
                        thresholds:
-                       - maxConnections: 8192`,
+                       - maxConnections: 8192
+                       - priority: HIGH
+                         maxConnections: 2048`,
 			},
 			expected: `
             resources:
@@ -273,6 +275,45 @@ var _ = Describe("Cluster modifications", func() {
                 circuitBreakers:
                   thresholds:
                   - maxConnections: 8192
+                    trackRemaining: true
+                  - maxConnections: 2048
+                    priority: HIGH
+                lbPolicy: CLUSTER_PROVIDED
+                name: outbound:passthrough:ipv4
+                type: ORIGINAL_DST`,
+		}),
+		Entry("should patch per host circuit breaker threshold instead of appending a duplicate priority entry", testCase{
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    circuitBreakers:
+                      perHostThresholds:
+                      - trackRemaining: true
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: outbound:passthrough:ipv4
+                    type: ORIGINAL_DST
+`,
+				},
+			},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: outbound:passthrough:ipv4
+                   value: |
+                     circuitBreakers:
+                       perHostThresholds:
+                       - maxConnections: 512`,
+			},
+			expected: `
+            resources:
+            - name: outbound:passthrough:ipv4
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                circuitBreakers:
+                  perHostThresholds:
+                  - maxConnections: 512
                     trackRemaining: true
                 lbPolicy: CLUSTER_PROVIDED
                 name: outbound:passthrough:ipv4

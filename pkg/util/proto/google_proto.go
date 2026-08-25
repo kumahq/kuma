@@ -86,14 +86,14 @@ func Replace(dst, src proto.Message) {
 	ReplaceMergeFn(dst.ProtoReflect(), src.ProtoReflect())
 }
 
-func Merge(dst, src proto.Message) {
+// Merge merges src into dst with proto merge semantics, except that Duration is
+// replaced rather than merged. Callers whose resources have list semantics of
+// their own pass them in via opts.
+func Merge(dst, src proto.Message, opts ...OptionFn) {
 	duration := &durationpb.Duration{}
-	merge(dst, src,
+	merge(dst, src, append([]OptionFn{
 		MergeFunctionOptionFn(duration.ProtoReflect().Descriptor().FullName(), ReplaceMergeFn),
-		// Envoy honors only the first threshold matching a routing priority,
-		// so appending a duplicate priority entry silently disables the merged one.
-		KeyedListOptionFn("envoy.config.cluster.v3.CircuitBreakers.thresholds", "priority"),
-	)
+	}, opts...)...)
 }
 
 // Merge Code of proto.Merge with modifications to support custom types
