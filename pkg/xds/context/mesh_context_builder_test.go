@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v2/pkg/core/config/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/dns/lookup"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -25,6 +26,20 @@ import (
 	xds_server "github.com/kumahq/kuma/v2/pkg/xds/server"
 )
 
+func newMeshContextBuilder(resourceStore store.ResourceStore, lookupIPFunc lookup.LookupIPFunc) xds_context.MeshContextBuilder {
+	return xds_context.NewMeshContextBuilder(
+		resourceStore,
+		xds_server.MeshResourceTypes(),
+		lookupIPFunc,
+		"zone-1",
+		vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
+		"mesh",
+		80,
+		xds_context.AnyToAnyReachableServicesGraphBuilder,
+		nil,
+	)
+}
+
 var _ = Describe("hash", func() {
 	lookupIPFunc := func(s string) ([]net.IP, error) {
 		return []net.IP{net.ParseIP(s)}, nil
@@ -34,17 +49,7 @@ var _ = Describe("hash", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		meshContextBuilder = xds_context.NewMeshContextBuilder(
-			resourceStore,
-			xds_server.MeshResourceTypes(),
-			lookupIPFunc,
-			"zone-1",
-			vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
-			"mesh",
-			80,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
-			nil,
-		)
+		meshContextBuilder = newMeshContextBuilder(resourceStore, lookupIPFunc)
 	})
 
 	_ = DescribeTable("with BaseMeshContext", func(inputFile string) {
@@ -169,6 +174,97 @@ var _ = Describe("hash", func() {
 		// then the error is surfaced rather than causing a nil-pointer panic
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("failed to build base mesh context"))
+	})
+})
+
+// remoteMeshZoneAddressWithHostname is the public address of the zone proxy in zone
+// "east", published as a load balancer hostname instead of an IP, which is what the
+// ingress Service reconciler produces on EKS.
+const remoteMeshZoneAddressWithHostname = `
+type: MeshZoneAddress
+name: zone-proxy-east
+mesh: default
+labels:
+  kuma.io/zone: east
+  kuma.io/origin: global
+spec:
+  address: lb.example.com
+  port: 10001
+`
+
+// remoteZoneIngress is the legacy zone proxy of zone "east", used whenever that zone
+// publishes no usable MeshZoneAddress.
+const remoteZoneIngress = `
+type: ZoneIngress
+name: ingress-east
+zone: east
+networking:
+  address: 192.168.0.1
+  port: 10001
+  advertisedAddress: 20.0.0.1
+  advertisedPort: 10001
+`
+
+func endpointTargets(meshCtx *xds_context.MeshContext) []string {
+	var targets []string
+	for _, endpoints := range meshCtx.EndpointMap {
+		for _, endpoint := range endpoints {
+			targets = append(targets, endpoint.Target)
+		}
+	}
+	return targets
+}
+
+var _ = Describe("MeshZoneAddress", func() {
+	var resourceStore store.ResourceStore
+
+	BeforeEach(func() {
+		resourceStore = memory.NewStore()
+		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
+		Expect(samples.MeshServiceSyncedBackendBuilder().Create(resourceStore)).To(Succeed())
+		Expect(test_store.LoadResources(context.Background(), resourceStore, remoteMeshZoneAddressWithHostname)).To(Succeed())
+	})
+
+	It("resolves the MeshZoneAddress hostname before it reaches the endpoint map", func() {
+		// given a MeshZoneAddress pointing at a load balancer hostname, as reconciled
+		// from a LoadBalancer Service on EKS, where the hostname takes precedence
+		meshContextBuilder := newMeshContextBuilder(resourceStore, func(host string) ([]net.IP, error) {
+			if ip := net.ParseIP(host); ip != nil {
+				return []net.IP{ip}, nil
+			}
+			return []net.IP{net.ParseIP("10.0.0.1")}, nil
+		})
+
+		// when
+		meshCtx, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the endpoint target is the resolved IP, not the hostname Envoy can't dial
+		Expect(endpointTargets(meshCtx)).To(ConsistOf("10.0.0.1"))
+		// and the zone stays classified as served by a mesh-scoped zone proxy, so consumers use the KRI SNI
+		Expect(meshCtx.ZonesWithMeshScopedProxy).To(Equal(map[string]bool{"east": true}))
+	})
+
+	It("falls back to the ZoneIngress when the MeshZoneAddress hostname doesn't resolve", func() {
+		// given the same zone also runs a legacy ZoneIngress, and the load balancer
+		// hostname has no DNS record yet
+		Expect(test_store.LoadResources(context.Background(), resourceStore, remoteZoneIngress)).To(Succeed())
+		meshContextBuilder := newMeshContextBuilder(resourceStore, func(host string) ([]net.IP, error) {
+			if ip := net.ParseIP(host); ip != nil {
+				return []net.IP{ip}, nil
+			}
+			return nil, errors.New("no such host")
+		})
+
+		// when
+		meshCtx, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the unresolvable MeshZoneAddress is dropped and the zone keeps its ZoneIngress endpoint
+		Expect(endpointTargets(meshCtx)).To(ConsistOf("20.0.0.1"))
+		// and the zone leaves ZonesWithMeshScopedProxy together with its endpoint, so consumers
+		// use the hash-based SNI that the legacy ZoneIngress they now dial actually serves
+		Expect(meshCtx.ZonesWithMeshScopedProxy).To(BeEmpty())
 	})
 })
 
