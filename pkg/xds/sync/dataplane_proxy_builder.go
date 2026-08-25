@@ -162,11 +162,9 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 		)
 		// convert proto BackendRef to common_api.BackendRef
 		backendRef := common_api.BackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
-				Labels: pointer.To(labels),
-			},
-			Port: pointer.To(o.BackendRef.Port),
+			Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
+			Labels: pointer.To(labels),
+			Port:   pointer.To(o.BackendRef.Port),
 		}
 		if sectionName != "" {
 			backendRef.SectionName = pointer.To(sectionName)

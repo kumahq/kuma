@@ -6,7 +6,6 @@ import (
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	admissionv1 "k8s.io/api/admission/v1"
 	v1 "k8s.io/api/authentication/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -66,18 +65,16 @@ var _ = Describe("Defaulter", func() {
 			handler := DefaultingWebhookFor(scheme, converter, given.checker)
 
 			req := kube_admission.Request{
-				AdmissionRequest: admissionv1.AdmissionRequest{
-					Namespace: "kuma-system",
-					UID:       kube_types.UID("12345"),
-					Object: kube_runtime.RawExtension{
-						Raw: []byte(given.inputObject),
-					},
-					Kind: kube_meta.GroupVersionKind{
-						Kind: given.kind,
-					},
-					UserInfo: v1.UserInfo{
-						Username: given.username,
-					},
+				Namespace: "kuma-system",
+				UID:       kube_types.UID("12345"),
+				Object: kube_runtime.RawExtension{
+					Raw: []byte(given.inputObject),
+				},
+				Kind: kube_meta.GroupVersionKind{
+					Kind: given.kind,
+				},
+				UserInfo: v1.UserInfo{
+					Username: given.username,
 				},
 			}
 

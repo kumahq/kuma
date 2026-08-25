@@ -8,7 +8,6 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_discovery "k8s.io/api/discovery/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_event "k8s.io/client-go/tools/events"
@@ -102,10 +101,8 @@ func (r *MeshZoneAddressReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	meshName := util.MeshOfByLabel(svc, namespace)
 
 	mza := &meshzoneaddress_k8s.MeshZoneAddress{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      req.Name,
-			Namespace: req.Namespace,
-		},
+		Name:      req.Name,
+		Namespace: req.Namespace,
 	}
 
 	result, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, mza, func() error {
@@ -237,10 +234,8 @@ func (r *MeshZoneAddressReconciler) hasReadyEndpoints(ctx context.Context, svc *
 
 func (r *MeshZoneAddressReconciler) deleteIfExists(ctx context.Context, key kube_types.NamespacedName) error {
 	mza := &meshzoneaddress_k8s.MeshZoneAddress{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      key.Name,
-			Namespace: key.Namespace,
-		},
+		Name:      key.Name,
+		Namespace: key.Namespace,
 	}
 	if err := r.Delete(ctx, mza); err != nil && !kube_apierrs.IsNotFound(err) {
 		return errors.Wrap(err, "unable to delete MeshZoneAddress")
@@ -298,7 +293,7 @@ func (r *MeshZoneAddressReconciler) nodeToZoneProxyServices(c kube_client.Client
 				continue
 			}
 			reqs = append(reqs, kube_ctrl.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: svc.Namespace, Name: svc.Name},
+				Namespace: svc.Namespace, Name: svc.Name,
 			})
 		}
 		return reqs

@@ -225,12 +225,10 @@ func TestBackendRefRealResourceSelectorKeepsExplicitSectionNameOverPort(t *testi
 	t.Parallel()
 
 	ref := BackendRef{
-		TargetRef: TargetRef{
-			Kind:        MeshService,
-			Labels:      pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
-			SectionName: pointer.To("http"),
-		},
-		Port: pointer.To(uint32(80)),
+		Kind:        MeshService,
+		Labels:      pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
+		SectionName: pointer.To("http"),
+		Port:        pointer.To(uint32(80)),
 	}
 
 	_, sectionName, ok := ref.RealResourceSelector("kuma-demo")
@@ -246,9 +244,7 @@ func TestBackendRefRealResourceSelectorRejectsRealRefsWithoutLabels(t *testing.T
 	t.Parallel()
 
 	ref := BackendRef{
-		TargetRef: TargetRef{
-			Kind: MeshService,
-		},
+		Kind: MeshService,
 	}
 
 	if _, _, ok := ref.RealResourceSelector("default"); ok {
@@ -313,18 +309,14 @@ func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
 		t.Parallel()
 
 		a := BackendRef{
-			TargetRef: TargetRef{
-				Kind:   MeshService,
-				Labels: &map[string]string{mesh_proto.DisplayName: "backend", mesh_proto.KubeNamespaceTag: "kuma-demo"},
-			},
-			Port: pointer.To(uint32(8080)),
+			Kind:   MeshService,
+			Labels: &map[string]string{mesh_proto.DisplayName: "backend", mesh_proto.KubeNamespaceTag: "kuma-demo"},
+			Port:   pointer.To(uint32(8080)),
 		}
 		b := BackendRef{
-			TargetRef: TargetRef{
-				Kind:   MeshService,
-				Labels: &map[string]string{mesh_proto.KubeNamespaceTag: "kuma-demo", mesh_proto.DisplayName: "backend"},
-			},
-			Port: pointer.To(uint32(8080)),
+			Kind:   MeshService,
+			Labels: &map[string]string{mesh_proto.KubeNamespaceTag: "kuma-demo", mesh_proto.DisplayName: "backend"},
+			Port:   pointer.To(uint32(8080)),
 		}
 
 		if a.Hash() != b.Hash() {
@@ -336,18 +328,14 @@ func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
 		t.Parallel()
 
 		base := BackendRef{
-			TargetRef: TargetRef{
-				Kind:   MeshService,
-				Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
-			},
-			Port: pointer.To(uint32(8080)),
+			Kind:   MeshService,
+			Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
+			Port:   pointer.To(uint32(8080)),
 		}
 		otherPort := BackendRef{
-			TargetRef: TargetRef{
-				Kind:   MeshService,
-				Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
-			},
-			Port: pointer.To(uint32(9090)),
+			Kind:   MeshService,
+			Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
+			Port:   pointer.To(uint32(9090)),
 		}
 
 		if base.Hash() == otherPort.Hash() {

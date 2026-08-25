@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -55,10 +54,8 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			to.Name = pointer.To(gatewayapi.ObjectName(targetName))
 		}
 		return &gatewayapi.ReferenceGrant{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      "allow-route",
-				Namespace: grantNamespace,
-			},
+			Name:      "allow-route",
+			Namespace: grantNamespace,
 			Spec: gatewayapi.ReferenceGrantSpec{
 				From: []gatewayapi.ReferenceGrantFrom{from},
 				To:   []gatewayapi.ReferenceGrantTo{to},
@@ -71,10 +68,8 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      "backend",
-				Namespace: "kuma-demo",
-			},
+			Name:      "backend",
+			Namespace: "kuma-demo",
 			Spec: kube_core.ServiceSpec{
 				Ports: []kube_core.ServicePort{{Port: 80}},
 			},
@@ -106,10 +101,8 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      "backend",
-				Namespace: "kuma-demo",
-			},
+			Name:      "backend",
+			Namespace: "kuma-demo",
 			Spec: kube_core.ServiceSpec{
 				Ports: []kube_core.ServicePort{{Port: 8080}},
 			},
@@ -157,7 +150,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		ms := &meshservice_k8s.MeshService{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "kuma-demo"},
+			Name: "backend", Namespace: "kuma-demo",
 			Spec: &meshservice_api.MeshService{
 				Ports: []meshservice_api.Port{{Port: 80}},
 			},
@@ -185,7 +178,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		ms := &meshservice_k8s.MeshService{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "kuma-demo"},
+			Name: "backend", Namespace: "kuma-demo",
 			Spec: &meshservice_api.MeshService{
 				Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("http")}},
 			},
@@ -230,7 +223,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		ms := &meshservice_k8s.MeshService{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "kuma-demo"},
+			Name: "backend", Namespace: "kuma-demo",
 			Spec: &meshservice_api.MeshService{
 				Ports: []meshservice_api.Port{{Port: 80}},
 			},
@@ -261,7 +254,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "backend-ns"},
+			Name: "backend", Namespace: "backend-ns",
 			Spec: kube_core.ServiceSpec{
 				Ports: []kube_core.ServicePort{{Port: 80}},
 			},
@@ -285,7 +278,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "backend-ns"},
+			Name: "backend", Namespace: "backend-ns",
 			Spec: kube_core.ServiceSpec{
 				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
 			},
@@ -308,7 +301,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		ms := &meshservice_k8s.MeshService{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "backend-ns"},
+			Name: "backend", Namespace: "backend-ns",
 			Spec: &meshservice_api.MeshService{
 				Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("http")}},
 			},
@@ -336,7 +329,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "backend-ns"},
+			Name: "backend", Namespace: "backend-ns",
 			Spec: kube_core.ServiceSpec{
 				Ports: []kube_core.ServicePort{{Port: 80}},
 			},
@@ -382,11 +375,9 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 var _ = Describe("gapiMeshServiceToMeshRoute", func() {
 	meshService := func(ports ...meshservice_api.Port) *meshservice_k8s.MeshService {
 		return &meshservice_k8s.MeshService{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      "backend",
-				Namespace: "kuma-demo",
-			},
-			Spec: &meshservice_api.MeshService{Ports: ports},
+			Name:      "backend",
+			Namespace: "kuma-demo",
+			Spec:      &meshservice_api.MeshService{Ports: ports},
 		}
 	}
 
@@ -506,11 +497,9 @@ var _ = Describe("gapiMeshServiceToMeshRoute", func() {
 var _ = Describe("gapiServiceToMeshRoute", func() {
 	service := func(ports ...kube_core.ServicePort) *kube_core.Service {
 		return &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      "backend",
-				Namespace: "kuma-demo",
-			},
-			Spec: kube_core.ServiceSpec{Ports: ports},
+			Name:      "backend",
+			Namespace: "kuma-demo",
+			Spec:      kube_core.ServiceSpec{Ports: ports},
 		}
 	}
 

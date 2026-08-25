@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	kube_discovery "k8s.io/api/discovery/v1"
-	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_events "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -85,7 +84,7 @@ var _ = Describe("MeshZoneAddressReconciler", func() {
 
 			// when
 			_, err = reconciler.Reconcile(context.Background(), kube_ctrl.Request{
-				NamespacedName: kube_types.NamespacedName{Name: svcName, Namespace: testNamespace},
+				Name: svcName, Namespace: testNamespace,
 			})
 			Expect(err).ToNot(HaveOccurred())
 

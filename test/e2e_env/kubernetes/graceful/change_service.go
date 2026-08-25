@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
@@ -44,14 +43,10 @@ func ChangeService() {
 
 	newSvc := func(selector map[string]string) *corev1.Service {
 		return &corev1.Service{
-			TypeMeta: kube_meta.TypeMeta{
-				Kind:       "Service",
-				APIVersion: "v1",
-			},
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      "test-server",
-				Namespace: namespace,
-			},
+			Kind:       "Service",
+			APIVersion: "v1",
+			Name:       "test-server",
+			Namespace:  namespace,
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
 					{

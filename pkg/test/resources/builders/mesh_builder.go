@@ -3,7 +3,6 @@ package builders
 import (
 	"context"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -66,13 +65,9 @@ func (m *MeshBuilder) With(fn func(resource *core_mesh.MeshResource)) *MeshBuild
 func (m *MeshBuilder) KubeYaml() string {
 	mesh := m.Build()
 	kubeMesh := mesh_k8s.Mesh{
-		TypeMeta: v1.TypeMeta{
-			Kind:       string(core_mesh.MeshType),
-			APIVersion: mesh_k8s.GroupVersion.String(),
-		},
-		ObjectMeta: v1.ObjectMeta{
-			Name: mesh.Meta.GetName(),
-		},
+		Kind:       string(core_mesh.MeshType),
+		APIVersion: mesh_k8s.GroupVersion.String(),
+		Name:       mesh.Meta.GetName(),
 	}
 	kubeMesh.SetSpec(mesh.Spec)
 	res, err := yaml.Marshal(kubeMesh)

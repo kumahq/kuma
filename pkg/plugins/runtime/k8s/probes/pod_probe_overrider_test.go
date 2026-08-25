@@ -49,27 +49,19 @@ var _ = Describe("RealProbePorts", func() {
 							{Name: "http", ContainerPort: 8080},
 						},
 						LivenessProbe: &kube_core.Probe{
-							ProbeHandler: kube_core.ProbeHandler{
-								HTTPGet: &kube_core.HTTPGetAction{Port: intstr.FromString("http")},
-							},
+							HTTPGet: &kube_core.HTTPGetAction{Port: intstr.FromString("http")},
 						},
 						ReadinessProbe: &kube_core.Probe{
-							ProbeHandler: kube_core.ProbeHandler{
-								TCPSocket: &kube_core.TCPSocketAction{Port: intstr.FromInt32(6379)},
-							},
+							TCPSocket: &kube_core.TCPSocketAction{Port: intstr.FromInt32(6379)},
 						},
 						StartupProbe: &kube_core.Probe{
-							ProbeHandler: kube_core.ProbeHandler{
-								GRPC: &kube_core.GRPCAction{Port: 8080},
-							},
+							GRPC: &kube_core.GRPCAction{Port: 8080},
 						},
 					},
 					{
 						Name: "kuma-sidecar",
 						LivenessProbe: &kube_core.Probe{
-							ProbeHandler: kube_core.ProbeHandler{
-								HTTPGet: &kube_core.HTTPGetAction{Port: intstr.FromInt32(9901)},
-							},
+							HTTPGet: &kube_core.HTTPGetAction{Port: intstr.FromInt32(9901)},
 						},
 					},
 				},
@@ -89,9 +81,7 @@ var _ = Describe("RealProbePorts", func() {
 							{Name: "http", ContainerPort: 8080},
 						},
 						ReadinessProbe: &kube_core.Probe{
-							ProbeHandler: kube_core.ProbeHandler{
-								HTTPGet: &kube_core.HTTPGetAction{Port: intstr.FromString("http")},
-							},
+							HTTPGet: &kube_core.HTTPGetAction{Port: intstr.FromString("http")},
 						},
 					},
 				},

@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -42,14 +41,14 @@ var _ = Describe("Injector", func() {
 	}
 
 	BeforeAll(func() {
-		err := k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: systemNamespace}})
+		err := k8sClient.Create(context.Background(), &kube_core.Namespace{Name: systemNamespace})
 		Expect(err).ToNot(HaveOccurred())
 
 		// The transparent proxy ConfigMap is the single source of the base
 		// transparent proxy config. It mirrors the config shipped by the Helm
 		// chart in the kuma-system namespace.
 		err = k8sClient.Create(context.Background(), &kube_core.ConfigMap{
-			ObjectMeta: kube_meta.ObjectMeta{Name: tproxyConfigMapName, Namespace: systemNamespace},
+			Name: tproxyConfigMapName, Namespace: systemNamespace,
 			Data: map[string]string{
 				"config.yaml": `
 kumaDPUser: "5678"
@@ -1142,11 +1141,9 @@ metadata:
 			}
 
 			return &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "zone-proxy",
-					Namespace: "default",
-					Labels:    labels,
-				},
+				Name:      "zone-proxy",
+				Namespace: "default",
+				Labels:    labels,
 				Spec: kube_core.PodSpec{
 					Containers: []kube_core.Container{
 						{Name: "pause", Image: "registry.k8s.io/pause:3.10"},
@@ -1157,12 +1154,10 @@ metadata:
 
 		createZoneProxyService := func(namespace string) {
 			svc := &kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "zone-proxy-svc",
-					Namespace: namespace,
-					Labels: map[string]string{
-						metadata.KumaZoneProxyTypeLabel: "ingress",
-					},
+				Name:      "zone-proxy-svc",
+				Namespace: namespace,
+				Labels: map[string]string{
+					metadata.KumaZoneProxyTypeLabel: "ingress",
 				},
 				Spec: kube_core.ServiceSpec{
 					Selector: map[string]string{

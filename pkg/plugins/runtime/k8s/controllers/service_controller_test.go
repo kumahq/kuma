@@ -6,8 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -25,80 +23,64 @@ var _ = Describe("ServiceReconciler", func() {
 	BeforeEach(func() {
 		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).WithObjects(
 			&kube_core.Namespace{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name: "non-system-ns-with-sidecar-injection",
-					Labels: map[string]string{
-						metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
-					},
+				Name: "non-system-ns-with-sidecar-injection",
+				Labels: map[string]string{
+					metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
 				},
 			},
 			&kube_core.Namespace{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name: "non-system-ns-without-sidecar-injection",
-					Labels: map[string]string{
-						metadata.KumaGatewayAnnotation: metadata.AnnotationEnabled,
-					},
+				Name: "non-system-ns-without-sidecar-injection",
+				Labels: map[string]string{
+					metadata.KumaGatewayAnnotation: metadata.AnnotationEnabled,
 				},
 			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "non-system-ns-with-sidecar-injection",
-					Name:      "service",
-					Annotations: map[string]string{
-						"bogus-annotation": "1",
-					},
+				Namespace: "non-system-ns-with-sidecar-injection",
+				Name:      "service",
+				Annotations: map[string]string{
+					"bogus-annotation": "1",
 				},
 				Spec: kube_core.ServiceSpec{},
 			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "non-system-ns-with-sidecar-injection",
-					Name:      "ignored",
-					Annotations: map[string]string{
-						metadata.KumaIgnoreAnnotation: metadata.AnnotationTrue,
-					},
+				Namespace: "non-system-ns-with-sidecar-injection",
+				Name:      "ignored",
+				Annotations: map[string]string{
+					metadata.KumaIgnoreAnnotation: metadata.AnnotationTrue,
 				},
 				Spec: kube_core.ServiceSpec{},
 			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "non-system-ns-with-sidecar-injection",
-					Name:      "non-ignored",
-					Annotations: map[string]string{
-						metadata.KumaIgnoreAnnotation: metadata.AnnotationFalse,
-					},
+				Namespace: "non-system-ns-with-sidecar-injection",
+				Name:      "non-ignored",
+				Annotations: map[string]string{
+					metadata.KumaIgnoreAnnotation: metadata.AnnotationFalse,
 				},
 				Spec: kube_core.ServiceSpec{},
 			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "non-system-ns-without-sidecar-injection",
-					Name:      "service",
-					Annotations: map[string]string{
-						"bogus-annotation": "1",
-					},
+				Namespace: "non-system-ns-without-sidecar-injection",
+				Name:      "service",
+				Annotations: map[string]string{
+					"bogus-annotation": "1",
 				},
 				Spec: kube_core.ServiceSpec{},
 			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "non-system-ns-with-sidecar-injection",
-					Name:      "external-name",
-					Annotations: map[string]string{
-						metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
-					},
+				Namespace: "non-system-ns-with-sidecar-injection",
+				Name:      "external-name",
+				Annotations: map[string]string{
+					metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
 				},
 				Spec: kube_core.ServiceSpec{
 					Type: kube_core.ServiceTypeExternalName,
 				},
 			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace:   "non-system-ns-with-sidecar-injection",
-					Name:        "non-annotations-service",
-					Annotations: nil,
-				},
-				Spec: kube_core.ServiceSpec{},
+				Namespace:   "non-system-ns-with-sidecar-injection",
+				Name:        "non-annotations-service",
+				Annotations: nil,
+				Spec:        kube_core.ServiceSpec{},
 			}).Build()
 
 		reconciler = &ServiceReconciler{
@@ -110,7 +92,7 @@ var _ = Describe("ServiceReconciler", func() {
 	It("should ignore service not in an annotated namespace", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "non-system-ns-without-sidecar-injection", Name: "service"},
+			Namespace: "non-system-ns-without-sidecar-injection", Name: "service",
 		}
 
 		// when
@@ -130,7 +112,7 @@ var _ = Describe("ServiceReconciler", func() {
 	It("should ignore service of ExternalName type", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "non-system-ns-with-sidecar-injection", Name: "external-name"},
+			Namespace: "non-system-ns-with-sidecar-injection", Name: "external-name",
 		}
 
 		// when
@@ -150,7 +132,7 @@ var _ = Describe("ServiceReconciler", func() {
 	It("should update service in an annotated namespace", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "non-system-ns-with-sidecar-injection", Name: "service"},
+			Namespace: "non-system-ns-with-sidecar-injection", Name: "service",
 		}
 
 		// when
@@ -171,7 +153,7 @@ var _ = Describe("ServiceReconciler", func() {
 	It("should update service that has no annotations in an annotated namespace", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "non-system-ns-with-sidecar-injection", Name: "non-annotations-service"},
+			Namespace: "non-system-ns-with-sidecar-injection", Name: "non-annotations-service",
 		}
 
 		// when
@@ -192,7 +174,7 @@ var _ = Describe("ServiceReconciler", func() {
 	It("should ignore service in an annotated namespace with ignored annotation", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "non-system-ns-with-sidecar-injection", Name: "ignored"},
+			Namespace: "non-system-ns-with-sidecar-injection", Name: "ignored",
 		}
 
 		// when
@@ -212,7 +194,7 @@ var _ = Describe("ServiceReconciler", func() {
 	It("should ignore service in an annotated namespace with ignored annotation", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "non-system-ns-with-sidecar-injection", Name: "non-ignored"},
+			Namespace: "non-system-ns-with-sidecar-injection", Name: "non-ignored",
 		}
 
 		// when
