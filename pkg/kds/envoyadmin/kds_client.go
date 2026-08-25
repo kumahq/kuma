@@ -72,7 +72,7 @@ func startTrace(ctx context.Context, tracer trace.Tracer, name string) (context.
 	return ctx, span
 }
 
-func doRequest[T message]( //nolint:nonamedreturns
+func doRequest[T message](
 	ctx context.Context,
 	tracer trace.Tracer,
 	resManager manager.ReadOnlyResourceManager,
@@ -80,7 +80,7 @@ func doRequest[T message]( //nolint:nonamedreturns
 	requestType string,
 	rpcs util_grpc.ReverseUnaryRPCs,
 	mkMsg func(id, typ, name, mesh string) util_grpc.ReverseUnaryMessage,
-) (resp T, retErr error) {
+) (resp T, retErr error) { //nolint:nonamedreturns // the deferred closure reports the returned error on the span
 	var t T
 	ctx, span := startTrace(ctx, tracer, requestType)
 	defer func() {
