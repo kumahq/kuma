@@ -14,13 +14,13 @@ A `MeshHTTPRoute` generated from a Gateway API `HTTPRoute` whose parent (a `Serv
 
 A generated route whose parent is in a different namespace (a consumer route) still lands in the Kuma system namespace and keeps its `system` role and precedence unchanged.
 
-Because the route now lives in the `HTTPRoute`'s namespace, its `kuma.io/namespace` label changes to match, it now syncs across zones like any other namespaced policy, and it applies to dataplanes in remote zones the same way a hand-written route in that namespace would.
+Because the route now lives in the `HTTPRoute`'s namespace, its `k8s.kuma.io/namespace` label changes to match, it now syncs across zones like any other namespaced policy, and it applies to dataplanes in remote zones the same way a hand-written route in that namespace would.
 
 **Action required**
 
 If a mesh has both a generated producer route and a hand-written `MeshHTTPRoute` targeting the same `Mesh` and `to` entry, check which one you expect to win: before this upgrade the hand-written route always won, after it the two tie and the outcome falls back to resource name. Remove or adjust one of them if you relied on the previous, implicit precedence.
 
-If any policy selects the generated route by its old `kuma.io/namespace: <kuma-system>` label (or your system namespace), update it to the `HTTPRoute`'s namespace instead. The control plane moves each existing generated route to its new namespace the next time its `HTTPRoute` is reconciled, so no manual migration of the `MeshHTTPRoute` object itself is needed.
+If any policy selects the generated route by its old `k8s.kuma.io/namespace: <kuma-system>` label (or your system namespace), update it to the `HTTPRoute`'s namespace instead. The control plane moves each existing generated route to its new namespace the next time its `HTTPRoute` is reconciled, so no manual migration of the `MeshHTTPRoute` object itself is needed.
 
 ### The `BUILTIN` gateway type and its statistics are removed from the API
 
