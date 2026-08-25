@@ -351,5 +351,182 @@ var _ = Describe("Cluster modifications", func() {
                     sni: foo-service{mesh=default}
             `,
 		}),
+		Entry("should not duplicate circuit breaker thresholds for the same priority", testCase{
+			clusters: []testCaseCluster{{
+				yaml: `
+                name: outbound:passthrough:ipv4
+                type: ORIGINAL_DST
+                circuitBreakers:
+                  thresholds:
+                    - trackRemaining: true`,
+			}},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: outbound:passthrough:ipv4
+                   value: |
+                     circuitBreakers:
+                       thresholds:
+                         - maxConnections: 8192`,
+			},
+			// A second DEFAULT-priority threshold would be ignored by Envoy, which
+			// only honours the first match, silently dropping maxConnections.
+			expected: `
+            resources:
+            - name: outbound:passthrough:ipv4
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                name: outbound:passthrough:ipv4
+                type: ORIGINAL_DST
+                circuitBreakers:
+                  thresholds:
+                    - trackRemaining: true
+                      maxConnections: 8192`,
+		}),
+		Entry("should keep circuit breaker thresholds of distinct priorities", testCase{
+			clusters: []testCaseCluster{{
+				yaml: `
+                name: backend
+                type: EDS
+                circuitBreakers:
+                  thresholds:
+                    - trackRemaining: true`,
+			}},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: backend
+                   value: |
+                     circuitBreakers:
+                       thresholds:
+                         - maxConnections: 8192
+                         - priority: HIGH
+                           maxConnections: 4096`,
+			},
+			expected: `
+            resources:
+            - name: backend
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                name: backend
+                type: EDS
+                circuitBreakers:
+                  thresholds:
+                    - trackRemaining: true
+                      maxConnections: 8192
+                    - priority: HIGH
+                      maxConnections: 4096`,
+		}),
+		Entry("should apply a threshold without priority to every priority", testCase{
+			clusters: []testCaseCluster{{
+				yaml: `
+                name: backend
+                type: EDS
+                circuitBreakers:
+                  thresholds:
+                    - trackRemaining: true
+                    - priority: HIGH
+                      maxRetries: 5`,
+			}},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: backend
+                   value: |
+                     circuitBreakers:
+                       thresholds:
+                         - maxConnections: 8192`,
+			},
+			// limits written without a priority are meant for the whole cluster,
+			// so they land on the HIGH threshold as well
+			expected: `
+            resources:
+            - name: backend
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                name: backend
+                type: EDS
+                circuitBreakers:
+                  thresholds:
+                    - trackRemaining: true
+                      maxConnections: 8192
+                    - priority: HIGH
+                      maxRetries: 5
+                      maxConnections: 8192`,
+		}),
+		Entry("should apply a threshold with a priority only to that priority", testCase{
+			clusters: []testCaseCluster{{
+				yaml: `
+                name: backend
+                type: EDS
+                circuitBreakers:
+                  thresholds:
+                    - trackRemaining: true
+                    - priority: HIGH
+                      maxRetries: 5`,
+			}},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: backend
+                   value: |
+                     circuitBreakers:
+                       thresholds:
+                         - priority: HIGH
+                           maxConnections: 4096`,
+			},
+			expected: `
+            resources:
+            - name: backend
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                name: backend
+                type: EDS
+                circuitBreakers:
+                  thresholds:
+                    - trackRemaining: true
+                    - priority: HIGH
+                      maxRetries: 5
+                      maxConnections: 4096`,
+		}),
+		Entry("should dedupe per host thresholds as well", testCase{
+			clusters: []testCaseCluster{{
+				yaml: `
+                name: backend
+                type: EDS
+                circuitBreakers:
+                  perHostThresholds:
+                    - maxConnections: 1024`,
+			}},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: backend
+                   value: |
+                     circuitBreakers:
+                       perHostThresholds:
+                         - maxConnections: 4096`,
+			},
+			expected: `
+            resources:
+            - name: backend
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                name: backend
+                type: EDS
+                circuitBreakers:
+                  perHostThresholds:
+                    - maxConnections: 4096`,
+		}),
 	)
 })
