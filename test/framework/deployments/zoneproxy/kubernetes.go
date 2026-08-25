@@ -37,14 +37,10 @@ func (d *k8sDeployment) egressName() string {
 // which it denies (#14928).
 func (d *k8sDeployment) workloadServiceAccount() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ServiceAccount",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      d.opts.Workload,
-			Namespace: d.opts.Namespace,
-		},
+		Kind:       "ServiceAccount",
+		APIVersion: "v1",
+		Name:       d.opts.Workload,
+		Namespace:  d.opts.Namespace,
 	}
 }
 
@@ -82,14 +78,10 @@ func (d *k8sDeployment) ingressDeployment() *appsv1.Deployment {
 		podSpec.ServiceAccountName = d.opts.Workload
 	}
 	return &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Deployment",
-			APIVersion: "apps/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: d.opts.Namespace,
-		},
+		Kind:       "Deployment",
+		APIVersion: "apps/v1",
+		Name:       name,
+		Namespace:  d.opts.Namespace,
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
@@ -115,17 +107,13 @@ func (d *k8sDeployment) ingressService() *corev1.Service {
 	name := d.ingressName()
 	port := int32(d.opts.IngressPort)
 	return &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: d.opts.Namespace,
-			Labels: map[string]string{
-				zoneProxyTypeLabel: "ingress",
-				"kuma.io/mesh":     d.opts.Mesh,
-			},
+		Kind:       "Service",
+		APIVersion: "v1",
+		Name:       name,
+		Namespace:  d.opts.Namespace,
+		Labels: map[string]string{
+			zoneProxyTypeLabel: "ingress",
+			"kuma.io/mesh":     d.opts.Mesh,
 		},
 		Spec: corev1.ServiceSpec{
 			Type:     corev1.ServiceTypeNodePort,
@@ -176,14 +164,10 @@ func (d *k8sDeployment) egressDeployment() *appsv1.Deployment {
 		podSpec.ServiceAccountName = d.opts.Workload
 	}
 	return &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Deployment",
-			APIVersion: "apps/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: d.opts.Namespace,
-		},
+		Kind:       "Deployment",
+		APIVersion: "apps/v1",
+		Name:       name,
+		Namespace:  d.opts.Namespace,
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
@@ -209,17 +193,13 @@ func (d *k8sDeployment) egressService() *corev1.Service {
 	name := d.egressName()
 	port := int32(d.opts.EgressPort)
 	return &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: d.opts.Namespace,
-			Labels: map[string]string{
-				zoneProxyTypeLabel: "egress",
-				"kuma.io/mesh":     d.opts.Mesh,
-			},
+		Kind:       "Service",
+		APIVersion: "v1",
+		Name:       name,
+		Namespace:  d.opts.Namespace,
+		Labels: map[string]string{
+			zoneProxyTypeLabel: "egress",
+			"kuma.io/mesh":     d.opts.Mesh,
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{"app": name},

@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 
-	v1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -116,20 +115,18 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 
 func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() *admission.Response {
 	return &admission.Response{
-		AdmissionResponse: v1.AdmissionResponse{
-			Allowed: false,
-			Result: &metav1.Status{
-				Status:  "Failure",
-				Message: fmt.Sprintf("Operation not allowed. Applying policies on Zone CP on a system namespace requires '%s' label to be set to '%s'.", mesh_proto.ResourceOriginLabel, mesh_proto.ZoneResourceOrigin),
-				Reason:  "Forbidden",
-				Code:    403,
-				Details: &metav1.StatusDetails{
-					Causes: []metav1.StatusCause{
-						{
-							Type:    "FieldValueInvalid",
-							Message: "cannot be empty",
-							Field:   "metadata.labels[kuma.io/origin]",
-						},
+		Allowed: false,
+		Result: &metav1.Status{
+			Status:  "Failure",
+			Message: fmt.Sprintf("Operation not allowed. Applying policies on Zone CP on a system namespace requires '%s' label to be set to '%s'.", mesh_proto.ResourceOriginLabel, mesh_proto.ZoneResourceOrigin),
+			Reason:  "Forbidden",
+			Code:    403,
+			Details: &metav1.StatusDetails{
+				Causes: []metav1.StatusCause{
+					{
+						Type:    "FieldValueInvalid",
+						Message: "cannot be empty",
+						Field:   "metadata.labels[kuma.io/origin]",
 					},
 				},
 			},
@@ -155,14 +152,12 @@ func resourceTypeNotAllowedMsg(resType core_model.ResourceType, mode core.CpMode
 
 func forbiddenResponse(msg string) *admission.Response {
 	return &admission.Response{
-		AdmissionResponse: v1.AdmissionResponse{
-			Allowed: false,
-			Result: &metav1.Status{
-				Status:  "Failure",
-				Message: msg,
-				Reason:  "Forbidden",
-				Code:    403,
-			},
+		Allowed: false,
+		Result: &metav1.Status{
+			Status:  "Failure",
+			Message: msg,
+			Reason:  "Forbidden",
+			Code:    403,
 		},
 	}
 }

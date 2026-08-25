@@ -174,15 +174,13 @@ func convertValidationErrorOf(kumaErr validators.ValidationError, obj kube_runti
 		Kind: obj.GetObjectKind().GroupVersionKind().Kind,
 	}
 	resp := admission.Response{
-		AdmissionResponse: v1.AdmissionResponse{
-			Allowed: false,
-			Result: &metav1.Status{
-				Status:  "Failure",
-				Message: kumaErr.Error(),
-				Reason:  "Invalid",
-				Code:    int32(422),
-				Details: details,
-			},
+		Allowed: false,
+		Result: &metav1.Status{
+			Status:  "Failure",
+			Message: kumaErr.Error(),
+			Reason:  "Invalid",
+			Code:    int32(422),
+			Details: details,
 		},
 	}
 	for _, violation := range kumaErr.Violations {

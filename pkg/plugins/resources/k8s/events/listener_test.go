@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -40,7 +39,7 @@ func counterValue(counter prometheus.Counter) float64 {
 
 var _ = Describe("kubernetesObjectFromEvent", func() {
 	mesh := &kuma_v1alpha1.Mesh{
-		ObjectMeta: metav1.ObjectMeta{Name: "mesh-1"},
+		Name: "mesh-1",
 	}
 
 	It("returns Kubernetes object directly", func() {
@@ -97,7 +96,7 @@ var _ = Describe("listener", func() {
 			call(l, cache.DeletedFinalStateUnknown{
 				Key: "mesh-1",
 				Obj: &kuma_v1alpha1.Mesh{
-					ObjectMeta: metav1.ObjectMeta{Name: "mesh-1"},
+					Name: "mesh-1",
 				},
 			})
 

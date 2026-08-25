@@ -49,7 +49,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 
 	newRoute := func(parentRefs ...gatewayapi.ParentReference) *gatewayapi.HTTPRoute {
 		return &gatewayapi.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "my-route", Namespace: routeNamespace},
+			Name: "my-route", Namespace: routeNamespace,
 			Spec: gatewayapi.HTTPRouteSpec{
 				CommonRouteSpec: gatewayapi.CommonRouteSpec{ParentRefs: parentRefs},
 			},
@@ -64,7 +64,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 		scheme, err := bootstrap_k8s.NewScheme()
 		Expect(err).ToNot(HaveOccurred())
 
-		namespace = &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "kuma-demo"}}
+		namespace = &kube_core.Namespace{Name: "kuma-demo"}
 
 		newClientBuilder = func(objs ...kube_client.Object) kube_client.Client {
 			return kube_client_fake.NewClientBuilder().
@@ -83,7 +83,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 
 	It("generates a MeshHTTPRoute and reports ResolvedRefs=True when the MeshService exists", func() {
 		ms := &meshservice_k8s.MeshService{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "kuma-demo"},
+			Name: "backend", Namespace: "kuma-demo",
 			Spec: &meshservice_api.MeshService{
 				Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("http")}},
 			},
@@ -118,7 +118,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 
 	It("applies a parentRef sectionName as the port name", func() {
 		ms := &meshservice_k8s.MeshService{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "kuma-demo"},
+			Name: "backend", Namespace: "kuma-demo",
 			Spec: &meshservice_api.MeshService{
 				Ports: []meshservice_api.Port{
 					{Port: 80, Name: pointer.To("http")},
@@ -150,7 +150,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 
 	It("reports Accepted=False when the parentRef names a port the MeshService does not have", func() {
 		ms := &meshservice_k8s.MeshService{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "kuma-demo"},
+			Name: "backend", Namespace: "kuma-demo",
 			Spec: &meshservice_api.MeshService{
 				Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("http")}},
 			},
@@ -182,8 +182,8 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 
 	It("stays quiet when the MeshService has no ports and the parentRef names none", func() {
 		ms := &meshservice_k8s.MeshService{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "kuma-demo"},
-			Spec:       &meshservice_api.MeshService{},
+			Name: "backend", Namespace: "kuma-demo",
+			Spec: &meshservice_api.MeshService{},
 		}
 		route := newRoute(meshServiceParentRef("backend"))
 
@@ -255,7 +255,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 
 	newRoute := func(parentRefs ...gatewayapi.ParentReference) *gatewayapi.HTTPRoute {
 		return &gatewayapi.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "my-route", Namespace: routeNamespace},
+			Name: "my-route", Namespace: routeNamespace,
 			Spec: gatewayapi.HTTPRouteSpec{
 				CommonRouteSpec: gatewayapi.CommonRouteSpec{ParentRefs: parentRefs},
 			},
@@ -270,7 +270,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		scheme, err := bootstrap_k8s.NewScheme()
 		Expect(err).ToNot(HaveOccurred())
 
-		namespace = &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: routeNamespace}}
+		namespace = &kube_core.Namespace{Name: routeNamespace}
 
 		newClientBuilder = func(objs ...kube_client.Object) kube_client.Client {
 			return kube_client_fake.NewClientBuilder().
@@ -290,7 +290,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 
 	It("applies a parentRef sectionName as the Service port name", func() {
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Name: "backend", Namespace: routeNamespace,
 			Spec: kube_core.ServiceSpec{
 				ClusterIP: "10.0.0.1",
 				Ports: []kube_core.ServicePort{
@@ -328,7 +328,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 
 	It("merges multiple section-specific parentRefs for the same Service", func() {
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Name: "backend", Namespace: routeNamespace,
 			Spec: kube_core.ServiceSpec{
 				ClusterIP: "10.0.0.1",
 				Ports: []kube_core.ServicePort{
@@ -372,7 +372,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 
 	It("reports Accepted=False when the parentRef names a Service port the Service does not have", func() {
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Name: "backend", Namespace: routeNamespace,
 			Spec: kube_core.ServiceSpec{
 				ClusterIP: "10.0.0.1",
 				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
@@ -403,7 +403,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 
 	It("reports Accepted=False after deleting a Service referenced only as a parentRef", func() {
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Name: "backend", Namespace: routeNamespace,
 			Spec: kube_core.ServiceSpec{
 				ClusterIP: "10.0.0.1",
 				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
@@ -448,7 +448,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 
 	It("requeues a parent-only route when a Service update makes its sectionName valid", func() {
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Name: "backend", Namespace: routeNamespace,
 			Spec: kube_core.ServiceSpec{
 				ClusterIP: "10.0.0.1",
 				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
@@ -498,7 +498,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 
 	It("reports Accepted=False and generates no MeshHTTPRoute for a headless Service parentRef", func() {
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Name: "backend", Namespace: routeNamespace,
 			Spec: kube_core.ServiceSpec{
 				ClusterIP: kube_core.ClusterIPNone,
 				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
@@ -530,7 +530,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 
 	It("requeues a parent-only route when a headless Service is replaced by a ClusterIP Service", func() {
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Name: "backend", Namespace: routeNamespace,
 			Spec: kube_core.ServiceSpec{
 				ClusterIP: kube_core.ClusterIPNone,
 				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
@@ -584,22 +584,18 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with cross-namespace backendRefs
 		ns := gatewayapi.Namespace(namespace)
 		weight := int32(1)
 		return gatewayapi.HTTPBackendRef{
-			BackendRef: gatewayapi.BackendRef{
-				BackendObjectReference: gatewayapi.BackendObjectReference{
-					Group:     &group,
-					Kind:      &kind,
-					Namespace: &ns,
-					Name:      gatewayapi.ObjectName(name),
-					Port:      &port,
-				},
-				Weight: &weight,
-			},
+			Group:     &group,
+			Kind:      &kind,
+			Namespace: &ns,
+			Name:      gatewayapi.ObjectName(name),
+			Port:      &port,
+			Weight:    &weight,
 		}
 	}
 
 	referenceGrant := func(grantNamespace, routeNamespace, targetName string) *gatewayapi.ReferenceGrant {
 		return &gatewayapi.ReferenceGrant{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "allow-route", Namespace: grantNamespace},
+			Name: "allow-route", Namespace: grantNamespace,
 			Spec: gatewayapi.ReferenceGrantSpec{
 				From: []gatewayapi.ReferenceGrantFrom{{
 					Group:     gatewayapi.Group(gatewayapi.GroupVersion.Group),
@@ -629,7 +625,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with cross-namespace backendRefs
 
 	newRoute := func() *gatewayapi.HTTPRoute {
 		return &gatewayapi.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "my-route", Namespace: "route-ns"},
+			Name: "my-route", Namespace: "route-ns",
 			Spec: gatewayapi.HTTPRouteSpec{
 				CommonRouteSpec: gatewayapi.CommonRouteSpec{
 					ParentRefs: []gatewayapi.ParentReference{parentRef("route-ns", "frontend")},
@@ -652,8 +648,8 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with cross-namespace backendRefs
 
 		newClientBuilder = func(objs ...kube_client.Object) kube_client.Client {
 			base := []kube_client.Object{
-				&kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "route-ns"}},
-				&kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "backend-ns"}},
+				&kube_core.Namespace{Name: "route-ns"},
+				&kube_core.Namespace{Name: "backend-ns"},
 			}
 			return kube_client_fake.NewClientBuilder().
 				WithScheme(scheme).
@@ -673,13 +669,13 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with cross-namespace backendRefs
 
 	It("reports RefNotPermitted and omits the denied backend targetRef when no ReferenceGrant exists", func() {
 		frontend := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "frontend", Namespace: "route-ns"},
+			Name: "frontend", Namespace: "route-ns",
 			Spec: kube_core.ServiceSpec{
 				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
 			},
 		}
 		backend := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "backend-ns"},
+			Name: "backend", Namespace: "backend-ns",
 			Spec: kube_core.ServiceSpec{
 				Ports: []kube_core.ServicePort{{Name: "http", Port: 8080}},
 			},
@@ -711,13 +707,13 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with cross-namespace backendRefs
 
 	It("requeues and allows the route after grant creation, then denies it again after grant deletion", func() {
 		frontend := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "frontend", Namespace: "route-ns"},
+			Name: "frontend", Namespace: "route-ns",
 			Spec: kube_core.ServiceSpec{
 				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
 			},
 		}
 		backend := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "backend-ns"},
+			Name: "backend", Namespace: "backend-ns",
 			Spec: kube_core.ServiceSpec{
 				Ports: []kube_core.ServicePort{{Name: "http", Port: 8080}},
 			},
@@ -783,16 +779,12 @@ var _ = Describe("routesForReferenceGrant", func() {
 		port := gatewayapi.PortNumber(80)
 		weight := int32(1)
 		return gatewayapi.HTTPBackendRef{
-			BackendRef: gatewayapi.BackendRef{
-				BackendObjectReference: gatewayapi.BackendObjectReference{
-					Group:     &group,
-					Kind:      &kind,
-					Namespace: &ns,
-					Name:      gatewayapi.ObjectName(name),
-					Port:      &port,
-				},
-				Weight: &weight,
-			},
+			Group:     &group,
+			Kind:      &kind,
+			Namespace: &ns,
+			Name:      gatewayapi.ObjectName(name),
+			Port:      &port,
+			Weight:    &weight,
 		}
 	}
 
@@ -801,7 +793,7 @@ var _ = Describe("routesForReferenceGrant", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		matchingRoute := &gatewayapi.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "matching", Namespace: "route-ns"},
+			Name: "matching", Namespace: "route-ns",
 			Spec: gatewayapi.HTTPRouteSpec{
 				Rules: []gatewayapi.HTTPRouteRule{{
 					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("backend")},
@@ -809,7 +801,7 @@ var _ = Describe("routesForReferenceGrant", func() {
 			},
 		}
 		sameNamespaceRoute := &gatewayapi.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "same-ns", Namespace: "backend-ns"},
+			Name: "same-ns", Namespace: "backend-ns",
 			Spec: gatewayapi.HTTPRouteSpec{
 				Rules: []gatewayapi.HTTPRouteRule{{
 					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("backend")},
@@ -817,7 +809,7 @@ var _ = Describe("routesForReferenceGrant", func() {
 			},
 		}
 		wrongBackendRoute := &gatewayapi.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "wrong-backend", Namespace: "route-ns"},
+			Name: "wrong-backend", Namespace: "route-ns",
 			Spec: gatewayapi.HTTPRouteSpec{
 				Rules: []gatewayapi.HTTPRouteRule{{
 					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("other-backend")},
@@ -825,7 +817,7 @@ var _ = Describe("routesForReferenceGrant", func() {
 			},
 		}
 		grant := &gatewayapi.ReferenceGrant{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "allow-route", Namespace: "backend-ns"},
+			Name: "allow-route", Namespace: "backend-ns",
 			Spec: gatewayapi.ReferenceGrantSpec{
 				From: []gatewayapi.ReferenceGrantFrom{{
 					Group:     gatewayapi.Group(gatewayapi.GroupVersion.Group),
@@ -856,7 +848,7 @@ var _ = Describe("routesForReferenceGrant", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		matchingRoute := &gatewayapi.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "matching", Namespace: "route-ns"},
+			Name: "matching", Namespace: "route-ns",
 			Spec: gatewayapi.HTTPRouteSpec{
 				Rules: []gatewayapi.HTTPRouteRule{{
 					BackendRefs: []gatewayapi.HTTPBackendRef{serviceBackendRef("backend")},
@@ -864,7 +856,7 @@ var _ = Describe("routesForReferenceGrant", func() {
 			},
 		}
 		oldGrant := &gatewayapi.ReferenceGrant{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "allow-route", Namespace: "backend-ns"},
+			Name: "allow-route", Namespace: "backend-ns",
 			Spec: gatewayapi.ReferenceGrantSpec{
 				From: []gatewayapi.ReferenceGrantFrom{{
 					Group:     gatewayapi.Group(gatewayapi.GroupVersion.Group),
@@ -936,7 +928,7 @@ var _ = Describe("servicesOfRoute", func() {
 
 	It("indexes parentRefs, backendRefs and request-mirror backendRefs, defaulting namespace to the route", func() {
 		route := &gatewayapi.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "my-route", Namespace: "kuma-demo"},
+			Name: "my-route", Namespace: "kuma-demo",
 			Spec: gatewayapi.HTTPRouteSpec{
 				CommonRouteSpec: gatewayapi.CommonRouteSpec{
 					ParentRefs: []gatewayapi.ParentReference{
@@ -946,7 +938,7 @@ var _ = Describe("servicesOfRoute", func() {
 				Rules: []gatewayapi.HTTPRouteRule{
 					{
 						BackendRefs: []gatewayapi.HTTPBackendRef{
-							{BackendRef: gatewayapi.BackendRef{BackendObjectReference: *serviceRef("other-ns", "backend-svc")}},
+							{BackendObjectReference: *serviceRef("other-ns", "backend-svc")},
 						},
 						Filters: []gatewayapi.HTTPRouteFilter{
 							{
@@ -997,7 +989,7 @@ var _ = Describe("meshServicesOfRoute", func() {
 
 	It("indexes parentRefs, backendRefs and request-mirror backendRefs, defaulting namespace to the route", func() {
 		route := &gatewayapi.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "my-route", Namespace: "kuma-demo"},
+			Name: "my-route", Namespace: "kuma-demo",
 			Spec: gatewayapi.HTTPRouteSpec{
 				CommonRouteSpec: gatewayapi.CommonRouteSpec{
 					ParentRefs: []gatewayapi.ParentReference{
@@ -1007,7 +999,7 @@ var _ = Describe("meshServicesOfRoute", func() {
 				Rules: []gatewayapi.HTTPRouteRule{
 					{
 						BackendRefs: []gatewayapi.HTTPBackendRef{
-							{BackendRef: gatewayapi.BackendRef{BackendObjectReference: *meshServiceRef("other-ns", "backend-ms")}},
+							{BackendObjectReference: *meshServiceRef("other-ns", "backend-ms")},
 						},
 						Filters: []gatewayapi.HTTPRouteFilter{
 							{

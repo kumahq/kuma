@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_events "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,10 +28,8 @@ var _ = Describe("PodStatusReconciler", func() {
 	BeforeEach(func() {
 		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).WithObjects(
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-without-kuma-sidecar",
-				},
+				Namespace: "demo",
+				Name:      "pod-without-kuma-sidecar",
 				Status: kube_core.PodStatus{
 					ContainerStatuses: []kube_core.ContainerStatus{
 						{
@@ -51,13 +48,11 @@ var _ = Describe("PodStatusReconciler", func() {
 				},
 			},
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-with-kuma-sidecar-workload-not-owned-by-a-job",
-					OwnerReferences: []kube_meta.OwnerReference{
-						{
-							Kind: "ReplicaSet",
-						},
+				Namespace: "demo",
+				Name:      "pod-with-kuma-sidecar-workload-not-owned-by-a-job",
+				OwnerReferences: []kube_meta.OwnerReference{
+					{
+						Kind: "ReplicaSet",
 					},
 				},
 				Status: kube_core.PodStatus{
@@ -78,13 +73,11 @@ var _ = Describe("PodStatusReconciler", func() {
 				},
 			},
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-with-kuma-sidecar-workload-not-terminated",
-					OwnerReferences: []kube_meta.OwnerReference{
-						{
-							Kind: "Job",
-						},
+				Namespace: "demo",
+				Name:      "pod-with-kuma-sidecar-workload-not-terminated",
+				OwnerReferences: []kube_meta.OwnerReference{
+					{
+						Kind: "Job",
 					},
 				},
 				Status: kube_core.PodStatus{
@@ -105,13 +98,11 @@ var _ = Describe("PodStatusReconciler", func() {
 				},
 			},
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-with-kuma-sidecar-workload-not-terminated-successfully",
-					OwnerReferences: []kube_meta.OwnerReference{
-						{
-							Kind: "Job",
-						},
+				Namespace: "demo",
+				Name:      "pod-with-kuma-sidecar-workload-not-terminated-successfully",
+				OwnerReferences: []kube_meta.OwnerReference{
+					{
+						Kind: "Job",
 					},
 				},
 				Status: kube_core.PodStatus{
@@ -134,13 +125,11 @@ var _ = Describe("PodStatusReconciler", func() {
 				},
 			},
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-with-kuma-sidecar-workload-terminated",
-					OwnerReferences: []kube_meta.OwnerReference{
-						{
-							Kind: "Job",
-						},
+				Namespace: "demo",
+				Name:      "pod-with-kuma-sidecar-workload-terminated",
+				OwnerReferences: []kube_meta.OwnerReference{
+					{
+						Kind: "Job",
 					},
 				},
 				Status: kube_core.PodStatus{
@@ -163,10 +152,8 @@ var _ = Describe("PodStatusReconciler", func() {
 				},
 			},
 			&mesh_k8s.Dataplane{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-with-kuma-sidecar-workload-terminated",
-				},
+				Namespace: "demo",
+				Name:      "pod-with-kuma-sidecar-workload-terminated",
 			},
 		).Build()
 
@@ -186,7 +173,7 @@ var _ = Describe("PodStatusReconciler", func() {
 	It("should ignore non-existing Pods", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "non-existing-pod"},
+			Namespace: "demo", Name: "non-existing-pod",
 		}
 
 		// when
@@ -202,7 +189,7 @@ var _ = Describe("PodStatusReconciler", func() {
 	It("should ignore Pods without kuma sidecar", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-without-kuma-sidecar"},
+			Namespace: "demo", Name: "pod-without-kuma-sidecar",
 		}
 
 		// when
@@ -218,7 +205,7 @@ var _ = Describe("PodStatusReconciler", func() {
 	It("should ignore Pods with kuma sidecar, not owned by a job", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-workload-not-owned-by-a-job"},
+			Namespace: "demo", Name: "pod-with-kuma-sidecar-workload-not-owned-by-a-job",
 		}
 
 		// when
@@ -234,7 +221,7 @@ var _ = Describe("PodStatusReconciler", func() {
 	It("should ignore Pods with kuma sidecar terminated", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-terminated"},
+			Namespace: "demo", Name: "pod-with-kuma-sidecar-terminated",
 		}
 
 		// when
@@ -250,7 +237,7 @@ var _ = Describe("PodStatusReconciler", func() {
 	It("should ignore Pods with workload not terminated", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-workload-not-terminated"},
+			Namespace: "demo", Name: "pod-with-kuma-sidecar-workload-not-terminated",
 		}
 
 		// when
@@ -266,7 +253,7 @@ var _ = Describe("PodStatusReconciler", func() {
 	It("should ignore Pods with workload not terminated successfully", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-workload-not-terminated-successfully"},
+			Namespace: "demo", Name: "pod-with-kuma-sidecar-workload-not-terminated-successfully",
 		}
 
 		// when
@@ -282,7 +269,7 @@ var _ = Describe("PodStatusReconciler", func() {
 	It("should call envoy quit for Pods with workload terminated", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-workload-terminated"},
+			Namespace: "demo", Name: "pod-with-kuma-sidecar-workload-terminated",
 		}
 
 		// when

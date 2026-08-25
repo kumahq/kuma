@@ -264,16 +264,12 @@ func YamlUniversal(yaml string) InstallFunc {
 
 func ConfigMapKubernetes(name, namespace string, labels, data map[string]string) InstallFunc {
 	return YamlK8sObject(&corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels:    labels,
-		},
-		Data: data,
+		Kind:       "ConfigMap",
+		APIVersion: "v1",
+		Name:       name,
+		Namespace:  namespace,
+		Labels:     labels,
+		Data:       data,
 	})
 }
 
@@ -416,15 +412,11 @@ metadata:
 func DemoClientJobK8s(namespace, mesh, destination string) InstallFunc {
 	const name = "demo-job-client"
 	job := &batchv1.Job{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Job",
-			APIVersion: batchv1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels:    map[string]string{"app": name},
-		},
+		Kind:       "Job",
+		APIVersion: batchv1.SchemeGroupVersion.String(),
+		Name:       name,
+		Namespace:  namespace,
+		Labels:     map[string]string{"app": name},
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{

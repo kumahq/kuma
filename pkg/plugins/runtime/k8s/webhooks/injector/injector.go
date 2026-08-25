@@ -44,33 +44,27 @@ const (
 var (
 	volumeInitTmp = kube_core.Volume{
 		Name: "kuma-init-tmp",
-		VolumeSource: kube_core.VolumeSource{
-			EmptyDir: &kube_core.EmptyDirVolumeSource{
-				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
-			},
+		EmptyDir: &kube_core.EmptyDirVolumeSource{
+			SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
 		},
 	}
 	volumeSidecarTmp = kube_core.Volume{
 		Name: "kuma-sidecar-tmp",
-		VolumeSource: kube_core.VolumeSource{
-			EmptyDir: &kube_core.EmptyDirVolumeSource{
-				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
-			},
+		EmptyDir: &kube_core.EmptyDirVolumeSource{
+			SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
 		},
 	}
 	volumeTPBase = kube_core.Volume{
 		Name: "transparent-proxy-base",
-		VolumeSource: kube_core.VolumeSource{
-			DownwardAPI: &kube_core.DownwardAPIVolumeSource{
-				Items: []kube_core.DownwardAPIVolumeFile{
-					{
-						Path: tproxy_consts.KubernetesConfigMapDataKey,
-						FieldRef: &kube_core.ObjectFieldSelector{
-							FieldPath: fmt.Sprintf(
-								"metadata.annotations['%s']",
-								metadata.KumaTrafficTransparentProxyConfig,
-							),
-						},
+		DownwardAPI: &kube_core.DownwardAPIVolumeSource{
+			Items: []kube_core.DownwardAPIVolumeFile{
+				{
+					Path: tproxy_consts.KubernetesConfigMapDataKey,
+					FieldRef: &kube_core.ObjectFieldSelector{
+						FieldPath: fmt.Sprintf(
+							"metadata.annotations['%s']",
+							metadata.KumaTrafficTransparentProxyConfig,
+						),
 					},
 				},
 			},
@@ -212,11 +206,9 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 	} else if enabled {
 		pod.Spec.Volumes = append(pod.Spec.Volumes, kube_core.Volume{
 			Name: "kuma-spire-agent-socket",
-			VolumeSource: kube_core.VolumeSource{
-				CSI: &kube_core.CSIVolumeSource{
-					Driver:   "csi.spiffe.io",
-					ReadOnly: pointer.To(true),
-				},
+			CSI: &kube_core.CSIVolumeSource{
+				Driver:   "csi.spiffe.io",
+				ReadOnly: pointer.To(true),
 			},
 		})
 	}
@@ -269,12 +261,8 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 			pod.Spec.Volumes,
 			kube_core.Volume{
 				Name: volumeNameTPCustom,
-				VolumeSource: kube_core.VolumeSource{
-					ConfigMap: &kube_core.ConfigMapVolumeSource{
-						LocalObjectReference: kube_core.LocalObjectReference{
-							Name: v,
-						},
-					},
+				ConfigMap: &kube_core.ConfigMapVolumeSource{
+					Name: v,
 				},
 			},
 		)

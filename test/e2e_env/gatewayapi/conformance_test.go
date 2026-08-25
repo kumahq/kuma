@@ -113,49 +113,47 @@ metadata:
 	g.Expect(err).ToNot(HaveOccurred())
 
 	options := suite.ConformanceOptions{
-		Client:     client,
-		RestConfig: clientConfig,
-		Clientset:  clientset,
-		ManifestFS: []fs.FS{&conformance.Manifests},
-		ConfigurableOptions: suite.ConfigurableOptions{
-			GatewayClassName:     "kuma",
-			CleanupBaseResources: false,
-			CleanupTestResources: true,
-			Debug:                Config.Debug,
-			NamespaceLabels: map[string]string{
-				metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
-			},
-			SkipTests: []string{
-				"HTTPRouteNoBackendRefs",
-			},
-			// Left undeclared, with what Kuma does not do:
-			//   - SupportMeshHTTPRouteBackendRequestHeaderModification: Kuma's BackendRef type
-			//     (api/common/v1alpha1.BackendRef) has no Filters field, so
-			//     rules[].backendRefs[].filters cannot be translated.
-			//   - SupportMeshHTTPRouteNamedRouteRule: the upstream test is Provisional and
-			//     asserts a backend path of /named for a /unnamed request with no rewrite in
-			//     its own manifest.
-			//   - SupportMeshHTTPRouteQueryParamMatching: requests that don't match any rule's
-			//     query params still land on a backend (200) instead of getting a 404; Kuma
-			//     doesn't have a deny-on-no-match fallback for MeshHTTPRoute.
-			SupportedFeatures: []features.FeatureName{
-				features.SupportHTTPRouteResponseHeaderModification,
-				features.SupportHTTPRoute,
-				features.SupportHTTPRoute303RedirectStatusCode,
-				features.SupportHTTPRoute307RedirectStatusCode,
-				features.SupportHTTPRoute308RedirectStatusCode,
-				features.SupportHTTPRouteParentRefPort,
-				features.SupportMesh,
-				features.SupportMeshClusterIPMatching,
-				features.SupportMeshConsumerRoute,
-				features.SupportMeshHTTPRouteRedirectPath,
-				features.SupportMeshHTTPRouteRedirectPort,
-				features.SupportMeshHTTPRouteSchemeRedirect,
-				features.SupportMeshHTTPRouteRewritePath,
-			},
-			Implementation:      implementation,
-			ConformanceProfiles: []suite.ConformanceProfileName{suite.MeshHTTPConformanceProfileName},
+		Client:               client,
+		RestConfig:           clientConfig,
+		Clientset:            clientset,
+		ManifestFS:           []fs.FS{&conformance.Manifests},
+		GatewayClassName:     "kuma",
+		CleanupBaseResources: false,
+		CleanupTestResources: true,
+		Debug:                Config.Debug,
+		NamespaceLabels: map[string]string{
+			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
 		},
+		SkipTests: []string{
+			"HTTPRouteNoBackendRefs",
+		},
+		// Left undeclared, with what Kuma does not do:
+		//   - SupportMeshHTTPRouteBackendRequestHeaderModification: Kuma's BackendRef type
+		//     (api/common/v1alpha1.BackendRef) has no Filters field, so
+		//     rules[].backendRefs[].filters cannot be translated.
+		//   - SupportMeshHTTPRouteNamedRouteRule: the upstream test is Provisional and
+		//     asserts a backend path of /named for a /unnamed request with no rewrite in
+		//     its own manifest.
+		//   - SupportMeshHTTPRouteQueryParamMatching: requests that don't match any rule's
+		//     query params still land on a backend (200) instead of getting a 404; Kuma
+		//     doesn't have a deny-on-no-match fallback for MeshHTTPRoute.
+		SupportedFeatures: []features.FeatureName{
+			features.SupportHTTPRouteResponseHeaderModification,
+			features.SupportHTTPRoute,
+			features.SupportHTTPRoute303RedirectStatusCode,
+			features.SupportHTTPRoute307RedirectStatusCode,
+			features.SupportHTTPRoute308RedirectStatusCode,
+			features.SupportHTTPRouteParentRefPort,
+			features.SupportMesh,
+			features.SupportMeshClusterIPMatching,
+			features.SupportMeshConsumerRoute,
+			features.SupportMeshHTTPRouteRedirectPath,
+			features.SupportMeshHTTPRouteRedirectPort,
+			features.SupportMeshHTTPRouteSchemeRedirect,
+			features.SupportMeshHTTPRouteRewritePath,
+		},
+		Implementation:      implementation,
+		ConformanceProfiles: []suite.ConformanceProfileName{suite.MeshHTTPConformanceProfileName},
 	}
 
 	conformanceSuite, err := suite.NewConformanceTestSuite(options)

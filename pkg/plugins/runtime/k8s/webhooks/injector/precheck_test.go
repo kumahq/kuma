@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -137,16 +136,12 @@ func TestHasExplicitMesh(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			pod := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Labels:      tc.podLabels,
-					Annotations: tc.podAnnotations,
-				},
+				Labels:      tc.podLabels,
+				Annotations: tc.podAnnotations,
 			}
 			ns := &kube_core.Namespace{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Labels:      tc.nsLabels,
-					Annotations: tc.nsAnnotations,
-				},
+				Labels:      tc.nsLabels,
+				Annotations: tc.nsAnnotations,
 			}
 
 			if got := hasExplicitMesh(pod, ns); got != tc.expected {
@@ -158,12 +153,10 @@ func TestHasExplicitMesh(t *testing.T) {
 
 func createPod(annotationName, value string) *kube_core.Pod {
 	return &kube_core.Pod{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:   "test-pod",
-			Labels: map[string]string{},
-			Annotations: map[string]string{
-				annotationName: value,
-			},
+		Name:   "test-pod",
+		Labels: map[string]string{},
+		Annotations: map[string]string{
+			annotationName: value,
 		},
 		Spec: kube_core.PodSpec{
 			Containers: []kube_core.Container{
