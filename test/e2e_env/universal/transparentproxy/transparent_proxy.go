@@ -59,7 +59,7 @@ func TransparentProxy() {
 		Eventually(func(g Gomega) {
 			failures, err := client.CollectFailure(universal.Cluster, "tp-client", "test-server.svc.mesh.local")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(failures.Exitcode).To((Or(Equal(6), Equal(28))))
+			g.Expect(failures.Exitcode).To(Or(Equal(6), Equal(28)))
 		}).Should(Succeed())
 
 		// and
