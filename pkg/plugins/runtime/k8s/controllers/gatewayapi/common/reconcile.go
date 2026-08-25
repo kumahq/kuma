@@ -19,6 +19,13 @@ import (
 
 const ownerLabel = "gateways.kuma.io/gateway.networking.k8s.io-owner"
 
+// OwnedObject describes an object owned by a gateway-api resource,
+// including the namespace it should live in.
+type OwnedObject struct {
+	Namespace string
+	Spec      core_model.ResourceSpec
+}
+
 func hashNamespacedName(name kube_types.NamespacedName) string {
 	hash := fnv.New32()
 	hash.Write([]byte(name.Namespace))
@@ -44,8 +51,7 @@ func ReconcileLabelledObject(
 	owner kube_types.NamespacedName,
 	ownerMesh string,
 	ownedType k8s_registry.ResourceType,
-	ownedNamespace string,
-	owned map[string]core_model.ResourceSpec,
+	owned map[string]OwnedObject,
 ) error {
 	log := logger.WithValues("type", ownedType, "name", owner.Name, "namespace", owner.Namespace)
 	// First we list which existing objects are owned by this owner.
@@ -68,7 +74,8 @@ func ReconcileLabelledObject(
 	// Delete unneeded objects
 	existingObjs := map[string]k8s_model.KubernetesObject{}
 	for _, existing := range existingList.GetItems() {
-		if _, ok := owned[existing.GetName()]; !ok {
+		desired, ok := owned[existing.GetName()]
+		if !ok || existing.GetNamespace() != desired.Namespace {
 			err := client.Delete(ctx, existing)
 			switch {
 			case kube_apierrs.IsNotFound(err):
@@ -89,18 +96,18 @@ func ReconcileLabelledObject(
 		return fmt.Errorf("could not reconcile object, owner mesh must not be empty")
 	}
 
-	for ownedName, ownedSpec := range owned {
+	for ownedName, ownedObj := range owned {
 		// Update existing
 		if existing, ok := existingObjs[ownedName]; ok {
 			existingSpec, err := existing.GetSpec()
 			if err != nil {
 				return err
 			}
-			if core_model.Equal(existingSpec, ownedSpec) {
+			if core_model.Equal(existingSpec, ownedObj.Spec) {
 				log.V(1).Info("object is the same. Nothing to update")
 				continue
 			}
-			existing.SetSpec(ownedSpec)
+			existing.SetSpec(ownedObj.Spec)
 
 			if err := client.Update(ctx, existing); err != nil {
 				return errors.Wrapf(err, "could not update owned %T", ownedType)
@@ -111,24 +118,24 @@ func ReconcileLabelledObject(
 		}
 
 		// Or create new
-		owned, err := registry.NewObject(ownedType)
+		newObj, err := registry.NewObject(ownedType)
 		if err != nil {
 			return errors.Wrapf(err, "could not get new %T from registry", ownedType)
 		}
 
-		owned.SetObjectMeta(
+		newObj.SetObjectMeta(
 			&kube_meta.ObjectMeta{
 				Name:      ownedName,
-				Namespace: ownedNamespace,
+				Namespace: ownedObj.Namespace,
 				Labels: map[string]string{
 					ownerLabel: ownerLabelValue,
 				},
 			},
 		)
-		owned.SetMesh(ownerMesh)
-		owned.SetSpec(ownedSpec)
+		newObj.SetMesh(ownerMesh)
+		newObj.SetSpec(ownedObj.Spec)
 
-		if err := client.Create(ctx, owned); err != nil {
+		if err := client.Create(ctx, newObj); err != nil {
 			return errors.Wrapf(err, "could not create owned %T", ownedType)
 		}
 		logger.Info("object created")

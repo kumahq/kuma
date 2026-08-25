@@ -116,6 +116,54 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 		Expect(condition.Status).To(Equal(kube_meta.ConditionTrue))
 	})
 
+	It("creates the generated route in the HTTPRoute namespace when the parent MeshService is in the same namespace", func() {
+		ms := &meshservice_k8s.MeshService{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "kuma-demo"},
+			Spec: &meshservice_api.MeshService{
+				Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("http")}},
+			},
+		}
+		route := newRoute(meshServiceParentRef("backend"))
+
+		client := newClientBuilder(ms, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		Expect(routes.Items[0].Namespace).To(Equal(routeNamespace))
+	})
+
+	It("creates the generated route in the system namespace when the parent MeshService is in a different namespace", func() {
+		otherNamespace := &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "other-ns"}}
+		ms := &meshservice_k8s.MeshService{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "other-ns"},
+			Spec: &meshservice_api.MeshService{
+				Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("http")}},
+			},
+		}
+		route := newRoute(meshServiceParentRef("backend"))
+		route.Spec.ParentRefs[0].Namespace = pointer.To(gatewayapi.Namespace("other-ns"))
+
+		client := newClientBuilder(otherNamespace, ms, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		Expect(routes.Items[0].Namespace).To(Equal("kuma-system"))
+	})
+
 	It("applies a parentRef sectionName as the port name", func() {
 		ms := &meshservice_k8s.MeshService{
 			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "kuma-demo"},
@@ -324,6 +372,98 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		accepted := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionAccepted))
 		Expect(accepted).ToNot(BeNil())
 		Expect(accepted.Status).To(Equal(kube_meta.ConditionTrue))
+	})
+
+	It("creates the generated route in the HTTPRoute namespace when the parent Service is in the same namespace", func() {
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Spec: kube_core.ServiceSpec{
+				ClusterIP: "10.0.0.1",
+				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		route := newRoute(withSectionName(serviceParentRef(), "http"))
+
+		client := newClientBuilder(svc, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		Expect(routes.Items[0].Namespace).To(Equal(routeNamespace))
+	})
+
+	It("creates the generated route in the system namespace when the parent Service is in a different namespace", func() {
+		otherNamespace := &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "other-ns"}}
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "other-ns"},
+			Spec: kube_core.ServiceSpec{
+				ClusterIP: "10.0.0.1",
+				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		ns := gatewayapi.Namespace("other-ns")
+		ref := serviceParentRef()
+		ref.Namespace = &ns
+		route := newRoute(withSectionName(ref, "http"))
+
+		client := newClientBuilder(otherNamespace, svc, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		Expect(routes.Items[0].Namespace).To(Equal("kuma-system"))
+	})
+
+	It("moves a generated route that already exists in the system namespace into the HTTPRoute namespace", func() {
+		svc := &kube_core.Service{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Spec: kube_core.ServiceSpec{
+				ClusterIP: "10.0.0.1",
+				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		route := newRoute(withSectionName(serviceParentRef(), "http"))
+
+		client := newClientBuilder(svc, route)
+		reconciler.Client = client
+
+		req := kube_ctrl.Request{NamespacedName: kube_client.ObjectKeyFromObject(route)}
+		_, err := reconciler.Reconcile(context.Background(), req)
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		Expect(routes.Items[0].Namespace).To(Equal(routeNamespace))
+
+		stale := routes.Items[0].DeepCopy()
+		stale.ObjectMeta = kube_meta.ObjectMeta{
+			Name:      stale.Name,
+			Namespace: "kuma-system",
+			Labels:    stale.Labels,
+		}
+		stale.ResourceVersion = ""
+		Expect(client.Delete(context.Background(), &routes.Items[0])).To(Succeed())
+		Expect(client.Create(context.Background(), stale)).To(Succeed())
+
+		_, err = reconciler.Reconcile(context.Background(), req)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		Expect(routes.Items[0].Namespace).To(Equal(routeNamespace))
 	})
 
 	It("merges multiple section-specific parentRefs for the same Service", func() {
