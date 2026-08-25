@@ -118,7 +118,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 
 	It("creates the generated route in the HTTPRoute namespace when the parent MeshService is in the same namespace", func() {
 		ms := &meshservice_k8s.MeshService{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "kuma-demo"},
+			Name: "backend", Namespace: "kuma-demo",
 			Spec: &meshservice_api.MeshService{
 				Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("http")}},
 			},
@@ -140,9 +140,9 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 	})
 
 	It("creates the generated route in the system namespace when the parent MeshService is in a different namespace", func() {
-		otherNamespace := &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "other-ns"}}
+		otherNamespace := &kube_core.Namespace{Name: "other-ns"}
 		ms := &meshservice_k8s.MeshService{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "other-ns"},
+			Name: "backend", Namespace: "other-ns",
 			Spec: &meshservice_api.MeshService{
 				Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("http")}},
 			},
@@ -376,7 +376,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 
 	It("creates the generated route in the HTTPRoute namespace when the parent Service is in the same namespace", func() {
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Name: "backend", Namespace: routeNamespace,
 			Spec: kube_core.ServiceSpec{
 				ClusterIP: "10.0.0.1",
 				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
@@ -399,9 +399,9 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 	})
 
 	It("creates the generated route in the system namespace when the parent Service is in a different namespace", func() {
-		otherNamespace := &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "other-ns"}}
+		otherNamespace := &kube_core.Namespace{Name: "other-ns"}
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "other-ns"},
+			Name: "backend", Namespace: "other-ns",
 			Spec: kube_core.ServiceSpec{
 				ClusterIP: "10.0.0.1",
 				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
@@ -428,7 +428,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 
 	It("moves a generated route that already exists in the system namespace into the HTTPRoute namespace", func() {
 		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: routeNamespace},
+			Name: "backend", Namespace: routeNamespace,
 			Spec: kube_core.ServiceSpec{
 				ClusterIP: "10.0.0.1",
 				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
