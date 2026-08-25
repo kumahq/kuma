@@ -105,11 +105,9 @@ func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
 		})
 	} else {
 		return resolve.NewResolvedBackendRef(&resolve.LegacyBackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Name: pointer.To(ds.Outbound.LegacyOutbound.GetService()),
-				Tags: pointer.To(ds.Outbound.LegacyOutbound.GetTags()),
-			},
+			Kind:   common_api.MeshService,
+			Name:   pointer.To(ds.Outbound.LegacyOutbound.GetService()),
+			Tags:   pointer.To(ds.Outbound.LegacyOutbound.GetTags()),
 			Weight: pointer.To(uint(100)),
 		})
 	}

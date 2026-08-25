@@ -353,12 +353,10 @@ func (c *memoryStore) marshalRecord(
 		return nil, err
 	}
 	return &memoryStoreRecord{
-		resourceKey: resourceKey{
-			ResourceType: resourceType,
-			// Name must be provided via CreateOptions
-			Name: meta.Name,
-			Mesh: meta.Mesh,
-		},
+		ResourceType: resourceType,
+		// Name must be provided via CreateOptions
+		Name:             meta.Name,
+		Mesh:             meta.Mesh,
 		Version:          meta.Version,
 		Spec:             string(content),
 		Status:           string(statusContent),

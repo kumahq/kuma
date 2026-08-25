@@ -3,7 +3,6 @@ package k8s_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
@@ -50,7 +49,7 @@ var _ = Describe("KubernetesStore template", func() {
 		It("works passing no namespace on k8s store", func() {
 			in := core_mtp.NewMeshTrafficPermissionResource()
 			in.SetMeta(&rest_v1alpha1.ResourceMeta{Name: "foo", Mesh: "default"})
-			in.SetMeta(&k8s.KubernetesMetaAdapter{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "a-namespace", Labels: map[string]string{"hello": "world"}}, Mesh: "default"})
+			in.SetMeta(&k8s.KubernetesMetaAdapter{Name: "foo", Namespace: "a-namespace", Labels: map[string]string{"hello": "world"}, Mesh: "default"})
 
 			mapper := k8s.NewKubernetesMapper(&k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
 			res, err := mapper(in, "")
@@ -64,7 +63,7 @@ var _ = Describe("KubernetesStore template", func() {
 
 		It("works passing namespace on k8s store", func() {
 			in := core_mtp.NewMeshTrafficPermissionResource()
-			in.SetMeta(&k8s.KubernetesMetaAdapter{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "a-namespace", Labels: map[string]string{"hello": "world"}}, Mesh: "default"})
+			in.SetMeta(&k8s.KubernetesMetaAdapter{Name: "foo", Namespace: "a-namespace", Labels: map[string]string{"hello": "world"}, Mesh: "default"})
 
 			mapper := k8s.NewKubernetesMapper(&k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
 			res, err := mapper(in, "my-ns")
@@ -94,7 +93,7 @@ var _ = Describe("KubernetesStore template", func() {
 
 		It("works with kubernetes", func() {
 			in := core_mesh.NewMeshResource()
-			in.SetMeta(&k8s.KubernetesMetaAdapter{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "a-namespace", Labels: map[string]string{"hello": "world"}}, Mesh: "default"})
+			in.SetMeta(&k8s.KubernetesMetaAdapter{Name: "foo", Namespace: "a-namespace", Labels: map[string]string{"hello": "world"}, Mesh: "default"})
 
 			mapper := k8s.NewKubernetesMapper(&k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
 			res, err := mapper(in, "my-ns")

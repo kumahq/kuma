@@ -94,16 +94,12 @@ func (k *K8SDeployment) WithIPv6(isIPv6 bool) *K8SDeployment {
 
 func (k *K8SDeployment) service() *corev1.Service {
 	return &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      k.Name(),
-			Namespace: k.namespace,
-			Labels: map[string]string{
-				"app": k.Name(),
-			},
+		Kind:       "Service",
+		APIVersion: "v1",
+		Name:       k.Name(),
+		Namespace:  k.namespace,
+		Labels: map[string]string{
+			"app": k.Name(),
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
@@ -147,10 +143,8 @@ func (k *K8SDeployment) service() *corev1.Service {
 
 func (k *K8SDeployment) deployment() *appsv1.Deployment {
 	return &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Deployment",
-			APIVersion: "apps/v1",
-		},
+		Kind:       "Deployment",
+		APIVersion: "apps/v1",
 		ObjectMeta: meta(k.namespace, k.Name(), map[string]string{"app": k.Name()}),
 		Spec: appsv1.DeploymentSpec{
 			Replicas: pointer.To(int32(1)),
@@ -174,10 +168,8 @@ func (k *K8SDeployment) deployment() *appsv1.Deployment {
 
 func (k *K8SDeployment) podSpec() corev1.PodTemplateSpec {
 	spec := corev1.PodTemplateSpec{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels: map[string]string{
-				"app": k.Name(),
-			},
+		Labels: map[string]string{
+			"app": k.Name(),
 		},
 		Spec: corev1.PodSpec{
 			ServiceAccountName: k.serviceAccountName,
@@ -235,15 +227,13 @@ func (k *K8SDeployment) podSpec() corev1.PodTemplateSpec {
 			Volumes: []corev1.Volume{
 				{
 					Name: "otel-collector-config-vol",
-					VolumeSource: corev1.VolumeSource{
-						ConfigMap: &corev1.ConfigMapVolumeSource{
-							LocalObjectReference: corev1.LocalObjectReference{Name: "otel-collector-conf"},
-							DefaultMode:          pointer.To(int32(0o555)),
-							Items: []corev1.KeyToPath{{
-								Key:  "config",
-								Path: "otel-collector-config.yaml",
-							}},
-						},
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						Name:        "otel-collector-conf",
+						DefaultMode: pointer.To(int32(0o555)),
+						Items: []corev1.KeyToPath{{
+							Key:  "config",
+							Path: "otel-collector-config.yaml",
+						}},
 					},
 				},
 			},
@@ -254,10 +244,8 @@ func (k *K8SDeployment) podSpec() corev1.PodTemplateSpec {
 
 func (k *K8SDeployment) configMap() *corev1.ConfigMap {
 	return &corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
+		Kind:       "ConfigMap",
+		APIVersion: "v1",
 		ObjectMeta: meta(k.namespace, "otel-collector-conf", map[string]string{"app": k.Name()}),
 		Data: map[string]string{
 			"config": config(k.endpointBasedOnIP()),
@@ -267,10 +255,8 @@ func (k *K8SDeployment) configMap() *corev1.ConfigMap {
 
 func (k *K8SDeployment) serviceAccount() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ServiceAccount",
-			APIVersion: "v1",
-		},
+		Kind:       "ServiceAccount",
+		APIVersion: "v1",
 		ObjectMeta: meta(k.namespace, k.serviceAccountName, map[string]string{"app": k.Name()}),
 	}
 }

@@ -20,7 +20,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/transparentproxy/kubernetes"
@@ -41,20 +40,18 @@ var _ = Describe("kubernetes", func() {
 	},
 		Entry("should generate", testCaseKumactl{
 			pod: &kube_core.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						metadata.KumaBuiltinDNS:                                metadata.AnnotationEnabled,
-						metadata.KumaBuiltinDNSPort:                            "25053",
-						metadata.KumaTrafficExcludeOutboundPorts:               "11000",
-						metadata.KumaTransparentProxyingOutboundPortAnnotation: "25100",
-						metadata.KumaTrafficExcludeInboundPorts:                "12000",
-						metadata.KumaTransparentProxyingInboundPortAnnotation:  "25204",
-						metadata.KumaSidecarUID:                                "12345",
-						metadata.KumaTrafficExcludeOutboundPortsForUIDs:        "0;12;udp:11001:1;udp:11002:2;tcp:11003:3",
-						metadata.KumaTransparentProxyingIPFamilyMode:           "ipv4",
-						metadata.KumaTrafficDropInvalidPackets:                 metadata.AnnotationTrue,
-						metadata.KumaTrafficIptablesLogs:                       metadata.AnnotationTrue,
-					},
+				Annotations: map[string]string{
+					metadata.KumaBuiltinDNS:                                metadata.AnnotationEnabled,
+					metadata.KumaBuiltinDNSPort:                            "25053",
+					metadata.KumaTrafficExcludeOutboundPorts:               "11000",
+					metadata.KumaTransparentProxyingOutboundPortAnnotation: "25100",
+					metadata.KumaTrafficExcludeInboundPorts:                "12000",
+					metadata.KumaTransparentProxyingInboundPortAnnotation:  "25204",
+					metadata.KumaSidecarUID:                                "12345",
+					metadata.KumaTrafficExcludeOutboundPortsForUIDs:        "0;12;udp:11001:1;udp:11002:2;tcp:11003:3",
+					metadata.KumaTransparentProxyingIPFamilyMode:           "ipv4",
+					metadata.KumaTrafficDropInvalidPackets:                 metadata.AnnotationTrue,
+					metadata.KumaTrafficIptablesLogs:                       metadata.AnnotationTrue,
 				},
 			},
 			commandLine: []string{
@@ -78,14 +75,12 @@ var _ = Describe("kubernetes", func() {
 		}),
 		Entry("should generate with deprecated dns annotation", testCaseKumactl{
 			pod: &kube_core.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						metadata.KumaTrafficExcludeOutboundPorts:               "11000",
-						metadata.KumaTransparentProxyingOutboundPortAnnotation: "25100",
-						metadata.KumaTrafficExcludeInboundPorts:                "12000",
-						metadata.KumaTransparentProxyingInboundPortAnnotation:  "25204",
-						metadata.KumaSidecarUID:                                "12345",
-					},
+				Annotations: map[string]string{
+					metadata.KumaTrafficExcludeOutboundPorts:               "11000",
+					metadata.KumaTransparentProxyingOutboundPortAnnotation: "25100",
+					metadata.KumaTrafficExcludeInboundPorts:                "12000",
+					metadata.KumaTransparentProxyingInboundPortAnnotation:  "25204",
+					metadata.KumaSidecarUID:                                "12345",
 				},
 			},
 			commandLine: []string{
@@ -100,14 +95,12 @@ var _ = Describe("kubernetes", func() {
 
 		Entry("should generate no builtin DNS", testCaseKumactl{
 			pod: &kube_core.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						metadata.KumaTrafficExcludeOutboundPorts:               "11000",
-						metadata.KumaTransparentProxyingOutboundPortAnnotation: "25100",
-						metadata.KumaTrafficExcludeInboundPorts:                "12000",
-						metadata.KumaTransparentProxyingInboundPortAnnotation:  "25204",
-						metadata.KumaSidecarUID:                                "12345",
-					},
+				Annotations: map[string]string{
+					metadata.KumaTrafficExcludeOutboundPorts:               "11000",
+					metadata.KumaTransparentProxyingOutboundPortAnnotation: "25100",
+					metadata.KumaTrafficExcludeInboundPorts:                "12000",
+					metadata.KumaTransparentProxyingInboundPortAnnotation:  "25204",
+					metadata.KumaSidecarUID:                                "12345",
 				},
 			},
 			commandLine: []string{
@@ -121,17 +114,15 @@ var _ = Describe("kubernetes", func() {
 		}),
 		Entry("should generate for Gateway", testCaseKumactl{
 			pod: &kube_core.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						metadata.KumaBuiltinDNS:                                metadata.AnnotationEnabled,
-						metadata.KumaBuiltinDNSPort:                            "25053",
-						metadata.KumaTrafficExcludeOutboundPorts:               "11000",
-						metadata.KumaTransparentProxyingOutboundPortAnnotation: "25100",
-						metadata.KumaGatewayAnnotation:                         metadata.AnnotationEnabled,
-						metadata.KumaTrafficExcludeInboundPorts:                "12000",
-						metadata.KumaTransparentProxyingInboundPortAnnotation:  "25204",
-						metadata.KumaSidecarUID:                                "12345",
-					},
+				Annotations: map[string]string{
+					metadata.KumaBuiltinDNS:                                metadata.AnnotationEnabled,
+					metadata.KumaBuiltinDNSPort:                            "25053",
+					metadata.KumaTrafficExcludeOutboundPorts:               "11000",
+					metadata.KumaTransparentProxyingOutboundPortAnnotation: "25100",
+					metadata.KumaGatewayAnnotation:                         metadata.AnnotationEnabled,
+					metadata.KumaTrafficExcludeInboundPorts:                "12000",
+					metadata.KumaTransparentProxyingInboundPortAnnotation:  "25204",
+					metadata.KumaSidecarUID:                                "12345",
 				},
 			},
 			commandLine: []string{
@@ -146,22 +137,20 @@ var _ = Describe("kubernetes", func() {
 		}),
 		Entry("should generate for ebpf transparent proxy", testCaseKumactl{
 			pod: &kube_core.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						metadata.KumaBuiltinDNS:                                  metadata.AnnotationEnabled,
-						metadata.KumaBuiltinDNSPort:                              "25053",
-						metadata.KumaTrafficExcludeOutboundPorts:                 "11000",
-						metadata.KumaTransparentProxyingOutboundPortAnnotation:   "25100",
-						metadata.KumaGatewayAnnotation:                           metadata.AnnotationEnabled,
-						metadata.KumaTrafficExcludeInboundPorts:                  "12000",
-						metadata.KumaTransparentProxyingInboundPortAnnotation:    "25204",
-						metadata.KumaSidecarUID:                                  "12345",
-						metadata.KumaTransparentProxyingEbpf:                     metadata.AnnotationEnabled,
-						metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName: "FOO_BAR",
-						metadata.KumaTransparentProxyingEbpfBPFFSPath:            "/baz/bar/foo",
-						metadata.KumaTransparentProxyingEbpfCgroupPath:           "/foo/bar/baz",
-						metadata.KumaTransparentProxyingEbpfProgramsSourcePath:   "/foo",
-					},
+				Annotations: map[string]string{
+					metadata.KumaBuiltinDNS:                                  metadata.AnnotationEnabled,
+					metadata.KumaBuiltinDNSPort:                              "25053",
+					metadata.KumaTrafficExcludeOutboundPorts:                 "11000",
+					metadata.KumaTransparentProxyingOutboundPortAnnotation:   "25100",
+					metadata.KumaGatewayAnnotation:                           metadata.AnnotationEnabled,
+					metadata.KumaTrafficExcludeInboundPorts:                  "12000",
+					metadata.KumaTransparentProxyingInboundPortAnnotation:    "25204",
+					metadata.KumaSidecarUID:                                  "12345",
+					metadata.KumaTransparentProxyingEbpf:                     metadata.AnnotationEnabled,
+					metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName: "FOO_BAR",
+					metadata.KumaTransparentProxyingEbpfBPFFSPath:            "/baz/bar/foo",
+					metadata.KumaTransparentProxyingEbpfCgroupPath:           "/foo/bar/baz",
+					metadata.KumaTransparentProxyingEbpfProgramsSourcePath:   "/foo",
 				},
 			},
 			commandLine: []string{

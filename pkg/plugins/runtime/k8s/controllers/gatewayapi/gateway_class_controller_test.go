@@ -6,9 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
-	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -25,13 +23,13 @@ var _ = Describe("gatewayToClassMapper", func() {
 			WithScheme(scheme).
 			WithObjects(
 				&gatewayapi.GatewayClass{
-					ObjectMeta: kube_meta.ObjectMeta{Name: "kuma"},
+					Name: "kuma",
 					Spec: gatewayapi.GatewayClassSpec{
 						ControllerName: common.ControllerName,
 					},
 				},
 				&gatewayapi.GatewayClass{
-					ObjectMeta: kube_meta.ObjectMeta{Name: "other"},
+					Name: "other",
 					Spec: gatewayapi.GatewayClassSpec{
 						ControllerName: gatewayapi.GatewayController("other.example/controller"),
 					},
@@ -42,13 +40,13 @@ var _ = Describe("gatewayToClassMapper", func() {
 		requests := gatewayToClassMapper(logr.Discard(), client)(context.Background(), nil)
 
 		Expect(requests).To(ConsistOf(kube_reconcile.Request{
-			NamespacedName: kube_types.NamespacedName{Name: "kuma"},
+			Name: "kuma",
 		}))
 	})
 
 	It("maps startup GatewayClass events to the class", func() {
 		class := &gatewayapi.GatewayClass{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "kuma"},
+			Name: "kuma",
 			Spec: gatewayapi.GatewayClassSpec{
 				ControllerName: common.ControllerName,
 			},
@@ -57,13 +55,13 @@ var _ = Describe("gatewayToClassMapper", func() {
 		requests := gatewayToClassMapper(logr.Discard(), nil)(context.Background(), class)
 
 		Expect(requests).To(ConsistOf(kube_reconcile.Request{
-			NamespacedName: kube_types.NamespacedName{Name: "kuma"},
+			Name: "kuma",
 		}))
 	})
 
 	It("ignores startup GatewayClass events for other controllers", func() {
 		class := &gatewayapi.GatewayClass{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "other"},
+			Name: "other",
 			Spec: gatewayapi.GatewayClassSpec{
 				ControllerName: gatewayapi.GatewayController("other.example/controller"),
 			},

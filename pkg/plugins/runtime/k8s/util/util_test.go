@@ -20,11 +20,9 @@ var _ = Describe("Util", func() {
 		It("should match", func() {
 			// given
 			pod := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Labels: map[string]string{
-						"app":               "demo-app",
-						"pod-template-hash": "7cbbd658d5",
-					},
+				Labels: map[string]string{
+					"app":               "demo-app",
+					"pod-template-hash": "7cbbd658d5",
 				},
 			}
 			// and
@@ -45,11 +43,9 @@ var _ = Describe("Util", func() {
 		It("should not match", func() {
 			// given
 			pod := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Labels: map[string]string{
-						"app":               "demo-app",
-						"pod-template-hash": "7cbbd658d5",
-					},
+				Labels: map[string]string{
+					"app":               "demo-app",
+					"pod-template-hash": "7cbbd658d5",
 				},
 			}
 			// and
@@ -70,11 +66,9 @@ var _ = Describe("Util", func() {
 		It("should match with ignored labels", func() {
 			// given
 			pod := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Labels: map[string]string{
-						"app":               "demo-app",
-						"pod-template-hash": "7cbbd658d5",
-					},
+				Labels: map[string]string{
+					"app":               "demo-app",
+					"pod-template-hash": "7cbbd658d5",
 				},
 			}
 			// and
@@ -110,20 +104,16 @@ var _ = Describe("Util", func() {
 		},
 		Entry("should match services by a predicate",
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Labels: map[string]string{
-						"app":               "demo-app",
-						"pod-template-hash": "7cbbd658d5",
-					},
+				Labels: map[string]string{
+					"app":               "demo-app",
+					"pod-template-hash": "7cbbd658d5",
 				},
 			},
 			// and
 			&kube_core.ServiceList{
 				Items: []kube_core.Service{
 					{
-						ObjectMeta: kube_meta.ObjectMeta{
-							Name: "demo-app",
-						},
+						Name: "demo-app",
 						Spec: kube_core.ServiceSpec{
 							Selector: map[string]string{
 								"app": "demo-app",
@@ -131,9 +121,7 @@ var _ = Describe("Util", func() {
 						},
 					},
 					{
-						ObjectMeta: kube_meta.ObjectMeta{
-							Name: "nginx",
-						},
+						Name: "nginx",
 						Spec: kube_core.ServiceSpec{
 							Selector: map[string]string{
 								"app": "nginx",
@@ -141,11 +129,9 @@ var _ = Describe("Util", func() {
 						},
 					},
 					{
-						ObjectMeta: kube_meta.ObjectMeta{
-							Name:      "kubernetes",
-							Namespace: "default",
-						},
-						Spec: kube_core.ServiceSpec{},
+						Name:      "kubernetes",
+						Namespace: "default",
+						Spec:      kube_core.ServiceSpec{},
 					},
 				},
 			},
@@ -153,21 +139,17 @@ var _ = Describe("Util", func() {
 		),
 		Entry("should match multiple services in order",
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Labels: map[string]string{
-						"app":               "demo-app",
-						"pod-template-hash": "7cbbd658d5",
-					},
+				Labels: map[string]string{
+					"app":               "demo-app",
+					"pod-template-hash": "7cbbd658d5",
 				},
 			},
 			// and
 			&kube_core.ServiceList{
 				Items: []kube_core.Service{
 					{
-						ObjectMeta: kube_meta.ObjectMeta{
-							CreationTimestamp: kube_meta.NewTime(exampleTime),
-							Name:              "demo-app2",
-						},
+						CreationTimestamp: kube_meta.NewTime(exampleTime),
+						Name:              "demo-app2",
 						Spec: kube_core.ServiceSpec{
 							Selector: map[string]string{
 								"app": "demo-app",
@@ -175,10 +157,8 @@ var _ = Describe("Util", func() {
 						},
 					},
 					{
-						ObjectMeta: kube_meta.ObjectMeta{
-							CreationTimestamp: kube_meta.NewTime(exampleTime),
-							Name:              "demo-app",
-						},
+						CreationTimestamp: kube_meta.NewTime(exampleTime),
+						Name:              "demo-app",
 						Spec: kube_core.ServiceSpec{
 							Selector: map[string]string{
 								"app": "demo-app",
@@ -186,10 +166,8 @@ var _ = Describe("Util", func() {
 						},
 					},
 					{
-						ObjectMeta: kube_meta.ObjectMeta{
-							CreationTimestamp: kube_meta.NewTime(exampleTime.Add(-time.Hour)),
-							Name:              "nginx",
-						},
+						CreationTimestamp: kube_meta.NewTime(exampleTime.Add(-time.Hour)),
+						Name:              "nginx",
 						Spec: kube_core.ServiceSpec{
 							Selector: map[string]string{
 								"app": "demo-app",
@@ -197,12 +175,10 @@ var _ = Describe("Util", func() {
 						},
 					},
 					{
-						ObjectMeta: kube_meta.ObjectMeta{
-							CreationTimestamp: kube_meta.NewTime(exampleTime),
-							Name:              "kubernetes",
-							Namespace:         "default",
-						},
-						Spec: kube_core.ServiceSpec{},
+						CreationTimestamp: kube_meta.NewTime(exampleTime),
+						Name:              "kubernetes",
+						Namespace:         "default",
+						Spec:              kube_core.ServiceSpec{},
 					},
 				},
 			},
@@ -221,14 +197,10 @@ var _ = Describe("Util", func() {
 			func(given testCase) {
 				// given
 				pod := &kube_core.Pod{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Annotations: given.podAnnotations,
-					},
+					Annotations: given.podAnnotations,
 				}
 				ns := &kube_core.Namespace{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Annotations: given.nsAnnotations,
-					},
+					Annotations: given.nsAnnotations,
 				}
 
 				// then
@@ -274,16 +246,12 @@ var _ = Describe("Util", func() {
 			func(given testCase) {
 				// given
 				pod := &kube_core.Pod{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Annotations: given.podAnnotations,
-						Labels:      given.podLabels,
-					},
+					Annotations: given.podAnnotations,
+					Labels:      given.podLabels,
 				}
 				ns := &kube_core.Namespace{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Annotations: given.nsAnnotations,
-						Labels:      given.nsLabels,
-					},
+					Annotations: given.nsAnnotations,
+					Labels:      given.nsLabels,
 				}
 
 				// then
@@ -681,10 +649,8 @@ var _ = Describe("Util", func() {
 		It("should use Service FQDN", func() {
 			// given
 			svc := &kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "example",
-				},
+				Namespace: "demo",
+				Name:      "example",
 				Spec: kube_core.ServiceSpec{
 					Ports: []kube_core.ServicePort{
 						{

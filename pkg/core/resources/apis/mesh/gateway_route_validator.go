@@ -17,10 +17,8 @@ func (g *MeshGatewayRouteResource) Validate() error {
 		g.Spec.GetSelectors(),
 		ValidateSelectorsOpts{
 			RequireAtLeastOneSelector: true,
-			ValidateTagsOpts: ValidateTagsOpts{
-				RequireAtLeastOneTag: true,
-				RequireService:       true,
-			},
+			RequireAtLeastOneTag:      true,
+			RequireService:            true,
 		},
 	))
 

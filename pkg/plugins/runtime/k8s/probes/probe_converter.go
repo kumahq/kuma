@@ -69,12 +69,10 @@ func (p ProxiedApplicationProbe) httpProbeToVirtual(virtualPort uint32) (Proxied
 	}
 
 	return ProxiedApplicationProbe{
-		ProbeHandler: kube_core.ProbeHandler{
-			HTTPGet: &kube_core.HTTPGetAction{
-				Port:        intstr.FromInt32(int32(virtualPort)),
-				Path:        fmt.Sprintf("/%d%s", appPort, probePath),
-				HTTPHeaders: headers,
-			},
+		HTTPGet: &kube_core.HTTPGetAction{
+			Port:        intstr.FromInt32(int32(virtualPort)),
+			Path:        fmt.Sprintf("/%d%s", appPort, probePath),
+			HTTPHeaders: headers,
 		},
 	}, nil
 }
@@ -93,12 +91,10 @@ func (p ProxiedApplicationProbe) tcpProbeToVirtual(virtualPort uint32) (ProxiedA
 	}
 
 	return ProxiedApplicationProbe{
-		ProbeHandler: kube_core.ProbeHandler{
-			HTTPGet: &kube_core.HTTPGetAction{
-				Port:        intstr.FromInt32(int32(virtualPort)),
-				Path:        fmt.Sprintf("/tcp/%d", appPort),
-				HTTPHeaders: headers,
-			},
+		HTTPGet: &kube_core.HTTPGetAction{
+			Port:        intstr.FromInt32(int32(virtualPort)),
+			Path:        fmt.Sprintf("/tcp/%d", appPort),
+			HTTPHeaders: headers,
 		},
 	}, nil
 }
@@ -121,12 +117,10 @@ func (p ProxiedApplicationProbe) grpcProbeToVirtual(virtualPort uint32) (Proxied
 	}
 
 	return ProxiedApplicationProbe{
-		ProbeHandler: kube_core.ProbeHandler{
-			HTTPGet: &kube_core.HTTPGetAction{
-				Port:        intstr.FromInt32(int32(virtualPort)),
-				Path:        fmt.Sprintf("/grpc/%d", appPort),
-				HTTPHeaders: headers,
-			},
+		HTTPGet: &kube_core.HTTPGetAction{
+			Port:        intstr.FromInt32(int32(virtualPort)),
+			Path:        fmt.Sprintf("/grpc/%d", appPort),
+			HTTPHeaders: headers,
 		},
 	}, nil
 }

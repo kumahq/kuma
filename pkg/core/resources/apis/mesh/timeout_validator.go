@@ -20,10 +20,8 @@ func (t *TimeoutResource) validateSources() validators.ValidationError {
 		validators.RootedAt("sources"),
 		t.Spec.Sources,
 		ValidateSelectorsOpts{
-			ValidateTagsOpts: ValidateTagsOpts{
-				RequireAtLeastOneTag: true,
-				RequireService:       true,
-			},
+			RequireAtLeastOneTag:      true,
+			RequireService:            true,
 			RequireAtLeastOneSelector: true,
 		},
 	)

@@ -127,7 +127,7 @@ func ServiceToConfigMapsMapper(client kube_client.Reader, l logr.Logger, systemN
 		var req []kube_reconile.Request
 		for mesh := range meshSet {
 			req = append(req, kube_reconile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: systemNamespace, Name: vips.ConfigKey(mesh)},
+				Namespace: systemNamespace, Name: vips.ConfigKey(mesh),
 			})
 		}
 
@@ -151,7 +151,7 @@ func DataplaneToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_commo
 		}
 
 		return []kube_reconile.Request{{
-			NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(cause.Mesh)},
+			Namespace: ns, Name: vips.ConfigKey(cause.Mesh),
 		}}
 	}
 }
@@ -176,7 +176,7 @@ func MeshGatewayToMeshMapper(client kube_client.Reader, l logr.Logger, ns string
 		var requests []kube_reconile.Request
 		for _, mesh := range meshes.Items {
 			requests = append(requests, kube_reconile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(mesh.Name)},
+				Namespace: ns, Name: vips.ConfigKey(mesh.Name),
 			})
 		}
 
@@ -204,7 +204,7 @@ func MeshGatewayRouteToMeshMapper(client kube_client.Reader, l logr.Logger, ns s
 		var requests []kube_reconile.Request
 		for _, mesh := range meshes.Items {
 			requests = append(requests, kube_reconile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(mesh.Name)},
+				Namespace: ns, Name: vips.ConfigKey(mesh.Name),
 			})
 		}
 
@@ -234,7 +234,7 @@ func ZoneIngressToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_com
 		var requests []kube_reconile.Request
 		for mesh := range meshSet {
 			requests = append(requests, kube_reconile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(mesh)},
+				Namespace: ns, Name: vips.ConfigKey(mesh),
 			})
 		}
 		return requests
@@ -251,7 +251,7 @@ func ExternalServiceToConfigMapsMapper(l logr.Logger, ns string) kube_handler.Ma
 		}
 
 		return []kube_reconile.Request{{
-			NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(cause.Mesh)},
+			Namespace: ns, Name: vips.ConfigKey(cause.Mesh),
 		}}
 	}
 }
@@ -266,7 +266,7 @@ func VirtualOutboundToConfigMapsMapper(l logr.Logger, ns string) kube_handler.Ma
 		}
 
 		return []kube_reconile.Request{{
-			NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(cause.Mesh)},
+			Namespace: ns, Name: vips.ConfigKey(cause.Mesh),
 		}}
 	}
 }

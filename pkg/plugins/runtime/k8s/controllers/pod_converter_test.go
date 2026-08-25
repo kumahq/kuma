@@ -12,7 +12,6 @@ import (
 	kube_apps "k8s.io/api/apps/v1"
 	kube_batch "k8s.io/api/batch/v1"
 	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -644,24 +643,20 @@ var _ = Describe("InboundTagsForService(..)", func() {
 		func(given testCase) {
 			// given
 			pod := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Labels:    given.podLabels,
-				},
+				Namespace: "demo",
+				Labels:    given.podLabels,
 				Spec: kube_core.PodSpec{
 					NodeName: "test-node",
 				},
 			}
 			// and
 			svc := &kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "example",
-					Labels: map[string]string{
-						"more": "labels",
-					},
-					Annotations: given.svcAnnotations,
+				Namespace: "demo",
+				Name:      "example",
+				Labels: map[string]string{
+					"more": "labels",
 				},
+				Annotations: given.svcAnnotations,
 				Spec: kube_core.ServiceSpec{
 					Ports: []kube_core.ServicePort{
 						{
@@ -848,10 +843,8 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 		func(given testCase) {
 			// given
 			pod := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace:   "demo",
-					Annotations: given.annotations,
-				},
+				Namespace:   "demo",
+				Annotations: given.annotations,
 			}
 
 			// expect
@@ -935,10 +928,8 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 		func(given testCase) {
 			// given
 			pod := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace:   "demo",
-					Annotations: given.annotations,
-				},
+				Namespace:   "demo",
+				Annotations: given.annotations,
 			}
 
 			// expect
@@ -973,11 +964,9 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 		func(given testCase) {
 			// given
 			svc := &kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace:   "demo",
-					Name:        "example",
-					Annotations: given.annotations,
-				},
+				Namespace:   "demo",
+				Name:        "example",
+				Annotations: given.annotations,
 				Spec: kube_core.ServiceSpec{
 					Ports: []kube_core.ServicePort{
 						{
