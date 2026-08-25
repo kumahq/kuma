@@ -615,7 +615,7 @@ func newFilterStateValue(key, format string) *common_set_filter_state.FilterStat
 				},
 			},
 		},
-		ReadOnly:    true,
+		ReadOnly:    true, //nolint:staticcheck // no replacement for read-only filter state, see envoy/extensions/filters/common/set_filter_state/v3/value.proto
 		SkipIfEmpty: true,
 	}
 }
