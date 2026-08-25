@@ -8,6 +8,20 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Generated Gateway API producer routes now win the same ties as hand-written ones
+
+A `MeshHTTPRoute` generated from a Gateway API `HTTPRoute` whose parent (a `Service` or `MeshService`) lives in the `HTTPRoute`'s own namespace is now created in that namespace, instead of always landing in the Kuma system namespace. This is what the policy role model calls a producer route, and putting it in the right namespace gives it `kuma.io/policy-role=producer`, the same role a hand-written `MeshHTTPRoute` targeting the same `Mesh` and `to` entry gets. Before this change, every generated route landed in the system namespace and was ranked `system`, so it always lost to an equivalent hand-written producer route even when the two expressed the same intent.
+
+A generated route whose parent is in a different namespace (a consumer route) still lands in the Kuma system namespace and keeps its `system` role and precedence unchanged.
+
+Because the route now lives in the `HTTPRoute`'s namespace, its `k8s.kuma.io/namespace` label changes to match, it now syncs across zones like any other namespaced policy, and it applies to dataplanes in remote zones the same way a hand-written route in that namespace would.
+
+**Action required**
+
+If a mesh has both a generated producer route and a hand-written `MeshHTTPRoute` targeting the same `Mesh` and `to` entry, check which one you expect to win: before this upgrade the hand-written route always won, after it the two tie and the outcome falls back to resource name. Remove or adjust one of them if you relied on the previous, implicit precedence.
+
+If any policy selects the generated route by its old `k8s.kuma.io/namespace: <kuma-system>` label (or your system namespace), update it to the `HTTPRoute`'s namespace instead. The control plane moves each existing generated route to its new namespace the next time its `HTTPRoute` is reconciled, so no manual migration of the `MeshHTTPRoute` object itself is needed.
+
 ### The `BUILTIN` gateway type and its statistics are removed from the API
 
 The built-in gateway implementation was removed over the previous releases, and the Dataplane validator has been rejecting `networking.gateway.type: BUILTIN` since then. The remaining API surface is now gone too:
