@@ -9024,7 +9024,8 @@ components:
                               priorities when dataplane proxies inside local
                               zone
 
-                              are unavailable
+                              are unavailable. Supported only for
+                              to[].targetRef.kind MeshMultiZoneService.
                             properties:
                               failover:
                                 description: >-

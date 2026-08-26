@@ -8,6 +8,14 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `MeshLoadBalancingStrategy` cross-zone settings now require a `MeshMultiZoneService` `to` target
+
+`MeshLoadBalancingStrategy.spec.to[].default.localityAwareness.crossZone` is now accepted only when that `to` entry targets a `MeshMultiZoneService`. Create and update validation now rejects the same `crossZone` block on `Mesh`, `MeshService`, and `MeshExternalService` targets.
+
+**Action required**
+
+Move any existing `crossZone` configuration under `to` entries whose `targetRef.kind` is `MeshMultiZoneService` before upgrading. Keep `localityAwareness.localZone`, `loadBalancer`, and other supported settings on the remaining target kinds as needed.
+
 ### Generated Gateway API producer routes now win the same ties as hand-written ones
 
 A `MeshHTTPRoute` generated from a Gateway API `HTTPRoute` whose parent (a `Service` or `MeshService`) lives in the `HTTPRoute`'s own namespace is now created in that namespace, instead of always landing in the Kuma system namespace. This is what the policy role model calls a producer route, and putting it in the right namespace gives it `kuma.io/policy-role=producer`, the same role a hand-written `MeshHTTPRoute` targeting the same `Mesh` and `to` entry gets. Before this change, every generated route landed in the system namespace and was ranked `system`, so it always lost to an equivalent hand-written producer route even when the two expressed the same intent.
