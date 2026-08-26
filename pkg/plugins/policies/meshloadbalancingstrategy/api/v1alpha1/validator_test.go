@@ -547,6 +547,8 @@ to:
   - targetRef:
       kind: MeshService
       name: svc-2
+	  labels:
+	    kuma.io/display-name: svc-2
     default:
       localityAwareness:
         disabled: true
@@ -562,6 +564,8 @@ to:
 - targetRef:
     kind: MeshMultiZoneService
     name: backend
+	labels:
+	  kuma.io/display-name: backend
   default:
     localityAwareness:
       crossZone:
