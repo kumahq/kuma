@@ -47,7 +47,7 @@ type LocalityAwareness struct {
 	// LocalZone defines locality aware load balancing priorities between dataplane proxies inside a zone
 	LocalZone *LocalZone `json:"localZone,omitempty"`
 	// CrossZone defines locality aware load balancing priorities when dataplane proxies inside local zone
-	// are unavailable
+	// are unavailable. Supported only for to[].targetRef.kind MeshMultiZoneService.
 	CrossZone *CrossZone `json:"crossZone,omitempty"`
 }
 

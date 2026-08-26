@@ -35,7 +35,7 @@ to: []
 				Message: "value 'MeshServiceSubset' is not supported",
 			}, {
 				Field:   "spec.to[1].default.localityAwareness.crossZone",
-				Message: "must not be set: MeshService traffic is local",
+				Message: "crossZone is only supported when targetRef.kind is MeshMultiZoneService",
 			}},
 			`
 type: MeshLoadBalancingStrategy
@@ -54,6 +54,38 @@ to:
       labels:
         kuma.io/display-name: real-mesh-service
       sectionName: http
+    default:
+      localityAwareness:
+        crossZone: {}
+`),
+		ErrorCases(
+			"crossZone on unsupported target kinds",
+			[]validators.Violation{
+				{
+					Field:   "spec.to[0].default.localityAwareness.crossZone",
+					Message: "crossZone is only supported when targetRef.kind is MeshMultiZoneService",
+				},
+				{
+					Field:   "spec.to[1].default.localityAwareness.crossZone",
+					Message: "crossZone is only supported when targetRef.kind is MeshMultiZoneService",
+				},
+			},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      localityAwareness:
+        crossZone: {}
+  - targetRef:
+      kind: MeshExternalService
+      labels:
+        kuma.io/display-name: httpbin
     default:
       localityAwareness:
         crossZone: {}
