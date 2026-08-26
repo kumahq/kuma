@@ -2,8 +2,25 @@
   "diff": [
     {
       "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_transparentproxy_passthrough_outbound_ipv4/circuitBreakers/perHostThresholds",
+      "value": [
+        {
+          "maxConnections": 512
+        }
+      ]
+    },
+    {
+      "op": "add",
       "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_transparentproxy_passthrough_outbound_ipv4/circuitBreakers/thresholds/0/maxConnections",
       "value": 8192
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/self_transparentproxy_passthrough_outbound_ipv4/circuitBreakers/thresholds/1",
+      "value": {
+        "maxConnections": 2048,
+        "priority": "HIGH"
+      }
     }
   ],
   "xds": {
@@ -235,10 +252,19 @@
       },
       "self_transparentproxy_passthrough_outbound_ipv4": {
         "circuitBreakers": {
+          "perHostThresholds": [
+            {
+              "maxConnections": 512
+            }
+          ],
           "thresholds": [
             {
               "maxConnections": 8192,
               "trackRemaining": true
+            },
+            {
+              "maxConnections": 2048,
+              "priority": "HIGH"
             }
           ]
         },

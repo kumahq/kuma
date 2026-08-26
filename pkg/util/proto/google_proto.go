@@ -62,7 +62,9 @@ func MergeFunctionOptionFn(name protoreflect.FullName, function MergeFunction) O
 // KeyedListOptionFn marks the repeated message field listField as a keyed
 // list: instead of appending, a src entry is merged into the dst entry whose
 // keyField has the same value, so merging never produces duplicates by key.
-// Entries with a key not present in dst are appended as usual.
+// Entries with a key not present in dst are appended as usual, and src entries
+// that repeat a key are dropped. keyField must name a comparable scalar field,
+// otherwise listField keeps plain append semantics.
 func KeyedListOptionFn(listField protoreflect.FullName, keyField protoreflect.Name) OptionFn {
 	return func(options mergeOptions) mergeOptions {
 		options.keyedLists[listField] = keyField
@@ -161,21 +163,49 @@ func (o mergeOptions) mergeList(dst, src protoreflect.List, fd protoreflect.Fiel
 	}
 }
 
+// isComparableScalar reports whether fd holds a value that can be used as a map
+// key, which rules out repeated fields, messages, groups and bytes.
+func isComparableScalar(fd protoreflect.FieldDescriptor) bool {
+	if fd.IsList() || fd.IsMap() || fd.Message() != nil {
+		return false
+	}
+	return fd.Kind() != protoreflect.BytesKind
+}
+
 func (o mergeOptions) mergeListByKey(dst, src protoreflect.List, fd protoreflect.FieldDescriptor, keyField protoreflect.Name) {
 	var keyFd protoreflect.FieldDescriptor
 	if fd.Message() != nil {
 		keyFd = fd.Message().Fields().ByName(keyField)
 	}
-	if keyFd == nil {
+	// Anything that is not a comparable scalar cannot identify an entry, so an
+	// unusable registration degrades to plain append semantics.
+	if keyFd == nil || !isComparableScalar(keyFd) {
 		o.mergeList(dst, src, fd)
 		return
 	}
 
+	// A keyed list holds at most one entry per key, so src entries that repeat
+	// a key are dropped rather than merged on top of each other. The consumers
+	// of a keyed list resolve duplicates first-wins, which makes the later
+	// entries dead config no matter what we do with them.
+	seen := map[any]struct{}{}
+
 	for i, n := 0, src.Len(); i < n; i++ {
 		srcElem := src.Get(i).Message()
+		key := srcElem.Get(keyFd).Interface()
+		if _, duplicate := seen[key]; duplicate {
+			continue
+		}
+		seen[key] = struct{}{}
+
 		merged := false
 		for j := 0; j < dst.Len(); j++ {
 			dstElem := dst.Get(j).Message()
+			// mergeMessage panics on an invalid message, and unlike mergeList
+			// this merges into existing dst entries rather than fresh ones.
+			if !dstElem.IsValid() {
+				continue
+			}
 			if dstElem.Get(keyFd).Equal(srcElem.Get(keyFd)) {
 				o.mergeMessage(dstElem, srcElem)
 				merged = true

@@ -16,3 +16,7 @@ spec:
             circuitBreakers:
               thresholds:
                 - maxConnections: 8192
+                - priority: HIGH
+                  maxConnections: 2048
+              perHostThresholds:
+                - maxConnections: 512

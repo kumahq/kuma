@@ -111,7 +111,9 @@ spec:
 			// also matches remaining_cx_pools
 			s, err := admin.GetStats("cluster.self_transparentproxy_passthrough_outbound_ipv4.circuit_breakers.default.remaining_cx$")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(s).To(stats.BeEqual(float64(8192)))
+			// remaining_cx counts down as the cluster opens connections, so
+			// assert against Envoy's 1024 default rather than an exact 8192
+			g.Expect(s).To(stats.BeGreaterThan(float64(1024)))
 		}, "30s", "1s").Should(Succeed())
 	})
 }
