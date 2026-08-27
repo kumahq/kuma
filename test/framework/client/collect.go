@@ -307,6 +307,40 @@ func CollectResponse(
 	return execResult.stdout, execResult.stderr, execResult.err
 }
 
+// collectExecAttempts is how many times a collect command is executed when the
+// exec transport reports success but delivers no output at all.
+const collectExecAttempts = 3
+
+// execCollect runs a collect command, retrying while the exec reports success
+// but delivers neither stdout nor stderr.
+//
+// The Kubernetes SPDY exec stream can lose the command output without reporting
+// it: client-go only logs a failed stdout copy (tools/remotecommand/v2.go) and
+// treats an error stream that closed without a status message as success
+// (tools/remotecommand/errorstream.go). A dropped connection is therefore
+// indistinguishable from "the command exited 0 and printed nothing", which for
+// curl never happens - it either prints a body or fails with a non-zero exit
+// code and a message on stderr.
+func execCollect(
+	cluster framework.Cluster,
+	namespace string,
+	podName string,
+	container string,
+	cmd ...string,
+) (string, string, error) {
+	var stdout, stderr string
+	var err error
+
+	for range collectExecAttempts {
+		stdout, stderr, err = cluster.Exec(namespace, podName, container, cmd...)
+		if err != nil || stdout != "" || stderr != "" {
+			break
+		}
+	}
+
+	return stdout, stderr, err
+}
+
 type collectResponseResult struct {
 	cluster     framework.Cluster
 	container   string
@@ -352,7 +386,7 @@ func collectResponse(
 	}
 	result.podName = appPodName
 
-	result.stdout, result.stderr, result.err = cluster.Exec(opts.namespace, appPodName, container, cmd...)
+	result.stdout, result.stderr, result.err = execCollect(cluster, opts.namespace, appPodName, container, cmd...)
 	return result
 }
 
@@ -366,6 +400,17 @@ func CollectEchoResponse(
 	if execResult.err != nil {
 		err := fmt.Errorf("stderr: '%s', %v", execResult.stderr, execResult.err)
 		return types.EchoResponse{}, withCollectDiagnostic("exec-error", execResult, err)
+	}
+
+	// curl exited 0 but printed nothing on either stream, which it never does for
+	// a real response. The output was lost by the exec transport, so report that
+	// rather than a misleading JSON decoding error.
+	if execResult.stdout == "" && execResult.stderr == "" {
+		err := errors.Errorf(
+			"no output from curl after %d attempts, despite a successful exit: the exec transport lost the command output",
+			collectExecAttempts,
+		)
+		return types.EchoResponse{}, withCollectDiagnostic("no-output", execResult, err)
 	}
 
 	response := &types.EchoResponse{}
@@ -759,18 +804,7 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 		}
 	}
 
-	// Retry on empty stdout with no exec error: the Kubernetes SPDY exec stream can
-	// close before stdout is delivered when the process exits immediately (e.g. DNS
-	// failure, exit code 6). One retry is enough to recover from the race.
-	var stdout string
-	var stderr string
-	var err error
-	for range 2 {
-		stdout, stderr, err = cluster.Exec(opts.namespace, appPodName, container, cmd...)
-		if stdout != "" || err != nil {
-			break
-		}
-	}
+	stdout, stderr, err := execCollect(cluster, opts.namespace, appPodName, container, cmd...)
 	execResult := collectResponseResult{
 		cluster:     cluster,
 		container:   container,
