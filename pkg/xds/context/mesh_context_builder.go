@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"slices"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -188,7 +189,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		}
 	}
 	zoneIngresses := resources.ZoneIngresses().Items
-	zoneEgresses := resources.ZoneEgresses().Items
+	zoneEgresses := readyZoneEgresses(resources.ZoneEgresses().Items)
 	externalServices := resources.ExternalServices().Items
 	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
 	if len(zoneEgressList) == 0 {
@@ -691,6 +692,26 @@ func resolveLegacyZoneEgresses(zoneEgresses []*core_mesh.ZoneEgressResource) []x
 		legacyEgresses = append(legacyEgresses, xds.ZoneEgressInstance{Address: n.GetAddress(), Port: n.GetPort()})
 	}
 	return legacyEgresses
+}
+
+// readyZoneEgresses drops the instances whose Pod is terminating or not ready yet. Only endpoint generation is
+// filtered: the unfiltered list stays in the mesh context so that a draining egress keeps being served its own
+// configuration for as long as it runs.
+//
+// The label is written by the Pod converter, so in practice the value is only ever "true" or "false". It is a plain
+// label though, so anything else - an absent label on Universal, a resource written by an older control plane, a
+// value nobody can parse - counts as ready and keeps traffic flowing.
+func readyZoneEgresses(zoneEgresses []*core_mesh.ZoneEgressResource) []*core_mesh.ZoneEgressResource {
+	var ready []*core_mesh.ZoneEgressResource
+	for _, ze := range zoneEgresses {
+		if value, found := ze.GetMeta().GetLabels()[mesh_proto.ProxyReadyLabel]; found {
+			if isReady, err := strconv.ParseBool(value); err == nil && !isReady {
+				continue
+			}
+		}
+		ready = append(ready, ze)
+	}
+	return ready
 }
 
 func getCAsByTrustDomain(trusts []*meshtrust_api.MeshTrustResource) map[string][]PEMBytes {

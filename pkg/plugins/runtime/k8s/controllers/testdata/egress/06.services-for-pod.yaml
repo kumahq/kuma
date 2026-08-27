@@ -1,0 +1,15 @@
+---
+metadata:
+  namespace: kuma-system
+  name: kuma-egress
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 10001
+      targetPort: 10001
+  selector:
+    app: kuma-egress
+status:
+  loadBalancer:
+    egress:
+      - hostname: "kuma-egress.com"
