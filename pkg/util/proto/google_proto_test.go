@@ -34,13 +34,24 @@ var _ = Describe("MergeKuma", func() {
 				},
 			},
 		}
-		util_proto.Merge(dest, src)
+		util_proto.Merge(dest, src, util_proto.ReplaceDurationOptionFn)
 		Expect(dest.ConnectTimeout.AsDuration()).To(Equal(time.Millisecond * 500))
 		Expect(dest.Name).To(Equal("new"))
 		Expect(dest.EdsClusterConfig.ServiceName).To(Equal("srv"))
 		Expect(dest.EdsClusterConfig.EdsConfig.InitialFetchTimeout.AsDuration()).To(Equal(time.Second))
 		Expect(dest.EdsClusterConfig.EdsConfig.InitialFetchTimeout.AsDuration()).To(Equal(time.Second))
 		Expect(dest.EdsClusterConfig.EdsConfig.ResourceApiVersion).To(Equal(envoy_config_core_v3.ApiVersion_V3))
+	})
+
+	It("should merge durations field by field without the option", func() {
+		dest := &envoy_cluster.Cluster{
+			ConnectTimeout: durationpb.New(time.Second * 10),
+		}
+		src := &envoy_cluster.Cluster{
+			ConnectTimeout: &durationpb.Duration{Nanos: 5},
+		}
+		util_proto.Merge(dest, src)
+		Expect(dest.ConnectTimeout.AsDuration()).To(Equal(time.Second*10 + 5))
 	})
 
 	Context("keyed lists", func() {

@@ -65,7 +65,7 @@ func MergeAnys(dst *anypb.Any, src *anypb.Any) (*anypb.Any, error) {
 		return nil, err
 	}
 
-	Merge(dstMsg, srcMsg)
+	Merge(dstMsg, srcMsg, ReplaceDurationOptionFn)
 	return MarshalAnyDeterministic(dstMsg)
 }
 

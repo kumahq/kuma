@@ -88,18 +88,16 @@ func Replace(dst, src proto.Message) {
 	ReplaceMergeFn(dst.ProtoReflect(), src.ProtoReflect())
 }
 
-// Merge merges src into dst with proto merge semantics, except that Duration is
-// replaced rather than merged. Callers whose resources have list semantics of
-// their own pass them in via opts.
-func Merge(dst, src proto.Message, opts ...OptionFn) {
-	duration := &durationpb.Duration{}
-	merge(dst, src, append([]OptionFn{
-		MergeFunctionOptionFn(duration.ProtoReflect().Descriptor().FullName(), ReplaceMergeFn),
-	}, opts...)...)
-}
+// ReplaceDurationOptionFn replaces a Duration instead of merging it field by
+// field, so that a patched duration overrides the existing one rather than
+// taking seconds from one and nanos from the other.
+var ReplaceDurationOptionFn = MergeFunctionOptionFn(
+	(&durationpb.Duration{}).ProtoReflect().Descriptor().FullName(),
+	ReplaceMergeFn,
+)
 
-// Merge Code of proto.Merge with modifications to support custom types
-func merge(dst, src proto.Message, opts ...OptionFn) {
+// Merge merges src into dst with proto merge semantics
+func Merge(dst, src proto.Message, opts ...OptionFn) {
 	mo := mergeOptions{
 		customMergeFn: map[protoreflect.FullName]MergeFunction{},
 		keyedLists:    map[protoreflect.FullName]protoreflect.Name{},
