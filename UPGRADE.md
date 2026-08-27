@@ -8,6 +8,16 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `MeshPassthrough` rejects conflicting L7 protocols on the same port, including matches without a port
+
+A `MeshPassthrough` match without a port applies to every port used by other matches in the policy, so a match with `grpc` on port `4317` next to a match with `http` and no port configures two L7 protocols on port `4317`. Create and update validation now rejects such a policy, previously it was accepted and Envoy rejected the entire generated passthrough listener, breaking all passthrough traffic for every proxy the policy matched. The check only fires between two of `grpc`, `http` and `http2` sharing the same filter chain: `tls` and `http` on the same port, or `http` on an IP next to `grpc` on a domain, are no longer reported, they generate distinct filter chains.
+
+An already applied policy with such a conflict is not re-validated on upgrade. Instead of failing config generation, the control plane now drops the conflicting match, keeps the rest of the configuration working and reports a warning in the dataplane `_rules` inspect API, so proxies previously stuck with a rejected listener recover on their own.
+
+**Action required**
+
+If a `MeshPassthrough` policy mixes `grpc`, `http` or `http2` matches that end up on the same port (directly or through a match without a port), decide which protocol that port uses and update the policy, otherwise the next edit of the policy is rejected by validation.
+
 ### `MeshLoadBalancingStrategy` cross-zone settings now require a `MeshMultiZoneService` `to` target
 
 `MeshLoadBalancingStrategy.spec.to[].default.localityAwareness.crossZone` is now accepted only when that `to` entry targets a `MeshMultiZoneService`. Create and update validation now rejects the same `crossZone` block on `Mesh`, `MeshService`, and `MeshExternalService` targets.
