@@ -65,58 +65,65 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, []string) {
 	warnings := newWarnings()
 	matcherWithRoutes := map[Matcher]map[Route]bool{}
 	portProtocols := map[uint32]map[core_meta.Protocol]bool{}
-	// the L7 protocol configured for a filter chain, the first match wins
-	l7ProtocolOnChain := map[l7ChainKey]core_meta.Protocol{}
+	// the first match that configured a filter chain wins, a later match resolving to
+	// the same chain is dropped
+	chainOwners := map[chainKey]chainOwner{}
 	for _, match := range pointer.Deref(conf.AppendMatch) {
 		port := pointer.DerefOr[uint32](match.Port, 0)
 		protocol := core_meta.ParseProtocol(string(match.Protocol))
 		matchType, isWildcardDomain := getMatchType(match, protocol)
-		if slices.Contains(l7Protocols, protocol) {
-			key := newL7ChainKey(port, matchType, match.Value)
-			if configured, found := l7ProtocolOnChain[key]; found && configured != protocol {
-				warnings.add(fmt.Sprintf(
-					"ignoring match %q with protocol %s, protocol %s is already configured for %s on %s, only one of %v can be configured on the same port",
-					match.Value, protocol, configured, key.describe(), describePort(port), l7Protocols,
-				))
-				continue
-			}
-			l7ProtocolOnChain[key] = protocol
-		}
 		matcher := Matcher{
 			Protocol:  protocol,
 			Port:      port,
 			MatchType: matchType,
+		}
+		// domains of an L7 protocol share one filter chain and become virtual host routes,
+		// every other match keeps its value on the matcher
+		isL7Domain := slices.Contains(l7Protocols, protocol) && matchType == Domain
+		if !isL7Domain {
+			matcher.Value = match.Value
+		}
+		key := newChainKey(port, protocol, matchType, match.Value)
+		if owner, found := chainOwners[key]; found {
+			if owner.protocol != protocol {
+				warnings.add(fmt.Sprintf(
+					"ignoring match %q with protocol %s, protocol %s is already configured for %s on %s, %s",
+					match.Value, protocol, owner.protocol, key.describe(), describePort(port), key.conflictReason(),
+				))
+				continue
+			}
+			if owner.matcher != matcher {
+				warnings.add(fmt.Sprintf(
+					"ignoring match %q with protocol %s, match %q already defines a filter chain for %s on %s",
+					match.Value, protocol, owner.value, key.describe(), describePort(port),
+				))
+				continue
+			}
+		} else {
+			chainOwners[key] = chainOwner{protocol: protocol, matcher: matcher, value: match.Value}
 		}
 		if _, found := portProtocols[port]; !found {
 			portProtocols[port] = map[core_meta.Protocol]bool{protocol: true}
 		} else {
 			portProtocols[port][protocol] = true
 		}
-		switch protocol {
-		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-			// when there are domains we want to create VirtualHosts with Domain match
-			if matchType == Domain {
-				if isWildcardDomain {
-					matchType = WildcardDomain
-				}
-				route := Route{
-					Value:     match.Value,
-					MatchType: matchType,
-				}
-				if _, found := matcherWithRoutes[matcher]; found {
-					matcherWithRoutes[matcher][route] = true
-				} else {
-					matcherWithRoutes[matcher] = map[Route]bool{
-						route: true,
-					}
-				}
-			} else {
-				matcher.Value = match.Value
-				// there should be no existing matcher if there is ip/cidr
-				matcherWithRoutes[matcher] = map[Route]bool{}
+		if isL7Domain {
+			routeMatchType := Domain
+			if isWildcardDomain {
+				routeMatchType = WildcardDomain
 			}
-		default:
-			matcher.Value = match.Value
+			route := Route{
+				Value:     match.Value,
+				MatchType: routeMatchType,
+			}
+			if _, found := matcherWithRoutes[matcher]; found {
+				matcherWithRoutes[matcher][route] = true
+			} else {
+				matcherWithRoutes[matcher] = map[Route]bool{
+					route: true,
+				}
+			}
+		} else if _, found := matcherWithRoutes[matcher]; !found {
 			matcherWithRoutes[matcher] = map[Route]bool{}
 		}
 	}
@@ -141,21 +148,31 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, []string) {
 				if port == 0 {
 					continue
 				}
-				// a match without a port must not override the protocol explicitly configured
-				// for this port, otherwise we generate two filter chains with the same matcher
-				key := newL7ChainKey(port, matcher.MatchType, matcher.Value)
-				if configured, found := l7ProtocolOnChain[key]; found && configured != matcher.Protocol && slices.Contains(l7Protocols, matcher.Protocol) {
-					warnings.add(fmt.Sprintf(
-						"matches with protocol %s and no port are not applied to %s on port %d, protocol %s is already configured there",
-						matcher.Protocol, key.describe(), port, configured,
-					))
-					continue
-				}
 				additionalMatcher := Matcher{
 					Protocol:  matcher.Protocol,
 					Port:      port,
 					MatchType: matcher.MatchType,
 					Value:     matcher.Value,
+				}
+				// a match without a port must not duplicate the filter chain explicitly
+				// configured for this port, otherwise we generate two filter chains with
+				// the same matcher
+				key := newChainKey(port, matcher.Protocol, matcher.MatchType, matcher.Value)
+				if owner, found := chainOwners[key]; found {
+					if owner.protocol != matcher.Protocol {
+						warnings.add(fmt.Sprintf(
+							"matches with protocol %s and no port are not applied to %s on port %d, protocol %s is already configured there",
+							matcher.Protocol, key.describe(), port, owner.protocol,
+						))
+						continue
+					}
+					if owner.matcher != additionalMatcher {
+						warnings.add(fmt.Sprintf(
+							"matches with protocol %s and no port are not applied to %s on port %d, match %q already defines a filter chain there",
+							matcher.Protocol, key.describe(), port, owner.value,
+						))
+						continue
+					}
 				}
 				if _, found := matcherWithRoutesAndAdditionalPorts[additionalMatcher]; found {
 					for route := range routes {
@@ -185,31 +202,96 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, []string) {
 	return filterChainMatchers, warnings.sorted()
 }
 
-// l7ChainKey identifies the filter chain an L7 match ends up in. All domains of a given
-// protocol and port share a single filter chain without an address matcher, IPs and CIDRs
-// get their own filter chain matched on the destination address.
-type l7ChainKey struct {
-	port    uint32
-	address string
+// chainClass groups protocols whose filter chains can collide. Chains of different
+// classes always differ in the transport or application protocols they match on, chains
+// of the same class differ only by port and address, so two matches of the same class
+// resolving to the same chain key produce a listener rejected by Envoy.
+type chainClass int
+
+const (
+	tcpChain  chainClass = iota // tcp and mysql: raw_buffer with optional address and port
+	tlsChain                    // tls: tls transport with SNI or address and optional port
+	httpChain                   // http, http2 and grpc: raw_buffer and http/1.1,h2c with optional address and port
+)
+
+func protocolClass(protocol core_meta.Protocol) chainClass {
+	switch protocol {
+	case core_meta.ProtocolTLS:
+		return tlsChain
+	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
+		return httpChain
+	default:
+		return tcpChain
+	}
 }
 
-func newL7ChainKey(port uint32, matchType MatchType, value string) l7ChainKey {
-	key := l7ChainKey{port: port}
-	// the address is normalized to the prefix range Envoy matches on, an IP and a CIDR
-	// covering only that IP end up in the same filter chain
+// chainKey identifies the filter chain a match ends up in. All domains of an L7
+// protocol and port share a single filter chain without an address matcher, TLS domains
+// get a filter chain per SNI, IPs and CIDRs get their own filter chain matched on the
+// destination prefix range.
+type chainKey struct {
+	class   chainClass
+	port    uint32
+	address string
+	sni     string
+}
+
+// chainOwner is the first match that configured a filter chain, kept to report dropped
+// matches and to tell a conflicting matcher apart from one that merges into the chain
+type chainOwner struct {
+	protocol core_meta.Protocol
+	matcher  Matcher
+	value    string
+}
+
+func newChainKey(port uint32, protocol core_meta.Protocol, matchType MatchType, value string) chainKey {
+	key := chainKey{class: protocolClass(protocol), port: port}
 	switch matchType {
-	case IP:
-		key.address = fmt.Sprintf("%s/32", value)
-	case IPV6:
-		key.address = fmt.Sprintf("%s/128", value)
-	case CIDR, CIDRV6:
-		ip, prefixLen := getIpAndMask(value)
-		key.address = fmt.Sprintf("%s/%d", ip, prefixLen)
+	case IP, IPV6, CIDR, CIDRV6:
+		key.address = normalizePrefix(matchType, value)
+	case Domain, WildcardDomain:
+		if key.class == tlsChain {
+			key.sni = value
+		}
 	}
 	return key
 }
 
-func (k l7ChainKey) describe() string {
+// normalizePrefix normalizes an address to the prefix range Envoy matches on, so an IP,
+// a CIDR covering only that IP, a CIDR spelled with host bits and a non-canonical IPv6
+// form all resolve to the same filter chain
+func normalizePrefix(matchType MatchType, value string) string {
+	switch matchType {
+	case IP:
+		return canonicalIP(value) + "/32"
+	case IPV6:
+		return canonicalIP(value) + "/128"
+	case CIDR, CIDRV6:
+		ip, prefixLen := getIpAndMask(value)
+		return fmt.Sprintf("%s/%d", ip, prefixLen)
+	}
+	return ""
+}
+
+func canonicalIP(value string) string {
+	if ip := net.ParseIP(value); ip != nil {
+		return ip.String()
+	}
+	return value
+}
+
+// conflictReason explains why two protocols cannot share the chain identified by the key
+func (k chainKey) conflictReason() string {
+	if k.class == httpChain {
+		return fmt.Sprintf("only one of %v can be configured on the same port", l7Protocols)
+	}
+	return "both would produce the same filter chain matcher"
+}
+
+func (k chainKey) describe() string {
+	if k.sni != "" {
+		return fmt.Sprintf("domain %q", k.sni)
+	}
 	if k.address == "" {
 		return "domains"
 	}

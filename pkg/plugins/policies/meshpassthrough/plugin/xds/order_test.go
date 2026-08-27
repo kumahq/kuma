@@ -333,5 +333,114 @@ var _ = Describe("Match order", func() {
 				"matches with protocol http and no port are not applied to domains on port 4317, protocol grpc is already configured there",
 			},
 		}),
+		Entry("an IP and a CIDR resolving to the same address range with the same protocol", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "10.0.0.1",
+						Port:     pointer.To[uint32](80),
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "10.0.0.1/32",
+						Port:     pointer.To[uint32](80),
+						Protocol: api.ProtocolType("http"),
+					},
+				},
+			},
+			orderedGolden: "duplicate-ip-and-cidr.golden.yaml",
+			warnings: []string{
+				`ignoring match "10.0.0.1/32" with protocol http, match "10.0.0.1" already defines a filter chain for 10.0.0.1/32 on port 80`,
+			},
+		}),
+		Entry("tcp and mysql on the same address and port", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "10.1.1.1",
+						Port:     pointer.To[uint32](3306),
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "10.1.1.1",
+						Port:     pointer.To[uint32](3306),
+						Protocol: api.ProtocolType("mysql"),
+					},
+				},
+			},
+			orderedGolden: "duplicate-tcp-and-mysql.golden.yaml",
+			warnings: []string{
+				`ignoring match "10.1.1.1" with protocol mysql, protocol tcp is already configured for 10.1.1.1/32 on port 3306, both would produce the same filter chain matcher`,
+			},
+		}),
+		Entry("CIDRs with host bits resolving to the same range with different L7 protocols", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "10.0.0.1/24",
+						Port:     pointer.To[uint32](8080),
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "10.0.0.0/24",
+						Port:     pointer.To[uint32](8080),
+						Protocol: api.ProtocolType("grpc"),
+					},
+				},
+			},
+			orderedGolden: "duplicate-cidr-host-bits.golden.yaml",
+			warnings: []string{
+				`ignoring match "10.0.0.0/24" with protocol grpc, protocol http is already configured for 10.0.0.0/24 on port 8080, only one of [http http2 grpc] can be configured on the same port`,
+			},
+		}),
+		Entry("a match without a port duplicating an explicit chain of the same protocol", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "192.168.0.1",
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "192.168.0.1/32",
+						Port:     pointer.To[uint32](9090),
+						Protocol: api.ProtocolType("tcp"),
+					},
+				},
+			},
+			orderedGolden: "duplicate-all-ports-and-explicit-port.golden.yaml",
+			warnings: []string{
+				`matches with protocol tcp and no port are not applied to 192.168.0.1/32 on port 9090, match "192.168.0.1/32" already defines a filter chain there`,
+			},
+		}),
+		Entry("IPv6 spelled differently resolving to the same address", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "0:0:0:0:0:0:0:1",
+						Port:     pointer.To[uint32](443),
+						Protocol: api.ProtocolType("tls"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "::1/128",
+						Port:     pointer.To[uint32](443),
+						Protocol: api.ProtocolType("tls"),
+					},
+				},
+			},
+			orderedGolden: "duplicate-ipv6-forms.golden.yaml",
+			warnings: []string{
+				`ignoring match "::1/128" with protocol tls, match "0:0:0:0:0:0:0:1" already defines a filter chain for ::1/128 on port 443`,
+			},
+		}),
 	)
 })

@@ -50,6 +50,12 @@ var _ = Describe("MeshPassthrough", func() {
 			Entry("the same domain with a different L7 protocol on all ports", testCase{
 				file: "same-domain-different-protocols",
 			}),
+			Entry("matches resolving to duplicate filter chains", testCase{
+				file: "duplicate-filter-chains",
+			}),
+			Entry("matches resolving to distinct filter chains", testCase{
+				file: "distinct-filter-chains",
+			}),
 		)
 	})
 })

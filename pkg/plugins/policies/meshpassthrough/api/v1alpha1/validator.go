@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"fmt"
 	"math"
+	"net"
 	"regexp"
 	"slices"
 	"strings"
@@ -44,8 +45,8 @@ func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TopLevelTarg
 
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
-	// L7 matches accepted so far, a match without a port has port 0 and applies to all ports
-	acceptedL7Matches := []l7Match{}
+	// matches accepted so far, a match without a port has port 0 and applies to all ports
+	acceptedMatches := []chainMatch{}
 	type portProtocol struct {
 		port     uint32
 		protocol ProtocolType
@@ -58,13 +59,12 @@ func validateDefault(conf Conf) validators.ValidationError {
 		if match.Port != nil && pointer.Deref[uint32](match.Port) == 0 || pointer.Deref[uint32](match.Port) > math.MaxUint16 {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
 		}
-		if slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
-			current := newL7Match(match)
-			if conflict, found := findL7Conflict(acceptedL7Matches, current); found {
-				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), conflictMessage(current, conflict))
-			} else {
-				acceptedL7Matches = append(acceptedL7Matches, current)
-			}
+		current := newChainMatch(match)
+		if conflict, found := findChainConflict(acceptedMatches, current); found {
+			field, message := conflictViolation(current, conflict)
+			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field(field), message)
+		} else {
+			acceptedMatches = append(acceptedMatches, current)
 		}
 		if match.Port != nil {
 			key := portProtocol{
@@ -122,50 +122,128 @@ func validateDefault(conf Conf) validators.ValidationError {
 	return verr
 }
 
-// l7Match is a match with a protocol that cannot share a filter chain with another L7
-// protocol. Port 0 means the match has no port defined and applies to all ports. All
-// domains of a given protocol and port share a single filter chain, so they conflict with
-// each other, IPs and CIDRs are matched on the destination address and conflict only with
-// the same address.
-type l7Match struct {
-	port     uint32
-	address  string
-	protocol ProtocolType
+// chainClass groups protocols whose filter chains can collide. Chains of different
+// classes always differ in the transport or application protocols they match on, chains
+// of the same class differ only by port and address, so two matches of the same class
+// resolving to the same chain produce a listener rejected by Envoy.
+type chainClass int
+
+const (
+	tcpChain  chainClass = iota // tcp and mysql: raw_buffer with optional address and port
+	tlsChain                    // tls: tls transport with SNI or address and optional port
+	httpChain                   // http, http2 and grpc: raw_buffer and http/1.1,h2c with optional address and port
+)
+
+func protocolClass(protocol ProtocolType) chainClass {
+	switch protocol {
+	case TlsProtocol:
+		return tlsChain
+	case HttpProtocol, Http2Protocol, GrpcProtocol:
+		return httpChain
+	default:
+		return tcpChain
+	}
 }
 
-func newL7Match(match Match) l7Match {
-	result := l7Match{
+// chainMatch identifies the filter chain a match resolves to. Port 0 means the match has
+// no port defined and applies to all ports. All domains of an L7 protocol and port share
+// a single filter chain, TLS domains get a filter chain per SNI, IPs and CIDRs get their
+// own filter chain matched on the destination prefix range, so an IP and a CIDR covering
+// only that IP resolve to the same chain.
+type chainMatch struct {
+	class    chainClass
+	port     uint32
+	address  string
+	sni      string
+	protocol ProtocolType
+	value    string
+}
+
+func newChainMatch(match Match) chainMatch {
+	result := chainMatch{
+		class:    protocolClass(match.Protocol),
 		port:     pointer.Deref[uint32](match.Port),
 		protocol: match.Protocol,
+		value:    match.Value,
 	}
-	if match.Type != "Domain" {
-		result.address = match.Value
+	switch match.Type {
+	case "IP":
+		if govalidator.IsIPv6(match.Value) {
+			result.address = canonicalIP(match.Value) + "/128"
+		} else {
+			result.address = canonicalIP(match.Value) + "/32"
+		}
+	case "CIDR":
+		result.address = canonicalCIDR(match.Value)
+	case "Domain":
+		if result.class == tlsChain {
+			result.sni = match.Value
+		}
 	}
 	return result
 }
 
-// findL7Conflict returns the first accepted match that ends up in the same filter chain
-// as the given match but with a different protocol
-func findL7Conflict(accepted []l7Match, current l7Match) (l7Match, bool) {
+func canonicalIP(value string) string {
+	if ip := net.ParseIP(value); ip != nil {
+		return ip.String()
+	}
+	return value
+}
+
+func canonicalCIDR(value string) string {
+	if _, ipNet, err := net.ParseCIDR(value); err == nil {
+		return ipNet.String()
+	}
+	return value
+}
+
+// findChainConflict returns the first accepted match that resolves to the same filter
+// chain as the given match, either with a different protocol or as a duplicate of the
+// same address range spelled differently
+func findChainConflict(accepted []chainMatch, current chainMatch) (chainMatch, bool) {
 	for _, match := range accepted {
-		if match.protocol == current.protocol || match.address != current.address {
+		if match.class != current.class || match.address != current.address || match.sni != current.sni {
 			continue
 		}
-		if match.port == current.port || match.port == 0 || current.port == 0 {
+		if match.port != current.port && match.port != 0 && current.port != 0 {
+			continue
+		}
+		if current.address != "" && (match.protocol != current.protocol || match.value != current.value) {
+			return match, true
+		}
+		// all domains of an L7 protocol and port share a single filter chain
+		if current.address == "" && current.sni == "" && current.class == httpChain && match.protocol != current.protocol {
 			return match, true
 		}
 	}
-	return l7Match{}, false
+	return chainMatch{}, false
 }
 
-func conflictMessage(current l7Match, conflict l7Match) string {
+func conflictViolation(current chainMatch, conflict chainMatch) (string, string) {
+	if current.protocol == conflict.protocol {
+		return "value", fmt.Sprintf("match %q resolves to the same address as match %q on %s, both would produce the same filter chain", current.value, conflict.value, describeConflictPort(current, conflict))
+	}
+	if current.address != "" {
+		return "protocol", fmt.Sprintf("protocols %s and %s for the same address on %s would produce the same filter chain, use a single protocol for %q", conflict.protocol, current.protocol, describeConflictPort(current, conflict), current.value)
+	}
 	if conflict.port == current.port {
-		return fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort)
+		return "port", fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort)
 	}
 	// exactly one of the ports is undefined, a match without a port applies to all ports
 	definedPort := current.port
 	if definedPort == 0 {
 		definedPort = conflict.port
 	}
-	return fmt.Sprintf("a match without a port applies to all ports, so protocols %s and %s are both configured on port %d, using the same port in multiple matches requires the same protocol for the following protocols: %v", conflict.protocol, current.protocol, definedPort, notAllowedProtocolsOnTheSamePort)
+	return "port", fmt.Sprintf("a match without a port applies to all ports, so protocols %s and %s are both configured on port %d, using the same port in multiple matches requires the same protocol for the following protocols: %v", conflict.protocol, current.protocol, definedPort, notAllowedProtocolsOnTheSamePort)
+}
+
+func describeConflictPort(current chainMatch, conflict chainMatch) string {
+	port := current.port
+	if port == 0 {
+		port = conflict.port
+	}
+	if port == 0 {
+		return "all ports"
+	}
+	return fmt.Sprintf("port %d", port)
 }

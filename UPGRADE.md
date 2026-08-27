@@ -8,15 +8,21 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
-### `MeshPassthrough` rejects conflicting L7 protocols on the same port, including matches without a port
+### `MeshPassthrough` rejects matches that resolve to the same Envoy filter chain
 
-A `MeshPassthrough` match without a port applies to every port used by other matches in the policy, so a match with `grpc` on port `4317` next to a match with `http` and no port configures two L7 protocols on port `4317`. Create and update validation now rejects such a policy, previously it was accepted and Envoy rejected the entire generated passthrough listener, breaking all passthrough traffic for every proxy the policy matched. The check only fires between two of `grpc`, `http` and `http2` sharing the same filter chain: `tls` and `http` on the same port, or `http` on an IP next to `grpc` on a domain, are no longer reported, they generate distinct filter chains.
+Create and update validation now rejects a `MeshPassthrough` policy in which two matches resolve to the same filter chain of the generated passthrough listener. Previously such a policy was accepted and Envoy rejected the entire listener, breaking all passthrough traffic for every proxy the policy matched. Two matches collide when they configure the same port with:
+
+- two of `grpc`, `http` and `http2`, which share one filter chain per port, including a match without a port, which applies to every port used by other matches in the policy, so `grpc` on port `4317` next to `http` with no port configures two L7 protocols on port `4317`
+- the same address spelled differently, an IP and a CIDR covering only that IP (`10.0.0.1` and `10.0.0.1/32`), a CIDR with host bits (`10.0.0.1/24` and `10.0.0.0/24`) or another textual form of the same IPv6 address, addresses are now normalized before comparison
+- `tcp` and `mysql` on the same address, both generate an identical TCP proxy filter chain
+
+The check only fires between matches sharing the same filter chain: `tls` and `http` on the same port, or `http` on an IP next to `grpc` on a domain, are no longer reported, they generate distinct filter chains.
 
 An already applied policy with such a conflict is not re-validated on upgrade. Instead of failing config generation, the control plane now drops the conflicting match, keeps the rest of the configuration working and reports a warning in the dataplane `_rules` inspect API, so proxies previously stuck with a rejected listener recover on their own.
 
 **Action required**
 
-If a `MeshPassthrough` policy mixes `grpc`, `http` or `http2` matches that end up on the same port (directly or through a match without a port), decide which protocol that port uses and update the policy, otherwise the next edit of the policy is rejected by validation.
+If a `MeshPassthrough` policy contains matches like the above, resolve the conflict (pick one protocol per port and one spelling per address), otherwise the next edit of the policy is rejected by validation.
 
 ### `MeshLoadBalancingStrategy` cross-zone settings now require a `MeshMultiZoneService` `to` target
 

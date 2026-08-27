@@ -1,0 +1,37 @@
+targetRef:
+  kind: Dataplane
+default:
+  passthroughMode: Matched
+  appendMatch:
+  - type: IP
+    value: 10.0.0.1
+    protocol: tls
+    port: 443
+  - type: IP
+    value: 10.0.0.1
+    protocol: http
+    port: 443
+  - type: IP
+    value: 10.0.0.1
+    protocol: tcp
+    port: 443
+  - type: CIDR
+    value: 10.0.0.0/24
+    protocol: http
+    port: 443
+  - type: IP
+    value: 10.0.0.1
+    protocol: http
+    port: 8080
+  - type: Domain
+    value: example.com
+    protocol: grpc
+    port: 443
+  - type: Domain
+    value: example.com
+    protocol: tls
+    port: 443
+  - type: Domain
+    value: other.com
+    protocol: grpc
+    port: 443

@@ -1,0 +1,44 @@
+targetRef:
+  kind: Dataplane
+default:
+  passthroughMode: Matched
+  appendMatch:
+  - type: IP
+    value: 10.0.0.1
+    protocol: http
+    port: 80
+  - type: CIDR
+    value: 10.0.0.1/32
+    protocol: http
+    port: 80
+  - type: CIDR
+    value: 10.0.0.1/24
+    protocol: http
+    port: 8080
+  - type: CIDR
+    value: 10.0.0.0/24
+    protocol: grpc
+    port: 8080
+  - type: IP
+    value: 10.1.1.1
+    protocol: tcp
+    port: 3306
+  - type: IP
+    value: 10.1.1.1
+    protocol: mysql
+    port: 3306
+  - type: IP
+    value: 192.168.0.1
+    protocol: tcp
+  - type: CIDR
+    value: 192.168.0.1/32
+    protocol: tcp
+    port: 9090
+  - type: IP
+    value: "0:0:0:0:0:0:0:1"
+    protocol: tls
+    port: 443
+  - type: CIDR
+    value: "::1/128"
+    protocol: tls
+    port: 443
