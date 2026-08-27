@@ -29,12 +29,13 @@ endpoints:
       - 10.0.0.1
     conditions:
       ready: true
-    nodeName: node-1
 ---
 apiVersion: v1
 kind: Node
 metadata:
-  name: node-1
+  name: node-a
+spec:
+  unschedulable: true
 status:
   conditions:
     - type: Ready
@@ -42,5 +43,15 @@ status:
   addresses:
     - type: InternalIP
       address: 192.168.1.1
-    - type: ExternalIP
-      address: 1.2.3.4
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: node-b
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+  addresses:
+    - type: InternalIP
+      address: 192.168.1.2

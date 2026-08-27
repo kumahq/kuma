@@ -145,5 +145,41 @@ var _ = Describe("MeshZoneAddressReconciler", func() {
 			inputFile:  "13.update-existing.resources.yaml",
 			outputFile: "13.update-existing.mza.yaml",
 		}),
+		Entry("NodePort advertises the node hosting a ready endpoint", testCase{
+			inputFile:  "14.nodeport-endpoint-node.resources.yaml",
+			outputFile: "14.nodeport-endpoint-node.mza.yaml",
+		}),
+		Entry("NodePort falls back to a healthy node when the endpoint node is NotReady", testCase{
+			inputFile:  "15.nodeport-endpoint-node-not-ready.resources.yaml",
+			outputFile: "15.nodeport-endpoint-node-not-ready.mza.yaml",
+		}),
+		Entry("NodePort picks the first node by name when endpoints carry no node", testCase{
+			inputFile:  "16.nodeport-deterministic-pick.resources.yaml",
+			outputFile: "16.nodeport-deterministic-pick.mza.yaml",
+		}),
+		Entry("NodePort with externalTrafficPolicy Local requires a node with a local endpoint", testCase{
+			inputFile:  "17.nodeport-local-traffic-policy.resources.yaml",
+			outputFile: "17.nodeport-local-traffic-policy.mza.yaml",
+		}),
+		Entry("NodePort skips cordoned nodes when falling back", testCase{
+			inputFile:  "18.nodeport-skips-cordoned-node.resources.yaml",
+			outputFile: "18.nodeport-skips-cordoned-node.mza.yaml",
+		}),
+		Entry("NodePort keeps a cordoned node that still hosts a ready endpoint", testCase{
+			inputFile:  "19.nodeport-cordoned-node-with-endpoint.resources.yaml",
+			outputFile: "19.nodeport-cordoned-node-with-endpoint.mza.yaml",
+		}),
+		Entry("NodePort with no Ready node emits warning, no MeshZoneAddress", testCase{
+			inputFile:  "20.nodeport-no-ready-nodes.resources.yaml",
+			outputFile: "20.nodeport-no-ready-nodes.mza.yaml",
+		}),
+		Entry("NodePort prefers an ExternalIP over a serving node with only an InternalIP", testCase{
+			inputFile:  "21.nodeport-external-ip-over-serving-node.resources.yaml",
+			outputFile: "21.nodeport-external-ip-over-serving-node.mza.yaml",
+		}),
+		Entry("NodePort with externalTrafficPolicy Local falls back when endpoints carry no node", testCase{
+			inputFile:  "22.nodeport-local-traffic-policy-no-node-name.resources.yaml",
+			outputFile: "22.nodeport-local-traffic-policy-no-node-name.mza.yaml",
+		}),
 	)
 })
