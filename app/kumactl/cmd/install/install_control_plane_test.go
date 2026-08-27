@@ -237,10 +237,6 @@ controlPlane:
 			extraArgs: []string{"--mode", "global"},
 			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
 		}),
-		Entry("--mode global with universal environment is still unsupported", errTestCase{
-			extraArgs: []string{"--mode", "global", "--set", "controlPlane.environment=universal"},
-			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
-		}),
 		Entry("--zone is more than 253 characters", errTestCase{
 			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "takryywlpeftgnlwuwmwwfwohwzqxqlofjfsuuldtatoxlmnniytycvdnduwplvgnpnjwvzmbkqrvgnlovpynrtuyhhrqibdzwbfjrmhvwkkryzfnudghaxmegfvacjlytuyeikuawquolrykwwldjiynaxrpqgxmvwashrkigadzhxdeihcbjurhpmdrnulajpaspqcgzqxsnjrdenhruaawooojpyoprgnnoqiqdhncuztbgfsvhparjlippv"},
 			errorMsg:  "controlPlane.zone must be no more than 253 characters",

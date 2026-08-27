@@ -24,7 +24,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.extraLabels | object | `{}` | Labels to add to resources in addition to default labels |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
 | controlPlane.logOutputPath | string | `""` | Kuma CP log output path: Defaults to /dev/stdout |
-| controlPlane.mode | string | `"zone"` | Kuma CP modes: zone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart |
+| controlPlane.mode | string | `"zone"` | Kuma CP modes: zone, global. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |

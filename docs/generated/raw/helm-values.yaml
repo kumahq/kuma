@@ -44,7 +44,7 @@ controlPlane:
   # -- Kuma CP log output path: Defaults to /dev/stdout
   logOutputPath: ""
 
-  # -- Kuma CP modes: zone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart
+  # -- Kuma CP modes: zone, global. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart
   mode: "zone"
 
   # -- (string) Kuma CP zone, if running multizone
