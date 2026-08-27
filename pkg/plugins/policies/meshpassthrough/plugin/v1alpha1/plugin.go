@@ -34,14 +34,26 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 	if !proxy.GetTransparentProxy().Enabled() || proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
-		policies.Warnings = append(policies.Warnings, "policy doesn't support proxy running without transparent-proxy")
+		addWarnings(proxy, policies, "policy doesn't support proxy running without transparent-proxy")
 		return nil
 	}
 	listeners := policies_xds.GatherListeners(rs)
-	if err := applyToOutboundPassthrough(ctx, rs, policies.ProxyConf, listeners, proxy); err != nil {
+	warnings, err := applyToOutboundPassthrough(ctx, rs, policies.ProxyConf, listeners, proxy)
+	if err != nil {
 		return err
 	}
+	addWarnings(proxy, policies, warnings...)
 	return nil
+}
+
+// addWarnings stores warnings back in the proxy, policies are kept in a map by value
+// so appending to the local copy is not enough
+func addWarnings(proxy *core_xds.Proxy, policies core_xds.TypedMatchingPolicies, warnings ...string) {
+	if len(warnings) == 0 {
+		return
+	}
+	policies.Warnings = append(policies.Warnings, warnings...)
+	proxy.Policies.Dynamic[api.MeshPassthroughType] = policies
 }
 
 func applyToOutboundPassthrough(
@@ -50,9 +62,9 @@ func applyToOutboundPassthrough(
 	policyConf *core_rules.ProxyConf,
 	listeners policies_xds.Listeners,
 	proxy *core_xds.Proxy,
-) error {
+) ([]string, error) {
 	if policyConf == nil {
-		return nil
+		return nil, nil
 	}
 	conf := policyConf.Conf.(api.Conf)
 
@@ -64,11 +76,11 @@ func applyToOutboundPassthrough(
 	if conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == "None" {
 		// remove clusters because they were added in TransparentProxyGenerator
 		removeDefaultPassthroughCluster(rs)
-		return nil
+		return nil, nil
 	}
 	if conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == "All" {
 		// clusters were added in TransparentProxyGenerator, do nothing
-		return nil
+		return nil, nil
 	}
 
 	if conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == "Matched" || conf.PassthroughMode == nil {
@@ -80,13 +92,10 @@ func applyToOutboundPassthrough(
 				Conf:              conf,
 				IPv6Enabled:       proxy.Metadata.IPv6Enabled,
 			}
-			err := configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
-			if err != nil {
-				return err
-			}
+			return configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func removeDefaultPassthroughCluster(rs *core_xds.ResourceSet) {

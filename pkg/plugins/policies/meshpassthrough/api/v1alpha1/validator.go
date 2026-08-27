@@ -44,7 +44,8 @@ func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TopLevelTarg
 
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
-	portAndProtocol := map[uint32]ProtocolType{}
+	// L7 matches accepted so far, a match without a port has port 0 and applies to all ports
+	acceptedL7Matches := []l7Match{}
 	type portProtocol struct {
 		port     uint32
 		protocol ProtocolType
@@ -57,12 +58,15 @@ func validateDefault(conf Conf) validators.ValidationError {
 		if match.Port != nil && pointer.Deref[uint32](match.Port) == 0 || pointer.Deref[uint32](match.Port) > math.MaxUint16 {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
 		}
-		if match.Port != nil {
-			if value, found := portAndProtocol[pointer.Deref[uint32](match.Port)]; found && value != match.Protocol && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
-				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort))
+		if slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
+			current := newL7Match(match)
+			if conflict, found := findL7Conflict(acceptedL7Matches, current); found {
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), conflictMessage(current, conflict))
 			} else {
-				portAndProtocol[pointer.Deref[uint32](match.Port)] = match.Protocol
+				acceptedL7Matches = append(acceptedL7Matches, current)
 			}
+		}
+		if match.Port != nil {
 			key := portProtocol{
 				port:     *match.Port,
 				protocol: match.Protocol,
@@ -116,4 +120,52 @@ func validateDefault(conf Conf) validators.ValidationError {
 		}
 	}
 	return verr
+}
+
+// l7Match is a match with a protocol that cannot share a filter chain with another L7
+// protocol. Port 0 means the match has no port defined and applies to all ports. All
+// domains of a given protocol and port share a single filter chain, so they conflict with
+// each other, IPs and CIDRs are matched on the destination address and conflict only with
+// the same address.
+type l7Match struct {
+	port     uint32
+	address  string
+	protocol ProtocolType
+}
+
+func newL7Match(match Match) l7Match {
+	result := l7Match{
+		port:     pointer.Deref[uint32](match.Port),
+		protocol: match.Protocol,
+	}
+	if match.Type != "Domain" {
+		result.address = match.Value
+	}
+	return result
+}
+
+// findL7Conflict returns the first accepted match that ends up in the same filter chain
+// as the given match but with a different protocol
+func findL7Conflict(accepted []l7Match, current l7Match) (l7Match, bool) {
+	for _, match := range accepted {
+		if match.protocol == current.protocol || match.address != current.address {
+			continue
+		}
+		if match.port == current.port || match.port == 0 || current.port == 0 {
+			return match, true
+		}
+	}
+	return l7Match{}, false
+}
+
+func conflictMessage(current l7Match, conflict l7Match) string {
+	if conflict.port == current.port {
+		return fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort)
+	}
+	// exactly one of the ports is undefined, a match without a port applies to all ports
+	definedPort := current.port
+	if definedPort == 0 {
+		definedPort = conflict.port
+	}
+	return fmt.Sprintf("a match without a port applies to all ports, so protocols %s and %s are both configured on port %d, using the same port in multiple matches requires the same protocol for the following protocols: %v", conflict.protocol, current.protocol, definedPort, notAllowedProtocolsOnTheSamePort)
 }

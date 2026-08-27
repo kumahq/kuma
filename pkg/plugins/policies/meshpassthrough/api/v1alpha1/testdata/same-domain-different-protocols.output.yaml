@@ -1,0 +1,5 @@
+violations:
+- field: spec.default.appendMatch[1].port
+  message: 'a match without a port applies to all ports, so protocols grpc and http
+    are both configured on port 4317, using the same port in multiple matches requires
+    the same protocol for the following protocols: [grpc http http2]'

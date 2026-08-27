@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"fmt"
 	"maps"
 	"net"
 	"slices"
@@ -8,8 +9,6 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
@@ -26,6 +25,10 @@ const (
 	IP
 	IPV6
 )
+
+// l7Protocols produce identical Envoy filter chain matchers, so only one of them
+// can be configured on a given port. More than one makes Envoy reject the listener.
+var l7Protocols = []core_meta.Protocol{core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC}
 
 var protocolOrder = map[core_meta.Protocol]int{
 	core_meta.ProtocolTLS:   0,
@@ -55,13 +58,30 @@ type FilterChainMatch struct {
 	Routes    []Route
 }
 
-func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
+// GetOrderedMatchers builds filter chain matchers for the given configuration. Matches
+// that would result in a listener rejected by Envoy are dropped and returned as warnings,
+// so a single incorrect match doesn't invalidate the whole passthrough listener.
+func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, []string) {
+	warnings := newWarnings()
 	matcherWithRoutes := map[Matcher]map[Route]bool{}
 	portProtocols := map[uint32]map[core_meta.Protocol]bool{}
+	// the L7 protocol configured for a filter chain, the first match wins
+	l7ProtocolOnChain := map[l7ChainKey]core_meta.Protocol{}
 	for _, match := range pointer.Deref(conf.AppendMatch) {
 		port := pointer.DerefOr[uint32](match.Port, 0)
 		protocol := core_meta.ParseProtocol(string(match.Protocol))
 		matchType, isWildcardDomain := getMatchType(match, protocol)
+		if slices.Contains(l7Protocols, protocol) {
+			key := newL7ChainKey(port, matchType, match.Value)
+			if configured, found := l7ProtocolOnChain[key]; found && configured != protocol {
+				warnings.add(fmt.Sprintf(
+					"ignoring match %q with protocol %s, protocol %s is already configured for %s on %s, only one of %v can be configured on the same port",
+					match.Value, protocol, configured, key.describe(), describePort(port), l7Protocols,
+				))
+				continue
+			}
+			l7ProtocolOnChain[key] = protocol
+		}
 		matcher := Matcher{
 			Protocol:  protocol,
 			Port:      port,
@@ -100,10 +120,6 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 			matcherWithRoutes[matcher] = map[Route]bool{}
 		}
 	}
-	// we cannot differentiate between HTTP, HTTP/2, and gRPC on the same port.
-	if err := validatePortAndProtocol(portProtocols); err != nil {
-		return nil, err
-	}
 	// Envoy first checks the port when performing matching. If there is a matcher for a specific port
 	// and one rule to match all ports alongside another for a specific port,
 	// it might select the matcher for the specific port but fail to find a corresponding filter chain.
@@ -123,6 +139,16 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 		if matcher.Port == 0 {
 			for port := range portProtocols {
 				if port == 0 {
+					continue
+				}
+				// a match without a port must not override the protocol explicitly configured
+				// for this port, otherwise we generate two filter chains with the same matcher
+				key := newL7ChainKey(port, matcher.MatchType, matcher.Value)
+				if configured, found := l7ProtocolOnChain[key]; found && configured != matcher.Protocol && slices.Contains(l7Protocols, matcher.Protocol) {
+					warnings.add(fmt.Sprintf(
+						"matches with protocol %s and no port are not applied to %s on port %d, protocol %s is already configured there",
+						matcher.Protocol, key.describe(), port, configured,
+					))
 					continue
 				}
 				additionalMatcher := Matcher{
@@ -156,7 +182,65 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 			})
 	}
 	orderMatchers(filterChainMatchers)
-	return filterChainMatchers, nil
+	return filterChainMatchers, warnings.sorted()
+}
+
+// l7ChainKey identifies the filter chain an L7 match ends up in. All domains of a given
+// protocol and port share a single filter chain without an address matcher, IPs and CIDRs
+// get their own filter chain matched on the destination address.
+type l7ChainKey struct {
+	port    uint32
+	address string
+}
+
+func newL7ChainKey(port uint32, matchType MatchType, value string) l7ChainKey {
+	key := l7ChainKey{port: port}
+	// the address is normalized to the prefix range Envoy matches on, an IP and a CIDR
+	// covering only that IP end up in the same filter chain
+	switch matchType {
+	case IP:
+		key.address = fmt.Sprintf("%s/32", value)
+	case IPV6:
+		key.address = fmt.Sprintf("%s/128", value)
+	case CIDR, CIDRV6:
+		ip, prefixLen := getIpAndMask(value)
+		key.address = fmt.Sprintf("%s/%d", ip, prefixLen)
+	}
+	return key
+}
+
+func (k l7ChainKey) describe() string {
+	if k.address == "" {
+		return "domains"
+	}
+	return k.address
+}
+
+// warnings deduplicates messages and returns them in a stable order, matchers are kept
+// in maps so the same conflict can be reported multiple times and in a random order
+type warnings struct {
+	messages map[string]struct{}
+}
+
+func newWarnings() *warnings {
+	return &warnings{messages: map[string]struct{}{}}
+}
+
+func (w *warnings) add(message string) {
+	w.messages[message] = struct{}{}
+}
+
+func (w *warnings) sorted() []string {
+	messages := slices.Collect(maps.Keys(w.messages))
+	sort.Strings(messages)
+	return messages
+}
+
+func describePort(port uint32) string {
+	if port == 0 {
+		return "all ports"
+	}
+	return fmt.Sprintf("port %d", port)
 }
 
 func getMatchType(match api.Match, protocol core_meta.Protocol) (MatchType, bool) {
@@ -187,26 +271,6 @@ func getMatchType(match api.Match, protocol core_meta.Protocol) (MatchType, bool
 		}
 	}
 	return matchType, isWildcardDomain
-}
-
-func validatePortAndProtocol(portProtocols map[uint32]map[core_meta.Protocol]bool) error {
-	var errs error
-	for port, protocols := range portProtocols {
-		var counter int
-		if _, found := protocols[core_meta.ProtocolHTTP]; found {
-			counter++
-		}
-		if _, found := protocols[core_meta.ProtocolHTTP2]; found {
-			counter++
-		}
-		if _, found := protocols[core_meta.ProtocolGRPC]; found {
-			counter++
-		}
-		if counter > 1 {
-			errs = multierr.Append(errs, errors.Errorf("you cannot configure http, http2, grpc on the same port %d", port))
-		}
-	}
-	return errs
 }
 
 func getOrderedRoutes(routesMap map[Route]bool) []Route {

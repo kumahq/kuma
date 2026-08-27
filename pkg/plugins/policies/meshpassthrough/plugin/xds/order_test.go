@@ -2,7 +2,6 @@ package xds_test
 
 import (
 	"fmt"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -249,23 +248,23 @@ var _ = Describe("Match order", func() {
 			orderedGolden: "ordered-diff-protocols.golden.yaml",
 		}),
 	)
-	type invalidTestCase struct {
-		conf      api.Conf
-		errorMsgs []string
+	type conflictingTestCase struct {
+		conf          api.Conf
+		orderedGolden string
+		warnings      []string
 	}
-	DescribeTable("should fail when many protocols L7 on the same port",
-		func(given invalidTestCase) {
+	DescribeTable("should ignore conflicting L7 matches instead of failing",
+		func(given conflictingTestCase) {
 			// when
-			_, err := plugin_xds.GetOrderedMatchers(given.conf)
+			orderedFilterChainMatches, warnings := plugin_xds.GetOrderedMatchers(given.conf)
 
+			yaml, err := yaml.Marshal(orderedFilterChainMatches)
 			// then
-			Expect(err).To(HaveOccurred())
-			for _, errorMsg := range given.errorMsgs {
-				Expect(err.Error()).To(ContainSubstring(errorMsg))
-			}
-			Expect(strings.Split(err.Error(), ";")).To(HaveLen(len(given.errorMsgs)))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(yaml).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.orderedGolden)))
+			Expect(warnings).To(Equal(given.warnings))
 		},
-		Entry("many different protocols", invalidTestCase{
+		Entry("many different protocols", conflictingTestCase{
 			conf: api.Conf{
 				AppendMatch: &[]api.Match{
 					{
@@ -306,7 +305,33 @@ var _ = Describe("Match order", func() {
 					},
 				},
 			},
-			errorMsgs: []string{"you cannot configure http, http2, grpc on the same port 8080", "you cannot configure http, http2, grpc on the same port 9001"},
+			orderedGolden: "conflicting-protocols-on-the-same-port.golden.yaml",
+			warnings: []string{
+				`ignoring match "another.com" with protocol http2, protocol http is already configured for domains on port 8080, only one of [http http2 grpc] can be configured on the same port`,
+				`ignoring match "grpc.com" with protocol grpc, protocol http is already configured for domains on port 9001, only one of [http http2 grpc] can be configured on the same port`,
+				`ignoring match "http2.com" with protocol http2, protocol http is already configured for domains on port 9001, only one of [http http2 grpc] can be configured on the same port`,
+			},
+		}),
+		Entry("the same domain on all ports and on a port with a different L7 protocol", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "datadog.datadog.svc.cluster.local",
+						Port:     pointer.To[uint32](4317),
+						Protocol: api.ProtocolType("grpc"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "datadog.datadog.svc.cluster.local",
+						Protocol: api.ProtocolType("http"),
+					},
+				},
+			},
+			orderedGolden: "conflicting-protocols-on-all-ports.golden.yaml",
+			warnings: []string{
+				"matches with protocol http and no port are not applied to domains on port 4317, protocol grpc is already configured there",
+			},
 		}),
 	)
 })

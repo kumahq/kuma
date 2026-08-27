@@ -23,6 +23,10 @@ violations:
 - field: spec.default.appendMatch[9].value
   message: value google.com is already defiend for this port and protocol
 - field: spec.default.appendMatch[10].port
+  message: 'a match without a port applies to all ports, so protocols http2 and http
+    are both configured on port 9090, using the same port in multiple matches requires
+    the same protocol for the following protocols: [grpc http http2]'
+- field: spec.default.appendMatch[10].port
   message: wildcard domains doesn't work for all ports and layer 7 protocol
 - field: spec.default.appendMatch[11].protocol
   message: protocol mysql is not supported for a domain
