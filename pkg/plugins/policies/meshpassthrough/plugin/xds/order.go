@@ -65,8 +65,6 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, []string) {
 	warnings := newWarnings()
 	matcherWithRoutes := map[Matcher]map[Route]bool{}
 	portProtocols := map[uint32]map[core_meta.Protocol]bool{}
-	// the first match that configured a filter chain wins, a later match resolving to
-	// the same chain is dropped
 	chainOwners := map[chainKey]chainOwner{}
 	for _, match := range pointer.Deref(conf.AppendMatch) {
 		port := pointer.DerefOr[uint32](match.Port, 0)
@@ -77,8 +75,7 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, []string) {
 			Port:      port,
 			MatchType: matchType,
 		}
-		// domains of an L7 protocol share one filter chain and become virtual host routes,
-		// every other match keeps its value on the matcher
+		// L7 domains share one filter chain per port and become virtual host routes
 		isL7Domain := slices.Contains(l7Protocols, protocol) && matchType == Domain
 		if !isL7Domain {
 			matcher.Value = match.Value
@@ -154,9 +151,6 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, []string) {
 					MatchType: matcher.MatchType,
 					Value:     matcher.Value,
 				}
-				// a match without a port must not duplicate the filter chain explicitly
-				// configured for this port, otherwise we generate two filter chains with
-				// the same matcher
 				key := newChainKey(port, matcher.Protocol, matcher.MatchType, matcher.Value)
 				if owner, found := chainOwners[key]; found {
 					if owner.protocol != matcher.Protocol {
@@ -202,10 +196,8 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, []string) {
 	return filterChainMatchers, warnings.sorted()
 }
 
-// chainClass groups protocols whose filter chains can collide. Chains of different
-// classes always differ in the transport or application protocols they match on, chains
-// of the same class differ only by port and address, so two matches of the same class
-// resolving to the same chain key produce a listener rejected by Envoy.
+// chainClass groups protocols whose filter chains can collide: chains of different
+// classes always differ in the transport or application protocols they match on.
 type chainClass int
 
 const (
@@ -225,10 +217,9 @@ func protocolClass(protocol core_meta.Protocol) chainClass {
 	}
 }
 
-// chainKey identifies the filter chain a match ends up in. All domains of an L7
-// protocol and port share a single filter chain without an address matcher, TLS domains
-// get a filter chain per SNI, IPs and CIDRs get their own filter chain matched on the
-// destination prefix range.
+// chainKey identifies the filter chain a match ends up in: all domains of an L7
+// protocol and port share one chain, TLS domains get a chain per SNI, IPs and CIDRs
+// a chain per destination prefix range.
 type chainKey struct {
 	class   chainClass
 	port    uint32
@@ -236,8 +227,7 @@ type chainKey struct {
 	sni     string
 }
 
-// chainOwner is the first match that configured a filter chain, kept to report dropped
-// matches and to tell a conflicting matcher apart from one that merges into the chain
+// chainOwner tells a conflicting matcher apart from one that merges into the chain
 type chainOwner struct {
 	protocol core_meta.Protocol
 	matcher  Matcher
@@ -257,9 +247,8 @@ func newChainKey(port uint32, protocol core_meta.Protocol, matchType MatchType, 
 	return key
 }
 
-// normalizePrefix normalizes an address to the prefix range Envoy matches on, so an IP,
-// a CIDR covering only that IP, a CIDR spelled with host bits and a non-canonical IPv6
-// form all resolve to the same filter chain
+// normalizePrefix converts an address to the prefix range Envoy matches on, so an IP,
+// a CIDR covering only that IP and a non-canonical spelling all resolve to the same chain
 func normalizePrefix(matchType MatchType, value string) string {
 	switch matchType {
 	case IP:
@@ -280,7 +269,6 @@ func canonicalIP(value string) string {
 	return value
 }
 
-// conflictReason explains why two protocols cannot share the chain identified by the key
 func (k chainKey) conflictReason() string {
 	if k.class == httpChain {
 		return fmt.Sprintf("only one of %v can be configured on the same port", l7Protocols)
@@ -298,8 +286,8 @@ func (k chainKey) describe() string {
 	return k.address
 }
 
-// warnings deduplicates messages and returns them in a stable order, matchers are kept
-// in maps so the same conflict can be reported multiple times and in a random order
+// warnings deduplicates messages, map iteration surfaces the same conflict multiple
+// times and in random order
 type warnings struct {
 	messages map[string]struct{}
 }

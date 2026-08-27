@@ -46,8 +46,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
-// addWarnings stores warnings back in the proxy, policies are kept in a map by value
-// so appending to the local copy is not enough
+// policies are kept in a map by value, appending to the local copy would be discarded
 func addWarnings(proxy *core_xds.Proxy, policies core_xds.TypedMatchingPolicies, warnings ...string) {
 	if len(warnings) == 0 {
 		return

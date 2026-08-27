@@ -122,10 +122,8 @@ func validateDefault(conf Conf) validators.ValidationError {
 	return verr
 }
 
-// chainClass groups protocols whose filter chains can collide. Chains of different
-// classes always differ in the transport or application protocols they match on, chains
-// of the same class differ only by port and address, so two matches of the same class
-// resolving to the same chain produce a listener rejected by Envoy.
+// chainClass groups protocols whose filter chains can collide: chains of different
+// classes always differ in the transport or application protocols they match on.
 type chainClass int
 
 const (
@@ -145,11 +143,9 @@ func protocolClass(protocol ProtocolType) chainClass {
 	}
 }
 
-// chainMatch identifies the filter chain a match resolves to. Port 0 means the match has
-// no port defined and applies to all ports. All domains of an L7 protocol and port share
-// a single filter chain, TLS domains get a filter chain per SNI, IPs and CIDRs get their
-// own filter chain matched on the destination prefix range, so an IP and a CIDR covering
-// only that IP resolve to the same chain.
+// chainMatch identifies the filter chain a match resolves to: all domains of an L7
+// protocol and port share one chain, TLS domains get a chain per SNI, IPs and CIDRs
+// a chain per normalized destination prefix range.
 type chainMatch struct {
 	class    chainClass
 	port     uint32
@@ -198,8 +194,7 @@ func canonicalCIDR(value string) string {
 }
 
 // findChainConflict returns the first accepted match that resolves to the same filter
-// chain as the given match, either with a different protocol or as a duplicate of the
-// same address range spelled differently
+// chain as the given match
 func findChainConflict(accepted []chainMatch, current chainMatch) (chainMatch, bool) {
 	for _, match := range accepted {
 		if match.class != current.class || match.address != current.address || match.sni != current.sni {

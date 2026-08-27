@@ -19,8 +19,7 @@ type Configurer struct {
 	IPv6Enabled       bool
 }
 
-// Configure builds passthrough listeners and clusters and returns warnings about matches
-// that were dropped because they cannot be expressed in the Envoy configuration.
+// Configure builds passthrough listeners and clusters, returning warnings for dropped matches
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) ([]string, error) {
 	clustersAccumulator := map[string]core_meta.Protocol{}
 	filterChainMatches, warnings := GetOrderedMatchers(c.Conf)
