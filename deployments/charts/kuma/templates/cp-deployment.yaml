@@ -6,11 +6,11 @@
   {{ end }}
 {{ end }}
 
-{{ if eq .Values.controlPlane.mode "global" }}
+{{ if and (eq .Values.controlPlane.environment "kubernetes") (eq .Values.controlPlane.mode "global") }}
   {{ fail "Kubernetes-native Global Control Plane is not supported: controlPlane.mode=global cannot be deployed with this Helm chart. Deploy Zone control planes on Kubernetes; run the Global Control Plane on non-Kubernetes (Universal) infrastructure instead" }}
 {{ end }}
-{{ if ne .Values.controlPlane.mode "zone" }}
-  {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: zone" .Values.controlPlane.mode }}
+{{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "global")) }}
+  {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: zone, global" .Values.controlPlane.mode }}
   {{ fail $msg }}
 {{ end }}
 {{ if eq .Values.controlPlane.mode "zone" }}
