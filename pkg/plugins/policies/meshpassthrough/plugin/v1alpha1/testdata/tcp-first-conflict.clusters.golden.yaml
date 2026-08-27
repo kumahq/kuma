@@ -1,0 +1,9 @@
+resources:
+- name: meshpassthrough_tcp_172.12.2.2_3306
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_tcp_172_12_2_2_3306
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_tcp_172.12.2.2_3306
+    type: ORIGINAL_DST
