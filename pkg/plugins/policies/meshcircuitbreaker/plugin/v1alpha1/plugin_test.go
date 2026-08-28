@@ -167,6 +167,33 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			},
 			expectedCluster: []string{"outbound_cluster_connection_limits.golden.yaml"},
 		}),
+		Entry("basic outbound cluster with a retry budget", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:           "outbound",
+					Origin:         metadata.OriginOutbound,
+					Resource:       test_xds.ClusterWithName(otherServiceIdentifier.String()),
+					ResourceOrigin: otherServiceIdentifier,
+				},
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+					otherServiceIdentifier: {
+						Conf: []any{
+							api.Conf{
+								ConnectionLimits: &api.ConnectionLimits{
+									RetryBudget: &api.RetryBudget{
+										BudgetPercent:       pointer.To(intstr.FromString("12.5")),
+										MinRetryConcurrency: pointer.To(uint32(7)),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedCluster: []string{"outbound_cluster_retry_budget.golden.yaml"},
+		}),
 		Entry("basic outbound cluster without MeshCircuitBreaker", sidecarTestCase{
 			resources: []*core_xds.Resource{
 				{
