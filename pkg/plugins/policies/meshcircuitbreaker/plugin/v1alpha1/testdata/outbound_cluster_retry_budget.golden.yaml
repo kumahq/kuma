@@ -1,0 +1,8 @@
+circuitBreakers:
+  thresholds:
+  - retryBudget:
+      budgetPercent:
+        value: 12.5
+      minRetryConcurrency: 7
+    trackRemaining: true
+name: kri_msvc_default___other-service_80

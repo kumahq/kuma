@@ -72,6 +72,23 @@ type ConnectionLimits struct {
 	// The maximum number of parallel requests that are allowed to be made
 	// to the upstream cluster. This limit does not apply to non-HTTP traffic.
 	MaxRequests *uint32 `json:"maxRequests,omitempty"`
+	// RetryBudget limits concurrent retries as a share of the active requests,
+	// an alternative to the static 'maxRetries' cap. When set, Envoy applies the
+	// budget and ignores 'maxRetries'.
+	RetryBudget *RetryBudget `json:"retryBudget,omitempty"`
+}
+
+// RetryBudget configures a dynamic limit on concurrent retries, expressed
+// relative to the number of active requests to the cluster.
+type RetryBudget struct {
+	// Maximum share of active requests, as a percentage, that may be used for
+	// concurrent retries.
+	// If not specified then the default value is 20.
+	BudgetPercent *intstr.IntOrString `json:"budgetPercent,omitempty"`
+	// Minimum number of concurrent retries allowed regardless of the percentage
+	// budget, so that retries stay possible under low load.
+	// If not specified then the default value is 3.
+	MinRetryConcurrency *uint32 `json:"minRetryConcurrency,omitempty"`
 }
 
 type OutlierDetection struct {
