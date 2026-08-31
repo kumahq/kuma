@@ -46,6 +46,16 @@ If a mesh has both a generated producer route and a hand-written `MeshHTTPRoute`
 
 If any policy selects the generated route by its old `k8s.kuma.io/namespace: <kuma-system>` label (or your system namespace), update it to the `HTTPRoute`'s namespace instead. The control plane moves each existing generated route to its new namespace the next time its `HTTPRoute` is reconciled, so no manual migration of the `MeshHTTPRoute` object itself is needed.
 
+### Gateway API HTTPRoute conflicts on the same parent now resolve by creationTimestamp
+
+When two Gateway API `HTTPRoute`s attach to the same parent with equally specific matches, the generated `MeshHTTPRoute`s used to tie-break by resource name alone, so which route won depended on name rather than which `HTTPRoute` was applied first. Each generated `MeshHTTPRoute` now carries its owning `HTTPRoute`'s `creationTimestamp` as a label, and that label breaks the tie in favor of the older `HTTPRoute`; name order is used only when the timestamps also match.
+
+A hand-written `MeshHTTPRoute` has no such label, so it still takes precedence over any generated route it ties with on an exact conflict, same as before this change.
+
+**Action required**
+
+None. Existing generated `MeshHTTPRoute`s are backfilled with the timestamp label the next time their `HTTPRoute` is reconciled. If two `HTTPRoute`s previously tied and were resolved by name, check whether the new creationTimestamp-based outcome matches what you expect.
+
 ### The `BUILTIN` gateway type and its statistics are removed from the API
 
 The built-in gateway implementation was removed over the previous releases, and the Dataplane validator has been rejecting `networking.gateway.type: BUILTIN` since then. The remaining API surface is now gone too:
@@ -1899,6 +1909,14 @@ controlPlane:
     capabilities:
       drop: []
 ```
+
+### `MeshProxyPatch` can now change circuit breaker thresholds
+
+Since 2.14.0 every generated cluster carries a `DEFAULT`-priority circuit breaker threshold, and a `MeshProxyPatch` patching `circuitBreakers` appended a second one for that same priority. Envoy honours only the first threshold matching a routing priority, so the patched entry was dead config: `/config_dump` showed the requested values while Envoy kept what `MeshCircuitBreaker`, or its own defaults, had set. The patch now merges into the existing threshold of the same priority instead of appending. A threshold whose priority is not yet on the cluster still appends, and a `value` listing the same priority twice keeps the first entry, matching how Envoy resolves them.
+
+**Action required**
+
+Review every `MeshProxyPatch` that patches `circuitBreakers`. Where the same cluster is also covered by a `MeshCircuitBreaker`, the patch now overrides that policy for each field it sets, instead of being ignored — `MeshProxyPatch` runs last, so it wins the fields it names and the policy keeps the rest. Remove patches you wrote before 2.14.0 and no longer rely on, and drop any workaround you put in place because the patch appeared to do nothing.
 
 ## Upgrade to `2.13.7`
 

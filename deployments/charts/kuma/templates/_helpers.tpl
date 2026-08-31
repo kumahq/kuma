@@ -57,6 +57,11 @@ Create chart name and version as used by the chart label.
 {{ printf "%s" (default $defaultSvcName .Values.controlPlane.service.name) }}
 {{- end }}
 
+{{- define "kuma.controlPlane.globalZoneSync.serviceName" -}}
+{{- $defaultSvcName := printf "%s-global-zone-sync" (include "kuma.name" .) -}}
+{{ printf "%s" (default $defaultSvcName .Values.controlPlane.globalZoneSyncService.name) }}
+{{- end }}
+
 {{/*
 Common labels
 */}}

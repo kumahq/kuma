@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"maps"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -24,6 +25,7 @@ const ownerLabel = "gateways.kuma.io/gateway.networking.k8s.io-owner"
 type OwnedObject struct {
 	Namespace string
 	Spec      core_model.ResourceSpec
+	Labels    map[string]string
 }
 
 func hashNamespacedName(name kube_types.NamespacedName) string {
@@ -97,16 +99,29 @@ func ReconcileLabelledObject(
 	}
 
 	for ownedName, ownedObj := range owned {
+		desiredLabels := maps.Clone(ownedObj.Labels)
+		if desiredLabels == nil {
+			desiredLabels = map[string]string{}
+		}
+		desiredLabels[ownerLabel] = ownerLabelValue
+
 		// Update existing
 		if existing, ok := existingObjs[ownedName]; ok {
 			existingSpec, err := existing.GetSpec()
 			if err != nil {
 				return err
 			}
-			if core_model.Equal(existingSpec, ownedObj.Spec) {
+			mergedLabels := maps.Clone(existing.GetLabels())
+			if mergedLabels == nil {
+				mergedLabels = map[string]string{}
+			}
+			maps.Copy(mergedLabels, desiredLabels)
+			labelsChanged := !maps.Equal(existing.GetLabels(), mergedLabels)
+			if core_model.Equal(existingSpec, ownedObj.Spec) && !labelsChanged {
 				log.V(1).Info("object is the same. Nothing to update")
 				continue
 			}
+			existing.SetLabels(mergedLabels)
 			existing.SetSpec(ownedObj.Spec)
 
 			if err := client.Update(ctx, existing); err != nil {
@@ -127,9 +142,7 @@ func ReconcileLabelledObject(
 			&kube_meta.ObjectMeta{
 				Name:      ownedName,
 				Namespace: ownedObj.Namespace,
-				Labels: map[string]string{
-					ownerLabel: ownerLabelValue,
-				},
+				Labels:    desiredLabels,
 			},
 		)
 		newObj.SetMesh(ownerMesh)

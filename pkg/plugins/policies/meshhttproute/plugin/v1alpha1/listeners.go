@@ -222,7 +222,7 @@ func prepareRoutes(
 	for _, rule := range apiRules {
 		filters := pointer.Deref(rule.Default.Filters)
 		backendRefs := pointer.Deref(rule.Default.BackendRefs)
-		hasExplicitBackendRefs := len(backendRefs) > 0
+		hasExplicitBackendRefs := rule.Default.BackendRefs != nil
 		matchesHash := api.HashMatches(rule.Matches)
 		routeName := string(matchesHash)
 		origin := originByMatches[matchesHash]
