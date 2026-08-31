@@ -257,7 +257,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		if resourceChanged, ok := event.(events.ResourceChangedEvent); ok {
 			desc, err := r.registry.DescriptorFor(resourceChanged.Type)
 			if err != nil {
-				log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
+				log.V(1).Info("resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
 				return false
 			}
 			if desc.Scope == model.ScopeGlobal && desc.Name != core_mesh.MeshType {
