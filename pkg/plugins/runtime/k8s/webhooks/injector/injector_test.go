@@ -113,7 +113,7 @@ spec:
 				Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 				cfg.CaCertFile = caCertPath
 				cfg.TransparentProxyConfigMapName = tproxyConfigMapName
-				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil)
+				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, false, systemNamespace, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				// and create mesh
@@ -868,7 +868,7 @@ spec:
 			"http://kuma-control-plane.kuma-system:5681",
 			k8sClient,
 			false,
-			k8s.NewSimpleConverter(),
+			k8s.NewSimpleConverter("kuma-system"),
 			9901,
 			9902,
 			false,
@@ -926,7 +926,7 @@ metadata:
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
 			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, false, systemNamespace, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1033,7 +1033,7 @@ metadata:
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
 			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, false, systemNamespace, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1117,7 +1117,7 @@ metadata:
 				"http://kuma-control-plane.kuma-system:5681",
 				k8sClient,
 				true,
-				k8s.NewSimpleConverter(),
+				k8s.NewSimpleConverter("kuma-system"),
 				9901,
 				9902,
 				false,
