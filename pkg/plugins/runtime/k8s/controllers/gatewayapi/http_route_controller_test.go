@@ -341,6 +341,44 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 		Expect(routes.Items).To(HaveLen(1))
 		Expect(routes.Items[0].Labels).To(HaveKeyWithValue(metadata.GatewayAPIRouteCreationTimestampLabel, "1700000000"))
 	})
+
+	It("keeps labels it does not manage on a generated MeshHTTPRoute", func() {
+		ms := &meshservice_k8s.MeshService{
+			Name: "backend", Namespace: "kuma-demo",
+			Spec: &meshservice_api.MeshService{
+				Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("http")}},
+			},
+		}
+		route := newRoute(meshServiceParentRef("backend"))
+		route.CreationTimestamp = kube_meta.NewTime(time.Unix(1700000000, 0))
+
+		client := newClientBuilder(ms, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+
+		generated := &routes.Items[0]
+		generated.Labels["team"] = "payments"
+		delete(generated.Labels, metadata.GatewayAPIRouteCreationTimestampLabel)
+		Expect(client.Update(context.Background(), generated)).To(Succeed())
+
+		_, err = reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		Expect(routes.Items[0].Labels).To(HaveKeyWithValue("team", "payments"))
+		Expect(routes.Items[0].Labels).To(HaveKeyWithValue(metadata.GatewayAPIRouteCreationTimestampLabel, "1700000000"))
+	})
 })
 
 var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func() {

@@ -99,9 +99,9 @@ func ReconcileLabelledObject(
 	}
 
 	for ownedName, ownedObj := range owned {
-		desiredLabels := map[string]string{}
-		for k, v := range ownedObj.Labels {
-			desiredLabels[k] = v
+		desiredLabels := maps.Clone(ownedObj.Labels)
+		if desiredLabels == nil {
+			desiredLabels = map[string]string{}
 		}
 		desiredLabels[ownerLabel] = ownerLabelValue
 
@@ -111,12 +111,17 @@ func ReconcileLabelledObject(
 			if err != nil {
 				return err
 			}
-			labelsChanged := !maps.Equal(existing.GetLabels(), desiredLabels)
+			mergedLabels := maps.Clone(existing.GetLabels())
+			if mergedLabels == nil {
+				mergedLabels = map[string]string{}
+			}
+			maps.Copy(mergedLabels, desiredLabels)
+			labelsChanged := !maps.Equal(existing.GetLabels(), mergedLabels)
 			if core_model.Equal(existingSpec, ownedObj.Spec) && !labelsChanged {
 				log.V(1).Info("object is the same. Nothing to update")
 				continue
 			}
-			existing.SetLabels(desiredLabels)
+			existing.SetLabels(mergedLabels)
 			existing.SetSpec(ownedObj.Spec)
 
 			if err := client.Update(ctx, existing); err != nil {
