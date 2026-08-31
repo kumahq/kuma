@@ -5,11 +5,10 @@ import (
 	"net"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
@@ -27,9 +26,14 @@ const (
 	IPV6
 )
 
+// l7Protocols produce identical Envoy filter chain matchers, so only one of them
+// can be configured on a given port. More than one makes Envoy reject the listener.
+var l7Protocols = []core_meta.Protocol{core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC}
+
 var protocolOrder = map[core_meta.Protocol]int{
 	core_meta.ProtocolTLS:   0,
 	core_meta.ProtocolTCP:   1,
+	core_meta.ProtocolMysql: 1,
 	core_meta.ProtocolHTTP:  2,
 	core_meta.ProtocolHTTP2: 3,
 	core_meta.ProtocolGRPC:  4,
@@ -55,10 +59,18 @@ type FilterChainMatch struct {
 	Routes    []Route
 }
 
-func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
+// GetOrderedMatchers builds the filter chain matchers for the configuration. Matches
+// Envoy would reject the listener for are dropped, so a single incorrect match doesn't
+// invalidate the whole passthrough listener.
+func GetOrderedMatchers(conf api.Conf) []FilterChainMatch {
+	conflicts := api.FindConflicts(conf)
 	matcherWithRoutes := map[Matcher]map[Route]bool{}
+	matcherFilterChains := map[Matcher]api.FilterChainMatcher{}
 	portProtocols := map[uint32]map[core_meta.Protocol]bool{}
-	for _, match := range pointer.Deref(conf.AppendMatch) {
+	for i, match := range pointer.Deref(conf.AppendMatch) {
+		if conflicts.IsDropped(i) {
+			continue
+		}
 		port := pointer.DerefOr[uint32](match.Port, 0)
 		protocol := core_meta.ParseProtocol(string(match.Protocol))
 		matchType, isWildcardDomain := getMatchType(match, protocol)
@@ -67,42 +79,36 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 			Port:      port,
 			MatchType: matchType,
 		}
+		// L7 domains share one filter chain per port and become virtual host routes
+		isL7Domain := slices.Contains(l7Protocols, protocol) && matchType == Domain
+		if !isL7Domain {
+			matcher.Value = match.Value
+		}
+		matcherFilterChains[matcher] = match.FilterChainMatcher()
 		if _, found := portProtocols[port]; !found {
 			portProtocols[port] = map[core_meta.Protocol]bool{protocol: true}
 		} else {
 			portProtocols[port][protocol] = true
 		}
-		switch protocol {
-		case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-			// when there are domains we want to create VirtualHosts with Domain match
-			if matchType == Domain {
-				if isWildcardDomain {
-					matchType = WildcardDomain
-				}
-				route := Route{
-					Value:     match.Value,
-					MatchType: matchType,
-				}
-				if _, found := matcherWithRoutes[matcher]; found {
-					matcherWithRoutes[matcher][route] = true
-				} else {
-					matcherWithRoutes[matcher] = map[Route]bool{
-						route: true,
-					}
-				}
-			} else {
-				matcher.Value = match.Value
-				// there should be no existing matcher if there is ip/cidr
-				matcherWithRoutes[matcher] = map[Route]bool{}
+		if isL7Domain {
+			routeMatchType := Domain
+			if isWildcardDomain {
+				routeMatchType = WildcardDomain
 			}
-		default:
-			matcher.Value = match.Value
+			route := Route{
+				Value:     match.Value,
+				MatchType: routeMatchType,
+			}
+			if _, found := matcherWithRoutes[matcher]; found {
+				matcherWithRoutes[matcher][route] = true
+			} else {
+				matcherWithRoutes[matcher] = map[Route]bool{
+					route: true,
+				}
+			}
+		} else if _, found := matcherWithRoutes[matcher]; !found {
 			matcherWithRoutes[matcher] = map[Route]bool{}
 		}
-	}
-	// we cannot differentiate between HTTP, HTTP/2, and gRPC on the same port.
-	if err := validatePortAndProtocol(portProtocols); err != nil {
-		return nil, err
 	}
 	// Envoy first checks the port when performing matching. If there is a matcher for a specific port
 	// and one rule to match all ports alongside another for a specific port,
@@ -123,6 +129,9 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 		if matcher.Port == 0 {
 			for port := range portProtocols {
 				if port == 0 {
+					continue
+				}
+				if conflicts.IsSuppressed(matcherFilterChains[matcher].WithPort(port)) {
 					continue
 				}
 				additionalMatcher := Matcher{
@@ -156,7 +165,7 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 			})
 	}
 	orderMatchers(filterChainMatchers)
-	return filterChainMatchers, nil
+	return filterChainMatchers
 }
 
 func getMatchType(match api.Match, protocol core_meta.Protocol) (MatchType, bool) {
@@ -179,7 +188,9 @@ func getMatchType(match api.Match, protocol core_meta.Protocol) (MatchType, bool
 			matchType = IP
 		}
 	case api.MatchType("CIDR"):
-		split := strings.Split(match.Value, "/")
+		// classify by the canonical form, so an IPv4-mapped IPv6 CIDR lands on
+		// the IPv4 listener the canonical prefix is generated for
+		split := strings.Split(api.CanonicalCIDR(match.Value), "/")
 		if govalidator.IsIPv6(split[0]) {
 			matchType = CIDRV6
 		} else {
@@ -187,26 +198,6 @@ func getMatchType(match api.Match, protocol core_meta.Protocol) (MatchType, bool
 		}
 	}
 	return matchType, isWildcardDomain
-}
-
-func validatePortAndProtocol(portProtocols map[uint32]map[core_meta.Protocol]bool) error {
-	var errs error
-	for port, protocols := range portProtocols {
-		var counter int
-		if _, found := protocols[core_meta.ProtocolHTTP]; found {
-			counter++
-		}
-		if _, found := protocols[core_meta.ProtocolHTTP2]; found {
-			counter++
-		}
-		if _, found := protocols[core_meta.ProtocolGRPC]; found {
-			counter++
-		}
-		if counter > 1 {
-			errs = multierr.Append(errs, errors.Errorf("you cannot configure http, http2, grpc on the same port %d", port))
-		}
-	}
-	return errs
 }
 
 func getOrderedRoutes(routesMap map[Route]bool) []Route {
@@ -272,12 +263,14 @@ func sortDomains(i string, j string) bool {
 	return i < j
 }
 
+// getIpAndMask returns the canonical prefix Envoy matches on, so an IPv4-mapped
+// IPv6 CIDR produces its plain IPv4 form instead of a prefix length Envoy rejects
 func getIpAndMask(cidr string) (string, uint32) {
-	_, ipNet, err := net.ParseCIDR(cidr)
-	if err != nil {
+	canonical := api.CanonicalCIDR(cidr)
+	if _, _, err := net.ParseCIDR(canonical); err != nil {
 		return "", 0
 	}
-	ip := ipNet.IP.String()
-	mask, _ := ipNet.Mask.Size()
+	ip, maskText, _ := strings.Cut(canonical, "/")
+	mask, _ := strconv.ParseUint(maskText, 10, 32)
 	return ip, uint32(mask)
 }

@@ -8,6 +8,22 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `MeshPassthrough` rejects matches that resolve to the same Envoy filter chain
+
+Create and update validation now rejects a `MeshPassthrough` policy in which two matches resolve to the same filter chain of the generated passthrough listener. Previously such a policy was accepted and Envoy rejected the entire listener, breaking all passthrough traffic for every proxy the policy matched. Two matches collide when they configure the same port (or both configure no port) with:
+
+- two of `grpc`, `http` and `http2`, which share one filter chain per port
+- the same address spelled differently, an IP and a CIDR covering only that IP (`10.0.0.1` and `10.0.0.1/32`), a CIDR with host bits (`10.0.0.1/24` and `10.0.0.0/24`) or another textual form of the same IPv6 address, addresses are now normalized before comparison
+- `tcp` and `mysql` on the same address, both generate an identical TCP proxy filter chain
+
+The check only fires between matches sharing the same filter chain: `tls` and `http` on the same port, or `http` on an IP next to `grpc` on a domain, are no longer reported, they generate distinct filter chains. A match with a port next to a match without one is not a conflict either: `grpc` on port `4317` next to `http` with no port previously broke the listener, now the port-specific match owns its port and the match without a port covers the remaining ports.
+
+An already applied policy with a conflict is not re-validated on upgrade. Instead of failing config generation, the control plane keeps the first match of the colliding pair in `appendMatch` order, drops the later one and names it in a debug log of the `MeshPassthrough` component, so proxies previously stuck with a rejected listener recover on their own.
+
+**Action required**
+
+If a `MeshPassthrough` policy contains matches like the above, resolve the conflict (pick one protocol per port and one spelling per address), otherwise the next edit of the policy is rejected by validation.
+
 ### `MeshLoadBalancingStrategy` cross-zone settings now require a `MeshMultiZoneService` `to` target
 
 `MeshLoadBalancingStrategy.spec.to[].default.localityAwareness.crossZone` is now accepted only when that `to` entry targets a `MeshMultiZoneService`. Create and update validation now rejects the same `crossZone` block on `Mesh`, `MeshService`, and `MeshExternalService` targets.

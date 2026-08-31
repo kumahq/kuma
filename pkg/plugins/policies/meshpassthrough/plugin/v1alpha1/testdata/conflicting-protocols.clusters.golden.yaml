@@ -1,0 +1,22 @@
+resources:
+- name: meshpassthrough_grpc_datadog.datadog.svc.cluster.local_4317
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_grpc_datadog_datadog_svc_cluster_local_4317
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_grpc_datadog.datadog.svc.cluster.local_4317
+    type: ORIGINAL_DST
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: meshpassthrough_http_datadog.datadog.svc.cluster.local_*
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_http_datadog_datadog_svc_cluster_local__
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_http_datadog.datadog.svc.cluster.local_*
+    type: ORIGINAL_DST
