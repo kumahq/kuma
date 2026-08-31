@@ -207,17 +207,20 @@ spec:
 			g.Expect(time.Since(start)).To(BeNumerically("<", time.Second*4))
 		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
-		// negative control: catch-all route is untouched by the route-scoped timeout
+		// negative control: an unmatched path now hits the MeshHTTPRoute no-match
+		// fallback, so it should fail fast with 404 instead of inheriting the
+		// route-scoped timeout or reaching the backend.
 		Eventually(func(g Gomega) {
 			start := time.Now()
-			_, err := framework_client.CollectEchoResponse(
+			response, err := framework_client.CollectFailure(
 				multizone.KubeZone1, "test-client", dest+"/path/without/timeout",
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
 				framework_client.WithMaxTime(10),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+			g.Expect(response.ResponseCode).To(Equal(404))
+			g.Expect(time.Since(start)).To(BeNumerically("<", time.Second*4))
 		}, "30s", "1s").Should(Succeed())
 	})
 
