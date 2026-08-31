@@ -303,7 +303,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
 		Expect(client.List(context.Background(), routes)).To(Succeed())
 		Expect(routes.Items).To(HaveLen(1))
-		Expect(routes.Items[0].Labels).To(HaveKeyWithValue(metadata.GatewayAPIRouteCreationTimestampLabel, "1700000000"))
+		Expect(routes.Items[0].Labels).To(HaveKeyWithValue(metadata.GatewayAPIRouteCreationTimestampLabel, "1700000000000000000"))
 	})
 
 	It("backfills the creationTimestamp label onto a generated MeshHTTPRoute created before the label existed", func() {
@@ -339,7 +339,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 
 		Expect(client.List(context.Background(), routes)).To(Succeed())
 		Expect(routes.Items).To(HaveLen(1))
-		Expect(routes.Items[0].Labels).To(HaveKeyWithValue(metadata.GatewayAPIRouteCreationTimestampLabel, "1700000000"))
+		Expect(routes.Items[0].Labels).To(HaveKeyWithValue(metadata.GatewayAPIRouteCreationTimestampLabel, "1700000000000000000"))
 	})
 
 	It("keeps labels it does not manage on a generated MeshHTTPRoute", func() {
@@ -377,7 +377,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 		Expect(client.List(context.Background(), routes)).To(Succeed())
 		Expect(routes.Items).To(HaveLen(1))
 		Expect(routes.Items[0].Labels).To(HaveKeyWithValue("team", "payments"))
-		Expect(routes.Items[0].Labels).To(HaveKeyWithValue(metadata.GatewayAPIRouteCreationTimestampLabel, "1700000000"))
+		Expect(routes.Items[0].Labels).To(HaveKeyWithValue(metadata.GatewayAPIRouteCreationTimestampLabel, "1700000000000000000"))
 	})
 })
 

@@ -187,7 +187,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	conditions := ParentConditions{}
 
 	labels := map[string]string{
-		metadata.GatewayAPIRouteCreationTimestampLabel: strconv.FormatInt(route.CreationTimestamp.Unix(), 10),
+		metadata.GatewayAPIRouteCreationTimestampLabel: strconv.FormatInt(route.CreationTimestamp.UnixNano(), 10),
 	}
 
 	for i, ref := range route.Spec.ParentRefs {

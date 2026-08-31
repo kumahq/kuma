@@ -39,11 +39,11 @@ func CompareByRouteCreationTimestamp[T common.PolicyAttributes](a, b T) int {
 		if !ok {
 			return time.Time{}
 		}
-		sec, err := strconv.ParseInt(label, 10, 64)
+		nanos, err := strconv.ParseInt(label, 10, 64)
 		if err != nil {
 			return time.Time{}
 		}
-		return time.Unix(sec, 0)
+		return time.Unix(0, nanos)
 	}
 
 	return keyOf(b).Compare(keyOf(a))
