@@ -35,3 +35,10 @@ default:
     value: other.com
     protocol: grpc
     port: 443
+  - type: IP
+    value: 192.168.0.1
+    protocol: tcp
+  - type: CIDR
+    value: 192.168.0.1/32
+    protocol: tcp
+    port: 9090

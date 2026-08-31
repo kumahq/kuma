@@ -9,8 +9,5 @@ violations:
   message: protocols tcp and mysql for the same address on port 3306 would produce
     the same filter chain, use a single protocol for "10.1.1.1"
 - field: spec.default.appendMatch[7].value
-  message: match "192.168.0.1/32" resolves to the same address as match "192.168.0.1"
-    on port 9090, both would produce the same filter chain
-- field: spec.default.appendMatch[9].value
   message: match "::1/128" resolves to the same address as match "0:0:0:0:0:0:0:1"
     on port 443, both would produce the same filter chain

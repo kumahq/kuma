@@ -1,11 +1,11 @@
 package xds
 
 import (
-	"fmt"
 	"maps"
 	"net"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -33,6 +33,7 @@ var l7Protocols = []core_meta.Protocol{core_meta.ProtocolHTTP, core_meta.Protoco
 var protocolOrder = map[core_meta.Protocol]int{
 	core_meta.ProtocolTLS:   0,
 	core_meta.ProtocolTCP:   1,
+	core_meta.ProtocolMysql: 1,
 	core_meta.ProtocolHTTP:  2,
 	core_meta.ProtocolHTTP2: 3,
 	core_meta.ProtocolGRPC:  4,
@@ -59,14 +60,18 @@ type FilterChainMatch struct {
 }
 
 // GetOrderedMatchers builds filter chain matchers for the given configuration. Matches
-// that would result in a listener rejected by Envoy are dropped and returned as warnings,
-// so a single incorrect match doesn't invalidate the whole passthrough listener.
-func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, []string) {
-	warnings := newWarnings()
+// that would result in a listener rejected by Envoy are dropped, so a single incorrect
+// match doesn't invalidate the whole passthrough listener. The warnings for dropped
+// matches are attached to the matched policies by MatchedPolicies.
+func GetOrderedMatchers(conf api.Conf) []FilterChainMatch {
+	analysis := api.AnalyzeConf(conf)
 	matcherWithRoutes := map[Matcher]map[Route]bool{}
+	matcherChainKeys := map[Matcher]api.ChainKey{}
 	portProtocols := map[uint32]map[core_meta.Protocol]bool{}
-	chainOwners := map[chainKey]chainOwner{}
-	for _, match := range pointer.Deref(conf.AppendMatch) {
+	for i, match := range pointer.Deref(conf.AppendMatch) {
+		if analysis.IsDropped(i) {
+			continue
+		}
 		port := pointer.DerefOr[uint32](match.Port, 0)
 		protocol := core_meta.ParseProtocol(string(match.Protocol))
 		matchType, isWildcardDomain := getMatchType(match, protocol)
@@ -80,25 +85,7 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, []string) {
 		if !isL7Domain {
 			matcher.Value = match.Value
 		}
-		key := newChainKey(port, protocol, matchType, match.Value)
-		if owner, found := chainOwners[key]; found {
-			if owner.protocol != protocol {
-				warnings.add(fmt.Sprintf(
-					"ignoring match %q with protocol %s, protocol %s is already configured for %s on %s, %s",
-					match.Value, protocol, owner.protocol, key.describe(), describePort(port), key.conflictReason(),
-				))
-				continue
-			}
-			if owner.matcher != matcher {
-				warnings.add(fmt.Sprintf(
-					"ignoring match %q with protocol %s, match %q already defines a filter chain for %s on %s",
-					match.Value, protocol, owner.value, key.describe(), describePort(port),
-				))
-				continue
-			}
-		} else {
-			chainOwners[key] = chainOwner{protocol: protocol, matcher: matcher, value: match.Value}
-		}
+		matcherChainKeys[matcher] = api.KeyOf(match)
 		if _, found := portProtocols[port]; !found {
 			portProtocols[port] = map[core_meta.Protocol]bool{protocol: true}
 		} else {
@@ -145,28 +132,18 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, []string) {
 				if port == 0 {
 					continue
 				}
+				if analysis.IsProjectionSuppressed(
+					matcherChainKeys[matcher].WithPort(port),
+					api.ProtocolType(matcher.Protocol),
+					matcher.Value,
+				) {
+					continue
+				}
 				additionalMatcher := Matcher{
 					Protocol:  matcher.Protocol,
 					Port:      port,
 					MatchType: matcher.MatchType,
 					Value:     matcher.Value,
-				}
-				key := newChainKey(port, matcher.Protocol, matcher.MatchType, matcher.Value)
-				if owner, found := chainOwners[key]; found {
-					if owner.protocol != matcher.Protocol {
-						warnings.add(fmt.Sprintf(
-							"matches with protocol %s and no port are not applied to %s on port %d, protocol %s is already configured there",
-							matcher.Protocol, key.describe(), port, owner.protocol,
-						))
-						continue
-					}
-					if owner.matcher != additionalMatcher {
-						warnings.add(fmt.Sprintf(
-							"matches with protocol %s and no port are not applied to %s on port %d, match %q already defines a filter chain there",
-							matcher.Protocol, key.describe(), port, owner.value,
-						))
-						continue
-					}
 				}
 				if _, found := matcherWithRoutesAndAdditionalPorts[additionalMatcher]; found {
 					for route := range routes {
@@ -193,124 +170,7 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, []string) {
 			})
 	}
 	orderMatchers(filterChainMatchers)
-	return filterChainMatchers, warnings.sorted()
-}
-
-// chainClass groups protocols whose filter chains can collide: chains of different
-// classes always differ in the transport or application protocols they match on.
-type chainClass int
-
-const (
-	tcpChain  chainClass = iota // tcp and mysql: raw_buffer with optional address and port
-	tlsChain                    // tls: tls transport with SNI or address and optional port
-	httpChain                   // http, http2 and grpc: raw_buffer and http/1.1,h2c with optional address and port
-)
-
-func protocolClass(protocol core_meta.Protocol) chainClass {
-	switch protocol {
-	case core_meta.ProtocolTLS:
-		return tlsChain
-	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
-		return httpChain
-	default:
-		return tcpChain
-	}
-}
-
-// chainKey identifies the filter chain a match ends up in: all domains of an L7
-// protocol and port share one chain, TLS domains get a chain per SNI, IPs and CIDRs
-// a chain per destination prefix range.
-type chainKey struct {
-	class   chainClass
-	port    uint32
-	address string
-	sni     string
-}
-
-// chainOwner tells a conflicting matcher apart from one that merges into the chain
-type chainOwner struct {
-	protocol core_meta.Protocol
-	matcher  Matcher
-	value    string
-}
-
-func newChainKey(port uint32, protocol core_meta.Protocol, matchType MatchType, value string) chainKey {
-	key := chainKey{class: protocolClass(protocol), port: port}
-	switch matchType {
-	case IP, IPV6, CIDR, CIDRV6:
-		key.address = normalizePrefix(matchType, value)
-	case Domain, WildcardDomain:
-		if key.class == tlsChain {
-			key.sni = value
-		}
-	}
-	return key
-}
-
-// normalizePrefix converts an address to the prefix range Envoy matches on, so an IP,
-// a CIDR covering only that IP and a non-canonical spelling all resolve to the same chain
-func normalizePrefix(matchType MatchType, value string) string {
-	switch matchType {
-	case IP:
-		return canonicalIP(value) + "/32"
-	case IPV6:
-		return canonicalIP(value) + "/128"
-	case CIDR, CIDRV6:
-		ip, prefixLen := getIpAndMask(value)
-		return fmt.Sprintf("%s/%d", ip, prefixLen)
-	}
-	return ""
-}
-
-func canonicalIP(value string) string {
-	if ip := net.ParseIP(value); ip != nil {
-		return ip.String()
-	}
-	return value
-}
-
-func (k chainKey) conflictReason() string {
-	if k.class == httpChain {
-		return fmt.Sprintf("only one of %v can be configured on the same port", l7Protocols)
-	}
-	return "both would produce the same filter chain matcher"
-}
-
-func (k chainKey) describe() string {
-	if k.sni != "" {
-		return fmt.Sprintf("domain %q", k.sni)
-	}
-	if k.address == "" {
-		return "domains"
-	}
-	return k.address
-}
-
-// warnings deduplicates messages, map iteration surfaces the same conflict multiple
-// times and in random order
-type warnings struct {
-	messages map[string]struct{}
-}
-
-func newWarnings() *warnings {
-	return &warnings{messages: map[string]struct{}{}}
-}
-
-func (w *warnings) add(message string) {
-	w.messages[message] = struct{}{}
-}
-
-func (w *warnings) sorted() []string {
-	messages := slices.Collect(maps.Keys(w.messages))
-	sort.Strings(messages)
-	return messages
-}
-
-func describePort(port uint32) string {
-	if port == 0 {
-		return "all ports"
-	}
-	return fmt.Sprintf("port %d", port)
+	return filterChainMatchers
 }
 
 func getMatchType(match api.Match, protocol core_meta.Protocol) (MatchType, bool) {
@@ -333,7 +193,9 @@ func getMatchType(match api.Match, protocol core_meta.Protocol) (MatchType, bool
 			matchType = IP
 		}
 	case api.MatchType("CIDR"):
-		split := strings.Split(match.Value, "/")
+		// classify by the canonical form, so an IPv4-mapped IPv6 CIDR lands on
+		// the IPv4 listener the canonical prefix is generated for
+		split := strings.Split(api.CanonicalCIDR(match.Value), "/")
 		if govalidator.IsIPv6(split[0]) {
 			matchType = CIDRV6
 		} else {
@@ -406,12 +268,14 @@ func sortDomains(i string, j string) bool {
 	return i < j
 }
 
+// getIpAndMask returns the canonical prefix Envoy matches on, so an IPv4-mapped
+// IPv6 CIDR produces its plain IPv4 form instead of a prefix length Envoy rejects
 func getIpAndMask(cidr string) (string, uint32) {
-	_, ipNet, err := net.ParseCIDR(cidr)
-	if err != nil {
+	canonical := api.CanonicalCIDR(cidr)
+	if _, _, err := net.ParseCIDR(canonical); err != nil {
 		return "", 0
 	}
-	ip := ipNet.IP.String()
-	mask, _ := ipNet.Mask.Size()
+	ip, maskText, _ := strings.Cut(canonical, "/")
+	mask, _ := strconv.ParseUint(maskText, 10, 32)
 	return ip, uint32(mask)
 }

@@ -19,26 +19,25 @@ type Configurer struct {
 	IPv6Enabled       bool
 }
 
-// Configure builds passthrough listeners and clusters, returning warnings for dropped matches
-func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) ([]string, error) {
+func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
 	clustersAccumulator := map[string]core_meta.Protocol{}
-	filterChainMatches, warnings := GetOrderedMatchers(c.Conf)
+	filterChainMatches := GetOrderedMatchers(c.Conf)
 
 	if hasIPv4Matches(filterChainMatches) {
 		if err := c.configureListener(filterChainMatches, ipv4, clustersAccumulator, false, c.IPv6Enabled); err != nil {
-			return warnings, err
+			return err
 		}
 	}
 	if hasIPv6Matches(filterChainMatches) {
 		if err := c.configureListener(filterChainMatches, ipv6, clustersAccumulator, true, c.IPv6Enabled); err != nil {
-			return warnings, err
+			return err
 		}
 	}
 
 	for name, protocol := range clustersAccumulator {
 		config, err := CreateCluster(c.APIVersion, name, protocol)
 		if err != nil {
-			return warnings, err
+			return err
 		}
 		rs.Add(&core_xds.Resource{
 			Name:     config.GetName(),
@@ -46,7 +45,7 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listene
 			Resource: config,
 		})
 	}
-	return warnings, nil
+	return nil
 }
 
 func (c Configurer) configureListener(

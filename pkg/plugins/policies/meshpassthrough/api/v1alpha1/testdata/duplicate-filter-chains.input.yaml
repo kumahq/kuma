@@ -28,13 +28,6 @@ default:
     protocol: mysql
     port: 3306
   - type: IP
-    value: 192.168.0.1
-    protocol: tcp
-  - type: CIDR
-    value: 192.168.0.1/32
-    protocol: tcp
-    port: 9090
-  - type: IP
     value: "0:0:0:0:0:0:0:1"
     protocol: tls
     port: 443

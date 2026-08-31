@@ -1,8 +1,11 @@
 package v1alpha1
 
 import (
+	"slices"
+
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
+	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -16,6 +19,8 @@ import (
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
+
+var logger = core.Log.WithName("MeshPassthrough")
 
 type plugin struct{}
 
@@ -39,19 +44,22 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 	listeners := policies_xds.GatherListeners(rs)
 	warnings, err := applyToOutboundPassthrough(ctx, rs, policies.ProxyConf, listeners, proxy)
-	if err != nil {
-		return err
+	if len(warnings) > 0 {
+		// the same conflict reproduces on every proxy the policy matches and on
+		// every reconciliation, so it stays at debug level like other dropped config
+		logger.V(1).Info("some matches were dropped, they resolve to a filter chain another match already configures", "proxy", proxy.Id.String(), "warnings", warnings)
+		addWarnings(proxy, policies, warnings...)
 	}
-	addWarnings(proxy, policies, warnings...)
-	return nil
+	return err
 }
 
-// policies are kept in a map by value, appending to the local copy would be discarded
+// policies are kept in a map by value and the slice may be shared with the policy
+// matching cache, so write an extended copy back instead of appending in place
 func addWarnings(proxy *core_xds.Proxy, policies core_xds.TypedMatchingPolicies, warnings ...string) {
 	if len(warnings) == 0 {
 		return
 	}
-	policies.Warnings = append(policies.Warnings, warnings...)
+	policies.Warnings = append(slices.Clone(policies.Warnings), warnings...)
 	proxy.Policies.Dynamic[api.MeshPassthroughType] = policies
 }
 
@@ -91,7 +99,7 @@ func applyToOutboundPassthrough(
 				Conf:              conf,
 				IPv6Enabled:       proxy.Metadata.IPv6Enabled,
 			}
-			return configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
+			return conf.ConfWarnings(), configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
 		}
 	}
 	return nil, nil

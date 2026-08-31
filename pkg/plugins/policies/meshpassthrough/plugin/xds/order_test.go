@@ -21,7 +21,7 @@ var _ = Describe("Match order", func() {
 	DescribeTable("should generate proper order",
 		func(given validTestCase) {
 			// when
-			orderedFilterChainMatches, _ := plugin_xds.GetOrderedMatchers(given.conf)
+			orderedFilterChainMatches := plugin_xds.GetOrderedMatchers(given.conf)
 
 			yaml, err := yaml.Marshal(orderedFilterChainMatches)
 			// then
@@ -253,16 +253,17 @@ var _ = Describe("Match order", func() {
 		orderedGolden string
 		warnings      []string
 	}
-	DescribeTable("should ignore conflicting L7 matches instead of failing",
+	DescribeTable("should ignore conflicting matches instead of failing",
 		func(given conflictingTestCase) {
 			// when
-			orderedFilterChainMatches, warnings := plugin_xds.GetOrderedMatchers(given.conf)
+			orderedFilterChainMatches := plugin_xds.GetOrderedMatchers(given.conf)
 
 			yaml, err := yaml.Marshal(orderedFilterChainMatches)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(yaml).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.orderedGolden)))
-			Expect(warnings).To(Equal(given.warnings))
+			// the same analysis produces the warnings the inspect API serves
+			Expect(given.conf.ConfWarnings()).To(Equal(given.warnings))
 		},
 		Entry("many different protocols", conflictingTestCase{
 			conf: api.Conf{
@@ -307,9 +308,9 @@ var _ = Describe("Match order", func() {
 			},
 			orderedGolden: "conflicting-protocols-on-the-same-port.golden.yaml",
 			warnings: []string{
-				`ignoring match "another.com" with protocol http2, protocol http is already configured for domains on port 8080, only one of [http http2 grpc] can be configured on the same port`,
-				`ignoring match "grpc.com" with protocol grpc, protocol http is already configured for domains on port 9001, only one of [http http2 grpc] can be configured on the same port`,
-				`ignoring match "http2.com" with protocol http2, protocol http is already configured for domains on port 9001, only one of [http http2 grpc] can be configured on the same port`,
+				`ignoring match "another.com" with protocol http2, protocol http is already configured for domains on port 8080, only one of [grpc http http2] can be configured on the same port`,
+				`ignoring match "grpc.com" with protocol grpc, protocol http is already configured for domains on port 9001, only one of [grpc http http2] can be configured on the same port`,
+				`ignoring match "http2.com" with protocol http2, protocol http is already configured for domains on port 9001, only one of [grpc http http2] can be configured on the same port`,
 			},
 		}),
 		Entry("the same domain on all ports and on a port with a different L7 protocol", conflictingTestCase{
@@ -396,7 +397,7 @@ var _ = Describe("Match order", func() {
 			},
 			orderedGolden: "duplicate-cidr-host-bits.golden.yaml",
 			warnings: []string{
-				`ignoring match "10.0.0.0/24" with protocol grpc, protocol http is already configured for 10.0.0.0/24 on port 8080, only one of [http http2 grpc] can be configured on the same port`,
+				`ignoring match "10.0.0.0/24" with protocol grpc, protocol http is already configured for 10.0.0.0/24 on port 8080, only one of [grpc http http2] can be configured on the same port`,
 			},
 		}),
 		Entry("a match without a port duplicating an explicit chain of the same protocol", conflictingTestCase{
