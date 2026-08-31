@@ -17,6 +17,7 @@ import (
 	meshhttproute "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshloadbalancing "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	meshmetric "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	meshproxypatch "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	meshratelimit "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	meshretry "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -65,6 +66,7 @@ func Sidecars() {
 		meshretry.MeshRetryResourceTypeDescriptor,
 		meshloadbalancing.MeshLoadBalancingStrategyResourceTypeDescriptor,
 		meshmetric.MeshMetricResourceTypeDescriptor,
+		meshproxypatch.MeshProxyPatchResourceTypeDescriptor,
 		meshtrafficpermission.MeshTrafficPermissionResourceTypeDescriptor,
 		meshopentelemetrybackend.MeshOpenTelemetryBackendResourceTypeDescriptor,
 	))
@@ -81,6 +83,7 @@ func Sidecars() {
 		test.EntriesForFolder(filepath.Join("sidecars", "meshloadbalancingstrategy"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshtrafficpermission"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshmetric"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshproxypatch"), "envoyconfig"),
 	)
 }
 
