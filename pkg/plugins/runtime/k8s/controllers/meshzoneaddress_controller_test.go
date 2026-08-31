@@ -11,10 +11,13 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	kube_discovery "k8s.io/api/discovery/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_events "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/yaml"
 
 	meshzoneaddress_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/k8s/v1alpha1"
@@ -181,5 +184,60 @@ var _ = Describe("MeshZoneAddressReconciler", func() {
 			inputFile:  "22.nodeport-local-traffic-policy-no-node-name.resources.yaml",
 			outputFile: "22.nodeport-local-traffic-policy-no-node-name.mza.yaml",
 		}),
+	)
+
+	DescribeTable("should only issue a Delete when a MeshZoneAddress exists",
+		func(existing bool, expectedDeletes int) {
+			// given
+			objects := []kube_client.Object{
+				&kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: testNamespace}},
+				&kube_core.Service{ObjectMeta: kube_meta.ObjectMeta{Name: testSvcName, Namespace: testNamespace}},
+			}
+			if existing {
+				objects = append(objects, &meshzoneaddress_k8s.MeshZoneAddress{
+					ObjectMeta: kube_meta.ObjectMeta{Name: testSvcName, Namespace: testNamespace},
+				})
+			}
+
+			deletes := 0
+			kubeClient := kube_client_fake.NewClientBuilder().
+				WithObjects(objects...).
+				WithScheme(k8sClientScheme).
+				WithInterceptorFuncs(interceptor.Funcs{
+					Delete: func(
+						ctx context.Context,
+						client kube_client.WithWatch,
+						obj kube_client.Object,
+						opts ...kube_client.DeleteOption,
+					) error {
+						deletes++
+						return client.Delete(ctx, obj, opts...)
+					},
+				}).
+				Build()
+
+			reconciler := &MeshZoneAddressReconciler{
+				Client:        kubeClient,
+				Log:           logr.Discard(),
+				Scheme:        k8sClientScheme,
+				EventRecorder: kube_events.NewFakeRecorder(10),
+				ZoneName:      testZone,
+			}
+
+			// when a Service without the zone-proxy label is reconciled
+			_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+				NamespacedName: kube_types.NamespacedName{Name: testSvcName, Namespace: testNamespace},
+			})
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(deletes).To(Equal(expectedDeletes))
+
+			mzas := &meshzoneaddress_k8s.MeshZoneAddressList{}
+			Expect(kubeClient.List(context.Background(), mzas)).To(Succeed())
+			Expect(mzas.Items).To(BeEmpty())
+		},
+		Entry("no MeshZoneAddress to remove", false, 0),
+		Entry("stale MeshZoneAddress to remove", true, 1),
 	)
 })

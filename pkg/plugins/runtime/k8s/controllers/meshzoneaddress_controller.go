@@ -298,9 +298,15 @@ func (r *MeshZoneAddressReconciler) readyEndpointNodes(ctx context.Context, svc 
 }
 
 func (r *MeshZoneAddressReconciler) deleteIfExists(ctx context.Context, key kube_types.NamespacedName) error {
-	mza := &meshzoneaddress_k8s.MeshZoneAddress{
-		Name:      key.Name,
-		Namespace: key.Namespace,
+	// Look the MeshZoneAddress up in the cache first. This reconciler runs for every
+	// Service in the cluster and almost none of them have a MeshZoneAddress, so an
+	// unconditional Delete costs one API server call per Service event.
+	mza := &meshzoneaddress_k8s.MeshZoneAddress{}
+	if err := r.Get(ctx, key, mza); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return nil
+		}
+		return errors.Wrap(err, "unable to fetch MeshZoneAddress")
 	}
 	if err := r.Delete(ctx, mza); err != nil && !kube_apierrs.IsNotFound(err) {
 		return errors.Wrap(err, "unable to delete MeshZoneAddress")
