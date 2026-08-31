@@ -751,6 +751,58 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		Expect(resolvedRefs.Status).To(Equal(kube_meta.ConditionTrue))
 	})
 
+	It("updates only supported parentRef statuses when writing the generated MeshHTTPRoute fails", func() {
+		svc := &kube_core.Service{
+			Name: "backend", Namespace: routeNamespace,
+			Spec: kube_core.ServiceSpec{
+				ClusterIP: "10.0.0.1",
+				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		serviceRef := withSectionName(serviceParentRef(), "http")
+		unsupportedGroup := gatewayapi.Group(gatewayapi.GroupName)
+		unsupportedKind := gatewayapi.Kind("Mesh")
+		unsupportedRef := gatewayapi.ParentReference{
+			Group: &unsupportedGroup,
+			Kind:  &unsupportedKind,
+			Name:  gatewayapi.ObjectName("mesh"),
+		}
+		route := newRoute(serviceRef, unsupportedRef)
+		writeErr := errors.New("simulated create failure")
+
+		client := kube_client_fake.NewClientBuilder().
+			WithScheme(reconciler.Scheme).
+			WithStatusSubresource(&gatewayapi.HTTPRoute{}).
+			WithIndex(&gatewayapi.HTTPRoute{}, servicesOfRouteField, servicesOfRoute).
+			WithInterceptorFuncs(kube_interceptor.Funcs{
+				Create: func(ctx context.Context, client kube_client.WithWatch, obj kube_client.Object, opts ...kube_client.CreateOption) error {
+					if _, ok := obj.(*meshhttproute_k8s.MeshHTTPRoute); ok {
+						return writeErr
+					}
+					return client.Create(ctx, obj, opts...)
+				},
+			}).
+			WithObjects(namespace, svc, route).
+			Build()
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).To(MatchError(ContainSubstring("could not reconcile owned MeshHTTPRoute.kuma.io")))
+
+		var updatedRoute gatewayapi.HTTPRoute
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
+		Expect(updatedRoute.Status.Parents).To(HaveLen(1))
+		Expect(updatedRoute.Status.Parents[0].ParentRef).To(Equal(serviceRef))
+
+		accepted := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionAccepted))
+		Expect(accepted).ToNot(BeNil())
+		Expect(accepted.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(accepted.Reason).To(Equal(string(gatewayapi.RouteReasonPending)))
+		Expect(accepted.Message).To(ContainSubstring(writeErr.Error()))
+	})
+
 	It("reports Accepted=False when the parentRef names a Service port the Service does not have", func() {
 		svc := &kube_core.Service{
 			Name: "backend", Namespace: routeNamespace,

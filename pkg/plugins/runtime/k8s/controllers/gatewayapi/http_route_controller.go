@@ -165,7 +165,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &meshhttproute_api.MeshHTTPRoute{}, meshRouteSpecs,
 	); err != nil {
 		reconcileErr := errors.Wrap(err, "could not reconcile owned MeshHTTPRoute.kuma.io")
-		if statusErr := r.updateStatus(ctx, httpRoute, generatedRouteWriteFailureConditions(httpRoute, conditions, reconcileErr)); statusErr != nil {
+		if statusErr := r.updateStatus(ctx, httpRoute, generatedRouteWriteFailureConditions(conditions, reconcileErr)); statusErr != nil {
 			r.Log.Error(statusErr, "unable to update HTTPRoute status after MeshHTTPRoute reconcile failure", "name", httpRoute.Name, "namespace", httpRoute.Namespace)
 		}
 		return kube_ctrl.Result{}, reconcileErr
@@ -412,14 +412,14 @@ func generatedMeshHTTPRouteNameSegment(label string, value string) string {
 	return fmt.Sprintf("%s-%d-%s", label, len(value), value)
 }
 
-func generatedRouteWriteFailureConditions(route *gatewayapi.HTTPRoute, existing ParentConditions, reconcileErr error) ParentConditions {
-	if len(route.Spec.ParentRefs) == 0 {
+func generatedRouteWriteFailureConditions(existing ParentConditions, reconcileErr error) ParentConditions {
+	if len(existing) == 0 {
 		return nil
 	}
 
 	failed := ParentConditions{}
-	for _, ref := range route.Spec.ParentRefs {
-		conditions := append([]kube_meta.Condition{}, existing[ref]...)
+	for ref, existingConditions := range existing {
+		conditions := append([]kube_meta.Condition{}, existingConditions...)
 		conditions = append(conditions, kube_meta.Condition{
 			Type:    string(gatewayapi.RouteConditionAccepted),
 			Status:  kube_meta.ConditionFalse,
