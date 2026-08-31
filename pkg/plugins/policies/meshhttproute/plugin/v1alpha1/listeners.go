@@ -104,7 +104,7 @@ func generateFromService(
 
 	for _, route := range prepareRoutes(rules, svc, meshCtx) {
 		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
-		if len(split) == 0 && !route.AllBackendRefsUnresolved {
+		if len(split) == 0 && !route.AllBackendRefsUnresolved && route.DirectResponseStatus == 0 {
 			continue
 		}
 		// mirrored requests go to a cluster of their own, it has no weight so
@@ -129,6 +129,7 @@ func generateFromService(
 			Name:                        route.Name,
 			Match:                       route.Match,
 			Filters:                     route.Filters,
+			DirectResponseStatus:        route.DirectResponseStatus,
 			UnresolvedBackendRefsWeight: route.UnresolvedBackendRefsWeight,
 			AllBackendRefsUnresolved:    route.AllBackendRefsUnresolved,
 			MirrorSplits:                mirrorSplits,
@@ -296,11 +297,15 @@ func prepareRoutes(
 	}) == -1
 
 	if noCatchAll {
-		routes = append(routes, api.Route{
+		fallbackRoute := api.Route{
 			Match:  catchAllMatch,
 			Name:   string(api.HashMatches([]api.Match{catchAllMatch})),
 			Origin: svc.Outbound.Resource,
-		})
+		}
+		if len(apiRules) > 0 {
+			fallbackRoute.DirectResponseStatus = 404
+		}
+		routes = append(routes, fallbackRoute)
 	}
 
 	for i := range routes {
@@ -314,7 +319,7 @@ func prepareRoutes(
 			route.Match.Path = pointer.To(catchAllPathMatch)
 		}
 
-		if len(route.BackendRefs) == 0 && !route.AllBackendRefsUnresolved {
+		if len(route.BackendRefs) == 0 && !route.AllBackendRefsUnresolved && route.DirectResponseStatus == 0 {
 			route.BackendRefs = []resolve.ResolvedBackendRef{
 				*svc.DefaultBackendRef(),
 			}

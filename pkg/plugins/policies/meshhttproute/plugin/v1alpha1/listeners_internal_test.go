@@ -401,4 +401,85 @@ var _ = Describe("prepareRoutes", func() {
 		Entry("zero-weight HTTP backend plus missing backend", []string{"http-backend", "missing-backend"}, []uint{0, 100}, true, nil, uint(100)),
 		Entry("mixed HTTP and TCP backend share", []string{"http-backend", "tcp-backend"}, []uint{90, 10}, false, []string{"http-backend"}, uint(10)),
 	)
+
+	It("should append a no-match 404 fallback when policy rules exist without an explicit catch-all", func() {
+		backend := builders.MeshService().
+			WithName("backend").
+			WithMesh(core_model.DefaultMesh).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+
+		meshCtx := xds_builders.Context().
+			WithMeshLocalResources([]core_model.Resource{backend}).
+			Build().
+			Mesh
+
+		matches := []api.Match{{
+			Path: &api.PathMatch{Type: api.PathPrefix, Value: "/specific"},
+		}}
+		policyMeta := &test_model.ResourceMeta{
+			Name: "web-route",
+			Mesh: core_model.DefaultMesh,
+		}
+		toRules := core_rules.ToRules{
+			ResourceRules: outbound.ResourceRules{
+				kri.From(backend): {
+					Resource: backend.GetMeta(),
+					Conf: []any{api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: matches,
+						}},
+					}},
+					OriginByMatches: map[common_api.MatchesHash]common.Origin{
+						api.HashMatches(matches): {Resource: policyMeta},
+					},
+				},
+			},
+		}
+		svc := meshroute_xds.DestinationService{
+			Outbound: &xds_types.Outbound{
+				Resource: kri.WithSectionName(kri.From(backend), "8080"),
+				Port:     8080,
+			},
+			Protocol: core_meta.ProtocolHTTP,
+		}
+
+		routes := prepareRoutes(toRules, svc, meshCtx)
+
+		Expect(routes).To(HaveLen(2))
+		Expect(routes[1].Match.Path).ToNot(BeNil())
+		Expect(*routes[1].Match.Path).To(Equal(api.PathMatch{Type: api.PathPrefix, Value: "/"}))
+		Expect(routes[1].DirectResponseStatus).To(Equal(uint32(404)))
+		Expect(routes[1].BackendRefs).To(BeEmpty())
+	})
+
+	It("should keep the default backend fallback when no policy rules exist", func() {
+		backend := builders.MeshService().
+			WithName("backend").
+			WithMesh(core_model.DefaultMesh).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+
+		meshCtx := xds_builders.Context().
+			WithMeshLocalResources([]core_model.Resource{backend}).
+			Build().
+			Mesh
+
+		svc := meshroute_xds.DestinationService{
+			Outbound: &xds_types.Outbound{
+				Resource: kri.WithSectionName(kri.From(backend), "8080"),
+				Port:     8080,
+			},
+			Protocol: core_meta.ProtocolHTTP,
+		}
+
+		routes := prepareRoutes(core_rules.ToRules{}, svc, meshCtx)
+
+		Expect(routes).To(HaveLen(1))
+		Expect(routes[0].Match.Path).ToNot(BeNil())
+		Expect(*routes[0].Match.Path).To(Equal(api.PathMatch{Type: api.PathPrefix, Value: "/"}))
+		Expect(routes[0].DirectResponseStatus).To(BeZero())
+		Expect(routes[0].BackendRefs).To(HaveLen(1))
+		Expect(routes[0].BackendRefs[0].Resource()).To(Equal(svc.DefaultBackendRef().Resource()))
+	})
 })

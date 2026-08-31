@@ -23,6 +23,7 @@ type RoutesConfigurer struct {
 	Name                        string
 	Match                       api.Match
 	Filters                     []api.Filter
+	DirectResponseStatus        uint32
 	UnresolvedBackendRefsWeight uint
 	AllBackendRefsUnresolved    bool
 	MirrorSplits                map[int]envoy_common.Split
@@ -33,6 +34,17 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 	matches := c.routeMatch(c.Match)
 
 	for _, match := range matches {
+		if c.DirectResponseStatus > 0 {
+			rb := c.routeBuilder(match)
+			rb.Configure(envoy_routes.RouteActionDirectResponse(c.DirectResponseStatus, ""))
+			r, err := rb.Build()
+			if err != nil {
+				return err
+			}
+			virtualHost.Routes = append(virtualHost.Routes, r.(*envoy_route.Route))
+			continue
+		}
+
 		// A rule whose backendRefs all fail to resolve answers 500, unless a
 		// filter already terminates the request without an upstream.
 		if c.AllBackendRefsUnresolved && !hasTerminalFilter(c.Filters) {

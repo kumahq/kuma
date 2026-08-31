@@ -45,12 +45,13 @@ resources:
                   cluster: kri_msvc_default___backend_80
                   prefixRewrite: /v2
                   timeout: 0s
-              - match:
+              - directResponse:
+                  body:
+                    inlineString: ""
+                  status: 404
+                match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
-                route:
-                  cluster: kri_msvc_default___backend_80
-                  timeout: 0s
           statPrefix: kri_msvc_default___backend_80
     metadata:
       filterMetadata:
