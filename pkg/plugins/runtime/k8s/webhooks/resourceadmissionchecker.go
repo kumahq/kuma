@@ -13,8 +13,15 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/version"
 )
+
+// managedIdentityLabels are computed by the control plane from the Pod, not
+// user-provided. kuma.io/workload is excluded: on Universal it is user-set.
+var managedIdentityLabels = []string{
+	metadata.KumaServiceAccount,
+}
 
 type ResourceAdmissionChecker struct {
 	AllowedUsers                 []string
@@ -33,6 +40,10 @@ const (
 func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {
 	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
 		return admission.Allowed("")
+	}
+
+	if resp := c.validateManagedIdentityLabels(r); resp != nil {
+		return *resp
 	}
 
 	if ns != "" {
@@ -73,6 +84,18 @@ func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns s
 		return nil
 	}
 	return c.validateLabels(r, ns)
+}
+
+// Privileged writers are short-circuited earlier, so any managed label here is user-supplied.
+func (c *ResourceAdmissionChecker) validateManagedIdentityLabels(r core_model.Resource) *admission.Response {
+	labels := r.GetMeta().GetLabels()
+	for _, key := range managedIdentityLabels {
+		if _, ok := labels[key]; ok {
+			return forbiddenResponse(fmt.Sprintf(
+				"Operation not allowed. Label %q is managed by %s and cannot be set manually.", key, version.Product))
+		}
+	}
+	return nil
 }
 
 func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
