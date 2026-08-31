@@ -8,6 +8,34 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### A request matching no `MeshHTTPRoute` rule now gets a `404`
+
+When a `MeshHTTPRoute` applies to a destination, a request that matches none of its rules is answered with `404` instead of being sent to that destination. This is what the Gateway API requires of an `HTTPRoute`, and it is what the GAMMA conformance suite asserts. Before this change the unmatched request fell through to the destination service as if no route existed.
+
+The rules of a `MeshHTTPRoute` apply to every HTTP port of the destination when the `to[].targetRef` names a `MeshService` without a `sectionName`, so the `404` covers those ports too, including ports no rule mentions. Ports whose protocol is not HTTP based are unaffected. A destination with no `MeshHTTPRoute` at all is also unaffected and keeps reaching its service.
+
+The case worth checking is a route written only to anchor another policy. A `MeshHTTPRoute` matching `/api` that exists so a `MeshTimeout`, `MeshRetry`, or `MeshAccessLog` can target it now answers `404` on every other path of that destination. On a gRPC destination the same `404` reaches the client as `UNIMPLEMENTED`.
+
+**Action required**
+
+Add an explicit catch-all rule to any `MeshHTTPRoute` that should keep passing unmatched traffic to its destination:
+
+```yaml
+rules:
+  - matches:
+      - path:
+          type: PathPrefix
+          value: /
+    default:
+      backendRefs:
+        - kind: MeshService
+          labels:
+            kuma.io/display-name: backend
+          port: 80
+```
+
+Put it on the route itself when the other policies targeting that route should also cover the unmatched traffic, or on a second `MeshHTTPRoute` when they should not.
+
 ### `MeshLoadBalancingStrategy` cross-zone settings now require a `MeshMultiZoneService` `to` target
 
 `MeshLoadBalancingStrategy.spec.to[].default.localityAwareness.crossZone` is now accepted only when that `to` entry targets a `MeshMultiZoneService`. Create and update validation now rejects the same `crossZone` block on `Mesh`, `MeshService`, and `MeshExternalService` targets.

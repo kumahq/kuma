@@ -302,7 +302,7 @@ func prepareRoutes(
 			Name:   string(api.HashMatches([]api.Match{catchAllMatch})),
 			Origin: svc.Outbound.Resource,
 		}
-		if len(apiRules) > 0 {
+		if len(routes) > 0 && core_meta.IsHTTPBased(svc.Protocol) {
 			fallbackRoute.DirectResponseStatus = 404
 		}
 		routes = append(routes, fallbackRoute)

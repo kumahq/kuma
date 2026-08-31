@@ -161,6 +161,37 @@ spec:
                 port: 80
 `, mesh, multizone.KubeZone2.ZoneName(), k8sZoneNamespace, multizone.KubeZone2.ZoneName(), k8sZoneNamespace))(multizone.Global)).To(Succeed())
 
+		Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshHTTPRoute
+name: route-catch-all
+mesh: %s
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: test-client
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server
+          kuma.io/zone: %s
+          k8s.kuma.io/namespace: %s
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: test-server
+                  kuma.io/zone: %s
+                  k8s.kuma.io/namespace: %s
+                port: 80
+`, mesh, multizone.KubeZone2.ZoneName(), k8sZoneNamespace, multizone.KubeZone2.ZoneName(), k8sZoneNamespace))(multizone.Global)).To(Succeed())
+
 		// positive control: route matches, but no timeout policy yet
 		Eventually(func(g Gomega) {
 			start := time.Now()
@@ -207,20 +238,17 @@ spec:
 			g.Expect(time.Since(start)).To(BeNumerically("<", time.Second*4))
 		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
-		// negative control: an unmatched path now hits the MeshHTTPRoute no-match
-		// fallback, so it should fail fast with 404 instead of inheriting the
-		// route-scoped timeout or reaching the backend.
+		// negative control: catch-all route is untouched by the route-scoped timeout
 		Eventually(func(g Gomega) {
 			start := time.Now()
-			response, err := framework_client.CollectFailure(
+			_, err := framework_client.CollectEchoResponse(
 				multizone.KubeZone1, "test-client", dest+"/path/without/timeout",
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
 				framework_client.WithMaxTime(10),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.ResponseCode).To(Equal(404))
-			g.Expect(time.Since(start)).To(BeNumerically("<", time.Second*4))
+			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
 		}, "30s", "1s").Should(Succeed())
 	})
 

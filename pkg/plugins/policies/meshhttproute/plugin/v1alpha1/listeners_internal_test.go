@@ -483,6 +483,92 @@ var _ = Describe("prepareRoutes", func() {
 		Expect(routes[0].BackendRefs[0].Resource()).To(Equal(svc.DefaultBackendRef().Resource()))
 	})
 
+	It("should not append a no-match 404 fallback when the rules produce no route", func() {
+		backend := builders.MeshService().
+			WithName("backend").
+			WithMesh(core_model.DefaultMesh).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+
+		meshCtx := xds_builders.Context().
+			WithMeshLocalResources([]core_model.Resource{backend}).
+			Build().
+			Mesh
+
+		toRules := core_rules.ToRules{
+			ResourceRules: outbound.ResourceRules{
+				kri.From(backend): {
+					Resource: backend.GetMeta(),
+					Conf: []any{api.PolicyDefault{
+						Rules: []api.Rule{{Matches: nil}},
+					}},
+				},
+			},
+		}
+		svc := meshroute_xds.DestinationService{
+			Outbound: &xds_types.Outbound{
+				Resource: kri.WithSectionName(kri.From(backend), "8080"),
+				Port:     8080,
+			},
+			Protocol: core_meta.ProtocolHTTP,
+		}
+
+		routes := prepareRoutes(toRules, svc, meshCtx)
+
+		Expect(routes).To(HaveLen(1))
+		Expect(routes[0].DirectResponseStatus).To(BeZero())
+		Expect(routes[0].BackendRefs).To(HaveLen(1))
+		Expect(routes[0].BackendRefs[0].Resource()).To(Equal(svc.DefaultBackendRef().Resource()))
+	})
+
+	It("should not append a no-match 404 fallback on a destination that is not HTTP based", func() {
+		backend := builders.MeshService().
+			WithName("backend").
+			WithMesh(core_model.DefaultMesh).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			AddIntPort(3306, 3306, core_meta.ProtocolTCP).
+			Build()
+
+		meshCtx := xds_builders.Context().
+			WithMeshLocalResources([]core_model.Resource{backend}).
+			Build().
+			Mesh
+
+		matches := []api.Match{{
+			Path: &api.PathMatch{Type: api.PathPrefix, Value: "/specific"},
+		}}
+		policyMeta := &test_model.ResourceMeta{
+			Name: "web-route",
+			Mesh: core_model.DefaultMesh,
+		}
+		toRules := core_rules.ToRules{
+			ResourceRules: outbound.ResourceRules{
+				kri.From(backend): {
+					Resource: backend.GetMeta(),
+					Conf: []any{api.PolicyDefault{
+						Rules: []api.Rule{{Matches: matches}},
+					}},
+					OriginByMatches: map[common_api.MatchesHash]common.Origin{
+						api.HashMatches(matches): {Resource: policyMeta},
+					},
+				},
+			},
+		}
+		svc := meshroute_xds.DestinationService{
+			Outbound: &xds_types.Outbound{
+				Resource: kri.WithSectionName(kri.From(backend), "3306"),
+				Port:     3306,
+			},
+			Protocol: core_meta.ProtocolTCP,
+		}
+
+		routes := prepareRoutes(toRules, svc, meshCtx)
+
+		for _, route := range routes {
+			Expect(route.DirectResponseStatus).To(BeZero())
+		}
+	})
+
 	It("should not append a no-match 404 fallback when a rule already matches the catch-all path", func() {
 		backend := builders.MeshService().
 			WithName("backend").
