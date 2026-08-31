@@ -6,6 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -369,6 +371,69 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 			}),
 		}))
+	})
+})
+
+var _ = Describe("gapiToKumaMeshRule", func() {
+	serviceBackendRef := func(namespace, name string, port gatewayapi.PortNumber) gatewayapi.HTTPBackendRef {
+		group := gatewayapi.Group("")
+		kind := gatewayapi.Kind("Service")
+		ns := gatewayapi.Namespace(namespace)
+		weight := int32(1)
+		return gatewayapi.HTTPBackendRef{
+			Group:     &group,
+			Kind:      &kind,
+			Namespace: &ns,
+			Name:      gatewayapi.ObjectName(name),
+			Port:      &port,
+			Weight:    &weight,
+		}
+	}
+
+	It("keeps an explicit empty BackendRefs list when a denied cross-namespace backendRef is filtered out", func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		frontend := &kube_core.Service{
+			Name:      "frontend",
+			Namespace: "route-ns",
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		backend := &kube_core.Service{
+			Name:      "backend",
+			Namespace: "backend-ns",
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 8080}},
+			},
+		}
+
+		reconciler := &HTTPRouteReconciler{
+			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(frontend, backend).Build(),
+		}
+
+		route := &gatewayapi.HTTPRoute{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name:      "my-route",
+				Namespace: "route-ns",
+			},
+		}
+		rule := gatewayapi.HTTPRouteRule{
+			BackendRefs: []gatewayapi.HTTPBackendRef{
+				serviceBackendRef("backend-ns", "backend", 8080),
+			},
+		}
+
+		kumaRule, conditions, err := reconciler.gapiToKumaMeshRule(context.Background(), route, rule)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(kumaRule.Default.BackendRefs).ToNot(BeNil())
+		Expect(pointer.Deref(kumaRule.Default.BackendRefs)).To(BeEmpty())
+		resolvedRefs := kube_apimeta.FindStatusCondition(conditions, string(gatewayapi.RouteConditionResolvedRefs))
+		Expect(resolvedRefs).ToNot(BeNil())
+		Expect(resolvedRefs.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(resolvedRefs.Reason).To(Equal(string(gatewayapi.RouteReasonRefNotPermitted)))
 	})
 })
 

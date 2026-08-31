@@ -219,6 +219,70 @@ var _ = Describe("prepareRoutes", func() {
 		Entry("all resolved keeps zero unresolved share", []string{"payments", "payments"}, []uint{30, 70}, false, []string{"payments", "payments"}, uint(0)),
 	)
 
+	It("treats an explicit empty backendRefs list as all unresolved without injecting the default backend", func() {
+		backend := builders.MeshService().
+			WithName("backend").
+			WithMesh(core_model.DefaultMesh).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+
+		meshCtx := xds_builders.Context().
+			WithMeshLocalResources([]core_model.Resource{backend}).
+			Build().
+			Mesh
+
+		matches := []api.Match{{
+			Path: &api.PathMatch{Type: api.PathPrefix, Value: "/explicit-empty"},
+		}}
+		policyMeta := &test_model.ResourceMeta{
+			Name: "web-route",
+			Mesh: core_model.DefaultMesh,
+			Labels: map[string]string{
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			},
+		}
+		backendRefs := []common_api.BackendRef{}
+		toRules := core_rules.ToRules{
+			ResourceRules: outbound.ResourceRules{
+				kri.From(backend): {
+					Resource: backend.GetMeta(),
+					Conf: []any{api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: matches,
+							Default: api.RuleConf{
+								BackendRefs: &backendRefs,
+							},
+						}},
+					}},
+					OriginByMatches: map[common_api.MatchesHash]common.Origin{
+						api.HashMatches(matches): {Resource: policyMeta},
+					},
+				},
+			},
+		}
+		svc := meshroute_xds.DestinationService{
+			Outbound: &xds_types.Outbound{
+				Resource: kri.WithSectionName(kri.From(backend), "8080"),
+				Port:     8080,
+			},
+			Protocol: core_meta.ProtocolHTTP,
+		}
+
+		routes := prepareRoutes(toRules, svc, meshCtx)
+
+		var matched *api.Route
+		for i := range routes {
+			if routes[i].Match.Path != nil && routes[i].Match.Path.Value == "/explicit-empty" {
+				matched = &routes[i]
+				break
+			}
+		}
+		Expect(matched).ToNot(BeNil())
+		Expect(matched.BackendRefs).To(BeEmpty())
+		Expect(matched.AllBackendRefsUnresolved).To(BeTrue())
+		Expect(matched.UnresolvedBackendRefsWeight).To(BeZero())
+	})
+
 	DescribeTable("should keep resolved backendRefs while tracking missing-port declared weight", func(refPorts []uint32, refWeights []uint, expectedAllUnresolved bool, expectedResolved []uint32, expectedUnresolvedWeight uint) {
 		backend := builders.MeshService().
 			WithName("backend").
