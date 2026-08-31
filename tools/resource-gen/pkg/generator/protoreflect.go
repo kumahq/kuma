@@ -56,7 +56,7 @@ func protoDescFromType(t reflect.Type) (protoreflect.MessageDescriptor, bool) {
 		return nil, false
 	}
 	pt := reflect.PointerTo(t)
-	m, ok := reflect.Zero(pt).Interface().(proto.Message)
+	m, ok := reflect.TypeAssert[proto.Message](reflect.Zero(pt))
 	if !ok {
 		return nil, false
 	}

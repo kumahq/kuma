@@ -37,10 +37,8 @@ func (r *RetryResource) validateSources() validators.ValidationError {
 		validators.RootedAt("sources"),
 		r.Spec.Sources,
 		ValidateSelectorsOpts{
-			ValidateTagsOpts: ValidateTagsOpts{
-				RequireAtLeastOneTag: true,
-				RequireService:       true,
-			},
+			RequireAtLeastOneTag:      true,
+			RequireService:            true,
 			RequireAtLeastOneSelector: true,
 		},
 	)

@@ -64,9 +64,7 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 	})
 	serviceFn := func(selector map[string]string) kube_core.Service {
 		return kube_core.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "svc",
-			},
+			Name: "svc",
 			Spec: kube_core.ServiceSpec{
 				Selector: selector,
 				Ports: []kube_core.ServicePort{
@@ -77,11 +75,9 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 	}
 	podFn := func(name string, labels map[string]string, annotations map[string]string) kube_core.Pod {
 		return kube_core.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        name,
-				Labels:      labels,
-				Annotations: annotations,
-			},
+			Name:        name,
+			Labels:      labels,
+			Annotations: annotations,
 			Spec: kube_core.PodSpec{
 				Containers: []kube_core.Container{
 					{Name: "foo", Image: "busybox"},
@@ -149,10 +145,8 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 		Entry("namespace annotated pod not annotated",
 			serviceFn(map[string]string{"app": "app1"}),
 			kube_core.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						metadata.KumaMeshLabel: "mesh1",
-					},
+				Annotations: map[string]string{
+					metadata.KumaMeshLabel: "mesh1",
 				},
 			},
 			[]kube_core.Pod{
@@ -164,10 +158,8 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 		Entry("namespace annotated pod annotated",
 			serviceFn(map[string]string{"app": "app1"}),
 			kube_core.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						metadata.KumaMeshLabel: "mesh1",
-					},
+				Annotations: map[string]string{
+					metadata.KumaMeshLabel: "mesh1",
 				},
 			},
 			[]kube_core.Pod{
@@ -179,10 +171,8 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 		Entry("namespace label pod has label",
 			serviceFn(map[string]string{"app": "app1"}),
 			kube_core.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						metadata.KumaMeshLabel: "mesh1",
-					},
+				Labels: map[string]string{
+					metadata.KumaMeshLabel: "mesh1",
 				},
 			},
 			[]kube_core.Pod{
@@ -194,10 +184,8 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 		Entry("namespace label pod has annotation",
 			serviceFn(map[string]string{"app": "app1"}),
 			kube_core.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						metadata.KumaMeshLabel: "mesh1",
-					},
+				Labels: map[string]string{
+					metadata.KumaMeshLabel: "mesh1",
 				},
 			},
 			[]kube_core.Pod{

@@ -36,10 +36,8 @@ type cachedEntry struct {
 
 func NewCachingConverter(expirationTime time.Duration) k8s_common.Converter {
 	return &cachingConverter{
-		SimpleConverter: SimpleConverter{
-			KubeFactory: &SimpleKubeFactory{
-				KubeTypes: k8s_registry.Global(),
-			},
+		KubeFactory: &SimpleKubeFactory{
+			KubeTypes: k8s_registry.Global(),
 		},
 		cache: cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 	}

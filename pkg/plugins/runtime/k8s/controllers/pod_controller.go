@@ -10,7 +10,6 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_discovery "k8s.io/api/discovery/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_events "k8s.io/client-go/tools/events"
@@ -172,7 +171,7 @@ func (r *PodReconciler) reconcileDataplane(ctx context.Context, pod *kube_core.P
 	}
 
 	dp := &mesh_k8s.Dataplane{
-		ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
+		Name: pod.Name, Namespace: pod.Namespace,
 	}
 	if pod.Status.Phase == kube_core.PodSucceeded {
 		// Remove Dataplane object for Pods that are indefinitely in Succeeded phase, i.e. Jobs
@@ -226,7 +225,7 @@ func (r *PodReconciler) deleteObjectIfExist(ctx context.Context, object k8s_mode
 func (r *PodReconciler) reconcileBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
 	if pod.Status.PodIP == "" {
 		dp := &mesh_k8s.Dataplane{
-			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
+			Name: pod.Name, Namespace: pod.Namespace,
 		}
 		return r.deleteObjectIfExist(ctx, dp, "pod IP is empty", log)
 	}
@@ -241,7 +240,7 @@ func (r *PodReconciler) reconcileBuiltinGatewayDataplane(ctx context.Context, po
 func (r *PodReconciler) reconcileZoneIngress(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
 	if pod.Status.PodIP == "" {
 		zi := &mesh_k8s.ZoneIngress{
-			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
+			Name: pod.Name, Namespace: pod.Namespace,
 		}
 		return r.deleteObjectIfExist(ctx, zi, "pod IP is empty", log)
 	}
@@ -263,7 +262,7 @@ func (r *PodReconciler) reconcileZoneIngress(ctx context.Context, pod *kube_core
 func (r *PodReconciler) reconcileZoneEgress(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
 	if pod.Status.PodIP == "" {
 		zi := &mesh_k8s.ZoneEgress{
-			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
+			Name: pod.Name, Namespace: pod.Namespace,
 		}
 		return r.deleteObjectIfExist(ctx, zi, "pod IP is empty", log)
 	}
@@ -387,10 +386,8 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	}
 
 	dataplane := &mesh_k8s.Dataplane{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace: pod.Namespace,
-			Name:      pod.Name,
-		},
+		Namespace: pod.Namespace,
+		Name:      pod.Name,
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
 		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, others, mesh); err != nil {
@@ -433,11 +430,9 @@ func (r *PodReconciler) createOrUpdateDataplane(
 
 func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) error {
 	ingress := &mesh_k8s.ZoneIngress{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace: pod.Namespace,
-			Name:      pod.Name,
-		},
-		Mesh: model.NoMesh,
+		Namespace: pod.Namespace,
+		Name:      pod.Name,
+		Mesh:      model.NoMesh,
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ingress, func() error {
 		if err := r.PodConverter.PodToIngress(ctx, ingress, pod, services); err != nil {
@@ -467,11 +462,9 @@ func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_cor
 
 func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) error {
 	egress := &mesh_k8s.ZoneEgress{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace: pod.Namespace,
-			Name:      pod.Name,
-		},
-		Mesh: model.NoMesh,
+		Namespace: pod.Namespace,
+		Name:      pod.Name,
+		Mesh:      model.NoMesh,
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, egress, func() error {
 		if err := r.PodConverter.PodToEgress(ctx, egress, pod, services); err != nil {
@@ -540,7 +533,7 @@ func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.
 					if endpoint.TargetRef != nil && endpoint.TargetRef.Kind == "Pod" && (endpoint.TargetRef.APIVersion == kube_core.SchemeGroupVersion.String() ||
 						endpoint.TargetRef.APIVersion == "") {
 						req = append(req, kube_reconcile.Request{
-							NamespacedName: kube_types.NamespacedName{Name: endpoint.TargetRef.Name, Namespace: endpoint.TargetRef.Namespace},
+							Name: endpoint.TargetRef.Name, Namespace: endpoint.TargetRef.Namespace,
 						})
 					}
 				}
@@ -555,7 +548,7 @@ func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.
 		var req []kube_reconcile.Request
 		for _, pod := range pods.Items {
 			req = append(req, kube_reconcile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
+				Namespace: pod.Namespace, Name: pod.Name,
 			})
 		}
 		return req
@@ -604,7 +597,7 @@ func EndpointSliceToPodsMapper(l logr.Logger, client kube_client.Client) kube_ha
 			if endpoint.TargetRef != nil && endpoint.TargetRef.Kind == "Pod" && (endpoint.TargetRef.APIVersion == kube_core.SchemeGroupVersion.String() ||
 				endpoint.TargetRef.APIVersion == "") {
 				req = append(req, kube_reconcile.Request{
-					NamespacedName: kube_types.NamespacedName{Namespace: endpoint.TargetRef.Namespace, Name: endpoint.TargetRef.Name},
+					Namespace: endpoint.TargetRef.Namespace, Name: endpoint.TargetRef.Name,
 				})
 			}
 		}
@@ -629,7 +622,7 @@ func MeshToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.Map
 
 		var req []kube_reconcile.Request
 		for _, pod := range pods.Items {
-			req = append(req, kube_reconcile.Request{NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name}})
+			req = append(req, kube_reconcile.Request{Namespace: pod.Namespace, Name: pod.Name})
 		}
 		return req
 	}

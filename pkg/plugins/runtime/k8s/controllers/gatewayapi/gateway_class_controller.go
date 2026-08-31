@@ -193,7 +193,7 @@ func gatewayToClassMapper(l logr.Logger, client kube_client.Client) kube_handler
 		}
 
 		return []kube_reconcile.Request{
-			{NamespacedName: kube_types.NamespacedName{Name: string(gateway.Spec.GatewayClassName)}},
+			{Name: string(gateway.Spec.GatewayClassName)},
 		}
 	}
 }

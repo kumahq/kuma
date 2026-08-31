@@ -425,18 +425,14 @@ var (
 		},
 	}
 	gatewayClass = &gatewayapi.GatewayClass{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name: "kuma",
-		},
+		Name: "kuma",
 		Spec: gatewayapi.GatewayClassSpec{
 			ControllerName: common.ControllerName,
 		},
 	}
 	gateway = &gatewayapi.Gateway{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:      "gateway",
-			Namespace: defaultNs,
-		},
+		Name:      "gateway",
+		Namespace: defaultNs,
 		Spec: gatewayapi.GatewaySpec{
 			GatewayClassName: "kuma",
 			Listeners: []gatewayapi.Listener{
@@ -458,10 +454,8 @@ var (
 	}
 
 	gatewayMultipleListeners = &gatewayapi.Gateway{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:      "multigateway",
-			Namespace: defaultNs,
-		},
+		Name:      "multigateway",
+		Namespace: defaultNs,
 		Spec: gatewayapi.GatewaySpec{
 			GatewayClassName: "kuma",
 			Listeners: []gatewayapi.Listener{
@@ -489,13 +483,9 @@ var (
 	}
 
 	defaultRouteNs = &kube_core.Namespace{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name: defaultNs,
-		},
+		Name: defaultNs,
 	}
 	otherRouteNs = &kube_core.Namespace{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name: otherNs,
-		},
+		Name: otherNs,
 	}
 )

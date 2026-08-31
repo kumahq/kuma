@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"slices"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -18,6 +19,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshtrust/api/v1alpha1"
+	meshzoneaddress_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -187,7 +189,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		}
 	}
 	zoneIngresses := resources.ZoneIngresses().Items
-	zoneEgresses := resources.ZoneEgresses().Items
+	zoneEgresses := readyZoneEgresses(resources.ZoneEgresses().Items)
 	externalServices := resources.ExternalServices().Items
 	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
 	if len(zoneEgressList) == 0 {
@@ -401,7 +403,7 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {
 		return nil, err
 	}
-	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType && filterFn == nil {
+	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType && resType != meshzoneaddress_api.MeshZoneAddressType && filterFn == nil {
 		// No post processing stuff so return the list as is
 		return list, nil
 	}
@@ -412,6 +414,21 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 			return nil, nil
 		}
 		switch resType {
+		case meshzoneaddress_api.MeshZoneAddressType:
+			mza, ok := resource.(*meshzoneaddress_api.MeshZoneAddressResource)
+			if !ok {
+				return nil, errors.New("entry is not a meshZoneAddress this shouldn't happen")
+			}
+
+			resolvedMeshZoneAddress, err := xds_topology.ResolveMeshZoneAddressPublicAddress(m.ipFunc, mza)
+			if err != nil {
+				// Dropping the resource also drops the zone from MeshContext.ZonesWithMeshScopedProxy,
+				// which is intended: the zone falls back to its legacy ZoneIngress for endpoints, and
+				// consumers have to fall back with it to the hash-based SNI that ingress serves.
+				l.Error(err, "failed to resolve meshZoneAddress's domain name, ignoring meshZoneAddress", "mesh", mza.GetMeta().GetMesh(), "name", mza.GetMeta().GetName())
+				return nil, nil
+			}
+			return resolvedMeshZoneAddress, nil
 		case core_mesh.ZoneIngressType:
 			zi, ok := resource.(*core_mesh.ZoneIngressResource)
 			if !ok {
@@ -675,6 +692,26 @@ func resolveLegacyZoneEgresses(zoneEgresses []*core_mesh.ZoneEgressResource) []x
 		legacyEgresses = append(legacyEgresses, xds.ZoneEgressInstance{Address: n.GetAddress(), Port: n.GetPort()})
 	}
 	return legacyEgresses
+}
+
+// readyZoneEgresses drops the instances whose Pod is terminating or not ready yet. Only endpoint generation is
+// filtered: the unfiltered list stays in the mesh context so that a draining egress keeps being served its own
+// configuration for as long as it runs.
+//
+// The label is written by the Pod converter, so in practice the value is only ever "true" or "false". It is a plain
+// label though, so anything else - an absent label on Universal, a resource written by an older control plane, a
+// value nobody can parse - counts as ready and keeps traffic flowing.
+func readyZoneEgresses(zoneEgresses []*core_mesh.ZoneEgressResource) []*core_mesh.ZoneEgressResource {
+	var ready []*core_mesh.ZoneEgressResource
+	for _, ze := range zoneEgresses {
+		if value, found := ze.GetMeta().GetLabels()[mesh_proto.ProxyReadyLabel]; found {
+			if isReady, err := strconv.ParseBool(value); err == nil && !isReady {
+				continue
+			}
+		}
+		ready = append(ready, ze)
+	}
+	return ready
 }
 
 func getCAsByTrustDomain(trusts []*meshtrust_api.MeshTrustResource) map[string][]PEMBytes {

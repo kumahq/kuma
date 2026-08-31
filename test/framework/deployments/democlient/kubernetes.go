@@ -22,10 +22,8 @@ func (k *k8SDeployment) Name() string {
 
 func (k *k8SDeployment) deployment() *appsv1.Deployment {
 	return &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Deployment",
-			APIVersion: "apps/v1",
-		},
+		Kind:       "Deployment",
+		APIVersion: "apps/v1",
 		ObjectMeta: meta(k.opts.Namespace, k.Name()),
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -44,10 +42,8 @@ func (k *k8SDeployment) deployment() *appsv1.Deployment {
 
 func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 	return corev1.PodTemplateSpec{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:      map[string]string{"app": k.Name(), "kuma.io/mesh": k.opts.Mesh},
-			Annotations: k.getAnnotations(),
-		},
+		Labels:      map[string]string{"app": k.Name(), "kuma.io/mesh": k.opts.Mesh},
+		Annotations: k.getAnnotations(),
 		Spec: corev1.PodSpec{
 			NodeSelector: k.opts.NodeSelector,
 			Containers: []corev1.Container{
@@ -73,14 +69,10 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 
 func (k *k8SDeployment) service() *corev1.Service {
 	return &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      k.Name(),
-			Namespace: k.opts.Namespace,
-		},
+		Kind:       "Service",
+		APIVersion: "v1",
+		Name:       k.Name(),
+		Namespace:  k.opts.Namespace,
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{

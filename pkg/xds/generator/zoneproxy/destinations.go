@@ -69,12 +69,10 @@ func BuildRealResourceDestinations(destinations []core_resources.Destination, sy
 				Mesh:              mesh,
 				SNI:               sniFor(id, port),
 				LegacyServiceName: destinationname.ResolveLegacyFromDestination(dest, port),
-				ResolvedBackendRef: resolve.ResolvedBackendRef{
-					Ref: &resolve.RealResourceBackendRef{
-						Resource: id,
-						Origin:   origin,
-						Weight:   1,
-					},
+				Ref: &resolve.RealResourceBackendRef{
+					Resource: id,
+					Origin:   origin,
+					Weight:   1,
 				},
 			})
 		}

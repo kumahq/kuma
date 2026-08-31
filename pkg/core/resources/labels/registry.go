@@ -20,4 +20,5 @@ var AllComputedLabels = map[string]struct{}{
 	metadata.KumaWorkload:               {},
 	mesh_proto.ListenerZoneIngressLabel: {},
 	mesh_proto.ListenerZoneEgressLabel:  {},
+	mesh_proto.ProxyReadyLabel:          {},
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -23,11 +22,9 @@ import (
 // belonging to a built-in Kuma gateway.
 func (r *PodReconciler) createOrUpdateBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod, ns *kube_core.Namespace) error {
 	dataplane := &mesh_k8s.Dataplane{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace: pod.Namespace,
-			Name:      pod.Name,
-		},
-		Mesh: k8s_util.MeshOfByLabelOrAnnotation(r.Log, pod, ns),
+		Namespace: pod.Namespace,
+		Name:      pod.Name,
+		Mesh:      k8s_util.MeshOfByLabelOrAnnotation(r.Log, pod, ns),
 	}
 
 	tagsAnnotation, ok := pod.Annotations[metadata.KumaTagsAnnotation]

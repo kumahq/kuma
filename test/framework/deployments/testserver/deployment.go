@@ -149,11 +149,9 @@ func (p probeParams) toKubeProbe() *corev1.Probe {
 	switch p.HandlerType {
 	case ProbeHttpGet:
 		return &corev1.Probe{
-			ProbeHandler: corev1.ProbeHandler{
-				HTTPGet: &corev1.HTTPGetAction{
-					Path: p.HttpGetPath,
-					Port: intstr.FromInt32(int32(p.Port)),
-				},
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: p.HttpGetPath,
+				Port: intstr.FromInt32(int32(p.Port)),
 			},
 			InitialDelaySeconds: 3,
 			PeriodSeconds:       5,
@@ -162,20 +160,16 @@ func (p probeParams) toKubeProbe() *corev1.Probe {
 		}
 	case ProbeTcpSocket:
 		return &corev1.Probe{
-			ProbeHandler: corev1.ProbeHandler{
-				TCPSocket: &corev1.TCPSocketAction{
-					Port: intstr.FromInt32(int32(p.Port)),
-				},
+			TCPSocket: &corev1.TCPSocketAction{
+				Port: intstr.FromInt32(int32(p.Port)),
 			},
 			InitialDelaySeconds: 3,
 			PeriodSeconds:       3,
 		}
 	case ProbeGRPC:
 		return &corev1.Probe{
-			ProbeHandler: corev1.ProbeHandler{
-				GRPC: &corev1.GRPCAction{
-					Port: int32(p.Port),
-				},
+			GRPC: &corev1.GRPCAction{
+				Port: int32(p.Port),
 			},
 			InitialDelaySeconds: 3,
 			PeriodSeconds:       3,

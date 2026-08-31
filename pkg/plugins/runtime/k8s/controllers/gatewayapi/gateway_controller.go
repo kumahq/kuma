@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -128,19 +127,15 @@ func (r *GatewayReconciler) meshGatewayConfigFromClass(ctx context.Context, clas
 	}
 
 	return mesh_k8s.MeshGatewayConfigSpec{
-		MeshGatewayCommonConfig: mesh_k8s.MeshGatewayCommonConfig{
-			ServiceType: kube_core.ServiceTypeLoadBalancer,
-			Replicas:    1,
-		},
+		ServiceType: kube_core.ServiceTypeLoadBalancer,
+		Replicas:    1,
 	}, true, nil
 }
 
 func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, mesh string, gateway *gatewayapi.Gateway, config mesh_k8s.MeshGatewayConfigSpec) (*mesh_k8s.MeshGatewayInstance, error) {
 	instance := &mesh_k8s.MeshGatewayInstance{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace: gateway.Namespace,
-			Name:      gateway.Name,
-		},
+		Namespace: gateway.Namespace,
+		Name:      gateway.Name,
 	}
 
 	if _, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, instance, func() error {
@@ -195,7 +190,7 @@ func gatewaysForRoute(l logr.Logger) kube_handler.MapFunc {
 			requests = append(
 				requests,
 				kube_reconcile.Request{
-					NamespacedName: kube_types.NamespacedName{Namespace: namespace, Name: string(parentRef.Name)},
+					Namespace: namespace, Name: string(parentRef.Name),
 				},
 			)
 		}
