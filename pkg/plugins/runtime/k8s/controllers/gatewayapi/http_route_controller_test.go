@@ -667,13 +667,15 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 			Name:      gatewayapi.ObjectName("backend"),
 		}
 		firstRoute := &gatewayapi.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "blue-green", Namespace: firstRouteNamespace.Name},
+			Name:      "blue-green",
+			Namespace: firstRouteNamespace.Name,
 			Spec: gatewayapi.HTTPRouteSpec{
 				CommonRouteSpec: gatewayapi.CommonRouteSpec{ParentRefs: []gatewayapi.ParentReference{parentRef}},
 			},
 		}
 		secondRoute := &gatewayapi.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "blue", Namespace: secondRouteNamespace.Name},
+			Name:      "blue",
+			Namespace: secondRouteNamespace.Name,
 			Spec: gatewayapi.HTTPRouteSpec{
 				CommonRouteSpec: gatewayapi.CommonRouteSpec{ParentRefs: []gatewayapi.ParentReference{parentRef}},
 			},

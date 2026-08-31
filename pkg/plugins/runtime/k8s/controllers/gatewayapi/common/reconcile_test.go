@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/gomega"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,12 +27,10 @@ func TestReconcileLabelledObjectKeepsUnneededObjectWhenReplacementCreateFails(t 
 
 	owner := kube_types.NamespacedName{Namespace: "route-ns", Name: "my-route"}
 	stale := &meshhttproute_k8s.MeshHTTPRoute{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:      "legacy-route",
-			Namespace: "kuma-system",
-			Labels: map[string]string{
-				ownerLabel: hashNamespacedName(owner),
-			},
+		Name:      "legacy-route",
+		Namespace: "kuma-system",
+		Labels: map[string]string{
+			ownerLabel: hashNamespacedName(owner),
 		},
 	}
 
