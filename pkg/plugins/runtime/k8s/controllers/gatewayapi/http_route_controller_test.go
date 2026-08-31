@@ -2,6 +2,7 @@ package gatewayapi
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
@@ -24,6 +25,7 @@ import (
 	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
 	meshhttproute_k8s "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/k8s/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
@@ -278,6 +280,66 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 		condition := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionResolvedRefs))
 		Expect(condition).ToNot(BeNil())
 		Expect(condition.Status).To(Equal(kube_meta.ConditionTrue))
+	})
+
+	It("stamps the generated MeshHTTPRoute with the HTTPRoute's creationTimestamp", func() {
+		ms := &meshservice_k8s.MeshService{
+			Name: "backend", Namespace: "kuma-demo",
+			Spec: &meshservice_api.MeshService{
+				Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("http")}},
+			},
+		}
+		route := newRoute(meshServiceParentRef("backend"))
+		route.CreationTimestamp = kube_meta.NewTime(time.Unix(1700000000, 0))
+
+		client := newClientBuilder(ms, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		Expect(routes.Items[0].Labels).To(HaveKeyWithValue(metadata.GatewayAPIRouteCreationTimestampLabel, "1700000000"))
+	})
+
+	It("backfills the creationTimestamp label onto a generated MeshHTTPRoute created before the label existed", func() {
+		ms := &meshservice_k8s.MeshService{
+			Name: "backend", Namespace: "kuma-demo",
+			Spec: &meshservice_api.MeshService{
+				Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("http")}},
+			},
+		}
+		route := newRoute(meshServiceParentRef("backend"))
+		route.CreationTimestamp = kube_meta.NewTime(time.Unix(1700000000, 0))
+
+		client := newClientBuilder(ms, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+
+		generated := &routes.Items[0]
+		delete(generated.Labels, metadata.GatewayAPIRouteCreationTimestampLabel)
+		Expect(client.Update(context.Background(), generated)).To(Succeed())
+
+		_, err = reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		Expect(routes.Items[0].Labels).To(HaveKeyWithValue(metadata.GatewayAPIRouteCreationTimestampLabel, "1700000000"))
 	})
 })
 

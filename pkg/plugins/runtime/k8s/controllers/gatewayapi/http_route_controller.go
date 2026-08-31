@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strconv"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -27,6 +28,7 @@ import (
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -184,6 +186,10 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	// The conditions we accumulate for each ParentRef
 	conditions := ParentConditions{}
 
+	labels := map[string]string{
+		metadata.GatewayAPIRouteCreationTimestampLabel: strconv.FormatInt(route.CreationTimestamp.Unix(), 10),
+	}
+
 	for i, ref := range route.Spec.ParentRefs {
 		refAttachment, refKind, err := attachment.EvaluateParentRefAttachment(ref)
 		if err != nil {
@@ -218,7 +224,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 					return nil, nil, err
 				}
 
-				parentConditions = append(parentConditions,
+				parentConditions = append(
+					parentConditions,
 					kube_meta.Condition{
 						Type:    string(gatewayapi.RouteConditionAccepted),
 						Status:  kube_meta.ConditionFalse,
@@ -232,7 +239,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			}
 
 			if parent.Spec.ClusterIP == kube_core.ClusterIPNone {
-				parentConditions = append(parentConditions,
+				parentConditions = append(
+					parentConditions,
 					kube_meta.Condition{
 						Type:    string(gatewayapi.RouteConditionAccepted),
 						Status:  kube_meta.ConditionFalse,
@@ -255,7 +263,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 
 			meshRoute, ok := r.gapiServiceToMeshRoute(route.Namespace, rules, &parent, ref.Port, ref.SectionName)
 			if !ok {
-				parentConditions = append(parentConditions,
+				parentConditions = append(
+					parentConditions,
 					kube_meta.Condition{
 						Type:    string(gatewayapi.RouteConditionAccepted),
 						Status:  kube_meta.ConditionFalse,
@@ -273,7 +282,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				ownedNamespace = route.Namespace
 			}
 
-			storeMeshHTTPRoute(routes, routeSubName, ownedNamespace, meshRoute)
+			storeMeshHTTPRoute(routes, routeSubName, ownedNamespace, labels, meshRoute)
 		case attachment.MeshService:
 			namespace := route.Namespace
 			if ref.Namespace != nil {
@@ -289,7 +298,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 					return nil, nil, err
 				}
 
-				parentConditions = append(parentConditions,
+				parentConditions = append(
+					parentConditions,
 					kube_meta.Condition{
 						Type:    string(gatewayapi.RouteConditionAccepted),
 						Status:  kube_meta.ConditionFalse,
@@ -312,7 +322,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 
 			meshRoute, ok := r.gapiMeshServiceToMeshRoute(route.Namespace, rules, &parent, ref.Port, ref.SectionName)
 			if !ok {
-				parentConditions = append(parentConditions,
+				parentConditions = append(
+					parentConditions,
 					kube_meta.Condition{
 						Type:    string(gatewayapi.RouteConditionAccepted),
 						Status:  kube_meta.ConditionFalse,
@@ -330,7 +341,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				ownedNamespace = route.Namespace
 			}
 
-			storeMeshHTTPRoute(routes, routeSubName, ownedNamespace, meshRoute)
+			storeMeshHTTPRoute(routes, routeSubName, ownedNamespace, labels, meshRoute)
 		}
 
 		conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
@@ -339,22 +350,22 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	return routes, conditions, nil
 }
 
-func storeMeshHTTPRoute(routes map[string]common.OwnedObject, name string, namespace string, spec core_model.ResourceSpec) {
+func storeMeshHTTPRoute(routes map[string]common.OwnedObject, name string, namespace string, labels map[string]string, spec core_model.ResourceSpec) {
 	route, ok := spec.(*meshhttproute_api.MeshHTTPRoute)
 	if !ok {
-		routes[name] = common.OwnedObject{Namespace: namespace, Spec: spec}
+		routes[name] = common.OwnedObject{Namespace: namespace, Spec: spec, Labels: labels}
 		return
 	}
 
 	existing, ok := routes[name]
 	if !ok {
-		routes[name] = common.OwnedObject{Namespace: namespace, Spec: spec}
+		routes[name] = common.OwnedObject{Namespace: namespace, Spec: spec, Labels: labels}
 		return
 	}
 
 	existingRoute, ok := existing.Spec.(*meshhttproute_api.MeshHTTPRoute)
 	if !ok {
-		routes[name] = common.OwnedObject{Namespace: namespace, Spec: spec}
+		routes[name] = common.OwnedObject{Namespace: namespace, Spec: spec, Labels: labels}
 		return
 	}
 
