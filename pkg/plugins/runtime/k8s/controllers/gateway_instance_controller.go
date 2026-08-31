@@ -424,7 +424,7 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		gateway := obj.(*mesh_k8s.MeshGateway)
-		l = l.WithValues("gateway", obj.GetName(), "mesh", gateway.Mesh)
+		l := l.WithValues("gateway", obj.GetName(), "mesh", gateway.Mesh)
 
 		spec, err := gateway.GetSpec()
 		if err != nil {
