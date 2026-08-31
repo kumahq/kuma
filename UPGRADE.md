@@ -30,9 +30,6 @@ controlPlane:
       drop: []
 ```
 
-<<<<<<< HEAD
-## Upgrade to `2.13.7`, `2.12.11`, `2.11.14`, `2.9.16`, `2.7.26`
-=======
 ### `MeshProxyPatch` can now change circuit breaker thresholds
 
 Since 2.14.0 every generated cluster carries a `DEFAULT`-priority circuit breaker threshold, and a `MeshProxyPatch` patching `circuitBreakers` appended a second one for that same priority. Envoy honours only the first threshold matching a routing priority, so the patched entry was dead config: `/config_dump` showed the requested values while Envoy kept what `MeshCircuitBreaker`, or its own defaults, had set. The patch now merges into the existing threshold of the same priority instead of appending. A threshold whose priority is not yet on the cluster still appends, and a `value` listing the same priority twice keeps the first entry, matching how Envoy resolves them.
@@ -41,8 +38,7 @@ Since 2.14.0 every generated cluster carries a `DEFAULT`-priority circuit breake
 
 Review every `MeshProxyPatch` that patches `circuitBreakers`. Where the same cluster is also covered by a `MeshCircuitBreaker`, the patch now overrides that policy for each field it sets, instead of being ignored — `MeshProxyPatch` runs last, so it wins the fields it names and the policy keeps the rest. Remove patches you wrote before 2.14.0 and no longer rely on, and drop any workaround you put in place because the patch appeared to do nothing.
 
-## Upgrade to `2.13.7`
->>>>>>> 829dc468d6 (fix(meshproxypatch): honor circuit breaker patches (#18207))
+## Upgrade to `2.13.7`, `2.12.11`, `2.11.14`, `2.9.16`, `2.7.26`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because the underlying change is a security fix that alters TLS verification behavior in a way some deployments may notice.
 

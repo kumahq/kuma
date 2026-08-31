@@ -6,16 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-<<<<<<< HEAD
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/client"
+	"github.com/kumahq/kuma/v2/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
-=======
-	. "github.com/kumahq/kuma/v3/test/framework"
-	"github.com/kumahq/kuma/v3/test/framework/client"
-	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
-	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
->>>>>>> 829dc468d6 (fix(meshproxypatch): honor circuit breaker patches (#18207))
 )
 
 func MeshProxyPatch() {
@@ -29,7 +23,7 @@ func MeshProxyPatch() {
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("test-server"),
 			)).
-			Install(DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -100,7 +94,7 @@ spec:
       - cluster:
           operation: Patch
           match:
-            name: self_transparentproxy_passthrough_outbound_ipv4
+            name: outbound:passthrough:ipv4
           value: |
             circuitBreakers:
               thresholds:
@@ -115,7 +109,7 @@ spec:
 		Eventually(func(g Gomega) {
 			// anchored: the filter is a regex, and an unanchored remaining_cx
 			// also matches remaining_cx_pools
-			s, err := admin.GetStats("cluster.self_transparentproxy_passthrough_outbound_ipv4.circuit_breakers.default.remaining_cx$")
+			s, err := admin.GetStats("cluster.outbound_passthrough_ipv4.circuit_breakers.default.remaining_cx$")
 			g.Expect(err).ToNot(HaveOccurred())
 			// remaining_cx counts down as the cluster opens connections, so
 			// assert against Envoy's 1024 default rather than an exact 8192

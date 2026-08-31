@@ -11,7 +11,7 @@ spec:
       - cluster:
           operation: Patch
           match:
-            name: self_transparentproxy_passthrough_outbound_ipv4
+            name: outbound:passthrough:ipv4
           value: |
             circuitBreakers:
               thresholds:
