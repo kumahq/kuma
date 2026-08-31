@@ -65,7 +65,7 @@ type FilterChainMatch struct {
 func GetOrderedMatchers(conf api.Conf) []FilterChainMatch {
 	conflicts := api.FindConflicts(conf)
 	matcherWithRoutes := map[Matcher]map[Route]bool{}
-	matcherChainKeys := map[Matcher]api.ChainKey{}
+	matcherFilterChains := map[Matcher]api.FilterChainMatcher{}
 	portProtocols := map[uint32]map[core_meta.Protocol]bool{}
 	for i, match := range pointer.Deref(conf.AppendMatch) {
 		if conflicts.IsDropped(i) {
@@ -84,7 +84,7 @@ func GetOrderedMatchers(conf api.Conf) []FilterChainMatch {
 		if !isL7Domain {
 			matcher.Value = match.Value
 		}
-		matcherChainKeys[matcher] = match.ChainKey()
+		matcherFilterChains[matcher] = match.FilterChainMatcher()
 		if _, found := portProtocols[port]; !found {
 			portProtocols[port] = map[core_meta.Protocol]bool{protocol: true}
 		} else {
@@ -131,7 +131,7 @@ func GetOrderedMatchers(conf api.Conf) []FilterChainMatch {
 				if port == 0 {
 					continue
 				}
-				if conflicts.IsSuppressed(matcherChainKeys[matcher].WithPort(port)) {
+				if conflicts.IsSuppressed(matcherFilterChains[matcher].WithPort(port)) {
 					continue
 				}
 				additionalMatcher := Matcher{
