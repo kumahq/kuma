@@ -8,6 +8,14 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### The `k8s.kuma.io/service-account` label is rejected on user-applied resources
+
+On Kubernetes this label is computed by the control plane from the Pod's ServiceAccount and feeds the workload identity used by policies such as `MeshTrafficPermission`. Setting it by hand let any user who can apply Kuma resources in a namespace forge that identity. The admission webhook now denies any create or update carrying `k8s.kuma.io/service-account` unless the request comes from the control plane itself (or another user listed in `runtime.kubernetes.allowedUsers`), on both Zone and Global control planes. Resources synced over KDS and resources written by the control plane are unaffected.
+
+**Action required**
+
+Remove `k8s.kuma.io/service-account` from any manifest you apply yourself, including GitOps-managed ones. Existing resources that already carry the label keep working until something updates them, at which point the update is rejected until the label is dropped.
+
 ### `MeshLoadBalancingStrategy` cross-zone settings now require a `MeshMultiZoneService` `to` target
 
 `MeshLoadBalancingStrategy.spec.to[].default.localityAwareness.crossZone` is now accepted only when that `to` entry targets a `MeshMultiZoneService`. Create and update validation now rejects the same `crossZone` block on `Mesh`, `MeshService`, and `MeshExternalService` targets.
