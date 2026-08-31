@@ -12,4 +12,10 @@ const (
 	// proxies.
 	// Allowed values: ingress or egress.
 	KumaZoneProxyTypeLabel = "k8s.kuma.io/zone-proxy-type"
+
+	// GatewayAPIRouteCreationTimestampLabel records the creationTimestamp of
+	// the gateway-api HTTPRoute that a generated MeshHTTPRoute originates
+	// from. Value is the decimal Unix timestamp in nanoseconds. Used to
+	// break route conflicts in favor of the oldest route.
+	GatewayAPIRouteCreationTimestampLabel = "gateways.kuma.io/gateway.networking.k8s.io-route-creation-timestamp"
 )
