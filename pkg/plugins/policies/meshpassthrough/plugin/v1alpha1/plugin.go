@@ -99,7 +99,7 @@ func applyToOutboundPassthrough(
 				Conf:              conf,
 				IPv6Enabled:       proxy.Metadata.IPv6Enabled,
 			}
-			return conf.ConfWarnings(), configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
+			return conf.Warnings(), configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
 		}
 	}
 	return nil, nil

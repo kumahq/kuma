@@ -262,8 +262,7 @@ var _ = Describe("Match order", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(yaml).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.orderedGolden)))
-			// the same analysis produces the warnings the inspect API serves
-			Expect(given.conf.ConfWarnings()).To(Equal(given.warnings))
+			Expect(given.conf.Warnings()).To(Equal(given.warnings))
 		},
 		Entry("many different protocols", conflictingTestCase{
 			conf: api.Conf{
@@ -308,9 +307,9 @@ var _ = Describe("Match order", func() {
 			},
 			orderedGolden: "conflicting-protocols-on-the-same-port.golden.yaml",
 			warnings: []string{
-				`ignoring match "another.com" with protocol http2, protocol http is already configured for domains on port 8080, only one of [grpc http http2] can be configured on the same port`,
-				`ignoring match "grpc.com" with protocol grpc, protocol http is already configured for domains on port 9001, only one of [grpc http http2] can be configured on the same port`,
-				`ignoring match "http2.com" with protocol http2, protocol http is already configured for domains on port 9001, only one of [grpc http http2] can be configured on the same port`,
+				`ignoring match "another.com", protocols http and http2 produce the same filter chain for domains on port 8080`,
+				`ignoring match "http2.com", protocols http and http2 produce the same filter chain for domains on port 9001`,
+				`ignoring match "grpc.com", protocols http and grpc produce the same filter chain for domains on port 9001`,
 			},
 		}),
 		Entry("the same domain on all ports and on a port with a different L7 protocol", conflictingTestCase{
@@ -331,7 +330,7 @@ var _ = Describe("Match order", func() {
 			},
 			orderedGolden: "conflicting-protocols-on-all-ports.golden.yaml",
 			warnings: []string{
-				"matches with protocol http and no port are not applied to domains on port 4317, protocol grpc is already configured there",
+				"protocols grpc and http produce the same filter chain for domains on port 4317, matches with protocol http and no port are not applied there",
 			},
 		}),
 		Entry("an IP and a CIDR resolving to the same address range with the same protocol", conflictingTestCase{
@@ -353,7 +352,7 @@ var _ = Describe("Match order", func() {
 			},
 			orderedGolden: "duplicate-ip-and-cidr.golden.yaml",
 			warnings: []string{
-				`ignoring match "10.0.0.1/32" with protocol http, match "10.0.0.1" already defines a filter chain for 10.0.0.1/32 on port 80`,
+				`ignoring match "10.0.0.1/32", matches "10.0.0.1" and "10.0.0.1/32" produce the same filter chain for 10.0.0.1/32 on port 80`,
 			},
 		}),
 		Entry("tcp and mysql on the same address and port", conflictingTestCase{
@@ -375,7 +374,7 @@ var _ = Describe("Match order", func() {
 			},
 			orderedGolden: "duplicate-tcp-and-mysql.golden.yaml",
 			warnings: []string{
-				`ignoring match "10.1.1.1" with protocol mysql, protocol tcp is already configured for 10.1.1.1/32 on port 3306, both would produce the same filter chain matcher`,
+				`ignoring match "10.1.1.1", protocols tcp and mysql produce the same filter chain for 10.1.1.1/32 on port 3306`,
 			},
 		}),
 		Entry("CIDRs with host bits resolving to the same range with different L7 protocols", conflictingTestCase{
@@ -397,7 +396,7 @@ var _ = Describe("Match order", func() {
 			},
 			orderedGolden: "duplicate-cidr-host-bits.golden.yaml",
 			warnings: []string{
-				`ignoring match "10.0.0.0/24" with protocol grpc, protocol http is already configured for 10.0.0.0/24 on port 8080, only one of [grpc http http2] can be configured on the same port`,
+				`ignoring match "10.0.0.0/24", protocols http and grpc produce the same filter chain for 10.0.0.0/24 on port 8080`,
 			},
 		}),
 		Entry("a match without a port duplicating an explicit chain of the same protocol", conflictingTestCase{
@@ -418,7 +417,7 @@ var _ = Describe("Match order", func() {
 			},
 			orderedGolden: "duplicate-all-ports-and-explicit-port.golden.yaml",
 			warnings: []string{
-				`matches with protocol tcp and no port are not applied to 192.168.0.1/32 on port 9090, match "192.168.0.1/32" already defines a filter chain there`,
+				`matches "192.168.0.1/32" and "192.168.0.1" produce the same filter chain for 192.168.0.1/32 on port 9090, matches with protocol tcp and no port are not applied there`,
 			},
 		}),
 		Entry("IPv6 spelled differently resolving to the same address", conflictingTestCase{
@@ -440,7 +439,7 @@ var _ = Describe("Match order", func() {
 			},
 			orderedGolden: "duplicate-ipv6-forms.golden.yaml",
 			warnings: []string{
-				`ignoring match "::1/128" with protocol tls, match "0:0:0:0:0:0:0:1" already defines a filter chain for ::1/128 on port 443`,
+				`ignoring match "::1/128", matches "0:0:0:0:0:0:0:1" and "::1/128" produce the same filter chain for ::1/128 on port 443`,
 			},
 		}),
 	)

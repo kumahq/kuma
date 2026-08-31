@@ -2,35 +2,33 @@ package v1alpha1
 
 import (
 	"fmt"
-	"maps"
 	"net"
 	"slices"
-	"sort"
-	"strings"
+
+	"github.com/asaskevich/govalidator"
 
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
-// This file is the single source of truth for which matches of a MeshPassthrough
-// configuration resolve to the same Envoy filter chain. The validator rejects such
-// conflicts on apply, the generator drops them instead of producing a listener Envoy
-// would reject, and MatchedPolicies surfaces the drops as warnings in the inspect API.
+var l7Protocols = []ProtocolType{GrpcProtocol, HttpProtocol, Http2Protocol}
 
-// chainClass groups protocols whose filter chains can collide: chains of different
-// classes always differ in the transport or application protocols they match on.
+// chains of the same class are only told apart by port and address, chains of
+// different classes always differ in the transport or application protocols they
+// match on: raw_buffer for tcp and mysql, the tls transport for tls, raw_buffer with
+// http/1.1 and h2c for http, http2 and grpc
 type chainClass int
 
 const (
-	tcpChain  chainClass = iota // tcp and mysql: raw_buffer with optional address and port
-	tlsChain                    // tls: tls transport with SNI or address and optional port
-	httpChain                   // http, http2 and grpc: raw_buffer and http/1.1,h2c with optional address and port
+	tcpChain chainClass = iota
+	tlsChain
+	httpChain
 )
 
 func protocolClass(protocol ProtocolType) chainClass {
-	switch protocol {
-	case TlsProtocol:
+	switch {
+	case protocol == TlsProtocol:
 		return tlsChain
-	case HttpProtocol, Http2Protocol, GrpcProtocol:
+	case slices.Contains(l7Protocols, protocol):
 		return httpChain
 	default:
 		return tcpChain
@@ -39,7 +37,7 @@ func protocolClass(protocol ProtocolType) chainClass {
 
 // ChainKey identifies the filter chain a match resolves to: all domains of an L7
 // protocol and port share one chain, TLS domains get a chain per SNI, IPs and CIDRs
-// a chain per normalized destination prefix range.
+// a chain per normalized address range.
 type ChainKey struct {
 	class   chainClass
 	port    uint32
@@ -47,36 +45,49 @@ type ChainKey struct {
 	sni     string
 }
 
-// KeyOf returns the identity of the filter chain the match resolves to.
-func KeyOf(match Match) ChainKey {
-	key := ChainKey{class: protocolClass(match.Protocol), port: pointer.Deref(match.Port)}
-	switch match.Type {
+func (m Match) ChainKey() ChainKey {
+	key := ChainKey{class: protocolClass(m.Protocol), port: pointer.Deref(m.Port)}
+	switch m.Type {
 	case "IP":
-		if addressIsIPv6(match.Value) {
-			key.address = canonicalIP(match.Value) + "/128"
+		// the generator picks the listener the same way, a textual IPv6 form is IPv6
+		// even when it encodes an IPv4 address
+		if govalidator.IsIPv6(m.Value) {
+			key.address = CanonicalCIDR(m.Value + "/128")
 		} else {
-			key.address = canonicalIP(match.Value) + "/32"
+			key.address = CanonicalCIDR(m.Value + "/32")
 		}
 	case "CIDR":
-		key.address = CanonicalCIDR(match.Value)
+		key.address = CanonicalCIDR(m.Value)
 	case "Domain":
 		if key.class == tlsChain {
-			key.sni = match.Value
+			key.sni = m.Value
 		}
 	}
 	return key
 }
 
-// WithPort returns the identity of the chain the same match produces on another port.
 func (k ChainKey) WithPort(port uint32) ChainKey {
 	k.port = port
 	return k
 }
 
-// CanonicalCIDR normalizes a CIDR to the prefix range Envoy matches on: host bits
-// dropped, non-canonical IPv6 spellings collapsed, IPv4-mapped IPv6 converted to
-// plain IPv4. An unparseable value is returned as is, so distinct invalid values
-// never resolve to one chain.
+func (k ChainKey) String() string {
+	chain := "domains"
+	switch {
+	case k.sni != "":
+		chain = fmt.Sprintf("domain %q", k.sni)
+	case k.address != "":
+		chain = k.address
+	}
+	if k.port == 0 {
+		return chain + " on all ports"
+	}
+	return fmt.Sprintf("%s on port %d", chain, k.port)
+}
+
+// CanonicalCIDR returns the prefix range Envoy matches on, host bits dropped and
+// IPv4-mapped IPv6 collapsed to plain IPv4. An unparseable value is returned as is,
+// so two invalid values never resolve to one chain.
 func CanonicalCIDR(value string) string {
 	if _, ipNet, err := net.ParseCIDR(value); err == nil {
 		return ipNet.String()
@@ -84,28 +95,8 @@ func CanonicalCIDR(value string) string {
 	return value
 }
 
-func canonicalIP(value string) string {
-	if ip := net.ParseIP(value); ip != nil {
-		return ip.String()
-	}
-	return value
-}
-
-func addressIsIPv6(value string) bool {
-	ip, _, _ := strings.Cut(value, "/")
-	return govalidatorIsIPv6(ip)
-}
-
-// same rule the generator uses to pick the listener: textual IPv6 forms count as
-// IPv6 even when they encode an IPv4 address
-func govalidatorIsIPv6(ip string) bool {
-	return net.ParseIP(ip) != nil && strings.Contains(ip, ":")
-}
-
-var l7Protocols = []ProtocolType{GrpcProtocol, HttpProtocol, Http2Protocol}
-
-// chainValue is what distinguishes matches within one chain: L7 domains share the
-// chain and merge as virtual host routes, everything else owns its chain exclusively.
+// L7 domains share their chain and merge as virtual host routes, anything else owns
+// its chain exclusively
 func chainValue(match Match) string {
 	if match.Type == "Domain" && slices.Contains(l7Protocols, match.Protocol) {
 		return ""
@@ -116,205 +107,131 @@ func chainValue(match Match) string {
 type chainOwner struct {
 	protocol ProtocolType
 	value    string
-	raw      string
+	raw      string // the value as written, for messages
 }
 
-type matchDrop struct {
-	warning string
-	// field and message anchor the validator violation; empty when other
-	// validation already rejects the match
+// field and message are empty when the match is invalid rather than conflicting,
+// other validation already rejects those
+type conflict struct {
 	field   string
 	message string
 }
 
-type projection struct {
-	key      ChainKey
-	protocol ProtocolType
-	value    string
+// Conflicts lists what a Conf cannot apply: dropped matches resolve to a chain an
+// earlier match already configures, suppressed chains are the ones a match without a
+// port is not replicated onto. The validator rejects both on apply, the generator
+// drops them instead of building a listener Envoy rejects.
+type Conflicts struct {
+	dropped    map[int]conflict
+	suppressed map[ChainKey]struct{}
+	warnings   []string
 }
 
-// ConfAnalysis lists the matches of a Conf that cannot be applied: dropped matches
-// resolve to a chain an earlier match already configures, suppressed projections are
-// matches without a port not replicated onto a port whose chain a conflicting match
-// owns. The first match configuring a chain always wins.
-type ConfAnalysis struct {
-	dropped    map[int]matchDrop
-	suppressed map[projection]string
-}
-
-// AnalyzeConf mirrors how the generator assembles filter chains from AppendMatch.
-func AnalyzeConf(conf Conf) ConfAnalysis {
-	analysis := ConfAnalysis{dropped: map[int]matchDrop{}, suppressed: map[projection]string{}}
+// FindConflicts mirrors how the generator assembles filter chains from AppendMatch.
+// The first match configuring a chain wins.
+func FindConflicts(conf Conf) Conflicts {
+	conflicts := Conflicts{dropped: map[int]conflict{}, suppressed: map[ChainKey]struct{}{}}
 	owners := map[ChainKey]chainOwner{}
-	ports := map[uint32]struct{}{}
-	portless := map[projection]struct{}{}
+	var ports []uint32
+	var portless []ChainKey
 	for i, match := range pointer.Deref(conf.AppendMatch) {
-		if warning, invalid := invalidMatch(match); invalid {
-			analysis.dropped[i] = matchDrop{warning: warning}
+		if reason, invalid := invalidMatch(match); invalid {
+			conflicts.dropped[i] = conflict{}
+			conflicts.warn("ignoring match %q, %s", match.Value, reason)
 			continue
 		}
-		key := KeyOf(match)
+		key := match.ChainKey()
 		value := chainValue(match)
 		owner, found := owners[key]
 		if !found {
 			owners[key] = chainOwner{protocol: match.Protocol, value: value, raw: match.Value}
-			if port := pointer.Deref(match.Port); port == 0 {
-				portless[projection{key: key, protocol: match.Protocol, value: value}] = struct{}{}
-			} else {
-				ports[port] = struct{}{}
+			switch {
+			case key.port == 0:
+				portless = append(portless, key)
+			case !slices.Contains(ports, key.port):
+				ports = append(ports, key.port)
 			}
 			continue
 		}
 		if owner.protocol == match.Protocol && owner.value == value {
 			continue // the same chain, merges with the owner
 		}
-		analysis.dropped[i] = newMatchDrop(match, key, owner)
+		field := "value"
+		if owner.protocol != match.Protocol {
+			field = "protocol"
+		}
+		reason := conflictReason(owner, match.Protocol, match.Value, key)
+		conflicts.dropped[i] = conflict{field: field, message: reason}
+		conflicts.warn("ignoring match %q, %s", match.Value, reason)
 	}
 	// a match without a port is replicated onto every port used elsewhere in the
-	// policy, unless a conflicting match already owns the chain on that port
-	for p := range portless {
-		for port := range ports {
-			key := p.key.WithPort(port)
-			owner, found := owners[key]
-			if !found || (owner.protocol == p.protocol && owner.value == p.value) {
+	// policy, except ports whose chain a conflicting match already owns
+	for _, key := range portless {
+		projected := owners[key]
+		for _, port := range ports {
+			target := key.WithPort(port)
+			owner, found := owners[target]
+			if !found || (owner.protocol == projected.protocol && owner.value == projected.value) {
 				continue
 			}
-			var warning string
-			if owner.protocol != p.protocol {
-				warning = fmt.Sprintf(
-					"matches with protocol %s and no port are not applied to %s on port %d, protocol %s is already configured there",
-					p.protocol, key.describe(), port, owner.protocol,
-				)
-			} else {
-				warning = fmt.Sprintf(
-					"matches with protocol %s and no port are not applied to %s on port %d, match %q already defines a filter chain there",
-					p.protocol, key.describe(), port, owner.raw,
-				)
-			}
-			analysis.suppressed[projection{key: key, protocol: p.protocol, value: p.value}] = warning
+			conflicts.suppressed[target] = struct{}{}
+			conflicts.warn(
+				"%s, matches with protocol %s and no port are not applied there",
+				conflictReason(owner, projected.protocol, projected.raw, target), projected.protocol,
+			)
 		}
 	}
-	return analysis
+	return conflicts
 }
 
-// IsDropped reports whether the AppendMatch entry at the index resolves to a chain
-// another match already configures and must not produce one of its own.
-func (a ConfAnalysis) IsDropped(index int) bool {
-	_, found := a.dropped[index]
+func conflictReason(owner chainOwner, protocol ProtocolType, value string, key ChainKey) string {
+	if owner.protocol != protocol {
+		return fmt.Sprintf("protocols %s and %s produce the same filter chain for %s", owner.protocol, protocol, key)
+	}
+	return fmt.Sprintf("matches %q and %q produce the same filter chain for %s", owner.raw, value, key)
+}
+
+func (c *Conflicts) warn(format string, args ...any) {
+	warning := fmt.Sprintf(format, args...)
+	if !slices.Contains(c.warnings, warning) {
+		c.warnings = append(c.warnings, warning)
+	}
+}
+
+func (c Conflicts) IsDropped(index int) bool {
+	_, found := c.dropped[index]
 	return found
 }
 
-// IsProjectionSuppressed reports whether a match without a port must not be
-// replicated onto the chain identified by key.
-func (a ConfAnalysis) IsProjectionSuppressed(key ChainKey, protocol ProtocolType, value string) bool {
-	_, found := a.suppressed[projection{key: key, protocol: protocol, value: value}]
+func (c Conflicts) IsSuppressed(key ChainKey) bool {
+	_, found := c.suppressed[key]
 	return found
 }
 
-// Warnings renders one deduplicated, sorted message per dropped match and
-// suppressed projection.
-func (a ConfAnalysis) Warnings() []string {
-	set := map[string]struct{}{}
-	for _, drop := range a.dropped {
-		set[drop.warning] = struct{}{}
-	}
-	for _, warning := range a.suppressed {
-		set[warning] = struct{}{}
-	}
-	if len(set) == 0 {
-		return nil
-	}
-	warnings := slices.Collect(maps.Keys(set))
-	sort.Strings(warnings)
-	return warnings
+func (c Conflicts) Warnings() []string {
+	return c.warnings
 }
 
-// ConfWarnings lists the warnings for every match the generator drops from the
-// configuration. The policy matcher attaches them to the matched policies, which
-// is what the dataplane `_rules` inspect API serves.
-func (c Conf) ConfWarnings() []string {
-	return AnalyzeConf(c).Warnings()
+func (c Conf) Warnings() []string {
+	return FindConflicts(c).Warnings()
 }
 
-// invalidMatch drops matches the generator cannot turn into a valid filter chain.
-// The validator rejects them on apply, so they can only appear when validation was
-// bypassed, e.g. in a policy stored before an upgrade.
+// invalidMatch reports matches the generator cannot turn into a filter chain, they
+// only show up when validation was bypassed, for example in a policy stored before an
+// upgrade.
 func invalidMatch(match Match) (string, bool) {
 	switch match.Type {
 	case "IP":
 		if net.ParseIP(match.Value) == nil {
-			return fmt.Sprintf("ignoring match %q, not a valid IP", match.Value), true
+			return "not a valid IP", true
 		}
 	case "CIDR":
 		if _, _, err := net.ParseCIDR(match.Value); err != nil {
-			return fmt.Sprintf("ignoring match %q, not a valid CIDR", match.Value), true
+			return "not a valid CIDR", true
 		}
 	case "Domain":
 	default:
-		return fmt.Sprintf("ignoring match %q, type %q is not supported", match.Value, match.Type), true
+		return fmt.Sprintf("type %q is not supported", match.Type), true
 	}
 	return "", false
-}
-
-func newMatchDrop(match Match, key ChainKey, owner chainOwner) matchDrop {
-	port := pointer.Deref(match.Port)
-	if owner.protocol != match.Protocol {
-		drop := matchDrop{
-			warning: fmt.Sprintf(
-				"ignoring match %q with protocol %s, protocol %s is already configured for %s on %s, %s",
-				match.Value, match.Protocol, owner.protocol, key.describe(), describePort(port), key.conflictReason(),
-			),
-			field: "protocol",
-		}
-		switch {
-		case key.address != "":
-			drop.message = fmt.Sprintf(
-				"protocols %s and %s for the same address on %s would produce the same filter chain, use a single protocol for %q",
-				owner.protocol, match.Protocol, describePort(port), match.Value,
-			)
-		case key.class == httpChain && port != 0:
-			drop.field = "port"
-			drop.message = fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", l7Protocols)
-		case key.class == httpChain:
-			drop.message = fmt.Sprintf("protocols %s and %s share a single filter chain for domains without a port, use a single protocol", owner.protocol, match.Protocol)
-		default:
-			drop.message = fmt.Sprintf("protocols %s and %s on %s would produce the same filter chain for %q", owner.protocol, match.Protocol, describePort(port), match.Value)
-		}
-		return drop
-	}
-	return matchDrop{
-		warning: fmt.Sprintf(
-			"ignoring match %q with protocol %s, match %q already defines a filter chain for %s on %s",
-			match.Value, match.Protocol, owner.raw, key.describe(), describePort(port),
-		),
-		field: "value",
-		message: fmt.Sprintf(
-			"match %q resolves to the same address as match %q on %s, both would produce the same filter chain",
-			match.Value, owner.raw, describePort(port),
-		),
-	}
-}
-
-func (k ChainKey) conflictReason() string {
-	if k.class == httpChain {
-		return fmt.Sprintf("only one of %v can be configured on the same port", l7Protocols)
-	}
-	return "both would produce the same filter chain matcher"
-}
-
-func (k ChainKey) describe() string {
-	if k.sni != "" {
-		return fmt.Sprintf("domain %q", k.sni)
-	}
-	if k.address == "" {
-		return "domains"
-	}
-	return k.address
-}
-
-func describePort(port uint32) string {
-	if port == 0 {
-		return "all ports"
-	}
-	return fmt.Sprintf("port %d", port)
 }

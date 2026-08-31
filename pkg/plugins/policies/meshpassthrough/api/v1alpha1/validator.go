@@ -44,9 +44,7 @@ func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TopLevelTarg
 
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
-	// matches resolving to a filter chain another match already configures are
-	// rejected with the same analysis the generator uses to drop them
-	analysis := AnalyzeConf(conf)
+	conflicts := FindConflicts(conf)
 	type portProtocol struct {
 		port     uint32
 		protocol ProtocolType
@@ -59,8 +57,8 @@ func validateDefault(conf Conf) validators.ValidationError {
 		if match.Port != nil && pointer.Deref[uint32](match.Port) == 0 || pointer.Deref[uint32](match.Port) > math.MaxUint16 {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
 		}
-		if drop, found := analysis.dropped[i]; found && drop.field != "" {
-			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field(drop.field), drop.message)
+		if conflict, found := conflicts.dropped[i]; found && conflict.field != "" {
+			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field(conflict.field), conflict.message)
 		}
 		if match.Port != nil {
 			key := portProtocol{

@@ -1,13 +1,13 @@
 violations:
 - field: spec.default.appendMatch[1].value
-  message: match "10.0.0.1/32" resolves to the same address as match "10.0.0.1" on
-    port 80, both would produce the same filter chain
+  message: matches "10.0.0.1" and "10.0.0.1/32" produce the same filter chain for
+    10.0.0.1/32 on port 80
 - field: spec.default.appendMatch[3].protocol
-  message: protocols http and grpc for the same address on port 8080 would produce
-    the same filter chain, use a single protocol for "10.0.0.0/24"
+  message: protocols http and grpc produce the same filter chain for 10.0.0.0/24 on
+    port 8080
 - field: spec.default.appendMatch[5].protocol
-  message: protocols tcp and mysql for the same address on port 3306 would produce
-    the same filter chain, use a single protocol for "10.1.1.1"
+  message: protocols tcp and mysql produce the same filter chain for 10.1.1.1/32 on
+    port 3306
 - field: spec.default.appendMatch[7].value
-  message: match "::1/128" resolves to the same address as match "0:0:0:0:0:0:0:1"
-    on port 443, both would produce the same filter chain
+  message: matches "0:0:0:0:0:0:0:1" and "::1/128" produce the same filter chain for
+    ::1/128 on port 443

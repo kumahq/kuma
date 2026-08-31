@@ -531,7 +531,7 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "conflicting-protocols.listener.golden.yaml",
 			clustersGolden:  "conflicting-protocols.clusters.golden.yaml",
 			warnings: []string{
-				"matches with protocol http and no port are not applied to domains on port 4317, protocol grpc is already configured there",
+				"protocols grpc and http produce the same filter chain for domains on port 4317, matches with protocol http and no port are not applied there",
 			},
 		}),
 		Entry("mysql protocol", testCase{
@@ -632,7 +632,7 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "mysql-first-conflict.listener.golden.yaml",
 			clustersGolden:  "mysql-first-conflict.clusters.golden.yaml",
 			warnings: []string{
-				`ignoring match "172.12.2.2" with protocol tcp, protocol mysql is already configured for 172.12.2.2/32 on port 3306, both would produce the same filter chain matcher`,
+				`ignoring match "172.12.2.2", protocols mysql and tcp produce the same filter chain for 172.12.2.2/32 on port 3306`,
 			},
 		}),
 		Entry("mysql and tcp on the same address and port, tcp first", testCase{
@@ -684,7 +684,7 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "tcp-first-conflict.listener.golden.yaml",
 			clustersGolden:  "tcp-first-conflict.clusters.golden.yaml",
 			warnings: []string{
-				`ignoring match "172.12.2.2" with protocol mysql, protocol tcp is already configured for 172.12.2.2/32 on port 3306, both would produce the same filter chain matcher`,
+				`ignoring match "172.12.2.2", protocols tcp and mysql produce the same filter chain for 172.12.2.2/32 on port 3306`,
 			},
 		}),
 		Entry("disabled on policy but enabled on mesh", testCase{

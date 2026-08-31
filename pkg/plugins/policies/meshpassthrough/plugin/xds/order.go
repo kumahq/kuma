@@ -59,17 +59,16 @@ type FilterChainMatch struct {
 	Routes    []Route
 }
 
-// GetOrderedMatchers builds filter chain matchers for the given configuration. Matches
-// that would result in a listener rejected by Envoy are dropped, so a single incorrect
-// match doesn't invalidate the whole passthrough listener. The warnings for dropped
-// matches are attached to the matched policies by MatchedPolicies.
+// GetOrderedMatchers builds the filter chain matchers for the configuration. Matches
+// Envoy would reject the listener for are dropped, so a single incorrect match doesn't
+// invalidate the whole passthrough listener.
 func GetOrderedMatchers(conf api.Conf) []FilterChainMatch {
-	analysis := api.AnalyzeConf(conf)
+	conflicts := api.FindConflicts(conf)
 	matcherWithRoutes := map[Matcher]map[Route]bool{}
 	matcherChainKeys := map[Matcher]api.ChainKey{}
 	portProtocols := map[uint32]map[core_meta.Protocol]bool{}
 	for i, match := range pointer.Deref(conf.AppendMatch) {
-		if analysis.IsDropped(i) {
+		if conflicts.IsDropped(i) {
 			continue
 		}
 		port := pointer.DerefOr[uint32](match.Port, 0)
@@ -85,7 +84,7 @@ func GetOrderedMatchers(conf api.Conf) []FilterChainMatch {
 		if !isL7Domain {
 			matcher.Value = match.Value
 		}
-		matcherChainKeys[matcher] = api.KeyOf(match)
+		matcherChainKeys[matcher] = match.ChainKey()
 		if _, found := portProtocols[port]; !found {
 			portProtocols[port] = map[core_meta.Protocol]bool{protocol: true}
 		} else {
@@ -132,11 +131,7 @@ func GetOrderedMatchers(conf api.Conf) []FilterChainMatch {
 				if port == 0 {
 					continue
 				}
-				if analysis.IsProjectionSuppressed(
-					matcherChainKeys[matcher].WithPort(port),
-					api.ProtocolType(matcher.Protocol),
-					matcher.Value,
-				) {
+				if conflicts.IsSuppressed(matcherChainKeys[matcher].WithPort(port)) {
 					continue
 				}
 				additionalMatcher := Matcher{
