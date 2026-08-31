@@ -414,10 +414,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		}
 
 		route := &gatewayapi.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      "my-route",
-				Namespace: "route-ns",
-			},
+			Name: "my-route", Namespace: "route-ns",
 		}
 		rule := gatewayapi.HTTPRouteRule{
 			BackendRefs: []gatewayapi.HTTPBackendRef{
