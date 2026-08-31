@@ -212,5 +212,34 @@ var _ = Describe("Cluster modifications", func() {
                   enforcingSuccessRate: 100
                 type: ORIGINAL_DST`,
 		}),
+		Entry("should replace a duration rather than merge it field by field", testCase{
+			clusters: []string{
+				`
+                connectTimeout: 5s
+                lbPolicy: CLUSTER_PROVIDED
+                name: test:cluster
+                type: ORIGINAL_DST`,
+			},
+			modifications: []string{
+				`
+                cluster:
+                   operation: patch
+                   match:
+                     name: test:cluster
+                   value: |
+                     connectTimeout: 0.5s`,
+			},
+			// merging field by field would keep the 5 seconds and take only
+			// the nanos from the patch, giving 5.5s
+			expected: `
+            resources:
+            - name: test:cluster
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                connectTimeout: 0.500s
+                lbPolicy: CLUSTER_PROVIDED
+                name: test:cluster
+                type: ORIGINAL_DST`,
+		}),
 	)
 })

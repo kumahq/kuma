@@ -332,5 +332,82 @@ var _ = Describe("Virtual Host modifications", func() {
                     name: outbound:192.168.0.1:8080
                     trafficDirection: INBOUND`,
 		}),
+		Entry("should replace a duration rather than merge it field by field", testCase{
+			routeCfgs: []string{
+				`
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 8080
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      httpFilters:
+                      - name: envoy.filters.http.router
+                      routeConfig:
+                        name: outbound:backend
+                        virtualHosts:
+                        - domains:
+                          - backend.com
+                          name: backend
+                          retryPolicy:
+                            perTryTimeout: 5s
+                          routes:
+                          - match:
+                              prefix: /
+                            route:
+                              cluster: backend
+                      statPrefix: localhost_8080
+                name: outbound:192.168.0.1:8080
+                trafficDirection: INBOUND
+`,
+			},
+			modifications: []string{
+				`
+                virtualHost:
+                   operation: patch
+                   match:
+                     origin: outbound
+                   value: |
+                     retryPolicy:
+                       perTryTimeout: 0.5s`,
+			},
+			// merging field by field would keep the 5 seconds and take only
+			// the nanos from the patch, giving 5.5s
+			expected: `
+                resources:
+                - name: outbound:192.168.0.1:8080
+                  resource:
+                    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                    address:
+                      socketAddress:
+                        address: 192.168.0.1
+                        portValue: 8080
+                    filterChains:
+                    - filters:
+                      - name: envoy.filters.network.http_connection_manager
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                          httpFilters:
+                          - name: envoy.filters.http.router
+                          routeConfig:
+                            name: outbound:backend
+                            virtualHosts:
+                            - domains:
+                              - backend.com
+                              name: backend
+                              retryPolicy:
+                                perTryTimeout: 0.500s
+                              routes:
+                              - match:
+                                  prefix: /
+                                route:
+                                  cluster: backend
+                          statPrefix: localhost_8080
+                    name: outbound:192.168.0.1:8080
+                    trafficDirection: INBOUND`,
+		}),
 	)
 })
