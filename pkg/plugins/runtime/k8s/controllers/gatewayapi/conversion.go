@@ -25,3 +25,8 @@ func prepareConditions(conditions []kube_meta.Condition) []kube_meta.Condition {
 
 	return conditions
 }
+
+func hasAcceptedFalse(conditions []kube_meta.Condition) bool {
+	accepted := kube_apimeta.FindStatusCondition(conditions, string(gatewayapi.RouteConditionAccepted))
+	return accepted != nil && accepted.Status == kube_meta.ConditionFalse
+}

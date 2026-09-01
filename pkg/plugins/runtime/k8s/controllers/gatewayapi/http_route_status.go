@@ -34,6 +34,14 @@ func (r *HTTPRouteReconciler) updateStatus(ctx context.Context, route *gatewayap
 // mergeHTTPRouteStatus updates the route status with the list of conditions for
 // each parent ref by mutating the given HTTPRoute.
 func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentConditions) {
+	route.Status.Parents = mergeRouteParentStatus(route.GetGeneration(), route.Status.Parents, parentConditions)
+}
+
+func mergeRouteParentStatus(
+	generation int64,
+	existingStatuses []gatewayapi.RouteParentStatus,
+	parentConditions ParentConditions,
+) []gatewayapi.RouteParentStatus {
 	// we cannot set a `nil` list
 	mergedStatuses := []gatewayapi.RouteParentStatus{}
 	var previousStatuses []gatewayapi.RouteParentStatus
@@ -41,7 +49,7 @@ func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentCo
 	// Partition existing statuses: keep other controllers' statuses as-is,
 	// collect our previous statuses separately so we can match them by ref
 	// below when parentConditions may contain new refs not yet in the status.
-	for _, status := range route.Status.Parents {
+	for _, status := range existingStatuses {
 		if status.ControllerName != common.ControllerName {
 			mergedStatuses = append(mergedStatuses, status)
 		} else {
@@ -78,7 +86,7 @@ func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentCo
 		}
 
 		for _, condition := range conditions {
-			condition.ObservedGeneration = route.GetGeneration()
+			condition.ObservedGeneration = generation
 			kube_apimeta.SetStatusCondition(&status.Conditions, condition)
 		}
 
@@ -92,7 +100,7 @@ func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentCo
 		return cmp.Compare(parentRefSortKey(a.ParentRef), parentRefSortKey(b.ParentRef))
 	})
 
-	route.Status.Parents = append(mergedStatuses, ownedStatuses...)
+	return append(mergedStatuses, ownedStatuses...)
 }
 
 func parentRefSortKey(ref gatewayapi.ParentReference) string {

@@ -18,7 +18,7 @@ import (
 var _ = Describe("CachingConverter", func() {
 	It("should preserve status on cache hit", func() {
 		// setup
-		converter := k8s.NewCachingConverter(5 * time.Minute)
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
 
 		// given - K8s Workload object with status
 		k8sWorkload := &workload_k8s.Workload{
@@ -62,7 +62,7 @@ var _ = Describe("CachingConverter", func() {
 
 	It("should preserve status even when cache hit with different status values", func() {
 		// setup
-		converter := k8s.NewCachingConverter(5 * time.Minute)
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
 
 		// given - K8s Workload object with initial status
 		k8sWorkload := &workload_k8s.Workload{
@@ -103,20 +103,24 @@ var _ = Describe("CachingConverter", func() {
 		Expect(out2.Status.DataplaneProxies.Total).To(Equal(int32(7)))
 	})
 
-	It("should memoize labels on the meta adapter across repeated GetLabels calls", func() {
-		adapter := &k8s.KubernetesMetaAdapter{
-			Name:      "backend",
-			Namespace: "demo",
-			Labels:    map[string]string{"app": "backend"},
+	It("should return a stable label map across repeated GetLabels calls", func() {
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
+		out := workload_api.NewWorkloadResource()
+		Expect(converter.ToCoreResource(&workload_k8s.Workload{
+			APIVersion: workload_k8s.GroupVersion.String(),
+			Kind:       "Workload",
+			Name:       "backend",
+			Namespace:  "demo",
+			Labels:     map[string]string{"app": "backend"},
 			Annotations: map[string]string{
 				v1alpha1.DisplayName:        "Backend Display",
 				metadata.KumaServiceAccount: "sa-backend",
 			},
-			Mesh: "default",
-		}
+			Spec: &workload_api.Workload{},
+		}, out)).To(Succeed())
 
-		first := adapter.GetLabels()
-		second := adapter.GetLabels()
+		first := out.GetMeta().GetLabels()
+		second := out.GetMeta().GetLabels()
 
 		// same map instance returned on repeat calls -> no per-call maps.Clone
 		Expect(reflect.ValueOf(first).Pointer()).To(Equal(reflect.ValueOf(second).Pointer()))
@@ -126,7 +130,7 @@ var _ = Describe("CachingConverter", func() {
 	})
 
 	It("should serve labels from cache for the same resourceVersion", func() {
-		converter := k8s.NewCachingConverter(5 * time.Minute)
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
 		k8sWorkload := &workload_k8s.Workload{
 			APIVersion:      workload_k8s.GroupVersion.String(),
 			Kind:            "Workload",
@@ -159,7 +163,7 @@ var _ = Describe("CachingConverter", func() {
 	})
 
 	It("should not corrupt the cache when consumers mutate the returned labels map", func() {
-		converter := k8s.NewCachingConverter(5 * time.Minute)
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
 		k8sWorkload := &workload_k8s.Workload{
 			APIVersion:      workload_k8s.GroupVersion.String(),
 			Kind:            "Workload",
@@ -200,7 +204,7 @@ var _ = Describe("CachingConverter", func() {
 	})
 
 	It("should route ToCoreList through the caching ToCoreResource", func() {
-		converter := k8s.NewCachingConverter(5 * time.Minute)
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
 		list := &workload_k8s.WorkloadList{
 			APIVersion: workload_k8s.GroupVersion.String(),
 			Kind:       "WorkloadList",
@@ -236,7 +240,7 @@ var _ = Describe("CachingConverter", func() {
 	})
 
 	It("should compute fresh labels when resourceVersion changes", func() {
-		converter := k8s.NewCachingConverter(5 * time.Minute)
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
 		k8sWorkload := &workload_k8s.Workload{
 			APIVersion:      workload_k8s.GroupVersion.String(),
 			Kind:            "Workload",

@@ -533,7 +533,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	gk := kube_schema.GroupKind{Kind: details.Kind, Group: details.Group}
 
 	if details.Namespace != objectNamespace {
-		allowed, err := r.referenceGrantAllowsBackendRef(ctx, objectNamespace, details)
+		allowed, err := r.referenceGrantAllowsBackendRef(ctx, sourceRouteKindHTTPRoute, objectNamespace, details)
 		if err != nil {
 			return common_api.TargetRef{}, nil, err
 		}
@@ -665,6 +665,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 
 func (r *HTTPRouteReconciler) referenceGrantAllowsBackendRef(
 	ctx context.Context,
+	sourceRouteKind string,
 	routeNamespace string,
 	backendRef backendObjectReferenceDetails,
 ) (bool, error) {
@@ -674,7 +675,7 @@ func (r *HTTPRouteReconciler) referenceGrantAllowsBackendRef(
 	}
 
 	for i := range grants.Items {
-		if backendObjectReferenceMatchesGrant(&grants.Items[i], routeNamespace, backendRef) {
+		if backendObjectReferenceMatchesGrant(&grants.Items[i], sourceRouteKind, routeNamespace, backendRef) {
 			return true, nil
 		}
 	}
