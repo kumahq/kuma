@@ -44,6 +44,20 @@ rules:
 
 Put it on the route itself when the other policies targeting that route should also cover the unmatched traffic, or on a second `MeshHTTPRoute` when they should not.
 
+### RBAC: control plane now reads Gateway API `GRPCRoute`s
+
+The Helm-installed control plane `ClusterRole` now grants `get`, `list`, and
+`watch` on `gateway.networking.k8s.io` `grpcroutes`, alongside the existing
+`httproutes` and `referencegrants` permissions. This is required for Kuma to
+watch and translate Gateway API `GRPCRoute` resources into mesh routing
+configuration.
+
+**Action required**
+
+If you manage the control plane RBAC outside of Helm (for example via GitOps or
+manual manifests), add the same `grpcroutes` read permissions to the control
+plane `ClusterRole`.
+
 ### `MeshLoadBalancingStrategy` cross-zone settings now require a `MeshMultiZoneService` `to` target
 
 `MeshLoadBalancingStrategy.spec.to[].default.localityAwareness.crossZone` is now accepted only when that `to` entry targets a `MeshMultiZoneService`. Create and update validation now rejects the same `crossZone` block on `Mesh`, `MeshService`, and `MeshExternalService` targets.

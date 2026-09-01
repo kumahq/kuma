@@ -109,6 +109,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 	crds := []string{
 		"gatewayclasses.gateway.networking.k8s.io",
 		"gateways.gateway.networking.k8s.io",
+		"grpcroutes.gateway.networking.k8s.io",
 		"httproutes.gateway.networking.k8s.io",
 		"referencegrants.gateway.networking.k8s.io",
 	}
@@ -122,19 +123,31 @@ func GatewayAPICRDs(cluster Cluster) error {
 	}
 
 	_, err := retry.DoWithRetryContextE(cluster.GetTesting(), context.Background(), "wait for Gateway API discovery", 20, 3*time.Second, func() (string, error) {
-		out, err := k8s.RunKubectlAndGetOutputContextE(
+		v1beta1Out, err := k8s.RunKubectlAndGetOutputContextE(
 			cluster.GetTesting(), context.Background(),
 			cluster.GetKubectlOptions(),
 			"get", "--raw", "/apis/gateway.networking.k8s.io/v1beta1")
 		if err != nil {
-			return out, err
+			return v1beta1Out, err
 		}
 		for _, resource := range []string{"gatewayclasses", "gateways", "httproutes", "referencegrants"} {
-			if !strings.Contains(out, fmt.Sprintf(`"name":%q`, resource)) {
-				return out, errors.Errorf("Gateway API discovery missing %s", resource)
+			if !strings.Contains(v1beta1Out, fmt.Sprintf(`"name":%q`, resource)) {
+				return v1beta1Out, errors.Errorf("Gateway API discovery missing %s in v1beta1", resource)
 			}
 		}
-		return out, nil
+
+		v1Out, err := k8s.RunKubectlAndGetOutputContextE(
+			cluster.GetTesting(), context.Background(),
+			cluster.GetKubectlOptions(),
+			"get", "--raw", "/apis/gateway.networking.k8s.io/v1")
+		if err != nil {
+			return v1Out, err
+		}
+		if !strings.Contains(v1Out, `"name":"grpcroutes"`) {
+			return v1Out, errors.New("Gateway API discovery missing grpcroutes in v1")
+		}
+
+		return v1beta1Out + "\n" + v1Out, nil
 	})
 	return err
 }
