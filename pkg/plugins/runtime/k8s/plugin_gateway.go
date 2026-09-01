@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,48 +22,61 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 )
 
-var requiredGatewayCRDs = map[string]string{
-	"HTTPRoute":      gatewayCRDNameWithGroupKindAndVersion("HTTPRoute"),
-	"ReferenceGrant": gatewayCRDNameWithGroupKindAndVersion("ReferenceGrant"),
+type gatewayCRDRequirement struct {
+	kind    string
+	version string
 }
 
-var requiredGRPCRouteCRDs = map[string]string{
-	"GRPCRoute":      gatewayCRDNameWithGroupKindAndVersion("GRPCRoute"),
-	"ReferenceGrant": gatewayCRDNameWithGroupKindAndVersion("ReferenceGrant"),
+func (r gatewayCRDRequirement) name() string {
+	return gatewayCRDNameWithGroupKindAndVersion(r.kind, r.version)
 }
 
-func gatewayCRDNameWithGroupKindAndVersion(name string) string {
+var requiredGatewayCRDs = []gatewayCRDRequirement{
+	{kind: "HTTPRoute", version: gatewayapi.GroupVersion.Version},
+	{kind: "ReferenceGrant", version: gatewayapi.GroupVersion.Version},
+}
+
+var requiredGRPCRouteCRDs = []gatewayCRDRequirement{
+	{kind: "GRPCRoute", version: gatewayapi_v1.GroupVersion.Version},
+	{kind: "ReferenceGrant", version: gatewayapi.GroupVersion.Version},
+}
+
+func gatewayCRDNameWithGroupKindAndVersion(name string, version string) string {
 	return fmt.Sprintf(
 		"%s.%s/%s",
 		name,
 		gatewayapi.GroupVersion.Group,
-		gatewayapi.GroupVersion.Version,
+		version,
 	)
 }
 
 func gatewayAPICRDsPresent(mgr kube_ctrl.Manager) (bool, []string) {
-	return gatewayAPICRDsPresentForKinds(mgr, requiredGatewayCRDs)
+	return gatewayAPIRESTMappingsPresent(mgr.GetClient().RESTMapper(), requiredGatewayCRDs)
 }
 
-func gatewayAPICRDsPresentForKinds(mgr kube_ctrl.Manager, required map[string]string) (bool, []string) {
+func gatewayAPIRESTMappingsPresent(mapper kube_apimeta.RESTMapper, required []gatewayCRDRequirement) (bool, []string) {
 	var missing []string
-	for kind, fullName := range required {
-		if !gatewayAPICRDPresent(mgr, kind) {
-			missing = append(missing, fullName)
+	for _, requirement := range required {
+		if !gatewayAPIRESTMappingPresent(mapper, requirement.kind, requirement.version) {
+			missing = append(missing, requirement.name())
 		}
 	}
 	return len(missing) == 0, missing
 }
 
-func gatewayAPICRDPresent(mgr kube_ctrl.Manager, kind string) bool {
+func gatewayAPICRDPresent(mgr kube_ctrl.Manager, kind string, version string) bool {
+	return gatewayAPIRESTMappingPresent(mgr.GetClient().RESTMapper(), kind, version)
+}
+
+func gatewayAPIRESTMappingPresent(mapper kube_apimeta.RESTMapper, kind string, version string) bool {
 	gk := schema.GroupKind{
 		Group: gatewayapi.GroupVersion.Group,
 		Kind:  kind,
 	}
 
-	mappings, _ := mgr.GetClient().RESTMapper().RESTMappings(
+	mappings, _ := mapper.RESTMappings(
 		gk,
-		gatewayapi.GroupVersion.Version,
+		version,
 	)
 
 	return len(mappings) > 0
@@ -73,7 +87,7 @@ func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) er
 		return nil
 	}
 
-	if gatewayAPICRDPresent(mgr, "GatewayClass") {
+	if gatewayAPICRDPresent(mgr, "GatewayClass", gatewayapi.GroupVersion.Version) {
 		if err := removeGatewayClassFinalizers(
 			context.Background(),
 			mgr.GetAPIReader(),
@@ -101,7 +115,7 @@ func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) er
 		return errors.Wrap(err, "could not setup Gateway API HTTPRoute reconciler")
 	}
 
-	if ok, missingGRPCRDs := gatewayAPICRDsPresentForKinds(mgr, requiredGRPCRouteCRDs); !ok {
+	if ok, missingGRPCRDs := gatewayAPIRESTMappingsPresent(mgr.GetClient().RESTMapper(), requiredGRPCRouteCRDs); !ok {
 		log.Info("[WARNING] GRPCRoute GatewayAPI CRDs are not registered. Disabling GRPCRoute support", "missing", missingGRPCRDs)
 		return nil
 	}

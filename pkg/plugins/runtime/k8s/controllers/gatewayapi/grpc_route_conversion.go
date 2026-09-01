@@ -271,7 +271,7 @@ func grpcMethodMatchToPathMatch(methodMatch gatewayapi.GRPCMethodMatch) (*v1alph
 		case service != "" && method != "":
 			return &v1alpha1.PathMatch{Type: v1alpha1.Exact, Value: fmt.Sprintf("/%s/%s", service, method)}, true
 		case service != "":
-			return &v1alpha1.PathMatch{Type: v1alpha1.PathPrefix, Value: fmt.Sprintf("/%s/", service)}, true
+			return &v1alpha1.PathMatch{Type: v1alpha1.PathPrefix, Value: fmt.Sprintf("/%s", service)}, true
 		case method != "":
 			return &v1alpha1.PathMatch{Type: v1alpha1.RegularExpression, Value: fmt.Sprintf("^/[^/]+/%s$", regexp.QuoteMeta(method))}, true
 		default:

@@ -35,7 +35,7 @@ var _ = Describe("gapiGRPCToKumaMeshMatch", func() {
 		Expect(ok).To(BeTrue())
 		Expect(match.Path).To(Equal(&meshhttproute_api.PathMatch{
 			Type:  meshhttproute_api.PathPrefix,
-			Value: "/acme.echo.Echo/",
+			Value: "/acme.echo.Echo",
 		}))
 	})
 
