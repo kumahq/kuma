@@ -21,6 +21,9 @@ run-name: "release-tag · ${{ inputs.branch }} · ${{ inputs.version }}"
 
 permissions: {}
 
+env:
+  BUILD_WORKFLOW: "build-test-distribute.yaml"
+
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.branch }}
   cancel-in-progress: false
@@ -98,7 +101,7 @@ jobs:
             IN_FLIGHT=0
             for STATUS in queued in_progress requested waiting pending; do
               COUNT=$(gh api \
-                "repos/${GITHUB_REPOSITORY}/actions/workflows/build-test-distribute.yaml/runs?branch=${BRANCH}&status=${STATUS}" \
+                "repos/${GITHUB_REPOSITORY}/actions/workflows/${BUILD_WORKFLOW}/runs?branch=${BRANCH}&status=${STATUS}" \
                 --jq '.total_count')
               IN_FLIGHT=$((IN_FLIGHT + COUNT))
             done
@@ -123,12 +126,12 @@ jobs:
           set -euo pipefail
 
           GREEN=$(gh api --method GET \
-            "repos/${GITHUB_REPOSITORY}/actions/workflows/build-test-distribute.yaml/runs" \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/${BUILD_WORKFLOW}/runs" \
             -f head_sha="${SHA}" -f status=completed -f event=push -f per_page=100 --paginate \
             --jq '[.workflow_runs[] | select(.conclusion == "success")] | length')
 
           if [[ "${GREEN}" -eq 0 ]]; then
-            echo "::error::no successful push run of build-test-distribute for ${SHA}. build-test-distribute's release_sha_gate requires one, so the tag build would fail and the tag would have to be moved. Re-run the branch build on this commit, then dispatch again."
+            echo "::error::no successful push run of ${BUILD_WORKFLOW} for ${SHA}. its release_sha_gate requires one, so the tag build would fail and the tag would have to be moved. Re-run the branch build on this commit, then dispatch again."
             exit 1
           fi
 
