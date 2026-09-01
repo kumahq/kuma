@@ -12,6 +12,7 @@ type ResourceMapperFunc func(resource model.Resource, namespace string) (k8s_mod
 // NewKubernetesMapper creates a ResourceMapper that returns the k8s object as is. This is meant to be used when the underlying store is kubernetes
 func NewKubernetesMapper(kubeFactory KubeFactory) ResourceMapperFunc {
 	return func(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error) {
+		// SystemNamespace unused: core -> k8s builds no meta adapter.
 		res, err := (&SimpleConverter{KubeFactory: kubeFactory}).ToKubernetesObject(resource)
 		if err != nil {
 			return nil, err

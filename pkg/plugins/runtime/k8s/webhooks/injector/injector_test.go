@@ -101,7 +101,7 @@ spec:
 				var cfg conf.Injector
 				Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 				cfg.CaCertFile = caCertPath
-				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, sidecarsEnabled, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, false)
+				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, sidecarsEnabled, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, false, systemNamespace, nil, false)
 				Expect(err).ToNot(HaveOccurred())
 
 				// and create mesh
@@ -896,7 +896,7 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, false)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, false, systemNamespace, nil, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1002,7 +1002,7 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, false)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, false, systemNamespace, nil, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1085,7 +1085,7 @@ spec:
 				"http://kuma-control-plane.kuma-system:5681",
 				k8sClient,
 				false,
-				k8s.NewSimpleConverter(),
+				k8s.NewSimpleConverter("kuma-system"),
 				9901,
 				9902,
 				false,
@@ -1227,7 +1227,7 @@ metadata:
 			var cfg conf.Injector
 			ExpectWithOffset(1, config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			inj, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, deltaXdsEnabled)
+			inj, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, false, systemNamespace, nil, deltaXdsEnabled)
 			ExpectWithOffset(1, err).ToNot(HaveOccurred())
 			return inj
 		}
