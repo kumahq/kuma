@@ -55,6 +55,25 @@ var _ = Describe("gapiGRPCToKumaMeshMatch", func() {
 			Value: "/acme.echo.Echo/EchoTwo",
 		}))
 	})
+
+	It("defaults omitted gRPC header match type to exact", func() {
+		reconciler := &GRPCRouteReconciler{}
+
+		match, ok := reconciler.gapiGRPCToKumaMeshMatch(gatewayapi.GRPCRouteMatch{
+			Headers: []gatewayapi.GRPCHeaderMatch{{
+				Name:  "X-Tenant",
+				Value: "acme",
+			}},
+		})
+
+		Expect(ok).To(BeTrue())
+		Expect(match.Headers).ToNot(BeNil())
+		Expect(*match.Headers).To(ConsistOf(common_api.HeaderMatch{
+			Type:  pointer.To(common_api.HeaderMatchExact),
+			Name:  "x-tenant",
+			Value: "acme",
+		}))
+	})
 })
 
 var _ = Describe("gapiGRPCToKumaMeshRule", func() {
