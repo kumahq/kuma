@@ -629,4 +629,47 @@ var _ = Describe("prepareRoutes", func() {
 		Expect(*routes[1].Match.Path).To(Equal(api.PathMatch{Type: api.PathPrefix, Value: "/"}))
 		Expect(routes[1].BackendRefs).To(HaveLen(1))
 	})
+
+	It("should not append a no-match 404 fallback when a rule has an empty match", func() {
+		backend := builders.MeshService().
+			WithName("backend").
+			WithMesh(core_model.DefaultMesh).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+
+		meshCtx := xds_builders.Context().
+			WithMeshLocalResources([]core_model.Resource{backend}).
+			Build().
+			Mesh
+
+		emptyMatches := []api.Match{{}}
+		toRules := core_rules.ToRules{
+			ResourceRules: outbound.ResourceRules{
+				kri.From(backend): {
+					Resource: backend.GetMeta(),
+					Conf: []any{api.PolicyDefault{
+						Rules: []api.Rule{{Matches: emptyMatches}},
+					}},
+					OriginByMatches: map[common_api.MatchesHash]common.Origin{
+						api.HashMatches(emptyMatches): {Resource: backend.GetMeta()},
+					},
+				},
+			},
+		}
+		svc := meshroute_xds.DestinationService{
+			Outbound: &xds_types.Outbound{
+				Resource: kri.WithSectionName(kri.From(backend), "8080"),
+				Port:     8080,
+			},
+			Protocol: core_meta.ProtocolHTTP,
+		}
+
+		routes := prepareRoutes(toRules, svc, meshCtx)
+
+		Expect(routes).To(HaveLen(1))
+		Expect(routes[0].Match.Path).ToNot(BeNil())
+		Expect(*routes[0].Match.Path).To(Equal(api.PathMatch{Type: api.PathPrefix, Value: "/"}))
+		Expect(routes[0].DirectResponseStatus).To(BeZero())
+		Expect(routes[0].BackendRefs).To(HaveLen(1))
+	})
 })

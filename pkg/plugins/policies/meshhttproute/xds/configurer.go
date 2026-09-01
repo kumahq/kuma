@@ -34,22 +34,15 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 	matches := c.routeMatch(c.Match)
 
 	for _, match := range matches {
-		if c.DirectResponseStatus > 0 {
-			rb := c.routeBuilder(match)
-			rb.Configure(envoy_routes.RouteActionDirectResponse(c.DirectResponseStatus, ""))
-			r, err := rb.Build()
-			if err != nil {
-				return err
-			}
-			virtualHost.Routes = append(virtualHost.Routes, r.(*envoy_route.Route))
-			continue
+		directResponseStatus := c.DirectResponseStatus
+		if directResponseStatus == 0 && c.AllBackendRefsUnresolved && !hasTerminalFilter(c.Filters) {
+			// A rule whose backendRefs all fail to resolve answers 500, unless a
+			// filter already terminates the request without an upstream.
+			directResponseStatus = 500
 		}
-
-		// A rule whose backendRefs all fail to resolve answers 500, unless a
-		// filter already terminates the request without an upstream.
-		if c.AllBackendRefsUnresolved && !hasTerminalFilter(c.Filters) {
+		if directResponseStatus > 0 {
 			rb := c.routeBuilder(match)
-			rb.Configure(envoy_routes.RouteActionDirectResponse(500, ""))
+			rb.Configure(envoy_routes.RouteActionDirectResponse(directResponseStatus, ""))
 			r, err := rb.Build()
 			if err != nil {
 				return err
