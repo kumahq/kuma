@@ -540,7 +540,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		Expect(resolvedRefs).To(BeNil())
 	})
 
-		It("reports Accepted=False for backendRef RequestHeaderModifier Filters without adding ResolvedRefs for valid backends", func() {
+	It("reports Accepted=False for backendRef RequestHeaderModifier Filters without adding ResolvedRefs for valid backends", func() {
 		frontend := &kube_core.Service{
 			Name:      "frontend",
 			Namespace: "route-ns",

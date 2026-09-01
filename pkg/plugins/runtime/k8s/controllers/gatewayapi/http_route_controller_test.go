@@ -582,10 +582,8 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 					},
 				},
 				BackendRefs: []gatewayapi.HTTPBackendRef{{
-					BackendObjectReference: gatewayapi.BackendObjectReference{
-						Name: gatewayapi.ObjectName("upstream"),
-						Port: pointer.To(gatewayapi.PortNumber(8080)),
-					},
+					Name:   gatewayapi.ObjectName("upstream"),
+					Port:   pointer.To(gatewayapi.PortNumber(8080)),
 					Weight: pointer.To(int32(1)),
 				}},
 			},
@@ -597,10 +595,8 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 					},
 				}},
 				BackendRefs: []gatewayapi.HTTPBackendRef{{
-					BackendObjectReference: gatewayapi.BackendObjectReference{
-						Name: gatewayapi.ObjectName("upstream"),
-						Port: pointer.To(gatewayapi.PortNumber(8080)),
-					},
+					Name:   gatewayapi.ObjectName("upstream"),
+					Port:   pointer.To(gatewayapi.PortNumber(8080)),
 					Weight: pointer.To(int32(1)),
 					Filters: []gatewayapi.HTTPRouteFilter{{
 						Type: gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier,
