@@ -42,12 +42,13 @@ resources:
                 match:
                   prefix: /v1/
                 name: kri_mhttpr_default___test-origin_rule_0
-              - match:
+              - directResponse:
+                  body:
+                    inlineString: ""
+                  status: 404
+                match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
-                route:
-                  cluster: kri_msvc_default___backend_80
-                  timeout: 0s
           statPrefix: kri_msvc_default___backend_80
     metadata:
       filterMetadata:

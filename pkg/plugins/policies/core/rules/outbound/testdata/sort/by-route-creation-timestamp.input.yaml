@@ -1,0 +1,40 @@
+# gateway-api-generated MeshHTTPRoutes with the same specificity are sorted by creationTimestamp, oldest wins, and an unlabelled hand-written policy beats both
+type: MeshTimeout
+name: matched-for-rules-zzz-first
+mesh: mesh-1
+labels:
+  gateways.kuma.io/gateway.networking.k8s.io-route-creation-timestamp: "100"
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 1s
+---
+type: MeshTimeout
+name: matched-for-rules-aaa-second
+mesh: mesh-1
+labels:
+  gateways.kuma.io/gateway.networking.k8s.io-route-creation-timestamp: "200"
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 2s
+---
+type: MeshTimeout
+name: matched-for-rules-mmm-third
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 3s

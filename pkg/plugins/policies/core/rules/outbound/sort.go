@@ -16,6 +16,7 @@ func Sort[T interface {
 	slices.SortStableFunc(list, sort.Compose(
 		sort.CompareByPolicyAttributes[T],
 		CompareByToEntry[T],
+		sort.CompareByRouteCreationTimestamp[T],
 		sort.CompareByDisplayName[T],
 	))
 }

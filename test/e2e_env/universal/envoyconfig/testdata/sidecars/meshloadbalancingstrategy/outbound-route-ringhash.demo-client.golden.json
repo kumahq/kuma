@@ -78,17 +78,6 @@
           }
         }
       ]
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/kri_msvc_envoyconfig_kuma-3__test-server_80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/6/route/hashPolicy",
-      "value": [
-        {
-          "header": {
-            "headerName": "x-header-for-test-server"
-          }
-        }
-      ]
     }
   ],
   "xds": {
@@ -712,22 +701,16 @@
                             }
                           },
                           {
+                            "directResponse": {
+                              "body": {
+                                "inlineString": ""
+                              },
+                              "status": 404
+                            },
                             "match": {
                               "prefix": "/"
                             },
-                            "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-                            "route": {
-                              "cluster": "kri_msvc_envoyconfig_kuma-3__test-server_80",
-                              "hashPolicy": [
-                                {
-                                  "header": {
-                                    "headerName": "x-header-for-test-server"
-                                  }
-                                }
-                              ],
-                              "idleTimeout": "1800s",
-                              "timeout": "15s"
-                            }
+                            "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo="
                           }
                         ]
                       }

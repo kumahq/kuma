@@ -96,11 +96,14 @@ func CompareMatch(a Match, b Match) int {
 }
 
 type Route struct {
-	Name        string
-	Origin      kri.Identifier
-	Match       Match
-	Filters     []Filter
-	BackendRefs []resolve.ResolvedBackendRef
+	Name    string
+	Origin  kri.Identifier
+	Match   Match
+	Filters []Filter
+	// DirectResponseStatus marks generated internal routes that should answer
+	// without an upstream. Zero means the route should use normal backend routing.
+	DirectResponseStatus uint32
+	BackendRefs          []resolve.ResolvedBackendRef
 	// UnresolvedBackendRefsWeight is the declared sum of backendRef weights that
 	// did not resolve to a routable backend for this rule.
 	UnresolvedBackendRefsWeight uint

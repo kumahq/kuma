@@ -16,6 +16,34 @@ On Kubernetes this label is computed by the control plane from the Pod's Service
 
 Remove `k8s.kuma.io/service-account` from any `Dataplane` you apply yourself, including GitOps-managed ones. A `Dataplane` that already carries a label disagreeing with its Pod stops connecting after the upgrade until the label is dropped.
 
+### A request matching no `MeshHTTPRoute` rule now gets a `404`
+
+When a `MeshHTTPRoute` applies to a destination, a request that matches none of its rules is answered with `404` instead of being sent to that destination. This is what the Gateway API requires of an `HTTPRoute`, and it is what the GAMMA conformance suite asserts. Before this change the unmatched request fell through to the destination service as if no route existed.
+
+The rules of a `MeshHTTPRoute` apply to every HTTP port of the destination when the `to[].targetRef` names a `MeshService` without a `sectionName`, so the `404` covers those ports too, including ports no rule mentions. Ports whose protocol is not HTTP based are unaffected. A destination with no `MeshHTTPRoute` at all is also unaffected and keeps reaching its service.
+
+The case worth checking is a route written only to anchor another policy. A `MeshHTTPRoute` matching `/api` that exists so a `MeshTimeout`, `MeshRetry`, or `MeshAccessLog` can target it now answers `404` on every other path of that destination. On a gRPC destination the same `404` reaches the client as `UNIMPLEMENTED`.
+
+**Action required**
+
+Add an explicit catch-all rule to any `MeshHTTPRoute` that should keep passing unmatched traffic to its destination:
+
+```yaml
+rules:
+  - matches:
+      - path:
+          type: PathPrefix
+          value: /
+    default:
+      backendRefs:
+        - kind: MeshService
+          labels:
+            kuma.io/display-name: backend
+          port: 80
+```
+
+Put it on the route itself when the other policies targeting that route should also cover the unmatched traffic, or on a second `MeshHTTPRoute` when they should not.
+
 ### `MeshLoadBalancingStrategy` cross-zone settings now require a `MeshMultiZoneService` `to` target
 
 `MeshLoadBalancingStrategy.spec.to[].default.localityAwareness.crossZone` is now accepted only when that `to` entry targets a `MeshMultiZoneService`. Create and update validation now rejects the same `crossZone` block on `Mesh`, `MeshService`, and `MeshExternalService` targets.
@@ -37,6 +65,16 @@ Because the route now lives in the `HTTPRoute`'s namespace, its `k8s.kuma.io/nam
 If a mesh has both a generated producer route and a hand-written `MeshHTTPRoute` targeting the same `Mesh` and `to` entry, check which one you expect to win: before this upgrade the hand-written route always won, after it the two tie and the outcome falls back to resource name. Remove or adjust one of them if you relied on the previous, implicit precedence.
 
 If any policy selects the generated route by its old `k8s.kuma.io/namespace: <kuma-system>` label (or your system namespace), update it to the `HTTPRoute`'s namespace instead. The control plane moves each existing generated route to its new namespace the next time its `HTTPRoute` is reconciled, so no manual migration of the `MeshHTTPRoute` object itself is needed.
+
+### Gateway API HTTPRoute conflicts on the same parent now resolve by creationTimestamp
+
+When two Gateway API `HTTPRoute`s attach to the same parent with equally specific matches, the generated `MeshHTTPRoute`s used to tie-break by resource name alone, so which route won depended on name rather than which `HTTPRoute` was applied first. Each generated `MeshHTTPRoute` now carries its owning `HTTPRoute`'s `creationTimestamp` as a label, and that label breaks the tie in favor of the older `HTTPRoute`; name order is used only when the timestamps also match.
+
+A hand-written `MeshHTTPRoute` has no such label, so it still takes precedence over any generated route it ties with on an exact conflict, same as before this change.
+
+**Action required**
+
+None. Existing generated `MeshHTTPRoute`s are backfilled with the timestamp label the next time their `HTTPRoute` is reconciled. If two `HTTPRoute`s previously tied and were resolved by name, check whether the new creationTimestamp-based outcome matches what you expect.
 
 ### The `BUILTIN` gateway type and its statistics are removed from the API
 

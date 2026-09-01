@@ -134,9 +134,6 @@ metadata:
 		//   - SupportMeshHTTPRouteNamedRouteRule: the upstream test is Provisional and
 		//     asserts a backend path of /named for a /unnamed request with no rewrite in
 		//     its own manifest.
-		//   - SupportMeshHTTPRouteQueryParamMatching: requests that don't match any rule's
-		//     query params still land on a backend (200) instead of getting a 404; Kuma
-		//     doesn't have a deny-on-no-match fallback for MeshHTTPRoute.
 		SupportedFeatures: []features.FeatureName{
 			features.SupportHTTPRouteResponseHeaderModification,
 			features.SupportHTTPRoute,
@@ -149,6 +146,7 @@ metadata:
 			features.SupportMeshConsumerRoute,
 			features.SupportMeshHTTPRouteRedirectPath,
 			features.SupportMeshHTTPRouteRedirectPort,
+			features.SupportMeshHTTPRouteQueryParamMatching,
 			features.SupportMeshHTTPRouteSchemeRedirect,
 			features.SupportMeshHTTPRouteRewritePath,
 		},

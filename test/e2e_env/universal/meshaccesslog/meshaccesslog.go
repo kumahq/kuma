@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
@@ -108,6 +109,7 @@ spec:
 			err := universal.Cluster.GetKumactlOptions().KumactlDelete("meshaccesslog", item, meshName)
 			Expect(err).ToNot(HaveOccurred())
 		}
+		Expect(DeleteMeshResources(universal.Cluster, meshName, meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
 
 		Expect(universal.Cluster.DeleteApp(AppModeDemoClient)).To(Succeed())
 		Expect(universal.Cluster.DeleteApp(AppModeTcpSink)).To(Succeed())
