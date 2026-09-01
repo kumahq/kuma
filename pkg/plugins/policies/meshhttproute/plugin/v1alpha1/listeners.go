@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	"reflect"
 	"slices"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
@@ -104,7 +103,7 @@ func generateFromService(
 
 	for _, route := range prepareRoutes(rules, svc, meshCtx) {
 		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
-		if len(split) == 0 && !route.AllBackendRefsUnresolved {
+		if len(split) == 0 && !route.AllBackendRefsUnresolved && route.DirectResponseStatus == 0 {
 			continue
 		}
 		// mirrored requests go to a cluster of their own, it has no weight so
@@ -129,6 +128,7 @@ func generateFromService(
 			Name:                        route.Name,
 			Match:                       route.Match,
 			Filters:                     route.Filters,
+			DirectResponseStatus:        route.DirectResponseStatus,
 			UnresolvedBackendRefsWeight: route.UnresolvedBackendRefsWeight,
 			AllBackendRefsUnresolved:    route.AllBackendRefsUnresolved,
 			MirrorSplits:                mirrorSplits,
@@ -200,7 +200,8 @@ func ComputeHTTPRouteConf(
 	return nil, make(map[common_api.MatchesHash]common.Origin)
 }
 
-// prepareRoutes handles the always present, catch all default route
+// prepareRoutes handles the always-present default backend route and the
+// policy-generated catch-all 404 fallback when rules leave unmatched traffic.
 func prepareRoutes(
 	toRules rules.ToRules,
 	svc meshroute_xds.DestinationService,
@@ -292,15 +293,19 @@ func prepareRoutes(
 	}
 
 	noCatchAll := slices.IndexFunc(routes, func(route api.Route) bool {
-		return reflect.DeepEqual(route.Match, catchAllMatch)
+		return matchIsCatchAll(route.Match)
 	}) == -1
 
 	if noCatchAll {
-		routes = append(routes, api.Route{
+		fallbackRoute := api.Route{
 			Match:  catchAllMatch,
 			Name:   string(api.HashMatches([]api.Match{catchAllMatch})),
 			Origin: svc.Outbound.Resource,
-		})
+		}
+		if len(routes) > 0 && core_meta.IsHTTPBased(svc.Protocol) {
+			fallbackRoute.DirectResponseStatus = 404
+		}
+		routes = append(routes, fallbackRoute)
 	}
 
 	for i := range routes {
@@ -314,7 +319,7 @@ func prepareRoutes(
 			route.Match.Path = pointer.To(catchAllPathMatch)
 		}
 
-		if len(route.BackendRefs) == 0 && !route.AllBackendRefsUnresolved {
+		if len(route.BackendRefs) == 0 && !route.AllBackendRefsUnresolved && route.DirectResponseStatus == 0 {
 			route.BackendRefs = []resolve.ResolvedBackendRef{
 				*svc.DefaultBackendRef(),
 			}
@@ -322,6 +327,16 @@ func prepareRoutes(
 	}
 
 	return routes
+}
+
+func matchIsCatchAll(match api.Match) bool {
+	if match.Method != nil || len(pointer.Deref(match.Headers)) > 0 || len(pointer.Deref(match.QueryParams)) > 0 {
+		return false
+	}
+	if match.Path == nil {
+		return true
+	}
+	return match.Path.Type == api.PathPrefix && match.Path.Value == "/"
 }
 
 func backendRefProducesHTTPSplit(

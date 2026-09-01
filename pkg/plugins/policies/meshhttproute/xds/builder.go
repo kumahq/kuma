@@ -12,9 +12,10 @@ import (
 )
 
 type OutboundRoute struct {
-	Name    string
-	Match   api.Match
-	Filters []api.Filter
+	Name                 string
+	Match                api.Match
+	Filters              []api.Filter
+	DirectResponseStatus uint32
 	// UnresolvedBackendRefsWeight is the declared sum of backendRef weights that
 	// did not resolve to a routable backend for this rule.
 	UnresolvedBackendRefsWeight uint
@@ -44,6 +45,7 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 				Name:                        route.Name,
 				Match:                       route.Match,
 				Filters:                     route.Filters,
+				DirectResponseStatus:        route.DirectResponseStatus,
 				UnresolvedBackendRefsWeight: route.UnresolvedBackendRefsWeight,
 				AllBackendRefsUnresolved:    route.AllBackendRefsUnresolved,
 				MirrorSplits:                route.MirrorSplits,
