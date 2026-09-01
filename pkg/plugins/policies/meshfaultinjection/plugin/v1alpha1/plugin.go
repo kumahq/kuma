@@ -87,7 +87,6 @@ func applyToInbounds(
 
 		inboundRules, ok := fromRules.InboundRules[listenerKey]
 		if !ok || len(inboundRules) == 0 {
-
 			rules, ok := fromRules.Rules[listenerKey]
 			if !ok {
 				continue

@@ -45,7 +45,6 @@ func BuildRulesAttachments(matchedPoliciesByType map[core_model.ResourceType]cor
 	var attachments []RuleAttachment
 
 	for typ, matched := range matchedPoliciesByType {
-
 		attachments = append(attachments, getInboundRuleAttachments(matched.FromRules.Rules, networking, typ)...)
 		attachments = append(attachments, getOutboundRuleAttachments(matched.ToRules.Rules, networking, typ, domainsByAddress)...)
 		if len(matched.SingleItemRules.Rules) > 0 {
