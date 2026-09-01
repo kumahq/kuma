@@ -3,6 +3,7 @@ metadata:
   labels:
     app: sample-ms
     k8s.kuma.io/namespace: demo
+    kuma.io/display-name: pod-with-duplicated-inbound
     kuma.io/env: kubernetes
     kuma.io/mesh: poc-ms
     kuma.io/origin: zone
