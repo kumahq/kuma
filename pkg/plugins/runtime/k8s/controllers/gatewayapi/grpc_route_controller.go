@@ -3,7 +3,6 @@ package gatewayapi
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -296,7 +295,7 @@ func grpcRoutesForService(l logr.Logger, client kube_client.Client) kube_handler
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		svc, ok := obj.(*kube_core.Service)
 		if !ok {
-			l.Error(nil, "unexpected error converting object to Service", "typ", reflect.TypeOf(obj))
+			l.Error(nil, "unexpected error converting object to Service", "typ", fmt.Sprintf("%T", obj))
 			return nil
 		}
 
@@ -320,7 +319,7 @@ func grpcRoutesForMeshService(l logr.Logger, client kube_client.Client) kube_han
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		ms, ok := obj.(*meshservice_k8s.MeshService)
 		if !ok {
-			l.Error(nil, "unexpected error converting object to MeshService", "typ", reflect.TypeOf(obj))
+			l.Error(nil, "unexpected error converting object to MeshService", "typ", fmt.Sprintf("%T", obj))
 			return nil
 		}
 
@@ -344,7 +343,7 @@ func grpcRoutesForReferenceGrant(l logr.Logger, client kube_client.Client) kube_
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		grant, ok := obj.(*gatewayapi_beta.ReferenceGrant)
 		if !ok {
-			l.Error(nil, "unexpected error converting object to ReferenceGrant", "typ", reflect.TypeOf(obj))
+			l.Error(nil, "unexpected error converting object to ReferenceGrant", "typ", fmt.Sprintf("%T", obj))
 			return nil
 		}
 
