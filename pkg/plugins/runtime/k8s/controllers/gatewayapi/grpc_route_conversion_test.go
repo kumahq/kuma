@@ -8,6 +8,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi_beta "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -53,6 +54,24 @@ var _ = Describe("gapiGRPCToKumaMeshMatch", func() {
 		Expect(match.Path).To(Equal(&meshhttproute_api.PathMatch{
 			Type:  meshhttproute_api.Exact,
 			Value: "/acme.echo.Echo/EchoTwo",
+		}))
+	})
+
+	It("groups regular-expression gRPC service and method matches before building the HTTP/2 path", func() {
+		reconciler := &GRPCRouteReconciler{}
+
+		match, ok := reconciler.gapiGRPCToKumaMeshMatch(gatewayapi.GRPCRouteMatch{
+			Method: &gatewayapi.GRPCMethodMatch{
+				Type:    pointer.To(gatewayapi.GRPCMethodMatchRegularExpression),
+				Service: pointer.To("echo|payments"),
+				Method:  pointer.To("Say|Tell"),
+			},
+		})
+
+		Expect(ok).To(BeTrue())
+		Expect(match.Path).To(Equal(&meshhttproute_api.PathMatch{
+			Type:  meshhttproute_api.RegularExpression,
+			Value: "^/(?:echo|payments)/(?:Say|Tell)$",
 		}))
 	})
 
@@ -141,6 +160,7 @@ var _ = Describe("gapiGRPCToKumaMeshRule", func() {
 							Name:      "mirror",
 							Port:      pointer.To(gatewayapi.PortNumber(80)),
 						},
+						Percent: pointer.To(int32(0)),
 					},
 				},
 			},
@@ -160,6 +180,48 @@ var _ = Describe("gapiGRPCToKumaMeshRule", func() {
 		Expect((*rule.Default.Filters)[0].Type).To(Equal(meshhttproute_api.RequestHeaderModifierType))
 		Expect((*rule.Default.Filters)[1].Type).To(Equal(meshhttproute_api.ResponseHeaderModifierType))
 		Expect((*rule.Default.Filters)[2].Type).To(Equal(meshhttproute_api.RequestMirrorType))
+		Expect((*rule.Default.Filters)[2].RequestMirror.Percentage).To(Equal(pointer.To(intstr.FromInt32(0))))
+	})
+
+	It("converts request mirror fraction to a MeshHTTPRoute percentage", func() {
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+
+		mirror := &meshservice_k8s.MeshService{Name: "mirror", Namespace: "kuma-demo", Spec: &meshservice_api.MeshService{Ports: []meshservice_api.Port{{Port: 80, Name: pointer.To("grpc")}}}}
+		reconciler := &GRPCRouteReconciler{
+			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(mirror).Build(),
+		}
+
+		group := gatewayapi.Group(meshservice_k8s.GroupVersion.Group)
+		kind := gatewayapi.Kind("MeshService")
+		ns := gatewayapi.Namespace("kuma-demo")
+		denominator := int32(8)
+
+		rule, conditions, err := reconciler.gapiGRPCToKumaMeshRule(context.Background(), &gatewayapi.GRPCRoute{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "route", Namespace: "kuma-demo"},
+		}, gatewayapi.GRPCRouteRule{
+			Filters: []gatewayapi.GRPCRouteFilter{{
+				Type: gatewayapi.GRPCRouteFilterRequestMirror,
+				RequestMirror: &gatewayapi.HTTPRequestMirrorFilter{
+					BackendRef: gatewayapi.BackendObjectReference{
+						Group:     &group,
+						Kind:      &kind,
+						Namespace: &ns,
+						Name:      "mirror",
+						Port:      pointer.To(gatewayapi.PortNumber(80)),
+					},
+					Fraction: &gatewayapi.Fraction{
+						Numerator:   1,
+						Denominator: &denominator,
+					},
+				},
+			}},
+		})
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(conditions).To(BeEmpty())
+		Expect(*rule.Default.Filters).To(HaveLen(1))
+		Expect((*rule.Default.Filters)[0].RequestMirror.Percentage).To(Equal(pointer.To(intstr.FromString("12.5"))))
 	})
 
 	It("reports Accepted=False for unsupported extension filters", func() {

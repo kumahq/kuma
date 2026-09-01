@@ -6,12 +6,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/shopspring/decimal"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi_beta "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -284,10 +286,29 @@ func grpcMethodMatchToPathMatch(methodMatch gatewayapi.GRPCMethodMatch) (*v1alph
 		if method != "" {
 			methodPattern = method
 		}
-		return &v1alpha1.PathMatch{Type: v1alpha1.RegularExpression, Value: fmt.Sprintf("^/%s/%s$", servicePattern, methodPattern)}, true
+		return &v1alpha1.PathMatch{Type: v1alpha1.RegularExpression, Value: fmt.Sprintf("^/(?:%s)/(?:%s)$", servicePattern, methodPattern)}, true
 	default:
 		return nil, false
 	}
+}
+
+func grpcMirrorPercentage(mirror gatewayapi.HTTPRequestMirrorFilter) *intstr.IntOrString {
+	if mirror.Percent != nil {
+		return pointer.To(intstr.FromInt32(*mirror.Percent))
+	}
+	if mirror.Fraction == nil {
+		return nil
+	}
+
+	denominator := int32(100)
+	if mirror.Fraction.Denominator != nil {
+		denominator = *mirror.Fraction.Denominator
+	}
+	percentage := decimal.NewFromInt(int64(mirror.Fraction.Numerator)).
+		Mul(decimal.NewFromInt(100)).
+		Div(decimal.NewFromInt(int64(denominator)))
+
+	return pointer.To(intstr.FromString(percentage.String()))
 }
 
 func (r *GRPCRouteReconciler) gapiGRPCToKumaMeshFilter(
@@ -331,6 +352,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaMeshFilter(
 			Type: v1alpha1.RequestMirrorType,
 			RequestMirror: &v1alpha1.RequestMirror{
 				BackendRef: common_api.BackendRef{TargetRef: ref},
+				Percentage: grpcMirrorPercentage(*mirror),
 			},
 		}, conditions, true
 	default:
