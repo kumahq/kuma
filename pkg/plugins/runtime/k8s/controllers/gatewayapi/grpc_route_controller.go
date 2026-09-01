@@ -174,6 +174,10 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaRoutes(
 				conditions[gatewayapi_beta.ParentReference(ref)] = prepareConditions(append(parentConditions, rulesConditions...))
 				continue
 			}
+			if hasAcceptedFalse(rulesConditions) {
+				conditions[gatewayapi_beta.ParentReference(ref)] = prepareConditions(append(parentConditions, rulesConditions...))
+				continue
+			}
 
 			ownedNamespace := r.SystemNamespace
 			if route.Namespace == parent.GetNamespace() {
@@ -210,6 +214,10 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaRoutes(
 					Reason:  string(gatewayapi.RouteReasonNoMatchingParent),
 					Message: fmt.Sprintf("MeshService %q has no port matching the parentRef", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
 				})
+				conditions[gatewayapi_beta.ParentReference(ref)] = prepareConditions(append(parentConditions, rulesConditions...))
+				continue
+			}
+			if hasAcceptedFalse(rulesConditions) {
 				conditions[gatewayapi_beta.ParentReference(ref)] = prepareConditions(append(parentConditions, rulesConditions...))
 				continue
 			}

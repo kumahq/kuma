@@ -18,6 +18,7 @@ import (
 	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
 	meshhttproute_k8s "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/k8s/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
@@ -147,6 +148,46 @@ var _ = Describe("GRPCRouteReconciler", func() {
 		Expect(resolved).ToNot(BeNil())
 		Expect(resolved.Status).To(Equal(kube_meta.ConditionFalse))
 		Expect(resolved.Reason).To(Equal(string(gatewayapi.RouteReasonBackendNotFound)))
+	})
+
+	It("reports unsupported extension filters and removes generated routes", func() {
+		route := newGRPCRoute("kuma-demo", "extension-filter", newServiceParentRef("kuma-demo", "backend"))
+		extensionGroup := gatewayapi.Group("example.com")
+		extensionKind := gatewayapi.Kind("AuthFilter")
+		route.Spec.Rules[0].Filters = []gatewayapi.GRPCRouteFilter{{
+			Type: gatewayapi.GRPCRouteFilterExtensionRef,
+			ExtensionRef: &gatewayapi.LocalObjectReference{
+				Group: extensionGroup,
+				Kind:  extensionKind,
+				Name:  "authn",
+			},
+		}}
+		existingRoute := &meshhttproute_k8s.MeshHTTPRoute{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name:      generatedMeshHTTPRouteName(sourceRouteKindGRPCRoute, route.Namespace, route.Name, "Service", service.Namespace, service.Name),
+				Namespace: route.Namespace,
+				Labels: map[string]string{
+					common.OwnerLabel: common.OwnerLabelValue(sourceRouteKindGRPCRoute, kube_client.ObjectKeyFromObject(route)),
+				},
+			},
+		}
+		client := newClient(service, route, existingRoute)
+		grpcReconciler.Client = client
+
+		_, err := grpcReconciler.Reconcile(context.Background(), kube_ctrl.Request{NamespacedName: kube_client.ObjectKeyFromObject(route)})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(BeEmpty())
+
+		var updated gatewayapi.GRPCRoute
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updated)).To(Succeed())
+		Expect(updated.Status.Parents).To(HaveLen(1))
+		accepted := kube_apimeta.FindStatusCondition(updated.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionAccepted))
+		Expect(accepted).ToNot(BeNil())
+		Expect(accepted.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(accepted.Reason).To(Equal(string(gatewayapi.RouteReasonUnsupportedValue)))
 	})
 
 	It("does not collide with an HTTPRoute that shares namespace name and parent", func() {

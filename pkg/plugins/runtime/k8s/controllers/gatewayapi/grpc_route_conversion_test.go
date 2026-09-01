@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1"
@@ -140,6 +141,32 @@ var _ = Describe("gapiGRPCToKumaMeshRule", func() {
 		Expect((*rule.Default.Filters)[0].Type).To(Equal(meshhttproute_api.RequestHeaderModifierType))
 		Expect((*rule.Default.Filters)[1].Type).To(Equal(meshhttproute_api.ResponseHeaderModifierType))
 		Expect((*rule.Default.Filters)[2].Type).To(Equal(meshhttproute_api.RequestMirrorType))
+	})
+
+	It("reports Accepted=False for unsupported extension filters", func() {
+		reconciler := &GRPCRouteReconciler{}
+		extensionGroup := gatewayapi.Group("example.com")
+		extensionKind := gatewayapi.Kind("AuthFilter")
+
+		rule, conditions, err := reconciler.gapiGRPCToKumaMeshRule(context.Background(), &gatewayapi.GRPCRoute{
+			ObjectMeta: kube_meta.ObjectMeta{Name: "route", Namespace: "kuma-demo"},
+		}, gatewayapi.GRPCRouteRule{
+			Filters: []gatewayapi.GRPCRouteFilter{{
+				Type: gatewayapi.GRPCRouteFilterExtensionRef,
+				ExtensionRef: &gatewayapi.LocalObjectReference{
+					Group: extensionGroup,
+					Kind:  extensionKind,
+					Name:  "authn",
+				},
+			}},
+		})
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(*rule.Default.Filters).To(BeEmpty())
+		accepted := kube_apimeta.FindStatusCondition(conditions, string(gatewayapi.RouteConditionAccepted))
+		Expect(accepted).ToNot(BeNil())
+		Expect(accepted.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(accepted.Reason).To(Equal(string(gatewayapi.RouteReasonUnsupportedValue)))
 	})
 
 	It("requires a ReferenceGrant whose from.kind is GRPCRoute", func() {

@@ -329,7 +329,12 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaMeshFilter(
 			},
 		}, conditions, true
 	default:
-		return v1alpha1.Filter{}, nil, false
+		return v1alpha1.Filter{}, []kube_meta.Condition{{
+			Type:    string(gatewayapi.RouteConditionAccepted),
+			Status:  kube_meta.ConditionFalse,
+			Reason:  string(gatewayapi.RouteReasonUnsupportedValue),
+			Message: fmt.Sprintf("GRPCRoute filter type %q is not supported", gapiFilter.Type),
+		}}, true
 	}
 }
 
