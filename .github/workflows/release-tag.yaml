@@ -1,0 +1,174 @@
+name: "release-tag"
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Release branch to tag, e.g. release-2.14"
+        required: true
+        type: string
+      version:
+        description: "Version to release, without a v prefix, e.g. 2.14.4"
+        required: true
+        type: string
+      dry_run:
+        description: "Report the tag that would be pushed without pushing it"
+        required: false
+        type: boolean
+        default: false
+
+run-name: "release-tag · ${{ inputs.branch }} · ${{ inputs.version }}"
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.branch }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    timeout-minutes: 60
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    steps:
+      - name: "Generate GitHub app token"
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: "Resolve and validate the tag"
+        id: tag
+        env:
+          BRANCH: ${{ inputs.branch }}
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "${BRANCH}" =~ ^release-([0-9]+)\.([0-9]+)$ ]]; then
+            echo "::error::'${BRANCH}' is not a release branch (expected release-X.Y)"
+            exit 1
+          fi
+          BRANCH_MAJOR="${BASH_REMATCH[1]}"
+          BRANCH_MINOR="${BASH_REMATCH[2]}"
+
+          if [[ ! "${VERSION}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "::error::'${VERSION}' is not a version (expected X.Y.Z, without a v prefix)"
+            exit 1
+          fi
+          VERSION_MAJOR="${BASH_REMATCH[1]}"
+          VERSION_MINOR="${BASH_REMATCH[2]}"
+
+          if [[ "${BRANCH_MAJOR}.${BRANCH_MINOR}" != "${VERSION_MAJOR}.${VERSION_MINOR}" ]]; then
+            echo "::error::version ${VERSION} does not belong on branch ${BRANCH}"
+            exit 1
+          fi
+
+          if [[ "${BRANCH_MAJOR}.${BRANCH_MINOR}" == "2.9" ]]; then
+            TAG="${VERSION}"
+            echo "release-2.9 never received the v-prefix backport (#14810), so this tag stays bare."
+          else
+            TAG="v${VERSION}"
+          fi
+
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            echo "::error::tag ${TAG} already exists"
+            exit 1
+          fi
+
+          if ! BRANCH_JSON="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${BRANCH}" 2>/dev/null)"; then
+            echo "::error::branch ${BRANCH} does not exist"
+            exit 1
+          fi
+          SHA="$(jq -r '.object.sha' <<< "${BRANCH_JSON}")"
+
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "Tagging ${BRANCH} at ${SHA} as ${TAG}"
+
+      - name: "Wait for the branch build to finish"
+        env:
+          BRANCH: ${{ inputs.branch }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          for attempt in $(seq 1 60); do
+            IN_FLIGHT=0
+            for STATUS in queued in_progress requested waiting pending; do
+              COUNT=$(gh api \
+                "repos/${GITHUB_REPOSITORY}/actions/workflows/build-test-distribute.yaml/runs?branch=${BRANCH}&status=${STATUS}" \
+                --jq '.total_count')
+              IN_FLIGHT=$((IN_FLIGHT + COUNT))
+            done
+
+            if [[ "${IN_FLIGHT}" -eq 0 ]]; then
+              echo "No build in flight on ${BRANCH}."
+              exit 0
+            fi
+
+            echo "Tagging now would fail that build. ${IN_FLIGHT} in flight on ${BRANCH}; waiting (attempt ${attempt}/60)."
+            sleep 30
+          done
+
+          echo "::error::a build is still running on ${BRANCH} after 30 minutes; re-run once it finishes"
+          exit 1
+
+      - name: "Require a green branch build for the commit being tagged"
+        env:
+          SHA: ${{ steps.tag.outputs.sha }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          GREEN=$(gh api --method GET \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/build-test-distribute.yaml/runs" \
+            -f head_sha="${SHA}" -f status=completed -f event=push -f per_page=100 --paginate \
+            --jq '[.workflow_runs[] | select(.conclusion == "success")] | length')
+
+          if [[ "${GREEN}" -eq 0 ]]; then
+            echo "::error::no successful push run of build-test-distribute for ${SHA}. build-test-distribute's release_sha_gate requires one, so the tag build would fail and the tag would have to be moved. Re-run the branch build on this commit, then dispatch again."
+            exit 1
+          fi
+
+          echo "${SHA} has ${GREEN} successful push run(s)."
+
+      - name: "Check out the commit being tagged"
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ steps.tag.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: "Push the tag"
+        env:
+          BRANCH: ${{ inputs.branch }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          SHA: ${{ steps.tag.outputs.sha }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          CURRENT=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${BRANCH}" --jq '.object.sha')
+          if [[ "${CURRENT}" != "${SHA}" ]]; then
+            echo "::error::${BRANCH} moved from ${SHA} to ${CURRENT} while this run was validating. The new head needs its own green build; dispatch again."
+            exit 1
+          fi
+
+          echo "${BRANCH} is at ${SHA}"
+          git --no-pager log -1 --oneline
+
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            echo "Dry run: would tag ${SHA} as ${TAG} and push it." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          git config user.name "kumahq[bot]"
+          git config user.email "110050114+kumahq[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Release ${TAG}"
+          git push origin "refs/tags/${TAG}"
+
+          echo "Pushed \`${TAG}\` at \`${SHA}\`." >> "$GITHUB_STEP_SUMMARY"
