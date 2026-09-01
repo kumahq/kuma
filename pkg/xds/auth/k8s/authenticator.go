@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/v2/pkg/util/k8s"
 	"github.com/kumahq/kuma/v2/pkg/xds/auth"
 	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
@@ -60,6 +61,15 @@ func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Res
 		return err
 	}
 
+	serviceAccountAuthErr := errors.Errorf("invalid service account token")
+
+	// the label is what becomes the SPIFFE ID, the Pod is the source of truth for it
+	if sa, ok := resource.GetMeta().GetLabels()[metadata.KumaServiceAccount]; ok && sa != serviceAccountName {
+		log.Info("[WARNING] invalid service account token: service account label on the dataplane does not match pod service account",
+			"dataplaneServiceAccount", sa, "proxy", resourceName, "serviceAccountName", serviceAccountName)
+		return serviceAccountAuthErr
+	}
+
 	tokenReview := &kube_auth.TokenReview{
 		Spec: kube_auth.TokenReviewSpec{
 			Token: credential,
@@ -76,7 +86,6 @@ func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Res
 		return errors.Errorf("dataplane token verification failed with an error")
 	}
 
-	serviceAccountAuthErr := errors.Errorf("invalid service account token")
 	userInfo := strings.Split(tokenReview.Status.User.Username, ":")
 	if len(userInfo) != 4 {
 		log.Info(fmt.Sprintf("[WARNING] invalid service account token: username inside TokenReview response has unexpected format: %q",

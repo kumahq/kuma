@@ -8,7 +8,15 @@ does not have any particular instructions.
 
 ## Upgrade to `2.12.15`
 
-Patch releases normally do not require upgrade instructions. The entry below is included because the change alters the pod spec of workloads the chart ships.
+Patch releases normally do not require upgrade instructions. The entries below are included because they change behaviour existing deployments may rely on.
+
+### The `k8s.kuma.io/service-account` label on a `Dataplane` is managed by the control plane
+
+On Kubernetes this label is computed by the control plane from the Pod's ServiceAccount and is not meant to be set by hand. The admission webhook now rejects any `Dataplane` create or update that carries `k8s.kuma.io/service-account`, unless the request comes from the control plane itself or from another user listed in `runtime.kubernetes.allowedUsers`, on both Zone and Global control planes. A proxy is also rejected at xDS authentication when the label on its `Dataplane` does not match the ServiceAccount of its Pod. Other resource types are unaffected, as are resources synced over KDS and resources written by the control plane.
+
+**Action required**
+
+Remove `k8s.kuma.io/service-account` from any `Dataplane` you apply yourself, including GitOps-managed ones. A `Dataplane` whose label does not match its Pod stops connecting after the upgrade until the label is dropped.
 
 ### Control plane, hook, ingress and egress containers drop all Linux capabilities
 
