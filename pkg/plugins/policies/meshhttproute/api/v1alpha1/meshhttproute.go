@@ -106,7 +106,7 @@ type RuleConf struct {
 
 type BackendRef struct {
 	// +kuma:nolint // keep parity with common_api.BackendRef
-	common_api.TargetRef `json:","`
+	common_api.TargetRef `json:",inline"`
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
 	// +kubebuilder:default=1
