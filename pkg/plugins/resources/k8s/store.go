@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -28,6 +29,14 @@ import (
 func typeIsUnregistered(err error) bool {
 	var typeErr *k8s_registry.UnknownTypeError
 	return errors.As(err, &typeErr)
+}
+
+// isNamespaceTerminating reports whether err is the Forbidden error the
+// NamespaceLifecycle admission controller returns when creating an object in
+// a namespace that is being deleted, so callers can treat it as an expected,
+// transient condition rather than an actionable failure.
+func isNamespaceTerminating(err error) bool {
+	return kube_apierrs.HasStatusCause(err, kube_core.NamespaceTerminatingCause)
 }
 
 var _ store.ResourceStore = &KubernetesStore{}
@@ -87,6 +96,13 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 		// the same bytes fail every time and the caller has to drop it.
 		if kube_apierrs.IsInvalid(err) {
 			return store.ErrorInvalid(err.Error())
+		}
+		// The namespace can start terminating between us deciding to create the
+		// object and the API server admitting it, e.g. while a namespace with an
+		// injected mesh is being deleted. The object would be garbage collected
+		// anyway, so callers can treat this the same as AlreadyExists/Conflict.
+		if isNamespaceTerminating(err) {
+			return store.ErrorResourceNamespaceTerminating(r.Descriptor().Name, opts.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to create k8s resource")
 	}
