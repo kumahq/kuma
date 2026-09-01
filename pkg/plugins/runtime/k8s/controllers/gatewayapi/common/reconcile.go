@@ -73,21 +73,12 @@ func ReconcileLabelledObject(
 		return err
 	}
 
-	// Delete unneeded objects
 	existingObjs := map[string]k8s_model.KubernetesObject{}
+	var unneededObjs []k8s_model.KubernetesObject
 	for _, existing := range existingList.GetItems() {
 		desired, ok := owned[existing.GetName()]
 		if !ok || existing.GetNamespace() != desired.Namespace {
-			err := client.Delete(ctx, existing)
-			switch {
-			case kube_apierrs.IsNotFound(err):
-				log.V(1).Info("object not found. Nothing to delete")
-			case err == nil:
-				log.Info("object deleted")
-			default:
-				return err
-			}
-			// We don't care about this anymore
+			unneededObjs = append(unneededObjs, existing)
 			continue
 		}
 		existingObjs[existing.GetName()] = existing
@@ -152,6 +143,20 @@ func ReconcileLabelledObject(
 			return errors.Wrapf(err, "could not create owned %T", ownedType)
 		}
 		logger.Info("object created")
+	}
+
+	// Delete unneeded objects after desired objects are reconciled. This keeps
+	// existing config serving if a replacement create or update fails.
+	for _, existing := range unneededObjs {
+		err := client.Delete(ctx, existing)
+		switch {
+		case kube_apierrs.IsNotFound(err):
+			log.V(1).Info("object not found. Nothing to delete")
+		case err == nil:
+			log.Info("object deleted")
+		default:
+			return err
+		}
 	}
 
 	return nil
