@@ -77,8 +77,15 @@ jobs:
             exit 1
           fi
 
+          if ! BRANCH_JSON="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${BRANCH}" 2>/dev/null)"; then
+            echo "::error::branch ${BRANCH} does not exist"
+            exit 1
+          fi
+          SHA="$(jq -r '.object.sha' <<< "${BRANCH_JSON}")"
+
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "Tagging ${BRANCH} as ${TAG}"
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "Tagging ${BRANCH} at ${SHA} as ${TAG}"
 
       - name: "Wait for the branch build to finish"
         env:
@@ -108,10 +115,29 @@ jobs:
           echo "::error::a build is still running on ${BRANCH} after 30 minutes; re-run once it finishes"
           exit 1
 
-      - name: "Check out the release branch"
+      - name: "Require a green branch build for the commit being tagged"
+        env:
+          SHA: ${{ steps.tag.outputs.sha }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          GREEN=$(gh api --method GET \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/build-test-distribute.yaml/runs" \
+            -f head_sha="${SHA}" -f status=completed -f event=push -f per_page=100 --paginate \
+            --jq '[.workflow_runs[] | select(.conclusion == "success")] | length')
+
+          if [[ "${GREEN}" -eq 0 ]]; then
+            echo "::error::no successful push run of build-test-distribute for ${SHA}. build-test-distribute's release_sha_gate requires one, so the tag build would fail and the tag would have to be moved. Re-run the branch build on this commit, then dispatch again."
+            exit 1
+          fi
+
+          echo "${SHA} has ${GREEN} successful push run(s)."
+
+      - name: "Check out the commit being tagged"
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ steps.tag.outputs.sha }}
           fetch-depth: 0
           persist-credentials: true
           token: ${{ steps.app-token.outputs.token }}
@@ -120,25 +146,29 @@ jobs:
         env:
           BRANCH: ${{ inputs.branch }}
           TAG: ${{ steps.tag.outputs.tag }}
+          SHA: ${{ steps.tag.outputs.sha }}
           DRY_RUN: ${{ inputs.dry_run }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
 
-          git fetch origin "${BRANCH}"
-          git reset --hard "origin/${BRANCH}"
+          CURRENT=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${BRANCH}" --jq '.object.sha')
+          if [[ "${CURRENT}" != "${SHA}" ]]; then
+            echo "::error::${BRANCH} moved from ${SHA} to ${CURRENT} while this run was validating. The new head needs its own green build; dispatch again."
+            exit 1
+          fi
 
-          COMMIT=$(git rev-parse HEAD)
-          echo "${BRANCH} is at ${COMMIT}"
+          echo "${BRANCH} is at ${SHA}"
           git --no-pager log -1 --oneline
 
           if [[ "${DRY_RUN}" == "true" ]]; then
-            echo "Dry run: would tag ${COMMIT} as ${TAG} and push it." >> "$GITHUB_STEP_SUMMARY"
+            echo "Dry run: would tag ${SHA} as ${TAG} and push it." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
           git config user.name "kumahq[bot]"
           git config user.email "110050114+kumahq[bot]@users.noreply.github.com"
           git tag -a "${TAG}" -m "Release ${TAG}"
-          git push origin "${TAG}"
+          git push origin "refs/tags/${TAG}"
 
-          echo "Pushed \`${TAG}\` at \`${COMMIT}\`." >> "$GITHUB_STEP_SUMMARY"
+          echo "Pushed \`${TAG}\` at \`${SHA}\`." >> "$GITHUB_STEP_SUMMARY"
