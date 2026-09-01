@@ -100,8 +100,29 @@ type QueryParamsMatch struct {
 }
 
 type RuleConf struct {
-	Filters     *[]Filter                `json:"filters,omitempty"`
-	BackendRefs *[]common_api.BackendRef `json:"backendRefs,omitempty"`
+	Filters     *[]Filter     `json:"filters,omitempty"`
+	BackendRefs *[]BackendRef `json:"backendRefs,omitempty"`
+}
+
+type BackendRef struct {
+	// +kuma:nolint // keep parity with common_api.BackendRef
+	common_api.TargetRef `json:","`
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=4294967295
+	// +kubebuilder:default=1
+	// +kuma:nolint // keep parity with common_api.BackendRef
+	Weight *uint `json:"weight,omitempty"`
+	// Port is only supported when this ref refers to a real MeshService object
+	Port    *uint32   `json:"port,omitempty"`
+	Filters *[]Filter `json:"filters,omitempty"`
+}
+
+func (b BackendRef) CommonBackendRef() common_api.BackendRef {
+	return common_api.BackendRef{
+		TargetRef: b.TargetRef,
+		Weight:    b.Weight,
+		Port:      b.Port,
+	}
 }
 
 // +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier;RequestRedirect;URLRewrite;RequestMirror

@@ -102,7 +102,22 @@ func generateFromService(
 	var routes []xds.OutboundRoute
 
 	for _, route := range prepareRoutes(rules, svc, meshCtx) {
-		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
+		var split []xds.BackendRefSplit
+		for _, backendRef := range route.BackendRefs {
+			backendSplit := meshroute_xds.MakeHTTPSplit(
+				clusterCache,
+				servicesAcc,
+				[]resolve.ResolvedBackendRef{backendRef.BackendRef},
+				meshCtx,
+			)
+			if len(backendSplit) == 0 {
+				continue
+			}
+			split = append(split, xds.BackendRefSplit{
+				Split:   backendSplit[0],
+				Filters: backendRef.Filters,
+			})
+		}
 		if len(split) == 0 && !route.AllBackendRefsUnresolved && route.DirectResponseStatus == 0 {
 			continue
 		}
@@ -246,11 +261,11 @@ func prepareRoutes(
 		}
 
 		for _, match := range rule.Matches {
-			var refs []resolve.ResolvedBackendRef
+			var refs []api.RouteBackendRef
 			var unresolvedWeight uint
 
 			for _, br := range backendRefs {
-				rbr, ok := resolve.BackendRef(originID, br, meshCtx.ResolveResourceIdentifier)
+				rbr, ok := resolve.BackendRef(originID, br.CommonBackendRef(), meshCtx.ResolveResourceIdentifier)
 				if !ok {
 					unresolvedWeight += pointer.DerefOr(br.Weight, 1)
 					continue
@@ -263,7 +278,10 @@ func prepareRoutes(
 					}
 					continue
 				}
-				refs = append(refs, rbr)
+				refs = append(refs, api.RouteBackendRef{
+					BackendRef: rbr,
+					Filters:    pointer.Deref(br.Filters),
+				})
 			}
 
 			routes = append(
@@ -320,8 +338,10 @@ func prepareRoutes(
 		}
 
 		if len(route.BackendRefs) == 0 && !route.AllBackendRefsUnresolved && route.DirectResponseStatus == 0 {
-			route.BackendRefs = []resolve.ResolvedBackendRef{
-				*svc.DefaultBackendRef(),
+			route.BackendRefs = []api.RouteBackendRef{
+				{
+					BackendRef: *svc.DefaultBackendRef(),
+				},
 			}
 		}
 	}

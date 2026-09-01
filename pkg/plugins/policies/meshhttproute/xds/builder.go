@@ -25,7 +25,19 @@ type OutboundRoute struct {
 	// MirrorSplits contains splits of the clusters created for RequestMirror
 	// filters, keyed by the index of the filter in Filters
 	MirrorSplits map[int]envoy_common.Split
-	Split        []envoy_common.Split
+	Split        []BackendRefSplit
+}
+
+type BackendRefSplit struct {
+	Split   envoy_common.Split
+	Filters []api.Filter
+}
+
+func NewBackendRefSplit(split envoy_common.Split, filters ...api.Filter) BackendRefSplit {
+	return BackendRefSplit{
+		Split:   split,
+		Filters: filters,
+	}
 }
 
 type HttpOutboundRouteConfigurer struct {

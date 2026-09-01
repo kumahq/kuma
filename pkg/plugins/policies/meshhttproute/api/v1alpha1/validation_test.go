@@ -391,6 +391,46 @@ to:
                   kuma.io/display-name: mirror
                 weight: 4294967296
 `),
+		ErrorCases("invalid backendRef filters",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.backendRefs[0].filters[0].type`,
+				Message: "only RequestHeaderModifier is supported on backendRefs",
+			}, {
+				Field:   `spec.to[0].rules[0].default.backendRefs[1].filters[0].requestHeaderModifier`,
+				Message: validators.MustBeDefined,
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: frontend
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+          - kind: MeshService
+            labels:
+              kuma.io/display-name: test-server
+            filters:
+              - type: ResponseHeaderModifier
+                responseHeaderModifier:
+                  set:
+                    - name: foo
+                      value: bar
+          - kind: MeshService
+            labels:
+              kuma.io/display-name: other-server
+            filters:
+              - type: RequestHeaderModifier
+`),
 		ErrorCases("hostnames and hostname to backend rewrite not allowed with services",
 			[]validators.Violation{{
 				Field:   `spec.to[0].hostnames`,
