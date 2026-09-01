@@ -39,6 +39,8 @@ on:
         type: boolean
         default: true
 
+run-name: "release-tasks · ${{ inputs.version || github.event.workflow_run.head_branch }}"
+
 permissions: {}
 
 concurrency:
