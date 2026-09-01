@@ -84,7 +84,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 
 		ref := serviceRef("kuma-demo", "backend")
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindHTTPRoute, "kuma-demo", ref)
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", ref)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).To(BeNil())
@@ -117,7 +117,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 
 		ref := serviceRef("kuma-demo", "backend")
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindHTTPRoute, "kuma-demo", ref)
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", ref)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).ToNot(BeNil())
@@ -162,7 +162,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(ms).Build(),
 		}
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindHTTPRoute, "kuma-demo", meshServiceRef(nil))
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", meshServiceRef(nil))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).To(BeNil())
@@ -190,7 +190,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(ms).Build(),
 		}
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindHTTPRoute, "kuma-demo", meshServiceRef(pointer.To(gatewayapi.PortNumber(80))))
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", meshServiceRef(pointer.To(gatewayapi.PortNumber(80))))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).To(BeNil())
@@ -212,7 +212,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).Build(),
 		}
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindHTTPRoute, "kuma-demo", meshServiceRef(nil))
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", meshServiceRef(nil))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).ToNot(BeNil())
@@ -235,7 +235,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(ms).Build(),
 		}
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindHTTPRoute, "kuma-demo", meshServiceRef(pointer.To(gatewayapi.PortNumber(443))))
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", meshServiceRef(pointer.To(gatewayapi.PortNumber(443))))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).ToNot(BeNil())
@@ -266,7 +266,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(svc).Build(),
 		}
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindHTTPRoute, "route-ns", serviceRef("backend-ns", "backend"))
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", serviceRef("backend-ns", "backend"))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).ToNot(BeNil())
@@ -291,7 +291,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(svc, grant).Build(),
 		}
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindHTTPRoute, "route-ns", serviceRef("backend-ns", "backend"))
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", serviceRef("backend-ns", "backend"))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).To(BeNil())
@@ -314,7 +314,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(ms, grant).Build(),
 		}
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindHTTPRoute, "route-ns", func() gatewayapi.BackendObjectReference {
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", func() gatewayapi.BackendObjectReference {
 			ref := meshServiceRef(pointer.To(gatewayapi.PortNumber(80)))
 			ns := gatewayapi.Namespace("backend-ns")
 			ref.Namespace = &ns
@@ -342,7 +342,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 			Client: kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(svc, grant).Build(),
 		}
 
-		_, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindHTTPRoute, "route-ns", serviceRef("backend-ns", "backend"))
+		_, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", serviceRef("backend-ns", "backend"))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).ToNot(BeNil())
@@ -360,7 +360,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 
 		ref := serviceRef("kuma-demo", "missing-backend")
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindHTTPRoute, "kuma-demo", ref)
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "kuma-demo", ref)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).ToNot(BeNil())

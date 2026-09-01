@@ -199,7 +199,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaMeshRule(
 	}
 
 	for _, gapiBackendRef := range rule.BackendRefs {
-		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, sourceRouteKindGRPCRoute, route.Namespace, gapiBackendRef.BackendObjectReference)
+		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, route.Namespace, gapiBackendRef.BackendObjectReference)
 		if err != nil {
 			return v1alpha1.Rule{}, nil, err
 		}
@@ -340,7 +340,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaMeshFilter(
 	case gatewayapi.GRPCRouteFilterRequestMirror:
 		mirror := gapiFilter.RequestMirror
 
-		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, sourceRouteKindGRPCRoute, routeNamespace, mirror.BackendRef)
+		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, routeNamespace, mirror.BackendRef)
 		if err != nil {
 			return v1alpha1.Filter{}, nil, false
 		}
@@ -366,9 +366,9 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaMeshFilter(
 }
 
 func (r *GRPCRouteReconciler) uncheckedGapiToKumaRef(
-	ctx context.Context, sourceRouteKind, objectNamespace string, ref gatewayapi.BackendObjectReference,
+	ctx context.Context, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
-	details, ok := backendObjectReferenceInfo(objectNamespace, gatewayapi_beta.BackendObjectReference(ref))
+	details, ok := backendObjectReferenceInfo(objectNamespace, ref)
 	refNamespace := objectNamespace
 	if ok {
 		refNamespace = details.Namespace
@@ -394,7 +394,7 @@ func (r *GRPCRouteReconciler) uncheckedGapiToKumaRef(
 	gk := kube_schema.GroupKind{Kind: details.Kind, Group: details.Group}
 
 	if details.Namespace != objectNamespace {
-		allowed, err := r.referenceGrantAllowsBackendRef(ctx, sourceRouteKind, objectNamespace, details)
+		allowed, err := r.referenceGrantAllowsBackendRef(ctx, sourceRouteKindGRPCRoute, objectNamespace, details)
 		if err != nil {
 			return common_api.TargetRef{}, nil, err
 		}

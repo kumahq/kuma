@@ -558,12 +558,10 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		legacyName := legacyGeneratedMeshHTTPRouteName(route.Namespace, route.Name, "Service", svc.Namespace, svc.Name)
 		currentName := generatedMeshHTTPRouteName(sourceRouteKindHTTPRoute, route.Namespace, route.Name, "Service", svc.Namespace, svc.Name)
 		legacyRoute := &meshhttproute_k8s.MeshHTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      legacyName,
-				Namespace: routeNamespace,
-				Labels: map[string]string{
-					common.OwnerLabel: common.LegacyOwnerLabelValue(kube_client.ObjectKeyFromObject(route)),
-				},
+			Name:      legacyName,
+			Namespace: routeNamespace,
+			Labels: map[string]string{
+				common.OwnerLabel: common.LegacyOwnerLabelValue(kube_client.ObjectKeyFromObject(route)),
 			},
 			Spec: &meshhttproute_api.MeshHTTPRoute{},
 		}
@@ -587,12 +585,10 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 	It("deletes a pre-upgrade generated route after the HTTPRoute is deleted", func() {
 		route := newRoute(withSectionName(serviceParentRef(), "http"))
 		legacyRoute := &meshhttproute_k8s.MeshHTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      legacyGeneratedMeshHTTPRouteName(route.Namespace, route.Name, "Service", routeNamespace, "backend"),
-				Namespace: routeNamespace,
-				Labels: map[string]string{
-					common.OwnerLabel: common.LegacyOwnerLabelValue(kube_client.ObjectKeyFromObject(route)),
-				},
+			Name:      legacyGeneratedMeshHTTPRouteName(route.Namespace, route.Name, "Service", routeNamespace, "backend"),
+			Namespace: routeNamespace,
+			Labels: map[string]string{
+				common.OwnerLabel: common.LegacyOwnerLabelValue(kube_client.ObjectKeyFromObject(route)),
 			},
 			Spec: &meshhttproute_api.MeshHTTPRoute{},
 		}

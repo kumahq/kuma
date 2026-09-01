@@ -113,7 +113,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaRoutes(
 	}
 
 	for i, ref := range route.Spec.ParentRefs {
-		refAttachment, refKind, err := attachment.EvaluateParentRefAttachment(gatewayapi_beta.ParentReference(ref))
+		refAttachment, refKind, err := attachment.EvaluateParentRefAttachment(ref)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "unable to check parent ref %d", i)
 		}
@@ -146,7 +146,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaRoutes(
 					Reason:  string(gatewayapi.RouteReasonNoMatchingParent),
 					Message: fmt.Sprintf("Service %q does not exist", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
 				})
-				conditions[gatewayapi_beta.ParentReference(ref)] = prepareConditions(append(parentConditions, rulesConditions...))
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
 				continue
 			}
 
@@ -157,7 +157,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaRoutes(
 					Reason:  string(gatewayapi.RouteReasonNoMatchingParent),
 					Message: fmt.Sprintf("Service %q has no MeshService to attach to", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
 				})
-				conditions[gatewayapi_beta.ParentReference(ref)] = prepareConditions(append(parentConditions, rulesConditions...))
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
 				continue
 			}
 
@@ -170,11 +170,11 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaRoutes(
 					Reason:  string(gatewayapi.RouteReasonNoMatchingParent),
 					Message: fmt.Sprintf("Service %q has no port matching the parentRef", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
 				})
-				conditions[gatewayapi_beta.ParentReference(ref)] = prepareConditions(append(parentConditions, rulesConditions...))
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
 				continue
 			}
 			if hasAcceptedFalse(rulesConditions) {
-				conditions[gatewayapi_beta.ParentReference(ref)] = prepareConditions(append(parentConditions, rulesConditions...))
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
 				continue
 			}
 
@@ -200,7 +200,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaRoutes(
 					Reason:  string(gatewayapi.RouteReasonNoMatchingParent),
 					Message: fmt.Sprintf("MeshService %q does not exist", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
 				})
-				conditions[gatewayapi_beta.ParentReference(ref)] = prepareConditions(append(parentConditions, rulesConditions...))
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
 				continue
 			}
 
@@ -213,11 +213,11 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaRoutes(
 					Reason:  string(gatewayapi.RouteReasonNoMatchingParent),
 					Message: fmt.Sprintf("MeshService %q has no port matching the parentRef", kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()),
 				})
-				conditions[gatewayapi_beta.ParentReference(ref)] = prepareConditions(append(parentConditions, rulesConditions...))
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
 				continue
 			}
 			if hasAcceptedFalse(rulesConditions) {
-				conditions[gatewayapi_beta.ParentReference(ref)] = prepareConditions(append(parentConditions, rulesConditions...))
+				conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
 				continue
 			}
 
@@ -228,7 +228,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaRoutes(
 			storeMeshHTTPRoute(routes, routeSubName, ownedNamespace, labels, meshRoute)
 		}
 
-		conditions[gatewayapi_beta.ParentReference(ref)] = prepareConditions(append(parentConditions, rulesConditions...))
+		conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))
 	}
 
 	return routes, conditions, nil
@@ -250,7 +250,7 @@ func meshServicesOfGRPCRoute(obj kube_client.Object) []string {
 	}
 
 	for _, backendRef := range backendObjectReferencesOfGRPCRoute(route) {
-		details, ok := backendObjectReferenceInfo(route.Namespace, gatewayapi_beta.BackendObjectReference(backendRef))
+		details, ok := backendObjectReferenceInfo(route.Namespace, backendRef)
 		if !ok || details.Kind != "MeshService" {
 			continue
 		}
@@ -279,7 +279,7 @@ func servicesOfGRPCRoute(obj kube_client.Object) []string {
 	}
 
 	for _, backendRef := range backendObjectReferencesOfGRPCRoute(route) {
-		details, ok := backendObjectReferenceInfo(route.Namespace, gatewayapi_beta.BackendObjectReference(backendRef))
+		details, ok := backendObjectReferenceInfo(route.Namespace, backendRef)
 		if !ok || details.Kind != "Service" {
 			continue
 		}
@@ -357,7 +357,7 @@ func grpcRoutesForReferenceGrant(l logr.Logger, client kube_client.Client) kube_
 		for i := range routes.Items {
 			route := &routes.Items[i]
 			for _, backendRef := range backendObjectReferencesOfGRPCRoute(route) {
-				details, ok := backendObjectReferenceInfo(route.Namespace, gatewayapi_beta.BackendObjectReference(backendRef))
+				details, ok := backendObjectReferenceInfo(route.Namespace, backendRef)
 				if !ok || details.Namespace != grant.Namespace || details.Namespace == route.Namespace {
 					continue
 				}

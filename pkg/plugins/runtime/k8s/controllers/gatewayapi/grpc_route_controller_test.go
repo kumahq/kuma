@@ -23,10 +23,10 @@ import (
 )
 
 var _ = Describe("GRPCRouteReconciler", func() {
-	newServiceParentRef := func(namespace, name string) gatewayapi.ParentReference {
+	newServiceParentRef := func(name string) gatewayapi.ParentReference {
 		group := gatewayapi.Group("")
 		kind := gatewayapi.Kind("Service")
-		ns := gatewayapi.Namespace(namespace)
+		ns := gatewayapi.Namespace("kuma-demo")
 		return gatewayapi.ParentReference{
 			Group:     &group,
 			Kind:      &kind,
@@ -39,22 +39,19 @@ var _ = Describe("GRPCRouteReconciler", func() {
 		group := gatewayapi.Group("")
 		kind := gatewayapi.Kind("Service")
 		return gatewayapi.GRPCBackendRef{
-			BackendRef: gatewayapi.BackendRef{
-				BackendObjectReference: gatewayapi.BackendObjectReference{
-					Group: &group,
-					Kind:  &kind,
-					Name:  gatewayapi.ObjectName(name),
-					Port:  pointer.To(gatewayapi.PortNumber(80)),
-				},
-			},
+			Group: &group,
+			Kind:  &kind,
+			Name:  gatewayapi.ObjectName(name),
+			Port:  pointer.To(gatewayapi.PortNumber(80)),
 		}
 	}
 
 	newGRPCRoute := func(namespace, name string, parentRefs ...gatewayapi.ParentReference) *gatewayapi.GRPCRoute {
 		return &gatewayapi.GRPCRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: name, Namespace: namespace},
+			Name:      name,
+			Namespace: namespace,
 			Spec: gatewayapi.GRPCRouteSpec{
-				CommonRouteSpec: gatewayapi.CommonRouteSpec{ParentRefs: parentRefs},
+				ParentRefs: parentRefs,
 				Rules: []gatewayapi.GRPCRouteRule{{
 					BackendRefs: []gatewayapi.GRPCBackendRef{newBackendRef("backend")},
 				}},
@@ -72,9 +69,9 @@ var _ = Describe("GRPCRouteReconciler", func() {
 		scheme, err := bootstrap_k8s.NewScheme()
 		Expect(err).ToNot(HaveOccurred())
 
-		namespace = &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "kuma-demo"}}
+		namespace = &kube_core.Namespace{Name: "kuma-demo"}
 		service = &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "backend", Namespace: "kuma-demo"},
+			Name: "backend", Namespace: "kuma-demo",
 			Spec: kube_core.ServiceSpec{
 				ClusterIP: "10.0.0.1",
 				Ports:     []kube_core.ServicePort{{Name: "grpc", Port: 80}},
@@ -106,7 +103,7 @@ var _ = Describe("GRPCRouteReconciler", func() {
 	})
 
 	It("generates a MeshHTTPRoute and reports Accepted and ResolvedRefs on its parent", func() {
-		route := newGRPCRoute("kuma-demo", "my-route", newServiceParentRef("kuma-demo", "backend"))
+		route := newGRPCRoute("kuma-demo", "my-route", newServiceParentRef("backend"))
 		client := newClient(service, route)
 		grpcReconciler.Client = client
 
@@ -130,7 +127,7 @@ var _ = Describe("GRPCRouteReconciler", func() {
 	})
 
 	It("reports a missing parent service and unresolved backend refs in status", func() {
-		route := newGRPCRoute("kuma-demo", "missing-parent", newServiceParentRef("kuma-demo", "missing-parent"))
+		route := newGRPCRoute("kuma-demo", "missing-parent", newServiceParentRef("missing-parent"))
 		client := newClient(route)
 		grpcReconciler.Client = client
 
@@ -151,7 +148,7 @@ var _ = Describe("GRPCRouteReconciler", func() {
 	})
 
 	It("reports unsupported extension filters and removes generated routes", func() {
-		route := newGRPCRoute("kuma-demo", "extension-filter", newServiceParentRef("kuma-demo", "backend"))
+		route := newGRPCRoute("kuma-demo", "extension-filter", newServiceParentRef("backend"))
 		extensionGroup := gatewayapi.Group("example.com")
 		extensionKind := gatewayapi.Kind("AuthFilter")
 		route.Spec.Rules[0].Filters = []gatewayapi.GRPCRouteFilter{{
@@ -163,12 +160,10 @@ var _ = Describe("GRPCRouteReconciler", func() {
 			},
 		}}
 		existingRoute := &meshhttproute_k8s.MeshHTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      generatedMeshHTTPRouteName(sourceRouteKindGRPCRoute, route.Namespace, route.Name, "Service", service.Namespace, service.Name),
-				Namespace: route.Namespace,
-				Labels: map[string]string{
-					common.OwnerLabel: common.OwnerLabelValue(sourceRouteKindGRPCRoute, kube_client.ObjectKeyFromObject(route)),
-				},
+			Name:      generatedMeshHTTPRouteName(sourceRouteKindGRPCRoute, route.Namespace, route.Name, "Service", service.Namespace, service.Name),
+			Namespace: route.Namespace,
+			Labels: map[string]string{
+				common.OwnerLabel: common.OwnerLabelValue(sourceRouteKindGRPCRoute, kube_client.ObjectKeyFromObject(route)),
 			},
 		}
 		client := newClient(service, route, existingRoute)
@@ -191,11 +186,12 @@ var _ = Describe("GRPCRouteReconciler", func() {
 	})
 
 	It("does not collide with an HTTPRoute that shares namespace name and parent", func() {
-		parentRef := newServiceParentRef("kuma-demo", "backend")
+		parentRef := newServiceParentRef("backend")
 		httpRoute := &gatewayapi_beta.HTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "shared", Namespace: "kuma-demo"},
+			Name:      "shared",
+			Namespace: "kuma-demo",
 			Spec: gatewayapi_beta.HTTPRouteSpec{
-				CommonRouteSpec: gatewayapi_beta.CommonRouteSpec{ParentRefs: []gatewayapi_beta.ParentReference{gatewayapi_beta.ParentReference(parentRef)}},
+				ParentRefs: []gatewayapi_beta.ParentReference{parentRef},
 				Rules: []gatewayapi_beta.HTTPRouteRule{{
 					Matches: []gatewayapi_beta.HTTPRouteMatch{{
 						Path: &gatewayapi_beta.HTTPPathMatch{
@@ -204,13 +200,9 @@ var _ = Describe("GRPCRouteReconciler", func() {
 						},
 					}},
 					BackendRefs: []gatewayapi_beta.HTTPBackendRef{{
-						BackendRef: gatewayapi_beta.BackendRef{
-							BackendObjectReference: gatewayapi_beta.BackendObjectReference{
-								Name: "backend",
-								Port: pointer.To(gatewayapi_beta.PortNumber(80)),
-							},
-							Weight: pointer.To(int32(1)),
-						},
+						Name:   "backend",
+						Port:   pointer.To(gatewayapi_beta.PortNumber(80)),
+						Weight: pointer.To(int32(1)),
 					}},
 				}},
 			},

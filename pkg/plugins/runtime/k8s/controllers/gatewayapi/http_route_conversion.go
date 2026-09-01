@@ -234,7 +234,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 	}
 
 	for _, gapiBackendRef := range rule.BackendRefs {
-		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, sourceRouteKindHTTPRoute, route.Namespace, gapiBackendRef.BackendObjectReference)
+		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, route.Namespace, gapiBackendRef.BackendObjectReference)
 		if err != nil {
 			return v1alpha1.Rule{}, nil, err
 		}
@@ -431,7 +431,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 	case gatewayapi_v1.HTTPRouteFilterRequestMirror:
 		mirror := gapiFilter.RequestMirror
 
-		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, sourceRouteKindHTTPRoute, routeNamespace, mirror.BackendRef)
+		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, routeNamespace, mirror.BackendRef)
 		if err != nil {
 			return v1alpha1.Filter{}, nil, false
 		}
@@ -474,7 +474,7 @@ func (c *ResolvedRefsConditionFalse) preventsBackendTarget() bool {
 }
 
 func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
-	ctx context.Context, sourceRouteKind, objectNamespace string, ref gatewayapi.BackendObjectReference,
+	ctx context.Context, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
 	details, ok := backendObjectReferenceInfo(objectNamespace, ref)
 	refNamespace := objectNamespace
@@ -502,7 +502,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	gk := kube_schema.GroupKind{Kind: details.Kind, Group: details.Group}
 
 	if details.Namespace != objectNamespace {
-		allowed, err := r.referenceGrantAllowsBackendRef(ctx, sourceRouteKind, objectNamespace, details)
+		allowed, err := r.referenceGrantAllowsBackendRef(ctx, sourceRouteKindHTTPRoute, objectNamespace, details)
 		if err != nil {
 			return common_api.TargetRef{}, nil, err
 		}

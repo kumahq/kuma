@@ -101,15 +101,11 @@ var _ = Describe("gapiGRPCToKumaMeshRule", func() {
 		kind := gatewayapi.Kind("Service")
 		port := gatewayapi.PortNumber(80)
 		return gatewayapi.GRPCBackendRef{
-			BackendRef: gatewayapi.BackendRef{
-				BackendObjectReference: gatewayapi.BackendObjectReference{
-					Group: &group,
-					Kind:  &kind,
-					Name:  gatewayapi.ObjectName(name),
-					Port:  &port,
-				},
-				Weight: pointer.To(weight),
-			},
+			Group:  &group,
+			Kind:   &kind,
+			Name:   gatewayapi.ObjectName(name),
+			Port:   &port,
+			Weight: pointer.To(weight),
 		}
 	}
 
@@ -129,7 +125,8 @@ var _ = Describe("gapiGRPCToKumaMeshRule", func() {
 		ns := gatewayapi.Namespace("kuma-demo")
 
 		rule, conditions, err := reconciler.gapiGRPCToKumaMeshRule(context.Background(), &gatewayapi.GRPCRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "route", Namespace: "kuma-demo"},
+			Name:      "route",
+			Namespace: "kuma-demo",
 		}, gatewayapi.GRPCRouteRule{
 			Matches: []gatewayapi.GRPCRouteMatch{{
 				Method: &gatewayapi.GRPCMethodMatch{
@@ -198,7 +195,8 @@ var _ = Describe("gapiGRPCToKumaMeshRule", func() {
 		denominator := int32(8)
 
 		rule, conditions, err := reconciler.gapiGRPCToKumaMeshRule(context.Background(), &gatewayapi.GRPCRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "route", Namespace: "kuma-demo"},
+			Name:      "route",
+			Namespace: "kuma-demo",
 		}, gatewayapi.GRPCRouteRule{
 			Filters: []gatewayapi.GRPCRouteFilter{{
 				Type: gatewayapi.GRPCRouteFilterRequestMirror,
@@ -230,7 +228,8 @@ var _ = Describe("gapiGRPCToKumaMeshRule", func() {
 		extensionKind := gatewayapi.Kind("AuthFilter")
 
 		rule, conditions, err := reconciler.gapiGRPCToKumaMeshRule(context.Background(), &gatewayapi.GRPCRoute{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "route", Namespace: "kuma-demo"},
+			Name:      "route",
+			Namespace: "kuma-demo",
 		}, gatewayapi.GRPCRouteRule{
 			Filters: []gatewayapi.GRPCRouteFilter{{
 				Type: gatewayapi.GRPCRouteFilterExtensionRef,
@@ -256,7 +255,8 @@ var _ = Describe("gapiGRPCToKumaMeshRule", func() {
 
 		svc := &kube_core.Service{Name: "backend", Namespace: "backend-ns", Spec: kube_core.ServiceSpec{Ports: []kube_core.ServicePort{{Name: "grpc", Port: 80}}}}
 		httpGrant := &gatewayapi_beta.ReferenceGrant{
-			ObjectMeta: kube_meta.ObjectMeta{Name: "http-allow", Namespace: "backend-ns"},
+			Name:      "http-allow",
+			Namespace: "backend-ns",
 			Spec: gatewayapi_beta.ReferenceGrantSpec{
 				From: []gatewayapi_beta.ReferenceGrantFrom{{
 					Group:     gatewayapi_beta.Group(gatewayapi.GroupVersion.Group),
@@ -289,13 +289,13 @@ var _ = Describe("gapiGRPCToKumaMeshRule", func() {
 			Port:      pointer.To(gatewayapi.PortNumber(80)),
 		}
 
-		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindGRPCRoute, "route-ns", ref)
+		targetRef, condition, err := reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", ref)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).To(BeNil())
 		Expect(targetRef.Kind).To(Equal(common_api.MeshService))
 
 		reconciler.Client = kube_client_fake.NewClientBuilder().WithScheme(scheme).WithObjects(svc, httpGrant).Build()
-		targetRef, condition, err = reconciler.uncheckedGapiToKumaRef(context.Background(), sourceRouteKindGRPCRoute, "route-ns", ref)
+		targetRef, condition, err = reconciler.uncheckedGapiToKumaRef(context.Background(), "route-ns", ref)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(condition).ToNot(BeNil())
 		Expect(condition.Reason).To(Equal(string(gatewayapi.RouteReasonRefNotPermitted)))
