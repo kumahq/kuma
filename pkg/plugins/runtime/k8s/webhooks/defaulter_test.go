@@ -362,10 +362,12 @@ var _ = Describe("Defaulter", func() {
                 "namespace": "example",
                 "name": "empty",
                 "labels": {
-                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/origin": "zone",
+                  "kuma.io/env": "kubernetes",
                   "kuma.io/mesh": "default",
-                  "kuma.io/origin": "global",
-                  "kuma.io/policy-role": "workload-owner"
+                  "kuma.io/policy-role": "workload-owner",
+                  "kuma.io/zone": "zone-1",
+                  "k8s.kuma.io/namespace": "example"
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
