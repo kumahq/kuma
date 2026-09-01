@@ -18,7 +18,9 @@ import (
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-const ownerLabel = "gateways.kuma.io/gateway.networking.k8s.io-owner"
+const OwnerLabel = "gateways.kuma.io/gateway.networking.k8s.io-owner"
+
+const ownerLabel = OwnerLabel
 
 // OwnedObject describes an object owned by a gateway-api resource,
 // including the namespace it should live in.
@@ -35,6 +37,18 @@ func hashNamespacedName(kind string, name kube_types.NamespacedName) string {
 	hash.Write([]byte(name.Name))
 	// our hash is 8 characters and our label can be 63
 	return fmt.Sprintf("%.54s-%x", fmt.Sprintf("%s_%s_%s", kind, name.Namespace, name.Name), hash.Sum(nil))
+}
+
+func OwnerLabelValue(kind string, name kube_types.NamespacedName) string {
+	return hashNamespacedName(kind, name)
+}
+
+func LegacyOwnerLabelValue(name kube_types.NamespacedName) string {
+	hash := fnv.New32()
+	hash.Write([]byte(name.Namespace))
+	hash.Write([]byte(name.Name))
+	// our hash is 8 characters and our label can be 63
+	return fmt.Sprintf("%.54s-%x", fmt.Sprintf("%s_%s", name.Namespace, name.Name), hash.Sum(nil))
 }
 
 func OwnedPolicyName(owner kube_types.NamespacedName) string {
@@ -56,6 +70,7 @@ func ReconcileLabelledObject(
 	ownerMesh string,
 	ownedType k8s_registry.ResourceType,
 	owned map[string]OwnedObject,
+	legacyOwnerLabelValues ...string,
 ) error {
 	log := logger.WithValues("type", ownedType, "name", owner.Name, "namespace", owner.Namespace)
 	// First we list which existing objects are owned by this owner.
@@ -75,9 +90,36 @@ func ReconcileLabelledObject(
 		return err
 	}
 
+	seenObjects := map[kube_types.NamespacedName]struct{}{}
+	existingItems := existingList.GetItems()
+	for _, existing := range existingItems {
+		seenObjects[kube_types.NamespacedName{Namespace: existing.GetNamespace(), Name: existing.GetName()}] = struct{}{}
+	}
+	for _, legacyOwnerLabelValue := range legacyOwnerLabelValues {
+		if legacyOwnerLabelValue == "" || legacyOwnerLabelValue == ownerLabelValue {
+			continue
+		}
+
+		legacyList, err := registry.NewList(ownedType)
+		if err != nil {
+			return errors.Wrapf(err, "could not create list of owned %T", ownedType)
+		}
+		if err := client.List(ctx, legacyList, kube_client.MatchingLabels{ownerLabel: legacyOwnerLabelValue}); err != nil {
+			return err
+		}
+		for _, legacy := range legacyList.GetItems() {
+			key := kube_types.NamespacedName{Namespace: legacy.GetNamespace(), Name: legacy.GetName()}
+			if _, ok := seenObjects[key]; ok {
+				continue
+			}
+			seenObjects[key] = struct{}{}
+			existingItems = append(existingItems, legacy)
+		}
+	}
+
 	existingObjs := map[string]k8s_model.KubernetesObject{}
 	var unneededObjs []k8s_model.KubernetesObject
-	for _, existing := range existingList.GetItems() {
+	for _, existing := range existingItems {
 		desired, ok := owned[existing.GetName()]
 		if !ok || existing.GetNamespace() != desired.Namespace {
 			unneededObjs = append(unneededObjs, existing)

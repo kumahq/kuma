@@ -26,11 +26,23 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshservice_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
 	bootstrap_k8s "github.com/kumahq/kuma/v3/pkg/plugins/bootstrap/k8s"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_k8s "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/k8s/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
+
+func legacyGeneratedMeshHTTPRouteName(routeNamespace, routeName, parentKind, parentNamespace, parentName string) string {
+	return strings.Join([]string{
+		generatedMeshHTTPRouteNameSegment("rns", routeNamespace),
+		generatedMeshHTTPRouteNameSegment("rn", routeName),
+		generatedMeshHTTPRouteNameSegment("pk", strings.ToLower(parentKind)),
+		generatedMeshHTTPRouteNameSegment("pns", strings.ToLower(parentNamespace)),
+		generatedMeshHTTPRouteNameSegment("pn", strings.ToLower(parentName)),
+	}, "--")
+}
 
 var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", func() {
 	const routeNamespace = "kuma-demo"
@@ -532,6 +544,70 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		Expect(client.List(context.Background(), routes)).To(Succeed())
 		Expect(routes.Items).To(HaveLen(1))
 		Expect(routes.Items[0].Namespace).To(Equal(routeNamespace))
+	})
+
+	It("replaces a pre-upgrade generated route with a legacy owner label and name", func() {
+		svc := &kube_core.Service{
+			Name: "backend", Namespace: routeNamespace,
+			Spec: kube_core.ServiceSpec{
+				ClusterIP: "10.0.0.1",
+				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		route := newRoute(withSectionName(serviceParentRef(), "http"))
+		legacyName := legacyGeneratedMeshHTTPRouteName(route.Namespace, route.Name, "Service", svc.Namespace, svc.Name)
+		currentName := generatedMeshHTTPRouteName(sourceRouteKindHTTPRoute, route.Namespace, route.Name, "Service", svc.Namespace, svc.Name)
+		legacyRoute := &meshhttproute_k8s.MeshHTTPRoute{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name:      legacyName,
+				Namespace: routeNamespace,
+				Labels: map[string]string{
+					common.OwnerLabel: common.LegacyOwnerLabelValue(kube_client.ObjectKeyFromObject(route)),
+				},
+			},
+			Spec: &meshhttproute_api.MeshHTTPRoute{},
+		}
+
+		client := newClientBuilder(svc, route, legacyRoute)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		Expect(routes.Items[0].Name).To(Equal(currentName))
+		Expect(routes.Items[0].Labels).To(HaveKeyWithValue(common.OwnerLabel, common.OwnerLabelValue(sourceRouteKindHTTPRoute, kube_client.ObjectKeyFromObject(route))))
+		Expect(routes.Items[0].Labels[common.OwnerLabel]).ToNot(Equal(common.LegacyOwnerLabelValue(kube_client.ObjectKeyFromObject(route))))
+	})
+
+	It("deletes a pre-upgrade generated route after the HTTPRoute is deleted", func() {
+		route := newRoute(withSectionName(serviceParentRef(), "http"))
+		legacyRoute := &meshhttproute_k8s.MeshHTTPRoute{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name:      legacyGeneratedMeshHTTPRouteName(route.Namespace, route.Name, "Service", routeNamespace, "backend"),
+				Namespace: routeNamespace,
+				Labels: map[string]string{
+					common.OwnerLabel: common.LegacyOwnerLabelValue(kube_client.ObjectKeyFromObject(route)),
+				},
+			},
+			Spec: &meshhttproute_api.MeshHTTPRoute{},
+		}
+
+		client := newClientBuilder(legacyRoute)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(BeEmpty())
 	})
 
 	It("creates the generated route in the system namespace when the parent Service is in a different namespace", func() {

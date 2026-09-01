@@ -13,6 +13,7 @@ import (
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	kube_interceptor "sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_k8s "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/k8s/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -77,4 +78,92 @@ func TestReconcileLabelledObjectKeepsUnneededObjectWhenReplacementCreateFails(t 
 	g.Expect(client.List(ctx, routes)).To(Succeed())
 	g.Expect(routes.Items).To(HaveLen(1))
 	g.Expect(routes.Items[0].Name).To(Equal("legacy-route"))
+}
+
+func TestReconcileLabelledObjectMigratesDesiredObjectWithLegacyOwnerLabel(t *testing.T) {
+	g := NewWithT(t)
+	ctx := context.Background()
+
+	scheme := kube_runtime.NewScheme()
+	g.Expect(meshhttproute_k8s.AddToScheme(scheme)).To(Succeed())
+
+	owner := kube_types.NamespacedName{Namespace: "route-ns", Name: "my-route"}
+	existing := &meshhttproute_k8s.MeshHTTPRoute{
+		Name:      "generated-route",
+		Namespace: "route-ns",
+		Labels: map[string]string{
+			ownerLabel: LegacyOwnerLabelValue(owner),
+			"team":     "payments",
+		},
+		Spec: &meshhttproute_api.MeshHTTPRoute{},
+	}
+
+	client := kube_client_fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(existing).
+		Build()
+
+	err := ReconcileLabelledObject(
+		ctx,
+		logr.Discard(),
+		k8s_registry.Global(),
+		client,
+		"HTTPRoute",
+		owner,
+		"default",
+		&meshhttproute_api.MeshHTTPRoute{},
+		map[string]OwnedObject{
+			"generated-route": {
+				Namespace: "route-ns",
+				Spec:      &meshhttproute_api.MeshHTTPRoute{},
+			},
+		},
+		LegacyOwnerLabelValue(owner),
+	)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	updated := &meshhttproute_k8s.MeshHTTPRoute{}
+	g.Expect(client.Get(ctx, kube_types.NamespacedName{Namespace: "route-ns", Name: "generated-route"}, updated)).To(Succeed())
+	g.Expect(updated.Labels).To(HaveKeyWithValue(ownerLabel, hashNamespacedName("HTTPRoute", owner)))
+	g.Expect(updated.Labels).To(HaveKeyWithValue("team", "payments"))
+}
+
+func TestReconcileLabelledObjectDeletesUnneededObjectWithLegacyOwnerLabel(t *testing.T) {
+	g := NewWithT(t)
+	ctx := context.Background()
+
+	scheme := kube_runtime.NewScheme()
+	g.Expect(meshhttproute_k8s.AddToScheme(scheme)).To(Succeed())
+
+	owner := kube_types.NamespacedName{Namespace: "route-ns", Name: "my-route"}
+	stale := &meshhttproute_k8s.MeshHTTPRoute{
+		Name:      "legacy-route",
+		Namespace: "kuma-system",
+		Labels: map[string]string{
+			ownerLabel: LegacyOwnerLabelValue(owner),
+		},
+	}
+
+	client := kube_client_fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(stale).
+		Build()
+
+	err := ReconcileLabelledObject(
+		ctx,
+		logr.Discard(),
+		k8s_registry.Global(),
+		client,
+		"HTTPRoute",
+		owner,
+		core_model.NoMesh,
+		&meshhttproute_api.MeshHTTPRoute{},
+		nil,
+		LegacyOwnerLabelValue(owner),
+	)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+	g.Expect(client.List(ctx, routes)).To(Succeed())
+	g.Expect(routes.Items).To(BeEmpty())
 }

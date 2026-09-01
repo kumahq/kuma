@@ -139,6 +139,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 			// object.
 			if err := common.ReconcileLabelledObject(
 				ctx, r.Log, r.TypeRegistry, r.Client, sourceRouteKindHTTPRoute, req.NamespacedName, core_model.NoMesh, &meshhttproute_api.MeshHTTPRoute{}, nil,
+				common.LegacyOwnerLabelValue(req.NamespacedName),
 			); err != nil {
 				return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned MeshHTTPRoute.kuma.io")
 			}
@@ -163,6 +164,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 	if err := common.ReconcileLabelledObject(
 		ctx, r.Log, r.TypeRegistry, r.Client, sourceRouteKindHTTPRoute, req.NamespacedName, mesh, &meshhttproute_api.MeshHTTPRoute{}, meshRouteSpecs,
+		common.LegacyOwnerLabelValue(req.NamespacedName),
 	); err != nil {
 		reconcileErr := errors.Wrap(err, "could not reconcile owned MeshHTTPRoute.kuma.io")
 		if statusErr := r.updateStatus(ctx, httpRoute, generatedRouteWriteFailureConditions(conditions, reconcileErr)); statusErr != nil {
