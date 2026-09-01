@@ -144,7 +144,7 @@ jobs:
         with:
           ref: ${{ steps.tag.outputs.sha }}
           fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
           token: ${{ steps.app-token.outputs.token }}
 
       - name: "Push the tag"
@@ -174,6 +174,6 @@ jobs:
           git config user.name "${GIT_USER}"
           git config user.email "${GIT_EMAIL}"
           git tag -a "${TAG}" -m "Release ${TAG}"
-          git push origin "refs/tags/${TAG}"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "refs/tags/${TAG}"
 
           echo "Pushed \`${TAG}\` at \`${SHA}\`." >> "$GITHUB_STEP_SUMMARY"
