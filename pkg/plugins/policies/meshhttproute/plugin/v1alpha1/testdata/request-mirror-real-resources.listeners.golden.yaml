@@ -96,12 +96,13 @@ resources:
                         denominator: TEN_THOUSAND
                         numerator: 9990
                   timeout: 0s
-              - match:
+              - directResponse:
+                  body:
+                    inlineString: ""
+                  status: 404
+                match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
-                route:
-                  cluster: kri_msvc_default___backend_test-port
-                  timeout: 0s
           statPrefix: kri_msvc_default___backend_test-port
     metadata:
       filterMetadata:
