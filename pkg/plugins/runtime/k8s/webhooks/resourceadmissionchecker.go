@@ -11,14 +11,15 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
-// managedIdentityLabels are computed by the control plane from the Pod, not
-// user-provided. kuma.io/workload is excluded: on Universal it is user-set.
+// managedIdentityLabels are computed by the control plane from the Pod and feed the
+// SPIFFE ID. kuma.io/workload is excluded: on Universal it is user-set.
 var managedIdentityLabels = []string{
 	metadata.KumaServiceAccount,
 }
@@ -88,6 +89,9 @@ func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns s
 
 // Privileged writers are short-circuited earlier, so any managed label here is user-supplied.
 func (c *ResourceAdmissionChecker) validateManagedIdentityLabels(r core_model.Resource) *admission.Response {
+	if r.Descriptor().Name != core_mesh.DataplaneType {
+		return nil
+	}
 	labels := r.GetMeta().GetLabels()
 	for _, key := range managedIdentityLabels {
 		if _, ok := labels[key]; ok {

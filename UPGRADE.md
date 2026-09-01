@@ -8,13 +8,13 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
-### The `k8s.kuma.io/service-account` label is rejected on user-applied resources
+### The `k8s.kuma.io/service-account` label is rejected on user-applied `Dataplane`s
 
-On Kubernetes this label is computed by the control plane from the Pod's ServiceAccount and feeds the workload identity used by policies such as `MeshTrafficPermission`. Setting it by hand let any user who can apply Kuma resources in a namespace forge that identity. The admission webhook now denies any create or update carrying `k8s.kuma.io/service-account` unless the request comes from the control plane itself (or another user listed in `runtime.kubernetes.allowedUsers`), on both Zone and Global control planes. Resources synced over KDS and resources written by the control plane are unaffected.
+On Kubernetes this label is computed by the control plane from the Pod's ServiceAccount and feeds the workload identity used by policies such as `MeshTrafficPermission`. Setting it by hand on a `Dataplane` let any user who can apply Kuma resources in a namespace forge that identity. Two things changed. The admission webhook now denies any `Dataplane` create or update carrying `k8s.kuma.io/service-account` unless the request comes from the control plane itself (or another user listed in `runtime.kubernetes.allowedUsers`), on both Zone and Global control planes. Independently, a proxy is now refused at xDS authentication when the label on its `Dataplane` disagrees with the ServiceAccount of its Pod, which also covers resources that already carry a forged label. Other resource types are unaffected, as are resources synced over KDS and resources written by the control plane.
 
 **Action required**
 
-Remove `k8s.kuma.io/service-account` from any manifest you apply yourself, including GitOps-managed ones. Existing resources that already carry the label keep working until something updates them, at which point the update is rejected until the label is dropped.
+Remove `k8s.kuma.io/service-account` from any `Dataplane` you apply yourself, including GitOps-managed ones. A `Dataplane` that already carries a label disagreeing with its Pod stops connecting after the upgrade until the label is dropped.
 
 ### `MeshLoadBalancingStrategy` cross-zone settings now require a `MeshMultiZoneService` `to` target
 
