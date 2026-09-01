@@ -584,6 +584,46 @@ func (r *resourceEndpoints) validateLabels(rm model.ResourceMeta) validators.Val
 	return err
 }
 
+<<<<<<< HEAD
+=======
+func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newComputedLabels map[string]string) validators.ValidationError {
+	var err validators.ValidationError
+
+	immutableLabels := []string{
+		mesh_proto.ZoneTag,
+	}
+
+	for _, label := range immutableLabels {
+		currentVal, currentExists := currentComputedLabels[label]
+		newVal, newExists := newComputedLabels[label]
+
+		if currentExists && !newExists {
+			err.AddViolationAt(
+				validators.Root().Key(label),
+				fmt.Sprintf("is immutable, cannot be removed (was %q)", currentVal),
+			)
+		} else if currentExists && currentVal != newVal {
+			err.AddViolationAt(
+				validators.Root().Key(label),
+				fmt.Sprintf("is immutable, cannot be changed from %q to %q", currentVal, newVal),
+			)
+		}
+	}
+
+	return err
+}
+
+func (r *resourceEndpoints) validatePolicyRole(resource rest.Resource) validators.ValidationError {
+	var err validators.ValidationError
+	policyRole := core_model.PolicyRole(resource.GetMeta())
+	// at the moment on universal all policies have system policy role
+	if policyRole != mesh_proto.SystemPolicyRole {
+		err.AddViolationAt(validators.Root().Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should have %s value, got %s", mesh_proto.PolicyRoleLabel, mesh_proto.SystemPolicyRole, policyRole))
+	}
+	return err
+}
+
+>>>>>>> ac47fa03d6 (feat(labels): compute `kuma.io/origin` on global and zone control planes (backport of #17176) (#18279))
 // The resource is prefixed with the zone name when it is synchronized
 // to global control-plane. It is important to notice that the zone is unaware
 // of the type of the store used by the global control-plane, so we must prepare
