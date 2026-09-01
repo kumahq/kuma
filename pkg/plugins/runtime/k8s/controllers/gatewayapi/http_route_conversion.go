@@ -246,13 +246,12 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 		}
 
 		refCondition.AddIfFalseAndNotPresent(&conditions)
-		if refCondition.preventsBackendTarget() {
-			continue
-		}
-
 		if len(gapiBackendRef.Filters) > 0 {
 			unsupportedFilter = true
 			addIfFalseAndNotPresent(&conditions, unsupportedBackendRefFilterCondition(route.Namespace, gapiBackendRef))
+		}
+		if refCondition.preventsBackendTarget() {
+			continue
 		}
 
 		backendRefs = append(backendRefs, common_api.BackendRef{
@@ -263,6 +262,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 
 	if unsupportedFilter {
 		backendRefs = []common_api.BackendRef{}
+		filters = []v1alpha1.Filter{}
 	}
 
 	return v1alpha1.Rule{

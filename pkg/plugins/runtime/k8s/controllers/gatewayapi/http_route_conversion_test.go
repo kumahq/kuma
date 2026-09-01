@@ -438,7 +438,55 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		Expect(resolvedRefs.Reason).To(Equal(string(gatewayapi.RouteReasonRefNotPermitted)))
 	})
 
-	It("reports Accepted=False and clears backendRefs for an unsupported rule-level ExtensionRef filter", func() {
+	It("reports Accepted=False when a denied cross-namespace backendRef has filters", func() {
+		frontend := &kube_core.Service{
+			Name:      "frontend",
+			Namespace: "route-ns",
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		backend := &kube_core.Service{
+			Name:      "backend",
+			Namespace: "backend-ns",
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 8080}},
+			},
+		}
+
+		reconciler := newReconciler(frontend, backend)
+
+		route := &gatewayapi.HTTPRoute{
+			Name: "my-route", Namespace: "route-ns",
+		}
+		backendRef := serviceBackendRef("backend-ns", "backend", 8080)
+		backendRef.Filters = []gatewayapi.HTTPRouteFilter{{
+			Type: gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier,
+			RequestHeaderModifier: &gatewayapi.HTTPHeaderFilter{
+				Add: []gatewayapi.HTTPHeader{{Name: "x-test", Value: "1"}},
+			},
+		}}
+		rule := gatewayapi.HTTPRouteRule{
+			BackendRefs: []gatewayapi.HTTPBackendRef{backendRef},
+		}
+
+		kumaRule, conditions, err := reconciler.gapiToKumaMeshRule(context.Background(), route, rule)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(kumaRule.Default.BackendRefs).ToNot(BeNil())
+		Expect(pointer.Deref(kumaRule.Default.BackendRefs)).To(BeEmpty())
+		accepted := kube_apimeta.FindStatusCondition(conditions, string(gatewayapi.RouteConditionAccepted))
+		Expect(accepted).ToNot(BeNil())
+		Expect(accepted.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(accepted.Reason).To(Equal(string(gatewayapi.RouteReasonUnsupportedValue)))
+		Expect(accepted.Message).To(ContainSubstring(string(gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier)))
+		resolvedRefs := kube_apimeta.FindStatusCondition(conditions, string(gatewayapi.RouteConditionResolvedRefs))
+		Expect(resolvedRefs).ToNot(BeNil())
+		Expect(resolvedRefs.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(resolvedRefs.Reason).To(Equal(string(gatewayapi.RouteReasonRefNotPermitted)))
+	})
+
+	It("reports Accepted=False and clears backendRefs and filters for an unsupported rule-level ExtensionRef filter", func() {
 		frontend := &kube_core.Service{
 			Name:      "frontend",
 			Namespace: "route-ns",
@@ -460,9 +508,17 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 			Name: "my-route", Namespace: "route-ns",
 		}
 		rule := gatewayapi.HTTPRouteRule{
-			Filters: []gatewayapi.HTTPRouteFilter{{
-				Type: gatewayapi_v1.HTTPRouteFilterExtensionRef,
-			}},
+			Filters: []gatewayapi.HTTPRouteFilter{
+				{
+					Type: gatewayapi_v1.HTTPRouteFilterRequestRedirect,
+					RequestRedirect: &gatewayapi.HTTPRequestRedirectFilter{
+						Scheme: pointer.To("https"),
+					},
+				},
+				{
+					Type: gatewayapi_v1.HTTPRouteFilterExtensionRef,
+				},
+			},
 			BackendRefs: []gatewayapi.HTTPBackendRef{
 				serviceBackendRef("route-ns", "backend", 8080),
 			},
@@ -473,6 +529,8 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(kumaRule.Default.BackendRefs).ToNot(BeNil())
 		Expect(pointer.Deref(kumaRule.Default.BackendRefs)).To(BeEmpty())
+		Expect(kumaRule.Default.Filters).ToNot(BeNil())
+		Expect(pointer.Deref(kumaRule.Default.Filters)).To(BeEmpty())
 		accepted := kube_apimeta.FindStatusCondition(conditions, string(gatewayapi.RouteConditionAccepted))
 		Expect(accepted).ToNot(BeNil())
 		Expect(accepted.Status).To(Equal(kube_meta.ConditionFalse))

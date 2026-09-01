@@ -570,9 +570,17 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 						Value: pointer.To("/ext"),
 					},
 				}},
-				Filters: []gatewayapi.HTTPRouteFilter{{
-					Type: gatewayapi_v1.HTTPRouteFilterExtensionRef,
-				}},
+				Filters: []gatewayapi.HTTPRouteFilter{
+					{
+						Type: gatewayapi_v1.HTTPRouteFilterRequestRedirect,
+						RequestRedirect: &gatewayapi.HTTPRequestRedirectFilter{
+							Scheme: pointer.To("https"),
+						},
+					},
+					{
+						Type: gatewayapi_v1.HTTPRouteFilterExtensionRef,
+					},
+				},
 				BackendRefs: []gatewayapi.HTTPBackendRef{{
 					BackendObjectReference: gatewayapi.BackendObjectReference{
 						Name: gatewayapi.ObjectName("upstream"),
@@ -618,6 +626,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		generatedRules := (*routes.Items[0].Spec.To)[0].Rules
 		Expect(generatedRules).To(HaveLen(2))
 		Expect(pointer.Deref(generatedRules[0].Default.BackendRefs)).To(BeEmpty())
+		Expect(pointer.Deref(generatedRules[0].Default.Filters)).To(BeEmpty())
 		Expect(pointer.Deref(generatedRules[1].Default.BackendRefs)).To(BeEmpty())
 
 		var updatedRoute gatewayapi.HTTPRoute
