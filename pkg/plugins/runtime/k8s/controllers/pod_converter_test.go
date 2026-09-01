@@ -154,7 +154,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 					NodeLabelsToCopy: given.nodeLabelsToCopy,
 				},
 				Zone:              "zone-1",
+<<<<<<< HEAD
 				ResourceConverter: k8s.NewSimpleConverter(),
+=======
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
+				WorkloadLabels:    given.workloadLabels,
+>>>>>>> 462d97e142 (fix(k8s): enforce control-plane-owned labels on read (backport of #18271) (#18281))
 			}
 
 			// when
@@ -345,7 +350,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			converter := PodConverter{
 				ServiceGetter:     nil,
 				NodeGetter:        nodeGetter,
-				ResourceConverter: k8s.NewSimpleConverter(),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 				Zone:              "zone-1",
 				InboundConverter: InboundConverter{
 					NodeGetter: nodeGetter,
@@ -438,7 +443,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			converter := PodConverter{
 				ServiceGetter:     nil,
 				NodeGetter:        nodeGetter,
-				ResourceConverter: k8s.NewSimpleConverter(),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 				Zone:              "zone-1",
 				InboundConverter: InboundConverter{
 					NodeGetter: nodeGetter,

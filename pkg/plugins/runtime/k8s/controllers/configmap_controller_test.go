@@ -23,7 +23,7 @@ import (
 var _ = Describe("DataplaneToMeshMapper", func() {
 	It("should map ingress to list of meshes", func() {
 		l := log.NewLogger(log.InfoLevel)
-		mapper := controllers.DataplaneToMeshMapper(l, "ns", k8s.NewSimpleConverter())
+		mapper := controllers.DataplaneToMeshMapper(l, "ns", k8s.NewSimpleConverter("kuma-system"))
 		requests := mapper(context.Background(), &mesh_k8s.Dataplane{
 			Mesh: "mesh-1",
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{

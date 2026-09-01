@@ -278,10 +278,18 @@ var _ = Describe("PodReconciler", func() {
 			Scheme:        k8sClientScheme,
 			Log:           core.Log.WithName("test"),
 			PodConverter: PodConverter{
+<<<<<<< HEAD
 				ResourceConverter: k8s.NewSimpleConverter(),
+=======
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
+				ServiceGetter:     kubeClient,
+				Mode:              config_core.Zone,
+				Zone:              "zone-1",
+				SystemNamespace:   "kuma-system",
+>>>>>>> 462d97e142 (fix(k8s): enforce control-plane-owned labels on read (backport of #18271) (#18281))
 			},
 			SystemNamespace:   "kuma-system",
-			ResourceConverter: k8s.NewSimpleConverter(),
+			ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 		}
 	})
 

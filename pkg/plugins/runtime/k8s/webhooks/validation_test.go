@@ -78,7 +78,7 @@ func newValidatingWebhook(mode core.CpMode, federatedZone bool) *kube_admission.
 		FederatedZone:                federatedZone,
 		DisableOriginLabelValidation: false,
 	}
-	handler := webhooks.NewValidatingWebhook(k8s_resources.NewSimpleConverter(), core_registry.Global(), k8s_registry.Global(), checker)
+	handler := webhooks.NewValidatingWebhook(k8s_resources.NewSimpleConverter("kuma-system"), core_registry.Global(), k8s_registry.Global(), checker)
 	handler.InjectDecoder(kube_admission.NewDecoder(scheme))
 	return &kube_admission.Webhook{
 		Handler: handler,

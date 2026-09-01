@@ -14,19 +14,12 @@ import (
 
 	"github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	k8s_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("Defaulter", func() {
-	var converter k8s_common.Converter
-
-	BeforeEach(func() {
-		converter = k8s_resources.NewSimpleConverter()
-	})
-
 	type testCase struct {
 		inputObject string
 		expected    string
@@ -56,7 +49,9 @@ var _ = Describe("Defaulter", func() {
 
 	DescribeTable("should apply defaults on a target object",
 		func(given testCase) {
-			// given
+			// given - in production both the converter and the checker read the system
+			// namespace from the same config, so they always agree
+			converter := k8s_resources.NewSimpleConverter(given.checker.SystemNamespace)
 			handler := DefaultingWebhookFor(scheme, converter, given.checker)
 
 			req := kube_admission.Request{
@@ -287,7 +282,59 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
+<<<<<<< HEAD
                 "targetRef": {}
+=======
+                "targetRef": {
+                  "kind": "Mesh"
+                }
+              }
+            }
+`,
+		}),
+		Entry("should not set zone label when origin is set to global, federated zone", testCase{
+			checker: zoneChecker(true, false),
+			kind:    string(v1alpha1.MeshTrafficPermissionType),
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "labels": {
+                  "kuma.io/origin": "global"
+                }
+              },
+              "spec": {
+                "targetRef": {
+                  "kind": "Mesh"
+                }
+              }
+            }
+`,
+			expected: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "labels": {
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/mesh": "default",
+                  "kuma.io/origin": "global",
+                  "kuma.io/policy-role": "workload-owner"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
+                }
+              },
+              "spec": {
+                "targetRef": {
+                  "kind": "Mesh"
+                }
+>>>>>>> 462d97e142 (fix(k8s): enforce control-plane-owned labels on read (backport of #18271) (#18281))
               }
             }
 `,

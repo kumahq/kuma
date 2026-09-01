@@ -62,9 +62,18 @@ var _ = Describe("MeshServiceController", func() {
 				Build()
 
 			reconciler = &MeshServiceReconciler{
+<<<<<<< HEAD
 				Client: kubeClient,
 				Log:    logr.Discard(),
 				Scheme: k8sClientScheme,
+=======
+				Client:              kubeClient,
+				Log:                 logr.Discard(),
+				Scheme:              k8sClientScheme,
+				EventRecorder:       kube_events.NewFakeRecorder(10),
+				ResourceConverter:   k8s.NewSimpleConverter("kuma-system"),
+				InboundTagsDisabled: given.inboundTagsDisabled,
+>>>>>>> 462d97e142 (fix(k8s): enforce control-plane-owned labels on read (backport of #18271) (#18281))
 			}
 
 			key := kube_types.NamespacedName{

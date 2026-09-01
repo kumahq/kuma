@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
@@ -260,6 +261,62 @@ var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
 type KubernetesMetaAdapter struct {
 	kube_meta.ObjectMeta
 	Mesh string
+<<<<<<< HEAD
+=======
+
+	// labels is the materialized label set: the object's stored labels, the entries
+	// derived from annotations, and the control-plane-owned ones recomputed by
+	// labels.EnforcedReadLabels. Callers MUST treat it as read-only - it is handed
+	// out as is, and when the adapter came from cachingConverter a clone of it also
+	// sits in the cache.
+	labels map[string]string
+}
+
+// newMetaAdapter is the only place an adapter's labels are computed from a Kubernetes
+// object. Taking rd and spec forces every conversion path to supply what
+// labels.EnforcedReadLabels needs, so a new converter cannot silently skip the
+// read-side recomputation. newMetaAdapterWithLabels is not a second computation: it
+// only re-wraps a set this function already produced.
+func newMetaAdapter(
+	obj k8s_model.KubernetesObject,
+	systemNamespace string,
+	rd core_model.ResourceTypeDescriptor,
+	spec core_model.ResourceSpec,
+) *KubernetesMetaAdapter {
+	objMeta := obj.GetObjectMeta()
+
+	computed := maps.Clone(objMeta.GetLabels())
+	if computed == nil {
+		computed = map[string]string{}
+	}
+	if displayName, ok := objMeta.GetAnnotations()[v1alpha1.DisplayName]; ok {
+		computed[v1alpha1.DisplayName] = displayName
+	} else {
+		computed[v1alpha1.DisplayName] = objMeta.GetName()
+	}
+	if sa, ok := objMeta.GetAnnotations()[metadata.KumaServiceAccount]; ok {
+		computed[metadata.KumaServiceAccount] = sa
+	}
+	if workload, ok := objMeta.GetAnnotations()[metadata.KumaWorkload]; ok {
+		computed[metadata.KumaWorkload] = workload
+	}
+	ns := labels.NewNamespace(objMeta.GetNamespace(), objMeta.GetNamespace() == systemNamespace)
+	maps.Copy(computed, labels.EnforcedReadLabels(rd, spec, ns))
+
+	return &KubernetesMetaAdapter{
+		ObjectMeta: *objMeta,
+		Mesh:       obj.GetMesh(),
+		labels:     computed,
+	}
+}
+
+func newMetaAdapterWithLabels(obj k8s_model.KubernetesObject, labels map[string]string) *KubernetesMetaAdapter {
+	return &KubernetesMetaAdapter{
+		ObjectMeta: *obj.GetObjectMeta(),
+		Mesh:       obj.GetMesh(),
+		labels:     labels,
+	}
+>>>>>>> 462d97e142 (fix(k8s): enforce control-plane-owned labels on read (backport of #18271) (#18281))
 }
 
 func (m *KubernetesMetaAdapter) GetName() string {
@@ -289,6 +346,7 @@ func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
 	return m.GetObjectMeta().GetCreationTimestamp().Time
 }
 
+<<<<<<< HEAD
 func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
 	labels := maps.Clone(m.GetObjectMeta().GetLabels())
 	if labels == nil {
@@ -304,6 +362,16 @@ func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
 	}
 
 	return labels
+=======
+// GetLabels returns the materialized label set built at construction time: the
+// object's stored labels, the annotation-derived entries (display name, Kuma service
+// account, Kuma workload), and the control-plane-owned ones recomputed by
+// labels.EnforcedReadLabels. Callers MUST treat the returned map as read-only.
+// Mutating it would corrupt both this adapter and, when the adapter was produced by
+// cachingConverter, the cross-reconcile entry shared via the resourceVersion key.
+func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
+	return m.labels
+>>>>>>> 462d97e142 (fix(k8s): enforce control-plane-owned labels on read (backport of #18271) (#18281))
 }
 
 type KubeFactory interface {
