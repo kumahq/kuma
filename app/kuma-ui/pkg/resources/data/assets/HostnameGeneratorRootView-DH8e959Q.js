@@ -1,0 +1,1 @@
+import{H as a,r as e,o as s,c as _,b as o,e as t}from"./index-gbqPIL_1.js";const i={};function p(m,u){const n=e("RouterView"),r=e("AppView"),c=e("RouteView");return s(),_(c,{name:"hostname-generator-root-view"},{default:o(()=>[t(r,null,{default:o(()=>[t(n)]),_:1})]),_:1})}const f=a(i,[["render",p]]);export{f as default};
