@@ -110,10 +110,10 @@ func backendObjectReferencesOfRoute(route *gatewayapi.HTTPRoute) []gatewayapi.Ba
 	return refs
 }
 
-func backendObjectReferenceMatchesGrant(grant *gatewayapi.ReferenceGrant, routeNamespace string, backendRef backendObjectReferenceDetails) bool {
+func backendObjectReferenceMatchesGrant(grant *gatewayapi.ReferenceGrant, routeKind, routeNamespace string, backendRef backendObjectReferenceDetails) bool {
 	fromMatches := slices.ContainsFunc(grant.Spec.From, func(from gatewayapi.ReferenceGrantFrom) bool {
 		return string(from.Group) == gatewayapi.GroupVersion.Group &&
-			string(from.Kind) == "HTTPRoute" &&
+			string(from.Kind) == routeKind &&
 			string(from.Namespace) == routeNamespace
 	})
 	if !fromMatches {
@@ -138,7 +138,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 			// We don't know the mesh, but we don't need it to delete our
 			// object.
 			if err := common.ReconcileLabelledObject(
-				ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &meshhttproute_api.MeshHTTPRoute{}, nil,
+				ctx, r.Log, r.TypeRegistry, r.Client, sourceRouteKindHTTPRoute, req.NamespacedName, core_model.NoMesh, &meshhttproute_api.MeshHTTPRoute{}, nil,
 			); err != nil {
 				return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned MeshHTTPRoute.kuma.io")
 			}
@@ -162,7 +162,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	}
 
 	if err := common.ReconcileLabelledObject(
-		ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &meshhttproute_api.MeshHTTPRoute{}, meshRouteSpecs,
+		ctx, r.Log, r.TypeRegistry, r.Client, sourceRouteKindHTTPRoute, req.NamespacedName, mesh, &meshhttproute_api.MeshHTTPRoute{}, meshRouteSpecs,
 	); err != nil {
 		reconcileErr := errors.Wrap(err, "could not reconcile owned MeshHTTPRoute.kuma.io")
 		if statusErr := r.updateStatus(ctx, httpRoute, generatedRouteWriteFailureConditions(conditions, reconcileErr)); statusErr != nil {
@@ -261,7 +261,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
-			routeSubName := generatedMeshHTTPRouteName(route, "Service", parent.GetNamespace(), parent.GetName())
+			routeSubName := generatedMeshHTTPRouteName(sourceRouteKindHTTPRoute, route.Namespace, route.Name, "Service", parent.GetNamespace(), parent.GetName())
 
 			meshRoute, ok := r.gapiServiceToMeshRoute(route.Namespace, rules, &parent, ref.Port, ref.SectionName)
 			if !ok {
@@ -314,7 +314,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
-			routeSubName := generatedMeshHTTPRouteName(route, "MeshService", parent.GetNamespace(), parent.GetName())
+			routeSubName := generatedMeshHTTPRouteName(sourceRouteKindHTTPRoute, route.Namespace, route.Name, "MeshService", parent.GetNamespace(), parent.GetName())
 
 			meshRoute, ok := r.gapiMeshServiceToMeshRoute(route.Namespace, rules, &parent, ref.Port, ref.SectionName)
 			if !ok {
@@ -381,14 +381,16 @@ func storeMeshHTTPRoute(routes map[string]common.OwnedObject, name string, names
 	existingRoute.To = pointer.To(merged)
 }
 
-func generatedMeshHTTPRouteName(route *gatewayapi.HTTPRoute, parentKind, parentNamespace, parentName string) string {
+func generatedMeshHTTPRouteName(routeKind, routeNamespace, routeName, parentKind, parentNamespace, parentName string) string {
 	normalizedParentKind := strings.ToLower(parentKind)
 	normalizedParentNamespace := strings.ToLower(parentNamespace)
 	normalizedParentName := strings.ToLower(parentName)
+	normalizedRouteKind := strings.ToLower(routeKind)
 
 	fullName := strings.Join([]string{
-		generatedMeshHTTPRouteNameSegment("rns", route.Namespace),
-		generatedMeshHTTPRouteNameSegment("rn", route.Name),
+		generatedMeshHTTPRouteNameSegment("rk", normalizedRouteKind),
+		generatedMeshHTTPRouteNameSegment("rns", routeNamespace),
+		generatedMeshHTTPRouteNameSegment("rn", routeName),
 		generatedMeshHTTPRouteNameSegment("pk", normalizedParentKind),
 		generatedMeshHTTPRouteNameSegment("pns", normalizedParentNamespace),
 		generatedMeshHTTPRouteNameSegment("pn", normalizedParentName),
@@ -519,7 +521,7 @@ func routesForReferenceGrant(l logr.Logger, client kube_client.Client) kube_hand
 				if !ok || details.Namespace != grant.Namespace || details.Namespace == route.Namespace {
 					continue
 				}
-				if backendObjectReferenceMatchesGrant(grant, route.Namespace, details) {
+				if backendObjectReferenceMatchesGrant(grant, sourceRouteKindHTTPRoute, route.Namespace, details) {
 					requests = append(requests, kube_reconcile.Request{
 						NamespacedName: kube_client.ObjectKeyFromObject(route),
 					})

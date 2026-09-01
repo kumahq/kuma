@@ -109,6 +109,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 	crds := []string{
 		"gatewayclasses.gateway.networking.k8s.io",
 		"gateways.gateway.networking.k8s.io",
+		"grpcroutes.gateway.networking.k8s.io",
 		"httproutes.gateway.networking.k8s.io",
 		"referencegrants.gateway.networking.k8s.io",
 	}
@@ -129,7 +130,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 		if err != nil {
 			return out, err
 		}
-		for _, resource := range []string{"gatewayclasses", "gateways", "httproutes", "referencegrants"} {
+		for _, resource := range []string{"gatewayclasses", "gateways", "grpcroutes", "httproutes", "referencegrants"} {
 			if !strings.Contains(out, fmt.Sprintf(`"name":%q`, resource)) {
 				return out, errors.Errorf("Gateway API discovery missing %s", resource)
 			}

@@ -30,7 +30,7 @@ func TestReconcileLabelledObjectKeepsUnneededObjectWhenReplacementCreateFails(t 
 		Name:      "legacy-route",
 		Namespace: "kuma-system",
 		Labels: map[string]string{
-			ownerLabel: hashNamespacedName(owner),
+			ownerLabel: hashNamespacedName("HTTPRoute", owner),
 		},
 	}
 
@@ -58,6 +58,7 @@ func TestReconcileLabelledObjectKeepsUnneededObjectWhenReplacementCreateFails(t 
 		logr.Discard(),
 		k8s_registry.Global(),
 		client,
+		"HTTPRoute",
 		owner,
 		"default",
 		&meshhttproute_api.MeshHTTPRoute{},

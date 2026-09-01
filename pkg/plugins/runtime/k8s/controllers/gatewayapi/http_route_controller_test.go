@@ -107,7 +107,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
 		Expect(client.List(context.Background(), routes)).To(Succeed())
 		Expect(routes.Items).To(HaveLen(1))
-		Expect(routes.Items[0].Name).To(Equal("rns-9-kuma-demo--rn-8-my-route--pk-11-meshservice--pns-9-kuma-demo--pn-7-backend"))
+		Expect(routes.Items[0].Name).To(Equal(generatedMeshHTTPRouteName(sourceRouteKindHTTPRoute, route.Namespace, route.Name, "MeshService", ms.Namespace, ms.Name)))
 
 		spec := routes.Items[0].Spec
 		Expect(spec).ToNot(BeNil())
@@ -367,7 +367,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a MeshService parentRef", f
 		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
 		Expect(client.List(context.Background(), routes)).To(Succeed())
 		Expect(routes.Items).To(HaveLen(1))
-		Expect(routes.Items[0].Name).To(Equal(generatedMeshHTTPRouteName(route, "MeshService", ms.Namespace, ms.Name)))
+		Expect(routes.Items[0].Name).To(Equal(generatedMeshHTTPRouteName(sourceRouteKindHTTPRoute, route.Namespace, route.Name, "MeshService", ms.Namespace, ms.Name)))
 		Expect(len(routes.Items[0].Name)).To(BeNumerically("<=", maxGeneratedMeshHTTPRouteNameLength))
 		Expect(routes.Items[0].Name).To(MatchRegexp(`^[a-z0-9]([-.a-z0-9]*[a-z0-9])?$`))
 
@@ -699,8 +699,8 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		Expect(routes.Items[0].Namespace).To(Equal("kuma-system"))
 		Expect(routes.Items[1].Namespace).To(Equal("kuma-system"))
 		Expect([]string{routes.Items[0].Name, routes.Items[1].Name}).To(ConsistOf(
-			generatedMeshHTTPRouteName(firstRoute, "Service", svc.Namespace, svc.Name),
-			generatedMeshHTTPRouteName(secondRoute, "Service", svc.Namespace, svc.Name),
+			generatedMeshHTTPRouteName(sourceRouteKindHTTPRoute, firstRoute.Namespace, firstRoute.Name, "Service", svc.Namespace, svc.Name),
+			generatedMeshHTTPRouteName(sourceRouteKindHTTPRoute, secondRoute.Namespace, secondRoute.Name, "Service", svc.Namespace, svc.Name),
 		))
 		Expect(routes.Items[0].Name).ToNot(Equal(routes.Items[1].Name))
 	})

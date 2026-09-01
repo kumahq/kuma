@@ -28,12 +28,13 @@ type OwnedObject struct {
 	Labels    map[string]string
 }
 
-func hashNamespacedName(name kube_types.NamespacedName) string {
+func hashNamespacedName(kind string, name kube_types.NamespacedName) string {
 	hash := fnv.New32()
+	hash.Write([]byte(kind))
 	hash.Write([]byte(name.Namespace))
 	hash.Write([]byte(name.Name))
 	// our hash is 8 characters and our label can be 63
-	return fmt.Sprintf("%.54s-%x", fmt.Sprintf("%s_%s", name.Namespace, name.Name), hash.Sum(nil))
+	return fmt.Sprintf("%.54s-%x", fmt.Sprintf("%s_%s_%s", kind, name.Namespace, name.Name), hash.Sum(nil))
 }
 
 func OwnedPolicyName(owner kube_types.NamespacedName) string {
@@ -50,6 +51,7 @@ func ReconcileLabelledObject(
 	logger logr.Logger,
 	registry k8s_registry.TypeRegistry,
 	client kube_client.Client,
+	ownerKind string,
 	owner kube_types.NamespacedName,
 	ownerMesh string,
 	ownedType k8s_registry.ResourceType,
@@ -59,7 +61,7 @@ func ReconcileLabelledObject(
 	// First we list which existing objects are owned by this owner.
 	// We expect either 0 or 1 and depending on whether routeSpec is nil
 	// we either create an object or update or delete the existing one.
-	ownerLabelValue := hashNamespacedName(owner)
+	ownerLabelValue := hashNamespacedName(ownerKind, owner)
 	labels := kube_client.MatchingLabels{
 		ownerLabel: ownerLabelValue,
 	}

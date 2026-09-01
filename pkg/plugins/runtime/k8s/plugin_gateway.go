@@ -26,6 +26,11 @@ var requiredGatewayCRDs = map[string]string{
 	"ReferenceGrant": gatewayCRDNameWithGroupKindAndVersion("ReferenceGrant"),
 }
 
+var requiredGRPCRouteCRDs = map[string]string{
+	"GRPCRoute":      gatewayCRDNameWithGroupKindAndVersion("GRPCRoute"),
+	"ReferenceGrant": gatewayCRDNameWithGroupKindAndVersion("ReferenceGrant"),
+}
+
 func gatewayCRDNameWithGroupKindAndVersion(name string) string {
 	return fmt.Sprintf(
 		"%s.%s/%s",
@@ -36,14 +41,16 @@ func gatewayCRDNameWithGroupKindAndVersion(name string) string {
 }
 
 func gatewayAPICRDsPresent(mgr kube_ctrl.Manager) (bool, []string) {
-	var missing []string
+	return gatewayAPICRDsPresentForKinds(mgr, requiredGatewayCRDs)
+}
 
-	for kind, fullName := range requiredGatewayCRDs {
+func gatewayAPICRDsPresentForKinds(mgr kube_ctrl.Manager, required map[string]string) (bool, []string) {
+	var missing []string
+	for kind, fullName := range required {
 		if !gatewayAPICRDPresent(mgr, kind) {
 			missing = append(missing, fullName)
 		}
 	}
-
 	return len(missing) == 0, missing
 }
 
@@ -92,6 +99,24 @@ func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) er
 	}
 	if err := gatewayAPIHTTPRouteReconciler.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup Gateway API HTTPRoute reconciler")
+	}
+
+	if ok, missingGRPCRDs := gatewayAPICRDsPresentForKinds(mgr, requiredGRPCRouteCRDs); !ok {
+		log.Info("[WARNING] GRPCRoute GatewayAPI CRDs are not registered. Disabling GRPCRoute support", "missing", missingGRPCRDs)
+		return nil
+	}
+
+	gatewayAPIGRPCRouteReconciler := &gatewayapi_controllers.GRPCRouteReconciler{
+		Client:          mgr.GetClient(),
+		Log:             core.Log.WithName("controllers").WithName("gatewayapi").WithName("GRPCRoute"),
+		Scheme:          mgr.GetScheme(),
+		TypeRegistry:    k8s_registry.Global(),
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+		ResourceManager: rt.ResourceManager(),
+		Zone:            rt.Config().Multizone.Zone.Name,
+	}
+	if err := gatewayAPIGRPCRouteReconciler.SetupWithManager(mgr); err != nil {
+		return errors.Wrap(err, "could not setup Gateway API GRPCRoute reconciler")
 	}
 
 	return nil

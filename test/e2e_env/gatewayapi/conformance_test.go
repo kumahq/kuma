@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/gateway-api/conformance"
 	conformanceapis "sigs.k8s.io/gateway-api/conformance/apis/v1"
 	"sigs.k8s.io/gateway-api/conformance/tests"
+	conformancegrpc "sigs.k8s.io/gateway-api/conformance/utils/grpc"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
 	"sigs.k8s.io/gateway-api/pkg/features"
 	"sigs.k8s.io/yaml"
@@ -116,6 +117,7 @@ metadata:
 		Client:               client,
 		RestConfig:           clientConfig,
 		Clientset:            clientset,
+		GRPCClient:           &conformancegrpc.DefaultClient{},
 		ManifestFS:           []fs.FS{&conformance.Manifests},
 		GatewayClassName:     "kuma",
 		CleanupBaseResources: false,
@@ -140,6 +142,7 @@ metadata:
 		SupportedFeatures: []features.FeatureName{
 			features.SupportHTTPRouteResponseHeaderModification,
 			features.SupportHTTPRoute,
+			features.SupportGRPCRoute,
 			features.SupportHTTPRoute303RedirectStatusCode,
 			features.SupportHTTPRoute307RedirectStatusCode,
 			features.SupportHTTPRoute308RedirectStatusCode,
@@ -152,8 +155,11 @@ metadata:
 			features.SupportMeshHTTPRouteSchemeRedirect,
 			features.SupportMeshHTTPRouteRewritePath,
 		},
-		Implementation:      implementation,
-		ConformanceProfiles: []suite.ConformanceProfileName{suite.MeshHTTPConformanceProfileName},
+		Implementation: implementation,
+		ConformanceProfiles: []suite.ConformanceProfileName{
+			suite.MeshHTTPConformanceProfileName,
+			suite.MeshGRPCConformanceProfileName,
+		},
 	}
 
 	conformanceSuite, err := suite.NewConformanceTestSuite(options)
