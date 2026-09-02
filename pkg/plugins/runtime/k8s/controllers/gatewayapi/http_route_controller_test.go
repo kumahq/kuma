@@ -546,6 +546,98 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		Expect(routes.Items[0].Namespace).To(Equal(routeNamespace))
 	})
 
+	It("keeps an explicit empty backendRefs list and Accepted=False for unsupported filters while valid refs stay resolved", func() {
+		parent := &kube_core.Service{
+			Name: "backend", Namespace: routeNamespace,
+			Spec: kube_core.ServiceSpec{
+				ClusterIP: "10.0.0.1",
+				Ports:     []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		upstream := &kube_core.Service{
+			Name: "upstream", Namespace: routeNamespace,
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 8080}},
+			},
+		}
+		route := newRoute(withSectionName(serviceParentRef(), "http"))
+		pathPrefix := gatewayapi_v1.PathMatchPathPrefix
+		route.Spec.Rules = []gatewayapi.HTTPRouteRule{
+			{
+				Matches: []gatewayapi.HTTPRouteMatch{{
+					Path: &gatewayapi.HTTPPathMatch{
+						Type:  &pathPrefix,
+						Value: pointer.To("/ext"),
+					},
+				}},
+				Filters: []gatewayapi.HTTPRouteFilter{
+					{
+						Type: gatewayapi_v1.HTTPRouteFilterRequestRedirect,
+						RequestRedirect: &gatewayapi.HTTPRequestRedirectFilter{
+							Scheme: pointer.To("https"),
+						},
+					},
+					{
+						Type: gatewayapi_v1.HTTPRouteFilterExtensionRef,
+					},
+				},
+				BackendRefs: []gatewayapi.HTTPBackendRef{{
+					Name:   gatewayapi.ObjectName("upstream"),
+					Port:   pointer.To(gatewayapi.PortNumber(8080)),
+					Weight: pointer.To(int32(1)),
+				}},
+			},
+			{
+				Matches: []gatewayapi.HTTPRouteMatch{{
+					Path: &gatewayapi.HTTPPathMatch{
+						Type:  &pathPrefix,
+						Value: pointer.To("/backend-filter"),
+					},
+				}},
+				BackendRefs: []gatewayapi.HTTPBackendRef{{
+					Name:   gatewayapi.ObjectName("upstream"),
+					Port:   pointer.To(gatewayapi.PortNumber(8080)),
+					Weight: pointer.To(int32(1)),
+					Filters: []gatewayapi.HTTPRouteFilter{{
+						Type: gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier,
+						RequestHeaderModifier: &gatewayapi.HTTPHeaderFilter{
+							Add: []gatewayapi.HTTPHeader{{Name: "x-test", Value: "1"}},
+						},
+					}},
+				}},
+			},
+		}
+
+		client := newClientBuilder(parent, upstream, route)
+		reconciler.Client = client
+
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
+			NamespacedName: kube_client.ObjectKeyFromObject(route),
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		routes := &meshhttproute_k8s.MeshHTTPRouteList{}
+		Expect(client.List(context.Background(), routes)).To(Succeed())
+		Expect(routes.Items).To(HaveLen(1))
+		generatedRules := (*routes.Items[0].Spec.To)[0].Rules
+		Expect(generatedRules).To(HaveLen(2))
+		Expect(pointer.Deref(generatedRules[0].Default.BackendRefs)).To(BeEmpty())
+		Expect(pointer.Deref(generatedRules[0].Default.Filters)).To(BeEmpty())
+		Expect(pointer.Deref(generatedRules[1].Default.BackendRefs)).To(BeEmpty())
+
+		var updatedRoute gatewayapi.HTTPRoute
+		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())
+		Expect(updatedRoute.Status.Parents).To(HaveLen(1))
+		accepted := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionAccepted))
+		Expect(accepted).ToNot(BeNil())
+		Expect(accepted.Status).To(Equal(kube_meta.ConditionFalse))
+		Expect(accepted.Reason).To(Equal(string(gatewayapi.RouteReasonUnsupportedValue)))
+		Expect(accepted.Message).To(ContainSubstring(string(gatewayapi_v1.HTTPRouteFilterExtensionRef)))
+		resolvedRefs := kube_apimeta.FindStatusCondition(updatedRoute.Status.Parents[0].Conditions, string(gatewayapi.RouteConditionResolvedRefs))
+		Expect(resolvedRefs).ToNot(BeNil())
+		Expect(resolvedRefs.Status).To(Equal(kube_meta.ConditionTrue))
+	})
+
 	It("replaces a pre-upgrade generated route with a legacy owner label and name", func() {
 		svc := &kube_core.Service{
 			Name: "backend", Namespace: routeNamespace,
