@@ -20,14 +20,15 @@ import (
 )
 
 type RoutesConfigurer struct {
-	Name                        string
-	Match                       api.Match
-	Filters                     []api.Filter
-	DirectResponseStatus        uint32
-	UnresolvedBackendRefsWeight uint
-	AllBackendRefsUnresolved    bool
-	MirrorSplits                map[int]envoy_common.Split
-	Split                       []BackendRefSplit
+	Name                         string
+	Match                        api.Match
+	Filters                      []api.Filter
+	DirectResponseStatus         uint32
+	UnresolvedBackendRefsWeight  uint
+	AllBackendRefsUnresolved     bool
+	AllBackendRefsHaveZeroWeight bool
+	MirrorSplits                 map[int]envoy_common.Split
+	Split                        []BackendRefSplit
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
@@ -35,10 +36,17 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 
 	for _, match := range matches {
 		directResponseStatus := c.DirectResponseStatus
-		if directResponseStatus == 0 && c.AllBackendRefsUnresolved && !hasTerminalFilter(c.Filters) {
-			// A rule whose backendRefs all fail to resolve answers 500, unless a
-			// filter already terminates the request without an upstream.
-			directResponseStatus = 500
+		if directResponseStatus == 0 && !hasTerminalFilter(c.Filters) {
+			switch {
+			case c.AllBackendRefsHaveZeroWeight:
+				// An explicit non-empty backendRefs list whose effective weights are
+				// all zero is treated as no available backend and answers 503.
+				directResponseStatus = 503
+			case c.AllBackendRefsUnresolved:
+				// A rule whose backendRefs all fail to resolve answers 500, unless a
+				// filter already terminates the request without an upstream.
+				directResponseStatus = 500
+			}
 		}
 		if directResponseStatus > 0 {
 			rb := c.routeBuilder(match)

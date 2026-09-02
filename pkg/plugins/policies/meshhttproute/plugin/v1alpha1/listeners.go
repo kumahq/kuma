@@ -140,14 +140,15 @@ func generateFromService(
 			mirrorSplits[i] = mirrorSplit[0]
 		}
 		routes = append(routes, xds.OutboundRoute{
-			Name:                        route.Name,
-			Match:                       route.Match,
-			Filters:                     route.Filters,
-			DirectResponseStatus:        route.DirectResponseStatus,
-			UnresolvedBackendRefsWeight: route.UnresolvedBackendRefsWeight,
-			AllBackendRefsUnresolved:    route.AllBackendRefsUnresolved,
-			MirrorSplits:                mirrorSplits,
-			Split:                       split,
+			Name:                         route.Name,
+			Match:                        route.Match,
+			Filters:                      route.Filters,
+			DirectResponseStatus:         route.DirectResponseStatus,
+			UnresolvedBackendRefsWeight:  route.UnresolvedBackendRefsWeight,
+			AllBackendRefsUnresolved:     route.AllBackendRefsUnresolved,
+			AllBackendRefsHaveZeroWeight: route.AllBackendRefsHaveZeroWeight,
+			MirrorSplits:                 mirrorSplits,
+			Split:                        split,
 		})
 	}
 
@@ -239,6 +240,7 @@ func prepareRoutes(
 		filters := pointer.Deref(rule.Default.Filters)
 		backendRefs := pointer.Deref(rule.Default.BackendRefs)
 		hasExplicitBackendRefs := rule.Default.BackendRefs != nil
+		allBackendRefsHaveZeroWeight := hasExplicitBackendRefs && len(backendRefs) > 0
 		matchesHash := api.HashMatches(rule.Matches)
 		routeName := string(matchesHash)
 		origin := originByMatches[matchesHash]
@@ -257,6 +259,13 @@ func prepareRoutes(
 			}
 			if rbr, ok := resolve.BackendRef(originID, filter.RequestMirror.BackendRef, meshCtx.ResolveResourceIdentifier); ok {
 				mirrorRefs[i] = rbr
+			}
+		}
+
+		for _, br := range backendRefs {
+			if pointer.DerefOr(br.Weight, 1) != 0 {
+				allBackendRefsHaveZeroWeight = false
+				break
 			}
 		}
 
@@ -287,14 +296,15 @@ func prepareRoutes(
 			routes = append(
 				routes,
 				api.Route{
-					Name:                        routeName,
-					Origin:                      originID,
-					Match:                       match,
-					Filters:                     filters,
-					BackendRefs:                 refs,
-					UnresolvedBackendRefsWeight: unresolvedWeight,
-					AllBackendRefsUnresolved:    hasExplicitBackendRefs && len(refs) == 0,
-					MirrorBackendRefs:           mirrorRefs,
+					Name:                         routeName,
+					Origin:                       originID,
+					Match:                        match,
+					Filters:                      filters,
+					BackendRefs:                  refs,
+					UnresolvedBackendRefsWeight:  unresolvedWeight,
+					AllBackendRefsUnresolved:     hasExplicitBackendRefs && len(refs) == 0,
+					AllBackendRefsHaveZeroWeight: allBackendRefsHaveZeroWeight,
+					MirrorBackendRefs:            mirrorRefs,
 				},
 			)
 		}

@@ -110,6 +110,9 @@ type Route struct {
 	// AllBackendRefsUnresolved is true when the rule declares backendRefs and
 	// none of them resolve, which is the case the Gateway API answers with 500.
 	AllBackendRefsUnresolved bool
+	// AllBackendRefsHaveZeroWeight is true when the rule explicitly declares a
+	// non-empty backendRefs list and every effective declared weight is zero.
+	AllBackendRefsHaveZeroWeight bool
 	// MirrorBackendRefs contains resolved backendRefs of RequestMirror filters,
 	// keyed by the index of the filter in Filters.
 	MirrorBackendRefs map[int]resolve.ResolvedBackendRef
