@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not process a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "labels[\"kuma.io/display-name\"]",
+   "reason": "must not be longer than 255 characters"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "labels[\"kuma.io/display-name\"]",
+   "message": "must not be longer than 255 characters"
+  }
+ ]
+}

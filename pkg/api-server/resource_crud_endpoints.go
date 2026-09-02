@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
@@ -27,6 +28,12 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
+
+// maxAnnotationBackedLabelValueLength caps the labels Kubernetes stores as
+// annotations (k8s.LabelsStoredAsAnnotations). Their values carry a resource name,
+// so they are bounded by the name length rather than by the 63-character label
+// value limit.
+const maxAnnotationBackedLabelValueLength = 255
 
 // resourceCrudHandler serves the resource CRUD endpoints and their validation.
 type resourceCrudHandler struct {
@@ -498,10 +505,17 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 	}
 
 	for _, k := range maps.SortedKeys(resource.GetMeta().GetLabels()) {
+		v := resource.GetMeta().GetLabels()[k]
 		for _, msg := range validation.IsQualifiedName(k) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
-		for _, msg := range validation.IsValidLabelValue(resource.GetMeta().GetLabels()[k]) {
+		// Labels that Kubernetes stores as annotations are never subject to the label
+		// value rules, they only have to fit a resource name.
+		if slices.Contains(k8s.LabelsStoredAsAnnotations, k) {
+			err.Add(validators.ValidateLength(validators.Root().Key(k), maxAnnotationBackedLabelValueLength, v))
+			continue
+		}
+		for _, msg := range validation.IsValidLabelValue(v) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
 	}
