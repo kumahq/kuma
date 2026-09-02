@@ -792,12 +792,13 @@ legacy statistics:
 
 **Action required**
 
-Update any automation or dashboards that read `ServiceInsight.services`,
-`MeshInsight.services`, or the `_rules` `toRules`/`fromRules` fields to use
-`MeshService`/`MeshExternalService` status and `_rules` `toResourceRules`/
-`inboundRules` instead. For delegated gateways, which are never turned into a
-`MeshService`, use the `Dataplane`/`DataplaneOverview` endpoints filtered by
-gateway type; aggregated gateway service counts remain available under `services` in the
+Update any automation or dashboards that read the legacy `ServiceInsight`
+resource or `/meshes/{mesh}/service-insights` endpoints, `MeshInsight.services`,
+or the `_rules` `toRules`/`fromRules` fields to use `MeshService`/
+`MeshExternalService` status and `_rules` `toResourceRules`/`inboundRules`
+instead. For delegated gateways, which are never turned into a `MeshService`,
+use the `Dataplane`/`DataplaneOverview` endpoints filtered by gateway type;
+aggregated gateway service counts remain available under `services` in the
 global insight endpoint.
 
 ### Zone proxies authenticate with a dataplane token
@@ -1361,10 +1362,9 @@ for any dataplane, zone ingress, or zone egress.
 
 Traffic between services now always flows by default, the same way it
 already did in meshes that only use `MeshHTTPRoute`/`MeshTCPRoute`. A
-`TrafficRoute` resource previously already used to be required to make
-communication between services possible; it no longer has any effect,
-including its side effect of disabling default routing until a
-`MeshHTTPRoute`/`MeshTCPRoute` was applied.
+user-authored `TrafficRoute` no longer has any effect, including its former
+side effect of disabling the default routing fallback once such a resource
+existed and no `MeshHTTPRoute`/`MeshTCPRoute` matched instead.
 
 The `TrafficRoute` resource, API, and KDS sync are still in place for this
 release; existing resources are still accepted and stored.
