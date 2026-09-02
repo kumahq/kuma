@@ -529,3 +529,19 @@ var _ = Describe("metricsTargetsForBackends", func() {
 		}}))
 	})
 })
+
+var _ = Describe("readinessListenAddr", func() {
+	DescribeTable("should pick the address the kubelet or the operator can reach",
+		func(inKubernetes bool, ipv6 bool, adminAddress string, expected string) {
+			Expect(readinessListenAddr(inKubernetes, ipv6, adminAddress)).To(Equal(expected))
+		},
+		Entry("kubernetes, admin on unix socket", true, false, "", "0.0.0.0"),
+		Entry("kubernetes, admin on TCP loopback", true, false, "127.0.0.1", "0.0.0.0"),
+		Entry("kubernetes, ipv6, admin on unix socket", true, true, "", "::"),
+		Entry("kubernetes, ipv6, admin on TCP loopback", true, true, "::1", "::"),
+		Entry("universal, admin on TCP loopback", false, false, "127.0.0.1", "127.0.0.1"),
+		Entry("universal, admin bound to all interfaces", false, false, "0.0.0.0", "0.0.0.0"),
+		Entry("universal, admin on unix socket", false, false, "", "127.0.0.1"),
+		Entry("universal, ipv6, admin on unix socket", false, true, "", "::1"),
+	)
+})
