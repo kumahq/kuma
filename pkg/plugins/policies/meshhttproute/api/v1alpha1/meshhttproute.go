@@ -112,7 +112,7 @@ type BackendRef struct {
 	// +kubebuilder:default=1
 	// +kuma:nolint // keep parity with common_api.BackendRef
 	Weight *uint `json:"weight,omitempty"`
-	// Port is only supported when this ref refers to a real MeshService object
+	// Port is only supported when this ref refers to a MeshService object
 	Port    *uint32   `json:"port,omitempty"`
 	Filters *[]Filter `json:"filters,omitempty"`
 }
