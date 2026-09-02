@@ -103,7 +103,7 @@ type Route struct {
 	// DirectResponseStatus marks generated internal routes that should answer
 	// without an upstream. Zero means the route should use normal backend routing.
 	DirectResponseStatus uint32
-	BackendRefs          []resolve.ResolvedBackendRef
+	BackendRefs          []RouteBackendRef
 	// UnresolvedBackendRefsWeight is the declared sum of backendRef weights that
 	// did not resolve to a routable backend for this rule.
 	UnresolvedBackendRefsWeight uint
@@ -113,4 +113,17 @@ type Route struct {
 	// MirrorBackendRefs contains resolved backendRefs of RequestMirror filters,
 	// keyed by the index of the filter in Filters.
 	MirrorBackendRefs map[int]resolve.ResolvedBackendRef
+}
+
+type RouteBackendRef struct {
+	BackendRef resolve.ResolvedBackendRef
+	Filters    []Filter
+}
+
+func (r RouteBackendRef) ReferencesRealResource() bool {
+	return r.BackendRef.ReferencesRealResource()
+}
+
+func (r RouteBackendRef) Resource() kri.Identifier {
+	return r.BackendRef.Resource()
 }

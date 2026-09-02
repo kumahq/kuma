@@ -861,7 +861,7 @@ var _ = Describe("MeshTCPRoute", func() {
 									},
 								},
 								Default: meshhttproute_api.RuleConf{
-									BackendRefs: &[]common_api.BackendRef{
+									BackendRefs: &[]meshhttproute_api.BackendRef{
 										{
 											TargetRef: builders.TargetRefMeshService("http-backend", "", "http-port"),
 											Weight:    pointer.To(uint(1)),
@@ -999,7 +999,7 @@ var _ = Describe("MeshTCPRoute", func() {
 									},
 								},
 								Default: meshhttproute_api.RuleConf{
-									BackendRefs: &[]common_api.BackendRef{
+									BackendRefs: &[]meshhttproute_api.BackendRef{
 										{
 											TargetRef: builders.TargetRefMeshService("http-backend", "", "http-port"),
 											Weight:    pointer.To(uint(1)),

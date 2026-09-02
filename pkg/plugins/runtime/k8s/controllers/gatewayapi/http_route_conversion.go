@@ -204,7 +204,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 
 	var matches []v1alpha1.Match
 	var filters []v1alpha1.Filter
-	var backendRefs []common_api.BackendRef
+	var backendRefs []v1alpha1.BackendRef
 	unsupportedFilter := false
 
 	for _, gapiMatch := range rule.Matches {
@@ -246,22 +246,54 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 		}
 
 		refCondition.AddIfFalseAndNotPresent(&conditions)
-		if len(gapiBackendRef.Filters) > 0 {
-			unsupportedFilter = true
-			addIfFalseAndNotPresent(&conditions, unsupportedBackendRefFilterCondition(route.Namespace, gapiBackendRef))
+
+		var backendFilters []v1alpha1.Filter
+		for _, gapiFilter := range gapiBackendRef.Filters {
+			if gapiFilter.Type != gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier {
+				unsupportedFilter = true
+				addIfFalseAndNotPresent(&conditions, unsupportedBackendRefFilterCondition(route.Namespace, gapiBackendRef))
+				continue
+			}
+
+			filter, filterConditions, ok := r.gapiToKumaMeshFilter(ctx, route.Namespace, gapiFilter)
+			if !ok || filter.Type != v1alpha1.RequestHeaderModifierType {
+				unsupportedFilter = true
+				addIfFalseAndNotPresent(&conditions, unsupportedBackendRefFilterCondition(route.Namespace, gapiBackendRef))
+				continue
+			}
+
+			for _, condition := range filterConditions {
+				if kube_apimeta.FindStatusCondition(conditions, condition.Type) == nil {
+					kube_apimeta.SetStatusCondition(&conditions, condition)
+				}
+			}
+
+			if len(filterConditions) == 0 {
+				backendFilters = append(backendFilters, filter)
+				continue
+			}
+
+			if hasAcceptedFalse(filterConditions) {
+				unsupportedFilter = true
+			}
 		}
+
 		if refCondition.preventsBackendTarget() {
 			continue
 		}
 
-		backendRefs = append(backendRefs, common_api.BackendRef{
+		backendRef := v1alpha1.BackendRef{
 			TargetRef: ref,
 			Weight:    pointer.To(uint(*gapiBackendRef.Weight)),
-		})
+		}
+		if len(backendFilters) > 0 {
+			backendRef.Filters = &backendFilters
+		}
+		backendRefs = append(backendRefs, backendRef)
 	}
 
 	if unsupportedFilter {
-		backendRefs = []common_api.BackendRef{}
+		backendRefs = []v1alpha1.BackendRef{}
 		filters = []v1alpha1.Filter{}
 	}
 

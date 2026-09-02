@@ -441,7 +441,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
+												BackendRefs: &[]api.BackendRef{{
 													Kind:   common_api.MeshService,
 													Labels: &map[string]string{"app": "backend"},
 													Weight: pointer.To(uint(100)),
@@ -795,7 +795,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										},
 									}},
 									Default: api.RuleConf{
-										BackendRefs: &[]common_api.BackendRef{{
+										BackendRefs: &[]api.BackendRef{{
 											TargetRef: builders.TargetRefMeshExternalService("example"),
 											Weight:    pointer.To(uint(100)),
 										}},
@@ -909,7 +909,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
+												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefMeshService("backend", "", "test-port"),
 													Weight:    pointer.To(uint(100)),
 												}},
@@ -927,7 +927,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
+												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefMeshService("backend-us", "", "test-port"),
 													Weight:    pointer.To(uint(100)),
 												}},
@@ -940,7 +940,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
+												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefMeshService("backend", "", "test-port"),
 													Weight:    pointer.To(uint(100)),
 													Port:      pointer.To(uint32(80)),
@@ -955,7 +955,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												}},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
+												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefMeshService("backend", "", "test-port"),
 													Weight:    pointer.To(uint(100)),
 												}},
@@ -1071,7 +1071,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													},
 												}},
 												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
+													BackendRefs: &[]api.BackendRef{{
 														Kind: common_api.MeshService,
 														Labels: &map[string]string{
 															"app":     "backend",
@@ -1090,7 +1090,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													},
 												}},
 												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
+													BackendRefs: &[]api.BackendRef{{
 														Kind: common_api.MeshService,
 														Labels: &map[string]string{
 															"app":     "backend",
@@ -1225,7 +1225,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													},
 												}},
 												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
+													BackendRefs: &[]api.BackendRef{{
 														Kind: common_api.MeshService,
 														Labels: &map[string]string{
 															"app": "backend",
@@ -1243,7 +1243,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													},
 												}},
 												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
+													BackendRefs: &[]api.BackendRef{{
 														Kind: common_api.MeshMultiZoneService,
 														Labels: &map[string]string{
 															"app": "backend",
@@ -1323,7 +1323,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
+												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
 													Weight:    pointer.To(uint(100)),
 												}},
@@ -1338,7 +1338,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												Method: pointer.To(api.Method("GET")),
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
+												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
 													Weight:    pointer.To(uint(100)),
 												}},
@@ -1437,7 +1437,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
+												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
 													Weight:    pointer.To(uint(90)),
 												}, {
@@ -1517,7 +1517,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
+												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
 													Weight:    pointer.To(uint(0)),
 												}, {
@@ -1597,7 +1597,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
+												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
 													Weight:    pointer.To(uint(90)),
 												}, {
@@ -1687,6 +1687,111 @@ var _ = Describe("MeshHTTPRoute", func() {
 															"request-header-to-remove",
 														},
 													},
+												}},
+											},
+										}},
+									}),
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("backend-request-header-modifiers", func() outboundsTestCase {
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
+				},
+			}
+			canarySvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "canary", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8085)),
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.2"}},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc, &canarySvc},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("default_backend___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us")).
+				AddEndpoint("default_canary___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.5").
+					WithPort(8085).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "canary", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					WithResources(resources).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(builders.Dataplane().
+						WithName("web-01").
+						WithAddress("192.168.0.2").
+						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+					WithOutbounds(xds_types.Outbounds{
+						{
+							Address:  "10.0.0.1",
+							Port:     80,
+							Resource: kri.WithSectionName(kri.From(&meshSvc), "80"),
+						},
+					}).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+									backendMeshServiceIdentifier: test_policies.NewOutboundRule(nil, api.PolicyDefault{
+										Rules: []api.Rule{{
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.PathPrefix,
+													Value: "/backend",
+												},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]api.BackendRef{{
+													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
+													Weight:    pointer.To(uint(90)),
+													Filters: &[]api.Filter{{
+														Type: api.RequestHeaderModifierType,
+														RequestHeaderModifier: &api.HeaderModifier{
+															Add: &[]api.HeaderKeyValue{{
+																Name:  "x-backend-add",
+																Value: "backend",
+															}},
+															Set: &[]api.HeaderKeyValue{{
+																Name:  "x-backend-set",
+																Value: "primary",
+															}},
+															Remove: &[]string{"x-backend-remove"},
+														},
+													}},
+												}, {
+													TargetRef: builders.TargetRefMeshService("canary", "", "80"),
+													Weight:    pointer.To(uint(10)),
 												}},
 											},
 										}},
@@ -2059,7 +2164,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
+												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
 													Weight:    pointer.To(uint(100)),
 												}},
@@ -2277,7 +2382,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															},
 														},
 													}},
-													BackendRefs: &[]common_api.BackendRef{{
+													BackendRefs: &[]api.BackendRef{{
 														Kind:   common_api.MeshService,
 														Labels: &map[string]string{"app": "backend"},
 														Weight: pointer.To(uint(100)),
@@ -2305,7 +2410,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															},
 														},
 													}},
-													BackendRefs: &[]common_api.BackendRef{{
+													BackendRefs: &[]api.BackendRef{{
 														Kind:   common_api.MeshService,
 														Labels: &map[string]string{"app": "backend"},
 														Weight: pointer.To(uint(100)),
@@ -2333,7 +2438,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															},
 														},
 													}},
-													BackendRefs: &[]common_api.BackendRef{{
+													BackendRefs: &[]api.BackendRef{{
 														Kind:   common_api.MeshService,
 														Labels: &map[string]string{"app": "backend"},
 														Weight: pointer.To(uint(100)),
@@ -2363,7 +2468,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															},
 														},
 													}},
-													BackendRefs: &[]common_api.BackendRef{{
+													BackendRefs: &[]api.BackendRef{{
 														Kind:   common_api.MeshService,
 														Labels: &map[string]string{"app": "backend"},
 														Weight: pointer.To(uint(100)),

@@ -546,7 +546,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		Expect(routes.Items[0].Namespace).To(Equal(routeNamespace))
 	})
 
-	It("keeps an explicit empty backendRefs list and Accepted=False for unsupported filters while valid refs stay resolved", func() {
+	It("keeps unsupported rules empty while preserving valid backendRef request-header filters", func() {
 		parent := &kube_core.Service{
 			Name: "backend", Namespace: routeNamespace,
 			Spec: kube_core.ServiceSpec{
@@ -623,7 +623,10 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with a Service parentRef", func(
 		Expect(generatedRules).To(HaveLen(2))
 		Expect(pointer.Deref(generatedRules[0].Default.BackendRefs)).To(BeEmpty())
 		Expect(pointer.Deref(generatedRules[0].Default.Filters)).To(BeEmpty())
-		Expect(pointer.Deref(generatedRules[1].Default.BackendRefs)).To(BeEmpty())
+		Expect(pointer.Deref(generatedRules[1].Default.BackendRefs)).To(HaveLen(1))
+		backendFilters := pointer.Deref(pointer.Deref(generatedRules[1].Default.BackendRefs)[0].Filters)
+		Expect(backendFilters).To(HaveLen(1))
+		Expect(backendFilters[0].Type).To(Equal(meshhttproute_api.RequestHeaderModifierType))
 
 		var updatedRoute gatewayapi.HTTPRoute
 		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())

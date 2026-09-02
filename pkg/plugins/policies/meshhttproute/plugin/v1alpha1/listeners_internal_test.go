@@ -161,9 +161,9 @@ var _ = Describe("prepareRoutes", func() {
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 			},
 		}
-		var backendRefs []common_api.BackendRef
+		var backendRefs []api.BackendRef
 		for i, name := range refNames {
-			backendRefs = append(backendRefs, common_api.BackendRef{
+			backendRefs = append(backendRefs, api.BackendRef{
 				TargetRef: builders.TargetRefMeshService(name, "kuma-demo", ""),
 				Port:      pointer.To(uint32(8080)),
 				Weight:    pointer.To(refWeights[i]),
@@ -219,6 +219,111 @@ var _ = Describe("prepareRoutes", func() {
 		Entry("all resolved keeps zero unresolved share", []string{"payments", "payments"}, []uint{30, 70}, false, []string{"payments", "payments"}, uint(0)),
 	)
 
+	It("keeps backendRef-scoped filters on the resolved backend only", func() {
+		backend := builders.MeshService().
+			WithName("backend").
+			WithMesh(core_model.DefaultMesh).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+		payments := builders.MeshService().
+			WithName("payments-hash").
+			WithMesh(core_model.DefaultMesh).
+			WithLabels(map[string]string{
+				mesh_proto.DisplayName:      "payments",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			}).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+
+		meshCtx := xds_builders.Context().
+			WithMeshLocalResources([]core_model.Resource{backend, payments}).
+			Build().
+			Mesh
+
+		matches := []api.Match{{
+			Path: &api.PathMatch{Type: api.PathPrefix, Value: "/split"},
+		}}
+		backendRefs := []api.BackendRef{{
+			TargetRef: builders.TargetRefMeshService("payments", "kuma-demo", ""),
+			Port:      pointer.To(uint32(8080)),
+			Weight:    pointer.To(uint(70)),
+			Filters: &[]api.Filter{{
+				Type: api.RequestHeaderModifierType,
+				RequestHeaderModifier: &api.HeaderModifier{
+					Set: &[]api.HeaderKeyValue{{
+						Name:  "x-backend-only",
+						Value: "payments",
+					}},
+				},
+			}},
+		}, {
+			TargetRef: builders.TargetRefMeshService("missing-backend", "kuma-demo", ""),
+			Port:      pointer.To(uint32(8080)),
+			Weight:    pointer.To(uint(30)),
+			Filters: &[]api.Filter{{
+				Type: api.RequestHeaderModifierType,
+				RequestHeaderModifier: &api.HeaderModifier{
+					Set: &[]api.HeaderKeyValue{{
+						Name:  "x-ignored",
+						Value: "missing",
+					}},
+				},
+			}},
+		}}
+		policyMeta := &test_model.ResourceMeta{
+			Name: "web-route",
+			Mesh: core_model.DefaultMesh,
+			Labels: map[string]string{
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			},
+		}
+		toRules := core_rules.ToRules{
+			ResourceRules: outbound.ResourceRules{
+				kri.From(backend): {
+					Resource: backend.GetMeta(),
+					Conf: []any{api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: matches,
+							Default: api.RuleConf{
+								BackendRefs: &backendRefs,
+							},
+						}},
+					}},
+					OriginByMatches: map[common_api.MatchesHash]common.Origin{
+						api.HashMatches(matches): {Resource: policyMeta},
+					},
+				},
+			},
+		}
+		svc := meshroute_xds.DestinationService{
+			Outbound: &xds_types.Outbound{
+				Resource: kri.WithSectionName(kri.From(backend), "8080"),
+				Port:     8080,
+			},
+			Protocol: core_meta.ProtocolHTTP,
+		}
+
+		routes := prepareRoutes(toRules, svc, meshCtx)
+
+		var matched *api.Route
+		for i := range routes {
+			if routes[i].Match.Path != nil && routes[i].Match.Path.Value == "/split" {
+				matched = &routes[i]
+				break
+			}
+		}
+		Expect(matched).ToNot(BeNil())
+		Expect(matched.UnresolvedBackendRefsWeight).To(Equal(uint(30)))
+		Expect(matched.BackendRefs).To(HaveLen(1))
+		Expect(matched.BackendRefs[0].Filters).To(HaveLen(1))
+		Expect(matched.BackendRefs[0].Filters[0].Type).To(Equal(api.RequestHeaderModifierType))
+		Expect(matched.BackendRefs[0].Filters[0].RequestHeaderModifier).ToNot(BeNil())
+		Expect(pointer.Deref(matched.BackendRefs[0].Filters[0].RequestHeaderModifier.Set)).To(Equal([]api.HeaderKeyValue{{
+			Name:  "x-backend-only",
+			Value: "payments",
+		}}))
+	})
+
 	It("treats an explicit empty backendRefs list as all unresolved without injecting the default backend", func() {
 		backend := builders.MeshService().
 			WithName("backend").
@@ -241,7 +346,7 @@ var _ = Describe("prepareRoutes", func() {
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 			},
 		}
-		backendRefs := []common_api.BackendRef{}
+		backendRefs := []api.BackendRef{}
 		toRules := core_rules.ToRules{
 			ResourceRules: outbound.ResourceRules{
 				kri.From(backend): {
@@ -314,9 +419,9 @@ var _ = Describe("prepareRoutes", func() {
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 			},
 		}
-		var backendRefs []common_api.BackendRef
+		var backendRefs []api.BackendRef
 		for i, port := range refPorts {
-			backendRefs = append(backendRefs, common_api.BackendRef{
+			backendRefs = append(backendRefs, api.BackendRef{
 				TargetRef: builders.TargetRefMeshService("payments", "kuma-demo", ""),
 				Port:      pointer.To(port),
 				Weight:    pointer.To(refWeights[i]),
@@ -410,9 +515,9 @@ var _ = Describe("prepareRoutes", func() {
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 			},
 		}
-		var backendRefs []common_api.BackendRef
+		var backendRefs []api.BackendRef
 		for i, name := range refNames {
-			backendRefs = append(backendRefs, common_api.BackendRef{
+			backendRefs = append(backendRefs, api.BackendRef{
 				TargetRef: builders.TargetRefMeshService(name, "kuma-demo", ""),
 				Port:      pointer.To(uint32(8080)),
 				Weight:    pointer.To(refWeights[i]),
