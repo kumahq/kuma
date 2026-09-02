@@ -804,27 +804,27 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Match: meshhttproute_api.Match{
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
 						},
-						Split: []envoy_common.Split{
+						Split: backendRefSplits(
 							xds.NewSplitBuilder().WithClusterName(kri.WithSectionName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), uint32(27777)).String()).Build(),
-						},
+						),
 					},
 					{
 						Name: kri.MustFromString("kri_mhttpr_default_zone-1_ns-1_route-2_").String(),
 						Match: meshhttproute_api.Match{
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
 						},
-						Split: []envoy_common.Split{
+						Split: backendRefSplits(
 							xds.NewSplitBuilder().WithClusterName(kri.WithSectionName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), uint32(27777)).String()).Build(),
-						},
+						),
 					},
 					{
 						Name: kri.MustFromString("kri_mhttpr_default_zone-1_ns-1_route-3_").String(),
 						Match: meshhttproute_api.Match{
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-3"},
 						},
-						Split: []envoy_common.Split{
+						Split: backendRefSplits(
 							xds.NewSplitBuilder().WithClusterName(kri.WithSectionName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), uint32(27777)).String()).Build(),
-						},
+						),
 					},
 				}),
 			},
@@ -1300,9 +1300,9 @@ func zoneProxyEgressListener(id kri.Identifier) *core_xds.Resource {
 					Match: meshhttproute_api.Match{
 						Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/"},
 					},
-					Split: []envoy_common.Split{
+					Split: backendRefSplits(
 						xds.NewSplitBuilder().WithClusterName(id.String()).WithExternalService(true).WithWeight(1).Build(),
-					},
+					),
 				}},
 			})),
 		)).Build()
@@ -1356,6 +1356,14 @@ func createEndpointWithLabels(ip string, labels map[string]string) core_xds.Endp
 		Build()
 }
 
+func backendRefSplits(splits ...envoy_common.Split) []meshhttproute_xds.BackendRefSplit {
+	backendRefSplits := make([]meshhttproute_xds.BackendRefSplit, 0, len(splits))
+	for _, split := range splits {
+		backendRefSplits = append(backendRefSplits, meshhttproute_xds.NewBackendRefSplit(split))
+	}
+	return backendRefSplits
+}
+
 // TODO move to routing builder
 func paymentsAndBackendRouting() *xds_builders.RoutingBuilder {
 	return xds_builders.Routing().
@@ -1381,7 +1389,7 @@ func outboundRoute(service string, splits ...envoy_common.Split) *meshhttproute_
 		Routes: []meshhttproute_xds.OutboundRoute{{
 			Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{match})),
 			Match: match,
-			Split: splits,
+			Split: backendRefSplits(splits...),
 		}},
 		DpTags: mesh_proto.MultiValueTagSet{"kuma.io/service": {service: true}},
 	}

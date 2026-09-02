@@ -27,7 +27,7 @@ type RoutesConfigurer struct {
 	UnresolvedBackendRefsWeight uint
 	AllBackendRefsUnresolved    bool
 	MirrorSplits                map[int]envoy_common.Split
-	Split                       []envoy_common.Split
+	Split                       []BackendRefSplit
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
@@ -269,31 +269,37 @@ func routeQueryParamsMatch(envoyMatch *envoy_route.RouteMatch, matches []api.Que
 	}
 }
 
-func (c RoutesConfigurer) hasExternal(split []envoy_common.Split) bool {
+func (c RoutesConfigurer) hasExternal(split []BackendRefSplit) bool {
 	for _, s := range split {
-		if s.HasExternalService() {
+		if s.Split.HasExternalService() {
 			return true
 		}
 	}
 	return false
 }
 
-func (c RoutesConfigurer) routeAction(split []envoy_common.Split) *envoy_route.RouteAction {
+func (c RoutesConfigurer) routeAction(split []BackendRefSplit) *envoy_route.RouteAction {
 	routeAction := &envoy_route.RouteAction{
 		// this timeout should be updated by the MeshTimeout plugin
 		Timeout: util_proto.Duration(0),
 	}
-	if len(split) == 1 {
+	if len(split) == 1 && len(split[0].Filters) == 0 {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{
-			Cluster: split[0].ClusterName(),
+			Cluster: split[0].Split.ClusterName(),
 		}
 	} else {
 		var weightedClusters []*envoy_route.WeightedCluster_ClusterWeight
 		for _, s := range split {
-			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
-				Name:   s.ClusterName(),
-				Weight: util_proto.UInt32(s.Weight()),
-			})
+			clusterWeight := &envoy_route.WeightedCluster_ClusterWeight{
+				Name:   s.Split.ClusterName(),
+				Weight: util_proto.UInt32(s.Split.Weight()),
+			}
+			for _, filter := range s.Filters {
+				if filter.Type == api.RequestHeaderModifierType && filter.RequestHeaderModifier != nil {
+					filters.ApplyHeaderModifierToWeightedCluster(clusterWeight, *filter.RequestHeaderModifier)
+				}
+			}
+			weightedClusters = append(weightedClusters, clusterWeight)
 		}
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_WeightedClusters{
 			WeightedClusters: &envoy_route.WeightedCluster{
@@ -309,10 +315,10 @@ func (c RoutesConfigurer) routeAction(split []envoy_common.Split) *envoy_route.R
 	return routeAction
 }
 
-func unresolvedRuntimeFraction(unresolvedWeight uint, split []envoy_common.Split) *envoy_config_core.RuntimeFractionalPercent {
+func unresolvedRuntimeFraction(unresolvedWeight uint, split []BackendRefSplit) *envoy_config_core.RuntimeFractionalPercent {
 	totalWeight := uint64(unresolvedWeight)
 	for _, s := range split {
-		totalWeight += uint64(s.Weight())
+		totalWeight += uint64(s.Split.Weight())
 	}
 	if unresolvedWeight == 0 || totalWeight == 0 {
 		return nil

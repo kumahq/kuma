@@ -376,16 +376,17 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 })
 
 var _ = Describe("gapiToKumaMeshRule", func() {
-	serviceBackendRef := func(namespace, name string, port gatewayapi.PortNumber) gatewayapi.HTTPBackendRef {
+	serviceBackendRef := func(namespace string) gatewayapi.HTTPBackendRef {
 		group := gatewayapi.Group("")
 		kind := gatewayapi.Kind("Service")
 		ns := gatewayapi.Namespace(namespace)
+		port := gatewayapi.PortNumber(8080)
 		weight := int32(1)
 		return gatewayapi.HTTPBackendRef{
 			Group:     &group,
 			Kind:      &kind,
 			Namespace: &ns,
-			Name:      gatewayapi.ObjectName(name),
+			Name:      gatewayapi.ObjectName("backend"),
 			Port:      &port,
 			Weight:    &weight,
 		}
@@ -423,7 +424,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		}
 		rule := gatewayapi.HTTPRouteRule{
 			BackendRefs: []gatewayapi.HTTPBackendRef{
-				serviceBackendRef("backend-ns", "backend", 8080),
+				serviceBackendRef("backend-ns"),
 			},
 		}
 
@@ -438,7 +439,61 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		Expect(resolvedRefs.Reason).To(Equal(string(gatewayapi.RouteReasonRefNotPermitted)))
 	})
 
-	It("reports Accepted=False when a denied cross-namespace backendRef has filters", func() {
+	It("converts backendRef request header modifier filters", func() {
+		frontend := &kube_core.Service{
+			Name:      "frontend",
+			Namespace: "route-ns",
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 80}},
+			},
+		}
+		backend := &kube_core.Service{
+			Name:      "backend",
+			Namespace: "route-ns",
+			Spec: kube_core.ServiceSpec{
+				Ports: []kube_core.ServicePort{{Name: "http", Port: 8080}},
+			},
+		}
+
+		reconciler := newReconciler(frontend, backend)
+
+		route := &gatewayapi.HTTPRoute{
+			Name: "my-route", Namespace: "route-ns",
+		}
+		rule := gatewayapi.HTTPRouteRule{
+			BackendRefs: []gatewayapi.HTTPBackendRef{{
+				BackendObjectReference: serviceBackendRef("route-ns").BackendObjectReference,
+				Weight:                 pointer.To(int32(1)),
+				Filters: []gatewayapi.HTTPRouteFilter{{
+					Type: gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier,
+					RequestHeaderModifier: &gatewayapi.HTTPHeaderFilter{
+						Set: []gatewayapi.HTTPHeader{{
+							Name:  "X-Backend",
+							Value: "payments",
+						}},
+						Remove: []string{"X-Remove-Me"},
+					},
+				}},
+			}},
+		}
+
+		kumaRule, conditions, err := reconciler.gapiToKumaMeshRule(context.Background(), route, rule)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(conditions).To(BeEmpty())
+		Expect(pointer.Deref(kumaRule.Default.BackendRefs)).To(HaveLen(1))
+		backendFilters := pointer.Deref(pointer.Deref(kumaRule.Default.BackendRefs)[0].Filters)
+		Expect(backendFilters).To(HaveLen(1))
+		Expect(backendFilters[0].Type).To(Equal(v1alpha1.RequestHeaderModifierType))
+		Expect(backendFilters[0].RequestHeaderModifier).ToNot(BeNil())
+		Expect(pointer.Deref(backendFilters[0].RequestHeaderModifier.Set)).To(Equal([]v1alpha1.HeaderKeyValue{{
+			Name:  "x-backend",
+			Value: "payments",
+		}}))
+		Expect(pointer.Deref(backendFilters[0].RequestHeaderModifier.Remove)).To(Equal([]string{"X-Remove-Me"}))
+	})
+
+	It("reports Accepted=False when a denied cross-namespace backendRef has unsupported filters", func() {
 		frontend := &kube_core.Service{
 			Name:      "frontend",
 			Namespace: "route-ns",
@@ -459,10 +514,10 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		route := &gatewayapi.HTTPRoute{
 			Name: "my-route", Namespace: "route-ns",
 		}
-		backendRef := serviceBackendRef("backend-ns", "backend", 8080)
+		backendRef := serviceBackendRef("backend-ns")
 		backendRef.Filters = []gatewayapi.HTTPRouteFilter{{
-			Type: gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier,
-			RequestHeaderModifier: &gatewayapi.HTTPHeaderFilter{
+			Type: gatewayapi_v1.HTTPRouteFilterResponseHeaderModifier,
+			ResponseHeaderModifier: &gatewayapi.HTTPHeaderFilter{
 				Add: []gatewayapi.HTTPHeader{{Name: "x-test", Value: "1"}},
 			},
 		}}
@@ -479,7 +534,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		Expect(accepted).ToNot(BeNil())
 		Expect(accepted.Status).To(Equal(kube_meta.ConditionFalse))
 		Expect(accepted.Reason).To(Equal(string(gatewayapi.RouteReasonUnsupportedValue)))
-		Expect(accepted.Message).To(ContainSubstring(string(gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier)))
+		Expect(accepted.Message).To(ContainSubstring(string(gatewayapi_v1.HTTPRouteFilterResponseHeaderModifier)))
 		resolvedRefs := kube_apimeta.FindStatusCondition(conditions, string(gatewayapi.RouteConditionResolvedRefs))
 		Expect(resolvedRefs).ToNot(BeNil())
 		Expect(resolvedRefs.Status).To(Equal(kube_meta.ConditionFalse))
@@ -520,7 +575,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 				},
 			},
 			BackendRefs: []gatewayapi.HTTPBackendRef{
-				serviceBackendRef("route-ns", "backend", 8080),
+				serviceBackendRef("route-ns"),
 			},
 		}
 
@@ -540,7 +595,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		Expect(resolvedRefs).To(BeNil())
 	})
 
-	It("reports Accepted=False for backendRef RequestHeaderModifier Filters without adding ResolvedRefs for valid backends", func() {
+	It("reports Accepted=False for unsupported backendRef filters without adding ResolvedRefs for valid backends", func() {
 		frontend := &kube_core.Service{
 			Name:      "frontend",
 			Namespace: "route-ns",
@@ -563,10 +618,10 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		}
 		rule := gatewayapi.HTTPRouteRule{
 			BackendRefs: []gatewayapi.HTTPBackendRef{func() gatewayapi.HTTPBackendRef {
-				ref := serviceBackendRef("route-ns", "backend", 8080)
+				ref := serviceBackendRef("route-ns")
 				ref.Filters = []gatewayapi.HTTPRouteFilter{{
-					Type: gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier,
-					RequestHeaderModifier: &gatewayapi.HTTPHeaderFilter{
+					Type: gatewayapi_v1.HTTPRouteFilterResponseHeaderModifier,
+					ResponseHeaderModifier: &gatewayapi.HTTPHeaderFilter{
 						Add: []gatewayapi.HTTPHeader{{
 							Name:  "x-test",
 							Value: "1",
@@ -586,7 +641,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		Expect(accepted).ToNot(BeNil())
 		Expect(accepted.Status).To(Equal(kube_meta.ConditionFalse))
 		Expect(accepted.Reason).To(Equal(string(gatewayapi.RouteReasonUnsupportedValue)))
-		Expect(accepted.Message).To(ContainSubstring(string(gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier)))
+		Expect(accepted.Message).To(ContainSubstring(string(gatewayapi_v1.HTTPRouteFilterResponseHeaderModifier)))
 		Expect(accepted.Message).To(ContainSubstring("route-ns/backend"))
 		resolvedRefs := kube_apimeta.FindStatusCondition(conditions, string(gatewayapi.RouteConditionResolvedRefs))
 		Expect(resolvedRefs).To(BeNil())

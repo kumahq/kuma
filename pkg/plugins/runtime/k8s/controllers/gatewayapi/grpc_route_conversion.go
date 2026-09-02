@@ -166,7 +166,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaMeshRule(
 	var conditions []kube_meta.Condition
 	var matches []v1alpha1.Match
 	var filters []v1alpha1.Filter
-	var backendRefs []common_api.BackendRef
+	var backendRefs []v1alpha1.BackendRef
 
 	for _, gapiMatch := range rule.Matches {
 		match, ok := r.gapiGRPCToKumaMeshMatch(gapiMatch)
@@ -213,7 +213,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaMeshRule(
 		if gapiBackendRef.Weight != nil {
 			weight = uint(*gapiBackendRef.Weight)
 		}
-		backendRefs = append(backendRefs, common_api.BackendRef{
+		backendRefs = append(backendRefs, v1alpha1.BackendRef{
 			TargetRef: ref,
 			Weight:    pointer.To(weight),
 		})

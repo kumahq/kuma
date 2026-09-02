@@ -130,9 +130,6 @@ metadata:
 			"HTTPRouteNoBackendRefs",
 		},
 		// Left undeclared, with what Kuma does not do:
-		//   - SupportMeshHTTPRouteBackendRequestHeaderModification: Kuma's BackendRef type
-		//     (api/common/v1alpha1.BackendRef) has no Filters field, so
-		//     rules[].backendRefs[].filters cannot be translated.
 		//   - SupportMeshHTTPRouteNamedRouteRule: the upstream test is Provisional and
 		//     asserts a backend path of /named for a /unnamed request with no rewrite in
 		//     its own manifest.
@@ -147,6 +144,7 @@ metadata:
 			features.SupportMesh,
 			features.SupportMeshClusterIPMatching,
 			features.SupportMeshConsumerRoute,
+			features.SupportMeshHTTPRouteBackendRequestHeaderModification,
 			features.SupportMeshHTTPRouteRedirectPath,
 			features.SupportMeshHTTPRouteRedirectPort,
 			features.SupportMeshHTTPRouteQueryParamMatching,

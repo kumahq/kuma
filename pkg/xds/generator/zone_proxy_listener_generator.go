@@ -291,7 +291,7 @@ func (g ZoneProxyListenerGenerator) buildEgressFilterChain(
 							Value: "/",
 						},
 					},
-					Split: []envoy_common.Split{split},
+					Split: []xds.BackendRefSplit{xds.NewBackendRefSplit(split)},
 				},
 			},
 		}))
