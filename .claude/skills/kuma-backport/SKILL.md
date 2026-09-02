@@ -34,6 +34,7 @@ Facts about what the action produces (this shapes all later steps):
 
 - Head branches: `chore/backport-<release-branch>-<PR>`, pushed to kumahq/kuma directly.
 - Committer and author are both `kumahq[bot]`. That bot-authored cherry-pick commonly trips **DCO** because the bot's `Signed-off-by` is not a human attestation, and it happens even on conflict-free backports, so check DCO on every PR, not just conflicted ones.
+- Labels: the target branch, plus the original PR's labels except `backport`, `ci/auto-merge` and `ci/force-publish`.
 - On conflict the action runs `git add . && git cherry-pick --continue` **blindly**: conflict markers get committed into files, and files new on master land with master's import paths. The PR is opened as draft with a `conflict` label and the `git status` dump in the body.
 
 ## 3. Resolve conflicts per branch
@@ -116,7 +117,7 @@ A backport commit always needs rewriting (drop conflict markers, fix the author/
 For each PR:
 
 - **Body**: keep the auto-generated header (cherry-pick line, action link, commit SHA); replace the `:warning:` block + git-status dump with 1–2 sentences stating what conflicted and how it was resolved (e.g., module import path v3→v2; `interface{}` kept per branch style). `gh pr edit <n> --repo kumahq/kuma --body "..."`.
-- **Labels**: `--remove-label conflict`. Keep `backport` + `release-X.Y` — that's what merged backports carry.
+- **Labels**: `--remove-label conflict`. Keep `release-X.Y` and the inherited `area/*`, `kind/*`, `ci/*` labels.
 - **Ready**: `gh pr ready <n> --repo kumahq/kuma`.
 
 ## 7. Watch CI
