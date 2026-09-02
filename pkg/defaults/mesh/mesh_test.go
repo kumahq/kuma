@@ -343,15 +343,23 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 // mesh-timeout-all default carries today, used to assert a migrated legacy
 // resource is restored to the same values.
 func currentDefaultMeshTimeoutRules(resManager manager.ResourceManager) []meshtimeout.Rule {
+	return currentDefaultMeshTimeoutRulesForStore(resManager, false, "")
+}
+
+func currentDefaultMeshTimeoutRulesForStore(resManager manager.ResourceManager, k8sStore bool, systemNamespace string) []meshtimeout.Rule {
 	referenceMesh := core_mesh.NewMeshResource()
 	err := resManager.Create(context.Background(), referenceMesh, core_store.CreateByKey("reference-defaults-mesh", model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 
-	err = mesh.EnsureDefaultMeshResources(context.Background(), resManager, referenceMesh, []string{}, context.Background(), false, "", config_core.Zone, "zone-1", false)
+	err = mesh.EnsureDefaultMeshResources(context.Background(), resManager, referenceMesh, []string{}, context.Background(), k8sStore, systemNamespace, config_core.Zone, "zone-1", false)
 	Expect(err).ToNot(HaveOccurred())
 
+	resourceName := "mesh-timeout-all-reference-defaults-mesh"
+	if k8sStore {
+		resourceName = resourceName + "." + systemNamespace
+	}
 	reference := meshtimeout.NewMeshTimeoutResource()
-	err = resManager.Get(context.Background(), reference, core_store.GetByKey("mesh-timeout-all-reference-defaults-mesh", "reference-defaults-mesh"))
+	err = resManager.Get(context.Background(), reference, core_store.GetByKey(resourceName, "reference-defaults-mesh"))
 	Expect(err).ToNot(HaveOccurred())
 	Expect(reference.Spec.Rules).ToNot(BeNil())
 	return *reference.Spec.Rules
