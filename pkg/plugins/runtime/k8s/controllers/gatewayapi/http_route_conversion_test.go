@@ -376,7 +376,7 @@ var _ = Describe("uncheckedGapiToKumaRef", func() {
 })
 
 var _ = Describe("gapiToKumaMeshRule", func() {
-	serviceBackendRef := func(namespace, name string, port gatewayapi.PortNumber) gatewayapi.HTTPBackendRef {
+	serviceBackendRef := func(namespace string, port gatewayapi.PortNumber) gatewayapi.HTTPBackendRef {
 		group := gatewayapi.Group("")
 		kind := gatewayapi.Kind("Service")
 		ns := gatewayapi.Namespace(namespace)
@@ -385,7 +385,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 			Group:     &group,
 			Kind:      &kind,
 			Namespace: &ns,
-			Name:      gatewayapi.ObjectName(name),
+			Name:      gatewayapi.ObjectName("backend"),
 			Port:      &port,
 			Weight:    &weight,
 		}
@@ -423,7 +423,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		}
 		rule := gatewayapi.HTTPRouteRule{
 			BackendRefs: []gatewayapi.HTTPBackendRef{
-				serviceBackendRef("backend-ns", "backend", 8080),
+				serviceBackendRef("backend-ns", 8080),
 			},
 		}
 
@@ -461,7 +461,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		}
 		rule := gatewayapi.HTTPRouteRule{
 			BackendRefs: []gatewayapi.HTTPBackendRef{{
-				BackendObjectReference: serviceBackendRef("route-ns", "backend", 8080).BackendObjectReference,
+				BackendObjectReference: serviceBackendRef("route-ns", 8080).BackendObjectReference,
 				Weight:                 pointer.To(int32(1)),
 				Filters: []gatewayapi.HTTPRouteFilter{{
 					Type: gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier,
@@ -513,7 +513,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		route := &gatewayapi.HTTPRoute{
 			Name: "my-route", Namespace: "route-ns",
 		}
-		backendRef := serviceBackendRef("backend-ns", "backend", 8080)
+		backendRef := serviceBackendRef("backend-ns", 8080)
 		backendRef.Filters = []gatewayapi.HTTPRouteFilter{{
 			Type: gatewayapi_v1.HTTPRouteFilterResponseHeaderModifier,
 			ResponseHeaderModifier: &gatewayapi.HTTPHeaderFilter{
@@ -574,7 +574,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 				},
 			},
 			BackendRefs: []gatewayapi.HTTPBackendRef{
-				serviceBackendRef("route-ns", "backend", 8080),
+				serviceBackendRef("route-ns", 8080),
 			},
 		}
 
@@ -617,7 +617,7 @@ var _ = Describe("gapiToKumaMeshRule", func() {
 		}
 		rule := gatewayapi.HTTPRouteRule{
 			BackendRefs: []gatewayapi.HTTPBackendRef{func() gatewayapi.HTTPBackendRef {
-				ref := serviceBackendRef("route-ns", "backend", 8080)
+				ref := serviceBackendRef("route-ns", 8080)
 				ref.Filters = []gatewayapi.HTTPRouteFilter{{
 					Type: gatewayapi_v1.HTTPRouteFilterResponseHeaderModifier,
 					ResponseHeaderModifier: &gatewayapi.HTTPHeaderFilter{
