@@ -128,6 +128,16 @@ metadata:
 		},
 		SkipTests: []string{
 			"HTTPRouteNoBackendRefs",
+			// The upstream mesh weight tests sample the traffic distribution
+			// without waiting for the route to be programmed: the only gate is
+			// three consecutive 200s, which the parent Service already answers
+			// before any route exists. The distribution check then retries a
+			// fixed 10 times with no delay, so the whole budget is under two
+			// seconds and Kuma loses the race roughly half the time, reporting
+			// the routeless 50/50 split across the echo-v1 and echo-v2 pods.
+			// Re-enable once the upstream fix that bounds the retries by
+			// TimeoutConfig lands and we bump the conformance module.
+			"MeshGRPCRouteWeight",
 		},
 		// Left undeclared, with what Kuma does not do:
 		//   - SupportMeshHTTPRouteNamedRouteRule: the upstream test is Provisional and
