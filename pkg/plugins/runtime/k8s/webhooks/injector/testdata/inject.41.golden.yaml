@@ -93,6 +93,8 @@ spec:
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_ENABLED
       value: "false"
+    - name: KUMA_READINESS_PORT
+      value: "9902"
     - name: POD_NAME
       valueFrom:
         fieldRef:

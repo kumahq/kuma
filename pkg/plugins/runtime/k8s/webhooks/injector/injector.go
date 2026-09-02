@@ -99,6 +99,9 @@ func New(
 	systemNamespace string,
 	metrics core_metrics.Metrics,
 ) (*KumaInjector, error) {
+	if readinessPort == 0 {
+		return nil, errors.New("readinessPort has to be in (0, 65535] range")
+	}
 	var caCert string
 	if cfg.CaCertFile != "" {
 		bytes, err := os.ReadFile(cfg.CaCertFile)
@@ -230,10 +233,8 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 	// K8s probes hit the readiness reporter on the readiness port, so
 	// exclude it from inbound interception to let them reach kuma-dp
 	// directly.
-	if i.defaultReadinessPort != 0 {
-		if err := tpCfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", i.defaultReadinessPort)); err != nil {
-			return err
-		}
+	if err := tpCfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", i.defaultReadinessPort)); err != nil {
+		return err
 	}
 
 	// When application probe proxying is disabled, K8s probes hit the

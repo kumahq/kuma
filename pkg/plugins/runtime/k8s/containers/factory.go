@@ -273,6 +273,10 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Name:  "KUMA_CONTROL_PLANE_CA_CERT",
 			Value: i.ControlPlaneCACert,
 		},
+		"KUMA_READINESS_PORT": {
+			Name:  "KUMA_READINESS_PORT",
+			Value: strconv.Itoa(int(i.DefaultReadinessPort)),
+		},
 	}
 	if i.BuiltinDNS.Enabled {
 		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{

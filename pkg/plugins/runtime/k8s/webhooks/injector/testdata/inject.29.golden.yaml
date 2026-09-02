@@ -122,6 +122,8 @@ spec:
       value: "true"
     - name: KUMA_DNS_PROXY_PORT
       value: "25053"
+    - name: KUMA_READINESS_PORT
+      value: "9902"
     - name: POD_NAME
       valueFrom:
         fieldRef:
