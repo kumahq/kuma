@@ -62,7 +62,6 @@ func (r *MeshReconciler) ensureDefaultResources(ctx context.Context, mesh *core_
 		r.SystemNamespace,
 		r.CpMode,
 		r.CpZone,
-		false, // reconcileExistingOnly
 	); err != nil {
 		return errors.Wrap(err, "could not create default mesh resources")
 	}

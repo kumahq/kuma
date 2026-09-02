@@ -102,7 +102,6 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 		m.systemNamespace,
 		m.cpMode,
 		m.cpZone,
-		false, // reconcileExistingOnly
 	); err != nil {
 		return err
 	}
