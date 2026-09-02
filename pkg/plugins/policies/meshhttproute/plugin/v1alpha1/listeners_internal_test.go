@@ -463,6 +463,11 @@ var _ = Describe("prepareRoutes", func() {
 			Port:      pointer.To(uint32(8080)),
 			Weight:    pointer.To(uint(0)),
 		}}, true),
+		Entry("unresolvable explicit backendRefs with zero weight still set the all-zero flag", []api.BackendRef{{
+			TargetRef: builders.TargetRefMeshService("missing-backend", "kuma-demo", ""),
+			Port:      pointer.To(uint32(8080)),
+			Weight:    pointer.To(uint(0)),
+		}}, true),
 		Entry("explicit empty backendRefs do not set the all-zero flag", []api.BackendRef{}, false),
 	)
 

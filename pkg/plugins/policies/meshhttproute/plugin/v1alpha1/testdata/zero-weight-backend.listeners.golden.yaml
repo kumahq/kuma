@@ -31,14 +31,14 @@ resources:
               - directResponse:
                   body:
                     inlineString: ""
-                  status: 503
+                  status: 500
                 match:
                   path: /v1
                 name: kri_mhttpr_default___test-origin_rule_0
               - directResponse:
                   body:
                     inlineString: ""
-                  status: 503
+                  status: 500
                 match:
                   prefix: /v1/
                 name: kri_mhttpr_default___test-origin_rule_0

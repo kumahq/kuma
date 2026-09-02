@@ -38,14 +38,14 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 		directResponseStatus := c.DirectResponseStatus
 		if directResponseStatus == 0 && !hasTerminalFilter(c.Filters) {
 			switch {
-			case c.AllBackendRefsHaveZeroWeight:
-				// An explicit non-empty backendRefs list whose effective weights are
-				// all zero is treated as no available backend and answers 503.
-				directResponseStatus = 503
 			case c.AllBackendRefsUnresolved:
 				// A rule whose backendRefs all fail to resolve answers 500, unless a
 				// filter already terminates the request without an upstream.
 				directResponseStatus = 500
+			case c.AllBackendRefsHaveZeroWeight:
+				// An explicit non-empty backendRefs list whose effective weights are
+				// all zero is treated as no available backend and answers 503.
+				directResponseStatus = 503
 			}
 		}
 		if directResponseStatus > 0 {
