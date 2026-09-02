@@ -177,17 +177,6 @@ var _ = Context("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.zone.golden.yaml",
 		}),
-		Entry("should generate Kubernetes resources when controlPlane.ingress is removed", testCase{
-			extraArgs: []string{
-				"--values",
-				"-",
-			},
-			goldenFile: "install-cp-helm/empty.golden.yaml",
-			stdin: `
-controlPlane:
-  ingress: null
-`,
-		}),
 		Entry("should work with --set", testCase{
 			extraArgs: []string{
 				"--set",
@@ -224,6 +213,7 @@ controlPlane:
 	)
 
 	type errTestCase struct {
+		stdin     string
 		extraArgs []string
 		errorMsg  string
 	}
@@ -232,6 +222,11 @@ controlPlane:
 			// given
 			args := append([]string{"install", "control-plane", "--without-kubernetes-connection"}, given.extraArgs...)
 			_, _, rootCmd := test.DefaultTestingRootCmd(args...)
+			if given.stdin != "" {
+				stdin := &bytes.Buffer{}
+				stdin.WriteString(given.stdin)
+				rootCmd.SetIn(stdin)
+			}
 
 			// when
 			err := rootCmd.Execute()
@@ -267,6 +262,22 @@ controlPlane:
 		Entry("--mode standalone is no longer supported", errTestCase{
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "standalone"},
 			errorMsg:  "controlPlane.mode invalid got:'standalone'",
+		}),
+		Entry("removed top-level ingress values are rejected", errTestCase{
+			extraArgs: []string{"--values", "-"},
+			stdin: `
+ingress:
+  enabled: true
+`,
+			errorMsg: "top-level ingress was removed from the Kuma Helm chart",
+		}),
+		Entry("removed top-level egress values are rejected", errTestCase{
+			extraArgs: []string{"--values", "-"},
+			stdin: `
+egress:
+  enabled: true
+`,
+			errorMsg: "top-level egress was removed from the Kuma Helm chart",
 		}),
 		Entry("--tls-general-secret without --tls-general-ca-bundle", errTestCase{
 			extraArgs: []string{"--tls-general-secret", "sec"},

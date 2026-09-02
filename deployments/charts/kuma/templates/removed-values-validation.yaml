@@ -1,0 +1,6 @@
+{{- if hasKey .Values "ingress" }}
+{{- fail "top-level ingress was removed from the Kuma Helm chart; use controlPlane.ingress for the control-plane Ingress or meshes[].ingress / meshZoneProxyDefaults.ingress for zone ingress" }}
+{{- end }}
+{{- if hasKey .Values "egress" }}
+{{- fail "top-level egress was removed from the Kuma Helm chart; use meshes[].egress or meshZoneProxyDefaults.egress for zone egress" }}
+{{- end }}
