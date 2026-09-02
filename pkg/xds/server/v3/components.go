@@ -80,7 +80,7 @@ type adsServer struct {
 }
 
 func (s *adsServer) StreamAggregatedResources(stream envoy_service_discovery.AggregatedDiscoveryService_StreamAggregatedResourcesServer) error {
-	return status.Error(codes.Unimplemented, "unsupported SOTW/state-of-the-world xDS StreamAggregatedResources; use Delta ADS instead")
+	return status.Error(codes.Unimplemented, "unsupported SOTW/state-of-the-world xDS StreamAggregatedResources; restart the proxy with a delta-capable bootstrap to use Delta ADS")
 }
 
 func (s *adsServer) DeltaAggregatedResources(stream envoy_service_discovery.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {
