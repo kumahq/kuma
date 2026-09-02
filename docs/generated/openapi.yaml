@@ -8053,7 +8053,7 @@ components:
                                   port:
                                     description: >-
                                       Port is only supported when this ref
-                                      refers to a real MeshService object
+                                      refers to a MeshService object
                                     format: int32
                                     type: integer
                                   sectionName:

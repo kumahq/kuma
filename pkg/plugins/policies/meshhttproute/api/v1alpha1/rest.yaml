@@ -282,7 +282,7 @@ components:
                                                     service-tag based paths.
                                                   type: object
                                                 port:
-                                                  description: Port is only supported when this ref refers to a MeshService object
+                                                  description: Port is only supported when this ref refers to a real MeshService object
                                                   format: int32
                                                   type: integer
                                                 sectionName:
@@ -569,7 +569,7 @@ components:
                                               service-tag based paths.
                                             type: object
                                           port:
-                                            description: Port is only supported when this ref refers to a MeshService object
+                                            description: Port is only supported when this ref refers to a real MeshService object
                                             format: int32
                                             type: integer
                                           sectionName:

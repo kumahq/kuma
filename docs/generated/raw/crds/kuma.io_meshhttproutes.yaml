@@ -385,7 +385,7 @@ spec:
                                       type: object
                                     port:
                                       description: Port is only supported when this
-                                        ref refers to a real MeshService object
+                                        ref refers to a MeshService object
                                       format: int32
                                       type: integer
                                     sectionName:
