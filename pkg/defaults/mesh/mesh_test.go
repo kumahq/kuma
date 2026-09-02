@@ -2,6 +2,7 @@ package mesh_test
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -163,15 +164,13 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		})
 
 		It("should migrate a legacy combined MeshTimeout default that predates the rules/to split", func() {
-			// given a combined default MeshTimeout, as an older CP version stored it,
-			// with both 'rules' and 'to' set (now mutually exclusive)
+			// given a combined default MeshTimeout as CP 2.14 and earlier stored
+			// it: 'to' set, and the inbound half in 'from', a field the current
+			// struct no longer has, so it's absent here (dropped on unmarshal).
 			legacy := meshtimeout.NewMeshTimeoutResource()
 			legacy.Spec = &meshtimeout.MeshTimeout{
 				TargetRef: &common_api.TopLevelTargetRef{
 					Kind: common_api.TopLevelTargetRefKindMesh,
-				},
-				Rules: &[]meshtimeout.Rule{
-					{Default: meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Hour}}},
 				},
 				To: &[]meshtimeout.To{
 					{
@@ -190,7 +189,8 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			err = mesh.EnsureDefaultMeshResources(context.Background(), resManager, defaultMesh, []string{}, context.Background(), false, "", config_core.Zone, "zone-1", false)
 			Expect(err).ToNot(HaveOccurred())
 
-			// then the legacy resource is migrated to 'rules' only
+			// then the legacy resource is migrated to 'rules' only, restored
+			// from the current mesh-wide inbound defaults
 			migrated := meshtimeout.NewMeshTimeoutResource()
 			err = resManager.Get(context.Background(), migrated, core_store.GetByKey("mesh-timeout-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
@@ -198,6 +198,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(migrated.Spec.TargetRef.Kind).To(Equal(common_api.TopLevelTargetRefKindMesh))
 			Expect(migrated.Spec.To).To(BeNil())
 			Expect(migrated.Spec.Rules).ToNot(BeNil())
+			Expect(*migrated.Spec.Rules).To(Equal(currentDefaultMeshTimeoutRules(resManager)))
 
 			// and a separate 'to' resource now carries the outbound defaults
 			toResource := meshtimeout.NewMeshTimeoutResource()
@@ -205,6 +206,71 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(toResource.Spec.To).ToNot(BeNil())
 			Expect(toResource.Spec.Rules).To(BeNil())
+		})
+
+		It("should migrate a legacy combined MeshTimeout default on the boot reconcile path", func() {
+			// given the same legacy combined default as above
+			legacy := meshtimeout.NewMeshTimeoutResource()
+			legacy.Spec = &meshtimeout.MeshTimeout{
+				TargetRef: &common_api.TopLevelTargetRef{
+					Kind: common_api.TopLevelTargetRefKindMesh,
+				},
+				To: &[]meshtimeout.To{
+					{
+						TargetRef: common_api.OutboundTargetRef{Kind: common_api.OutboundTargetRefKindMesh},
+						Default:   meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Hour}},
+					},
+				},
+			}
+			err := rawStore.Create(context.Background(), legacy, core_store.CreateByKey("mesh-timeout-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when EnsureDefaultMeshResources runs with reconcileExistingOnly=true,
+			// the mode used by the boot-time reconciliation loop that crashed in
+			// production
+			err = mesh.EnsureDefaultMeshResources(context.Background(), resManager, defaultMesh, []string{}, context.Background(), false, "", config_core.Zone, "zone-1", true)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then the legacy resource is migrated the same way
+			migrated := meshtimeout.NewMeshTimeoutResource()
+			err = resManager.Get(context.Background(), migrated, core_store.GetByKey("mesh-timeout-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(migrated.Spec.To).To(BeNil())
+			Expect(migrated.Spec.Rules).ToNot(BeNil())
+			Expect(*migrated.Spec.Rules).To(Equal(currentDefaultMeshTimeoutRules(resManager)))
+
+			toResource := meshtimeout.NewMeshTimeoutResource()
+			err = resManager.Get(context.Background(), toResource, core_store.GetByKey("mesh-timeout-to-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(toResource.Spec.To).ToNot(BeNil())
+		})
+
+		It("should not fail EnsureDefaultMeshResources when a default-resource migration cannot complete", func() {
+			// given a legacy combined default MeshTimeout that needs migrating
+			legacy := meshtimeout.NewMeshTimeoutResource()
+			legacy.Spec = &meshtimeout.MeshTimeout{
+				TargetRef: &common_api.TopLevelTargetRef{
+					Kind: common_api.TopLevelTargetRefKindMesh,
+				},
+				To: &[]meshtimeout.To{
+					{
+						TargetRef: common_api.OutboundTargetRef{Kind: common_api.OutboundTargetRefKindMesh},
+						Default:   meshtimeout.Conf{IdleTimeout: &kube_meta.Duration{Duration: time.Hour}},
+					},
+				},
+			}
+			err := rawStore.Create(context.Background(), legacy, core_store.CreateByKey("mesh-timeout-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// and a resource manager whose Update always fails, simulating a
+			// migration that can never complete (e.g. a persistently
+			// unreachable store)
+			failingManager := &failingUpdateResourceManager{ResourceManager: resManager}
+
+			// when EnsureDefaultMeshResources runs
+			// then it does not return an error: the migration is logged and skipped
+			err = mesh.EnsureDefaultMeshResources(context.Background(), failingManager, defaultMesh, []string{}, context.Background(), false, "", config_core.Zone, "zone-1", false)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should delete legacy gateway-specific default MeshTimeout resources", func() {
@@ -270,4 +336,38 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
+
 })
+
+// currentDefaultMeshTimeoutRules returns the inbound rules a freshly-created
+// mesh-timeout-all default carries today, used to assert a migrated legacy
+// resource is restored to the same values.
+func currentDefaultMeshTimeoutRules(resManager manager.ResourceManager) []meshtimeout.Rule {
+	referenceMesh := core_mesh.NewMeshResource()
+	err := resManager.Create(context.Background(), referenceMesh, core_store.CreateByKey("reference-defaults-mesh", model.NoMesh))
+	Expect(err).ToNot(HaveOccurred())
+
+	err = mesh.EnsureDefaultMeshResources(context.Background(), resManager, referenceMesh, []string{}, context.Background(), false, "", config_core.Zone, "zone-1", false)
+	Expect(err).ToNot(HaveOccurred())
+
+	reference := meshtimeout.NewMeshTimeoutResource()
+	err = resManager.Get(context.Background(), reference, core_store.GetByKey("mesh-timeout-all-reference-defaults-mesh", "reference-defaults-mesh"))
+	Expect(err).ToNot(HaveOccurred())
+	Expect(reference.Spec.Rules).ToNot(BeNil())
+	return *reference.Spec.Rules
+}
+
+// failingUpdateResourceManager wraps a ResourceManager whose Update fails
+// whenever it's asked to persist a migrated (rules-only) MeshTimeout,
+// simulating a default-resource migration that can never complete without
+// affecting unrelated Update calls (e.g. label reconciliation).
+type failingUpdateResourceManager struct {
+	manager.ResourceManager
+}
+
+func (f *failingUpdateResourceManager) Update(ctx context.Context, res model.Resource, opts ...core_store.UpdateOptionsFunc) error {
+	if mt, ok := res.(*meshtimeout.MeshTimeoutResource); ok && mt.Spec.To == nil {
+		return errors.New("simulated update failure")
+	}
+	return f.ResourceManager.Update(ctx, res, opts...)
+}

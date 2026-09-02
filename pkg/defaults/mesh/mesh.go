@@ -62,11 +62,15 @@ func EnsureDefaultMeshResources(
 	} else {
 		logger.Info("Dataplane Token Signing Key already exists")
 	}
-	if err := migrateCombinedMeshTimeoutDefaults(ctx, resManager, meshName, k8sStore, systemNamespace, logger); err != nil {
-		return errors.Wrap(err, "could not migrate legacy combined default MeshTimeout resources")
+	// A migration that cannot complete is logged and skipped rather than
+	// failing CP startup: DefaultComponent retries EnsureDefaultMeshResources
+	// on a budget, and a persistently-failing migration would otherwise take
+	// the whole control plane down.
+	if err := migrateCombinedMeshTimeoutDefaults(ctx, resManager, meshName, k8sStore, systemNamespace, cpMode, cpZone, logger); err != nil {
+		logger.Error(err, "could not migrate legacy combined default MeshTimeout resources")
 	}
 	if err := migrateGatewayMeshTimeoutDefaults(ctx, resManager, meshName, k8sStore, systemNamespace, logger); err != nil {
-		return errors.Wrap(err, "could not migrate legacy gateway-specific default MeshTimeout resources")
+		logger.Error(err, "could not migrate legacy gateway-specific default MeshTimeout resources")
 	}
 	if slices.Contains(skippedPolicies, "*") {
 		logger.Info("skipping all default policy creation")
@@ -127,6 +131,8 @@ func migrateCombinedMeshTimeoutDefaults(
 	meshName string,
 	k8sStore bool,
 	systemNamespace string,
+	cpMode config_core.CpMode,
+	cpZone string,
 	logger logr.Logger,
 ) error {
 	for _, prefix := range []string{"mesh-timeout-all"} {
@@ -146,7 +152,29 @@ func migrateCombinedMeshTimeoutDefaults(
 		if len(pointer.Deref(existing.Spec.To)) == 0 {
 			continue // already migrated, or an operator-modified rules-only resource
 		}
+
+		// The outbound half of the legacy combined resource is about to be
+		// stripped: create its replacement first so a crash between the two
+		// writes never leaves the mesh without mesh-wide outbound defaults.
+		toResourceName := fmt.Sprintf("mesh-timeout-to-all-%s", meshName)
+		if k8sStore {
+			toResourceName = fmt.Sprintf("%s.%s", toResourceName, systemNamespace)
+		}
+		toKey := model.ResourceKey{Mesh: meshName, Name: toResourceName}
+		if err, _ := ensureDefaultResource(ctx, resManager, defaultMeshTimeoutToResource(), toKey, cpMode, cpZone, k8sStore, systemNamespace, false); err != nil {
+			return errors.Wrapf(err, "could not create default MeshTimeout %q", toKey.Name)
+		}
+
 		existing.Spec.To = nil
+		// 2.14 and earlier kept the inbound half of the combined default in
+		// 'from', a field the current struct no longer has, so it's silently
+		// dropped on unmarshal. Restore it from the current defaults, whose
+		// values are unchanged, so the migrated resource isn't left with
+		// neither 'to' nor 'rules' (invalid, see validator.go).
+		if len(pointer.Deref(existing.Spec.Rules)) == 0 {
+			rules := defaultMeshTimeoutRules()
+			existing.Spec.Rules = &rules
+		}
 		if err := resManager.Update(ctx, existing); err != nil {
 			return errors.Wrapf(err, "could not migrate default MeshTimeout %q", key.Name)
 		}
@@ -199,14 +227,14 @@ func ensureDefaultResource(
 	systemNamespace string,
 	reconcileExistingOnly bool,
 ) (error, bool) {
-	computeLabels := func(existing map[string]string) (map[string]string, error) {
+	computeLabels := func(spec model.ResourceSpec, existing map[string]string) (map[string]string, error) {
 		namespace := resource_labels.UnsetNamespace
 		if k8sStore {
 			namespace = resource_labels.NewNamespace(systemNamespace, true)
 		}
 		return resource_labels.Compute(
 			res.Descriptor(),
-			res.GetSpec(),
+			spec,
 			existing,
 			resourceKey.Mesh,
 			resourceKey.Name,
@@ -217,17 +245,23 @@ func ensureDefaultResource(
 		)
 	}
 
-	err := resManager.Get(ctx, res, store.GetBy(resourceKey), store.GetConsistent())
+	// Get into a fresh instance rather than the desired 'res': 'res' already
+	// carries the builder's default spec, and unmarshalling merges onto
+	// whatever fields are already set instead of replacing them, so reusing
+	// it here could blend the desired spec with a differently-shaped stored
+	// one (e.g. a legacy resource a migration failed to normalize).
+	existing := res.Descriptor().NewObject()
+	err := resManager.Get(ctx, existing, store.GetBy(resourceKey), store.GetConsistent())
 	if err == nil {
-		desired, err := computeLabels(res.GetMeta().GetLabels())
+		desired, err := computeLabels(existing.GetSpec(), existing.GetMeta().GetLabels())
 		if err != nil {
 			return errors.Wrap(err, "could not compute labels for a default resource"), false
 		}
-		if maps.Equal(res.GetMeta().GetLabels(), desired) {
+		if maps.Equal(existing.GetMeta().GetLabels(), desired) {
 			return nil, false
 		}
 		// Older CP versions persisted these without computed labels. Rewrite them in place.
-		if err := resManager.Update(ctx, res, store.UpdateWithLabels(desired)); err != nil {
+		if err := resManager.Update(ctx, existing, store.UpdateWithLabels(desired)); err != nil {
 			return errors.Wrap(err, "could not reconcile labels of a default resource"), false
 		}
 		return nil, false
@@ -240,7 +274,7 @@ func ensureDefaultResource(
 		// resources; it must not recreate ones an operator deleted.
 		return nil, false
 	}
-	desired, err := computeLabels(nil)
+	desired, err := computeLabels(res.GetSpec(), nil)
 	if err != nil {
 		return errors.Wrap(err, "could not compute labels for a default resource"), false
 	}

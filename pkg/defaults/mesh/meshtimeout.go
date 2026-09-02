@@ -14,8 +14,37 @@ import (
 // separate resources: 'rules' (inbound) and 'to' (outbound) are mutually
 // exclusive on a single MeshTimeout (see validator.go), so the mesh-wide
 // inbound and outbound defaults can't be expressed on one resource.
-var defaultMeshTimeoutResource = func() model.Resource {
+// defaultMeshTimeoutRules returns the inbound defaults shared by
+// defaultMeshTimeoutResource and the legacy combined-default migration.
+func defaultMeshTimeoutRules() []v1alpha1.Rule {
 	const factor = 2
+	return []v1alpha1.Rule{
+		{
+			Default: v1alpha1.Conf{
+				ConnectionTimeout: &kube_meta.Duration{
+					Duration: factor * policies_defaults.DefaultConnectTimeout,
+				},
+				IdleTimeout: &kube_meta.Duration{
+					Duration: factor * policies_defaults.DefaultIdleTimeout,
+				},
+				Http: &v1alpha1.Http{
+					RequestTimeout: &kube_meta.Duration{
+						Duration: 0,
+					},
+					StreamIdleTimeout: &kube_meta.Duration{
+						Duration: factor * policies_defaults.DefaultStreamIdleTimeout,
+					},
+					MaxStreamDuration: &kube_meta.Duration{
+						Duration: 0,
+					},
+				},
+			},
+		},
+	}
+}
+
+var defaultMeshTimeoutResource = func() model.Resource {
+	rules := defaultMeshTimeoutRules()
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TopLevelTargetRef{
@@ -23,29 +52,7 @@ var defaultMeshTimeoutResource = func() model.Resource {
 			},
 
 			// bigger than outbound side timeouts or disabled.
-			Rules: &[]v1alpha1.Rule{
-				{
-					Default: v1alpha1.Conf{
-						ConnectionTimeout: &kube_meta.Duration{
-							Duration: factor * policies_defaults.DefaultConnectTimeout,
-						},
-						IdleTimeout: &kube_meta.Duration{
-							Duration: factor * policies_defaults.DefaultIdleTimeout,
-						},
-						Http: &v1alpha1.Http{
-							RequestTimeout: &kube_meta.Duration{
-								Duration: 0,
-							},
-							StreamIdleTimeout: &kube_meta.Duration{
-								Duration: factor * policies_defaults.DefaultStreamIdleTimeout,
-							},
-							MaxStreamDuration: &kube_meta.Duration{
-								Duration: 0,
-							},
-						},
-					},
-				},
-			},
+			Rules: &rules,
 		},
 	}
 }
