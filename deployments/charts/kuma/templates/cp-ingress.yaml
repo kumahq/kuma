@@ -1,25 +1,26 @@
-{{- if .Values.controlPlane.ingress.enabled }}
+{{- $ingress := .Values.controlPlane.ingress | default dict }}
+{{- if $ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "kuma.controlPlane.serviceName" . }}
   namespace: {{ .Release.Namespace }}
-  {{- with .Values.controlPlane.ingress.annotations }}
+  {{- with $ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   labels: {{ include "kuma.cpLabels" . | nindent 4 }}
 spec:
-  ingressClassName: {{ .Values.controlPlane.ingress.ingressClassName }}
+  ingressClassName: {{ $ingress.ingressClassName }}
   rules:
-  - host: {{ .Values.controlPlane.ingress.hostname }}
+  - host: {{ $ingress.hostname }}
     http:
       paths:
-      - path: {{ .Values.controlPlane.ingress.path }}
-        pathType: {{ .Values.controlPlane.ingress.pathType }}
+      - path: {{ $ingress.path }}
+        pathType: {{ $ingress.pathType }}
         backend:
           service:
             name: {{ include "kuma.controlPlane.serviceName" . }}
             port:
-              number: {{ .Values.controlPlane.ingress.servicePort }}
+              number: {{ $ingress.servicePort }}
 {{- end }}

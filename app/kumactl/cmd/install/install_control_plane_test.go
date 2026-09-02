@@ -177,6 +177,17 @@ var _ = Context("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.zone.golden.yaml",
 		}),
+		Entry("should generate Kubernetes resources when controlPlane.ingress is removed", testCase{
+			extraArgs: []string{
+				"--values",
+				"-",
+			},
+			goldenFile: "install-cp-helm/empty.golden.yaml",
+			stdin: `
+controlPlane:
+  ingress: null
+`,
+		}),
 		Entry("should work with --set", testCase{
 			extraArgs: []string{
 				"--set",
