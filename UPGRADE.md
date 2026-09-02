@@ -542,7 +542,7 @@ networking:
 
 ### Route `backendRef` no longer accepts `MeshServiceSubset`
 
-`MeshHTTPRoute` and `MeshTCPRoute` accept only `MeshService`, `MeshExternalService` and `MeshMultiZoneService` in `backendRefs[]` and in the `RequestMirror` filter's `backendRef`. A route using `kind: MeshServiceSubset` is rejected with `value 'MeshServiceSubset' is not supported`.
+`MeshHTTPRoute` and `MeshTCPRoute` validators now accept only `MeshService`, `MeshExternalService`, and `MeshMultiZoneService` in `backendRefs[]`; the `MeshHTTPRoute` `RequestMirror` filter's `backendRef` is limited to the same kinds. A route using `kind: MeshServiceSubset` is rejected with `value 'MeshServiceSubset' is not supported`.
 
 The xDS path that turned such a ref into a `kuma.io/service` cluster is gone with it, and a `MeshService` ref selected by `kuma.io/display-name` alone no longer falls back to one when it fails to resolve. A backendRef that resolves to no real resource now produces no split at all, rather than a split towards a cluster that is never generated.
 
@@ -566,7 +566,7 @@ backendRefs:
     port: 8080
 ```
 
-**Warning**: Stored routes that still carry a `MeshServiceSubset` backendRef keep being served, but the backend is dropped during xDS generation, so traffic matching those rules loses its destination.
+**Warning**: Stored routes that still carry a `MeshServiceSubset` backendRef keep being served, but the current control plane no longer resolves that kind into a real backend. During xDS generation the backendRef is therefore treated as unresolved, so traffic matching those rules loses its destination.
 
 The `tags` field is also gone from the `backendRef` schema entirely, not just disallowed for `MeshServiceSubset`. On Kubernetes, a `tags` key on a `backendRef` is pruned by the CRD structural schema before it reaches the control plane. On Universal, it is silently ignored when the resource is unmarshalled.
 
@@ -779,9 +779,11 @@ legacy statistics:
   last services reported there, along with their per-service `zones` list.
   The GUI pages backed by that endpoint list nothing. `kumactl inspect
   services` is removed; use `kumactl get meshservices` instead.
-- `MeshInsight.services` (the `Total`/`Internal`/`External` service count
-  stat) is removed from the API. Field number 6 is reserved and will not be
-  reused.
+- `MeshInsight.services` is removed from the API. Field number 6 is reserved
+  and will not be reused. Mesh-scoped service status now comes from
+  `MeshService` and `MeshExternalService`; the aggregated
+  `internal`/`external`/`gatewayDelegated` counts live under `services` in the
+  global insight endpoint, not in `MeshInsight`.
 - The Dataplane/MeshGateway inspect `_rules` endpoint no longer returns the
   legacy `toRules` and `fromRules` fields on each rule entry; both fields are
   removed from the response. `toResourceRules` and `inboundRules` are
@@ -794,12 +796,13 @@ legacy statistics:
 
 Update any automation or dashboards that read the legacy `ServiceInsight`
 resource or `/meshes/{mesh}/service-insights` endpoints, `MeshInsight.services`,
-or the `_rules` `toRules`/`fromRules` fields to use `MeshService`/
-`MeshExternalService` status and `_rules` `toResourceRules`/`inboundRules`
-instead. For delegated gateways, which are never turned into a `MeshService`,
-use the `Dataplane`/`DataplaneOverview` endpoints filtered by gateway type;
-aggregated gateway service counts remain available under `services` in the
-global insight endpoint.
+or the `_rules` `toRules`/`fromRules` fields. Use `MeshService`/
+`MeshExternalService` status for per-resource service state, `_rules`
+`toResourceRules`/`inboundRules` for inspect output, and the global insight
+endpoint's `services` object for aggregated `internal`/`external`/
+`gatewayDelegated` counts. For delegated gateways, which are never turned into
+a `MeshService`, use the `Dataplane`/`DataplaneOverview` endpoints filtered by
+gateway type when you need per-gateway detail.
 
 ### Zone proxies authenticate with a dataplane token
 
@@ -1360,11 +1363,11 @@ configuration. Applying, updating, or removing a `TrafficRoute` resource no
 longer changes outbound routing, load balancing, or reachable destinations
 for any dataplane, zone ingress, or zone egress.
 
-Traffic between services now always flows by default, the same way it
-already did in meshes that only use `MeshHTTPRoute`/`MeshTCPRoute`. A
-user-authored `TrafficRoute` no longer has any effect, including its former
-side effect of disabling the default routing fallback once such a resource
-existed and no `MeshHTTPRoute`/`MeshTCPRoute` matched instead.
+Traffic between services now always flows by default, the same way it already
+did in meshes that only use `MeshHTTPRoute`/`MeshTCPRoute`. A user-authored
+`TrafficRoute` no longer has any effect, including the legacy behavior where
+just having a `TrafficRoute` disabled the default routing fallback when no
+`MeshHTTPRoute`/`MeshTCPRoute` matched instead.
 
 The `TrafficRoute` resource, API, and KDS sync are still in place for this
 release; existing resources are still accepted and stored.
