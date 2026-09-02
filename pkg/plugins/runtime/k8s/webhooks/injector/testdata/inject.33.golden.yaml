@@ -19,6 +19,8 @@ metadata:
           skipConntrackZoneSplit: false
         inbound:
           enabled: true
+          excludePorts:
+          - 9902
           port: 15006
         outbound:
           enabled: true
@@ -146,7 +148,7 @@ spec:
       failureThreshold: 212
       httpGet:
         path: /ready
-        port: 9901
+        port: 9902
       initialDelaySeconds: 260
       periodSeconds: 25
       successThreshold: 1
@@ -156,7 +158,7 @@ spec:
       failureThreshold: 112
       httpGet:
         path: /ready
-        port: 9901
+        port: 9902
       initialDelaySeconds: 11
       periodSeconds: 15
       successThreshold: 11
@@ -182,7 +184,7 @@ spec:
     startupProbe:
       httpGet:
         path: /ready
-        port: 9901
+        port: 9902
       successThreshold: 1
     volumeMounts:
     - mountPath: /tmp
