@@ -22,8 +22,8 @@ func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelR
 	case br.Kind == common_api.MeshExternalService:
 	case br.Kind == common_api.MeshMultiZoneService:
 	default:
-		// Any other kind selects by kuma.io/service tag, which no longer
-		// resolves to anything a cluster can be built from.
+		// Any other kind selects by tag, which no longer resolves to
+		// anything a cluster can be built from.
 		return ResolvedBackendRef{}, false
 	}
 

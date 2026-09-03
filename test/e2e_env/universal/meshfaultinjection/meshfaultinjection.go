@@ -72,7 +72,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: test-server
+      kuma.io/display-name: test-server
   rules:
     - matches:
         - spiffeID:
@@ -102,7 +102,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: test-service-block-all-sources
+      kuma.io/display-name: test-service-block-all-sources
   rules:
     - default:
         http:
@@ -122,14 +122,14 @@ spec:
 			Install(TestServerUniversal(
 				"test-server", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"}),
-				WithLabels(map[string]string{"kuma.io/service": "test-server"}),
+				WithLabels(map[string]string{"kuma.io/display-name": "test-server"}),
 				WithWorkload("test-server"),
 			)).
 			Install(TestServerUniversal(
 				"test-server-block-all-sources", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"}),
 				WithServiceName("test-service-block-all-sources"),
-				WithLabels(map[string]string{"kuma.io/service": "test-service-block-all-sources"}),
+				WithLabels(map[string]string{"kuma.io/display-name": "test-service-block-all-sources"}),
 				WithWorkload("test-server-block-all-sources"),
 			)).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithWorkload("demo-client"))).

@@ -10,4 +10,4 @@ networking:
   inbound:
     - port: 8080
       tags:
-        kuma.io/service: foo
+        kuma.io/display-name: foo

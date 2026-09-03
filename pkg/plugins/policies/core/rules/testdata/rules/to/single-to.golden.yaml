@@ -15,7 +15,7 @@ Rules:
     type: MeshRetry
   OriginByMatches: {}
   Subset:
-  - Key: kuma.io/service
+  - Key: kuma.io/display-name
     Not: false
     Value: backend
 - Conf:

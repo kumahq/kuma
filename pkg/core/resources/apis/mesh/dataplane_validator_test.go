@@ -86,7 +86,7 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               gateway:
                 tags:
-                  kuma.io/service: backend
+                  kuma.io/display-name: backend
                   kuam.io/protocol: tcp
                   version: "1"
               outbound:
@@ -104,7 +104,7 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               gateway:
                 tags:
-                  kuma.io/service: backend
+                  kuma.io/display-name: backend
                   version: "1"
                   kuma.io/valid: abc.0123-789.under_score:90
               outbound:
@@ -453,7 +453,7 @@ var _ = Describe("Dataplane", func() {
                       servicePort: 7777
                   gateway:
                     tags:
-                      kuma.io/service: kong
+                      kuma.io/display-name: kong
                   outbound:
                     - port: 3333
                       backendRef:
@@ -474,7 +474,7 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   gateway:
                     tags:
-                      kuma.io/service: kong
+                      kuma.io/display-name: kong
                   listeners:
                     - type: ZoneEgress
                       address: 192.168.0.1
@@ -550,27 +550,6 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.inbound[0].address
                   message: address has to be valid IP address`,
 		}),
-		Entry("networking.gateway: empty service tag", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    tags:
-                      version: "v1"
-                  outbound:
-                    - port: 3333
-                      backendRef:
-                        kind: MeshService
-                        name: redis
-                        port: 6379`,
-			expected: `
-                violations:
-                - field: networking.gateway.tags
-                  message: mandatory tag "kuma.io/service" is missing`,
-		}),
 		Entry("networking.gateway: empty tag value", testCase{
 			dataplane: `
                 type: Dataplane
@@ -580,7 +559,7 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   gateway:
                     tags:
-                      kuma.io/service: backend
+                      kuma.io/display-name: backend
                       version:
                   outbound:
                     - port: 3333
@@ -602,7 +581,7 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   gateway:
                     tags:
-                      kuma.io/service: backend
+                      kuma.io/display-name: backend
                       kuma.io/protocol: http
                   outbound:
                     - port: 3333
@@ -1132,9 +1111,8 @@ var _ = Describe("Dataplane", func() {
 		}),
 	)
 
-	Describe("gateway service tag requirement based on tag presence", func() {
-		It("should allow dataplane with empty inbound tags (tag-free mode)", func() {
-			// setup
+	Describe("dataplane and gateway tags", func() {
+		It("should allow dataplane with empty inbound tags", func() {
 			dataplane := core_mesh.NewDataplaneResource()
 
 			// when
@@ -1146,12 +1124,12 @@ var _ = Describe("Dataplane", func() {
 `), dataplane.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
-			// then - empty tags = new setup, no service tag required
+			// then
 			err = dataplane.Validate()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should allow dataplane with empty gateway tags (tag-free mode)", func() {
+		It("should allow dataplane with empty gateway tags", func() {
 			dataplane := core_mesh.NewDataplaneResource()
 
 			// when
@@ -1164,7 +1142,7 @@ var _ = Describe("Dataplane", func() {
 `), dataplane.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
-			// then - empty tags = new setup, no service tag required
+			// then
 			err = dataplane.Validate()
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -1183,7 +1161,7 @@ var _ = Describe("Dataplane", func() {
                   gateway:
                     type: BUILTIN
                     tags:
-                      kuma.io/service: kong
+                      kuma.io/display-name: kong
 `), dataplane.Spec)
 
 			// then the value is not a known gateway type anymore

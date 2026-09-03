@@ -715,7 +715,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&instance=1&&kuma.io/display-name=zone-proxy-test-server&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/service=zone-proxy-test-server&&kuma.io/workload=zone-proxy-test-server&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
+                          "value": "&instance=1&&kuma.io/display-name=zone-proxy-test-server&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/display-name=zone-proxy-test-server&&kuma.io/workload=zone-proxy-test-server&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
                         }
                       }
                     ],
@@ -848,7 +848,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&instance=1&&kuma.io/display-name=zone-proxy-test-server&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/service=zone-proxy-test-server&&kuma.io/workload=zone-proxy-test-server&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
+                          "value": "&instance=1&&kuma.io/display-name=zone-proxy-test-server&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/display-name=zone-proxy-test-server&&kuma.io/workload=zone-proxy-test-server&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
                         }
                       }
                     ],
@@ -946,7 +946,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&instance=1&&kuma.io/display-name=zone-proxy-test-server&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/service=zone-proxy-test-server&&kuma.io/workload=zone-proxy-test-server&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
+                          "value": "&instance=1&&kuma.io/display-name=zone-proxy-test-server&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/display-name=zone-proxy-test-server&&kuma.io/workload=zone-proxy-test-server&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
                         }
                       }
                     ],
@@ -1167,7 +1167,7 @@
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig-zoneproxies",
               "kuma.io/origin": "zone",
-              "kuma.io/service": "zone-proxy-test-server",
+              "kuma.io/display-name": "zone-proxy-test-server",
               "kuma.io/workload": "zone-proxy-test-server",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",

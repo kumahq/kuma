@@ -16,14 +16,14 @@
             "sources": [
               {
                 "match": {
-                  "kuma.io/service": "*"
+                  "kuma.io/display-name": "*"
                 }
               }
             ],
             "destinations": [
               {
                 "match": {
-                  "kuma.io/service": "*"
+                  "kuma.io/display-name": "*"
                 }
               }
             ]
@@ -46,14 +46,14 @@
             "sources": [
               {
                 "match": {
-                  "kuma.io/service": "*"
+                  "kuma.io/display-name": "*"
                 }
               }
             ],
             "destinations": [
               {
                 "match": {
-                  "kuma.io/service": "*"
+                  "kuma.io/display-name": "*"
                 }
               }
             ],
@@ -82,14 +82,14 @@
             "sources": [
               {
                 "match": {
-                  "kuma.io/service": "*"
+                  "kuma.io/display-name": "*"
                 }
               }
             ],
             "destinations": [
               {
                 "match": {
-                  "kuma.io/service": "*"
+                  "kuma.io/display-name": "*"
                 }
               }
             ],
@@ -98,7 +98,7 @@
                 "roundRobin": {}
               },
               "destination": {
-                "kuma.io/service": "gateway"
+                "kuma.io/display-name": "gateway"
               }
             }
           }
@@ -120,14 +120,14 @@
             "sources": [
               {
                 "match": {
-                  "kuma.io/service": "*"
+                  "kuma.io/display-name": "*"
                 }
               }
             ],
             "destinations": [
               {
                 "match": {
-                  "kuma.io/service": "*"
+                  "kuma.io/display-name": "*"
                 }
               }
             ],
@@ -151,14 +151,14 @@
             "sources": [
               {
                 "match": {
-                  "kuma.io/service": "*"
+                  "kuma.io/display-name": "*"
                 }
               }
             ],
             "destinations": [
               {
                 "match": {
-                  "kuma.io/service": "*"
+                  "kuma.io/display-name": "*"
                 }
               }
             ],

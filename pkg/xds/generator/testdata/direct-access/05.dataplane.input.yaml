@@ -2,7 +2,7 @@ type: Dataplane
 name: web-1
 mesh: default
 labels:
-  kuma.io/service: web
+  kuma.io/display-name: web
 networking:
   address: 192.168.0.1
   inbound:

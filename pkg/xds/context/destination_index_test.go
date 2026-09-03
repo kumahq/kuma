@@ -33,7 +33,7 @@ var _ = Describe("DestinationIndex", func() {
 					mesh_proto.ZoneTag:          "zone-1",
 				}).
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				WithTransparentProxying(15001, 15006, "").
 				Build()
 
@@ -67,7 +67,7 @@ var _ = Describe("DestinationIndex", func() {
 			dp := builders.Dataplane().
 				WithName("dp-1").
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				WithTransparentProxying(15001, 15006, "").
 				Build()
 
@@ -108,7 +108,7 @@ var _ = Describe("DestinationIndex", func() {
 					mesh_proto.ZoneTag:          "zone-1",
 				}).
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				WithTransparentProxying(15001, 15006, "").
 				Build()
 
@@ -149,7 +149,7 @@ var _ = Describe("DestinationIndex", func() {
 					mesh_proto.ZoneTag:          "zone-1",
 				}).
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				WithTransparentProxying(15001, 15006, "").
 				Build()
 
@@ -188,7 +188,7 @@ var _ = Describe("DestinationIndex", func() {
 					mesh_proto.ZoneTag:          "zone-1",
 				}).
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				AddOutbound(
 					builders.Outbound().
 						WithPort(10001).
@@ -222,7 +222,7 @@ var _ = Describe("DestinationIndex", func() {
 					mesh_proto.ZoneTag:          "zone-1",
 				}).
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				WithTransparentProxying(15001, 15006, "").
 				Build()
 

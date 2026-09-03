@@ -41,9 +41,9 @@ var _ = Describe("MeshServiceConfig Validate", func() {
 		Entry("rejects kuma.io/ reserved key", testCase{
 			cfg: kuma_cp.MeshServiceLabelPropagation{
 				Enabled:          true,
-				AllowedLabelKeys: []string{"app", "kuma.io/service"},
+				AllowedLabelKeys: []string{"app", "kuma.io/mesh"},
 			},
-			wantErr: `reserved key "kuma.io/service"`,
+			wantErr: `reserved key "kuma.io/mesh"`,
 		}),
 		Entry("rejects k8s.kuma.io/ reserved key", testCase{
 			cfg: kuma_cp.MeshServiceLabelPropagation{

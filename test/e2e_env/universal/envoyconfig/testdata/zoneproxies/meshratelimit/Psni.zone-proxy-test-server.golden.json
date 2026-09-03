@@ -815,7 +815,7 @@
             "io.kuma.tags": {
               "instance": "1",
               "kuma.io/protocol": "http",
-              "kuma.io/service": "zone-proxy-test-server",
+              "kuma.io/display-name": "zone-proxy-test-server",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",
               "version": "v1"

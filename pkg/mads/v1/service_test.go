@@ -214,8 +214,8 @@ var _ = Describe("MADS http service", func() {
 					Address: "192.168.0.1",
 					Gateway: &v1alpha1.Dataplane_Networking_Gateway{
 						Tags: map[string]string{
-							"kuma.io/service": "gateway",
-							"region":          "eu",
+							"kuma.io/display-name": "gateway",
+							"region":               "eu",
 						},
 					},
 				},

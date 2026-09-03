@@ -3,7 +3,7 @@ type: Dataplane
 name: web-1
 mesh: default
 labels:
-  kuma.io/service: web
+  kuma.io/display-name: web
 networking:
   address: 192.168.0.1
   inbound:
@@ -12,7 +12,7 @@ networking:
     - address: 192.168.0.4
       port: 1234
       tags:
-        kuma.io/service: redis
+        kuma.io/display-name: redis
   transparentProxying:
     redirectPort: 15001
     directAccessServices: ["backend"]
@@ -21,7 +21,7 @@ type: Dataplane
 name: backend-1
 mesh: default
 labels:
-  kuma.io/service: backend
+  kuma.io/display-name: backend
 networking:
   address: 192.168.0.2
   inbound:
@@ -32,7 +32,7 @@ type: Dataplane
 name: backend-2
 mesh: default
 labels:
-  kuma.io/service: backend
+  kuma.io/display-name: backend
 networking:
   address: 192.168.0.3
   inbound:
@@ -42,7 +42,7 @@ type: Dataplane
 name: backend-api-1
 mesh: default
 labels:
-  kuma.io/service: backend-api
+  kuma.io/display-name: backend-api
 networking:
   address: 192.168.0.5
   inbound:
@@ -52,7 +52,7 @@ type: Dataplane
 name: redis-1
 mesh: default
 labels:
-  kuma.io/service: redis
+  kuma.io/display-name: redis
 networking:
   address: 192.168.0.4
   inbound:

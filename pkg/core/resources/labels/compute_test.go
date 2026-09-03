@@ -291,7 +291,7 @@ var _ = Describe("Compute", func() {
 						Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 							Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
 							Tags: map[string]string{
-								mesh_proto.ServiceTag: "test-gateway",
+								"kuma.io/display-name": "test-gateway",
 							},
 						},
 					},

@@ -287,9 +287,6 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 		return result
 	}
 	result.Add(ValidateTags(validators.RootedAt("tags"), gateway.Tags, ValidateTagsOpts{
-		// Require service tag only if gateway has any tags.
-		// Gateways have no tags in tag-free mode.
-		RequireService:      len(gateway.Tags) > 0,
 		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
 	}),
 	)

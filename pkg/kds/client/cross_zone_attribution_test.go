@@ -144,8 +144,8 @@ func gatewayDataplaneWithDivergentZoneTag() *mesh_proto.Dataplane {
 			Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 				Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
 				Tags: map[string]string{
-					mesh_proto.ZoneTag:    otherZone,
-					mesh_proto.ServiceTag: "gateway-a",
+					mesh_proto.ZoneTag:     otherZone,
+					"kuma.io/display-name": "gateway-a",
 				},
 			},
 		},

@@ -127,7 +127,7 @@ var _ = Describe("Dataplane", func() {
                       port: 8080
                   gateway:
                     tags:
-                      kuma.io/service: gateway
+                      env: prod
                   address: 192.168.0.1
 `,
 				expected: `{
@@ -135,7 +135,7 @@ var _ = Describe("Dataplane", func() {
     "address": "192.168.0.1",
     "gateway": {
       "tags": {
-        "kuma.io/service": "gateway"
+        "env": "prod"
       }
     },
     "outbound": [

@@ -15,4 +15,4 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: my-svc
+        kuma.io/display-name: my-svc

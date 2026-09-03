@@ -147,7 +147,7 @@ message Dataplane {
       uint32 port = 4;
 
       reserved 5;
-      reserved "tags"; // Formerly kuma.io/service based outbounds, see #17808
+      reserved "tags"; // Formerly tag-based outbounds, see #17808
 
       // BackendRef is a way to target MeshService.
       BackendRef backendRef = 6;
@@ -180,9 +180,7 @@ message Dataplane {
         reserved "BUILTIN";
       }
 
-      // Tags associated with a gateway of this data plane to, e.g.
-      // `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is
-      // mandatory.
+      // Tags associated with a gateway of this data plane, e.g. `env=prod`.
       map<string, string> tags = 1 [(validate.rules).map.min_pairs = 1];
 
       // Type of gateway this data plane proxy manages.

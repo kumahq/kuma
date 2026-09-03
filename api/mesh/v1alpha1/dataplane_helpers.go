@@ -41,8 +41,6 @@ const (
 )
 
 const (
-	// Mandatory tag that has a reserved meaning in Kuma.
-	ServiceTag     = "kuma.io/service"
 	ServiceUnknown = "unknown"
 
 	// Locality related tags
@@ -345,11 +343,6 @@ func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
 		return false
 	}
 	return selector.MatchesFuzzy(d.GetNetworking().GetGateway().GetTags())
-}
-
-// GetServiceFallback returns the service this inbound belongs to.
-func (d *Dataplane_Networking_Inbound) GetServiceFallback(fallback string) string {
-	return fallback
 }
 
 // GetSectionName returns either inbound name or stringified port value

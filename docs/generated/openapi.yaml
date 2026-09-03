@@ -5423,12 +5423,8 @@ components:
                   additionalProperties:
                     type: string
                   description: >-
-                    Tags associated with a gateway of this data plane to, e.g.
-
-                    `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag
-                    is
-
-                    mandatory.
+                    Tags associated with a gateway of this data plane, e.g.
+                    `env=prod`.
                   type: object
                 type:
                   description: >-
@@ -13700,13 +13696,8 @@ components:
                       additionalProperties:
                         type: string
                       description: >-
-                        Tags associated with a gateway of this data plane to,
-                        e.g.
-
-                        `kuma.io/service=gateway`, `env=prod`. `kuma.io/service`
-                        tag is
-
-                        mandatory.
+                        Tags associated with a gateway of this data plane, e.g.
+                        `env=prod`.
                       type: object
                     type:
                       description: >-

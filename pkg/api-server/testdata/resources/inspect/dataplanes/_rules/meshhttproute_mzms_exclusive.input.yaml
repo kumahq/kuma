@@ -94,4 +94,4 @@ networking:
       protocol: http
       tags:
         app: backend
-        kuma.io/service: foo
+        kuma.io/display-name: foo

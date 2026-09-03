@@ -140,9 +140,9 @@ var _ = Describe("MeshAccessLog", func() {
 				WithResources(meshResources).
 				WithEndpointMap(
 					xds_builders.EndpointMap().
-						AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/service", "backend")).
-						AddEndpoint("other-service-http", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service")).
-						AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
+						AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/display-name", "backend")).
+						AddEndpoint("other-service-http", xds_builders.Endpoint().WithTags("kuma.io/display-name", "other-service")).
+						AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/display-name", "other-service-tcp")),
 				).
 				Build()
 
@@ -996,8 +996,8 @@ var _ = Describe("MeshAccessLog", func() {
 			WithResources(meshResources).
 			WithEndpointMap(
 				xds_builders.EndpointMap().
-					AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/service", "backend")).
-					AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
+					AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/display-name", "backend")).
+					AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/display-name", "other-service-tcp")),
 			).
 			Build()
 
@@ -1083,8 +1083,8 @@ var _ = Describe("MeshAccessLog", func() {
 			WithResources(meshResources).
 			WithEndpointMap(
 				xds_builders.EndpointMap().
-					AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/service", "backend")).
-					AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/service", "other-service-tcp")),
+					AddEndpoint("backend", xds_builders.Endpoint().WithTags("kuma.io/display-name", "backend")).
+					AddEndpoint("other-service-tcp", xds_builders.Endpoint().WithTags("kuma.io/display-name", "other-service-tcp")),
 			).
 			Build()
 
@@ -1169,14 +1169,14 @@ func otherServiceHTTPListener() core_xds.Resource {
 				Port:    27777,
 			},
 			Protocol:            core_meta.ProtocolHTTP,
-			KumaServiceTagValue: "other-service-http",
+			DestinationResource: "other-service-http",
 		},
 		[]meshhttproute_xds.OutboundRoute{{
 			Split: backendRefSplits(
 				xds.NewSplitBuilder().WithClusterName("other-service-http").Build(),
 			),
 		}},
-		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
+		mesh_proto.MultiValueTagSet{"kuma.io/display-name": {"backend": true}},
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener
@@ -1219,7 +1219,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 			DestinationResource: destinationName(serviceResourceKRI, port),
 		},
 		routes,
-		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
+		mesh_proto.MultiValueTagSet{"kuma.io/display-name": {"backend": true}},
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener

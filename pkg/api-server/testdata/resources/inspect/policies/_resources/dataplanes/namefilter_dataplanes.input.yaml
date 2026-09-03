@@ -26,7 +26,7 @@ networking:
   inbound:
     - port: 8080
       tags:
-        kuma.io/service: foo
+        kuma.io/display-name: foo
 ---
 type: Dataplane
 name: dp-2
@@ -39,7 +39,7 @@ networking:
   inbound:
     - port: 8080
       tags:
-        kuma.io/service: bar
+        kuma.io/display-name: bar
 ---
 type: Dataplane
 name: the-dp
@@ -52,4 +52,4 @@ networking:
   inbound:
     - port: 8080
       tags:
-        kuma.io/service: bar
+        kuma.io/display-name: bar

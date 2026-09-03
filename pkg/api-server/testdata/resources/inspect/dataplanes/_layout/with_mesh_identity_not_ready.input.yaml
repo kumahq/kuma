@@ -15,7 +15,7 @@ networking:
       name: main-port
       protocol: http
       tags:
-        kuma.io/service: foo
+        kuma.io/display-name: foo
         kuma.io/protocol: http
 ---
 type: MeshIdentity

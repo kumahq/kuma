@@ -669,9 +669,7 @@ func (x *Dataplane_Networking_Outbound) GetBackendRef() *Dataplane_Networking_Ou
 // Gateway describes a service that ingress should not be proxied.
 type Dataplane_Networking_Gateway struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Tags associated with a gateway of this data plane to, e.g.
-	// `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is
-	// mandatory.
+	// Tags associated with a gateway of this data plane, e.g. `env=prod`.
 	Tags map[string]string `protobuf:"bytes,1,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// Type of gateway this data plane proxy manages.
 	//

@@ -182,7 +182,7 @@ func (c *UniversalControlPlane) GenerateDpToken(mesh, service, workload string) 
 
 	if service != "" {
 		tokenData["tags"] = map[string][]string{
-			"kuma.io/service": {service},
+			"kuma.io/display-name": {service},
 		}
 	}
 

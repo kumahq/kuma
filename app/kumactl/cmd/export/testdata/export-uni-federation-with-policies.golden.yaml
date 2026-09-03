@@ -17,7 +17,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web
+      kuma.io/display-name: web
   to:
   - default:
       backends:
@@ -45,7 +45,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web
+      kuma.io/display-name: web
   to:
   - default:
       backends:

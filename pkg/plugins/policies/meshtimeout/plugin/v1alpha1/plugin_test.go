@@ -98,7 +98,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "backend")).
 			WithRouting(
 				xds_builders.Routing().
 					WithOutboundTargets(
@@ -563,7 +563,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().
 				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
 					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
@@ -649,7 +649,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().
 				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
 					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
@@ -723,7 +723,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().
 				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
 					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{

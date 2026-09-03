@@ -386,7 +386,7 @@ var _ = Describe("Insight Persistence", func() {
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "10.0.0.2",
 				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "delegated-gw"},
+					Tags: map[string]string{"kuma.io/display-name": "delegated-gw"},
 					Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
 				},
 			},
@@ -638,7 +638,7 @@ var _ = Describe("Insight Persistence", func() {
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.0.0.1",
 				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "gateway"},
+					Tags: map[string]string{"kuma.io/display-name": "gateway"},
 				},
 			},
 		}
@@ -660,7 +660,7 @@ var _ = Describe("Insight Persistence", func() {
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.0.0.1",
 				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "gateway"},
+					Tags: map[string]string{"kuma.io/display-name": "gateway"},
 				},
 			},
 		}
@@ -685,7 +685,7 @@ var _ = Describe("Insight Persistence", func() {
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.0.0.1",
 				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "gateway"},
+					Tags: map[string]string{"kuma.io/display-name": "gateway"},
 				},
 			},
 		}

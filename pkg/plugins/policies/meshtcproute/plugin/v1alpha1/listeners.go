@@ -10,7 +10,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -25,14 +24,9 @@ func GenerateOutboundListener(
 	address := svc.Outbound.GetAddressWithFallback("127.0.0.1")
 	port := svc.Outbound.GetPort()
 
-	listenerName := envoy_names.GetOutboundListenerName(address, port)
-	listenerStatPrefix := ""
-	tcpProxyStatPrefix := svc.KumaServiceTagValue
-	if svc.DestinationResource != "" {
-		listenerName = svc.DestinationResource
-		listenerStatPrefix = listenerName
-		tcpProxyStatPrefix = listenerName
-	}
+	listenerName := svc.DestinationResource
+	listenerStatPrefix := listenerName
+	tcpProxyStatPrefix := listenerName
 
 	tags := svc.OutboundListenerTags()
 

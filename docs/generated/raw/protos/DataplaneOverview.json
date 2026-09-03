@@ -86,7 +86,7 @@
                         "type": "string"
                     },
                     "type": "object",
-                    "description": "Tags associated with a gateway of this data plane to, e.g. `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is mandatory."
+                    "description": "Tags associated with a gateway of this data plane, e.g. `env=prod`."
                 },
                 "type": {
                     "enum": [

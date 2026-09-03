@@ -35,7 +35,7 @@ var (
 		Networking: &mesh_proto.Dataplane_Networking{
 			Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 				Tags: map[string]string{
-					mesh_proto.ServiceTag: "gateway",
+					"kuma.io/display-name": "gateway",
 				},
 				Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
 			},

@@ -52,7 +52,7 @@ func test(meshName string, meshBuilder *builders.MeshBuilder, withEgress bool) {
 		NewClusterSetup().
 			Install(Parallel(
 				DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true),
-					WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient})),
+					WithLabels(map[string]string{"kuma.io/display-name": AppModeDemoClient})),
 				TestServerUniversal(
 					"dp-echo-1", meshName,
 					WithArgs([]string{"echo", "--instance", "zone1-v1"}),
@@ -118,7 +118,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: demo-client
+      kuma.io/display-name: demo-client
   to:
     - targetRef:
         kind: MeshService

@@ -30,7 +30,7 @@ var _ = Describe("Dataplane Manager", func() {
 					Address: "10.0.0.1",
 					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 						Tags: map[string]string{
-							mesh_proto.ServiceTag: "service-1",
+							"kuma.io/display-name": "service-1",
 						},
 					},
 				},
@@ -64,7 +64,7 @@ var _ = Describe("Dataplane Manager", func() {
 					Address: "10.0.0.1",
 					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 						Tags: map[string]string{
-							mesh_proto.ServiceTag: "service-1",
+							"kuma.io/display-name": "service-1",
 						},
 					},
 				},

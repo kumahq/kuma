@@ -6,8 +6,6 @@ import (
 	"text/template"
 
 	"github.com/pkg/errors"
-
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 )
 
 // DataplaneTemplateData represents the data for dataplane templates
@@ -121,7 +119,7 @@ func RenderDataplaneTemplate(data DataplaneTemplateData) (string, error) {
 	maps.Copy(labels, data.Labels)
 	maps.Copy(labels, data.AdditionalTags)
 	if data.ServiceName != "" {
-		labels[mesh_proto.ServiceTag] = data.ServiceName
+		labels["kuma.io/display-name"] = data.ServiceName
 	}
 	if data.Team != "" {
 		labels["team"] = data.Team
