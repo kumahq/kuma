@@ -255,6 +255,17 @@ components:
                     required:
                       - type
                     type: object
+                    oneOf:
+                      - properties:
+                          prometheus: {}
+                          type:
+                            enum:
+                              - Prometheus
+                      - properties:
+                          openTelemetry: {}
+                          type:
+                            enum:
+                              - OpenTelemetry
                   type: array
                 sidecar:
                   description: Sidecar metrics collection configuration

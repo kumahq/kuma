@@ -348,6 +348,17 @@ components:
                                               required:
                                                 - type
                                               type: object
+                                              oneOf:
+                                                - properties:
+                                                    replaceFullPath: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplaceFullPath
+                                                - properties:
+                                                    replacePrefixMatch: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplacePrefixMatch
                                             port:
                                               description: |-
                                                 Port is the port to be used in the value of the `Location`
@@ -457,10 +468,47 @@ components:
                                               required:
                                                 - type
                                               type: object
+                                              oneOf:
+                                                - properties:
+                                                    replaceFullPath: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplaceFullPath
+                                                - properties:
+                                                    replacePrefixMatch: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplacePrefixMatch
                                           type: object
                                       required:
                                         - type
                                       type: object
+                                      oneOf:
+                                        - properties:
+                                            requestHeaderModifier: {}
+                                            type:
+                                              enum:
+                                                - RequestHeaderModifier
+                                        - properties:
+                                            responseHeaderModifier: {}
+                                            type:
+                                              enum:
+                                                - ResponseHeaderModifier
+                                        - properties:
+                                            requestRedirect: {}
+                                            type:
+                                              enum:
+                                                - RequestRedirect
+                                        - properties:
+                                            type:
+                                              enum:
+                                                - URLRewrite
+                                            urlRewrite: {}
+                                        - properties:
+                                            requestMirror: {}
+                                            type:
+                                              enum:
+                                                - RequestMirror
                                     type: array
                                   kind:
                                     description: Kind of the referenced resource
@@ -635,6 +683,17 @@ components:
                                         required:
                                           - type
                                         type: object
+                                        oneOf:
+                                          - properties:
+                                              replaceFullPath: {}
+                                              type:
+                                                enum:
+                                                  - ReplaceFullPath
+                                          - properties:
+                                              replacePrefixMatch: {}
+                                              type:
+                                                enum:
+                                                  - ReplacePrefixMatch
                                       port:
                                         description: |-
                                           Port is the port to be used in the value of the `Location`
@@ -744,10 +803,47 @@ components:
                                         required:
                                           - type
                                         type: object
+                                        oneOf:
+                                          - properties:
+                                              replaceFullPath: {}
+                                              type:
+                                                enum:
+                                                  - ReplaceFullPath
+                                          - properties:
+                                              replacePrefixMatch: {}
+                                              type:
+                                                enum:
+                                                  - ReplacePrefixMatch
                                     type: object
                                 required:
                                   - type
                                 type: object
+                                oneOf:
+                                  - properties:
+                                      requestHeaderModifier: {}
+                                      type:
+                                        enum:
+                                          - RequestHeaderModifier
+                                  - properties:
+                                      responseHeaderModifier: {}
+                                      type:
+                                        enum:
+                                          - ResponseHeaderModifier
+                                  - properties:
+                                      requestRedirect: {}
+                                      type:
+                                        enum:
+                                          - RequestRedirect
+                                  - properties:
+                                      type:
+                                        enum:
+                                          - URLRewrite
+                                      urlRewrite: {}
+                                  - properties:
+                                      requestMirror: {}
+                                      type:
+                                        enum:
+                                          - RequestMirror
                               type: array
                           type: object
                         matches:
