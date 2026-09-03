@@ -5,6 +5,7 @@ metadata:
   labels:
     app: example
     k8s.kuma.io/namespace: demo
+    kuma.io/display-name: test-app-8646b8bbc8-5qbl2
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
     kuma.io/zone: default
