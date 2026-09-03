@@ -55,6 +55,7 @@ paths:
               schema:
                 oneOf:
                   - $ref: '/specs/protoresources/dataplaneoverview/rest.yaml#/components/schemas/DataplaneOverviewWithMeta'
+                  - $ref: '/specs/protoresources/meshoverview/rest.yaml#/components/schemas/MeshOverviewWithMeta'
         '400':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
         '404':

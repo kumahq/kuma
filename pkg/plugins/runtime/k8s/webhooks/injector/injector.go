@@ -96,10 +96,12 @@ func New(
 	converter k8s_common.Converter,
 	envoyAdminPort uint32,
 	readinessPort uint32,
-	envoyAdminUnixSocket bool,
 	systemNamespace string,
 	metrics core_metrics.Metrics,
 ) (*KumaInjector, error) {
+	if readinessPort == 0 {
+		return nil, errors.New("readinessPort has to be in (0, 65535] range")
+	}
 	var caCert string
 	if cfg.CaCertFile != "" {
 		bytes, err := os.ReadFile(cfg.CaCertFile)
@@ -123,11 +125,10 @@ func New(
 		converter:                converter,
 		defaultAdminPort:         envoyAdminPort,
 		defaultReadinessPort:     readinessPort,
-		envoyAdminUnixSocket:     envoyAdminUnixSocket,
 		proxyFactory: containers.NewDataplaneProxyFactory(
 			controlPlaneURL, caCert, envoyAdminPort, readinessPort,
 			cfg.SidecarContainer.DataplaneContainer,
-			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, envoyAdminUnixSocket,
+			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady,
 			sidecarContainersEnabled,
 			cfg.ApplicationProbeProxyPort,
 			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
@@ -145,7 +146,6 @@ type KumaInjector struct {
 	proxyFactory             *containers.DataplaneProxyFactory
 	defaultAdminPort         uint32
 	defaultReadinessPort     uint32
-	envoyAdminUnixSocket     bool
 	systemNamespace          string
 	metrics                  *injectionMetrics
 }
@@ -230,13 +230,11 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 		return err
 	}
 
-	// When admin UDS is enabled, the readiness reporter listens on a
-	// TCP port instead of the Envoy admin port. Exclude it from
-	// inbound interception so K8s probes reach kuma-dp directly.
-	if i.envoyAdminUnixSocket && i.defaultReadinessPort != 0 {
-		if err := tpCfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", i.defaultReadinessPort)); err != nil {
-			return err
-		}
+	// K8s probes hit the readiness reporter on the readiness port, so
+	// exclude it from inbound interception to let them reach kuma-dp
+	// directly.
+	if err := tpCfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", i.defaultReadinessPort)); err != nil {
+		return err
 	}
 
 	// When application probe proxying is disabled, K8s probes hit the
