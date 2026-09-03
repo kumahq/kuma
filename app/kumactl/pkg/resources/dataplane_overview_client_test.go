@@ -84,7 +84,6 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 			// and
 			Expect(list.Items).To(HaveLen(1))
 			Expect(list.Items[0].Meta.GetName()).To(Equal("one"))
-			Expect(list.Items[0].Spec.Dataplane.Networking.Gateway.Tags).To(HaveKeyWithValue("service", "kong"))
 
 			Expect(list.Items[0].Spec.DataplaneInsight.Subscriptions).To(HaveLen(2))
 		})

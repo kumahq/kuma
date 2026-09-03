@@ -46,7 +46,7 @@ func (p *PodConverter) PodToDataplane(
 	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
 	previousMesh := dataplane.Mesh
 	dataplane.Mesh = mesh.Meta.GetName()
-	dataplaneProto, err := p.dataplaneFor(ctx, pod, services)
+	dataplaneProto, err := p.dataplaneFor(pod, services)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,6 @@ func processReachableBackendRefs(refs ReachableBackendRefs) []*mesh_proto.Datapl
 }
 
 func (p *PodConverter) dataplaneFor(
-	ctx context.Context,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
 ) (*mesh_proto.Dataplane, error) {
@@ -155,11 +154,7 @@ func (p *PodConverter) dataplaneFor(
 		return nil, err
 	}
 	if gwEnabled {
-		gateway, err := p.GatewayByServiceFor(ctx, pod, services)
-		if err != nil {
-			return nil, err
-		}
-		dataplane.Networking.Gateway = gateway
+		dataplane.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{}
 	} else {
 		var regularServices, zoneProxyServices []*kube_core.Service
 		for _, svc := range services {
@@ -227,13 +222,6 @@ func (p *PodConverter) dataplaneFor(
 	}
 
 	return dataplane, nil
-}
-
-func (p *PodConverter) GatewayByServiceFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
-	return &mesh_proto.Dataplane_Networking_Gateway{
-		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-		Tags: map[string]string{},
-	}, nil
 }
 
 func mergeLabels(existingLabels map[string]string, labelSets ...map[string]string) map[string]string {

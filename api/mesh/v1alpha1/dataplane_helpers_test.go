@@ -340,42 +340,6 @@ var _ = Describe("Dataplane classification", func() {
 			Expect(gw.IsDelegatedGateway()).To(BeTrue())
 		})
 	})
-
-	Describe("with delegated gateway networking", func() {
-		It("should be a gateway", func() {
-			gw := Dataplane{
-				Networking: &Dataplane_Networking{
-					Gateway: &Dataplane_Networking_Gateway{
-						Type: Dataplane_Networking_Gateway_DELEGATED,
-					},
-				},
-			}
-			Expect(gw.IsDelegatedGateway()).To(BeTrue())
-		})
-	})
-})
-
-var _ = Describe("Dataplane with gateway", func() {
-	d := Dataplane{
-		Networking: &Dataplane_Networking{
-			Gateway: &Dataplane_Networking_Gateway{
-				Tags: map[string]string{
-					"kuma.io/service": "backend",
-					"version":         "v1",
-				},
-			},
-		},
-	}
-
-	Describe("Tags()", func() {
-		It("should provide combined tags", func() {
-			// when
-			tags := d.TagSet()
-
-			// then
-			Expect(tags.Values("kuma.io/service")).To(Equal([]string{"backend"}))
-		})
-	})
 })
 
 var _ = Describe("TagSelector", func() {

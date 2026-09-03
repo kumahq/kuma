@@ -60,7 +60,6 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		return core_manager.MeshNotFound(opts.Mesh)
 	}
 
-	m.setGatewayClusterTag(dp)
 	m.setHealth(dp)
 	labels, err := resource_labels.Compute(
 		resource.Descriptor(),
@@ -100,8 +99,6 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 		return core_manager.MeshNotFound(resource.GetMeta().GetMesh())
 	}
 
-	m.setGatewayClusterTag(dp)
-
 	opts := core_store.NewUpdateOptions(fs...)
 	labels, err := resource_labels.Compute(
 		resource.Descriptor(),
@@ -131,16 +128,6 @@ func (m *dataplaneManager) dataplane(resource core_model.Resource) (*core_mesh.D
 		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.DataplaneResource)(nil), resource)
 	}
 	return dp, nil
-}
-
-func (m *dataplaneManager) setGatewayClusterTag(dp *core_mesh.DataplaneResource) {
-	if m.zone == "" || dp.Spec.GetNetworking().GetGateway() == nil {
-		return
-	}
-	if dp.Spec.Networking.Gateway.Tags == nil {
-		dp.Spec.Networking.Gateway.Tags = make(map[string]string)
-	}
-	dp.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag] = m.zone
 }
 
 func (m *dataplaneManager) setHealth(dp *core_mesh.DataplaneResource) {

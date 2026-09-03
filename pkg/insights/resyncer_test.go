@@ -385,10 +385,7 @@ var _ = Describe("Insight Persistence", func() {
 		delegatedGw.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "10.0.0.2",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "delegated-gw"},
-					Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-				},
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
 			},
 		}
 		err = rm.Create(context.Background(), delegatedGw, store.CreateByKey("dp2", "mesh-1"))
@@ -637,9 +634,7 @@ var _ = Describe("Insight Persistence", func() {
 		dpOnline.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.0.0.1",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "gateway"},
-				},
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
 			},
 		}
 		err = rm.Create(context.Background(), dpOnline, store.CreateByKey("dpOnline", "mesh-1"))
@@ -659,9 +654,7 @@ var _ = Describe("Insight Persistence", func() {
 		dpOffline.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.0.0.1",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "gateway"},
-				},
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
 			},
 		}
 		err = rm.Create(context.Background(), dpOffline, store.CreateByKey("dpOffline", "mesh-1"))
@@ -684,9 +677,7 @@ var _ = Describe("Insight Persistence", func() {
 		dpNoInsights.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.0.0.1",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "gateway"},
-				},
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
 			},
 		}
 		err = rm.Create(context.Background(), dpNoInsights, store.CreateByKey("dpNoInsights", "mesh-1"))

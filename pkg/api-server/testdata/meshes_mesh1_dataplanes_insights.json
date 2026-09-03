@@ -74,11 +74,7 @@
    "dataplane": {
     "networking": {
      "address": "127.0.0.1",
-     "gateway": {
-      "tags": {
-       "service": "gateway"
-      }
-     }
+     "gateway": {}
     }
    },
    "dataplaneInsight": {

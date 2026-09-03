@@ -81,7 +81,6 @@ func dataplaneOverviewsTable(now time.Time) printers.Table {
 				return nil, nil
 			}
 			meta := dataplaneOverviews.Items[i].Meta
-			dataplane := dataplaneOverviews.Items[i].Spec.Dataplane
 			dataplaneInsight := dataplaneOverviews.Items[i].Spec.DataplaneInsight
 			dataplaneOverview := dataplaneOverviews.Items[i]
 
@@ -141,7 +140,7 @@ func dataplaneOverviewsTable(now time.Time) printers.Table {
 			return []string{
 				meta.GetMesh(), // MESH
 				meta.GetName(), // NAME,
-				core_mesh.DisplayTags(dataplane, meta.GetLabels()).String(), // TAGS
+				core_mesh.DisplayTags(meta.GetLabels()).String(), // TAGS
 				status.String(),                      // STATUS
 				table.Ago(lastConnected, now),        // LAST CONNECTED AGO
 				table.Ago(lastUpdated, now),          // LAST UPDATED AGO

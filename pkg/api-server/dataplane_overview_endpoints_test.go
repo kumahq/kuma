@@ -72,11 +72,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 		createDpWithInsights("gateway-delegated", &v1alpha1.Dataplane{
 			Networking: &v1alpha1.Dataplane_Networking{
 				Address: "127.0.0.1",
-				Gateway: &v1alpha1.Dataplane_Networking_Gateway{
-					Tags: map[string]string{
-						"service": "gateway",
-					},
-				},
+				Gateway: &v1alpha1.Dataplane_Networking_Gateway{},
 			},
 		})
 		dp1Labels := map[string]string{

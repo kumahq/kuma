@@ -166,34 +166,19 @@ message Dataplane {
       }
     }
 
-    // Gateway describes a service that ingress should not be proxied.
+    // Gateway marks this data plane proxy as a delegated gateway: an
+    // independently deployed proxy (e.g., Kong) that receives inbound traffic
+    // which is not proxied by Kuma, and sends outbound traffic into the data
+    // plane proxy. Its presence is the whole signal, so the message carries no
+    // fields; the proxy is identified by the Dataplane's labels like any other.
+    //
+    // See https://kuma.io/docs/latest/explore/gateway/ for more information.
     message Gateway {
-      enum GatewayType {
-        // A `DELEGATED` gateway is an independently deployed proxy that
-        // receives inbound traffic that is not proxied by Kuma, and
-        // it sends outbound traffic into the data plane proxy.
-        DELEGATED = 0;
-
-        // `BUILTIN = 1` was removed along with the built-in gateway. The
-        // ordinal stays reserved so it is never reused for a new type.
-        reserved 1;
-        reserved "BUILTIN";
-      }
-
-      // Tags associated with a gateway of this data plane to, e.g.
-      // `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is
-      // mandatory.
-      map<string, string> tags = 1 [(validate.rules).map.min_pairs = 1];
-
-      // Type of gateway this data plane proxy manages.
-      //
-      // The only supported type is `DELEGATED`: an independently deployed proxy
-      // (e.g., Kong, Contour, etc) that receives inbound traffic that is not
-      // proxied by Kuma, and it sends outbound traffic into the data plane
-      // proxy.
-      //
-      // See https://kuma.io/docs/latest/explore/gateway/ for more information.
-      GatewayType type = 2;
+      // `tags = 1` and `type = 2` were removed along with the tag-based
+      // model and the built-in gateway. The ordinals stay reserved so they
+      // are never reused.
+      reserved 1, 2;
+      reserved "tags", "type";
     }
 
     // TransparentProxying describes configuration for transparent proxying.

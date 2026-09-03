@@ -80,34 +80,10 @@
             "description": "Networking describes inbound and outbound interfaces of a data plane proxy."
         },
         "kuma.mesh.v1alpha1.Dataplane.Networking.Gateway": {
-            "properties": {
-                "tags": {
-                    "additionalProperties": {
-                        "type": "string"
-                    },
-                    "type": "object",
-                    "description": "Tags associated with a gateway of this data plane to, e.g. `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is mandatory."
-                },
-                "type": {
-                    "enum": [
-                        "DELEGATED",
-                        0
-                    ],
-                    "oneOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "integer"
-                        }
-                    ],
-                    "title": "Gateway Type"
-                }
-            },
             "additionalProperties": true,
             "type": "object",
             "title": "Gateway",
-            "description": "Gateway describes a service that ingress should not be proxied."
+            "description": "Gateway marks this data plane proxy as a delegated gateway: an independently deployed proxy (e.g., Kong) that receives inbound traffic which is not proxied by Kuma, and sends outbound traffic into the data plane proxy. Its presence is the whole signal, so the message carries no fields; the proxy is identified by the Dataplane's labels like any other. See https://kuma.io/docs/latest/explore/gateway/ for more information."
         },
         "kuma.mesh.v1alpha1.Dataplane.Networking.Inbound": {
             "properties": {

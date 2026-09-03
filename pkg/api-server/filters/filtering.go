@@ -136,7 +136,7 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 					return false
 				}
 
-				if !dataplane.Spec.MatchTagsFuzzy(tags) && !mesh_proto.TagSelector(tags).MatchesFuzzy(dataplane.GetMeta().GetLabels()) {
+				if !mesh_proto.TagSelector(tags).MatchesFuzzy(dataplane.GetMeta().GetLabels()) {
 					return false
 				}
 
@@ -173,8 +173,10 @@ func gatewayModeFilterFromParameter(request *restful.Request) (DpFilter, error) 
 			return isnil(a)
 		}, nil
 	case "delegated":
+		// Delegated is the only kind of gateway left, so this matches the
+		// same proxies as `true`.
 		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return !isnil(a) && a.Type == mesh_proto.Dataplane_Networking_Gateway_DELEGATED
+			return !isnil(a)
 		}, nil
 	default:
 		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {

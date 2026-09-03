@@ -338,15 +338,6 @@ func (n *Dataplane_Networking) GetHealthyInbounds() []*Dataplane_Networking_Inbo
 	return inbounds
 }
 
-// MatchTagsFuzzy fuzzy-matches the gateway's tags; regular inbounds are
-// matched via labels.
-func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
-	if d == nil {
-		return false
-	}
-	return selector.MatchesFuzzy(d.GetNetworking().GetGateway().GetTags())
-}
-
 // GetServiceFallback returns the service this inbound belongs to.
 func (d *Dataplane_Networking_Inbound) GetServiceFallback(fallback string) string {
 	return fallback
@@ -535,33 +526,10 @@ func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
 	return set
 }
 
-// TagSet returns the gateway's tags; regular inbounds carry no tag-shaped
-// identity and are represented by Dataplane labels instead.
-func (d *Dataplane) TagSet() MultiValueTagSet {
-	tags := MultiValueTagSet{}
-	for tag, value := range d.GetNetworking().GetGateway().GetTags() {
-		_, exists := tags[tag]
-		if !exists {
-			tags[tag] = map[string]bool{}
-		}
-		tags[tag][value] = true
-	}
-	return tags
-}
-
-// SingleValueTagSets returns the gateway's tag set; regular inbounds carry
-// no tag-shaped identity and are represented by Dataplane labels instead.
-func (d *Dataplane) SingleValueTagSets() []SingleValueTagSet {
-	var sets []SingleValueTagSet
-	if gateway := d.GetNetworking().GetGateway(); gateway != nil {
-		sets = append(sets, gateway.GetTags())
-	}
-	return sets
-}
-
+// IsDelegatedGateway reports whether this proxy fronts a delegated gateway.
+// The gateway message carries no fields, so its presence is the whole signal.
 func (d *Dataplane) IsDelegatedGateway() bool {
-	return d.GetNetworking().GetGateway() != nil &&
-		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_DELEGATED
+	return d.GetNetworking().GetGateway() != nil
 }
 
 func (t MultiValueTagSet) String() string {
