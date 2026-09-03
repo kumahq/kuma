@@ -554,6 +554,9 @@ type LabelsOptions struct {
 	Namespace      Namespace
 	ServiceAccount string
 	Workload       string
+	// Privileged marks trusted CP-internal writes (KDS sync, GC,
+	// storage-version migrator) whose labels must not be recomputed.
+	Privileged bool
 }
 
 type LabelsOptionsFunc func(*LabelsOptions)
@@ -602,6 +605,12 @@ func WithMode(mode config_core.CpMode) LabelsOptionsFunc {
 	}
 }
 
+func WithPrivileged(privileged bool) LabelsOptionsFunc {
+	return func(opts *LabelsOptions) {
+		opts.Privileged = privileged
+	}
+}
+
 // ComputeLabels computes labels for a resource based on its type, spec, existing labels, namespace, mesh, mode, k8s and localZone.
 // Only use set / setIfNotExist to set labels as it makes sure the label is on the list of computed labels (that is used in another project).
 func ComputeLabels(
@@ -609,12 +618,19 @@ func ComputeLabels(
 	spec ResourceSpec,
 	existingLabels map[string]string,
 	mesh string,
+	displayName string,
 	opts ...LabelsOptionsFunc,
 ) (map[string]string, error) {
 	labelsOpts := NewLabelsOptions(opts...)
 	labels := map[string]string{}
 	if len(existingLabels) > 0 {
 		labels = maps.Clone(existingLabels)
+	}
+
+	// Only skip recomputation for resources imported from another CP (e.g. via
+	// KDS sync); locally-originated resources are always recomputed.
+	if labelsOpts.Privileged && !IsLocallyOriginated(labelsOpts.Mode, labels) {
+		return labels, nil
 	}
 
 	set := func(k, v string) {
@@ -636,6 +652,8 @@ func ComputeLabels(
 		}
 		return DefaultMesh
 	}
+
+	set(mesh_proto.DisplayName, displayName)
 
 	if rd.Scope == ScopeMesh {
 		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
