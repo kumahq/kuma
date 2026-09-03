@@ -1,12 +1,26 @@
 package v1alpha1_test
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
 )
+
+var _ = Describe("generated schema", func() {
+	It("should describe the loadBalancer union with a oneOf", func() {
+		contents, err := os.ReadFile("rest.yaml")
+		Expect(err).ToNot(HaveOccurred())
+
+		// Each branch pairs a type with the property it selects, so consumers do
+		// not have to infer the mapping.
+		Expect(string(contents)).To(MatchRegexp(`(?s)oneOf:.*roundRobin: \{\}.*- RoundRobin`))
+	})
+})
 
 var _ = Describe("validation", func() {
 	DescribeErrorCases(

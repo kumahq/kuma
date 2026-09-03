@@ -322,6 +322,22 @@ components:
               required:
                 - type
               type: object
+              oneOf:
+                - properties:
+                    bundled: {}
+                    type:
+                      enum:
+                        - Bundled
+                - properties:
+                    spire: {}
+                    type:
+                      enum:
+                        - Spire
+                - properties:
+                    extension: {}
+                    type:
+                      enum:
+                        - Extension
             selector:
               properties:
                 dataplane:
