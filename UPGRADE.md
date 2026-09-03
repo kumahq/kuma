@@ -8,6 +8,17 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### The ServiceInsight REST endpoints are removed
+
+`GET /meshes/{mesh}/service-insights` and `GET /meshes/{mesh}/service-insights/{name}` are removed and answer `404`.
+
+The control plane stopped writing `ServiceInsight` when services became computed from `MeshService` and `MeshExternalService`; it deletes the ones left behind by older control planes. The endpoints had therefore been reading a resource that is never present, and returned an empty result for every mesh.
+
+**Action required**
+
+None if you were reading these endpoints, since they no longer returned data. To list services in a mesh, use `MeshService` and `MeshExternalService` instead.
+
+
 ### The legacy overview paths `dataplanes+insights` and `zones+insights` are removed
 
 `GET /meshes/{mesh}/dataplanes+insights` and `GET /zones+insights`, along with their `/{name}` forms, were kept as aliases when overviews moved to `_overview`. They are now removed and answer `404`.
