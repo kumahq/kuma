@@ -11,6 +11,9 @@ properties:
       It may be omitted for cluster-scoped resources.'
     type: string
     default: default
+    # keep in sync with core_mesh.MeshNamePattern / MaxNameLength
+    pattern: '^[0-9a-z-_.]*$'
+    maxLength: 253
   {{- end }}
   {{- if ne .ShortName "" }}
   {{- $kind := ternary .IsPolicy "policy" "resource" }}
@@ -51,6 +54,9 @@ properties:
   name:
     description: 'Name of the Kuma resource'
     type: string
+    # keep in sync with core_mesh.NamePattern / MaxNameLength
+    pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+    maxLength: 253
   labels:
     additionalProperties:
       type: string
