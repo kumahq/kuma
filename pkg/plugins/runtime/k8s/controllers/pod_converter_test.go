@@ -206,18 +206,18 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "19.services-for-pod.yaml",
 			dataplane:      "19.dataplane.yaml",
 		}),
-		Entry("20. Pod with gateway annotation and 1 service identified by deployment", testCase{
+		Entry(`20. Pod with gateway annotation "enabled"`, testCase{
 			pod:              "20.pod.yaml",
 			servicesForPod:   "20.services-for-pod.yaml",
 			otherReplicaSets: "20.replicasets-for-pod.yaml",
 			dataplane:        "20.dataplane.yaml",
 		}),
-		Entry("21. Pod with gateway annotation and 1 service with no replicaset", testCase{
+		Entry(`21. Pod with gateway annotation "true"`, testCase{
 			pod:            "21.pod.yaml",
 			servicesForPod: "21.services-for-pod.yaml",
 			dataplane:      "21.dataplane.yaml",
 		}),
-		Entry("22. Pod with gateway annotation and 1 service with replicaset but no deployment", testCase{
+		Entry(`22. Pod with gateway annotation "disabled" is a regular Dataplane`, testCase{
 			pod:              "22.pod.yaml",
 			servicesForPod:   "22.services-for-pod.yaml",
 			otherReplicaSets: "22.replicasets-for-pod.yaml",
@@ -366,6 +366,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:            "45.pod.yaml",
 			servicesForPod: "45.services-for-pod.yaml",
 			dataplane:      "45.dataplane.yaml",
+		}),
+		Entry("46. Pod with an invalid gateway annotation value", testCase{
+			pod:            "46.pod.yaml",
+			servicesForPod: "46.services-for-pod.yaml",
+			expectedErr:    `annotation "kuma.io/gateway" has wrong value "bogus"`,
 		}),
 	)
 })

@@ -856,6 +856,22 @@ spec:
                     kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.spire.config.yaml",
 		}),
+		Entry(`44. Pod with kuma.io/gateway annotation set to "true"`, testCase{
+			num: "44",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
 	)
 
 	It("falls back to init-container sidecar injection when native sidecars are unavailable", func() {

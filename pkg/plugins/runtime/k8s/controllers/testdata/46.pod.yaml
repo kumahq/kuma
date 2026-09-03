@@ -1,14 +1,11 @@
 metadata:
   namespace: demo
-  ownerReferences:
-    - name: replicaSetOne
-      kind: ReplicaSet
   name: example
   labels:
     app: example
     version: "0.1"
   annotations:
-    kuma.io/gateway: disabled
+    kuma.io/gateway: bogus
 spec:
   containers:
     - ports:

@@ -958,6 +958,18 @@ removed" below for the separate removal of `MeshGatewayInstance` management.
   own system namespace. Remove this key from your config file and Helm
   values — leaving it in place is harmless but has no effect.
 
+### `kuma.io/gateway` is a boolean annotation
+
+The `kuma.io/gateway` Pod annotation is now read the same way on both sides of the injection: as a boolean, accepting `enabled`, `true`, `yes` to mark a delegated gateway and `disabled`, `false`, `no` to opt out. Anything else is rejected with `annotation "kuma.io/gateway" has wrong value "<value>"`.
+
+The `provided` value is gone. It has not worked since 2.10: the injector parses this annotation as a boolean, so a Pod annotated `kuma.io/gateway: provided` fails admission before any `Dataplane` is created. Its only effect on the `Dataplane` was a `kuma.io/service-name` gateway tag that nothing has read since `kuma.io/service` was removed.
+
+Two values that used to be inconsistent now behave as the injector always intended. `kuma.io/gateway: "true"` was injected as a gateway but then failed conversion with `invalid delegated gateway type 'true'`; it now produces a gateway `Dataplane`. `kuma.io/gateway: disabled` was injected as a regular Pod but also failed conversion, so the Pod never got a `Dataplane` at all; it now produces a regular `Dataplane` with inbounds.
+
+**Action required**
+
+Replace `kuma.io/gateway: provided` with `kuma.io/gateway: enabled` on any Pod, Deployment template, or Helm value that still sets it. Such a Pod is currently failing admission, so this is a fix rather than a regression, but the annotation has to change before the Pod can start.
+
 ### Built-in gateway Kubernetes controllers removed
 
 The control plane no longer reconciles `MeshGatewayInstance` resources on
@@ -965,9 +977,9 @@ Kubernetes. It no longer creates or manages the `Service` and `Deployment`
 generated for a `MeshGatewayInstance`, no longer converts `Pod`s annotated
 `kuma.io/gateway: builtin` into a built-in gateway `Dataplane`, and no longer
 runs the `MeshGatewayInstance` admission validator. `kumactl inspect
-meshgateway` has been removed along with its client. Delegated gateway modes
-(`kuma.io/gateway: enabled` / `provided`) and the Gateway API `HTTPRoute`
-GAMMA path are unaffected.
+meshgateway` has been removed along with its client. Delegated gateways
+(`kuma.io/gateway: enabled`) and the Gateway API `HTTPRoute` GAMMA path are
+unaffected.
 
 The `MeshGatewayInstance` CRD, its API types, and the `MeshGateway`/
 `MeshGatewayRoute` resources themselves are not removed by this change.
@@ -979,8 +991,7 @@ The `MeshGatewayInstance` CRD, its API types, and the `MeshGateway`/
   `Dataplane` it previously generated for them is not updated, recreated, or
   cleaned up automatically. If you still rely on a built-in gateway, migrate
   it to a delegated gateway (bring your own `Deployment`/`Service` fronting a
-  Kuma-injected pod annotated `kuma.io/gateway: enabled` or `provided`) before
-  upgrading.
+  Kuma-injected pod annotated `kuma.io/gateway: enabled`) before upgrading.
 - Before upgrading, or as part of your migration, manually delete the
   `MeshGatewayInstance` resources you no longer need, along with the
   `Service`, `Deployment`, and `Dataplane` objects they previously generated
@@ -1539,7 +1550,7 @@ A `Dataplane` with `networking.gateway.type: BUILTIN` is now rejected at
 admission and update. The `Dataplane.networking.gateway` message and the
 `DELEGATED` gateway type are unaffected — delegated gateways (bring your own
 `Deployment`/`Service` fronting a Kuma-injected pod annotated
-`kuma.io/gateway: enabled` or `provided`) continue to work exactly as before.
+`kuma.io/gateway: enabled`) continue to work exactly as before.
 
 **Action required**
 
