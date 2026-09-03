@@ -497,6 +497,8 @@ var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsExperimental:        false,
 	IsProxy:               false,
 	AffectsPolicyMatching: true,
+	Insight:               NewMeshInsightResource(),
+	Overview:              NewMeshOverviewResource(),
 }
 
 func init() {
@@ -620,6 +622,135 @@ var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 
 func init() {
 	registry.RegisterType(MeshInsightResourceTypeDescriptor)
+}
+
+const (
+	MeshOverviewType model.ResourceType = "MeshOverview"
+)
+
+var _ model.Resource = &MeshOverviewResource{}
+
+type MeshOverviewResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.MeshOverview
+}
+
+func NewMeshOverviewResource() *MeshOverviewResource {
+	return &MeshOverviewResource{
+		Spec: &mesh_proto.MeshOverview{},
+	}
+}
+
+func (t *MeshOverviewResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *MeshOverviewResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *MeshOverviewResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *MeshOverviewResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.MeshOverview)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		if protoType == nil {
+			t.Spec = &mesh_proto.MeshOverview{}
+		} else {
+			t.Spec = protoType
+		}
+		return nil
+	}
+}
+
+func (t *MeshOverviewResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *MeshOverviewResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
+func (t *MeshOverviewResource) Descriptor() model.ResourceTypeDescriptor {
+	return MeshOverviewResourceTypeDescriptor
+}
+
+func (t *MeshOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	t.SetMeta(resource.GetMeta())
+	overview := &mesh_proto.MeshOverview{
+		Mesh: resource.GetSpec().(*mesh_proto.Mesh),
+	}
+	if insight != nil {
+		ins, ok := insight.GetSpec().(*mesh_proto.MeshInsight)
+		if !ok {
+			return errors.New("failed to convert to insight type 'MeshInsight'")
+		}
+		overview.MeshInsight = ins
+	}
+	return t.SetSpec(overview)
+}
+
+var _ model.ResourceList = &MeshOverviewResourceList{}
+
+type MeshOverviewResourceList struct {
+	Items      []*MeshOverviewResource
+	Pagination model.Pagination
+}
+
+func (l *MeshOverviewResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *MeshOverviewResourceList) GetItemType() model.ResourceType {
+	return MeshOverviewType
+}
+
+func (l *MeshOverviewResourceList) NewItem() model.Resource {
+	return NewMeshOverviewResource()
+}
+
+func (l *MeshOverviewResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*MeshOverviewResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*MeshOverviewResource)(nil), r)
+	}
+}
+
+func (l *MeshOverviewResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+func (l *MeshOverviewResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
+var MeshOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:                  MeshOverviewType,
+	Resource:              NewMeshOverviewResource(),
+	ResourceList:          &MeshOverviewResourceList{},
+	ReadOnly:              false,
+	AdminOnly:             false,
+	Scope:                 model.ScopeGlobal,
+	WsPath:                "",
+	KumactlArg:            "",
+	KumactlListArg:        "",
+	AllowToInspect:        false,
+	IsPolicy:              false,
+	SingularDisplayName:   "Mesh Overview",
+	PluralDisplayName:     "Mesh Overviews",
+	IsExperimental:        false,
+	IsProxy:               false,
+	AffectsPolicyMatching: false,
 }
 
 const (
