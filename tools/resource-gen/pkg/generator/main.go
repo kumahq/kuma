@@ -453,6 +453,8 @@ func Run() {
 	}
 }
 
+var protoEnumType = reflect.TypeFor[protoreflect.Enum]()
+
 var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeFor[v1alpha1.DataplaneOverview](),
 	reflect.TypeFor[system_proto.Zone](),
@@ -750,6 +752,9 @@ func (r *reflector) mapper(t reflect.Type) (*jsonschema.Schema, error) {
 	if hasOneofField(t) {
 		return r.handleOneOf(t)
 	}
+	if s := enumMapper(t); s != nil {
+		return s, nil
+	}
 	return valueMapper(t), nil
 }
 
@@ -860,6 +865,21 @@ func valueMapper(r reflect.Type) *jsonschema.Schema {
 	default:
 		return nil
 	}
+}
+
+// enumMapper renders protobuf enums as a string enum. Without it the reflector
+// falls back to `oneOf: [string, integer]` because jsonpb accepts both forms,
+// which makes generated clients type the field as `string | number`.
+func enumMapper(r reflect.Type) *jsonschema.Schema {
+	if !r.Implements(protoEnumType) {
+		return nil
+	}
+	values := reflect.Zero(r).Interface().(protoreflect.Enum).Descriptor().Values()
+	schema := &jsonschema.Schema{Type: "string"}
+	for i := range values.Len() {
+		schema.Enum = append(schema.Enum, string(values.Get(i).Name()))
+	}
+	return schema
 }
 
 func hasOneofField(r reflect.Type) bool {

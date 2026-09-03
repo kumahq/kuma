@@ -5060,9 +5060,9 @@ components:
 
                     See https://kuma.io/docs/latest/explore/gateway/ for more
                     information.
-                  oneOf:
-                    - type: string
-                    - type: integer
+                  enum:
+                    - DELEGATED
+                  type: string
               type: object
             inbound:
               description: >-
@@ -5225,9 +5225,11 @@ components:
                     type: object
                   state:
                     description: State describes the current state of the listener.
-                    oneOf:
-                      - type: string
-                      - type: integer
+                    enum:
+                      - Ready
+                      - NotReady
+                      - Ignored
+                    type: string
                 type: object
               type: array
             listeners:
@@ -5265,9 +5267,10 @@ components:
                       underlying
 
                       pod and sidecar container.
-                    oneOf:
-                      - type: string
-                      - type: integer
+                    enum:
+                      - Ready
+                      - NotReady
+                    type: string
                   type:
                     description: >-
                       Type determines the role of this listener: ZoneIngress for
@@ -5275,9 +5278,11 @@ components:
 
                       cross-zone traffic or ZoneEgress for outbound external
                       traffic.
-                    oneOf:
-                      - type: string
-                      - type: integer
+                    enum:
+                      - Unspecified
+                      - ZoneIngress
+                      - ZoneEgress
+                    type: string
                 type: object
               type: array
             outbound:
@@ -5365,9 +5370,12 @@ components:
                   description: >-
                     The IP family mode to enable for. Can be "IPv4" or
                     "DualStack".
-                  oneOf:
-                    - type: string
-                    - type: integer
+                  enum:
+                    - UnSpecified
+                    - DualStack
+                    - IPv4
+                    - IPv6
+                  type: string
                 reachableBackends:
                   description: >-
                     Reachable backend via transparent proxy when running with
@@ -13268,9 +13276,9 @@ components:
 
                         See https://kuma.io/docs/latest/explore/gateway/ for
                         more information.
-                      oneOf:
-                        - type: string
-                        - type: integer
+                      enum:
+                        - DELEGATED
+                      type: string
                   type: object
                 inbound:
                   description: >-
@@ -13437,9 +13445,11 @@ components:
                         type: object
                       state:
                         description: State describes the current state of the listener.
-                        oneOf:
-                          - type: string
-                          - type: integer
+                        enum:
+                          - Ready
+                          - NotReady
+                          - Ignored
+                        type: string
                     type: object
                   type: array
                 listeners:
@@ -13478,9 +13488,10 @@ components:
                           the underlying
 
                           pod and sidecar container.
-                        oneOf:
-                          - type: string
-                          - type: integer
+                        enum:
+                          - Ready
+                          - NotReady
+                        type: string
                       type:
                         description: >-
                           Type determines the role of this listener: ZoneIngress
@@ -13488,9 +13499,11 @@ components:
 
                           cross-zone traffic or ZoneEgress for outbound external
                           traffic.
-                        oneOf:
-                          - type: string
-                          - type: integer
+                        enum:
+                          - Unspecified
+                          - ZoneIngress
+                          - ZoneEgress
+                        type: string
                     type: object
                   type: array
                 outbound:
@@ -13582,9 +13595,12 @@ components:
                       description: >-
                         The IP family mode to enable for. Can be "IPv4" or
                         "DualStack".
-                      oneOf:
-                        - type: string
-                        - type: integer
+                      enum:
+                        - UnSpecified
+                        - DualStack
+                        - IPv4
+                        - IPv6
+                      type: string
                     reachableBackends:
                       description: >-
                         Reachable backend via transparent proxy when running
