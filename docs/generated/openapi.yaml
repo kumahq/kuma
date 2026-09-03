@@ -4603,20 +4603,87 @@ components:
           type: object
           additionalProperties:
             type: string
+          patternProperties:
+            ^kuma\.io/display-name$:
+              type: string
+              readOnly: true
+              description: >-
+                Display name of the resource. Always computed by the control
+                plane.
+            ^kuma\.io/origin$:
+              type: string
+              readOnly: true
+              description: >-
+                Whether the resource originated on a zone or on global. Always
+                computed by the control plane, and immutable.
+            ^k8s\.kuma\.io/namespace$:
+              type: string
+              readOnly: true
+              description: >-
+                Namespace the object lives in. Always computed by the control
+                plane on Kubernetes.
+            ^kuma\.io/policy-role$:
+              type: string
+              readOnly: true
+              description: >-
+                Role driving namespaced policy matching. Always computed by the
+                control plane for namespaced policies on Kubernetes.
+            ^k8s\.kuma\.io/service-account$:
+              type: string
+              readOnly: true
+              description: >-
+                Service account of the workload. Always computed by the control
+                plane on Kubernetes.
+            ^kuma\.io/workload$:
+              type: string
+              readOnly: true
+              description: >-
+                Workload the resource belongs to. Always computed by the control
+                plane.
+            ^kuma\.io/listener-zoneingress$:
+              type: string
+              readOnly: true
+              description: >-
+                Set to `enabled` when the proxy has a zone ingress listener.
+                Always computed by the control plane.
+            ^kuma\.io/listener-zoneegress$:
+              type: string
+              readOnly: true
+              description: >-
+                Set to `enabled` when the proxy has a zone egress listener.
+                Always computed by the control plane.
+            ^kuma\.io/mesh$:
+              type: string
+              description: Mesh the resource belongs to. Defaults to `default` when unset.
+            ^kuma\.io/zone$:
+              type: string
+              description: >-
+                Zone the resource originated in. Defaults to the name of the
+                zone it was applied on when unset, and is immutable afterwards.
+            ^kuma\.io/env$:
+              type: string
+              description: >-
+                Environment the resource was applied in. Defaults to `universal`
+                or `kubernetes` when unset.
           example:
             k8s.kuma.io/namespace: kuma-system
             kuma.io/display-name: mtp
             kuma.io/mesh: default
             kuma.io/origin: zone
           description: >
-            Labels of the resource. Note: certain system labels are immutable
-            after creation:
+            Labels of the resource.
 
-            - `kuma.io/origin`: Resource origin (zone/global). Immutable.
 
-            - `kuma.io/zone`: Zone where resource originated. Immutable.
+            Labels documented as `readOnly` are always computed by the control
+            plane; a value supplied by the
 
-            - `kuma.io/display-name`: Display name for the resource. Immutable.
+            user is overwritten. The remaining documented labels can be set by
+            the user, and the control plane
+
+            only fills in a default when they are absent. `kuma.io/origin` and
+            `kuma.io/zone` are immutable
+
+            after creation.
     ProxyRule:
       description: a rule that affects the entire proxy
       type: object
@@ -5176,9 +5243,9 @@ components:
 
                     See https://kuma.io/docs/latest/explore/gateway/ for more
                     information.
-                  oneOf:
-                    - type: string
-                    - type: integer
+                  enum:
+                    - DELEGATED
+                  type: string
               type: object
             inbound:
               description: >-
@@ -5341,9 +5408,11 @@ components:
                     type: object
                   state:
                     description: State describes the current state of the listener.
-                    oneOf:
-                      - type: string
-                      - type: integer
+                    enum:
+                      - Ready
+                      - NotReady
+                      - Ignored
+                    type: string
                 type: object
               type: array
             listeners:
@@ -5381,9 +5450,10 @@ components:
                       underlying
 
                       pod and sidecar container.
-                    oneOf:
-                      - type: string
-                      - type: integer
+                    enum:
+                      - Ready
+                      - NotReady
+                    type: string
                   type:
                     description: >-
                       Type determines the role of this listener: ZoneIngress for
@@ -5391,9 +5461,11 @@ components:
 
                       cross-zone traffic or ZoneEgress for outbound external
                       traffic.
-                    oneOf:
-                      - type: string
-                      - type: integer
+                    enum:
+                      - Unspecified
+                      - ZoneIngress
+                      - ZoneEgress
+                    type: string
                 type: object
               type: array
             outbound:
@@ -5481,9 +5553,12 @@ components:
                   description: >-
                     The IP family mode to enable for. Can be "IPv4" or
                     "DualStack".
-                  oneOf:
-                    - type: string
-                    - type: integer
+                  enum:
+                    - UnSpecified
+                    - DualStack
+                    - IPv4
+                    - IPv6
+                  type: string
                 reachableBackends:
                   description: >-
                     Reachable backend via transparent proxy when running with
@@ -13446,9 +13521,9 @@ components:
 
                         See https://kuma.io/docs/latest/explore/gateway/ for
                         more information.
-                      oneOf:
-                        - type: string
-                        - type: integer
+                      enum:
+                        - DELEGATED
+                      type: string
                   type: object
                 inbound:
                   description: >-
@@ -13615,9 +13690,11 @@ components:
                         type: object
                       state:
                         description: State describes the current state of the listener.
-                        oneOf:
-                          - type: string
-                          - type: integer
+                        enum:
+                          - Ready
+                          - NotReady
+                          - Ignored
+                        type: string
                     type: object
                   type: array
                 listeners:
@@ -13656,9 +13733,10 @@ components:
                           the underlying
 
                           pod and sidecar container.
-                        oneOf:
-                          - type: string
-                          - type: integer
+                        enum:
+                          - Ready
+                          - NotReady
+                        type: string
                       type:
                         description: >-
                           Type determines the role of this listener: ZoneIngress
@@ -13666,9 +13744,11 @@ components:
 
                           cross-zone traffic or ZoneEgress for outbound external
                           traffic.
-                        oneOf:
-                          - type: string
-                          - type: integer
+                        enum:
+                          - Unspecified
+                          - ZoneIngress
+                          - ZoneEgress
+                        type: string
                     type: object
                   type: array
                 outbound:
@@ -13760,9 +13840,12 @@ components:
                       description: >-
                         The IP family mode to enable for. Can be "IPv4" or
                         "DualStack".
-                      oneOf:
-                        - type: string
-                        - type: integer
+                      enum:
+                        - UnSpecified
+                        - DualStack
+                        - IPv4
+                        - IPv6
+                      type: string
                     reachableBackends:
                       description: >-
                         Reachable backend via transparent proxy when running
