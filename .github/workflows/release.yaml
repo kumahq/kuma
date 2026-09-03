@@ -24,6 +24,9 @@ on:
         description: "check that everything is published correctly"
 env:
   CHARTS_REPO: "kumahq/charts"
+  HELM_REPO_NAME: "kuma"
+  HELM_REPO_URL: "https://kumahq.github.io/charts"
+  HELM_CHARTS: "kuma"
   BINARIES: "darwin-amd64,darwin-arm64,linux-amd64,linux-arm64"
   DOCKER_REPO: "kumahq"
   DOCKER_IMAGES: "kumactl,kuma-cp,kuma-dp,kuma-init,kuma-cni"
@@ -82,6 +85,17 @@ jobs:
           retry_wait_seconds: 60
           timeout_minutes: 1
           command: release-tool release helm-chart --repo "$GITHUB_REPOSITORY" --charts-repo "$CHARTS_REPO" --release "$RELEASE"
+      # The check above only proves the charts repo cut a release. The index.yaml users
+      # install from is published separately, so also verify the chart is resolvable and
+      # pullable through `helm repo update`.
+      - name: check-helm-repo
+        if: env.RELEASE != '0.0.0' && fromJSON(env.CHECK)
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 60
+          timeout_minutes: 2
+          command: .github/workflows/scripts/check-helm-repo.sh
       - name: check-binaries
         if: fromJSON(env.CHECK)
         env:
