@@ -225,7 +225,7 @@ func (s *envoyAdminErrServer) HealthCheck(_ context.Context, _ *mesh_proto.ZoneH
 }
 
 func (s *envoyAdminErrServer) StreamXDSConfigs(_ mesh_proto.GlobalKDSService_StreamXDSConfigsServer) error {
-	return status.Error(codes.ResourceExhausted, "could not receive a message")
+	return status.Error(codes.ResourceExhausted, "could not receive a message: grpc: received message after decompression larger than max (20000000 vs. 10485760)")
 }
 
 func (s *envoyAdminErrServer) StreamStats(stream mesh_proto.GlobalKDSService_StreamStatsServer) error {

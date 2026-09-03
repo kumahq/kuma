@@ -25,7 +25,9 @@ type EnvoyAdminProcessor interface {
 type envoyAdminProcessor struct {
 	resManager  core_manager.ReadOnlyResourceManager
 	adminClient admin.EnvoyAdminClient
-	maxMsgSize  int
+	// stands in for the global CP's receive limit, which binds but isn't
+	// advertised over KDS. Both sides default to 10MiB.
+	maxMsgSize int
 }
 
 var _ EnvoyAdminProcessor = &envoyAdminProcessor{}
@@ -42,23 +44,6 @@ func NewEnvoyAdminProcessor(
 	}
 }
 
-// tooLargeError reports that a response can't be delivered over KDS. Receiving a
-// message past the size limit makes gRPC abort the whole RPC stream, which takes
-// down every other KDS stream multiplexed on the same connection, so the
-// processor answers with this error instead.
-//
-// The limit that actually binds is the global CP's receive limit, which gRPC
-// applies to the decompressed message, so proto.Size is the size to check. That
-// limit is configured on the global CP and is not advertised over KDS, so this
-// check uses the zone's own maxMsgSize as the only locally known proxy for it.
-// The two match by default (10MiB on both sides) and are expected to be kept
-// aligned; a zone configured below the global's limit rejects responses the
-// global would have accepted.
-//
-// The advice is deliberately limited to reachableBackends. Raising maxMsgSize is
-// not suggested: it is the global side that has to be raised, which a zone
-// operator may not control, and raising only the zone side lets messages past
-// this check that the global CP then rejects, dropping the stream.
 func (s *envoyAdminProcessor) tooLargeError(rpcName string, resourceName string, size int) string {
 	log.Info("Envoy admin response exceeds the maximum KDS message size, replying with an error instead of sending it",
 		"rpc", rpcName,
